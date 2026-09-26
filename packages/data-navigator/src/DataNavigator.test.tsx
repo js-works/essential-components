@@ -3,7 +3,7 @@ import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { DataNavigator as Spec } from './api';
 import { useDataNavigatorController, useDataNavigatorSelection } from './core/controllerHooks';
-import { selectColumnFilter, textColumnFilter } from './core/view/ColumnFilters';
+import { dateRangeColumnFilter, selectColumnFilter, textColumnFilter } from './core/view/ColumnFilters';
 import baseStylesheet from './core/view/DataNavigator.module.css?raw';
 import { createDataNavigator } from './createDataNavigator';
 import { antdTheme } from './themes/antd';
@@ -695,6 +695,49 @@ describe('DataNavigator', () => {
       await chooseFilterOption('Name', 'Ann');
 
       expect([shownIn('City'), shownIn('Name')]).toEqual(['Vienna', 'Ann']);
+    });
+
+    it('gives a date range filter the range of its date picker, shows it formatted, and clears it', async () => {
+      const columns: readonly Spec.Column<Person>[] = [
+        { key: 'city', header: 'Moved in', filter: dateRangeColumnFilter() },
+      ];
+
+      const { source } = renderNav({ columns });
+
+      await loaded();
+
+      const trigger = screen.getByRole('button', { name: 'Moved in' });
+
+      expect(trigger.textContent).toBe('All');
+
+      fireEvent.click(trigger);
+
+      // The date picker of @local/calendar, loaded on first use and registered under a generated tag name.
+      const picker = await waitFor(() => {
+        const element = [...document.querySelectorAll('*')].find((node) =>
+          node.localName.startsWith('datnav-date-picker-')
+        );
+
+        expect(element).toBeDefined();
+
+        return element as HTMLElement & { value: string };
+      });
+
+      // What the picker reports after the second click of a range.
+      picker.value = '2026-09-01,2026-09-20';
+      picker.dispatchEvent(new Event('change'));
+
+      await filteredWith(source, { city: { from: '2026-09-01', to: '2026-09-20' } }, 300);
+
+      expect(trigger.textContent).toMatch(/^Sep 1\s–\s20, 2026$/);
+
+      await loaded();
+
+      clickClear('Moved in');
+
+      await filteredWith(source, {}, 300);
+
+      expect(trigger.textContent).toBe('All');
     });
 
     it('clears the selection when a filter is applied', async () => {

@@ -9,6 +9,7 @@ export {
   clearButton,
   content,
   dataRow,
+  datePopup,
   detailCell,
   detailRow,
   dimmed,
@@ -133,3 +134,4 @@ declare const toolbarSpacer: string;
 declare const tooltip: string;
 declare const tooltipPositioner: string;
 declare const unsortedIcon: string;
+declare const datePopup: string;

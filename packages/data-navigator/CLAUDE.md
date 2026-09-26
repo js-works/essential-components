@@ -54,7 +54,9 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - The popups of Base UI (the list of a select, a menu) share one look (`.popupPositioner`, `.popup`) and are
     rendered into the layer of the root (`LayerContext`), so they get the values of the theme.
   - Icons: inline SVGs shipped with the component (the paths of the Tabler icons, `view/icons.tsx`).
-  - Runtime dependencies: only `@base-ui/react`, besides the peers.
+  - Runtime dependencies: `@base-ui/react` and `@local/calendar` (the date picker of the date range filter, a sibling
+    package of the `essential-components` monorepo; a copy of this package needs a copy of it too), besides the
+    peers.
 - Customization: a small set of general design values, the `DataNavigator.Theme` (see Configuration), not one per part.
   - The values (29), with their internal custom properties (`colorTextDimmed` → `--datnav-color-text-dimmed`):
     - Colors: `colorText`, `colorTextDimmed`, `colorSurface`, `colorBorder`, `colorHeader`, `colorHeaderHover`,
@@ -189,7 +191,7 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - This reversed "Themes are CSS only: no theme prop, nothing in the API", decided at first.
 - The stylesheet itself (`data-navigator.css`) is still imported by the app.
 - The public API: `createDataNavigator`, `useDataNavigatorController`, `useDataNavigatorSelection`,
-  `textColumnFilter`, `selectColumnFilter`, `defaultTheme`, `mantineTheme`, `antdTheme`, and the types
+  `textColumnFilter`, `selectColumnFilter`, `dateRangeColumnFilter`, `defaultTheme`, `mantineTheme`, `antdTheme`, and the types
   (`DataNavigator.Config`, `.Theme`, `.I18nAdapter`, `.Component`, `.Controller`, `.Props`, ...).
 
 ## Safepoints
@@ -255,6 +257,9 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   stylesheet reads only known ones) and the i18n tests (with small adapters).
 - `demo/` + `index.html`: the demo app (`npm run dev`): 245 users, 1 second loading time, en/de, all selection modes
   (through the Actions selector). It starts striped.
+  - Columns: first name, last name, date of birth (ISO, yyyy-mm-dd, with the date range filter; the dates come from
+    the index, not from the random generator, so the other demo data stays the same), email, country, role. No city
+    column (the users still have a city: the search and the details use it).
   - `index.html` + `main.ts`: the page, a shell around the demo element: a header with the title and, top right, the
     global switches (language, color scheme), which change `<html>` (`lang`, `data-scheme`). It registers the demo
     element as `data-navigator-demo`.
@@ -413,9 +418,18 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - Only the vertical padding of the header cells and data cells changes. The horizontal padding stays.
   - The values map onto the spacing values: `calc(var(--datnav-spacing-xs) / 2)`, `--datnav-spacing-xs`,
     `--datnav-spacing-md`.
+  - In `compact`, the column headers get a little more vertical padding than the data cells (3/4 of `spacingXs`
+    instead of half of it), so a header (often a click target) does not look squeezed.
   - The root element carries `data-density`, and the stylesheet does the rest (with `:where()`, so more specific cell
     classes like the group header keep their own padding).
-  - Toolbar and footer do not change with the density.
+  - Toolbar and footer change in `compact` only, both flatter, with a font between `fontSizeSm` and `fontSize` and
+    controls of 0.875 × `controlHeight`:
+    - Toolbar: `spacingXs` above, below and between its lines (instead of `spacingSm`; the sides stay), the title at
+      1.1 × `fontSize` (instead of 1.25 ×), smaller action and menu buttons and search field.
+    - Footer: less room around it (`spacingSm` above instead of `spacingMd`, `spacingXs` below), smaller pager buttons,
+      page size select and page field.
+    - The heights are set on those controls directly (the stylesheet only reads the theme's custom properties and never
+      sets one).
 - Pressed state: buttons (toolbar, row, pager, details toggle) and sortable headers get a darker background while
   pressed (`:active`): their hover or fill color with 10% (filled buttons: 15%) of `--datnav-color-text` mixed in.
 - Sortable column headers get a light gray, rounded shape on hover (only on devices that can hover).
@@ -767,9 +781,18 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     `FilterProps = { value: FilterValue | undefined; onChange(value: FilterValue | undefined): void; labelledBy: string }`.
     - `value` is the applied value (`undefined` for none), `onChange` applies a new one, and `labelledBy` is the id of
       the column header, for `aria-labelledby` (a filter has no visible label of its own).
-    - The built-in filters are factories, exported next to the component: `textColumnFilter()` and
-      `selectColumnFilter({ options, multiple? })` (`options` are strings, or `{ value, label }`). A custom filter is
-      just another function.
+    - The built-in filters are factories, exported next to the component: `textColumnFilter()`,
+      `selectColumnFilter({ options, multiple? })` (`options` are strings, or `{ value, label }`) and
+      `dateRangeColumnFilter()`. A custom filter is just another function.
+    - `dateRangeColumnFilter()` (`view/DateRangeFilter.tsx`): a trigger in the look of the selects (`Texts.filterAll`
+      while empty, dimmed; else the range, formatted with `Intl.DateTimeFormat#formatRange` (`dateStyle: 'medium'`) in
+      the adapter's locale, e.g. "Sep 12 – 20, 2026"), with a calendar icon at its end, or the clear button while set.
+      It opens a Base UI `Popover` (in the layer of the root, not modal, below the trigger) with the date picker of
+      `@local/calendar` in `dateRange` mode. The second click of a range (also the same day twice) applies it and
+      closes the popover; Escape and a click outside close it without a change.
+      - The date picker is loaded on first use (`import('@local/calendar')`), so importing this package needs no DOM
+        (e.g. on a server), and registered once under the first free tag name `datnav-date-picker-<n>`.
+      - Its colors are the date picker's own, fixed ones (not the theme's), for now.
     - The built-in filters are small (`0.8 * --datnav-control-height`) and fill the cell. Their text is between the small
       and the normal size (`(--datnav-font-size-sm + --datnav-font-size) / 2`), and they keep their own small side padding
       (`--datnav-spacing-xs`).
@@ -821,7 +844,8 @@ The main goal is a very nice, yet simple, API, designed together with the user.
       - The whole query is serializable (server, URL, storage).
       - A custom `onChange` takes a `FilterValue`, or `undefined` to remove the filter.
     - `textColumnFilter` gives a trimmed string, `selectColumnFilter` gives the string value of the chosen option (an
-      array of them with `multiple`).
+      array of them with `multiple`), `dateRangeColumnFilter` gives `{ from, to }` (`DataNavigator.DateRangeFilterValue`,
+      ISO dates yyyy-mm-dd, both inclusive).
     - Applying a value that equals the current one does not start a new load.
     - The keys are plain strings (not checked against the row type). Keys typed against the row type are a todo.
   - All filter inputs stay usable while loading (like the search box), whatever their type: everything else is blocked,
@@ -831,6 +855,7 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     - `textColumnFilter`: a clear button inside the input while there is text (also Escape, see above).
     - `selectColumnFilter`: a clear button (`Texts.clearFilter`) takes the place of the arrow while something is
       selected.
+    - `dateRangeColumnFilter`: the same clear button takes the place of the calendar icon while a range is set.
     - custom: the custom component provides its own clear control and calls `onChange(undefined)`.
 
 - The toolbar above the table has two parts, one below the other, `--datnav-spacing-sm` apart:
@@ -1033,7 +1058,7 @@ The main goal is a very nice, yet simple, API, designed together with the user.
 - `Query.filters` with keys typed against the row type (`Query<Row>`), a possible later safety net.
 - Array helper and filters: how the helper applies `Query.filters` (contains for text, equals for select, a list means
   "one of"), and how an own filter supplies its predicate.
-- More built-in filters (number range, date range, boolean) if there is demand.
+- More built-in filters (number range, boolean) if there is demand. (A date range filter exists.)
 - Controlled query state (`query` and `onQueryChange`), e.g. for URL sync or "reset all" from outside.
   - Design it as one unit, together with `pageSize` and the selection reset.
 - Error state: what happens when `source` rejects (display, retry, texts in `DataNavigator.Texts`).

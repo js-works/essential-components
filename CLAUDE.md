@@ -29,18 +29,57 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
   - `data-navigator` (`@local/data-navigator`): a React data table.
   - `file-upload` (`@local/file-upload`): a file upload custom element, with a React wrapper.
   - `overlays` (`@local/overlays`): dialogs and toasts.
+  - `calendar` (`@local/calendar`): a calendar date/time picker (used by `data-navigator`'s date range filter, the
+    one dependency between the packages) (`DatePickerElement`), a first step taken over from
+    picoui: its framework-free core unchanged, with a plain custom element instead of picoui's Lit wrapper. The
+    directory may be renamed later.
   - A package keeps its own tests, demo (`npm run dev` inside it) and `package-lock.json` (unused in the workspace,
     where the root lock file counts; it matters again in a standalone copy).
 - The root is the demo page of all packages:
   - `index.html`: a header with the title and, top right, the global switches (language `en-US`/`de-DE`, color
     scheme), which change `<html>` (`lang`, `data-scheme`) for every demo. Below it a split: vertical tabs on the left
-    ("Data navigator", "File upload", "Dialogs + Toasts"), the chosen demo on the right.
+    ("Data navigator", "File upload", "Dialogs + Toasts", "Date Picker", "Media Manager"), the chosen demo on the right.
     - The URL hash has one segment per level of tabs: `#file-upload/react`, `#dialogs-toasts/react-i18n` (the first tab,
       the data navigator, has none).
   - `demo/main.ts`: imports the demo element of each package by a relative path
     (`../packages/file-upload/demo/FileUploadDemo`) and registers it (`data-navigator-demo`, `file-upload-demo`,
-    `overlays-demo`). Each demo element is a light DOM custom element of its package (see "Demo element" in the
-    package's `CLAUDE.md`), exported and not registered.
+    `overlays-demo`, `date-picker-demo`; the root's own `media-manager-demo`). Each demo element is a light DOM custom
+    element of its package (see "Demo element" in the package's `CLAUDE.md`), exported and not registered.
+  - `demo/media-manager/`: the "Media Manager" tab, a demo of the root (not of a package), because it combines three
+    packages: a data navigator lists the attachments, a file upload (React wrapper) below it adds new ones. As soon as a
+    file in the upload is `done`, the table reloads (`nav.reload()`, once per file), so the file shows up. The table is
+    compact (`density="compact"`), striped and has a search, sorting, paging, column filters (Filename: contains; User,
+    Type and Size: one or more; Uploaded: a date range, `dateRangeColumnFilter()`; the types are a fixed list of common
+    ones, `TYPES`; the sizes are small < 100 kB, medium 100 kB – 1 MB, large ≥ 1 MB, `SIZES`), multi-selection with
+    "Delete" for the selected rows (toolbar), and "Delete" in each row. Both ask first, in a critical confirmation
+    dialog of the overlays package (`confirmCritical`: a "Delete" button in the danger style, no confirm on Enter), with
+    the file name or the list of the selected files. Deleting takes a second (`DELETE_TIME`): the dialog is opened in a
+    scope (`dialogs.open()`), so it stays open after "Delete", its button shows a spinner, and it closes when the files
+    are gone (`scope.dispose()`).
+    - Toasts of the overlays package, bottom right (`toasts: { placement: 'bottom-end', size: 'small', stacked: true
+      }` in the provider's config): "3 files deleted" after a delete, and "2 files uploaded" once per batch of uploads
+      (when nothing is uploading or waiting any more, the files done since the last such toast). For a single file, its
+      name instead: `"report.txt" deleted`, `"report.txt" uploaded`.
+    - "Download" (the last action in the toolbar, a menu): "Selected file" (a row action, only while exactly one row
+      is selected), a separator, "Selected files as zip", "Selected files as tar.gz" (rows actions, only while rows are
+      selected), a separator, and last "All files as zip", "All files as tar.gz" (always there). Every entry opens a
+      warning dialog of the overlays package (`dialogs.warn()`): downloading is not available in the demo.
+    - "More information" (an info icon in the action column of every row) opens a drawer of the overlays package
+      (`dialogs.drawer()`) with made-up details from the fake server (`getDetails()`: description, versions, downloads,
+      tags, storage, checksum, stable per attachment). A drawer is a form drawer: "OK" and "Cancel", both close it.
+    - "Show statistics" (a general action in the toolbar) opens an info dialog of the overlays package
+      (`OverlaysProvider` around the demo, `useDialogs().info()`): the number and total size of all attachments, count
+      and size per type (e.g. "3x · 646.8 kB"), the largest file and the latest upload, computed by the fake server
+      (`getStatistics()`).
+    - The type of a file is its extension in capitals (`PDF`, `XLSX`), not its MIME type: a MIME type can be very long
+      (`application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`) and made the statistics dialog too wide.
+    - `attachments.ts`: the fake server, in memory for as long as the page is open (eleven seed files of four users, at
+      least one of every type in `TYPES`; new uploads belong to the current user, "Admin"): the table's source, the
+      upload function (progress by size; at the end the file is stored and its id is the result) and delete.
+    - Its texts say "file"/"files" everywhere (never "attachment"). The code keeps its names (`Attachment`,
+      `attachments.ts`): a type `File` would clash with the DOM's `File`.
+    - `MediaManagerDemo.tsx`: the demo element (light DOM, React inside, registered as
+      `media-manager-demo`). It uses the i18n adapters of the two packages' demos, so it follows `<html lang>`.
   - `demo/demo.css`: only what is specific to this page: the frame around the demos (header, tabs) is not selectable
     (`user-select: none`); inside the demos, selecting stays as their packages have it.
   - `demo/ui/`: the design language (`ui.css`, `ui.ts`), the same files as in every package. Read the header of `ui.css`

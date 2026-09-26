@@ -1,9 +1,11 @@
 // The design language first, so the CSS of the demos comes after it.
 import './ui/ui.css';
 import './demo.css';
+import { DatePickerDemo } from '../packages/calendar/demo/DatePickerDemo';
 import { DataNavigatorDemo } from '../packages/data-navigator/demo/DataNavigatorDemo';
 import { FileUploadDemo } from '../packages/file-upload/demo/FileUploadDemo';
 import { OverlaysDemo } from '../packages/overlays/src/demo/OverlaysDemo';
+import { MediaManagerDemo } from './media-manager/MediaManagerDemo';
 import { setupUi } from './ui/ui';
 
 // The page: the global switches set `<html lang>` and the color scheme for every demo, and vertical tabs choose the
@@ -28,3 +30,5 @@ setupUi();
 customElements.define('file-upload-demo', FileUploadDemo);
 customElements.define('data-navigator-demo', DataNavigatorDemo);
 customElements.define('overlays-demo', OverlaysDemo);
+customElements.define('date-picker-demo', DatePickerDemo);
+customElements.define('media-manager-demo', MediaManagerDemo);

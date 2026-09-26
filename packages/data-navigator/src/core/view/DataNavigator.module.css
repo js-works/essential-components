@@ -86,6 +86,14 @@
   flex-direction: column;
   gap: var(--datnav-spacing-sm);
   padding: var(--datnav-spacing-sm);
+
+  /* Compact: a flatter toolbar, like the footer. Less room, a font between the small and the normal size, a smaller
+     title (below) and smaller controls (after the rules of the controls). */
+  :where([data-density='compact']) & {
+    gap: var(--datnav-spacing-xs);
+    padding-block: var(--datnav-spacing-xs);
+    font-size: calc((var(--datnav-font-size-sm) + var(--datnav-font-size)) / 2);
+  }
 }
 
 /* Everything around the data (the toolbar, the header with the filter row, the footer) is not text to select: a click
@@ -108,6 +116,10 @@
   font-size: calc(1.25 * var(--datnav-font-size));
   font-weight: var(--datnav-font-weight-bold);
   line-height: 1.3;
+
+  :where([data-density='compact']) & {
+    font-size: calc(1.1 * var(--datnav-font-size));
+  }
 }
 
 .subtitle {
@@ -145,6 +157,14 @@
   padding: var(--datnav-spacing-sm);
   /* A little more room between the table and the footer. */
   padding-top: var(--datnav-spacing-md);
+
+  /* Compact: a flatter footer. Less room around it, the small font, and smaller controls (see below, after the rules
+     of the controls). */
+  :where([data-density='compact']) & {
+    padding: var(--datnav-spacing-sm) var(--datnav-spacing-sm) var(--datnav-spacing-xs);
+    /* Between the small and the normal size. */
+    font-size: calc((var(--datnav-font-size-sm) + var(--datnav-font-size)) / 2);
+  }
 }
 
 .footerSide {
@@ -513,6 +533,35 @@
   padding-block: 0;
 }
 
+/* Compact: the controls of the toolbar and the footer are 0.875 × controlHeight (the rest of the flatter toolbar and
+   footer is in .toolbar and .footer). */
+:where([data-density='compact']) .toolbar {
+  & .toolbarBar {
+    min-height: calc(0.875 * var(--datnav-control-height));
+  }
+
+  & .button,
+  & .searchField .input {
+    height: calc(0.875 * var(--datnav-control-height));
+  }
+
+  & .button[data-icon-only] {
+    width: calc(0.875 * var(--datnav-control-height));
+  }
+}
+
+:where([data-density='compact']) .footer {
+  & .pagerButton {
+    width: calc(0.875 * var(--datnav-control-height));
+    height: calc(0.875 * var(--datnav-control-height));
+  }
+
+  & .pageSizeField .select,
+  & .pageInput {
+    height: calc(0.875 * var(--datnav-control-height) - 2px);
+  }
+}
+
 .filterCell .field .select {
   padding-inline-start: calc(var(--datnav-spacing-xs) + 1px);
 }
@@ -643,6 +692,13 @@
   color: var(--datnav-color-text);
   box-shadow: var(--datnav-shadow);
   outline: none;
+}
+
+/* The popover of a date range filter: the date picker, with a little room around it. Not as wide as its trigger at
+   least (like a select's list): the picker has its own size. */
+.datePopup {
+  min-width: 0;
+  padding: var(--datnav-spacing-sm);
 }
 
 .selectItem {
@@ -800,6 +856,12 @@
   align-items: flex-end;
   font-weight: var(--datnav-font-weight-bold);
   background-color: var(--datnav-color-surface);
+
+  /* Compact: a little more room than the data cells (3/4 of xs instead of half of it), so a header, often a click
+     target, does not look squeezed. The group headers and the lower header row keep their own padding (later rules). */
+  :where([data-density='compact']) & {
+    padding-block: calc(0.75 * var(--datnav-spacing-xs));
+  }
 
   /* The hover of a sortable header is a rounded shape a little inside the cell, behind the text, drawn by ::before.
      The whole cell stays the click target, and the line below the header stays straight. */

@@ -2,7 +2,7 @@ import { useContext, useEffect, useMemo, useState } from 'react';
 import type { DataNavigator as Spec } from '../api';
 import { ConfigContext } from './config';
 
-export { useTexts };
+export { useLocale, useTexts };
 
 // The namespace of our texts in an `I18nAdapter`.
 const NAMESPACE = 'datanav';
@@ -51,6 +51,13 @@ function createNumberFormat(locale: string): Intl.NumberFormat {
 // Without an adapter: the language of the page (`<html lang>`), else en-US.
 function pageLocale(): string {
   return (typeof document === 'undefined' ? '' : document.documentElement.lang) || FALLBACK_LOCALE;
+}
+
+// The locale the texts are in: the adapter's, else the page's. For formatting of our own (e.g. dates with `Intl`).
+function useLocale(): string {
+  const { i18n } = useContext(ConfigContext);
+
+  return i18n?.currentLocale() ?? pageLocale();
 }
 
 // The texts come from the `I18nAdapter` of the configuration (namespace "datanav"): it gets the key, the raw params

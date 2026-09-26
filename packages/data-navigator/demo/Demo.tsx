@@ -3,6 +3,7 @@ import type { ReactElement } from 'react';
 import {
   antdTheme,
   createDataNavigator,
+  dateRangeColumnFilter,
   defaultTheme,
   mantineTheme,
   selectColumnFilter,
@@ -46,8 +47,10 @@ type UserColumn = DataNavigator.Column<User>;
 const firstName: UserColumn = { key: 'firstName', header: 'First name', width: 2, sortable: true };
 const lastName: UserColumn = { key: 'lastName', header: 'Last name', width: 2, sortable: true };
 const email: UserColumn = { key: 'email', header: 'Email', width: 4, sortable: true };
-const city: UserColumn = { key: 'city', header: 'City', width: 2, sortable: true };
 const country: UserColumn = { key: 'country', header: 'Country', width: 2, sortable: true };
+
+// The date of birth, shown as it is stored (ISO, yyyy-mm-dd).
+const dateOfBirth: UserColumn = { key: 'dateOfBirth', header: 'Date of birth', width: 2, sortable: true };
 
 // Custom cell content can use the tokens of the table too, so it follows the theme.
 const role: UserColumn = {
@@ -65,6 +68,7 @@ const filterOf: Record<string, DataNavigator.ColumnFilter> = {
   email: textColumnFilter(),
   role: selectColumnFilter({ options: roles }),
   country: selectColumnFilter({ options: countries, multiple: true }),
+  dateOfBirth: dateRangeColumnFilter(),
 };
 
 function createColumns(grouped: boolean, filtered: boolean): readonly (UserColumn | DataNavigator.ColumnGroup<User>)[] {
@@ -76,11 +80,11 @@ function createColumns(grouped: boolean, filtered: boolean): readonly (UserColum
 
   return grouped
     ? [
-      { header: 'Person', columns: [filter(firstName), filter(lastName), filter(email)] },
-      { header: 'Location', columns: [city, filter(country)] },
+      { header: 'Person', columns: [filter(firstName), filter(lastName), filter(dateOfBirth), filter(email)] },
+      { header: 'Location', columns: [filter(country)] },
       filter(role),
     ]
-    : [filter(firstName), filter(lastName), filter(email), city, filter(country), filter(role)];
+    : [filter(firstName), filter(lastName), filter(dateOfBirth), filter(email), filter(country), filter(role)];
 }
 
 // The content of the demo element: plain elements only, no UI library. The page around it (title, language, color

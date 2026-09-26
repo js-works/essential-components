@@ -3,9 +3,10 @@ import type { DataNavigator as Spec } from '../../api';
 import { optionsOf, useTextFilter } from '../filters';
 import { useTexts } from '../texts';
 import { textFieldKeys } from '../utils';
+import { DateRangeFilterInput } from './DateRangeFilter';
 import { FilterSelectField, FilterTextField } from './widgets';
 
-export { selectColumnFilter, textColumnFilter };
+export { dateRangeColumnFilter, selectColumnFilter, textColumnFilter };
 
 type TextFilterProps = Spec.FilterProps & Spec.TextColumnFilterSettings;
 
@@ -61,4 +62,10 @@ function textColumnFilter(settings: Spec.TextColumnFilterSettings = {}): Spec.Co
 
 function selectColumnFilter(settings: Spec.SelectColumnFilterSettings): Spec.ColumnFilter {
   return (props) => <SelectFilterInput {...props} {...settings} />;
+}
+
+// A date range: the date picker of `@local/calendar` in a popover. The value is `{ from, to }` (yyyy-mm-dd, both
+// inclusive, see `DataNavigator.DateRangeFilterValue`). The placeholder is the localized `Texts.filterAll`.
+function dateRangeColumnFilter(): Spec.ColumnFilter {
+  return (props) => <DateRangeFilterInput {...props} />;
 }

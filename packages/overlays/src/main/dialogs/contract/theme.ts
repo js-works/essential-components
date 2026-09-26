@@ -40,7 +40,7 @@ export interface DialogTheme {
 export const defaultDialogTheme: DialogTheme = {
   background: "light-dark(white, #333)",
   text: "light-dark(black, white)",
-  radius: "4px",
+  radius: "6px",
   divider: "light-dark(#e5e7eb, rgba(255, 255, 255, 0.12))",
   primaryText: "var(--theme-surface, #ffffff)",
   primaryBackground: "var(--theme-color-primary-500, #007EC6)",

@@ -18,7 +18,8 @@
     "format:check": "dprint check"
   },
   "dependencies": {
-    "@base-ui/react": "^1.8.0"
+    "@base-ui/react": "^1.8.0",
+    "@local/calendar": "*"
   },
   "devDependencies": {
     "@ant-design/icons": "^6.3.4",

@@ -14,6 +14,7 @@ export {
   ActionMenu,
   Checkbox,
   ChevronButton,
+  ClearButton,
   EmptyIcon,
   FilterSelectField,
   FilterTextField,

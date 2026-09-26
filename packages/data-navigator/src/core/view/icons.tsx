@@ -12,6 +12,12 @@ const paths = {
   search: ['M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0', 'M21 21l-6 -6'],
   close: ['M18 6l-12 12', 'M6 6l12 12'],
   check: ['M5 12l5 5l10 -10'],
+  calendar: [
+    'M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z',
+    'M16 3v4',
+    'M8 3v4',
+    'M4 11h16',
+  ],
   inbox: ['M4 6a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z', 'M4 13h3l3 3h4l3 -3h3'],
 } as const;
 
@@ -87,5 +93,6 @@ const icons = {
   Search: icon('search'),
   Close: icon('close'),
   Check: icon('check'),
+  Calendar: icon('calendar'),
   Inbox: icon('inbox'),
 } as const;

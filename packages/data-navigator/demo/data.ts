@@ -12,6 +12,8 @@ type User = {
   city: string;
   country: string;
   created: string;
+  // yyyy-mm-dd
+  dateOfBirth: string;
   notes: string;
 };
 
@@ -79,9 +81,18 @@ function createUsers(count: number): readonly User[] {
       city,
       country,
       created: created.toISOString().slice(0, 10),
+      dateOfBirth: dateOfBirthOf(index),
       notes: `${firstName} ${lastName} works in ${city}. Account #${index + 1}.`,
     };
   });
+}
+
+// A date of birth between 1950 and 2004, from the index alone: not from the random numbers above, which would shift
+// every other value of the demo data.
+function dateOfBirthOf(index: number): string {
+  const date = new Date(Date.UTC(1950 + (index * 37) % 55, (index * 7) % 12, 1 + (index * 13) % 28));
+
+  return date.toISOString().slice(0, 10);
 }
 
 const users = createUsers(245);
@@ -107,15 +118,26 @@ async function fetchUsers(query: DataNavigator.Query, signal: AbortSignal): Prom
 
   const { sort, page, pageSize } = query;
   const text = query.search.toLowerCase();
-  const { firstName, lastName, email, role, country } = query.filters;
+  const { firstName, lastName, email, role, country, dateOfBirth } = query.filters;
   const contains = (value: string, filter: unknown) =>
     typeof filter !== 'string' || value.toLowerCase().includes(filter.toLowerCase());
+  // A date range filter is `{ from, to }` (yyyy-mm-dd, both inclusive): ISO dates compare as strings.
+  const within = (value: string, filter: unknown) => {
+    if (filter === null || typeof filter !== 'object' || Array.isArray(filter)) {
+      return true;
+    }
+
+    const { from, to } = filter as { from?: unknown; to?: unknown };
+
+    return (typeof from !== 'string' || value >= from) && (typeof to !== 'string' || value <= to);
+  };
   const sorted = users
     .filter(
       (user) =>
         contains(user.firstName, firstName) && contains(user.lastName, lastName) && contains(user.email, email)
         && (typeof role !== 'string' || user.role === role)
-        && (!Array.isArray(country) || country.includes(user.country)),
+        && (!Array.isArray(country) || country.includes(user.country))
+        && within(user.dateOfBirth, dateOfBirth),
     )
     .filter(
       (user) =>

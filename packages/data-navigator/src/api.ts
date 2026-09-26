@@ -46,6 +46,8 @@ declare namespace DataNavigator {
 
   type SelectColumnFilterSettings = { options: readonly FilterOption[]; multiple?: boolean };
 
+  type DateRangeFilterValue = { from: string; to: string };
+
   type Column<Row> = {
     key: keyof Row & string;
     header: ReactNode;
