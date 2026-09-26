@@ -1,0 +1,9 @@
+/* What is specific to this page. The page itself is styled by the design language in `ui/ui.css`. */
+
+/* The frame around the demos (title, global switches, the tabs of the demos) cannot be selected, so a click or a drag
+   there never selects text. Inside the demos, selecting stays as their projects have it. */
+.ui-page__header,
+.ui-split__side {
+  -webkit-user-select: none;
+  user-select: none;
+}

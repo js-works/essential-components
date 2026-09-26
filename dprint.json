@@ -1,0 +1,21 @@
+{
+  "lineWidth": 120,
+  "indentWidth": 2,
+  "newLineKind": "lf",
+  "typescript": {
+    "quoteStyle": "alwaysSingle",
+    "jsx.quoteStyle": "preferDouble"
+  },
+  "excludes": [
+    "node_modules",
+    "dist",
+    "coverage",
+    "package-lock.json",
+    "packages"
+  ],
+  "plugins": [
+    "npm:@dprint/typescript@0.96.1",
+    "npm:@dprint/json@0.24.0",
+    "npm:@dprint/markdown@0.24.0"
+  ]
+}

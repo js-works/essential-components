@@ -1,0 +1,28 @@
+{
+  "name": "essential-components",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The essential components (data navigator, file upload, overlays) as workspace packages, and one demo page for all of them.",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "build:pages": "tsc --noEmit && vite build --mode pages",
+    "typecheck": "tsc --noEmit",
+    "format": "dprint fmt",
+    "format:check": "dprint check"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "dprint": "^0.57.4",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.0"
+  }
+}

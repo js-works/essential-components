@@ -1,0 +1,50 @@
+# Builds the demo page of all packages and publishes it on GitHub Pages:
+# https://js-works.github.io/essential-components/
+# Needs "Settings → Pages → Build and deployment → Source: GitHub Actions" in the repository.
+name: Deploy demo
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time. A newer push replaces a waiting one, a running one finishes.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      # The root lock file: all packages at once, no new resolution (so .npmrc's min-release-age does not apply).
+      - run: npm ci
+      # The tests of the packages. file-upload without its browser-mode project (it needs a Chromium install).
+      - run: npm test -w @local/data-navigator
+      - run: npx vitest run --project jsdom --project server
+        working-directory: packages/file-upload
+      - run: npm run build:pages
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

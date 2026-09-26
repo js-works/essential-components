@@ -1,0 +1,1102 @@
+/* The stylesheet has no values of its own: every color, size and font is an internal --datnav-* custom property. The
+   component sets them on its root, from the theme of its configuration (createDataNavigator, see core/config.ts). */
+.root {
+  /* Theme colors with a light and a dark value (`light-dark()`) follow the color scheme of the page. */
+  color-scheme: light dark;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 100%;
+  color: var(--datnav-color-text);
+  font-family: var(--datnav-font-family);
+  font-size: var(--datnav-font-size);
+  line-height: 1.5;
+}
+
+.content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+
+  & > :not(.scrollArea) {
+    flex: none;
+  }
+}
+
+/* A minimum height, so the table never collapses to the header alone while the first load runs. */
+.scrollArea {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: calc(6 * var(--datnav-spacing-md));
+}
+
+.scroller {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+/* Loading: the spinner sits in the visible rows area below the header, and only the rows are dimmed. */
+/* Its own minimum height (the spinner plus a generous padding), so the spinner always has room below the header,
+   whatever the header costs. The overlay is out of flow, so this never changes the height of the table. */
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  min-height: calc(6 * var(--datnav-spacing-md));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.root[data-dimmed] .row > * {
+  opacity: 0.3;
+}
+
+.spinner {
+  display: block;
+  box-sizing: border-box;
+  width: calc(2 * var(--datnav-spacing-md));
+  height: calc(2 * var(--datnav-spacing-md));
+  border: 3px solid var(--datnav-color-border);
+  border-top-color: var(--datnav-color-primary);
+  border-radius: 50%;
+  animation: spin 800ms linear infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation-duration: 2s;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Toolbar: the title and the description, then a bar with the actions on the left and the search box (of a fixed
+   width) on the right. */
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--datnav-spacing-sm);
+  padding: var(--datnav-spacing-sm);
+}
+
+/* Everything around the data (the toolbar, the header with the filter row, the footer) is not text to select: a click
+   or a drag there never starts a text selection. Text inputs inside stay selectable. The rows stay selectable too. */
+.toolbar,
+.headerRow,
+.footer {
+  user-select: none;
+
+  & :is(input, textarea) {
+    user-select: text;
+  }
+}
+
+.toolbarHeading {
+  min-width: 0;
+}
+
+.title {
+  font-size: calc(1.25 * var(--datnav-font-size));
+  font-weight: var(--datnav-font-weight-bold);
+  line-height: 1.3;
+}
+
+.subtitle {
+  color: var(--datnav-color-text-dimmed);
+  font-size: var(--datnav-font-size-sm);
+  line-height: 1.3;
+}
+
+.toolbarBar {
+  display: flex;
+  align-items: center;
+  gap: var(--datnav-spacing-xs);
+  min-height: var(--datnav-control-height);
+}
+
+.toolbarSpacer {
+  flex: 1 1 auto;
+}
+
+.toolbarActions {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: calc(var(--datnav-spacing-xs) / 2);
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--datnav-spacing-md);
+  padding: var(--datnav-spacing-sm);
+  /* A little more room between the table and the footer. */
+  padding-top: var(--datnav-spacing-md);
+}
+
+.footerSide {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--datnav-spacing-sm);
+}
+
+/* The right side (page size and pager) is spaced a little wider than the left one (pill and item range). */
+.footerSide + .footerSide {
+  gap: var(--datnav-spacing-md);
+}
+
+.footerGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--datnav-spacing-xs);
+}
+
+/* The buttons of the pager and of the action column sit close together and never wrap. */
+.pager,
+.rowActions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: calc(var(--datnav-spacing-xs) / 2);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding-inline: var(--datnav-spacing-xs);
+  border: 1px solid var(--datnav-color-border);
+  border-radius: calc(var(--datnav-control-height) / 2);
+  background-color: var(--datnav-color-header);
+  font-size: var(--datnav-font-size-sm);
+  font-weight: var(--datnav-font-weight-bold);
+  line-height: 1.8;
+  white-space: nowrap;
+}
+
+.dimmed {
+  color: var(--datnav-color-text-dimmed);
+}
+
+/* Buttons. Toolbar: primary is filled, secondary and danger are outlined. Row: link-like, in three colors, because a
+   border or a background of their own looks odd on a hovered or selected row. */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--datnav-spacing-xs) / 2);
+  box-sizing: border-box;
+  height: var(--datnav-control-height);
+  padding: 0 var(--datnav-spacing-sm);
+  border: 1px solid var(--datnav-color-border);
+  border-radius: var(--datnav-radius);
+  background-color: var(--datnav-color-surface);
+  color: var(--datnav-color-text);
+  font: inherit;
+  font-weight: var(--datnav-font-weight-bold);
+  white-space: nowrap;
+  cursor: pointer;
+
+  &[data-icon-only] {
+    width: var(--datnav-control-height);
+    padding: 0;
+  }
+
+  &[data-variant='primary'] {
+    border-color: var(--datnav-color-primary);
+    background-color: var(--datnav-color-primary);
+    color: var(--datnav-color-on-primary);
+  }
+
+  &[data-variant='danger'] {
+    border-color: var(--datnav-color-danger);
+    background-color: var(--datnav-color-danger);
+    color: var(--datnav-color-on-primary);
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--datnav-color-hover);
+    }
+
+    &[data-variant='primary']:hover {
+      border-color: var(--datnav-color-primary-hover);
+      background-color: var(--datnav-color-primary-hover);
+    }
+
+    /* There is no hover color for danger: the filled button keeps its red on hover. */
+    &[data-variant='danger']:hover {
+      background-color: var(--datnav-color-danger);
+    }
+  }
+
+  &[data-placement='row'] {
+    height: calc(0.75 * var(--datnav-control-height));
+    padding: 0 calc(var(--datnav-spacing-xs) / 2);
+    border-color: transparent;
+    background-color: transparent;
+    color: var(--datnav-color-primary);
+    font-size: var(--datnav-font-size-sm);
+  }
+
+  &[data-placement='row'][data-variant='secondary'] {
+    color: var(--datnav-color-text);
+  }
+
+  &[data-placement='row'][data-variant='danger'] {
+    color: var(--datnav-color-danger);
+  }
+
+  &[data-placement='row'][data-icon-only] {
+    width: calc(0.75 * var(--datnav-control-height));
+    padding: 0;
+  }
+
+  /* On a hovered row the row already has the row hover color, so a hovered row button goes one shade further. */
+  @media (hover: hover) {
+    &[data-placement='row']:hover {
+      border-color: transparent;
+      background-color: var(--datnav-color-hover-border);
+    }
+  }
+
+  /* Pressed: the hover or fill color with a little of the text color (darker in light mode, lighter in dark mode). */
+  &:active {
+    background-color: color-mix(in srgb, var(--datnav-color-hover), var(--datnav-color-text) 10%);
+  }
+
+  &[data-variant='primary']:active {
+    border-color: color-mix(in srgb, var(--datnav-color-primary-hover), var(--datnav-color-text) 15%);
+    background-color: color-mix(in srgb, var(--datnav-color-primary-hover), var(--datnav-color-text) 15%);
+  }
+
+  &[data-variant='danger']:active {
+    border-color: color-mix(in srgb, var(--datnav-color-danger), var(--datnav-color-text) 15%);
+    background-color: color-mix(in srgb, var(--datnav-color-danger), var(--datnav-color-text) 15%);
+  }
+
+  &[data-placement='row']:active {
+    border-color: transparent;
+    background-color: color-mix(in srgb, var(--datnav-color-hover-border), var(--datnav-color-text) 10%);
+  }
+}
+
+.buttonIcon {
+  display: inline-flex;
+  align-items: center;
+}
+
+.buttonLabel {
+  min-width: 0;
+}
+
+/* Icon-only buttons without a look of their own: the details toggle and the pager buttons. */
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: calc(0.75 * var(--datnav-control-height));
+  height: calc(0.75 * var(--datnav-control-height));
+  padding: 0;
+  border: none;
+  border-radius: var(--datnav-radius);
+  background-color: transparent;
+  color: var(--datnav-color-text);
+  cursor: pointer;
+
+  @media (hover: hover) {
+    &:hover:not(:disabled) {
+      background-color: var(--datnav-color-hover-border);
+    }
+  }
+
+  &:active:not(:disabled) {
+    background-color: color-mix(in srgb, var(--datnav-color-hover-border), var(--datnav-color-text) 10%);
+  }
+}
+
+.pagerButton {
+  width: var(--datnav-control-height);
+  height: var(--datnav-control-height);
+}
+
+/* A disabled pager button has no background of its own (no gray box): it is only faded, and the cursor says that it
+   cannot be used. */
+.pagerButton:disabled {
+  background-color: transparent;
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.button,
+.iconButton,
+.sortButton,
+.clearButton,
+.menuItem {
+  &:focus-visible {
+    outline: 2px solid var(--datnav-color-focus);
+    outline-offset: 1px;
+  }
+}
+
+.chevron {
+  display: inline-flex;
+  transition: transform 150ms ease;
+
+  &[data-expanded] {
+    transform: rotate(90deg);
+  }
+}
+
+/* Checkboxes and radios: real inputs, drawn by us (`appearance: none`), so a checked one shows only its border and its
+   tick (or dot), without a fill. The check color is the text color of the input (`color`): primary by default. The
+   tick is a mask, painted in that color. */
+.check {
+  display: inline-grid;
+  flex: none;
+  place-content: center;
+  box-sizing: border-box;
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  border: 1px solid var(--datnav-color-border);
+  border-radius: calc(var(--datnav-radius) * 0.6);
+  background-color: var(--datnav-color-surface);
+  color: var(--datnav-color-primary);
+  appearance: none;
+  cursor: pointer;
+
+  &::before {
+    content: '';
+    width: 0.75rem;
+    height: 0.75rem;
+    background-color: currentColor;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5l10 -10'/%3E%3C/svg%3E") center / contain no-repeat;
+    visibility: hidden;
+  }
+
+  &:checked,
+  &:indeterminate {
+    border-color: currentColor;
+  }
+
+  &:checked::before,
+  &:indeterminate::before {
+    visibility: visible;
+  }
+
+  /* The select-all checkbox while only some rows are selected: a short dash instead of the tick. */
+  &:indeterminate::before {
+    width: 0.5rem;
+    height: 2px;
+    border-radius: 1px;
+    mask: none;
+  }
+
+  &[type='radio'] {
+    border-radius: 50%;
+
+    &::before {
+      width: 0.5rem;
+      height: 0.5rem;
+      border-radius: 50%;
+      mask: none;
+    }
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--datnav-color-focus);
+    outline-offset: 2px;
+  }
+}
+
+/* selectionAppearance="neutral": the selection checkboxes and radios of the rows (and the select-all checkbox) are
+   gray too, like the selected rows. Other checkboxes (for example in a custom filter) keep the primary color. */
+:where([data-selection-appearance='neutral']) :is(.dataRow > .cell > .check, .headerTall > .check) {
+  color: var(--datnav-color-text-dimmed);
+}
+
+/* Text inputs and selects. A field is an input with a clear button or an arrow at its end. */
+.field,
+.searchField,
+.pageSizeField {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.searchField {
+  width: 16rem;
+}
+
+.pageSizeField {
+  width: 5em;
+}
+
+.input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: var(--datnav-control-height);
+  padding: 0 calc(0.75 * var(--datnav-spacing-sm));
+  border: 1px solid var(--datnav-color-border);
+  border-radius: var(--datnav-radius);
+  background-color: var(--datnav-color-surface);
+  color: var(--datnav-color-text);
+  font: inherit;
+
+  &::placeholder {
+    color: var(--datnav-color-text-dimmed);
+    opacity: 1;
+  }
+
+  &:focus-visible {
+    border-color: var(--datnav-color-focus);
+    outline: 1px solid var(--datnav-color-focus);
+    outline-offset: -1px;
+  }
+}
+
+/* Room for the clear button or the arrow at the end, and for the icon at the start of the search box. */
+.field .input,
+.searchField .input,
+.pageSizeField .input {
+  padding-inline-end: calc(var(--datnav-spacing-xs) + 1.25rem);
+}
+
+.searchField .input {
+  padding-inline-start: calc(var(--datnav-spacing-xs) + 1.25rem);
+}
+
+.select {
+  display: flex;
+  align-items: center;
+  appearance: none;
+  text-align: start;
+  cursor: pointer;
+
+  &[data-empty] {
+    color: var(--datnav-color-text-dimmed);
+  }
+}
+
+/* Selects get 1px more padding on every side than the text inputs. */
+.field .select,
+.pageSizeField .select {
+  padding: 1px calc(var(--datnav-spacing-xs) + 1.25rem + 1px) 1px calc(0.75 * var(--datnav-spacing-sm) + 1px);
+}
+
+/* The page size select and the page number field of the footer are a little lower, with no vertical padding. */
+.pageSizeField .select,
+.pageInput {
+  height: calc(var(--datnav-control-height) - 2px);
+  padding-block: 0;
+}
+
+.filterCell .field .select {
+  padding-inline-start: calc(var(--datnav-spacing-xs) + 1px);
+}
+
+.selectText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pageInput {
+  width: 4em;
+  /* A little more room before and after it than between the pager buttons. */
+  margin-inline: calc(var(--datnav-spacing-xs) / 4);
+  /* The same side padding as the start of the page size select. */
+  padding-inline: calc(0.75 * var(--datnav-spacing-sm) + 1px);
+  text-align: center;
+}
+
+.fieldIcon,
+.fieldEnd,
+.clearButton {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--datnav-color-text-dimmed);
+}
+
+.fieldIcon {
+  inset-inline-start: calc(var(--datnav-spacing-xs) / 2);
+  pointer-events: none;
+}
+
+.fieldEnd,
+.clearButton {
+  inset-inline-end: calc(var(--datnav-spacing-xs) / 2);
+}
+
+.fieldEnd {
+  pointer-events: none;
+}
+
+.clearButton {
+  padding: 0;
+  border: none;
+  border-radius: var(--datnav-radius);
+  background-color: transparent;
+  cursor: pointer;
+
+  @media (hover: hover) {
+    &:hover {
+      color: var(--datnav-color-text);
+    }
+  }
+}
+
+/* Tooltips (Base UI). The tooltip turns the colors around: text color as background. */
+.tooltipPositioner {
+  z-index: 4;
+}
+
+.tooltip {
+  box-sizing: border-box;
+  /* As wide as its text (up to a limit): the layer it is rendered into has no width of its own. */
+  width: max-content;
+  max-width: 20rem;
+  padding: calc(var(--datnav-spacing-xs) / 2) var(--datnav-spacing-xs);
+  border-radius: var(--datnav-radius);
+  background-color: var(--datnav-color-text);
+  color: var(--datnav-color-surface);
+  box-shadow: var(--datnav-shadow);
+  font-size: var(--datnav-font-size-sm);
+  pointer-events: none;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: var(--datnav-spacing-xs);
+  box-sizing: border-box;
+  width: 100%;
+  padding: calc(var(--datnav-spacing-xs) / 2) var(--datnav-spacing-xs);
+  border: none;
+  border-radius: var(--datnav-radius);
+  background-color: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  white-space: nowrap;
+  cursor: pointer;
+
+  /* Base UI marks the item under the pointer or the keyboard focus. */
+  &[data-highlighted] {
+    background-color: var(--datnav-color-hover);
+  }
+
+  &[data-variant='danger'] {
+    color: var(--datnav-color-danger);
+  }
+}
+
+/* Lighter than the frame of the menu: the lighter line color of the theme. */
+.menuSeparator {
+  height: 1px;
+  margin: calc(var(--datnav-spacing-xs) / 2) 0;
+  background-color: var(--datnav-color-hover-border);
+}
+
+/* The popup of a select or a menu (Base UI): at least as wide as its trigger, and never higher than the room below or
+   above it. Base UI sets --anchor-width and --available-height on the positioner. */
+.popupPositioner {
+  z-index: 3;
+  outline: none;
+}
+
+.popup {
+  box-sizing: border-box;
+  min-width: var(--anchor-width);
+  max-height: var(--available-height);
+  overflow-y: auto;
+  padding: calc(var(--datnav-spacing-xs) / 2);
+  border: 1px solid var(--datnav-color-border);
+  border-radius: var(--datnav-radius);
+  background-color: var(--datnav-color-surface);
+  color: var(--datnav-color-text);
+  box-shadow: var(--datnav-shadow);
+  outline: none;
+}
+
+.selectItem {
+  display: flex;
+  align-items: center;
+  gap: var(--datnav-spacing-xs);
+  padding: calc(var(--datnav-spacing-xs) / 2) var(--datnav-spacing-xs);
+  border-radius: var(--datnav-radius);
+  white-space: nowrap;
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+
+  &[data-highlighted] {
+    background-color: var(--datnav-color-hover);
+  }
+
+  &[data-selected] {
+    font-weight: var(--datnav-font-weight-bold);
+  }
+}
+
+/* The room of the checkmark of a single select, kept on every option. */
+.selectCheck {
+  display: inline-flex;
+  flex: none;
+  width: 14px;
+  color: var(--datnav-color-primary);
+}
+
+/* The checkbox of a multiple select option is only a picture: the option handles the click. It is gray, calmer than
+   the selection checkboxes of the rows. */
+.selectItem .check {
+  flex: none;
+  color: var(--datnav-color-text-dimmed);
+  pointer-events: none;
+}
+
+/* Where the popups of the widgets are rendered: inside the root, so they get the tokens, and out of the flow. */
+.layer {
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 0;
+  height: 0;
+}
+
+.table {
+  display: grid;
+}
+
+.row {
+  display: contents;
+}
+
+.dataRow {
+  composes: row;
+}
+
+.cell {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: var(--datnav-spacing-xs) var(--datnav-spacing-sm);
+  border-bottom: 1px solid var(--datnav-color-border);
+  /* Long words are hyphenated at syllable boundaries (by the language of the page, its `lang` attribute), and only a
+     word that does not fit on a line at all (an email address) is broken at any place. */
+  hyphens: auto;
+  overflow-wrap: break-word;
+
+  /* selectionAppearance="neutral" (the default): a gray selection. */
+  &[data-selected] {
+    background-color: var(--datnav-color-selected-neutral);
+  }
+
+  /* selectionAppearance="accent": a light tint of the primary color instead. */
+  :where([data-selection-appearance='accent']) &[data-selected] {
+    background-color: var(--datnav-color-selected);
+  }
+
+  /* Density: only the vertical padding changes. The rules use :where(), so they do not win over the padding of
+     more specific cell classes (like the group header). */
+  :where([data-density='compact']) & {
+    padding-block: calc(var(--datnav-spacing-xs) / 2);
+  }
+
+  :where([data-density='comfortable']) & {
+    padding-block: var(--datnav-spacing-md);
+  }
+
+  &[data-align='center'] {
+    justify-content: center;
+    text-align: center;
+  }
+
+  &[data-align='end'] {
+    justify-content: flex-end;
+    text-align: end;
+  }
+
+  &[data-divider='end'] {
+    border-right: 1px solid var(--datnav-color-border);
+  }
+
+  &[data-divider='start'] {
+    border-left: 1px solid var(--datnav-color-border);
+  }
+}
+
+.headerRow {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: grid;
+  grid-column: 1 / -1;
+  grid-row: 1;
+  grid-template-columns: subgrid;
+}
+
+/* Selected cells (of a selected row and of its detail row) get a line on top and at the bottom: gray with the neutral
+   appearance, a slightly darker shade of the selection color with the accent one. The cell borders are collapsed: the
+   top line overlaps the bottom line of the row above (negative margin), so there is one line between two rows, and
+   the row does not grow. */
+.cell[data-selected] {
+  margin-top: -1px;
+  border-top: 1px solid var(--datnav-color-border);
+  border-bottom-color: var(--datnav-color-border);
+}
+
+:where([data-selection-appearance='accent']) .cell[data-selected] {
+  border-top-color: var(--datnav-color-selected-border);
+  border-bottom-color: var(--datnav-color-selected-border);
+}
+
+/* A selected row shows no vertical dividers: they lose their color (never their width, so nothing shifts). */
+.cell[data-selected][data-divider='end'] {
+  border-right-color: transparent;
+}
+
+.cell[data-selected][data-divider='start'] {
+  border-left-color: transparent;
+}
+
+/* The first row needs no top line: the line below the header is right above it. A line of its own could not overlap
+   it (the sticky header paints above), so it would be a second line and make the row grow. */
+.headerRow + .row > .cell[data-selected] {
+  margin-top: 0;
+  border-top: none;
+}
+
+/* The header has no band of its own: it shows the plain surface color. It is opaque all the same, so scrolled rows
+   never shine through the sticky header. The hover color of a sortable header is laid over it, so it may be
+   translucent. */
+.header {
+  composes: cell;
+  align-items: flex-end;
+  font-weight: var(--datnav-font-weight-bold);
+  background-color: var(--datnav-color-surface);
+
+  /* The hover of a sortable header is a rounded shape a little inside the cell, behind the text, drawn by ::before.
+     The whole cell stays the click target, and the line below the header stays straight. */
+  &[data-sortable] {
+    position: relative;
+    isolation: isolate;
+    cursor: pointer;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 3px;
+      z-index: -1;
+      border-radius: var(--datnav-radius);
+    }
+  }
+
+  @media (hover: hover) {
+    &[data-sortable]:hover::before {
+      background-color: var(--datnav-color-header-hover);
+    }
+
+    &[data-sortable]:hover .unsortedIcon {
+      visibility: visible;
+    }
+  }
+
+  /* Pressed: the shape with a little of the text color. */
+  &[data-sortable]:active::before {
+    background-color: color-mix(in srgb, var(--datnav-color-header-hover), var(--datnav-color-text) 10%);
+  }
+
+  &[data-sortable]:focus-within .unsortedIcon {
+    visibility: visible;
+  }
+}
+
+/* Fills the upper header row above a column without a group, so the header looks like one band. Like the group
+   headers, it has the bottom line, so the line runs over all data columns. */
+.headerFiller {
+  composes: header;
+  grid-row: 1;
+}
+
+/* The filter row is part of the header band. Its cells are header cells in the last row of the header. */
+.filterCell {
+  composes: header;
+  align-items: center;
+  font-weight: normal;
+  /* Less horizontal padding than the other header cells, so neighboring inputs are not far apart, and a little less
+     room above, so the filters sit closer to the column headers. */
+  padding-inline: calc(var(--datnav-spacing-xs) / 2);
+  padding-top: calc(var(--datnav-spacing-xs) / 2);
+
+  /* Whatever a filter renders takes the full width of the cell (its padding stays), also a custom filter. */
+  & > * {
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* The built-in filters are small, with a text size between the small and the normal one. */
+  & .input {
+    height: calc(0.8 * var(--datnav-control-height));
+    padding-inline-start: var(--datnav-spacing-xs);
+    font-size: calc((var(--datnav-font-size-sm) + var(--datnav-font-size)) / 2);
+  }
+}
+
+/* With a filter row, the one line of the header is under the filter row (and not under the column headers). */
+.headerRow[data-filters] > .header:not(.groupHeader, .headerFiller, .filterCell) {
+  border-bottom: none;
+}
+
+.headerTall {
+  composes: header;
+}
+
+.headerSub {
+  composes: header;
+  grid-row: 2;
+  /* A little more room below the group headers: the density's top padding plus half the xs spacing. Padding, not a
+     margin: a gap in the sticky header would let scrolled rows shine through. */
+  padding-top: calc(1.5 * var(--datnav-spacing-xs));
+
+  :where([data-density='compact']) & {
+    padding-top: var(--datnav-spacing-xs);
+  }
+
+  :where([data-density='comfortable']) & {
+    padding-top: calc(var(--datnav-spacing-md) + var(--datnav-spacing-xs) / 2);
+  }
+}
+
+.groupHeader {
+  composes: header;
+  grid-row: 1;
+  padding-bottom: calc(var(--datnav-spacing-xs) / 2);
+}
+
+/* The line below the upper header row (group headers and fillers): one short line per cell, inset by the radius on
+   each side, so neighbors are 2 × the radius apart. The cell keeps its 1px border (transparent), so its height does
+   not change; the line is drawn over it. */
+.groupHeader,
+.headerFiller {
+  position: relative;
+  border-bottom: 1px solid transparent;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset-inline: var(--datnav-radius);
+    bottom: -1px;
+    height: 1px;
+    background-color: var(--datnav-color-border);
+  }
+}
+
+.groupTitle {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.headerText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The up/down icon of a sortable column that is not sorted: visible on hover or focus only. It keeps its space. */
+.unsortedIcon {
+  visibility: hidden;
+}
+
+/* Devices that cannot hover (touch) cannot reveal the icon, so it is always visible there. */
+@media (hover: none) {
+  .unsortedIcon {
+    visibility: visible;
+  }
+}
+
+.sortButton {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--datnav-spacing-xs) / 2);
+  min-width: 0;
+  max-width: 100%;
+  padding: 0;
+  border: none;
+  border-radius: var(--datnav-radius);
+  background-color: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: var(--datnav-font-weight-bold);
+  cursor: pointer;
+
+  & > svg {
+    flex: none;
+  }
+}
+
+.detailRow {
+  composes: row;
+}
+
+/* striped: a zebra tint on every other data row, starting with the first, and on its detail row (the two are one
+   unit, as they are for hover and selection). `:where()` keeps the specificity at one class, so selection and hover
+   still win over it. */
+:where(.dataRow[data-stripe], .dataRow[data-stripe] + .detailRow) > .cell {
+  background-color: var(--datnav-color-stripe);
+}
+
+/* With striped rows the zebra is the separator, so the lines between the rows go. Only the color goes transparent,
+   never the width: the cells keep their 1px, so nothing shifts and a selected row still lines up with its neighbors.
+   Selected rows keep their lines, which is what frames them. Detail rows follow their data row, as everywhere. */
+:where([data-striped]) :where(.dataRow, .detailRow) > .cell:not([data-selected]) {
+  border-bottom-color: transparent;
+}
+
+/* A data row and its detail row are one block, so there is never a line between the two: the detail row has no top
+   border, and the data row above it gives up its bottom line. Only the color goes, never the width, so nothing
+   shifts. The bottom border of the detail row closes the block. These come after the selection rules, which they
+   override at equal weight. */
+.detailRow > .cell {
+  margin-top: 0;
+  border-top: none;
+}
+
+/* Row click selects, but only on the free space of a cell: not on its content. A data row and its detail row behave
+   the same. So the pointer sits on the cell, and everything the cell shows keeps the normal caret (cursor inherits,
+   and a value set on the content itself beats what it would inherit). */
+:where([data-selection='single'], [data-selection='multi']) :where(.dataRow, .detailRow) > .cell:not([data-control]) {
+  cursor: pointer;
+}
+
+:where(.dataRow, .detailRow) > .cell > * {
+  cursor: auto;
+}
+
+.dataRow:has(+ .detailRow) > .cell {
+  border-bottom-color: transparent;
+}
+
+/* A data row and its detail row are one unit for the hover: hovering either of the two gives both the same color.
+   The rules are separate, so a browser without :has() still gets the others. Selected cells keep their color. */
+@media (hover: hover) {
+  /* The row hover (striped or not): one shade over the stripes, and it wins over the selection color, so a hovered
+     selected row shows the hover color too. */
+  .dataRow:hover > .cell,
+  .dataRow:hover + .detailRow > .cell,
+  .detailRow:hover > .cell,
+  .dataRow:has(+ .detailRow:hover) > .cell {
+    background-color: var(--datnav-color-stripe-hover);
+  }
+
+  /* selectionAppearance="accent": the hover is a light tint of the accent color, striped or not. It comes last, so it
+     wins over the gray hovers above at equal weight. */
+  :where([data-selection-appearance='accent']) .dataRow:hover > .cell,
+  :where([data-selection-appearance='accent']) .dataRow:hover + .detailRow > .cell,
+  :where([data-selection-appearance='accent']) .detailRow:hover > .cell,
+  :where([data-selection-appearance='accent']) .dataRow:has(+ .detailRow:hover) > .cell {
+    background-color: var(--datnav-color-hover-accent);
+  }
+
+  /* A hovered row gets a line on top and at the bottom, around the data row and its detail row together. The top line
+     overlaps the line of the row above (negative margin, like the selection border), so nothing shifts. Selected rows
+     keep their own lines. */
+  .dataRow:hover > .cell:not([data-selected]),
+  .dataRow:has(+ .detailRow:hover) > .cell:not([data-selected]) {
+    margin-top: -1px;
+    border-top: 1px solid var(--datnav-color-hover-border);
+  }
+
+  .dataRow:hover:not(:has(+ .detailRow)) > .cell:not([data-selected]),
+  .dataRow:hover + .detailRow > .cell:not([data-selected]),
+  .detailRow:hover > .cell:not([data-selected]) {
+    border-bottom-color: var(--datnav-color-hover-border);
+  }
+
+  /* A hovered row shows no vertical dividers either (only their color goes). */
+  .dataRow:hover > .cell[data-divider='end'],
+  .dataRow:hover + .detailRow > .cell[data-divider='end'],
+  .detailRow:hover > .cell[data-divider='end'],
+  .dataRow:has(+ .detailRow:hover) > .cell[data-divider='end'] {
+    border-right-color: transparent;
+  }
+
+  .dataRow:hover > .cell[data-divider='start'],
+  .dataRow:hover + .detailRow > .cell[data-divider='start'],
+  .detailRow:hover > .cell[data-divider='start'],
+  .dataRow:has(+ .detailRow:hover) > .cell[data-divider='start'] {
+    border-left-color: transparent;
+  }
+
+  /* The first row needs no top line: the line of the header is right above it. A line of its own could not overlap the
+     line of the header (the sticky header paints above it), so it would make the row grow on hover. */
+  .headerRow + .dataRow:hover > .cell:not([data-selected]),
+  .headerRow + .dataRow:has(+ .detailRow:hover) > .cell:not([data-selected]) {
+    margin-top: 0;
+    border-top: none;
+  }
+}
+
+/* Plain text of a cell: one line, with an ellipsis when it does not fit. With `wrap` on its column it wraps instead
+   (hyphenated, see .cell), and so does the text of a detail row. Custom `render` content is left alone. */
+.cellText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  :where(.cell[data-wrap], .detailCell) > & {
+    overflow: visible;
+    white-space: normal;
+  }
+}
+
+.detailCell {
+  composes: cell;
+  display: block;
+}
+
+.emptyCell {
+  composes: cell;
+  /* The empty state has no line below it: nothing follows it. */
+  border-bottom: none;
+  grid-column: 1 / -1;
+  flex-direction: column;
+  gap: var(--datnav-spacing-xs);
+  justify-content: center;
+  padding: calc(2 * var(--datnav-spacing-md));
+}
+
+.emptyIcon {
+  color: var(--datnav-color-text-dimmed);
+}

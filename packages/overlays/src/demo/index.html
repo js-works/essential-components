@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Overlays demo</title>
+  </head>
+  <body>
+    <main class="ui-page ui-stack">
+      <header class="ui-page__header">
+        <h1 class="ui-page__title">Overlays demo</h1>
+        <!-- The global switches belong to the page: they change <html> for every demo on it. -->
+        <form id="page-switches" class="ui-page__actions ui-toolbar">
+          <label class="ui-field">Color scheme
+            <select class="ui-select" name="scheme">
+              <option value="system">system</option>
+              <option value="light">light</option>
+              <option value="dark">dark</option>
+            </select>
+          </label>
+        </form>
+      </header>
+      <overlays-demo></overlays-demo>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

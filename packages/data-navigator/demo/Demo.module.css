@@ -1,0 +1,59 @@
+/* The demo's own styles. The page and its controls are styled by the design language (`ui/ui.css`). */
+
+/* The line with the selected users: the rest of the row, on one line, with an ellipsis when it is full. */
+.selectedLine {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fixedHeight {
+  height: 30rem;
+}
+
+/* Custom cell content of the demo: fixed colors of its own (the custom properties of the table are internal). */
+.badge {
+  padding: 0 8px;
+  border: 1px solid light-dark(#a8a8a8, #5c5c5c);
+  border-radius: 5px;
+  background-color: light-dark(#eee, #262626);
+  color: light-dark(#111, #f5f5f5);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.note {
+  font-size: 12px;
+}
+
+.toasts {
+  position: fixed;
+  inset-block-end: 1rem;
+  inset-inline-end: 1rem;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.toast {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border: 1px solid GrayText;
+  border-radius: 6px;
+  background-color: Canvas;
+  color: CanvasText;
+  font-family: system-ui, sans-serif;
+  font-size: 0.875rem;
+}
+
+/* A gray info icon in front of the message. */
+.toastIcon {
+  display: inline-flex;
+  flex: none;
+  color: light-dark(#666, #bbb);
+}

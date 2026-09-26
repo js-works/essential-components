@@ -1,0 +1,7 @@
+/* The demo page of the file upload. The page itself is styled by the design language in `ui/ui.css`; this file only has
+   what is specific to this demo. */
+
+/* A part of the second element, styled from outside. */
+acme-upload::part(name) {
+  font-family: ui-monospace, monospace;
+}
