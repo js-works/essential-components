@@ -17,7 +17,6 @@ export {
   detailRow,
   dimmed,
   emptyCell,
-  emptyIcon,
   field,
   fieldEnd,
   fieldIcon,
@@ -69,6 +68,7 @@ export {
   toolbarActions,
   toolbarBar,
   toolbarHeading,
+  toolbarReload,
   toolbarSpacer,
   tooltip,
   tooltipPositioner,
@@ -90,7 +90,6 @@ declare const detailCell: string;
 declare const detailRow: string;
 declare const dimmed: string;
 declare const emptyCell: string;
-declare const emptyIcon: string;
 declare const field: string;
 declare const fieldEnd: string;
 declare const fieldIcon: string;
@@ -142,6 +141,7 @@ declare const toolbar: string;
 declare const toolbarActions: string;
 declare const toolbarBar: string;
 declare const toolbarHeading: string;
+declare const toolbarReload: string;
 declare const toolbarSpacer: string;
 declare const tooltip: string;
 declare const tooltipPositioner: string;

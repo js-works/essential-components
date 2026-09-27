@@ -51,7 +51,7 @@ export const defaultDialogTheme: DialogTheme = {
   dangerBackground: "#D03B3B",
   successAccent: "var(--theme-color-success-500, #00883c)",
   closeRadius: "100%",
-  actionRadius: "3px",
+  actionRadius: "5px",
   buttonTransition: "120ms ease",
   buttonActiveScale: "1",
 };

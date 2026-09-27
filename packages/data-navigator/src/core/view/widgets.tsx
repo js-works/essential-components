@@ -15,7 +15,6 @@ export {
   Checkbox,
   ChevronButton,
   ClearButton,
-  EmptyIcon,
   FilterSelectField,
   FilterTextField,
   PageField,
@@ -102,11 +101,6 @@ function Pill({ children }: { children: ReactNode }): ReactElement {
 
 function Spinner({ label }: { label: string }): ReactElement {
   return <span role="status" aria-label={label} className={styles.spinner} />;
-}
-
-function EmptyIcon(): ReactElement {
-  // A thinner stroke than the small icons (1.25 instead of 2, about 2px at this size): lighter at 40px.
-  return <icons.DatabaseThin size={40} className={styles.emptyIcon} />;
 }
 
 type CheckboxProps = {

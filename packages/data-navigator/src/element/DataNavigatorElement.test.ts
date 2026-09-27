@@ -296,6 +296,7 @@ describe('attributes', () => {
     expect(element.density).toBe('compact');
     expect(element.hasAttribute('striped')).toBe(true);
     expect(element.searchable).toBe(false);
+    expect(element.reloadable).toBe(false);
     expect(element.selectionAppearance).toBe('neutral');
     expect(element.pageSize).toBe(25);
     await waitFor(() => expect(element.querySelector('[data-density="compact"]')).not.toBeNull());
@@ -303,10 +304,13 @@ describe('attributes', () => {
     await act(async () => {
       element.density = 'comfortable';
       element.searchable = true;
+      element.reloadable = true;
     });
     expect(element.getAttribute('density')).toBe('comfortable');
     expect(element.querySelector('[data-density="comfortable"]')).not.toBeNull();
     expect(screen.getByPlaceholderText('Search')).toBeTruthy();
+    expect(element.hasAttribute('reloadable')).toBe(true);
+    expect(screen.getByRole('button', { name: 'Reload' })).toBeTruthy();
   });
 
   it('starts with the page size of its attribute', async () => {

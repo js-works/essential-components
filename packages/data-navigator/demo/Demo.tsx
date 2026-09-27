@@ -113,6 +113,7 @@ function Demo({ controls }: { controls: Controls }): ReactElement {
           title="Active customers"
           subtitle="Customers who placed an order or contacted support in the last 30 days"
           searchable
+          reloadable
           key={controls.data}
           source={controls.data === 'users' ? fetchUsers : fetchNothing}
           empty={controls.data === 'custom' ? <p>Nobody here yet. Add the first user!</p> : undefined}

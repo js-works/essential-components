@@ -63,12 +63,13 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - The builds list the licenses of everything bundled in: `dist/third-party-licenses-react.md` (the React entry) and
     `dist/third-party-licenses.md` (the custom element, with Preact and Base UI).
 - Customization: a small set of general design values, the `DataNavigator.Theme` (see Configuration), not one per part.
-  - The values (29), with their internal custom properties (`colorTextDimmed` → `--datnav-color-text-dimmed`):
+  - The values (30), with their internal custom properties (`colorTextDimmed` → `--datnav-color-text-dimmed`):
     - Colors: `colorText`, `colorTextDimmed`, `colorSurface`, `colorBorder`, `colorHeader`, `colorHeaderHover`,
       `colorHover`, `colorHoverBorder`, `colorHoverAccent`, `colorStripe`, `colorStripeHover`, `colorSelected`,
       `colorSelectedBorder`, `colorSelectedNeutral`, `colorPrimary`, `colorPrimaryHover`, `colorOnPrimary`,
       `colorDanger`, `colorFocus`.
-    - Shape and type: `radius`, `shadow`, `fontFamily`, `fontSize`, `fontSizeSm`, `fontWeightBold`.
+    - Shape and type: `radius`, `buttonRadius` (buttons with a shape: text and icon buttons, the clear buttons of the
+      fields and the date picker's Clear), `shadow`, `fontFamily`, `fontSize`, `fontSizeSm`, `fontWeightBold`.
     - Spacing and size: `spacingXs`, `spacingSm`, `spacingMd`, `controlHeight`.
   - Every color is its own value, mapped by the theme. No colors derived with `color-mix()` (except pressed states).
   - `selectionAppearance` stays. `'neutral'` uses `colorSelectedNeutral` and a gray selection border (`colorBorder`).
@@ -93,7 +94,8 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - All its grays are pure grays (equal red, green and blue). It has a high contrast, for readability: text `#111`,
     dimmed text `#555`, borders `#a8a8a8`, a row hover of `#dfdfdf` over a lighter neutral selection (`#eee`), a soft
     zebra (`#f8f8f8`), and a light control hover (`#f9f9f9`). Primary and danger are deep enough for 6:1 against
-    white. Radius 5px.
+    white. Radius 2px, buttons 5px (the `--ui-radius` and `--ui-button-radius` of the design language of the demos, see the
+    root `CLAUDE.md`). Mantine and antd map `buttonRadius` onto their normal radius (their buttons use it).
   - Its colors have a light and a dark value (`{ light, dark }`), which follow the color scheme of the page. Dark mode:
     text `#f5f5f5`, borders `#5c5c5c`, and a lighter primary with dark text on it.
   - It is the only place with hard-coded colors (besides the demo).
@@ -152,7 +154,7 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     element usually live and die together). No event callbacks in the controller's options.
     - `onSelectionChange((rows) => …)`: `rows` is typed (`readonly User[]`).
 - Settings that do not depend on `Row` are attributes, reflected to properties (booleans default to `false`):
-  - `density` (`compact`, `normal`, `comfortable`; default `normal`), `striped`, `searchable`,
+  - `density` (`compact`, `normal`, `comfortable`; default `normal`), `striped`, `searchable`, `reloadable`,
     `selection-appearance` (`selectionAppearance`: `neutral`, `accent`), `page-size` (`pageSize`).
   - `pageSizeOptions`: a property only (an array).
 - Content (`render`, `renderDetail`, the `header` function) is `string | C`. `C` comes from a content adapter in the
@@ -199,6 +201,9 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - The element gets the attribute `data-datnav-host`, which our stylesheet makes `display: block` (we do not know the
     tag name). The stylesheet is a `<style>` element, added once to the document's `<head>`, or once to the shadow
     root the element is in (the CSS module, imported with `?inline`).
+  - The element stops `input`, `keypress` and `keydown` at its border (`stopPropagation` on the host), so global
+    keyboard shortcuts of the page (e.g. XWiki's) do not react to typing inside it. Except Escape: Base UI closes its
+    popups (selects, menus, the date popover) through the document.
   - The built-in filters of the element are opaque markers for the React filters (`src/element/filters.ts`).
 
 ## Controller
@@ -591,12 +596,12 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - On devices that cannot hover (touch, `@media (hover: none)`) the icon is always visible on unsorted sortable
     columns, because nothing could reveal it there.
 - Empty state: `empty?: ReactNode`. It replaces the default when given.
-  - Default: a generic database icon above the text `Texts.empty`, centered and dimmed, in one cell that spans all
-    columns. The icon is Phosphor's `PiDatabaseThin` (MIT, the thin weight, its path inlined), 40px, in
-    `--datnav-color-text-dimmed`. (It replaced Tabler's `database` with a thinner stroke, and before that an inbox icon,
-    which looked like an empty box.) Custom content is not dimmed.
+  - Default: no icon, only the text `Texts.empty` ("No entries"), centered and dimmed, in one cell that spans all
+    columns. (Before: a database icon above the text; removed by decision, the default is "no icon".) Custom content
+    is not dimmed.
   - It is shown only when a load has finished and returned no rows (never before the first load).
-  - It has no line below it (nothing follows it). That applies to the default content and to a custom `empty`.
+  - It ends with the line below it (like the last row), for the default content and for a custom `empty`. (It had
+    none for a while; changed back by decision.)
   - The footer is shown only if at least one data row is shown. So it is hidden while the empty state is shown, and
     also before the first load returned rows (no item range, page size or pager: there is nothing to page).
   - The old rows stay visible while a new load runs, so the footer stays then too.
@@ -696,6 +701,13 @@ The main goal is a very nice, yet simple, API, designed together with the user.
 - No text selection around the data: the toolbar (title, subtitle, buttons), the header (column headers, group headers,
   filter row) and the footer have `user-select: none`. Text inputs inside (search box, text filters, page number) stay
   selectable (`user-select: text`). The rows stay selectable, so cell text can be copied.
+- Reload: `reloadable?: boolean` (default `false`, the element's attribute `reloadable`) shows a Reload button.
+  - It sits at the right end of the bar, after the search box (or alone there, without one). An icon-only toolbar
+    button (the secondary variant, Tabler's `refresh`), with the tooltip and accessible name `Texts.reload` ("Reload").
+  - It does the same as the controller's `reload()`: the current page again with the same query; selection and
+    details are cleared.
+  - Blocked while loading, like the rest of the toolbar. The toolbar is shown when the component is reloadable.
+  - To be reviewed (see "Todo"): whether being reloadable should come from the source instead of a prop.
 - Toolbar and footer: plain, with no background and no lines of their own.
   - Both have a padding of `--datnav-spacing-sm` on all sides. The footer has a little more room on top
     (`--datnav-spacing-md`), between the table and the footer.
@@ -728,7 +740,6 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - The sort icons are the filled Bootstrap arrows (MIT, 16×16): `BsArrowDownUp` for a sortable column that is not
     sorted, `BsArrowUp` and `BsArrowDown` for the sorted one. They replaced the Tabler chevrons (and before that a
     chevron pair of our own).
-  - The empty state's icon is Phosphor's `PiDatabaseThin` (MIT, 256×256), see "Empty state".
 - Data comes from exactly one prop: `source`, a function `(query, signal) => Promise<{ rows, total }>`.
   - The table itself never sorts, filters or pages. It delegates everything to `source`.
   - There is no `data` array prop. For arrays, a helper turns an array into a `source` (name and place undecided).
@@ -829,6 +840,9 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - So the selection never spans pages. Multi-row actions receive the selected row objects of the current page.
   - Multi uses checkboxes (with a select-all checkbox in the header). The whole selection cell is clickable, see the
     row click below.
+  - Without column groups, the select-all checkbox is centered vertically in the header (on the center line of the
+    column titles, which sit at the bottom of their cells). With groups, it stays at the bottom, next to the lower
+    header row.
   - Single uses radio buttons.
   - Clicking a data row selects it (row click):
     - Single mode: the row becomes the selected row. Clicking the selected row again keeps it selected.
@@ -1240,6 +1254,9 @@ The main goal is a very nice, yet simple, API, designed together with the user.
 
 ## Todo (later)
 
+- Review `reloadable`: should the source say whether its data can change (and so whether the Reload button makes
+  sense), instead of a prop of the table? Decided for now: a prop, like `searchable` (showing the button is a UI
+  decision, the source is a plain function, and nearly every remote source can change).
 - Toolbar on narrow screens: the bar does not wrap yet. When space runs out, the search box should go on its own
   full-width line below the buttons.
 - A hover color for danger (`--datnav-color-danger-hover`, a 28th token), so a filled danger button reacts on hover.

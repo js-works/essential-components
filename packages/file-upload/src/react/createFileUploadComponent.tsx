@@ -1,7 +1,7 @@
 import { createElement, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactNode, Ref } from 'react';
 import type * as Spec from '../api';
-import { DEFAULT_THEME } from '../element/styles';
+import { DEFAULT_THEME, DENSITY_PADDING } from '../element/styles';
 import type * as ReactSpec from './api';
 
 export { createFileUploadComponent };
@@ -21,6 +21,7 @@ const PROPERTY_DEFAULTS = {
   multiple: false,
   manualUpload: false,
   previews: false,
+  density: 'normal',
   disabled: false,
   name: undefined,
   required: false,
@@ -33,8 +34,10 @@ const SLOTS = ['label', 'icon', 'prompt', 'limits'] as const;
 // A generated tag name: the first free one of `internal-file-upload-1`, `-2`, ...
 const TAG_PREFIX = 'internal-file-upload-';
 
-// The height of the empty element (the drop line only), relative to the theme's `fontSize`.
-const PLACEHOLDER_HEIGHT = 'calc(2.75em + 4px)';
+// The height of the empty element (the drop line only), relative to the theme's `fontSize`: its content (1.608em), its
+// padding (per density) and the borders (4px).
+const placeholderHeight = (density: Spec.Density) =>
+  `calc(${Number((1.608 + 2 * DENSITY_PADDING[density].drop).toFixed(3))}em + 4px)`;
 
 const useNoI18nAdapter = (): Spec.I18nAdapter | undefined => undefined;
 
@@ -142,7 +145,12 @@ function createFileUploadComponent(config: ReactSpec.Config = {}): (props: React
 
     if (registered === undefined) {
       return (
-        <div id={id} className={className} style={{ fontSize, minHeight: PLACEHOLDER_HEIGHT, ...style }} aria-busy />
+        <div
+          id={id}
+          className={className}
+          style={{ fontSize, minHeight: placeholderHeight(props.density ?? 'normal'), ...style }}
+          aria-busy
+        />
       );
     }
 

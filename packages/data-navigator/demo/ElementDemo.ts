@@ -104,8 +104,9 @@ function mountElementDemo(container: HTMLElement): () => void {
         </label>
         <label class="ui-field"><input class="ui-checkbox" type="checkbox" data-striped checked> Striped</label>
         <label class="ui-field"><input class="ui-checkbox" type="checkbox" data-searchable checked> Searchable</label>
+        <label class="ui-field"><input class="ui-checkbox" type="checkbox" data-reloadable checked> Reloadable</label>
       </div>
-      <${TAG} class="element-demo__table" striped searchable page-size="10"></${TAG}>
+      <${TAG} class="element-demo__table" striped searchable reloadable page-size="10"></${TAG}>
       <div class="ui-toolbar">
         <button class="ui-button" type="button" data-reload>Reload</button>
         <button class="ui-button" type="button" data-clear>Clear selection</button>
@@ -118,9 +119,10 @@ function mountElementDemo(container: HTMLElement): () => void {
   const density = container.querySelector<HTMLSelectElement>('[data-density]');
   const striped = container.querySelector<HTMLInputElement>('[data-striped]');
   const searchable = container.querySelector<HTMLInputElement>('[data-searchable]');
+  const reloadable = container.querySelector<HTMLInputElement>('[data-reloadable]');
   const selected = container.querySelector('[data-selected]');
 
-  if (!table || !density || !striped || !searchable || !selected) {
+  if (!table || !density || !striped || !searchable || !reloadable || !selected) {
     return () => {};
   }
 
@@ -147,6 +149,9 @@ function mountElementDemo(container: HTMLElement): () => void {
   });
   searchable.addEventListener('change', () => {
     table.searchable = searchable.checked;
+  });
+  reloadable.addEventListener('change', () => {
+    table.reloadable = reloadable.checked;
   });
 
   return () => {

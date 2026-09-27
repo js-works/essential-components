@@ -116,6 +116,7 @@ declare namespace DataNavigatorComponent {
     pageSizeOptions?: readonly number[];
     defaultSort?: Sort;
     searchable?: boolean;
+    reloadable?: boolean;
     controller?: Controller<Row>;
   };
 

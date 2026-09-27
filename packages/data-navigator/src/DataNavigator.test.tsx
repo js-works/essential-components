@@ -343,7 +343,7 @@ describe('DataNavigator', () => {
       actions: [{ type: 'row', key: 'edit', label: 'Edit', onClick: vi.fn() }],
     });
 
-    await screen.findByText('No data');
+    await screen.findByText('No entries');
 
     const template = container.querySelector<HTMLElement>('[role="table"]')?.style.gridTemplateColumns;
 
@@ -377,32 +377,35 @@ describe('DataNavigator', () => {
   it('does not show the footer for a source without rows', async () => {
     renderNav({ source: async () => ({ rows: [], total: 0 }) });
 
-    expect(await screen.findByText('No data')).toBeTruthy();
+    expect(await screen.findByText('No entries')).toBeTruthy();
     expect(screen.queryByText('Page Size')).toBeNull();
   });
 
   it('shows an empty text when there are no rows', async () => {
     renderNav({ source: async () => ({ rows: [], total: 0 }) });
 
-    expect(await screen.findByText('No data')).toBeTruthy();
+    expect(await screen.findByText('No entries')).toBeTruthy();
   });
 
-  it('shows an icon above the default empty text', async () => {
+  it('shows no icon in the default empty state, only the text', async () => {
     const { container } = renderNav({ source: async () => ({ rows: [], total: 0 }) });
 
-    expect(await screen.findByText('No data')).toBeTruthy();
+    expect(await screen.findByText('No entries')).toBeTruthy();
 
-    expect(container.querySelector('.emptyIcon')).not.toBeNull();
+    expect(container.querySelector('[role="cell"] svg')).toBeNull();
   });
 
-  it('replaces the default icon and text with custom empty content', async () => {
-    const { container } = renderNav({ source: async () => ({ rows: [], total: 0 }), empty: <p>Nobody here yet</p> });
+  it('ends the empty state with the line below it, like the last row', () => {
+    expect(declarationsOf('.emptyCell')).not.toMatch(/border-bottom/);
+    expect(declarationsOf('.cell')).toMatch(/border-bottom: 1px solid var\(--datnav-color-border\)/);
+  });
+
+  it('replaces the default text with custom empty content', async () => {
+    renderNav({ source: async () => ({ rows: [], total: 0 }), empty: <p>Nobody here yet</p> });
 
     expect(await screen.findByText('Nobody here yet')).toBeTruthy();
 
-    expect(screen.queryByText('No data')).toBeNull();
-
-    expect(container.querySelector('.emptyIcon')).toBeNull();
+    expect(screen.queryByText('No entries')).toBeNull();
   });
 
   it('shows the empty content only when there are no rows', async () => {
@@ -412,7 +415,7 @@ describe('DataNavigator', () => {
 
     expect(screen.queryByText('Nobody here yet')).toBeNull();
 
-    expect(screen.queryByText('No data')).toBeNull();
+    expect(screen.queryByText('No entries')).toBeNull();
   });
 
   describe('column filters', () => {
@@ -865,6 +868,50 @@ describe('DataNavigator', () => {
       expect(nameBox()).toBeTruthy();
 
       expect(screen.queryByText('Page Size')).toBeNull();
+    });
+  });
+
+  describe('reload button', () => {
+    it('has a Reload button only when the component is reloadable', async () => {
+      renderNav({ searchable: true });
+      await loaded();
+
+      expect(screen.queryByRole('button', { name: 'Reload' })).toBeNull();
+    });
+
+    it('puts the Reload button right of the search box, also without a search box', async () => {
+      const { unmount } = renderNav({ searchable: true, reloadable: true });
+      await loaded();
+
+      const reload = screen.getByRole('button', { name: 'Reload' });
+
+      expect(
+        screen.getByRole('textbox', { name: 'Search' }).compareDocumentPosition(reload)
+          & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      unmount();
+
+      renderNav({ reloadable: true });
+      await loaded();
+
+      expect(screen.getByRole('button', { name: 'Reload' })).toBeTruthy();
+    });
+
+    it('loads the current page again, with the same query, and clears the selection', async () => {
+      const { source } = renderNav({ reloadable: true, selection: 'multi' });
+      await loaded();
+
+      fireEvent.click(screen.getAllByRole('checkbox', { name: 'Select row' })[0]!);
+      expect(screen.getAllByRole('checkbox', { name: 'Deselect row' })).toHaveLength(1);
+
+      const query = source.mock.lastCall![0];
+
+      fireEvent.click(screen.getByRole('button', { name: 'Reload' }));
+
+      await waitFor(() => expect(source).toHaveBeenCalledTimes(2));
+      expect(source.mock.lastCall![0]).toEqual(query);
+      await loaded();
+      expect(screen.queryAllByRole('checkbox', { name: 'Deselect row' })).toHaveLength(0);
     });
   });
 
@@ -2590,6 +2637,27 @@ describe('DataNavigator', () => {
       expect(declarationsOf('.groupTitle')).not.toMatch(/border/);
     });
 
+    it('centers the select-all checkbox in the header without groups, and keeps it at the bottom with groups', async () => {
+      const { unmount } = renderNav({ selection: 'multi' });
+      await loaded();
+
+      const headerRowOf = () => screen.getAllByRole('row')[0]!;
+
+      expect(headerRowOf().hasAttribute('data-groups')).toBe(false);
+      unmount();
+
+      renderNav({
+        selection: 'multi',
+        columns: [{ header: 'Group', columns: [{ key: 'name', header: 'Name' }] }, { key: 'id', header: 'Id' }],
+      });
+      await loaded();
+
+      expect(headerRowOf().hasAttribute('data-groups')).toBe(true);
+      expect(baseStylesheet).toMatch(
+        /\.headerRow:not\(\[data-groups\]\) > \.headerTall:has\(> \.check\) \{\s*align-items: center;/,
+      );
+    });
+
     it('draws the line below the upper header row over all data columns, also under the fillers', async () => {
       renderNav({
         columns: [
@@ -3132,6 +3200,7 @@ describe('theming', () => {
     'colorDanger',
     'colorFocus',
     'radius',
+    'buttonRadius',
     'shadow',
     'fontFamily',
     'fontSize',
@@ -3163,7 +3232,7 @@ describe('theming', () => {
     const style = rootOf(container).style;
 
     expect(style.getPropertyValue('--datnav-color-text')).toBe('light-dark(#111, #f5f5f5)');
-    expect(style.getPropertyValue('--datnav-radius')).toBe('5px');
+    expect(style.getPropertyValue('--datnav-radius')).toBe('2px');
     expect(keys.every((key) => style.getPropertyValue(propertyOf(key)) !== '')).toBe(true);
   });
 

@@ -18,6 +18,7 @@ type Props = AriaAttributes & {
   multiple?: boolean;
   manualUpload?: boolean;
   previews?: boolean;
+  density?: Spec.Density;
   disabled?: boolean;
   name?: string;
   required?: boolean;

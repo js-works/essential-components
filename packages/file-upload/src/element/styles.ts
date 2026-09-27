@@ -1,8 +1,16 @@
 import type * as Spec from '../api';
 
-export { createStyleSheet, DEFAULT_THEME };
+export { createStyleSheet, DEFAULT_THEME, DENSITY_PADDING };
 
 type ResolvedTheme = Required<Spec.Theme>;
+
+// The vertical padding (in em) of the rows of the list and of the drop line, per density. Only these change. The rows
+// match the data navigator's (4px, 8px, 16px at 14px).
+const DENSITY_PADDING = {
+  compact: { row: 0.286, drop: 0.571 },
+  normal: { row: 0.571, drop: 0.857 },
+  comfortable: { row: 1.143, drop: 1.429 },
+} as const satisfies Record<Spec.Density, { row: number; drop: number }>;
 
 const DEFAULT_THEME = {
   accentColor: { light: '#228be6', dark: '#1c7ed6' },
@@ -13,7 +21,8 @@ const DEFAULT_THEME = {
   surfaceColor: { light: '#f1f3f5', dark: '#2e2e2e' },
   successColor: { light: '#2f9e44', dark: '#51cf66' },
   dangerColor: { light: '#e03131', dark: '#ff6b6b' },
-  borderRadius: '8px',
+  borderRadius: '4px',
+  buttonBorderRadius: '5px',
   fontFamily: 'inherit',
   fontSize: '0.875rem',
 } as const satisfies ResolvedTheme;
@@ -107,7 +116,15 @@ function createCss(theme: ResolvedTheme): string {
   grid-area: drop;
   align-items: center;
   gap: 0.571em;
-  padding: 0.571em 0.857em;
+  padding: ${DENSITY_PADDING.normal.drop}em 0.857em;
+
+  :where(.root[data-density='compact']) & {
+    padding-block: ${DENSITY_PADDING.compact.drop}em;
+  }
+
+  :where(.root[data-density='comfortable']) & {
+    padding-block: ${DENSITY_PADDING.comfortable.drop}em;
+  }
 }
 
 .prompt {
@@ -135,7 +152,7 @@ button {
   justify-content: center;
   margin: 0;
   border: 1px solid transparent;
-  border-radius: calc(${radius} / 2);
+  border-radius: ${theme.buttonBorderRadius};
   background: none;
   color: inherit;
   font: inherit;
@@ -195,7 +212,15 @@ button {
   grid-column: 1 / -1;
   grid-template-columns: subgrid;
   align-items: center;
-  padding: 0.286em 0.857em;
+  padding: ${DENSITY_PADDING.normal.row}em 0.857em;
+
+  :where(.root[data-density='compact']) & {
+    padding-block: ${DENSITY_PADDING.compact.row}em;
+  }
+
+  :where(.root[data-density='comfortable']) & {
+    padding-block: ${DENSITY_PADDING.comfortable.row}em;
+  }
 
   & + & {
     border-top: 1px solid ${border};

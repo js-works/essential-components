@@ -18,7 +18,7 @@ import { Footer } from './Footer';
 import { LayerContext } from './layer';
 import { RowContextMenu } from './RowContextMenu';
 import { Toolbar } from './Toolbar';
-import { Checkbox, ChevronButton, EmptyIcon, Radio, SortButton, Spinner } from './widgets';
+import { Checkbox, ChevronButton, Radio, SortButton, Spinner } from './widgets';
 
 export { DataNavigatorView };
 
@@ -88,6 +88,7 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
               invoke={nav.invokeFromToolbar}
               texts={texts}
               search={nav.searchBox}
+              reload={nav.reload}
               inert={nav.loading}
             />
             <div className={classes.scrollArea}>
@@ -99,7 +100,13 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
                   className={classes.table}
                   style={{ gridTemplateColumns: nav.gridTemplateColumns }}
                 >
-                  <div role="row" ref={nav.headerRef} data-filters={flag(nav.hasFilters)} className={classes.headerRow}>
+                  <div
+                    role="row"
+                    ref={nav.headerRef}
+                    data-filters={flag(nav.hasFilters)}
+                    data-groups={flag(nav.headerRows === 2)}
+                    className={classes.headerRow}
+                  >
                     {selection !== 'none' && (
                       <div
                         role="columnheader"
@@ -375,12 +382,7 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
                   {nav.isEmpty && (
                     <div role="row" className={classes.row} inert={nav.loading}>
                       <div role="cell" className={classes.emptyCell}>
-                        {empty ?? (
-                          <>
-                            <EmptyIcon />
-                            <span className={classes.dimmed}>{nav.emptyText}</span>
-                          </>
-                        )}
+                        {empty ?? <span className={classes.dimmed}>{nav.emptyText}</span>}
                       </div>
                     </div>
                   )}

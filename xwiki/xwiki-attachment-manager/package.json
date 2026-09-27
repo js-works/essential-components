@@ -1,0 +1,19 @@
+{
+  "name": "xwiki-attachment-manager",
+  "version": "0.1.0",
+  "private": true,
+  "description": "An attachment manager for XWiki pages: a Lit custom element, packaged into a XAR by Maven.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build && node scripts/xar-attachment.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "lit": "^3.3.1"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "^8.3.0"
+  }
+}

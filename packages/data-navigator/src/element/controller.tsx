@@ -14,6 +14,7 @@ type ElementSettings = {
   density: DataNavigator.Density;
   striped: boolean;
   searchable: boolean;
+  reloadable: boolean;
   selectionAppearance: DataNavigator.SelectionAppearance;
   pageSize: number;
   pageSizeOptions: readonly number[];

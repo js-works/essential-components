@@ -64,13 +64,14 @@ declare namespace DataNavigator {
     previousPage: string; // Previous page
     nextPage: string; // Next page
     lastPage: string; // Last page
-    empty: string; // No data
+    empty: string; // No entries
     emptySearch: string; // No results found
     searchPlaceholder: string; // Search
     clearFilter: string; // Clear filter
     filterAll: string; // All
     filterPlaceholder: string; // Filter
     clearSearch: string; // Clear search
+    reload: string; // Reload
     loading: string; // Loading
     selectAll: string; // Select all rows
     deselectAll: string; // Deselect all rows
@@ -110,6 +111,7 @@ declare namespace DataNavigator {
     colorDanger?: ThemeValue;
     colorFocus?: ThemeValue;
     radius?: string;
+    buttonRadius?: string;
     shadow?: string;
     fontFamily?: string;
     fontSize?: string;
@@ -228,6 +230,7 @@ declare namespace DataNavigator {
     density: Density;
     striped: boolean;
     searchable: boolean;
+    reloadable: boolean;
     selectionAppearance: SelectionAppearance;
     pageSize: number;
     pageSizeOptions: readonly number[];

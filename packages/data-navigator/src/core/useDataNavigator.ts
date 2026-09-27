@@ -432,6 +432,8 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     hasFilters: layout.leaves.some(({ column }) => column.filter !== undefined),
     headerId: (key: string) => `${idBase}-header-${key.replace(/\W/g, '_')}`,
     isEmpty: loaded && result.rows.length === 0,
+    // The Reload button of the toolbar: the same as the controller's reload().
+    reload: props.reloadable === true ? () => latestRef.current.reload() : undefined,
     searchBox: searchable
       ? { text: searchText, onChange: changeSearchText, onSubmit: () => applySearch(searchText), onClear: clearSearch }
       : undefined,

@@ -5,7 +5,8 @@ import type { SearchBox } from '../useDataNavigator';
 import { hasContent, textFieldKeys } from '../utils';
 import { ActionList } from './Actions';
 import * as classes from './DataNavigator.module.css';
-import { SearchField } from './widgets';
+import { icons } from './icons';
+import { ActionButton, SearchField } from './widgets';
 
 export { Toolbar };
 
@@ -16,18 +17,20 @@ type ToolbarProps<Row> = {
   invoke: (action: Spec.Action<Row>) => void;
   texts: Spec.Texts;
   search: SearchBox | undefined;
+  reload: (() => void) | undefined;
   inert: boolean;
 };
 
 // The title and the description above the bar. The bar has the actions on the left and the search box (of a fixed
-// width) on the right.
+// width) and the Reload button on the right.
 // While loading, everything is blocked (`inert`), except the search box: a new search replaces the running one, and the
 // box must not lose its focus while the user types.
 function Toolbar<Row>(props: ToolbarProps<Row>): ReactElement | null {
-  const { title, subtitle, items, invoke, texts, search, inert } = props;
+  const { title, subtitle, items, invoke, texts, search, reload, inert } = props;
+  const end = search !== undefined || reload !== undefined;
   const heading = hasContent(title) || hasContent(subtitle);
 
-  if (!heading && items.length === 0 && search === undefined) {
+  if (!heading && items.length === 0 && !end) {
     return null;
   }
 
@@ -39,7 +42,7 @@ function Toolbar<Row>(props: ToolbarProps<Row>): ReactElement | null {
           {hasContent(subtitle) && <div className={classes.subtitle}>{subtitle}</div>}
         </div>
       )}
-      {(items.length > 0 || search !== undefined) && (
+      {(items.length > 0 || end) && (
         <div className={classes.toolbarBar}>
           {items.length > 0 && (
             <div className={classes.toolbarActions} inert={inert}>
@@ -56,6 +59,16 @@ function Toolbar<Row>(props: ToolbarProps<Row>): ReactElement | null {
               onClear={search.onClear}
               onKeyDown={textFieldKeys(search.onSubmit, search.onClear)}
             />
+          )}
+          {reload !== undefined && (
+            <div className={classes.toolbarReload} inert={inert}>
+              <ActionButton
+                look={{ icon: <icons.Refresh />, tip: texts.reload }}
+                variant="secondary"
+                placement="toolbar"
+                onClick={reload}
+              />
+            </div>
           )}
         </div>
       )}

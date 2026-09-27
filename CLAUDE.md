@@ -88,6 +88,12 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
     (`user-select: none`); inside the demos, selecting stays as their packages have it.
   - `demo/ui/`: the design language (`ui.css`, `ui.ts`), the same files as in every package. Read the header of `ui.css`
     before changing it, and copy a change into all copies (`demo/ui/` here, and in each package).
+    - Its `ui-*` tokens are the default look: the packages' default themes follow them, and a change of a token is
+      made in the packages' defaults too. The radius: `--ui-radius: 2px` for controls (inputs, selects, menus);
+      the data navigator's `radius` is `2px`, the file upload's small parts `2px` (half of its `borderRadius`, `4px`).
+      Buttons: `--ui-button-radius: 5px`; the data navigator's `buttonRadius`, the file upload's `buttonBorderRadius`
+      and the overlays' `actionRadius` (dialog buttons) are `5px`. Larger surfaces are a bit rounder: the file
+      upload's frame `4px`, dialogs `6px`, toasts `5px`.
 - `vite.config.ts`: `resolve.dedupe` makes all demos use one React, even where a package pins its own version (e.g.
   `overlays`, which gets a nested one in its `node_modules`).
 - `tsconfig.json`: `tsc` also checks the imported demo files, so the compiler options are the loosest common set: like

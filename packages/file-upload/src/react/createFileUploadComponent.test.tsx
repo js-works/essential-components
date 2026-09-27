@@ -76,7 +76,16 @@ describe('createFileUploadComponent', () => {
     const Upload = createFileUploadComponent();
     const upload = vi.fn(() => new Promise<void>(() => {}));
     const { container, rerender } = render(
-      <Upload upload={upload} accept=".txt" maxFiles={3} maxParallel={1} multiple name="files" required />,
+      <Upload
+        upload={upload}
+        accept=".txt"
+        maxFiles={3}
+        maxParallel={1}
+        multiple
+        name="files"
+        required
+        density="compact"
+      />,
     );
     const element = await elementIn(container);
 
@@ -87,6 +96,7 @@ describe('createFileUploadComponent', () => {
     expect(element.multiple).toBe(true);
     expect(element.name).toBe('files');
     expect(element.required).toBe(true);
+    expect(element.density).toBe('compact');
 
     rerender(<Upload upload={upload} />);
 
@@ -96,6 +106,7 @@ describe('createFileUploadComponent', () => {
     expect(element.multiple).toBe(false);
     expect(element.name).toBeUndefined();
     expect(element.required).toBe(false);
+    expect(element.density).toBe('normal');
   });
 
   it('calls onChange with the items', async () => {

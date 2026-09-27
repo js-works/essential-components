@@ -144,6 +144,12 @@
   flex: 1 1 auto;
 }
 
+/* The Reload button, after the search box. */
+.toolbarReload {
+  display: flex;
+  flex: none;
+}
+
 .toolbarActions {
   display: flex;
   flex: none;
@@ -227,7 +233,7 @@
   height: var(--datnav-control-height);
   padding: 0 var(--datnav-spacing-sm);
   border: 1px solid var(--datnav-color-border);
-  border-radius: var(--datnav-radius);
+  border-radius: var(--datnav-button-radius);
   background-color: var(--datnav-color-surface);
   color: var(--datnav-color-text);
   font: inherit;
@@ -338,7 +344,7 @@
   height: calc(0.75 * var(--datnav-control-height));
   padding: 0;
   border: none;
-  border-radius: var(--datnav-radius);
+  border-radius: var(--datnav-button-radius);
   background-color: transparent;
   color: var(--datnav-color-text);
   cursor: pointer;
@@ -608,7 +614,7 @@
 .clearButton {
   padding: 0;
   border: none;
-  border-radius: var(--datnav-radius);
+  border-radius: var(--datnav-button-radius);
   background-color: transparent;
   cursor: pointer;
 
@@ -778,7 +784,7 @@
     height: calc(var(--datnav-control-height) * 0.8);
     padding: 0;
     border: none;
-    border-radius: var(--datnav-radius);
+    border-radius: var(--datnav-button-radius);
     background: none;
     color: inherit;
     font: inherit;
@@ -1211,6 +1217,12 @@
   composes: header;
 }
 
+/* Without column groups, the select-all checkbox sits in the middle of the header, on the center line of the column
+   headers (whose text sits at the bottom of their cells). With groups, it stays at the bottom, like the lower row. */
+.headerRow:not([data-groups]) > .headerTall:has(> .check) {
+  align-items: center;
+}
+
 .headerSub {
   composes: header;
   grid-row: 2;
@@ -1420,16 +1432,11 @@
 }
 
 .emptyCell {
+  /* The line below it (from .cell) closes the table, like below the last row. */
   composes: cell;
-  /* The empty state has no line below it: nothing follows it. */
-  border-bottom: none;
   grid-column: 1 / -1;
   flex-direction: column;
   gap: var(--datnav-spacing-xs);
   justify-content: center;
   padding: calc(2 * var(--datnav-spacing-md));
-}
-
-.emptyIcon {
-  color: var(--datnav-color-text-dimmed);
 }

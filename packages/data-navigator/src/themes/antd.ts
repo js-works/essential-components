@@ -26,6 +26,7 @@ const antdTheme: Required<DataNavigator.Theme> = {
   colorDanger: 'var(--ant-color-error)',
   colorFocus: 'var(--ant-color-primary)',
   radius: 'var(--ant-border-radius)',
+  buttonRadius: 'var(--ant-border-radius)',
   shadow: 'var(--ant-box-shadow-secondary)',
   fontFamily: 'var(--ant-font-family)',
   fontSize: 'var(--ant-font-size)',

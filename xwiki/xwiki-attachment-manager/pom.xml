@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!--
+    The attachment manager as a XAR for XWiki: `mvn package` builds the Lit element with npm (the Node of this machine)
+    and packages the pages of src/main/resources plus the generated page with the module (target/classes) into
+    target/xwiki-attachment-manager-<version>.xar. Import it in XWiki: Administration > Content > Import.
+  -->
+  <groupId>local.xwiki</groupId>
+  <artifactId>xwiki-attachment-manager</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+  <packaging>xar</packaging>
+  <name>XWiki Attachment Manager</name>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <!-- The version of the local XWiki: its XAR tooling. -->
+    <xwiki.version>17.10.10</xwiki.version>
+  </properties>
+
+  <pluginRepositories>
+    <pluginRepository>
+      <id>xwiki-releases</id>
+      <url>https://nexus.xwiki.org/nexus/content/groups/public/</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </pluginRepository>
+  </pluginRepositories>
+
+  <repositories>
+    <repository>
+      <id>xwiki-releases</id>
+      <url>https://nexus.xwiki.org/nexus/content/groups/public/</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+
+  <build>
+    <extensions>
+      <!-- The `xar` packaging (its lifecycle). -->
+      <extension>
+        <groupId>org.xwiki.commons</groupId>
+        <artifactId>xwiki-commons-tool-xar-handlers</artifactId>
+        <version>${xwiki.version}</version>
+      </extension>
+    </extensions>
+
+    <plugins>
+      <plugin>
+        <groupId>org.xwiki.commons</groupId>
+        <artifactId>xwiki-commons-tool-xar-plugin</artifactId>
+        <version>${xwiki.version}</version>
+      </plugin>
+
+      <!-- The element: `npm ci` and `npm run build` (typecheck, Vite, and the page with the module as attachment). -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.5.1</version>
+        <executions>
+          <execution>
+            <id>npm-ci</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>npm</executable>
+              <arguments>
+                <argument>ci</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>npm-build</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>npm</executable>
+              <arguments>
+                <argument>run</argument>
+                <argument>build</argument>
+              </arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

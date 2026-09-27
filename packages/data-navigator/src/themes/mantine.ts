@@ -25,6 +25,7 @@ const mantineTheme: Required<DataNavigator.Theme> = {
   colorDanger: 'var(--mantine-color-error)',
   colorFocus: 'var(--mantine-primary-color-filled)',
   radius: 'var(--mantine-radius-default)',
+  buttonRadius: 'var(--mantine-radius-default)',
   shadow: 'var(--mantine-shadow-md)',
   fontFamily: 'var(--mantine-font-family)',
   fontSize: 'var(--mantine-font-size-sm)',

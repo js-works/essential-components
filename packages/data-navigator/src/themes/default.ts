@@ -24,7 +24,8 @@ const defaultTheme: Required<DataNavigator.Theme> = {
   colorOnPrimary: { light: '#fff', dark: '#111' },
   colorDanger: { light: '#b3141f', dark: '#ff6b63' },
   colorFocus: { light: '#0a5cc2', dark: '#78b0ff' },
-  radius: '5px',
+  radius: '2px',
+  buttonRadius: '5px',
   // light-dark() works only for colors, so it sits in the color of the shadow.
   shadow: '0 4px 12px light-dark(rgb(0 0 0 / 15%), rgb(0 0 0 / 60%))',
   fontFamily: 'system-ui, sans-serif',

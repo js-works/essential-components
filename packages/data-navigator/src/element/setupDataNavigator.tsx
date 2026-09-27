@@ -13,12 +13,16 @@ export { setupDataNavigator };
 
 const DENSITIES: readonly DataNavigator.Density[] = ['compact', 'normal', 'comfortable'];
 
+// The events that stop at the element's border (see the constructor).
+const CONTAINED_EVENTS = ['input', 'keypress', 'keydown'] as const;
+
 // The properties an app (or a framework) may set before the element is defined: taken over when it is upgraded.
 const UPGRADED_PROPERTIES = [
   'controller',
   'density',
   'striped',
   'searchable',
+  'reloadable',
   'selectionAppearance',
   'pageSize',
   'pageSizeOptions',
@@ -37,12 +41,31 @@ function setupDataNavigator<C = Node>(
   const setup = {};
 
   class DataNavigatorElement extends HTMLElement {
-    static observedAttributes = ['density', 'striped', 'searchable', 'selection-appearance', 'page-size'];
+    static observedAttributes = ['density', 'striped', 'searchable', 'reloadable', 'selection-appearance', 'page-size'];
 
     #controller: DataNavigator.NavigatorController<unknown, C> | undefined;
     #pageSizeOptions: readonly number[] | undefined;
     #root: Root | undefined;
     #stopListening: (() => void) | undefined;
+
+    // Typing into the element (search, filters, the page number) and its keyboard handling stay inside it: the page gets
+    // none of these events. Global keyboard shortcuts of the page (e.g. those of XWiki, on the document) would react to
+    // them otherwise: from inside a shadow root, the event arrives at the document with the host as its target, not the
+    // input, so the page cannot tell that someone is typing. Our own handlers are inside the element (React listens on
+    // it), so they are not affected.
+    constructor() {
+      super();
+
+      // Except Escape: Base UI closes its popups (selects, menus, the date popover) on it through a listener on the
+      // document.
+      for (const type of CONTAINED_EVENTS) {
+        this.addEventListener(type, (event) => {
+          if (!(event instanceof KeyboardEvent && event.key === 'Escape')) {
+            event.stopPropagation();
+          }
+        });
+      }
+    }
 
     get controller(): DataNavigator.NavigatorController<unknown, C> | undefined {
       return this.#controller;
@@ -89,6 +112,14 @@ function setupDataNavigator<C = Node>(
 
     set searchable(searchable: boolean) {
       this.toggleAttribute('searchable', searchable);
+    }
+
+    get reloadable(): boolean {
+      return this.hasAttribute('reloadable');
+    }
+
+    set reloadable(reloadable: boolean) {
+      this.toggleAttribute('reloadable', reloadable);
     }
 
     get selectionAppearance(): DataNavigator.SelectionAppearance {
@@ -156,6 +187,7 @@ function setupDataNavigator<C = Node>(
         density: this.density,
         striped: this.striped,
         searchable: this.searchable,
+        reloadable: this.reloadable,
         selectionAppearance: this.selectionAppearance,
         pageSize: this.pageSize,
         pageSizeOptions: this.pageSizeOptions,
