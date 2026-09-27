@@ -326,6 +326,9 @@ These are the first proposals behind `src/api.ts` and the element. Each one can 
       container is named `file-upload`), not switch ours off.
     - Because of the container query, the element takes its width from outside (as a block it fills its parent; as a
       flex or grid item it needs a width or has to grow).
+    - Height: as high as its content, unless the element has a height limit (e.g. `max-height`, or a height as a flex
+      item). Then the list scrolls (`overflow: auto`) and the line below it (drop area, "Clear", "Upload all") stays
+      visible: the element is a flex column (label, frame), the frame's list row is `minmax(0, auto)`.
   - `multiple` (default `false`). Without it, the file input takes one file, and a newly added file replaces the current
     one: its upload is aborted and it disappears from the list.
   - The same file can be chosen again (the input is reset after each choice).

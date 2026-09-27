@@ -9,7 +9,7 @@ import "./demo.css";
 // show it alone (index.html) or together with the demos of other components. It is exported
 // and not registered: the page registers it under a tag name of its choice.
 //
-// Four tabs: the two Lit demos (Toasts, Dialogs) and the two React demos. The global switches
+// Four tabs: the Lit dialogs, the two React demos, and last the toasts (Lit). The global switches
 // (color scheme) belong to the page, not to the demo.
 //
 // Rules for the demo (the same for the demos of all components):
@@ -29,15 +29,15 @@ export class OverlaysDemo extends HTMLElement {
       this.innerHTML = `
         <div class="ui-stack overlays-demo">
           <nav class="ui-tabs" aria-label="Overlays">
-            <button class="ui-tabs__tab" type="button">Toasts</button>
             <button class="ui-tabs__tab" type="button">Dialogs (Lit)</button>
             <button class="ui-tabs__tab" type="button">React form (Mantine)</button>
             <button class="ui-tabs__tab" type="button">React i18n</button>
+            <button class="ui-tabs__tab" type="button">Toasts</button>
           </nav>
-          <section class="ui-tabs__panel" data-panel="toasts"></section>
-          <section class="ui-tabs__panel" data-panel="dialogs" hidden></section>
+          <section class="ui-tabs__panel" data-panel="dialogs"></section>
           <section class="ui-tabs__panel" data-panel="react-form" hidden></section>
           <section class="ui-tabs__panel" data-panel="react-i18n" hidden></section>
+          <section class="ui-tabs__panel" data-panel="toasts" hidden></section>
         </div>
       `;
       mountLitDemo(this.#panel("toasts"), this.#panel("dialogs"));

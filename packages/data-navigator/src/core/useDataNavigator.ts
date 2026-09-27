@@ -2,7 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { MouseEvent } from 'react';
 import { hasContent, isPlainRowClick, isPlainRowDoubleClick } from '../core/utils';
 import type { DataNavigatorComponent as Spec } from '../react/api';
-import { columnItems, defaultActionOf, selectionModeOf, toolbarItems } from './actions';
+import { columnItems, contextMenuItems, defaultActionOf, selectionModeOf, toolbarItems } from './actions';
 import { connectController, notifySelection } from './controller';
 import type { ControllerTarget } from './controller';
 import { sameValue } from './filters';
@@ -339,6 +339,53 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
 
   const toggleAllDetails = () => setExpandedKeys(allDetailsExpanded ? EMPTY_KEYS : new Set(rowsWithDetails.map(keyOf)));
 
+  // The context menu of a row: the row it was opened on, and the rows its multi-row actions get.
+  const [contextRows, setContextRows] = useState<{ row: Row; rows: readonly Row[] }>();
+  // With several selected rows (a right-click on one of them), the menu is about all of them: no single-row actions.
+  const contextActions = contextMenuItems(
+    actions,
+    selection,
+    contextRows === undefined || contextRows.rows.length <= 1,
+  );
+
+  // Called when the context menu is about to open on the row with this key. Like a file manager: a row that is not
+  // selected becomes the only selected one; on a selected row the selection stays. False when there is nothing to
+  // show (then the browser's own menu opens).
+  const prepareContextMenu = (key: string): boolean => {
+    const row = rows.find((candidate) => keyOf(candidate) === key);
+
+    if (row === undefined || contextActions.length === 0) {
+      return false;
+    }
+
+    const inSelection = selectedKeys.has(key);
+
+    if (selection !== 'none' && !inSelection) {
+      setSelectedKeys(new Set([key]));
+    }
+
+    setContextRows({ row, rows: selection !== 'multi' ? [] : inSelection ? selectedRows : [row] });
+
+    return true;
+  };
+
+  const invokeFromContextMenu = (action: Spec.Action<Row>) => {
+    if (contextRows === undefined) {
+      return;
+    }
+
+    switch (action.type) {
+      case 'general':
+        action.onClick();
+        break;
+      case 'row':
+        action.onClick(contextRows.row);
+        break;
+      case 'rows':
+        action.onClick(contextRows.rows);
+    }
+  };
+
   const invokeFromToolbar = (action: Spec.Action<Row>) => {
     switch (action.type) {
       case 'general':
@@ -455,5 +502,8 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     hasActionColumn,
     invokeFromToolbar,
     invokeForRow,
+    contextActions,
+    prepareContextMenu,
+    invokeFromContextMenu,
   };
 }

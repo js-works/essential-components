@@ -53,7 +53,10 @@ function createCss(theme: ResolvedTheme): string {
 
   return `
 :host {
-  display: block;
+  /* A column: our label (if any) and the frame. With a height limit on the element (e.g. \`max-height\`), the frame
+     shrinks and its list scrolls, so the line below the list stays visible. Without one, it is as high as its content. */
+  display: flex;
+  flex-direction: column;
   color: ${color(theme.textColor)};
   font-family: ${theme.fontFamily};
   /* The base size. All sizes and spacings are relative to it (\`em\`), so it scales the whole element. The small texts
@@ -78,8 +81,11 @@ function createCss(theme: ResolvedTheme): string {
 
 .root {
   display: grid;
+  /* The list grows with its files, up to the space the element leaves it (see \`:host\`). */
+  grid-template-rows: minmax(0, auto) auto;
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas: 'list list' 'drop action';
+  min-height: 0;
   /* For the narrow layout (see \`@container\` below). The element takes its width from outside. */
   container: file-upload / inline-size;
   border: 1px solid ${border};
@@ -172,7 +178,12 @@ button {
   display: grid;
   grid-area: list;
   grid-template-columns: auto minmax(0, 1fr) auto auto auto auto;
+  /* The rows keep their own height when the list has less space than it needs: it scrolls. */
+  grid-auto-rows: max-content;
+  align-content: start;
   column-gap: 0.857em;
+  min-height: 0;
+  overflow: auto;
   margin: 0;
   padding: 0;
   border-bottom: 1px solid ${border};

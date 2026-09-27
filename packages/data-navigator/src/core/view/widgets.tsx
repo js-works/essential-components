@@ -256,6 +256,7 @@ type ActionMenuProps = Omit<ActionButtonProps, 'onClick'> & { entries: readonly 
 function ActionMenu({ look, variant, placement, entries }: ActionMenuProps): ReactElement {
   const layer = useContext(LayerContext);
   const [open, setOpen] = useState(false);
+  const withIcons = entries.some((entry) => entry.type !== 'separator' && hasContent(entry.icon));
 
   return (
     <BaseMenu.Root modal={false} open={open} onOpenChange={setOpen}>
@@ -272,7 +273,8 @@ function ActionMenu({ look, variant, placement, entries }: ActionMenuProps): Rea
           sideOffset={4}
           positionMethod="fixed"
         >
-          <BaseMenu.Popup className={styles.popup}>
+          {/* With icons (at least one entry has one), every entry gets the icon's place, so the texts line up. */}
+          <BaseMenu.Popup className={withIcons ? `${styles.popup} ${styles.menuWithIcons}` : styles.popup}>
             {entries.map((entry) =>
               entry.type === 'separator'
                 ? <BaseMenu.Separator key={entry.key} className={styles.menuSeparator} />
@@ -283,8 +285,8 @@ function ActionMenu({ look, variant, placement, entries }: ActionMenuProps): Rea
                     data-variant={entry.variant}
                     onClick={entry.onClick}
                   >
-                    {hasContent(entry.icon) && <span className={styles.buttonIcon}>{entry.icon}</span>}
-                    <span>{entry.label}</span>
+                    {withIcons && <span className={styles.menuIcon}>{entry.icon}</span>}
+                    <span className={styles.menuText}>{entry.label}</span>
                   </BaseMenu.Item>
                 )
             )}

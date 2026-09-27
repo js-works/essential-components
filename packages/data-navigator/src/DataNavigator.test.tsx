@@ -2258,6 +2258,120 @@ describe('DataNavigator', () => {
     });
   });
 
+  describe('context menu', () => {
+    const contextActions = (calls: string[]): readonly (Spec.Action<Person> | Spec.ActionMenu<Person>)[] => [
+      { type: 'general', key: 'add', label: 'Add', onClick: () => calls.push('add') },
+      {
+        type: 'rows',
+        key: 'remove',
+        label: 'Remove',
+        onClick: (rows) => calls.push(`remove ${rows.map((row) => row.id)}`),
+      },
+      { type: 'row', key: 'edit', label: 'Edit', show: 'column', onClick: (row) => calls.push(`edit ${row.id}`) },
+      { type: 'row', key: 'info', tip: 'Info', icon: <svg />, show: 'column', onClick: () => {} },
+      {
+        type: 'menu',
+        key: 'export',
+        label: 'Export',
+        actions: [
+          { type: 'general', key: 'all', label: 'All', onClick: () => calls.push('all') },
+          { type: 'rows', key: 'selected', label: 'Selected', onClick: () => calls.push('selected') },
+        ],
+      },
+    ];
+    // The entries of the open menu, separators as '---'.
+    const entries = () =>
+      [...screen.getByRole('menu').querySelectorAll('[role="menuitem"], [role="separator"]')].map((element) =>
+        element.getAttribute('role') === 'separator' ? '---' : element.textContent
+      );
+    const openOn = async (text: string) => {
+      fireEvent.contextMenu(screen.getByText(text));
+      await screen.findByRole('menu');
+    };
+
+    it('shows the actions of the clicked row, then those of the selection, then the general ones', async () => {
+      renderNav({ actions: contextActions([]) });
+
+      await loaded();
+      await openOn('Person 03');
+
+      // An icon-only action shows its tip; a menu is a submenu at the end.
+      expect(entries()).toEqual(['Edit', 'Info', '---', 'Remove', '---', 'Add', 'Export']);
+
+      // One entry has an icon: every entry gets the icon's place (empty where it has none), so the texts line up.
+      const menu = screen.getByRole('menu');
+
+      expect(menu.classList.contains('menuWithIcons')).toBe(true);
+      expect(menu.querySelectorAll('[role="menuitem"] > .menuIcon')).toHaveLength(5);
+      expect(menu.querySelectorAll('.menuIcon svg')).toHaveLength(1);
+    });
+
+    it('selects only the clicked row when it is not selected, keeps the selection on a selected row', async () => {
+      const calls: string[] = [];
+
+      renderNav({ actions: contextActions(calls) });
+
+      await loaded();
+      // The first two rows (a selected row's checkbox is "Deselect row", so the next one is the first "Select row").
+      fireEvent.click(screen.getAllByRole('checkbox', { name: 'Select row' })[0]!);
+      fireEvent.click(screen.getAllByRole('checkbox', { name: 'Select row' })[0]!);
+
+      // On a selected row: the selection stays, and the menu is about all selected rows (no single-row actions).
+      await openOn('Person 02');
+
+      expect(entries()).toEqual(['Remove', '---', 'Add', 'Export']);
+
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Remove' }));
+
+      expect(calls).toEqual(['remove 1,2']);
+      expect(screen.getByText('2 selected')).toBeTruthy();
+
+      // On a row that is not selected: it becomes the only selected one, and its single-row actions are there.
+      await openOn('Person 05');
+
+      expect(entries()).toEqual(['Edit', 'Info', '---', 'Remove', '---', 'Add', 'Export']);
+
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Edit' }));
+      await openOn('Person 05');
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Remove' }));
+
+      expect(calls).toEqual(['remove 1,2', 'edit 5', 'remove 5']);
+      expect(screen.getByText('1 selected')).toBeTruthy();
+    });
+
+    it('leaves the browser its own menu outside the rows, on selected text, and without actions', async () => {
+      const { unmount } = renderNav({ actions: contextActions([]) });
+
+      await loaded();
+
+      // The header.
+      expect(fireEvent.contextMenu(screen.getByText('Name'))).toBe(true);
+      expect(screen.queryByRole('menu')).toBeNull();
+
+      // Text selected in the row (to copy it).
+      const cell = screen.getByText('Person 03');
+      const range = document.createRange();
+
+      range.selectNodeContents(cell);
+      // addRange is ignored while the selection has a range already (also a collapsed one, e.g. from a focus).
+      document.getSelection()!.removeAllRanges();
+      document.getSelection()!.addRange(range);
+      expect(fireEvent.contextMenu(cell)).toBe(true);
+      expect(screen.queryByRole('menu')).toBeNull();
+      document.getSelection()!.removeAllRanges();
+
+      unmount();
+
+      // No actions at all.
+      renderNav();
+
+      await loaded();
+
+      expect(fireEvent.contextMenu(screen.getByText('Person 03'))).toBe(true);
+      expect(screen.queryByRole('menu')).toBeNull();
+    });
+  });
+
   describe('actions', () => {
     const onAdd = vi.fn();
     const onEdit = vi.fn();

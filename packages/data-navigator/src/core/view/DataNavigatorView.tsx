@@ -16,6 +16,7 @@ import { ActionList } from './Actions';
 import * as classes from './DataNavigator.module.css';
 import { Footer } from './Footer';
 import { LayerContext } from './layer';
+import { RowContextMenu } from './RowContextMenu';
 import { Toolbar } from './Toolbar';
 import { Checkbox, ChevronButton, EmptyIcon, Radio, SortButton, Spinner } from './widgets';
 
@@ -91,8 +92,10 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
             />
             <div className={classes.scrollArea}>
               <div className={classes.scroller}>
-                <div
-                  role="table"
+                <RowContextMenu
+                  items={nav.contextActions}
+                  prepare={nav.prepareContextMenu}
+                  invoke={nav.invokeFromContextMenu}
                   className={classes.table}
                   style={{ gridTemplateColumns: nav.gridTemplateColumns }}
                 >
@@ -239,6 +242,7 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
                         <div
                           role="row"
                           className={classes.dataRow}
+                          data-row-key={key}
                           inert={nav.loading}
                           data-stripe={flag(nav.striped && index % 2 === 0)}
                           aria-selected={selection !== 'none' ? selected : undefined}
@@ -324,7 +328,13 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
                           )}
                         </div>
                         {expanded && (
-                          <div role="row" className={classes.detailRow} inert={nav.loading} {...rowHandlers(row, key)}>
+                          <div
+                            role="row"
+                            className={classes.detailRow}
+                            data-row-key={key}
+                            inert={nav.loading}
+                            {...rowHandlers(row, key)}
+                          >
                             {selection !== 'none' && (
                               <div
                                 role="presentation"
@@ -374,7 +384,7 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
                       </div>
                     </div>
                   )}
-                </div>
+                </RowContextMenu>
               </div>
               {nav.spinnerVisible && (
                 <div className={classes.overlay} style={{ top: nav.headerHeight }}>

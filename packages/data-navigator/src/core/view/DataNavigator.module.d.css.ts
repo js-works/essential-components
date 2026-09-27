@@ -36,8 +36,11 @@ export {
   iconButton,
   input,
   layer,
+  menuIcon,
   menuItem,
   menuSeparator,
+  menuText,
+  menuWithIcons,
   overlay,
   pageInput,
   pager,
@@ -58,6 +61,7 @@ export {
   selectText,
   sortButton,
   spinner,
+  submenuChevron,
   subtitle,
   table,
   title,
@@ -105,8 +109,11 @@ declare const headerText: string;
 declare const iconButton: string;
 declare const input: string;
 declare const layer: string;
+declare const menuIcon: string;
 declare const menuItem: string;
 declare const menuSeparator: string;
+declare const menuText: string;
+declare const menuWithIcons: string;
 declare const overlay: string;
 declare const pageInput: string;
 declare const pageSizeField: string;
@@ -127,6 +134,7 @@ declare const selectItem: string;
 declare const selectText: string;
 declare const sortButton: string;
 declare const spinner: string;
+declare const submenuChevron: string;
 declare const subtitle: string;
 declare const table: string;
 declare const title: string;

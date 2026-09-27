@@ -26,23 +26,20 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
 
 - `packages/`: the components, npm workspaces (`"workspaces": ["packages/*"]`), each private and self-contained, so it
   can be copied as it is:
-  - `data-navigator` (`@local/data-navigator`): a data table: a React component (`/react`), a custom element to come.
+  - `data-navigator` (`@local/data-navigator`): a data table: a custom element, and a React component (`/react`).
   - `file-upload` (`@local/file-upload`): a file upload custom element, with a React wrapper.
   - `overlays` (`@local/overlays`): dialogs and toasts.
-  - `calendar` (`@local/calendar`): a calendar date/time picker (`DatePickerElement`), a first step taken over from
-    picoui: its framework-free core unchanged, with a plain custom element instead of picoui's Lit wrapper. The
-    directory may be renamed later.
   - A package keeps its own tests, demo (`npm run dev` inside it) and `package-lock.json` (unused in the workspace,
     where the root lock file counts; it matters again in a standalone copy).
 - The root is the demo page of all packages:
   - `index.html`: a header with the title and, top right, the global switches (language `en-US`/`de-DE`, color
     scheme), which change `<html>` (`lang`, `data-scheme`) for every demo. Below it a split: vertical tabs on the left
-    ("Data navigator", "File upload", "Dialogs + Toasts", "Date Picker", "Media Manager"), the chosen demo on the right.
+    ("Data navigator", "File upload", "Dialogs + Toasts", "Media Manager"), the chosen demo on the right.
     - The URL hash has one segment per level of tabs: `#file-upload/react`, `#dialogs-toasts/react-i18n` (the first tab,
       the data navigator, has none).
   - `demo/main.ts`: imports the demo element of each package by a relative path
     (`../packages/file-upload/demo/FileUploadDemo`) and registers it (`data-navigator-demo`, `file-upload-demo`,
-    `overlays-demo`, `date-picker-demo`; the root's own `media-manager-demo`). Each demo element is a light DOM custom
+    `overlays-demo`; the root's own `media-manager-demo`). Each demo element is a light DOM custom
     element of its package (see "Demo element" in the package's `CLAUDE.md`), exported and not registered.
   - `demo/media-manager/`: the "Media Manager" tab, a demo of the root (not of a package), because it combines three
     packages: a data navigator lists the attachments, dialogs and toasts of the overlays package, and a file upload

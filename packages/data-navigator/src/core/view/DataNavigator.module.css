@@ -371,13 +371,6 @@
 .iconButton,
 .sortButton,
 .clearButton,
-.menuItem {
-  &:focus-visible {
-    outline: 2px solid var(--datnav-color-focus);
-    outline-offset: 1px;
-  }
-}
-
 .chevron {
   display: inline-flex;
   transition: transform 150ms ease;
@@ -660,15 +653,26 @@
   text-align: start;
   white-space: nowrap;
   cursor: pointer;
+  /* No focus outline (the exception to our rule, see the CSS guidelines): the highlight below marks the item of the
+     keyboard, like in a native menu. Base UI moves the focus to the item under the pointer too, and after a key press
+     the browser counts that as keyboard focus, so an outline would come and go on hover. */
+  outline: none;
 
-  /* Base UI marks the item under the pointer or the keyboard focus. */
-  &[data-highlighted] {
-    background-color: var(--datnav-color-hover);
+  /* Base UI marks the item under the pointer or the keyboard focus, and the item of an open submenu. The header color:
+     darker than the hover color of the rows, so the item stands out on the popup (it is also the keyboard's mark). */
+  &[data-highlighted],
+  &[data-popup-open] {
+    background-color: var(--datnav-color-header);
   }
 
   &[data-variant='danger'] {
     color: var(--datnav-color-danger);
   }
+}
+
+/* The arrow of an item that opens a submenu (in the context menu of the rows), at its end. */
+.submenuChevron {
+  margin-inline-start: auto;
 }
 
 /* Lighter than the frame of the menu: the lighter line color of the theme. */
@@ -699,6 +703,42 @@
   outline: none;
 }
 
+/* A menu whose entries have icons (at least one): three columns (icon, text, the arrow of a submenu), and every entry
+   takes them over (subgrid), so all texts start at the same place, also next to an entry without icon. Without any
+   icon, the entries keep their plain layout. */
+.menuWithIcons {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  column-gap: var(--datnav-spacing-xs);
+
+  & > .menuItem {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+  }
+
+  & > .menuSeparator {
+    grid-column: 1 / -1;
+  }
+
+  & .menuIcon {
+    grid-column: 1;
+  }
+
+  & .menuText {
+    grid-column: 2;
+  }
+
+  & .submenuChevron {
+    grid-column: 3;
+  }
+}
+
+.menuIcon {
+  display: inline-flex;
+  align-items: center;
+}
+
 /* The popover of a date range filter: the date picker, with a little room around it. Not as wide as its trigger at
    least (like a select's list): the picker has its own size. */
 .datePopup {
@@ -713,7 +753,8 @@
   /* Dense: a day (and a header button) is 80% of a control high, and as wide. */
   display: flex;
   flex-wrap: wrap;
-  gap: var(--datnav-spacing-sm);
+  /* Clearly two sheets: wider apart than the days of one (16px with the default theme). */
+  gap: var(--datnav-spacing-md);
 
   & :global(.datepicker:not(.active)),
   & :global(.datepicker-footer),
@@ -856,7 +897,31 @@
     color: var(--datnav-color-text-dimmed);
   }
 
-  /* Today: its number in the primary color, except on the ends of the range (they are in the primary color). */
+  /* Today: a short bar below its number, in the primary color, visible on every background (on the ends of the range,
+     which are in the primary color, in their text color). Shorter than the number and rounded, so it does not look like
+     the underline of a link. */
+  & :global(.datepicker-cell.day.today) {
+    position: relative;
+
+    &::after {
+      position: absolute;
+      /* Sizes from the control height (16px wide, 2px high, 2px from the bottom with the default theme). */
+      bottom: calc(var(--datnav-control-height) / 16);
+      left: 50%;
+      width: calc(var(--datnav-control-height) / 2);
+      height: calc(var(--datnav-control-height) / 16);
+      border-radius: calc(var(--datnav-control-height) / 32);
+      background-color: var(--datnav-color-primary);
+      content: '';
+      translate: -50% 0;
+    }
+  }
+
+  & :global(.datepicker-cell.day.today:is(.selected, .range-start, .range-end))::after {
+    background-color: var(--datnav-color-on-primary);
+  }
+
+  /* And its number in the primary color, except on the ends of the range. */
   & :global(.datepicker-cell.today:not(.selected, .range-start, .range-end)) {
     color: var(--datnav-color-primary);
     font-weight: var(--datnav-font-weight-bold);
@@ -917,8 +982,9 @@
   outline: none;
   user-select: none;
 
+  /* Like the items of the menus (see `.menuItem`). */
   &[data-highlighted] {
-    background-color: var(--datnav-color-hover);
+    background-color: var(--datnav-color-header);
   }
 
   &[data-selected] {

@@ -61,7 +61,7 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - The date range filter uses vanillajs-datepicker (MIT), a dev dependency only: it is bundled completely into our
     build (a chunk loaded on first use), so an app never installs it. Its stylesheet is not used (see the filter).
   - The builds list the licenses of everything bundled in: `dist/third-party-licenses-react.md` (the React entry) and
-    `dist/third-party-licenses.md` (the custom element, with React and Base UI).
+    `dist/third-party-licenses.md` (the custom element, with Preact and Base UI).
 - Customization: a small set of general design values, the `DataNavigator.Theme` (see Configuration), not one per part.
   - The values (29), with their internal custom properties (`colorTextDimmed` → `--datnav-color-text-dimmed`):
     - Colors: `colorText`, `colorTextDimmed`, `colorSurface`, `colorBorder`, `colorHeader`, `colorHeaderHover`,
@@ -111,10 +111,13 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     API need an equivalent as DOM events or properties.
   - Hooks exist only in React. Whatever a hook offers (e.g. a reload) needs a plain, framework-free core that the hook
     only wraps, so the custom element can use the core directly.
-- Implementation: the element wraps the React component, with React bundled into the element's entry.
+- Implementation: the element wraps the React component. Its entry bundles Preact instead of React (`preact/compat`,
+  through aliases in `vite.config.ts`): about 101 kB gzip instead of 166 kB with React. Our code and Base UI work
+  with it (checked in the browser: rendering, sorting, search, paging, all filters, selection, actions, the menu,
+  tooltips, row details, the language switch).
 - Entries (like `file-upload`):
   - `@local/data-navigator`: the element (`setupDataNavigator`), its column filters and the types (namespace
-    `DataNavigator`). React is bundled in, the app needs none.
+    `DataNavigator`). Preact is bundled in (as React), the app needs no React.
   - `@local/data-navigator/react`: `createDataNavigatorComponent` (renamed from `createDataNavigator`), the hooks, the
     React column filters and their types (namespace `DataNavigatorComponent`), with the app's React (an optional peer
     dependency).
@@ -432,9 +435,11 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - It also breaks the count down by language and says what the component costs against what one theme costs.
 - Commands:
   - `npm run dev`: demo
+  - `npm run dev:preact`: the same demo on Preact (both tabs; `vite --mode preact`, the aliases of the element's
+    build), to see at once when something does not work with `preact/compat`. The unit tests run on React only.
   - `npm run build`: typecheck + library build in two steps: `dist/react.js`, `dist/themes.js` and the stylesheet
     `dist/data-navigator.css` (React and Base UI outside), then `--mode element`: `dist/index.js` with everything
-    bundled in (React too, about 165 kB gzip; the stylesheet is inside)
+    bundled in (Preact as React, about 101 kB gzip; the stylesheet is inside)
   - `npm run build:demo`: typecheck + the demo page for GitHub Pages (`vite build --mode demo`, base `/data-navigator/`,
     into `demo-dist/`)
   - `npm run typecheck`
@@ -506,8 +511,12 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - Inside CSS modules, plain local class names are fine. BEM is not needed there.
 - Custom properties: only the 29 internal `--datnav-*` ones, set from the theme. No other custom properties of our
   own, and none for passing other runtime values to the stylesheet either: set the real property inline instead.
-- No `!important`. Never remove focus outlines. Every button, input and menu item has a `:focus-visible` outline in
+- No `!important`. Never remove focus outlines. Every button and input has a `:focus-visible` outline in
   `--datnav-color-focus`.
+  - The one exception: the items of a menu (the toolbar's menus, the context menu). Their highlight background
+    (Base UI's `data-highlighted`, `--datnav-color-header`) marks the item of the keyboard, like in a native menu. Base
+    UI moves the focus to the item under the pointer too, and after a key press the browser counts that as keyboard
+    focus, so an outline came and went on hover.
 - The library build emits one stylesheet (`dist/data-navigator.css`). Apps import it, like Mantine's `styles.css`.
 
 ## Look and feel
@@ -928,10 +937,12 @@ The main goal is a very nice, yet simple, API, designed together with the user.
         library always renders six weeks); a month with more weeks makes the popover a little higher.
       - Dense: a day and a header button are 80% of `--datnav-control-height` high (and a day as wide), the days of the
         week 60%; the days' text is between the small and the normal size (like the filters); the calendars are
-        `--datnav-spacing-sm` apart, the footer `--datnav-spacing-xs` below them.
+        `--datnav-spacing-md` apart, the footer `--datnav-spacing-xs` below them.
       - The library's keyboard position (a gray day) is only shown while the keyboard is in that calendar.
-      - Today: its number bold and in `--datnav-color-primary`, except as an end of the range (then like every end:
-        `--datnav-color-on-primary` on the primary color).
+      - Today: a short bar below its number (in `--datnav-color-primary`; sized from `--datnav-control-height`: half of
+        it wide, a sixteenth high, rounded), visible on every background, and its number bold and in the primary color.
+        As an end of the range, the number and the bar are in `--datnav-color-on-primary`, like every end. (A dot was
+        tried: quieter, but easier to miss. A text underline would look like a link.)
       - Every day that can be picked has the pointer cursor, the ends of the range too. The day under the mouse gets a
         ring in `--datnav-color-primary` (1px, inside), the same inside the range and outside it; the ends of the range
         keep their look. (A background was too weak to see within the range.)
@@ -961,7 +972,8 @@ The main goal is a very nice, yet simple, API, designed together with the user.
       (`data-empty`) while nothing is chosen.
     - The list opens below the trigger (`alignItemWithTrigger={false}`, not over it as Base UI does by default), at
       least as wide as the trigger, in the look of our menus: `--datnav-color-surface`, `--datnav-color-border`,
-      `--datnav-radius`, `--datnav-shadow`. The highlighted option is `--datnav-color-hover`, a chosen one is bold.
+      `--datnav-radius`, `--datnav-shadow`. The highlighted option is `--datnav-color-header` (like the menus), a
+      chosen one is bold.
       - Single select: a checkmark (`--datnav-color-primary`) in front of the chosen option. Its room is kept on every
         option, so the labels line up.
       - Multiple select: a checkbox in front of every option, the same native checkbox as in the rows. It is only a
@@ -1041,7 +1053,8 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     - It opens below the button: in the toolbar (buttons on the left) aligned to the start of the button, in the action
       column (at the right edge of the rows) aligned to its end, so it does not reach past the table. Base UI flips it
       when there is no room. It is not modal (`modal={false}`).
-    - The item under the pointer or the keyboard focus is `--datnav-color-hover` (Base UI's `data-highlighted`).
+    - The item under the pointer or the keyboard focus is `--datnav-color-header` (Base UI's `data-highlighted`):
+      darker than `--datnav-color-hover` (too light on the popup; it was that before), an existing theme value.
   - General and multi-row actions are shown in the bar of the toolbar, on the left side.
   - Single-row actions can be shown in an optional action column at the very right, in the toolbar, or in both.
     - When no data row is shown, the whole action column is not shown: header cell and left border included.
@@ -1118,6 +1131,38 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     - Single-row actions: exactly one row selected.
     - Multi-row actions: at least one row selected.
 
+- Context menu of the rows: Base UI's `ContextMenu` (right-click, long press, the context menu key and Shift+F10),
+  with the actions' texts and icons. `view/RowContextMenu.tsx`; its entries: `contextMenuItems` in `actions.ts`.
+  - Icons, in the context menu and in the toolbar's menus: when at least one entry of a menu (or submenu) has an icon,
+    the menu is a grid (icon, text, submenu arrow; `.menuWithIcons`) and every entry takes its columns over (subgrid),
+    so all texts start at the same place, also next to an entry without icon. Without any icon, no icon column. No
+    cloning: a `ReactNode` is rendered anew in every place, and the element's icons are functions (`() => C`).
+  - Order: the actions of the clicked row (all single-row actions, wherever else they are shown; only while the menu is
+    about one row, see below), then those of the selected rows (multi-row, only with multi-selection), then the
+    general ones, and last the action menus as submenus (with the entries that apply here: single-row ones for the
+    clicked row, multi-row ones for the selection). A separator between the groups that are present. The most
+    specific first, closest to the pointer.
+  - The selection, like a file manager: a right-click on a row that is not selected selects only that row (the
+    selection is replaced); on a selected row, the selection stays. So the clicked row is always part of the selection
+    the multi-row actions get; the single-row actions get the clicked row.
+    - With several selected rows (a right-click on one of them), the menu is about all of them: no single-row actions
+      (like the toolbar, which shows them only for exactly one selected row). Otherwise "Edit" would act on the row
+      under the pointer only, easy to misread with several rows selected. Without selection (no multi-row actions),
+      nothing is selected. On touch, this happens when the menu opens (after the long press), not on the first touch.
+  - Always on, without a prop. The browser's own menu stays where it is clearly wanted or ours would be empty:
+    - on links, fields to type in (not on checkboxes or radios, like the row's selection) and text selected in the
+      row (to copy it, or to open a link in a new tab);
+    - outside the data rows (header, filters, empty state), and when there is no action for the menu.
+    - (Shift+right-click for the browser's menu was considered and left out for now.)
+  - Icon-only actions show their `tip` as the text.
+  - The custom element has it too (it renders the same view).
+  - Implementation notes:
+    - The table element is the trigger (Base UI's `render` prop), the rows carry `data-row-key` (also the detail
+      rows, which belong to their row).
+    - Base UI's trigger keeps the browser's menu away from everything inside it (a listener on the document), also
+      when its own handler is skipped. So where the browser's menu is wanted, our listener on the table stops the
+      event there (`stopPropagation`): neither Base UI's handler nor its document listener get it.
+    - Base UI keeps the open handler of its first render: it calls our latest `prepare` through a ref.
 - Row details (expandable rows) are supported.
   - A chevron column sits right next to the selection column: pointing right when collapsed, down when expanded.
   - The chevron change is animated (a CSS rotation).
@@ -1222,11 +1267,15 @@ The main goal is a very nice, yet simple, API, designed together with the user.
 - Error state: what happens when `source` rejects (display, retry, texts in `DataNavigator.Texts`).
   - Not specified yet, and not part of the component or the demo yet.
 - `rowKey` as a function `(row) => string`, for rows with a composite key. For now it is only a property name.
+- To discuss: keep the details toggle column and the action column while there are no rows. Today both go away
+  without data rows (their width is their content's), so the columns jump exactly when a filter or the search finds
+  nothing, and the filter fields move under the cursor (the details column is on the left: every column moves).
+  Suggestion: the details toggle column whenever `renderDetail` is given (its width is fixed: one toggle button); the
+  action column whenever there are row actions for it, with the width it had the last time rows were shown (measured
+  then; before the first load it is still missing). A fixed width does not work for it: its buttons may have labels.
 - Custom element, when really needed: stable styling hooks for app CSS, `data-part="…"` attributes on the main pieces
   (`toolbar`, `header`, `row`, `cell`, `footer`, ...), e.g. `data-navigator [data-part="footer"] { … }` (the light DOM
   counterpart to `::part()`; our class names are generated and not stable).
-- Idea (custom element): bundle `preact/compat` instead of React in the element's entry (much smaller; test whether
-  Base UI works with it).
 
 ## Open
 

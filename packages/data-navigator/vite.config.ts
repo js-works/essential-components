@@ -4,22 +4,36 @@ import { defineConfig } from 'vitest/config';
 // `vite` serves the demo (index.html). `vite build` builds the library in two steps:
 // - the React entry (src/react/index.ts, `@local/data-navigator/react`) and the themes (src/themes/index.ts,
 //   `@local/data-navigator/themes`), with React and Base UI outside the build (the app's);
-// - `--mode element`: the custom element (src/index.ts, `@local/data-navigator`), with everything bundled in (React
-//   too), so an app needs nothing else.
+// - `--mode element`: the custom element (src/index.ts, `@local/data-navigator`), with everything bundled in, so an app
+//   needs nothing else. Instead of React, it bundles Preact (`preact/compat`, much smaller): our code and Base UI are
+//   written for React, and the aliases below hand them Preact's compatibility layer.
 // `vite build --mode demo` builds the demo page for GitHub Pages (js-works.github.io/data-navigator), into demo-dist/.
+// `vite --mode preact` (`npm run dev:preact`) serves the demo on Preact (both tabs), with the same aliases as the
+// custom element's build, to see at once when something does not work with `preact/compat`.
+
+// React, for code written for React, from Preact's compatibility layer.
+const PREACT_ALIASES = [
+  { find: /^react$/, replacement: 'preact/compat' },
+  { find: /^react-dom$/, replacement: 'preact/compat' },
+  { find: /^react-dom\/client$/, replacement: 'preact/compat/client' },
+  { find: /^react\/jsx-runtime$/, replacement: 'preact/jsx-runtime' },
+  { find: /^react\/jsx-dev-runtime$/, replacement: 'preact/jsx-dev-runtime' },
+];
+
 const config = defineConfig(({ mode }) => ({
   plugins: [react()],
   base: mode === 'demo' ? '/data-navigator/' : '/',
   // React reads the mode from `process.env.NODE_ENV`, which a browser does not have: fixed at build time where React is
   // bundled.
   define: mode === 'element' ? { 'process.env.NODE_ENV': JSON.stringify('production') } : {},
+  resolve: mode === 'element' || mode === 'preact' ? { alias: PREACT_ALIASES } : {},
   build: mode === 'demo'
     ? { outDir: 'demo-dist', emptyOutDir: true }
     : mode === 'element'
     ? {
       // After the first step, into the same directory.
       emptyOutDir: false,
-      // The licenses of everything bundled in (React, Base UI, vanillajs-datepicker, ...).
+      // The licenses of everything bundled in (Preact, Base UI, vanillajs-datepicker, ...).
       license: { fileName: 'third-party-licenses.md' },
       lib: {
         entry: 'src/index.ts',

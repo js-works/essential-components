@@ -1,7 +1,7 @@
 import type { DataNavigatorComponent as Spec } from '../react/api';
 
-export { columnItems, defaultActionOf, selectionModeOf, toolbarItems, variantOf };
-export type { ActionInput, ActionItem };
+export { columnItems, contextMenuItems, defaultActionOf, selectionModeOf, toolbarItems, variantOf };
+export type { ActionInput, ActionItem, ContextMenuItem };
 
 // The actions and menus as the app gives them.
 type ActionInput<Row> = Spec.Action<Row> | Spec.ActionMenu<Row>;
@@ -18,6 +18,9 @@ type MenuView<Row> =
 
 // The actions and menus as they are rendered (filtered by what is visible now).
 type ActionItem<Row> = Spec.Action<Row> | MenuView<Row>;
+
+// The entries of the context menu of a row: actions, menus (as submenus) and the separators between the groups.
+type ContextMenuItem<Row> = ActionItem<Row> | KeyedSeparator;
 
 function filterItems<Row>(
   items: readonly ActionInput<Row>[],
@@ -76,6 +79,32 @@ function columnItems<Row>(items: readonly ActionInput<Row>[]): readonly ActionIt
   return filterItems(items, (action) => {
     return action.type === 'row' && (action.show === undefined || action.show === 'column' || action.show === 'both');
   });
+}
+
+// The context menu of a row: first the actions of the clicked row (all single-row actions, wherever else they are
+// shown; only while the menu is about one row, like in the toolbar), then those of the selected rows (multi-row, only
+// with a selection), then the general ones and last the menus (as submenus, with the entries that apply here). A
+// separator between the groups that are present.
+function contextMenuItems<Row>(
+  items: readonly ActionInput<Row>[],
+  selection: Spec.SelectionMode,
+  oneRow: boolean,
+): readonly ContextMenuItem<Row>[] {
+  const applies = (action: Spec.Action<Row>) =>
+    action.type === 'general' || (action.type === 'row' ? oneRow : selection === 'multi');
+  const plain = items.filter((item): item is Spec.Action<Row> => item.type !== 'menu' && applies(item));
+  const menus = filterItems(items.filter((item) => item.type === 'menu'), applies);
+  const groups: readonly (readonly ActionItem<Row>[])[] = [
+    plain.filter((action) => action.type === 'row'),
+    plain.filter((action) => action.type === 'rows'),
+    [...plain.filter((action) => action.type === 'general'), ...menus],
+  ];
+
+  return groups
+    .filter((group) => group.length > 0)
+    .flatMap((group, index): ContextMenuItem<Row>[] =>
+      index === 0 ? [...group] : [{ type: 'separator', key: `group-${index}` }, ...group]
+    );
 }
 
 // The variant of an action or menu. Secondary is the default.
