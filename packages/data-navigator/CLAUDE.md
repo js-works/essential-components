@@ -112,6 +112,10 @@ The main goal is a very nice, yet simple, API, designed together with the user.
 - The likely approach (discussed, not decided in detail): the custom element wraps the React component and the
   bundled React, rendered into its light DOM (so app CSS reaches custom cell content). React apps keep using the React
   component directly (no second React).
+  - Open: light DOM (app CSS reaches cells, no slots) or shadow DOM (slots for `title`, `subtitle`, `empty`; cells
+    styled via the config's `styles` or `::part()`).
+- Decided (for now): on the element, a column `header` is `string | Node`, and `render` and `renderDetail` return
+  `string | Node` (details follow).
 
 ## Controller
 
@@ -177,9 +181,10 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - This replaced a hidden `useTranslation('datanav')` of react-i18next, which tied every app to one i18n library.
 - Theme: `config.theme`, a typed `DataNavigator.Theme`: the design values in camelCase (`colorText`, `colorSelected`,
   `radius`, `fontSize`, ...), all optional; missing ones come from the default theme.
-  - Colors take a string or `{ light, dark }`, which becomes `light-dark(light, dark)` (the root has `color-scheme:
-    light dark`). Values may be `var(...)` of the app's design system. `light-dark()` works only for colors, so the
-    shadow is a plain string; the default theme puts `light-dark()` into the color of its shadow.
+  - Colors take a string or `{ light, dark }`, which becomes `light-dark(light, dark)`: it follows the `color-scheme`
+    the root inherits from the page (the root sets none: `light dark` would follow the system's scheme instead). Values
+    may be `var(...)` of the app's design system. `light-dark()` works only for colors, so the shadow is a plain string;
+    the default theme puts `light-dark()` into the color of its shadow.
   - The created component sets the values as custom properties on its root (inline: runtime values). The stylesheet
     stays a static CSS module and reads them.
   - The custom properties are internal: prefix `--datnav-` (it was `--dn-` while they were public), not documented
@@ -206,8 +211,9 @@ The main goal is a very nice, yet simple, API, designed together with the user.
 
 - TypeScript (strict), Vite (library mode), React 19, npm
 - Tests: Vitest with jsdom and Testing Library
-- One generic implementation with native elements. Themes for Mantine 9 and Ant Design 6. The demo uses both
-  libraries (dev dependencies only): `@mantine/*` with `react-icons`, `antd` with `@ant-design/icons`.
+- One generic implementation with native elements. Themes for Mantine 9 and Ant Design 6. `@mantine/core` and `antd`
+  are dev dependencies only, for `scripts/library-variables.mjs` (the variable snapshots of the demo); no library code
+  runs in the demo.
 - i18n: no library. The app gives an `I18nAdapter` in the configuration (namespace `datanav`, see Configuration).
 - npm never runs install scripts of dependencies: `.npmrc` has `ignore-scripts=true`. (Our own `npm run` scripts are
   not affected.)
@@ -469,8 +475,10 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - On devices that cannot hover (touch, `@media (hover: none)`) the icon is always visible on unsorted sortable
     columns, because nothing could reveal it there.
 - Empty state: `empty?: ReactNode`. It replaces the default when given.
-  - Default: a generic inbox-style icon above the text `Texts.empty`, centered and dimmed, in one cell that spans all
-    columns. The icon is our inline Tabler inbox, in `--datnav-color-text-dimmed`. Custom content is not dimmed.
+  - Default: a generic database icon above the text `Texts.empty`, centered and dimmed, in one cell that spans all
+    columns. The icon is Phosphor's `PiDatabaseThin` (MIT, the thin weight, its path inlined), 40px, in
+    `--datnav-color-text-dimmed`. (It replaced Tabler's `database` with a thinner stroke, and before that an inbox icon,
+    which looked like an empty box.) Custom content is not dimmed.
   - It is shown only when a load has finished and returned no rows (never before the first load).
   - It has no line below it (nothing follows it). That applies to the default content and to a custom `empty`.
   - The footer is shown only if at least one data row is shown. So it is hidden while the empty state is shown, and
@@ -604,6 +612,7 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - The sort icons are the filled Bootstrap arrows (MIT, 16×16): `BsArrowDownUp` for a sortable column that is not
     sorted, `BsArrowUp` and `BsArrowDown` for the sorted one. They replaced the Tabler chevrons (and before that a
     chevron pair of our own).
+  - The empty state's icon is Phosphor's `PiDatabaseThin` (MIT, 256×256), see "Empty state".
 - Data comes from exactly one prop: `source`, a function `(query, signal) => Promise<{ rows, total }>`.
   - The table itself never sorts, filters or pages. It delegates everything to `source`.
   - There is no `data` array prop. For arrays, a helper turns an array into a `source` (name and place undecided).

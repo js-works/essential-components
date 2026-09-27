@@ -1,8 +1,8 @@
 /* The stylesheet has no values of its own: every color, size and font is an internal --datnav-* custom property. The
    component sets them on its root, from the theme of its configuration (createDataNavigator, see core/config.ts). */
 .root {
-  /* Theme colors with a light and a dark value (`light-dark()`) follow the color scheme of the page. */
-  color-scheme: light dark;
+  /* No color-scheme of its own: the inherited one of the page decides which value of the theme colors' `light-dark()`
+     applies (`light dark` here would follow the system's scheme instead, also on a page switched to the other one). */
   position: relative;
   display: flex;
   flex-direction: column;

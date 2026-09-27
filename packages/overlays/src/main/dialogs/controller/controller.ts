@@ -194,8 +194,6 @@ export function createDialogsController<C extends object>(
     decideCritical: (c) => oneShot((s) => s.decideCritical(c)),
     form: (c) => oneShot((s) => s.form(c)),
     formCritical: (c) => oneShot((s) => s.formCritical(c)),
-    drawer: (c) => oneShot((s) => s.drawer(c)),
-    drawerCritical: (c) => oneShot((s) => s.drawerCritical(c)),
   };
 }
 
@@ -291,6 +289,7 @@ function createDialogScope<C extends object>(
       ensureHandle().show({
         props: {
           dialogType: "info",
+          surface: "dialog",
           themeVars,
           styles: null,
           hasForm: false,
@@ -646,6 +645,7 @@ function createDialogScope<C extends object>(
           value: config.wrapContent(raw, {
             dialogType: spec.dialogType,
             hasForm: spec.allowsForm,
+            surface: spec.config.surface ?? "dialog",
           }),
         };
       }
@@ -665,6 +665,7 @@ function createDialogScope<C extends object>(
     const buildSpec = (): DialogSpec<any> => ({
       props: {
         dialogType: spec.dialogType,
+        surface: spec.config.surface ?? "dialog",
         themeVars,
         styles: getStyles(spec),
         hasForm: spec.allowsForm,
@@ -854,7 +855,7 @@ function createDialogScope<C extends object>(
 
   // Every dialog type maps to its button row; the title key ("titleInfo", ...)
   // and form-ness derive from the type name, so one small spec builder replaces
-  // twelve hand-written openDialog/openForm blocks.
+  // ten hand-written openDialog/openForm blocks.
   const dialogButtons: Record<DialogType, ButtonConfig[]> = {
     info: [okBtn],
     success: [okBtn],
@@ -866,8 +867,6 @@ function createDialogScope<C extends object>(
     decideCritical: [yesBtnDanger, noBtn, cancelBtn],
     form: [confirmBtn, cancelBtn],
     formCritical: [confirmBtnDanger, cancelBtn],
-    drawer: [confirmBtn, cancelBtn],
-    drawerCritical: [confirmBtnDanger, cancelBtn],
   };
 
   const spec = (
@@ -879,9 +878,7 @@ function createDialogScope<C extends object>(
       `title${dialogType[0].toUpperCase()}${dialogType.slice(1)}` as TextKey,
     config,
     buttons: dialogButtons[dialogType],
-    // Drawers are form dialogs on another surface, so they get the <form> wrapper too.
-    allowsForm:
-      dialogType.startsWith("form") || dialogType.startsWith("drawer"),
+    allowsForm: dialogType.startsWith("form"),
   });
 
   const scope = {
@@ -899,8 +896,6 @@ function createDialogScope<C extends object>(
       openDialog(spec("decideCritical", c)) as DialogHandle<DecideDialogResult, C>,
     form: (c) => openForm(spec("form", c)),
     formCritical: (c) => openForm(spec("formCritical", c)),
-    drawer: (c) => openForm(spec("drawer", c)),
-    drawerCritical: (c) => openForm(spec("drawerCritical", c)),
 
     dispose(): void {
       // Aborting first is what settles any dialog still pending (see scopeLifetime); its

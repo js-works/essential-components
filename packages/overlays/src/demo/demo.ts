@@ -456,8 +456,9 @@ const PLACEMENTS: readonly Placement[] = [
 // The browser owns the checked state, so a pick only has to update module state and
 // rebuild — the page itself is rendered once and never re-rendered.
 //
+// The label above the options, like every field of the design language (ui-field--stacked).
 // role="group" on a plain div, not <fieldset>/<legend>: a styled <legend> is laid out
-// out-of-flow by the UA and won't sit as a flex item in the row. Named by aria-label rather
+// out-of-flow by the UA and won't sit as a flex item in the column. Named by aria-label rather
 // than aria-labelledby, so the demo needs no ids (it may be on a page twice).
 function radioGroup<T extends string>(
   name: string,
@@ -467,28 +468,30 @@ function radioGroup<T extends string>(
   pick: (value: T) => void,
 ) {
   return html`
-    <div class="choice-group" role="group" aria-label=${label}>
-      <span class="choice-group-label" aria-hidden="true">${label}</span>
-      ${options.map(
-        (option) => html`
-          <label class="choice-option">
-            <input
-              class="ui-radio"
-              type="radio"
-              name=${name}
-              value=${option}
-              ?checked=${option === initial}
-              autocomplete="off"
-              @change=${() => {
-                pick(option);
-                reconfigureToasts();
-                log(`Toast ${label.toLowerCase()}`, option);
-              }}
-            />
-            ${humanize(option)}
-          </label>
-        `,
-      )}
+    <div class="ui-field ui-field--stacked" role="group" aria-label=${label}>
+      <span aria-hidden="true">${label}</span>
+      <div class="choice-options">
+        ${options.map(
+          (option) => html`
+            <label class="choice-option">
+              <input
+                class="ui-radio"
+                type="radio"
+                name=${name}
+                value=${option}
+                ?checked=${option === initial}
+                autocomplete="off"
+                @change=${() => {
+                  pick(option);
+                  reconfigureToasts();
+                  log(`Toast ${label.toLowerCase()}`, option);
+                }}
+              />
+              ${humanize(option)}
+            </label>
+          `,
+        )}
+      </div>
     </div>
   `;
 }
@@ -526,8 +529,8 @@ const stackedPicker = () =>
 // two-word labels would wrap across several lines in this column, where a select stays
 // one compact control. Same one-of-many semantics either way.
 const placementPicker = () => html`
-  <label class="choice-group">
-    <span class="choice-group-label">Placement</span>
+  <label class="ui-field ui-field--stacked">
+    Placement
     <select
       class="ui-select"
       autocomplete="off"
@@ -693,8 +696,8 @@ async function runLogin(): Promise<void> {
   }
 }
 
-// The drawer surface: the same form contract as runLogin() above, on a full-height panel
-// at the inline-end edge. Iterated rather than plain-awaited: a wide edit panel is exactly
+// The drawer surface (`surface: "drawer"`): the same form contract as runLogin() above, on a
+// full-height panel at the inline-end edge. Iterated rather than plain-awaited: a wide edit panel is exactly
 // where you don't want to close on submit and lose what was typed.
 async function runDrawer(): Promise<void> {
   // Opening a scope first is what makes the 1.5s load visible: the scope puts up the
@@ -705,7 +708,8 @@ async function runDrawer(): Promise<void> {
   try {
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
-    const drawer = scope.drawer({
+    const drawer = scope.form({
+      surface: "drawer",
       title: "Edit customer",
       content: formContent({
         name: "Jane Doe",
@@ -738,7 +742,8 @@ async function runDrawer(): Promise<void> {
 // no Enter-to-confirm — so an irreversible save can't be triggered by a stray Return in
 // one of the fields. Awaited rather than iterated, which is all the short form is.
 async function runDrawerCritical(): Promise<void> {
-  const result = await dialogs.drawerCritical({
+  const result = await dialogs.formCritical({
+    surface: "drawer",
     title: "Delete customer",
     intro:
       'This permanently deletes "Jane Doe" and every associated record. Confirm by typing the customer name.',
@@ -763,6 +768,32 @@ async function runDrawerCritical(): Promise<void> {
   });
 
   logFormResult("Critical drawer result", result);
+}
+
+// Any dialog type works on the drawer surface: an info drawer, for details to read, has
+// only its "OK" button.
+async function runDrawerInfo(): Promise<void> {
+  const result = await dialogs.info({
+    surface: "drawer",
+    title: "Jane Doe",
+    content: html`
+      <dl class="details">
+        <dt>Email</dt>
+        <dd>jane.doe@example.com</dd>
+        <dt>Date of birth</dt>
+        <dd>1988-04-17</dd>
+        <dt>Newsletter</dt>
+        <dd>Subscribed</dd>
+      </dl>
+    `,
+    styles: `
+      .details { display: grid; grid-template-columns: auto 1fr; gap: 0.5em 1.5em; margin: 0; }
+      .details dt { font-weight: 500; }
+      .details dd { margin: 0; }
+    `,
+  });
+
+  log("Info drawer result", result);
 }
 
 // -------------------------------------------------------------------
@@ -852,6 +883,9 @@ const dialogsPanel = html`
       <section class="ui-stack ui-stack--tight">
         <h2 class="ui-heading">Drawer</h2>
         <div class="overlays-row">
+          <button class="ui-button" @click=${() => void runDrawerInfo()}>
+            Details in drawer (info)
+          </button>
           <button class="ui-button" @click=${() => void runDrawer()}>
             Edit in drawer (reject on name "nope")
           </button>

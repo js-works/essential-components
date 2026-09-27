@@ -478,7 +478,8 @@ class Dialog extends DialogElementBase {
     this.setAttribute("data-dialog-type", props.dialogType);
     this.#defaultButtonIndex = props.defaultButtonIndex;
     this.#hasForm = props.hasForm;
-    this.#isDrawer = props.dialogType.startsWith("drawer");
+    this.setAttribute("data-surface", props.surface);
+    this.#isDrawer = props.surface === "drawer";
     this.#buttonViews = props.buttons;
 
     this.#applyCallerStyles(props.styles);

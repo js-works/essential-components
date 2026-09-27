@@ -105,7 +105,8 @@ function Spinner({ label }: { label: string }): ReactElement {
 }
 
 function EmptyIcon(): ReactElement {
-  return <icons.Inbox size={40} className={styles.emptyIcon} />;
+  // A thinner stroke than the small icons (1.25 instead of 2, about 2px at this size): lighter at 40px.
+  return <icons.DatabaseThin size={40} className={styles.emptyIcon} />;
 }
 
 type CheckboxProps = {

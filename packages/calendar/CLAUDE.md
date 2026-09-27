@@ -18,7 +18,7 @@ core. Not final; the directory may be renamed later.
   core's props; several changes in one task render once. The language and direction come from the closest `lang`/`dir`
   (watched on the element and on `<html>`). A selection updates `value` and fires `change`.
 - `src/date-picker-element.styles.ts`: the bridge that sets the core's `--cal-*` tokens to fixed values (picoui's theme
-  colors, with `light-dark()`). A real theme config comes later.
+  colors, with `light-dark()`, and the font size `0.875rem`, like the other packages). A real theme config comes later.
 - `demo/`: `DatePickerDemo` (a light DOM demo element, see "Demo element" in the other packages): the picker and its
   switches (locale incl. `ar-SA` right to left, selection mode, size, minute step, the boolean attributes, min/max
   date) as `ui-select`s (labels above them, `ui-field--stacked`) and `ui-checkbox`es for the on/off switches, and the

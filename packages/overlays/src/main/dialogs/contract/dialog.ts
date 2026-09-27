@@ -24,9 +24,14 @@ export type DialogType =
   | "decide"
   | "decideCritical"
   | "form"
-  | "formCritical"
-  | "drawer"
-  | "drawerCritical";
+  | "formCritical";
+
+/**
+ * Where a dialog is shown, independent of its type (see {@link DialogConfig.surface}):
+ * `"dialog"` is the centered box, `"drawer"` a full-height panel sliding in from the
+ * inline-end edge.
+ */
+export type DialogSurface = "dialog" | "drawer";
 
 export type ActionButtonType = "primary" | "secondary" | "danger";
 
@@ -131,8 +136,9 @@ export interface DialogsControllerConfig<C extends object> {
 /** What {@link DialogsControllerConfig.wrapContent} is told about the dialog it is wrapping. */
 export interface DialogInfo {
   dialogType: DialogType;
-  /** Whether the content slot is wrapped in a <form> (form and drawer dialogs). */
+  /** Whether the content slot is wrapped in a <form> (form dialogs). */
   hasForm: boolean;
+  surface: DialogSurface;
 }
 
 /**
@@ -167,6 +173,17 @@ export interface DialogViewConfig<C extends object> {
  * (rather than to {@link DialogViewConfig}) is settable only when the dialog opens.
  */
 export interface DialogConfig<C extends object> extends DialogViewConfig<C> {
+  /**
+   * Where the dialog is shown. Default `"dialog"`, the centered box. `"drawer"` is a
+   * full-height panel sliding in from the inline-end edge, for content too wide or too
+   * tall for a centered dialog: details, a long form. Still a modal `<dialog>`, so focus
+   * trapping, the inert background and Escape behave identically, and every dialog type
+   * works on it (an info drawer has just "OK", a form drawer "OK" and "Cancel").
+   *
+   * Behavioural, so it is not part of {@link DialogViewConfig}: fixed once the dialog is
+   * open.
+   */
+  surface?: DialogSurface;
   /**
    * Abort this dialog. When the signal aborts, the dialog closes immediately and the
    * call resolves `{ canceled: true, aborted: true }`. Combined with any scope-level
@@ -253,7 +270,7 @@ export interface FormDialogConfig<C extends object> extends DialogConfig<C> {
   nativeValidation?: boolean;
 }
 
-// Not exported: the twelve methods exist so DialogScope and DialogsController can
+// Not exported: the ten methods exist so DialogScope and DialogsController can
 // share them. Code that wants to accept either writes the union of those two.
 interface DialogMethods<C extends object> {
   info(config: DialogConfig<C>): DialogHandle<MessageDialogResult, C>;
@@ -289,22 +306,6 @@ interface DialogMethods<C extends object> {
   form(config: FormDialogConfig<C>): FormDialogHandle<C>;
   /** {@link DialogMethods.form} with destructive styling and no Enter-to-confirm. */
   formCritical(config: FormDialogConfig<C>): FormDialogHandle<C>;
-  /**
-   * A form on a drawer surface — a full-height panel sliding in from the inline-end edge,
-   * for edit-in-place flows too wide or too tall for a centered dialog. Still a modal
-   * `<dialog>`, so focus trapping, the inert background and Escape behave identically.
-   *
-   * Same contract as {@link DialogMethods.form}. Iterating is usually the right choice
-   * here: a wide edit panel is exactly where closing on submit and losing the input hurts
-   * most.
-   */
-  drawer(config: FormDialogConfig<C>): FormDialogHandle<C>;
-  /**
-   * {@link DialogMethods.drawer} with destructive styling and no Enter-to-confirm —
-   * for a panel whose save is irreversible (publish, send, deploy) rather than an
-   * ordinary edit.
-   */
-  drawerCritical(config: FormDialogConfig<C>): FormDialogHandle<C>;
 }
 
 export interface DialogsController<C extends object> extends DialogMethods<C> {
@@ -445,7 +446,7 @@ export type FormDialogHandle<C extends object> = DialogHandle<
 /**
  * Any result the plumbing can produce, before narrowing to a specific dialog's.
  *
- * Only exists because one code path in the controller builds results for all twelve
+ * Only exists because one code path in the controller builds results for all ten
  * dialog kinds and TypeScript cannot follow which one it is at runtime. The draft dropped
  * it: `MessageDialogResult | ConfirmDialogResult | DecideDialogResult | FormDialogResult`
  * says the same thing more precisely and needs no declaration of its own.

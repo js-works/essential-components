@@ -17,7 +17,7 @@
 // React cannot honour) is needed.
 
 import type { DialogButtonView } from "./view.js";
-import type { DialogRenderOverrides, DialogType } from "./dialog.js";
+import type { DialogRenderOverrides, DialogSurface, DialogType } from "./dialog.js";
 import type { Renderable } from "./content.js";
 
 /**
@@ -30,11 +30,12 @@ import type { Renderable } from "./content.js";
  */
 export interface DialogProps<C extends object> {
   dialogType: DialogType;
+  surface: DialogSurface;
   /** Caller theme, already resolved to `--dialog-*` custom properties. */
   themeVars: Record<string, string>;
   /** Caller stylesheet text, scoped by the element to its own instance. */
   styles: string | null;
-  /** Whether the content slot is wrapped in a <form> (form and drawer dialogs). */
+  /** Whether the content slot is wrapped in a <form> (form dialogs). */
   hasForm: boolean;
   /**
    * Whether that <form> runs the browser's own constraint validation. False puts

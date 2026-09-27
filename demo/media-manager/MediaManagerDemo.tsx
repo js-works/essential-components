@@ -1,4 +1,4 @@
-import { StrictMode, useMemo, useRef } from 'react';
+import { StrictMode, useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
@@ -19,22 +19,23 @@ import { createFileUploadComponent } from '../../packages/file-upload/src/react'
 import { OverlaysProvider, useDialogs, useToast } from '../../packages/overlays/src/main/bindings/react';
 import { setupUi } from '../ui/ui';
 import {
+  commitUploads,
   deleteAttachments,
+  discardUploads,
   fetchAttachments,
   getDetails,
-  getStatistics,
   SIZES,
   TYPES,
   uploadAttachment,
   USERS,
 } from './attachments';
-import type { Attachment, Details, Statistics } from './attachments';
+import type { Attachment, Details } from './attachments';
 
 export { MediaManagerDemo };
 
-// Three packages working together: a data navigator lists the attachments, a file upload below it adds new ones, and a
-// dialog of the overlays package shows statistics. As soon as a file is uploaded, the table is reloaded, so the file
-// shows up in it. The server is fake (attachments.ts).
+// Three packages working together: a data navigator lists the attachments, the dialogs and toasts of the overlays
+// package ask, inform and report, and a file upload in a drawer adds new files: they are uploaded (staged) there and
+// added to the list on "Apply". The server is fake (attachments.ts).
 //
 // Both follow `<html lang>` through the i18n adapters of their own demos.
 
@@ -78,7 +79,7 @@ function formatDate(iso: string): string {
 }
 
 const columns: readonly DataNavigator.Column<Attachment>[] = [
-  { key: 'name', header: 'Filename', width: 4, sortable: true, filter: textColumnFilter() },
+  { key: 'name', header: 'Filename', width: 3, sortable: true, filter: textColumnFilter() },
   {
     key: 'user',
     header: 'User',
@@ -89,7 +90,7 @@ const columns: readonly DataNavigator.Column<Attachment>[] = [
   {
     key: 'type',
     header: 'Type',
-    width: 2,
+    width: 1.5,
     sortable: true,
     filter: selectColumnFilter({ options: TYPES, multiple: true }),
   },
@@ -115,43 +116,6 @@ const columns: readonly DataNavigator.Column<Attachment>[] = [
   },
 ];
 
-// The content of the statistics dialog. The dialog's content is light DOM, styled by STATISTICS_STYLES.
-function StatisticsTable({ stats }: { stats: Statistics }): ReactElement {
-  const file = (attachment: Attachment | undefined, detail: (a: Attachment) => string) =>
-    attachment === undefined ? '–' : `${attachment.name} (${detail(attachment)})`;
-
-  return (
-    <table className="attachment-stats">
-      <tbody>
-        <tr>
-          <th scope="row">Files</th>
-          <td>{stats.count}</td>
-        </tr>
-        <tr>
-          <th scope="row">Total size</th>
-          <td>{formatSize(stats.totalSize)}</td>
-        </tr>
-        {stats.byType.map(({ type, count, size }) => (
-          <tr key={type}>
-            <th scope="row">{type}</th>
-            <td>
-              {count}x · {formatSize(size)}
-            </td>
-          </tr>
-        ))}
-        <tr>
-          <th scope="row">Largest file</th>
-          <td>{file(stats.largest, (a) => formatSize(a.size))}</td>
-        </tr>
-        <tr>
-          <th scope="row">Latest upload</th>
-          <td>{file(stats.newest, (a) => formatDate(a.uploaded))}</td>
-        </tr>
-      </tbody>
-    </table>
-  );
-}
-
 // The content of the information drawer of one attachment.
 function DetailsTable({ attachment, details }: { attachment: Attachment; details: Details }): ReactElement {
   const rows: readonly (readonly [string, string])[] = [
@@ -170,7 +134,7 @@ function DetailsTable({ attachment, details }: { attachment: Attachment; details
   return (
     <>
       <p>{details.description}</p>
-      <table className="attachment-stats">
+      <table className="attachment-details">
         <tbody>
           {rows.map(([label, value]) => (
             <tr key={label}>
@@ -184,23 +148,19 @@ function DetailsTable({ attachment, details }: { attachment: Attachment; details
   );
 }
 
-const STATISTICS_STYLES = `
-  .attachment-stats { border-collapse: collapse; font-size: 0.9rem; }
-  .attachment-stats th, .attachment-stats td { padding: 0.3rem 0; vertical-align: top; }
+// The styles of the details table (the drawer's content is light DOM).
+const DETAILS_STYLES = `
+  .attachment-details { border-collapse: collapse; font-size: 0.9rem; }
+  .attachment-details th, .attachment-details td { padding: 0.3rem 0; vertical-align: top; }
   /* A long value (e.g. a file name) wraps instead of making the dialog wider than it can show. */
-  .attachment-stats td { overflow-wrap: anywhere; }
-  .attachment-stats th { padding-inline-end: 1.5rem; font-weight: 500; text-align: start; white-space: nowrap; }
+  .attachment-details td { overflow-wrap: anywhere; }
+  .attachment-details th { padding-inline-end: 1.5rem; font-weight: 500; text-align: start; white-space: nowrap; }
 `;
 
 function MediaManager(): ReactElement {
   const nav = useDataNavigatorController<Attachment>();
   const dialogs = useDialogs();
   const toasts = useToast();
-  // The files of the upload that are known to be done, so each one reloads the table only once.
-  const done = useRef(new Set<string>());
-  // The names of the files done since the last "uploaded" toast: one toast per batch, when nothing is uploading or
-  // waiting any more.
-  const uploadedSinceToast = useRef<string[]>([]);
 
   // A reload after a delete also clears the selection (like every new load).
   const actions = useMemo<readonly (DataNavigator.Action<Attachment> | DataNavigator.ActionMenu<Attachment>)[]>(() => {
@@ -243,26 +203,63 @@ function MediaManager(): ReactElement {
       toasts.success(`${filesText(rows.map((row) => row.name))} deleted`);
     };
 
-    // A drawer is a form drawer (a confirm and a cancel button, both close it here): "OK" instead of "Save".
+    // An info dialog on the drawer surface: only an "OK" button, and no icon (the title is the file name).
     const showDetails = async (attachment: Attachment) => {
       const details = await getDetails(attachment);
 
-      await dialogs.drawer({
+      await dialogs.info({
+        surface: 'drawer',
+        icon: false,
         title: attachment.name,
         content: <DetailsTable attachment={attachment} details={details} />,
-        styles: STATISTICS_STYLES,
-        buttons: { confirm: 'OK' },
+        styles: DETAILS_STYLES,
       });
     };
 
-    const showStatistics = async () => {
-      const stats = await getStatistics();
+    // The file upload in a form dialog on the drawer surface. Each file is uploaded (staged on the server) as soon as it is added; "Apply"
+    // adds the uploaded files to the list, "Cancel" discards them. The upload is a form control of the drawer's form:
+    // its value is the ids of the uploaded files, and the native validation blocks "Apply" while a file is unfinished
+    // or failed, and (`required`) while there is none.
+    const uploadFiles = async () => {
+      // The latest list of the upload, so a cancel knows which staged files to discard.
+      let items: readonly FileUpload.FileItem[] = [];
+      let committed: readonly Attachment[] = [];
 
-      await dialogs.info({
-        title: 'Statistics',
-        content: <StatisticsTable stats={stats} />,
-        styles: STATISTICS_STYLES,
+      const drawer = dialogs.form({
+        surface: 'drawer',
+        title: 'Upload files',
+        content: (
+          <AttachmentUpload
+            name="files"
+            multiple
+            previews
+            required
+            upload={uploadAttachment}
+            onChange={(next) => {
+              items = next;
+            }}
+          />
+        ),
+        buttons: { confirm: 'Apply' },
       });
+
+      for await (const attempt of drawer) {
+        const ids = attempt.data.getAll('files').filter((value) => typeof value === 'string');
+
+        committed = await commitUploads(ids);
+        attempt.accept();
+      }
+
+      const result = await drawer;
+
+      if (result.canceled) {
+        discardUploads(items.flatMap((item) => (item.result === undefined ? [] : [item.result])));
+
+        return;
+      }
+
+      nav.reload();
+      toasts.success(`${filesText(committed.map((attachment) => attachment.name))} uploaded`);
     };
 
     // Downloading is not part of the demo: every download entry only says so, in a warning dialog.
@@ -274,8 +271,7 @@ function MediaManager(): ReactElement {
     };
 
     // The last action in the toolbar, a menu: the selected file (a row action, only while exactly one row is
-    // selected), the selected ones (rows actions, only while rows are selected) and, last, all attachments (general
-    // actions, always there).
+    // selected) and the selected ones (rows actions, only while rows are selected).
     const downloadMenu: DataNavigator.ActionMenu<Attachment> = {
       type: 'menu',
       key: 'download',
@@ -285,9 +281,6 @@ function MediaManager(): ReactElement {
         { type: 'separator' },
         { type: 'rows', key: 'download-selected-zip', label: 'Selected files as zip', onClick: download },
         { type: 'rows', key: 'download-selected-tgz', label: 'Selected files as tar.gz', onClick: download },
-        { type: 'separator' },
-        { type: 'general', key: 'download-all-zip', label: 'All files as zip', onClick: download },
-        { type: 'general', key: 'download-all-tgz', label: 'All files as tar.gz', onClick: download },
       ],
     };
 
@@ -295,10 +288,10 @@ function MediaManager(): ReactElement {
       // In the toolbar, always there (no selection needed).
       {
         type: 'general',
-        key: 'statistics',
-        label: 'Show statistics',
-        icon: icons.info,
-        onClick: () => void showStatistics(),
+        key: 'upload',
+        label: 'Upload',
+        icon: icons.upload,
+        onClick: () => void uploadFiles(),
       },
       // In the toolbar, for the selected rows: this rows action is what makes the selection multiple.
       {
@@ -329,45 +322,22 @@ function MediaManager(): ReactElement {
     ];
   }, [nav, dialogs, toasts]);
 
-  const handleChange = (items: readonly FileUpload.FileItem[]) => {
-    const finished = items.filter((item) => item.status === 'done' && !done.current.has(item.id));
-
-    for (const item of finished) {
-      done.current.add(item.id);
-    }
-
-    if (finished.length > 0) {
-      nav.reload();
-      uploadedSinceToast.current.push(...finished.map((item) => item.file.name));
-    }
-
-    const busy = items.some((item) => item.status === 'uploading' || item.status === 'queued');
-
-    if (!busy && uploadedSinceToast.current.length > 0) {
-      toasts.success(`${filesText(uploadedSinceToast.current)} uploaded`);
-      uploadedSinceToast.current = [];
-    }
-  };
-
   return (
-    <div className="ui-stack">
-      <AttachmentNavigator
-        controller={nav}
-        title="Media Manager"
-        subtitle="Upload files below: each one appears here as soon as its upload is done."
-        density="compact"
-        striped
-        searchable
-        source={fetchAttachments}
-        rowKey="id"
-        columns={columns}
-        actions={actions}
-        pageSize={10}
-        pageSizeOptions={[10, 25, 50]}
-        defaultSort={{ key: 'uploaded', direction: 'desc' }}
-      />
-      <AttachmentUpload multiple previews upload={uploadAttachment} onChange={handleChange} />
-    </div>
+    <AttachmentNavigator
+      controller={nav}
+      title="Media Manager"
+      subtitle="Upload files with the upload button in the toolbar."
+      density="compact"
+      striped
+      searchable
+      source={fetchAttachments}
+      rowKey="id"
+      columns={columns}
+      actions={actions}
+      pageSize={10}
+      pageSizeOptions={[10, 25, 50]}
+      defaultSort={{ key: 'name', direction: 'asc' }}
+    />
   );
 }
 

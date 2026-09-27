@@ -11,7 +11,7 @@
 }
 
 .date-picker-demo__main {
-  flex: 0 1 24rem;
+  flex: 0 1 20rem;
 }
 
 /* The card around the picker. The picker sizes itself (the core's .cal-base has its own minimum size). */

@@ -46,36 +46,44 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
     `overlays-demo`, `date-picker-demo`; the root's own `media-manager-demo`). Each demo element is a light DOM custom
     element of its package (see "Demo element" in the package's `CLAUDE.md`), exported and not registered.
   - `demo/media-manager/`: the "Media Manager" tab, a demo of the root (not of a package), because it combines three
-    packages: a data navigator lists the attachments, a file upload (React wrapper) below it adds new ones. As soon as a
-    file in the upload is `done`, the table reloads (`nav.reload()`, once per file), so the file shows up. The table is
-    compact (`density="compact"`), striped and has a search, sorting, paging, column filters (Filename: contains; User,
-    Type and Size: one or more; Uploaded: a date range, `dateRangeColumnFilter()`; the types are a fixed list of common
-    ones, `TYPES`; the sizes are small < 100 kB, medium 100 kB – 1 MB, large ≥ 1 MB, `SIZES`), multi-selection with
-    "Delete" for the selected rows (toolbar), and "Delete" in each row. Both ask first, in a critical confirmation
-    dialog of the overlays package (`confirmCritical`: a "Delete" button in the danger style, no confirm on Enter), with
-    the file name or the list of the selected files. Deleting takes a second (`DELETE_TIME`): the dialog is opened in a
+    packages: a data navigator lists the attachments, dialogs and toasts of the overlays package, and a file upload
+    (React wrapper) in a drawer adds new ones. The table is compact (`density="compact"`), striped and has a search,
+    sorting (by default by filename, ascending), paging, column filters (Filename: contains; User, Type and Size: one or
+    more; Uploaded: a date range, `dateRangeColumnFilter()`; the types are a fixed list of common ones, `TYPES`; the
+    sizes are small < 100 kB, medium 100 kB – 1 MB, large ≥ 1 MB, `SIZES`), multi-selection with "Delete" for the
+    selected rows (toolbar), and "Delete" in each row. Both ask first, in a critical confirmation dialog of the overlays
+    package (`confirmCritical`: a "Delete" button in the danger style, no confirm on Enter), with the file name or the
+    list of the selected files. Deleting takes a second (`DELETE_TIME`): the dialog is opened in a
     scope (`dialogs.open()`), so it stays open after "Delete", its button shows a spinner, and it closes when the files
     are gone (`scope.dispose()`).
     - Toasts of the overlays package, bottom right (`toasts: { placement: 'bottom-end', size: 'small', stacked: true
-      }` in the provider's config): "3 files deleted" after a delete, and "2 files uploaded" once per batch of uploads
-      (when nothing is uploading or waiting any more, the files done since the last such toast). For a single file, its
-      name instead: `"report.txt" deleted`, `"report.txt" uploaded`.
+      }` in the provider's config): "3 files deleted" after a delete, "2 files uploaded" after an "Apply" of the upload
+      drawer. For a single file, its name instead: `"report.txt" deleted`, `"report.txt" uploaded`.
+    - "Upload" (the first general action in the toolbar, an upload icon) opens a form drawer
+      (`dialogs.form({ surface: 'drawer' })`, "Upload files", buttons "Apply" and "Cancel") with the file upload
+      (`multiple`, `previews`, `required`, `name="files"`). Each added file is uploaded at once, but only staged on the
+      fake server (not in the table yet).
+      - "Apply" adds the staged files (their ids are the upload's form values, `attempt.data.getAll('files')`) to the
+        list (`commitUploads()`, takes a second, `COMMIT_TIME`: the button shows a spinner), closes the drawer, reloads
+        the table and shows the toast.
+      - The upload is a form control of the drawer's form, so the drawer's native validation blocks "Apply" while a
+        file is unfinished or failed, and while there is no file (`required`), with the upload's own message.
+      - "Cancel" (also Escape, the close button) discards the staged files (`discardUploads()`, the `result`s of the
+        latest `items`); running uploads are aborted when the drawer removes the element.
     - "Download" (the last action in the toolbar, a menu): "Selected file" (a row action, only while exactly one row
       is selected), a separator, "Selected files as zip", "Selected files as tar.gz" (rows actions, only while rows are
-      selected), a separator, and last "All files as zip", "All files as tar.gz" (always there). Every entry opens a
-      warning dialog of the overlays package (`dialogs.warn()`): downloading is not available in the demo.
+      selected). Every entry opens a warning dialog of the overlays package (`dialogs.warn()`): downloading is not
+      available in the demo.
     - "More information" (an info icon in the action column of every row) opens a drawer of the overlays package
-      (`dialogs.drawer()`) with made-up details from the fake server (`getDetails()`: description, versions, downloads,
-      tags, storage, checksum, stable per attachment). A drawer is a form drawer: "OK" and "Cancel", both close it.
-    - "Show statistics" (a general action in the toolbar) opens an info dialog of the overlays package
-      (`OverlaysProvider` around the demo, `useDialogs().info()`): the number and total size of all attachments, count
-      and size per type (e.g. "3x · 646.8 kB"), the largest file and the latest upload, computed by the fake server
-      (`getStatistics()`).
+      (an info dialog on the drawer surface, `dialogs.info({ surface: 'drawer' })`, with only "OK") with made-up
+      details from the fake server (`getDetails()`: description, versions, downloads, tags, storage, checksum, stable
+      per attachment).
     - The type of a file is its extension in capitals (`PDF`, `XLSX`), not its MIME type: a MIME type can be very long
-      (`application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`) and made the statistics dialog too wide.
+      (`application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`).
     - `attachments.ts`: the fake server, in memory for as long as the page is open (eleven seed files of four users, at
       least one of every type in `TYPES`; new uploads belong to the current user, "Admin"): the table's source, the
-      upload function (progress by size; at the end the file is stored and its id is the result) and delete.
+      upload function (progress by size; at the end the file is staged and its id is the result), commit and discard
+      of staged files, and delete.
     - Its texts say "file"/"files" everywhere (never "attachment"). The code keeps its names (`Attachment`,
       `attachments.ts`): a type `File` would clash with the DOM's `File`.
     - `MediaManagerDemo.tsx`: the demo element (light DOM, React inside, registered as

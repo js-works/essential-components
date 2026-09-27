@@ -39,8 +39,6 @@ export const germanDialogTexts: DialogTexts = {
   titleDecideCritical: "Entscheidung",
   titleForm: "Eingabe",
   titleFormCritical: "Eingabe",
-  titleDrawer: "Eingabe",
-  titleDrawerCritical: "Eingabe",
 };
 
 /** German toast texts. Same completeness guarantee as {@link germanDialogTexts}. */

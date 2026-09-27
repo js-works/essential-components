@@ -123,12 +123,11 @@ const dialogStyles = css`
   }
 
   /* ---- Drawer surface ------------------------------------------------------
-     Same modal <dialog> as every other type — only the geometry changes, so the focus
+     Same modal <dialog> as the centered surface, for every dialog type — only the geometry changes, so the focus
      trap, inert background, Escape handling and ::backdrop all keep working untouched.
      Undoes the centering above: auto on the start side pushes the panel to the inline-end
      edge (right in LTR, left in RTL) and it fills the block axis. */
-  :host([data-dialog-type="drawer"]) dialog,
-  :host([data-dialog-type="drawerCritical"]) dialog {
+  :host([data-surface="drawer"]) dialog {
     margin-inline-start: auto;
     margin-inline-end: 0;
     margin-block: 0;
@@ -145,8 +144,7 @@ const dialogStyles = css`
     overflow: hidden;
   }
 
-  :host([data-dialog-type="drawer"]) .dialog-content,
-  :host([data-dialog-type="drawerCritical"]) .dialog-content {
+  :host([data-surface="drawer"]) .dialog-content {
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -155,8 +153,7 @@ const dialogStyles = css`
     min-width: 0;
   }
 
-  :host([data-dialog-type="drawer"]) .dialog-content .body,
-  :host([data-dialog-type="drawerCritical"]) .dialog-content .body {
+  :host([data-surface="drawer"]) .dialog-content .body {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
@@ -165,8 +162,7 @@ const dialogStyles = css`
   /* Slides out to the edge rather than fading in place. The distance is a custom property
      because transforms have no logical equivalent — the element sets it per writing
      direction (see #growIn in element.ts). */
-  :host([data-dialog-type="drawer"]) dialog[open].closing,
-  :host([data-dialog-type="drawerCritical"]) dialog[open].closing {
+  :host([data-surface="drawer"]) dialog[open].closing {
     animation: drawer-slide-out ${DIALOG_CLOSE_ANIM_MS}ms ease-in-out;
   }
 

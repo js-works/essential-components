@@ -50,20 +50,14 @@
   user-select: text;
 }
 
-/* A horizontal radio group (toast appearance, size, stacked), and the placement select. A
-   plain div with role="group" rather than a <fieldset>: a styled <legend> is laid out
-   out-of-flow by the UA and won't behave as a flex item in the row. */
-.choice-group {
+/* The options of a radio group (toast appearance, size, stacked) in one row, below the
+   group's label (ui-field--stacked, like the placement select). */
+.choice-options {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.25rem 0.9rem;
-}
-
-.choice-group-label {
-  color: var(--ui-color-muted);
-  font-size: var(--ui-font-size-small);
-  font-weight: 500;
+  font-weight: 400;
 }
 
 /* One radio + its text. */
@@ -71,7 +65,6 @@
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: var(--ui-font-size-small);
   cursor: pointer;
 }
 

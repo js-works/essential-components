@@ -1,8 +1,18 @@
 import type { DataNavigator } from '../../packages/data-navigator/src';
 import type { FileUpload } from '../../packages/file-upload/src';
 
-export { deleteAttachments, fetchAttachments, getDetails, getStatistics, SIZES, TYPES, uploadAttachment, USERS };
-export type { Attachment, Details, Statistics };
+export {
+  commitUploads,
+  deleteAttachments,
+  discardUploads,
+  fetchAttachments,
+  getDetails,
+  SIZES,
+  TYPES,
+  uploadAttachment,
+  USERS,
+};
+export type { Attachment, Details };
 
 // The fake server of the media manager: the attachments live in memory, for as long as the page is open.
 
@@ -21,6 +31,9 @@ const LOADING_TIME = 400;
 
 // Deleting takes a while (the confirmation dialog shows its spinner meanwhile).
 const DELETE_TIME = 1000;
+
+// Adding the uploaded files to the list takes a while too (the "Apply" button of the upload drawer shows its spinner).
+const COMMIT_TIME = 1000;
 
 // The user of the page: new uploads are theirs.
 const CURRENT_USER = 'Admin';
@@ -137,6 +150,10 @@ async function fetchAttachments(
 
 // The upload function of the file upload: the time depends on the size, the progress is reported, and at the end the
 // file is stored and its id is the result (the form value of the file).
+// An upload is staged first: the file is on the server, but not in the list yet. `commitUploads` adds staged files
+// (the "Apply" of the upload drawer), `discardUploads` drops them (its "Cancel").
+const staged = new Map<string, Attachment>();
+
 const uploadAttachment: FileUpload.Upload = async (file, { signal, onProgress }) => {
   const duration = Math.min(4000, 800 + file.size / 1000);
   const steps = 10;
@@ -155,47 +172,32 @@ const uploadAttachment: FileUpload.Upload = async (file, { signal, onProgress })
     uploaded: new Date().toISOString(),
   };
 
-  attachments.push(attachment);
+  staged.set(attachment.id, attachment);
 
   return attachment.id;
 };
 
-type Statistics = {
-  count: number;
-  totalSize: number;
-  // Per type, the most frequent first.
-  byType: readonly { type: string; count: number; size: number }[];
-  largest: Attachment | undefined;
-  newest: Attachment | undefined;
-};
+// Adds the staged files with these ids to the list and returns them (unknown ids are skipped).
+async function commitUploads(ids: readonly string[]): Promise<readonly Attachment[]> {
+  await wait(COMMIT_TIME, new AbortController().signal);
 
-// Statistics over all attachments (not only the current page of the table), computed by the "server".
-async function getStatistics(): Promise<Statistics> {
-  await wait(LOADING_TIME, new AbortController().signal);
+  const committed = ids.flatMap((id) => {
+    const attachment = staged.get(id);
 
-  const byType = new Map<string, { type: string; count: number; size: number }>();
+    staged.delete(id);
 
-  for (const { type, size } of attachments) {
-    const entry = byType.get(type) ?? { type, count: 0, size: 0 };
+    return attachment === undefined ? [] : [{ ...attachment, uploaded: new Date().toISOString() }];
+  });
 
-    entry.count++;
-    entry.size += size;
-    byType.set(type, entry);
+  attachments.push(...committed);
+
+  return committed;
+}
+
+function discardUploads(ids: readonly string[]): void {
+  for (const id of ids) {
+    staged.delete(id);
   }
-
-  const pick = (better: (a: Attachment, b: Attachment) => boolean) =>
-    attachments.reduce<Attachment | undefined>(
-      (best, a) => (best === undefined || better(a, best) ? a : best),
-      undefined,
-    );
-
-  return {
-    count: attachments.length,
-    totalSize: attachments.reduce((sum, a) => sum + a.size, 0),
-    byType: [...byType.values()].sort((a, b) => b.count - a.count || a.type.localeCompare(b.type)),
-    largest: pick((a, b) => a.size > b.size),
-    newest: pick((a, b) => a.uploaded > b.uploaded),
-  };
 }
 
 // More about one attachment, for its information drawer. All made up, but stable per attachment.

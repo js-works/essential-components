@@ -6,13 +6,13 @@ export { bridgeStyles };
 const bridgeStyles = `
   :host {
     display: inline-block;
-    color-scheme: light dark;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   }
 
   .base {
     --cal-font-family: inherit;
-    --cal-font-size: 1rem;
+    /* The same base size as the other packages (the file upload's default, the data navigator's 14px). */
+    --cal-font-size: 0.875rem;
     --cal-color: light-dark(#000000, #f5f5f5);
     --cal-background-color: transparent;
     --cal-border-color: light-dark(#d4d4d4, #404040);
