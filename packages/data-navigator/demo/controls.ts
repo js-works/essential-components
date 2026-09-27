@@ -1,4 +1,4 @@
-import type { DataNavigator } from '../src';
+import type { DataNavigatorComponent } from '../src/react';
 
 export type {
   Controls,
@@ -39,10 +39,10 @@ type Controls = {
   setActions: (actions: DemoActions) => void;
   variants: DemoVariants;
   setVariants: (variants: DemoVariants) => void;
-  selectionAppearance: DataNavigator.SelectionAppearance;
-  setSelectionAppearance: (appearance: DataNavigator.SelectionAppearance) => void;
-  density: DataNavigator.Density;
-  setDensity: (density: DataNavigator.Density) => void;
+  selectionAppearance: DataNavigatorComponent.SelectionAppearance;
+  setSelectionAppearance: (appearance: DataNavigatorComponent.SelectionAppearance) => void;
+  density: DataNavigatorComponent.Density;
+  setDensity: (density: DataNavigatorComponent.Density) => void;
   striped: DemoStriped;
   setStriped: (striped: DemoStriped) => void;
   filters: DemoFilters;

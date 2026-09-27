@@ -1,7 +1,7 @@
 import { Popover as BasePopover } from '@base-ui/react/popover';
 import { createElement, useContext, useEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
-import type { DataNavigator as Spec } from '../../api';
+import type { DataNavigatorComponent as Spec } from '../../react/api';
 import { useLocale, useTexts } from '../texts';
 import { flag } from '../utils';
 import * as styles from './DataNavigator.module.css';

@@ -1,4 +1,5 @@
 export {
+  adapterContent,
   button,
   buttonIcon,
   buttonLabel,
@@ -68,6 +69,7 @@ export {
   unsortedIcon,
 };
 
+declare const adapterContent: string;
 declare const button: string;
 declare const buttonIcon: string;
 declare const buttonLabel: string;

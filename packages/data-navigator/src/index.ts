@@ -1,20 +1,9 @@
 import type { DataNavigator } from './api';
-import { useDataNavigatorController, useDataNavigatorSelection } from './core/controllerHooks';
-import { dateRangeColumnFilter, selectColumnFilter, textColumnFilter } from './core/view/ColumnFilters';
-import { createDataNavigator } from './createDataNavigator';
-import { antdTheme } from './themes/antd';
-import { defaultTheme } from './themes/default';
-import { mantineTheme } from './themes/mantine';
+import { dateRangeColumnFilter, selectColumnFilter, textColumnFilter } from './element/filters';
+import { setupDataNavigator } from './element/setupDataNavigator';
 
-export {
-  antdTheme,
-  createDataNavigator,
-  dateRangeColumnFilter,
-  defaultTheme,
-  mantineTheme,
-  selectColumnFilter,
-  textColumnFilter,
-  useDataNavigatorController,
-  useDataNavigatorSelection,
-};
+export { dateRangeColumnFilter, selectColumnFilter, setupDataNavigator, textColumnFilter };
 export type { DataNavigator };
+
+// The main entry, `@local/data-navigator`: the custom element. React is bundled into its build, so an app needs none.
+// React apps use `@local/data-navigator/react` instead.

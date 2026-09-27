@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import type { DataNavigator as Spec } from '../../api';
+import type { DataNavigatorComponent as Spec } from '../../react/api';
 import { optionsOf, useTextFilter } from '../filters';
 import { useTexts } from '../texts';
 import { textFieldKeys } from '../utils';

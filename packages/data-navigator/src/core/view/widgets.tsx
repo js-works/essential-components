@@ -3,7 +3,7 @@ import { Select as BaseSelect } from '@base-ui/react/select';
 import { Tooltip as BaseTooltip } from '@base-ui/react/tooltip';
 import { useContext, useLayoutEffect, useRef, useState } from 'react';
 import type { KeyboardEventHandler, ReactElement, ReactNode } from 'react';
-import type { DataNavigator as Spec } from '../../api';
+import type { DataNavigatorComponent as Spec } from '../../react/api';
 import { flag, hasContent, isShiftClick } from '../utils';
 import * as styles from './DataNavigator.module.css';
 import { icons } from './icons';

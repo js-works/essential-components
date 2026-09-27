@@ -1,9 +1,9 @@
-import type { DataNavigator } from '../src';
+import type { DataNavigatorComponent } from '../src/react';
 
 export { i18n };
 
 // The demo's translations. English is missing on purpose: the component's own texts are the defaults.
-const GERMAN: Readonly<Record<keyof DataNavigator.Texts, string>> = {
+const GERMAN: Readonly<Record<keyof DataNavigatorComponent.Texts, string>> = {
   selectedCount: '{count} ausgewählt',
   itemRange: 'Einträge {from}-{to} / {total}',
   pageSize: 'Seitengröße',
@@ -42,7 +42,7 @@ const currentLocale = () => root.lang || 'en-US';
 // A minimal I18nAdapter, without any i18n library (the same shape as the one of the file-upload component, so one
 // object could serve both): the locale is the `lang` of `<html>`, texts are looked up by language (`de-AT` uses `de`),
 // and `{name}` placeholders are filled in, numbers formatted for the locale.
-const i18n: DataNavigator.I18nAdapter = {
+const i18n: DataNavigatorComponent.I18nAdapter = {
   currentLocale,
 
   resolveText: (namespace, key, params, defaultValue) => {

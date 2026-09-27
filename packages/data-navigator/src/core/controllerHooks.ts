@@ -1,5 +1,5 @@
 import { useState, useSyncExternalStore } from 'react';
-import type { DataNavigator as Spec } from '../api';
+import type { DataNavigatorComponent as Spec } from '../react/api';
 import { createDataNavigatorController, subscribeToSelection } from './controller';
 
 export { useDataNavigatorController, useDataNavigatorSelection };

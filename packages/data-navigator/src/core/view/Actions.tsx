@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import type { DataNavigator as Spec } from '../../api';
+import type { DataNavigatorComponent as Spec } from '../../react/api';
 import { variantOf } from '../actions';
 import type { ActionItem } from '../actions';
 import { ActionButton, ActionMenu } from './widgets';

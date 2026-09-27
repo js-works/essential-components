@@ -1,4 +1,4 @@
-import type { DataNavigator } from '../src';
+import type { DataNavigatorComponent } from '../src/react';
 
 export { countries, fetchNothing, fetchUsers, LOADING_TIME, roles };
 export type { User };
@@ -113,7 +113,10 @@ function wait(signal: AbortSignal): Promise<void> {
   });
 }
 
-async function fetchUsers(query: DataNavigator.Query, signal: AbortSignal): Promise<DataNavigator.Result<User>> {
+async function fetchUsers(
+  query: DataNavigatorComponent.Query,
+  signal: AbortSignal,
+): Promise<DataNavigatorComponent.Result<User>> {
   await wait(signal);
 
   const { sort, page, pageSize } = query;
@@ -157,7 +160,10 @@ async function fetchUsers(query: DataNavigator.Query, signal: AbortSignal): Prom
   return { rows: sorted.slice((page - 1) * pageSize, page * pageSize), total: sorted.length };
 }
 
-async function fetchNothing(_query: DataNavigator.Query, signal: AbortSignal): Promise<DataNavigator.Result<User>> {
+async function fetchNothing(
+  _query: DataNavigatorComponent.Query,
+  signal: AbortSignal,
+): Promise<DataNavigatorComponent.Result<User>> {
   await wait(signal);
 
   return { rows: [], total: 0 };

@@ -1,17 +1,15 @@
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import {
-  antdTheme,
-  createDataNavigator,
+  createDataNavigatorComponent,
   dateRangeColumnFilter,
-  defaultTheme,
-  mantineTheme,
   selectColumnFilter,
   textColumnFilter,
   useDataNavigatorController,
   useDataNavigatorSelection,
-} from '../src';
-import type { DataNavigator } from '../src';
+} from '../src/react';
+import type { DataNavigatorComponent } from '../src/react';
+import { antdTheme, defaultTheme, mantineTheme } from '../src/themes';
 import type { Controls, DemoTheme } from './controls';
 import { countries, fetchNothing, fetchUsers, roles } from './data';
 import type { User } from './data';
@@ -28,10 +26,10 @@ export { Demo };
 
 // An app creates its data navigator once, with its configuration. The demo creates one per theme, all with the same
 // I18nAdapter, and shows the one of the chosen theme.
-const navigators: Record<DemoTheme, DataNavigator.Component> = {
-  default: createDataNavigator({ i18n, theme: defaultTheme }),
-  mantine: createDataNavigator({ i18n, theme: mantineTheme }),
-  antd: createDataNavigator({ i18n, theme: antdTheme }),
+const navigators: Record<DemoTheme, DataNavigatorComponent.Component> = {
+  default: createDataNavigatorComponent({ i18n, theme: defaultTheme }),
+  mantine: createDataNavigatorComponent({ i18n, theme: mantineTheme }),
+  antd: createDataNavigatorComponent({ i18n, theme: antdTheme }),
 };
 
 // The Mantine and antd themes read the variables of their library, which a real app gets from the library. The demo
@@ -42,7 +40,7 @@ const libraryVariables: Record<DemoTheme, string> = {
   antd: antdVariables,
 };
 
-type UserColumn = DataNavigator.Column<User>;
+type UserColumn = DataNavigatorComponent.Column<User>;
 
 const firstName: UserColumn = { key: 'firstName', header: 'First name', width: 2, sortable: true };
 const lastName: UserColumn = { key: 'lastName', header: 'Last name', width: 2, sortable: true };
@@ -62,7 +60,7 @@ const role: UserColumn = {
   render: (user) => <span className={badge}>{user.role}</span>,
 };
 
-const filterOf: Record<string, DataNavigator.ColumnFilter> = {
+const filterOf: Record<string, DataNavigatorComponent.ColumnFilter> = {
   firstName: textColumnFilter(),
   lastName: textColumnFilter(),
   email: textColumnFilter(),
@@ -71,7 +69,10 @@ const filterOf: Record<string, DataNavigator.ColumnFilter> = {
   dateOfBirth: dateRangeColumnFilter(),
 };
 
-function createColumns(grouped: boolean, filtered: boolean): readonly (UserColumn | DataNavigator.ColumnGroup<User>)[] {
+function createColumns(
+  grouped: boolean,
+  filtered: boolean,
+): readonly (UserColumn | DataNavigatorComponent.ColumnGroup<User>)[] {
   const filter = (column: UserColumn): UserColumn => {
     const columnFilter = filterOf[column.key];
 

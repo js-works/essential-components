@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ReactElement } from 'react';
-import type { DataNavigator } from '../src';
+import type { DataNavigatorComponent } from '../src/react';
 import type {
   Controls,
   DemoActions,
@@ -20,8 +20,8 @@ function App(): ReactElement {
   const [theme, setTheme] = useState<DemoTheme>('default');
   const [actions, setActions] = useState<DemoActions>('multi-row');
   const [variants, setVariants] = useState<DemoVariants>('off');
-  const [selectionAppearance, setSelectionAppearance] = useState<DataNavigator.SelectionAppearance>('neutral');
-  const [density, setDensity] = useState<DataNavigator.Density>('normal');
+  const [selectionAppearance, setSelectionAppearance] = useState<DataNavigatorComponent.SelectionAppearance>('neutral');
+  const [density, setDensity] = useState<DataNavigatorComponent.Density>('normal');
   const [striped, setStriped] = useState<DemoStriped>('on');
   const [columns, setColumns] = useState<DemoColumns>('flat');
   const [filters, setFilters] = useState<DemoFilters>('on');

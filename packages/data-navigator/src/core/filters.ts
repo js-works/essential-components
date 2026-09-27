@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { DataNavigator as Spec } from '../api';
+import type { DataNavigatorComponent as Spec } from '../react/api';
 
 export { optionsOf, sameValue, useTextFilter };
 export type { NormalizedOption };

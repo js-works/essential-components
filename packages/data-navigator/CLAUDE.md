@@ -19,12 +19,15 @@ The main goal is a very nice, yet simple, API, designed together with the user.
 - Never read, list or scan anything outside this project folder.
   - This includes sibling projects, parent folders, the repo root and the home directory (e.g. `~/.claude`).
   - Only the user may explicitly grant an exception for a specific path.
-- `src/api.ts` holds the draft API types we are discussing. Types only, no comments for now (comments come later).
+- Two files hold the draft API types we are discussing. Types only, no comments for now (comments come later).
+  - `src/api.ts`: the namespace `DataNavigator`: the custom element and the shared types (`Query`, `Source`, `Theme`,
+    `I18nAdapter`, `Texts`, ...).
+  - `src/react/api.ts`: the namespace `DataNavigatorComponent`: the React component (`Props`, `Column`, `Action`,
+    `Controller`, ...), which re-exports the shared types, so React code never needs `DataNavigator`.
+  - Both namespaces use the same short names (`Column`, `Action`, ...) with their own meaning.
   - Exception: `DataNavigator.Texts` has the en-US text as a comment after each line.
-  - Each API decision changes only this file.
-  - The types live in a type-only `DataNavigator` namespace (`DataNavigator.Props`, `.Column`, `.Action`, ...).
-    - Type-only namespaces are fine. Do not use runtime (value) namespaces.
-    - Later the component function is merged with this namespace. Only `DataNavigator` is exported.
+  - Each API decision changes only these files.
+  - Type-only namespaces are fine. Do not use runtime (value) namespaces.
 - Do not update `README.md` until the first release. It only has a few general lines and the alpha notice.
 - Do not mention any specific i18n library by name in code, docs or specs, except react-i18next as the example.
 - Always add behavior details we decide (also small ones) to this spec, in the same step as the code.
@@ -95,27 +98,103 @@ The main goal is a very nice, yet simple, API, designed together with the user.
 - Class names come from CSS modules (hashed). They are not public, and neither are the `--datnav-*` custom properties.
   - What the theme values do not cover cannot be restyled by apps (accepted, to keep the public surface small).
 
-## Custom element (near future)
+## Custom element
 
-- The library will soon also export everything as a custom element (`<data-navigator>`), next to the React component.
-- Rule: every API change, from now on, must work for both the React component and the custom element. Before a new
-  prop, option, hook or callback is decided, check how it looks on the custom element.
-  - Configuration (`createDataNavigator({ i18n, theme })`) has a natural counterpart: a class factory, like
-    `createFileUploadClass` of the `file-upload` project.
-  - Props become properties of the element (functions, arrays and objects cannot be attributes). Events of the React
-    API (callbacks) must have an equivalent as DOM events or properties.
-  - Hooks exist only in React. Whatever a hook offers (e.g. a reload, an array source) needs a plain, framework-free
-    core (a function or an object) that the hook only wraps, so the custom element can use the core directly.
-  - `ReactNode` in the API (title, subtitle, empty, custom cells, icons, labels, custom filters) needs a way that works
-    without React: e.g. strings, DOM nodes, or templates (htm bound to the bundled React), or slots for the single
-    ones (title, subtitle, empty).
-- The likely approach (discussed, not decided in detail): the custom element wraps the React component and the
-  bundled React, rendered into its light DOM (so app CSS reaches custom cell content). React apps keep using the React
-  component directly (no second React).
-  - Open: light DOM (app CSS reaches cells, no slots) or shadow DOM (slots for `title`, `subtitle`, `empty`; cells
-    styled via the config's `styles` or `::part()`).
-- Decided (for now): on the element, a column `header` is `string | Node`, and `render` and `renderDetail` return
-  `string | Node` (details follow).
+- The library exports a custom element, next to the React component (`src/element/`).
+- The two APIs differ on purpose: React components and custom elements are different beasts, and each API follows its
+  own platform (React: props, hooks, `ReactNode`; the element: setup, controller, attributes, content adapter). Do not
+  align them for the sake of similarity.
+- Rule: before a new feature is decided for one of them, check how it looks on the other, in that one's own style.
+  - Props become properties of the element (functions, arrays and objects cannot be attributes). Callbacks of the React
+    API need an equivalent as DOM events or properties.
+  - Hooks exist only in React. Whatever a hook offers (e.g. a reload) needs a plain, framework-free core that the hook
+    only wraps, so the custom element can use the core directly.
+- Implementation: the element wraps the React component, with React bundled into the element's entry.
+- Entries (like `file-upload`):
+  - `@local/data-navigator`: the element (`setupDataNavigator`), its column filters and the types (namespace
+    `DataNavigator`). React is bundled in, the app needs none.
+  - `@local/data-navigator/react`: `createDataNavigatorComponent` (renamed from `createDataNavigator`), the hooks, the
+    React column filters and their types (namespace `DataNavigatorComponent`), with the app's React (an optional peer
+    dependency).
+  - `@local/data-navigator/themes`: `defaultTheme`, `mantineTheme`, `antdTheme` (plain data, used by both; no React,
+    no element). The other entries export no themes.
+  - Shared types (`Theme`, `I18nAdapter`, `Query`, ...) stay in `DataNavigator` of the main entry: a type-only import
+    loads no bundle, so React apps may import them from there.
+  - Needs the built files (`exports` to `dist/`), else the app's bundler resolves `react` itself.
+- `setupDataNavigator(config)` is called once per app with the config (theme, i18n, content adapter) and returns a
+  tuple: an element class without a type parameter, and the controller factory, both bound to that config. The app
+  names them itself and registers the class under its own tag name (and adds it to `HTMLElementTagNameMap`). We never
+  register elements ourselves.
+  ```ts
+  const [DataNavigatorBase, createNavigatorController] = setupDataNavigator({ theme, i18n, content: litContent });
+  class DataNavigatorElement extends DataNavigatorBase {}
+  customElements.define('data-navigator', DataNavigatorElement);
+  ```
+- Everything that depends on the row type is one object, built by the controller factory and set as one property:
+  ```ts
+  const users = createNavigatorController({ source: fetchUsers, rowKey: 'id', columns, actions, renderDetail });
+  html`<data-navigator .controller=${users} density="compact" striped></data-navigator>`;
+  ```
+  - The controller factory checks all parts against one `Row` (inferred from `source` or given explicitly) and against
+    the content type `C` of its setup. The controller keeps `Row` only in return values, so a
+    `NavigatorController<User>` can be set on the element's property (typed `NavigatorController<unknown>`).
+  - A controller belongs to one element (like the React controller): setting it on a second element is an error. It also
+    controls that element: `reload()`, `clearRowSelection()`, `getSelectedRows()` (typed: `readonly User[]`).
+  - A new controller replaces all parts at once (one render).
+  - `defaultSort` is part of the controller (its `key` is a column key).
+  - Events: the element fires no events of its own; to hear anything, you need the controller. Subscriptions are
+    methods named `onXyz(listener)` that return an unsubscribe function (rarely needed: listener, controller and
+    element usually live and die together). No event callbacks in the controller's options.
+    - `onSelectionChange((rows) => …)`: `rows` is typed (`readonly User[]`).
+- Settings that do not depend on `Row` are attributes, reflected to properties (booleans default to `false`):
+  - `density` (`compact`, `normal`, `comfortable`; default `normal`), `striped`, `searchable`,
+    `selection-appearance` (`selectionAppearance`: `neutral`, `accent`), `page-size` (`pageSize`).
+  - `pageSizeOptions`: a property only (an array).
+- Content (`render`, `renderDetail`, the `header` function) is `string | C`. `C` comes from a content adapter in the
+  config of `setupDataNavigator` (`content`); the default adapter is for `Node`.
+  ```ts
+  type ContentAdapter<C> = {
+    render: (content: C, container: HTMLElement) => void; // called again with new content
+    clear?: (container: HTMLElement) => void; // when a cell or detail goes away
+  };
+  const litContent: DataNavigator.ContentAdapter<TemplateResult> = {
+    render: (content, container) => render(content, container),
+  };
+  ```
+  - Strings are always allowed, with every adapter: the library renders them itself, as text.
+  - The library does not depend on Lit or any other framework: the app writes its adapter (a few lines).
+  - A column `header` and an action `label` are `string | (() => string | C)`, an action `icon` is `() => C` (no
+    string), an action `tip` is `string | (() => string)`.
+    - Functions, because a DOM node can be in one place only (a row action's icon is in every row), and to follow the
+      locale: the element calls every text and content function again when the i18n adapter reports a change
+      (`onChange`). Plain strings stay fixed.
+- Column filters: the element's entry exports the same factories as the React entry (`textColumnFilter()`,
+  `selectColumnFilter({ options, multiple })`, `dateRangeColumnFilter()`); internally they use the React filters.
+  - A custom filter is a function `(props: { value, onChange, labelledBy }) => C`, rendered by the content adapter.
+- Light DOM, no shadow root: the app's CSS reaches everything, also its own content in cells, details and filters.
+  - No slots: the element owns its children (the app must not put anything inside it). `title`, `subtitle` and `empty`
+    are options of the controller, each `string | (() => string | C)`.
+  - Custom content is rendered by the content adapter into an empty container that React creates.
+  - Our stylesheet is added once per document, or per shadow root when the element sits inside one.
+  - Page rules for bare elements (e.g. a global `button {}`) can reach our table; our class names are scoped.
+- Draft types: in `src/api.ts` (`SetupDataNavigator`, `SetupConfig`, `ContentAdapter`, `ControllerOptions`,
+  `NavigatorController`, `Column`, `Action`, `Element`, `ElementClass`, ...).
+  - `Element<C>` and `NavigatorController<Row, C>` carry the content type of their setup, so a controller of one setup
+    cannot be set on the element of another (e.g. Lit and `Node`).
+- Styling from outside: the theme. Stable hooks for app CSS come when needed (see "Todo (later)").
+- Behavior details:
+  - Without a controller the element is empty.
+  - Setting a controller checks it: not a controller, or one of another setup, throws a `TypeError`; one that is set
+    on another element throws an `Error`. Setting another controller (or `undefined`) releases the previous one.
+  - A new controller remounts the view (keyed by the controller), so all of its parts change at once.
+  - `page-size` is the page size the table starts with; `pageSizeOptions` (property only) default to 10, 25, 50, 100.
+  - `onSelectionChange` listeners hear only real changes of the selection (not the connecting of the table).
+  - A move (removed and added again in the same task) keeps the table; it unmounts when it stays removed.
+  - Properties set before the class is registered are taken over on connect.
+  - The element gets the attribute `data-datnav-host`, which our stylesheet makes `display: block` (we do not know the
+    tag name). The stylesheet is a `<style>` element, added once to the document's `<head>`, or once to the shadow
+    root the element is in (the CSS module, imported with `?inline`).
+  - The built-in filters of the element are opaque markers for the React filters (`src/element/filters.ts`).
 
 ## Controller
 
@@ -137,8 +216,8 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     table works as before.
 - The framework-free core is `createDataNavigatorController()` (`src/core/controller.ts`, no React). The hooks only
   wrap it (`src/core/controllerHooks.ts`): `useDataNavigatorController` keeps one stable, `useDataNavigatorSelection`
-  subscribes with `useSyncExternalStore`. The custom element will use the core for its methods (`reload()`,
-  `clearRowSelection()`, `getSelectedRows()`) and a `selectionchange` event.
+  subscribes with `useSyncExternalStore`. The custom element's controller (see "Custom element") will build on the
+  same core (`reload()`, `clearRowSelection()`, `getSelectedRows()`, `onSelectionChange()`).
 - One controller serves one table: a mounted table connects in an effect and disconnects when it unmounts. A second
   table that connects while the first is still connected throws ("already used by another DataNavigator"), in every
   build. After an unmount, the controller can be used again (e.g. switching between tables). StrictMode's test mount
@@ -157,11 +236,11 @@ The main goal is a very nice, yet simple, API, designed together with the user.
 
 - The component is not exported directly. The app creates it once, with a factory, and uses the result everywhere:
   ```tsx
-  const DataNavigator = createDataNavigator({ i18n, theme }); // once, at module level
+  const DataNavigator = createDataNavigatorComponent({ i18n, theme }); // once, at module level
   <DataNavigator source={source} rowKey="id" columns={columns} />; // no localization or theme in sight
   ```
   - The same model as the `file-upload` project (`createFileUploadClass({ i18n })`), so both are configured alike.
-  - `createDataNavigator(config?: DataNavigator.Config)`. Both parts are optional.
+  - `createDataNavigatorComponent(config?: DataNavigatorComponent.Config)`. Both parts are optional.
   - Create it once, at module level, never inside a component (a new component per render would remount the table).
   - It is the only way to get the component: no ready-made, unconfigured `DataNavigator` next to it.
   - Several looks or languages in one app: several factory calls.
@@ -195,9 +274,11 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - Without `theme`: the default theme, so the table always has its colors.
   - This reversed "Themes are CSS only: no theme prop, nothing in the API", decided at first.
 - The stylesheet itself (`data-navigator.css`) is still imported by the app.
-- The public API: `createDataNavigator`, `useDataNavigatorController`, `useDataNavigatorSelection`,
-  `textColumnFilter`, `selectColumnFilter`, `dateRangeColumnFilter`, `defaultTheme`, `mantineTheme`, `antdTheme`, and the types
-  (`DataNavigator.Config`, `.Theme`, `.I18nAdapter`, `.Component`, `.Controller`, `.Props`, ...).
+- The public API of the React entry (`@local/data-navigator/react`): `createDataNavigatorComponent`,
+  `useDataNavigatorController`, `useDataNavigatorSelection`, `textColumnFilter`, `selectColumnFilter`,
+  `dateRangeColumnFilter`, and the types (`DataNavigatorComponent.Config`, `.Theme`, `.I18nAdapter`, `.Component`,
+  `.Controller`, `.Props`, ...). The themes (`defaultTheme`, `mantineTheme`, `antdTheme`) come from
+  `@local/data-navigator/themes`.
 
 ## Safepoints
 
@@ -233,11 +314,24 @@ The main goal is a very nice, yet simple, API, designed together with the user.
 
 ## Project layout and commands
 
-- `src/api.ts`: the spec (types only).
-- `src/createDataNavigator.tsx`: the factory. It resolves the configuration once and returns the component, which
-  provides it (private `ConfigContext`) and renders `DataNavigatorView`.
-- `src/index.ts`: the public API (`createDataNavigator`, the two filter factories, the three themes) and the type
-  namespace `DataNavigator`, re-exported straight from `api.ts` (no merging with a function anymore).
+- `src/api.ts` and `src/react/api.ts`: the spec (types only), see "Working rules".
+  - The React code (`src/core/`, `src/react/`) imports `DataNavigatorComponent as Spec`.
+- Three entries (`exports` in `package.json`, to `dist/`):
+  - `src/index.ts` (`@local/data-navigator`): the custom element (`setupDataNavigator`, the element's column filters)
+    and the type namespace `DataNavigator`.
+  - `src/react/index.ts` (`@local/data-navigator/react`): the React API and the type namespace
+    `DataNavigatorComponent`.
+  - `src/themes/index.ts` (`@local/data-navigator/themes`): the three themes.
+- `src/element/`: the custom element, a wrapper of the React view:
+  - `setupDataNavigator.tsx`: the setup and the element class (attributes, properties, the React root in the light
+    DOM, the i18n subscription).
+  - `controller.tsx`: the controller factory, the one-element guard, and the controller's options as the props of the
+    React view.
+  - `content.tsx`: strings as text, everything else through the content adapter (the default one for `Node`).
+  - `filters.ts`: the element's built-in filters. `styles.ts`: the stylesheet in the document or shadow root.
+  - `DataNavigatorElement.test.ts`: its tests (jsdom).
+- `src/react/createDataNavigatorComponent.tsx`: the factory. It resolves the configuration once and returns the
+  component, which provides it (private `ConfigContext`) and renders `DataNavigatorView`.
 - `src/core/`: the state and the logic.
   - `useDataNavigator.ts`: the headless hook with all state and behavior (source calls, paging, sorting, selection,
     block selection, row details, actions, loading). The view only renders what it returns.
@@ -269,13 +363,19 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - `index.html` + `main.ts`: the page, a shell around the demo element: a header with the title and, top right, the
     global switches (language, color scheme), which change `<html>` (`lang`, `data-scheme`). It registers the demo
     element as `data-navigator-demo`.
-  - `DataNavigatorDemo.tsx`: the whole demo as a light DOM custom element (see "Demo element" below). On connect it
-    renders `App` into itself (React, `StrictMode`) and calls `setupUi(this)`; on disconnect it unmounts.
+  - `DataNavigatorDemo.tsx`: the whole demo as a light DOM custom element (see "Demo element" below), with two tabs:
+    "React component" and "Custom element". On connect it renders `App` into the first panel (React, `StrictMode`),
+    mounts the element demo into the second one and calls `setupUi(this)`; on disconnect it cleans up.
+  - `ElementDemo.ts` (+ `element-demo.css`): the custom element tab, plain TypeScript with DOM nodes as content: the
+    same users, `setupDataNavigator` with the demo's i18n adapter, text and select filters, a role badge (a node per
+    row, styled by the demo's global CSS), a rows action, switches for density, striped and searchable, and reload,
+    clear selection and the selected rows (`onSelectionChange`). Titles, headers and labels are functions, so they
+    follow the language.
   - One plain demo (`Demo.tsx`) for all themes, with no UI library: plain elements, a small toast for the actions
     (`Toasts.tsx`) and inline SVG icons (`icons.tsx`, Tabler paths).
   - The Theme selector at the top switches between Default, Mantine and Ant Design. It starts with Default.
-    - The demo creates one data navigator per theme at module level (`createDataNavigator({ i18n, theme })`, all
-      with the same adapter) and shows the one of the chosen theme.
+    - The demo creates one data navigator per theme at module level (`createDataNavigatorComponent({ i18n, theme })`,
+      all with the same adapter) and shows the one of the chosen theme.
     - The Mantine and antd themes read the variables of their library, which a real app gets from the library at
       runtime. The demo runs no library code, so it adds static snapshots of exactly the variables the two themes read
       (`demo/variables/mantine.css`, `demo/variables/antd.css`), light and dark (`prefers-color-scheme`), rendered as a
@@ -330,7 +430,9 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - It also breaks the count down by language and says what the component costs against what one theme costs.
 - Commands:
   - `npm run dev`: demo
-  - `npm run build`: typecheck + library build
+  - `npm run build`: typecheck + library build in two steps: `dist/react.js`, `dist/themes.js` and the stylesheet
+    `dist/data-navigator.css` (React and Base UI outside), then `--mode element`: `dist/index.js` with everything
+    bundled in (React too, about 165 kB gzip; the stylesheet is inside)
   - `npm run build:demo`: typecheck + the demo page for GitHub Pages (`vite build --mode demo`, base `/data-navigator/`,
     into `demo-dist/`)
   - `npm run typecheck`
@@ -359,7 +461,8 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     - at most one `export { ... }` for values (functions, components, constants)
     - at most one `export type { ... }` for types
   - Never put `export` on the declarations themselves.
-  - The public API is exactly what `src/index.ts` re-exports. Everything else is internal.
+  - The public API is exactly what the three entries (`src/index.ts`, `src/react/index.ts`, `src/themes/index.ts`)
+    export. Everything else is internal.
 - Every public API change comes with a Vitest test and a usage example (demo). No feature without both.
 - Ask before adding a dependency.
   - Keep runtime dependencies minimal.
@@ -1058,7 +1161,8 @@ The main goal is a very nice, yet simple, API, designed together with the user.
 
 - Combobox and autocomplete (Base UI), when a filter needs one. Select and multiple select are unified already.
 
-- `src/api.ts`: add the final comments to all types, and group the `Props` properties with blank lines again.
+- `src/api.ts`, `src/react/api.ts`: add the final comments to all types, and group the `Props` properties with blank
+  lines again.
 
 - Array helper: turns an array into a `source` (client-side sorting, filtering and paging).
   - Name and place undecided (`DataNavigator.fromArray(rows)` or a separate export).
@@ -1073,10 +1177,15 @@ The main goal is a very nice, yet simple, API, designed together with the user.
 - Error state: what happens when `source` rejects (display, retry, texts in `DataNavigator.Texts`).
   - Not specified yet, and not part of the component or the demo yet.
 - `rowKey` as a function `(row) => string`, for rows with a composite key. For now it is only a property name.
+- Custom element, when really needed: stable styling hooks for app CSS, `data-part="…"` attributes on the main pieces
+  (`toolbar`, `header`, `row`, `cell`, `footer`, ...), e.g. `data-navigator [data-part="footer"] { … }` (the light DOM
+  counterpart to `::part()`; our class names are generated and not stable).
+- Idea (custom element): bundle `preact/compat` instead of React in the element's entry (much smaller; test whether
+  Base UI works with it).
 
 ## Open
 
 - Linter (ESLint or none): not decided yet.
 - Package layout: the import path of the stylesheet (e.g. `data-navigator/styles.css`). For now the build emits
-  `dist/data-navigator.css` and `dist/data-navigator.js` (the themes are part of the JavaScript).
+  `dist/data-navigator.css` next to the three entries.
 - Controlling the selection from outside: at least clearing it must be possible. Not for v1, discuss later.

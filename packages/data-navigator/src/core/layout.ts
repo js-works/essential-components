@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { DataNavigator as Spec } from '../api';
+import type { DataNavigatorComponent as Spec } from '../react/api';
 
 export { createLayout };
 export type { Layout };

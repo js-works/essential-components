@@ -1,6 +1,8 @@
-import type { ReactElement, ReactNode } from 'react';
-
 export type { DataNavigator };
+
+declare const builtInFilter: unique symbol;
+
+declare const contentType: unique symbol;
 
 declare namespace DataNavigator {
   type SortDirection = 'asc' | 'desc';
@@ -38,8 +40,6 @@ declare namespace DataNavigator {
     labelledBy: string;
   };
 
-  type ColumnFilter = (props: FilterProps) => ReactNode;
-
   type FilterOption = string | { value: string; label: string };
 
   type TextColumnFilterSettings = { placeholder?: string };
@@ -48,80 +48,11 @@ declare namespace DataNavigator {
 
   type DateRangeFilterValue = { from: string; to: string };
 
-  type Column<Row> = {
-    key: keyof Row & string;
-    header: ReactNode;
-    width?: number;
-    sortable?: boolean;
-    align?: 'start' | 'center' | 'end';
-    render?: (row: Row) => ReactNode;
-    filter?: ColumnFilter;
-    wrap?: boolean;
-  };
-
-  type ColumnGroup<Row> = {
-    header: ReactNode;
-    columns: readonly Column<Row>[];
-  };
+  type ColumnAlign = 'start' | 'center' | 'end';
 
   type ActionVariant = 'primary' | 'secondary' | 'danger';
 
-  type ActionLook =
-    | { label: ReactNode; icon?: ReactNode; tip?: string }
-    | { label?: undefined; icon: ReactNode; tip: string };
-
-  type GeneralAction = {
-    type: 'general';
-    key: string;
-    variant?: ActionVariant;
-    onClick: () => void;
-  } & ActionLook;
-
-  type RowAction<Row> = {
-    type: 'row';
-    key: string;
-    variant?: ActionVariant;
-    onClick: (row: Row) => void;
-    show?: 'column' | 'toolbar' | 'both';
-    default?: boolean;
-  } & ActionLook;
-
-  type RowsAction<Row> = {
-    type: 'rows';
-    key: string;
-    variant?: ActionVariant;
-    onClick: (rows: readonly Row[]) => void;
-  } & ActionLook;
-
-  type Action<Row> = GeneralAction | RowAction<Row> | RowsAction<Row>;
-
   type ActionSeparator = { type: 'separator' };
-
-  type ActionMenu<Row> = {
-    type: 'menu';
-    key: string;
-    variant?: ActionVariant;
-    actions: readonly (Action<Row> | ActionSeparator)[];
-  } & ActionLook;
-
-  type Props<Row> = {
-    source: Source<Row>;
-    rowKey: keyof Row & string;
-    columns: readonly (Column<Row> | ColumnGroup<Row>)[];
-    title?: ReactNode;
-    subtitle?: ReactNode;
-    selectionAppearance?: SelectionAppearance;
-    density?: Density;
-    striped?: boolean;
-    renderDetail?: (row: Row) => ReactNode;
-    empty?: ReactNode;
-    actions?: readonly (Action<Row> | ActionMenu<Row>)[];
-    pageSize?: number;
-    pageSizeOptions?: readonly number[];
-    defaultSort?: Sort;
-    searchable?: boolean;
-    controller?: Controller<Row>;
-  };
 
   type Texts = {
     selectedCount: (params: { count: number }) => string; // {count} selected
@@ -198,16 +129,113 @@ declare namespace DataNavigator {
     onChange?: (listener: () => void) => () => void;
   };
 
-  type Config = {
-    i18n?: I18nAdapter;
-    theme?: Theme;
+  type ContentAdapter<C> = {
+    render: (content: C, container: HTMLElement) => void;
+    clear?: (container: HTMLElement) => void;
   };
 
-  type Component = <Row>(props: Props<Row>) => ReactElement;
+  type SetupConfig<C = Node> = {
+    theme?: Theme;
+    i18n?: I18nAdapter;
+    content?: ContentAdapter<C>;
+  };
 
-  type Controller<Row> = {
+  type TextContent<C> = string | (() => string | C);
+
+  type BuiltInColumnFilter = { readonly [builtInFilter]: true };
+
+  type ColumnFilter<C> = BuiltInColumnFilter | ((props: FilterProps) => string | C);
+
+  type Column<Row, C> = {
+    key: keyof Row & string;
+    header: TextContent<C>;
+    width?: number;
+    sortable?: boolean;
+    align?: ColumnAlign;
+    render?: (row: Row) => string | C;
+    filter?: ColumnFilter<C>;
+    wrap?: boolean;
+  };
+
+  type ColumnGroup<Row, C> = {
+    header: TextContent<C>;
+    columns: readonly Column<Row, C>[];
+  };
+
+  type ActionLook<C> =
+    | { label: TextContent<C>; icon?: () => C; tip?: string | (() => string) }
+    | { label?: undefined; icon: () => C; tip: string | (() => string) };
+
+  type GeneralAction<C> = {
+    type: 'general';
+    key: string;
+    variant?: ActionVariant;
+    onClick: () => void;
+  } & ActionLook<C>;
+
+  type RowAction<Row, C> = {
+    type: 'row';
+    key: string;
+    variant?: ActionVariant;
+    onClick: (row: Row) => void;
+    show?: 'column' | 'toolbar' | 'both';
+    default?: boolean;
+  } & ActionLook<C>;
+
+  type RowsAction<Row, C> = {
+    type: 'rows';
+    key: string;
+    variant?: ActionVariant;
+    onClick: (rows: readonly Row[]) => void;
+  } & ActionLook<C>;
+
+  type Action<Row, C> = GeneralAction<C> | RowAction<Row, C> | RowsAction<Row, C>;
+
+  type ActionMenu<Row, C> = {
+    type: 'menu';
+    key: string;
+    variant?: ActionVariant;
+    actions: readonly (Action<Row, C> | ActionSeparator)[];
+  } & ActionLook<C>;
+
+  type ControllerOptions<Row, C> = {
+    source: Source<Row>;
+    rowKey: keyof Row & string;
+    columns: readonly (Column<Row, C> | ColumnGroup<Row, C>)[];
+    actions?: readonly (Action<Row, C> | ActionMenu<Row, C>)[];
+    renderDetail?: (row: Row) => string | C;
+    defaultSort?: { key: keyof Row & string; direction: SortDirection };
+    title?: TextContent<C>;
+    subtitle?: TextContent<C>;
+    empty?: TextContent<C>;
+  };
+
+  type NavigatorController<Row, C> = {
+    readonly [contentType]: (content: C) => C;
     reload: () => void;
     clearRowSelection: () => void;
     getSelectedRows: () => readonly Row[];
+    onSelectionChange: (listener: (rows: readonly Row[]) => void) => () => void;
   };
+
+  type CreateNavigatorController<C> = <Row>(options: ControllerOptions<Row, C>) => NavigatorController<Row, C>;
+
+  type Element<C> = HTMLElement & {
+    controller: NavigatorController<unknown, C> | undefined;
+    density: Density;
+    striped: boolean;
+    searchable: boolean;
+    selectionAppearance: SelectionAppearance;
+    pageSize: number;
+    pageSizeOptions: readonly number[];
+  };
+
+  type ElementClass<C> = {
+    new(): Element<C>;
+    readonly prototype: Element<C>;
+  };
+
+  type SetupDataNavigator = <C = Node>(
+    config?: SetupConfig<C>,
+  ) => readonly [ElementClass<C>, CreateNavigatorController<C>];
 }

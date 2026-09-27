@@ -1,4 +1,4 @@
-import type { DataNavigator as Spec } from '../api';
+import type { DataNavigatorComponent as Spec } from '../react/api';
 
 export { connectController, createDataNavigatorController, notifySelection, subscribeToSelection };
 export type { ControllerTarget };

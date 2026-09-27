@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { DataNavigator } from '../src';
+import type { DataNavigatorComponent } from '../src/react';
 import type { DemoActions } from './controls';
 import type { User } from './data';
 
@@ -10,7 +10,7 @@ function fullName(user: User): string {
   return `${user.firstName} ${user.lastName}`;
 }
 
-type Item = DataNavigator.Action<User> | DataNavigator.ActionMenu<User>;
+type Item = DataNavigatorComponent.Action<User> | DataNavigatorComponent.ActionMenu<User>;
 
 // The icons of the actions.
 type DemoIcons = { add: ReactNode; edit: ReactNode; remove: ReactNode };
@@ -70,7 +70,7 @@ function createActions(
   // "Export all" needs no selection (general actions). "Export selection" needs selected rows (rows actions): it only
   // exists in the multi-row set, and it is only visible while at least one row is selected.
   const exportMenu = (withSelection: boolean): Item => {
-    const actions: (DataNavigator.Action<User> | DataNavigator.ActionSeparator)[] = [
+    const actions: (DataNavigatorComponent.Action<User> | DataNavigatorComponent.ActionSeparator)[] = [
       {
         type: 'general',
         key: 'export-all-csv',

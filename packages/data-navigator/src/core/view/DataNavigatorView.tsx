@@ -1,7 +1,7 @@
 import { Tooltip } from '@base-ui/react/tooltip';
 import { Fragment, useContext, useState } from 'react';
 import type { MouseEvent, ReactElement, ReactNode } from 'react';
-import type { DataNavigator as Spec } from '../../api';
+import type { DataNavigatorComponent as Spec } from '../../react/api';
 import { ConfigContext } from '../config';
 import { useDataNavigator } from '../useDataNavigator';
 import {

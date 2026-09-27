@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ReactElement } from 'react';
-import type { DataNavigator as Spec } from '../../api';
+import type { DataNavigatorComponent as Spec } from '../../react/api';
 import * as classes from './DataNavigator.module.css';
 import { PageField, PagerButton, PageSizeField, Pill } from './widgets';
 

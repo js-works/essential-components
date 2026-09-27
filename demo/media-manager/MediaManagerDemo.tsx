@@ -5,14 +5,14 @@ import type { Root } from 'react-dom/client';
 import { i18n as navigatorI18n } from '../../packages/data-navigator/demo/i18n';
 import { icons } from '../../packages/data-navigator/demo/icons';
 import {
-  createDataNavigator,
+  createDataNavigatorComponent,
   dateRangeColumnFilter,
-  defaultTheme,
   selectColumnFilter,
   textColumnFilter,
   useDataNavigatorController,
-} from '../../packages/data-navigator/src';
-import type { DataNavigator } from '../../packages/data-navigator/src';
+} from '../../packages/data-navigator/src/react';
+import type { DataNavigatorComponent } from '../../packages/data-navigator/src/react';
+import { defaultTheme } from '../../packages/data-navigator/src/themes';
 import { createDemoI18n } from '../../packages/file-upload/demo/i18n';
 import type { FileUpload } from '../../packages/file-upload/src';
 import { createFileUploadComponent } from '../../packages/file-upload/src/react';
@@ -39,7 +39,7 @@ export { MediaManagerDemo };
 //
 // Both follow `<html lang>` through the i18n adapters of their own demos.
 
-const AttachmentNavigator = createDataNavigator({ i18n: navigatorI18n, theme: defaultTheme });
+const AttachmentNavigator = createDataNavigatorComponent({ i18n: navigatorI18n, theme: defaultTheme });
 
 const uploadI18n = createDemoI18n();
 
@@ -78,7 +78,7 @@ function formatDate(iso: string): string {
   return new Intl.DateTimeFormat(locale(), { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso));
 }
 
-const columns: readonly DataNavigator.Column<Attachment>[] = [
+const columns: readonly DataNavigatorComponent.Column<Attachment>[] = [
   { key: 'name', header: 'Filename', width: 3, sortable: true, filter: textColumnFilter() },
   {
     key: 'user',
@@ -163,7 +163,9 @@ function MediaManager(): ReactElement {
   const toasts = useToast();
 
   // A reload after a delete also clears the selection (like every new load).
-  const actions = useMemo<readonly (DataNavigator.Action<Attachment> | DataNavigator.ActionMenu<Attachment>)[]>(() => {
+  const actions = useMemo<
+    readonly (DataNavigatorComponent.Action<Attachment> | DataNavigatorComponent.ActionMenu<Attachment>)[]
+  >(() => {
     // Asks first, with a critical confirmation (danger button, no confirm on Enter): deleting cannot be undone.
     const remove = async (rows: readonly Attachment[]) => {
       const [first] = rows;
@@ -272,7 +274,7 @@ function MediaManager(): ReactElement {
 
     // The last action in the toolbar, a menu: the selected file (a row action, only while exactly one row is
     // selected) and the selected ones (rows actions, only while rows are selected).
-    const downloadMenu: DataNavigator.ActionMenu<Attachment> = {
+    const downloadMenu: DataNavigatorComponent.ActionMenu<Attachment> = {
       type: 'menu',
       key: 'download',
       label: 'Download',

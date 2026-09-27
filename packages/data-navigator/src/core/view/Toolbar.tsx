@@ -1,5 +1,5 @@
 import type { ReactElement, ReactNode } from 'react';
-import type { DataNavigator as Spec } from '../../api';
+import type { DataNavigatorComponent as Spec } from '../../react/api';
 import type { ActionItem } from '../actions';
 import type { SearchBox } from '../useDataNavigator';
 import { hasContent, textFieldKeys } from '../utils';

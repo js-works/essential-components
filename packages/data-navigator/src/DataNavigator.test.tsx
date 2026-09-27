@@ -1,17 +1,17 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { DataNavigator as Spec } from './api';
 import { useDataNavigatorController, useDataNavigatorSelection } from './core/controllerHooks';
 import { dateRangeColumnFilter, selectColumnFilter, textColumnFilter } from './core/view/ColumnFilters';
 import baseStylesheet from './core/view/DataNavigator.module.css?raw';
-import { createDataNavigator } from './createDataNavigator';
+import type { DataNavigatorComponent as Spec } from './react/api';
+import { createDataNavigatorComponent } from './react/createDataNavigatorComponent';
 import { antdTheme } from './themes/antd';
 import { defaultTheme } from './themes/default';
 import { mantineTheme } from './themes/mantine';
 
 // The component under test: created without a configuration (English texts, the default theme).
-const Nav = createDataNavigator();
+const Nav = createDataNavigatorComponent();
 
 type Person = { id: number; name: string; city: string };
 
@@ -2855,7 +2855,9 @@ describe('DataNavigator', () => {
     });
 
     it('uses the translations of the adapter and falls back to English for missing ones', async () => {
-      const German = createDataNavigator({ i18n: adapterOf({ pageSize: 'Seitengröße', pageOf: 'von {pages}' }) });
+      const German = createDataNavigatorComponent({
+        i18n: adapterOf({ pageSize: 'Seitengröße', pageOf: 'von {pages}' }),
+      });
 
       render(<German source={createSource()} rowKey="id" columns={columns} pageSize={10} />);
 
@@ -2866,7 +2868,7 @@ describe('DataNavigator', () => {
 
     it('asks the adapter with the namespace, the key, the raw params and the English text filled in', async () => {
       const resolveText = vi.fn((_: string, __: string, ___: unknown, defaultValue: string) => defaultValue);
-      const Tracked = createDataNavigator({ i18n: { currentLocale: () => 'en-US', resolveText } });
+      const Tracked = createDataNavigatorComponent({ i18n: { currentLocale: () => 'en-US', resolveText } });
 
       render(<Tracked source={createSource()} rowKey="id" columns={columns} pageSize={10} />);
       await loaded();
@@ -2881,7 +2883,7 @@ describe('DataNavigator', () => {
     });
 
     it('translates the default placeholder of a text filter', async () => {
-      const German = createDataNavigator({ i18n: adapterOf({ filterPlaceholder: 'Filtern' }) });
+      const German = createDataNavigatorComponent({ i18n: adapterOf({ filterPlaceholder: 'Filtern' }) });
       const filtered: readonly Spec.Column<Person>[] = [
         { key: 'name', header: 'Name', filter: textColumnFilter() },
       ];
@@ -2892,7 +2894,7 @@ describe('DataNavigator', () => {
     });
 
     it('formats numbers in the locale of the adapter', async () => {
-      const German = createDataNavigator({ i18n: adapterOf({}, 'de-DE') });
+      const German = createDataNavigatorComponent({ i18n: adapterOf({}, 'de-DE') });
       const many = async (query: Spec.Query) => ({ ...(await createSource()(query)), total: 12345 });
 
       render(<German source={many} rowKey="id" columns={columns} pageSize={10} />);
@@ -2903,7 +2905,7 @@ describe('DataNavigator', () => {
     it('refreshes its texts when the adapter reports a change of the language', async () => {
       let language = 'en';
       let notify = () => {};
-      const Switching = createDataNavigator({
+      const Switching = createDataNavigatorComponent({
         i18n: {
           currentLocale: () => language,
           resolveText: (_, key, __, defaultValue) =>
@@ -2986,7 +2988,7 @@ describe('theming', () => {
   });
 
   it('takes the values of its theme, and the default theme for the missing ones', async () => {
-    const Themed = createDataNavigator({ theme: { colorText: 'rebeccapurple', radius: '2px' } });
+    const Themed = createDataNavigatorComponent({ theme: { colorText: 'rebeccapurple', radius: '2px' } });
     const { container } = render(<Themed source={createSource()} rowKey="id" columns={columns} />);
 
     await loaded();

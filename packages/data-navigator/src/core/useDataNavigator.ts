@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { MouseEvent } from 'react';
-import type { DataNavigator as Spec } from '../api';
 import { hasContent, isPlainRowClick, isPlainRowDoubleClick } from '../core/utils';
+import type { DataNavigatorComponent as Spec } from '../react/api';
 import { columnItems, defaultActionOf, selectionModeOf, toolbarItems } from './actions';
 import { connectController, notifySelection } from './controller';
 import type { ControllerTarget } from './controller';
@@ -10,7 +10,7 @@ import { useDelayedFlag, useElementHeight } from './hooks';
 import { createLayout } from './layout';
 import { useTexts } from './texts';
 
-export { useDataNavigator };
+export { DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS, useDataNavigator };
 export type { SearchBox };
 
 const DEFAULT_PAGE_SIZE = 25;

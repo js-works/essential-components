@@ -1,5 +1,5 @@
 /* The stylesheet has no values of its own: every color, size and font is an internal --datnav-* custom property. The
-   component sets them on its root, from the theme of its configuration (createDataNavigator, see core/config.ts). */
+   component sets them on its root, from the theme of its configuration (createDataNavigatorComponent, see core/config.ts). */
 .root {
   /* No color-scheme of its own: the inherited one of the page decides which value of the theme colors' `light-dark()`
      applies (`light dark` here would follow the system's scheme instead, also on a page switched to the other one). */
@@ -23,6 +23,11 @@
   & > :not(.scrollArea) {
     flex: none;
   }
+}
+
+/* The container of content rendered by a content adapter of the custom element: no box of its own. */
+.adapterContent {
+  display: contents;
 }
 
 /* A minimum height, so the table never collapses to the header alone while the first load runs. */

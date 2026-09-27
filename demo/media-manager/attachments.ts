@@ -1,4 +1,4 @@
-import type { DataNavigator } from '../../packages/data-navigator/src';
+import type { DataNavigatorComponent } from '../../packages/data-navigator/src/react';
 import type { FileUpload } from '../../packages/file-upload/src';
 
 export {
@@ -111,9 +111,9 @@ function within(date: string, filter: unknown): boolean {
 // range), search (in the name, the user and
 // the type), sorting and paging.
 async function fetchAttachments(
-  query: DataNavigator.Query,
+  query: DataNavigatorComponent.Query,
   signal: AbortSignal,
-): Promise<DataNavigator.Result<Attachment>> {
+): Promise<DataNavigatorComponent.Result<Attachment>> {
   await wait(LOADING_TIME, signal);
 
   const text = query.search.toLowerCase();

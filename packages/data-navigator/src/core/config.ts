@@ -1,6 +1,6 @@
 import { createContext } from 'react';
 import type { CSSProperties } from 'react';
-import type { DataNavigator as Spec } from '../api';
+import type { DataNavigatorComponent as Spec } from '../react/api';
 import { defaultTheme } from '../themes/default';
 
 export { ConfigContext, resolveConfig };

@@ -26,7 +26,7 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
 
 - `packages/`: the components, npm workspaces (`"workspaces": ["packages/*"]`), each private and self-contained, so it
   can be copied as it is:
-  - `data-navigator` (`@local/data-navigator`): a React data table.
+  - `data-navigator` (`@local/data-navigator`): a data table: a React component (`/react`), a custom element to come.
   - `file-upload` (`@local/file-upload`): a file upload custom element, with a React wrapper.
   - `overlays` (`@local/overlays`): dialogs and toasts.
   - `calendar` (`@local/calendar`): a calendar date/time picker (used by `data-navigator`'s date range filter, the
