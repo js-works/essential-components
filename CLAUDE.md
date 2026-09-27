@@ -29,8 +29,7 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
   - `data-navigator` (`@local/data-navigator`): a data table: a React component (`/react`), a custom element to come.
   - `file-upload` (`@local/file-upload`): a file upload custom element, with a React wrapper.
   - `overlays` (`@local/overlays`): dialogs and toasts.
-  - `calendar` (`@local/calendar`): a calendar date/time picker (used by `data-navigator`'s date range filter, the
-    one dependency between the packages) (`DatePickerElement`), a first step taken over from
+  - `calendar` (`@local/calendar`): a calendar date/time picker (`DatePickerElement`), a first step taken over from
     picoui: its framework-free core unchanged, with a plain custom element instead of picoui's Lit wrapper. The
     directory may be renamed later.
   - A package keeps its own tests, demo (`npm run dev` inside it) and `package-lock.json` (unused in the workspace,
@@ -53,9 +52,9 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
     sizes are small < 100 kB, medium 100 kB – 1 MB, large ≥ 1 MB, `SIZES`), multi-selection with "Delete" for the
     selected rows (toolbar), and "Delete" in each row. Both ask first, in a critical confirmation dialog of the overlays
     package (`confirmCritical`: a "Delete" button in the danger style, no confirm on Enter), with the file name or the
-    list of the selected files. Deleting takes a second (`DELETE_TIME`): the dialog is opened in a
-    scope (`dialogs.open()`), so it stays open after "Delete", its button shows a spinner, and it closes when the files
-    are gone (`scope.dispose()`).
+    list of the selected files. Deleting takes a second (`DELETE_TIME`): the dialog is opened in a scope
+    (`dialogs.open()`), so it stays open after "Delete", its button shows a spinner, and it closes when the files are
+    gone (`scope.dispose()`).
     - Toasts of the overlays package, bottom right (`toasts: { placement: 'bottom-end', size: 'small', stacked: true
       }` in the provider's config): "3 files deleted" after a delete, "2 files uploaded" after an "Apply" of the upload
       drawer. For a single file, its name instead: `"report.txt" deleted`, `"report.txt" uploaded`.

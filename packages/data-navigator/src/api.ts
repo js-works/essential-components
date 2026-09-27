@@ -82,6 +82,9 @@ declare namespace DataNavigator {
     collapseDetails: string; // Hide details
     sortAsc: string; // Sort ascending
     sortDesc: string; // Sort descending
+    calendarPrevious: string; // Previous
+    calendarNext: string; // Next
+    clear: string; // Clear
   };
 
   type ThemeValue = string | { light: string; dark: string };

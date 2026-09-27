@@ -31,6 +31,9 @@ const GERMAN: Readonly<Record<keyof DataNavigatorComponent.Texts, string>> = {
   collapseDetails: 'Details ausblenden',
   sortAsc: 'Aufsteigend sortieren',
   sortDesc: 'Absteigend sortieren',
+  calendarPrevious: 'Zurück',
+  calendarNext: 'Weiter',
+  clear: 'Löschen',
 };
 
 const TRANSLATIONS: Readonly<Record<string, Readonly<Record<string, string | undefined>>>> = { de: GERMAN };

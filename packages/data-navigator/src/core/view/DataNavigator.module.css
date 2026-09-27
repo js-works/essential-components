@@ -703,7 +703,207 @@
    least (like a select's list): the picker has its own size. */
 .datePopup {
   min-width: 0;
-  padding: var(--datnav-spacing-sm);
+  padding: calc(var(--datnav-spacing-xs) / 2) var(--datnav-spacing-xs);
+}
+
+/* The two calendars of the date range filter (vanillajs-datepicker, see dateRangePicker.ts), side by side. The
+   library's own stylesheet is not used: its structure is styled here, with the theme's values, so the calendars
+   follow the theme and the color scheme. Its class names are global (`:global`), always below `.dateRange`. */
+.dateRange {
+  /* Dense: a day (and a header button) is 80% of a control high, and as wide. */
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--datnav-spacing-sm);
+
+  & :global(.datepicker:not(.active)),
+  & :global(.datepicker-footer),
+  & :global(.datepicker-title) {
+    display: none;
+  }
+
+  & :global(.datepicker-picker) {
+    display: flex;
+    flex-direction: column;
+  }
+
+  & :global(.datepicker-controls) {
+    display: flex;
+  }
+
+  & :global(.datepicker-controls .button) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: calc(var(--datnav-control-height) * 0.8);
+    padding: 0;
+    border: none;
+    border-radius: var(--datnav-radius);
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+
+    &:hover {
+      background-color: var(--datnav-color-hover);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--datnav-color-focus);
+      outline-offset: -2px;
+    }
+  }
+
+  & :global(.datepicker-controls .view-switch) {
+    flex: auto;
+    font-weight: var(--datnav-font-weight-bold);
+  }
+
+  & :global(.datepicker-controls .prev-button),
+  & :global(.datepicker-controls .next-button) {
+    flex: 0 0 calc(100% / 7);
+    font-size: 1.25em;
+  }
+
+  & :global(.datepicker-controls .button.disabled),
+  /* The two calendars move together (see dateRangePicker.ts): only the outer buttons are shown. */
+  & > :first-child :global(.next-button),
+  & > :last-child :global(.prev-button) {
+    visibility: hidden;
+  }
+
+  & :global(.datepicker-view) {
+    display: flex;
+    width: calc(var(--datnav-control-height) * 0.8 * 7);
+  }
+
+  & :global(.datepicker-grid) {
+    display: flex;
+    flex: auto;
+    flex-wrap: wrap;
+  }
+
+  & :global(.days) {
+    display: flex;
+    flex: auto;
+    flex-direction: column;
+  }
+
+  & :global(.days-of-week) {
+    display: flex;
+  }
+
+  & :global(.datepicker span) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--datnav-radius);
+    cursor: default;
+    user-select: none;
+  }
+
+  & :global(.dow) {
+    flex-basis: calc(100% / 7);
+    height: calc(var(--datnav-control-height) * 0.6);
+    color: var(--datnav-color-text-dimmed);
+    font-size: var(--datnav-font-size-sm);
+    font-weight: var(--datnav-font-weight-bold);
+  }
+
+  /* Their text is between the small and the normal size, like the text of the filters. */
+  & :global(.datepicker-cell) {
+    flex-basis: calc(100% / 7);
+    height: calc(var(--datnav-control-height) * 0.8);
+    font-size: calc((var(--datnav-font-size-sm) + var(--datnav-font-size)) / 2);
+  }
+
+  & :global(.datepicker-cell:not(.day)) {
+    flex-basis: 25%;
+    height: calc(var(--datnav-control-height) * 1.6);
+  }
+
+  /* Every day (and month and year) that can be picked, the ends of the range too. */
+  & :global(.datepicker-cell:not(.disabled)) {
+    cursor: pointer;
+  }
+
+  /* The day (or month or year) under the mouse: a ring in the primary color, the same inside the range and outside
+     it (the background keeps showing the range). Not on the ends of the range: they are in the primary color (the
+     hovered day is the end of the preview). */
+  & :global(.datepicker-cell:not(.disabled, .selected, .range-start, .range-end):hover) {
+    box-shadow: inset 0 0 0 1px var(--datnav-color-primary);
+  }
+
+  /* The keyboard position of a calendar (arrow keys, while one of its buttons has the focus). Only then: a calendar
+     moved along with the other one has its position on the 1st. */
+  & > :focus-within :global(.datepicker-cell.focused:not(.selected)) {
+    background-color: var(--datnav-color-header);
+  }
+
+  /* The days of the adjacent months are not shown (the library always renders six weeks; hidden, they keep their
+     place and cannot be clicked). The months and years of the other views stay dimmed. */
+  & :global(.datepicker-cell.day:is(.prev, .next)) {
+    visibility: hidden;
+  }
+
+  /* The days of the next month come last: taking no space, they leave no empty last row (the library always renders
+     six weeks). The days of the previous month keep theirs, so the 1st stays below its day of the week. */
+  & :global(.datepicker-cell.day.next) {
+    display: none;
+  }
+
+  & :global(.datepicker-cell:is(.prev, .next):not(.disabled, .selected, .range-start, .range-end)),
+  & :global(.datepicker-cell.disabled) {
+    color: var(--datnav-color-text-dimmed);
+  }
+
+  /* Today: its number in the primary color, except on the ends of the range (they are in the primary color). */
+  & :global(.datepicker-cell.today:not(.selected, .range-start, .range-end)) {
+    color: var(--datnav-color-primary);
+    font-weight: var(--datnav-font-weight-bold);
+  }
+
+  /* The days between the two ends of the range, and the ends themselves. */
+  & :global(.datepicker-cell.range) {
+    border-radius: 0;
+    background-color: var(--datnav-color-selected);
+  }
+
+  & :global(.datepicker-cell.range-start:not(.range-end)) {
+    border-start-end-radius: 0;
+    border-end-end-radius: 0;
+  }
+
+  & :global(.datepicker-cell.range-end:not(.range-start)) {
+    border-start-start-radius: 0;
+    border-end-start-radius: 0;
+  }
+
+  & :global(.datepicker-cell.selected),
+  & :global(.datepicker-cell.selected:hover),
+  & :global(.datepicker-cell.range-start),
+  & :global(.datepicker-cell.range-end) {
+    background-color: var(--datnav-color-primary);
+    color: var(--datnav-color-on-primary);
+    font-weight: var(--datnav-font-weight-bold);
+  }
+}
+
+/* Below the calendars: what is picked so far (left) and the clear button (right). Always as high as a control, so the
+   calendars do not move when the button comes. */
+.dateRangeFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--datnav-spacing-sm);
+  min-height: var(--datnav-control-height);
+  margin-top: var(--datnav-spacing-xs);
+
+  /* The clear button: a little smaller than a normal button, like the calendars' own buttons. */
+  & > button {
+    height: calc(var(--datnav-control-height) * 0.8);
+    padding: 0 var(--datnav-spacing-xs);
+    font-size: calc((var(--datnav-font-size-sm) + var(--datnav-font-size)) / 2);
+  }
 }
 
 .selectItem {

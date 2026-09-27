@@ -38,6 +38,9 @@ const defaultTexts = {
   collapseDetails: 'Hide details',
   sortAsc: 'Sort ascending',
   sortDesc: 'Sort descending',
+  calendarPrevious: 'Previous',
+  calendarNext: 'Next',
+  clear: 'Clear',
 } as const satisfies Record<keyof Spec.Texts, string>;
 
 function createNumberFormat(locale: string): Intl.NumberFormat {
@@ -115,6 +118,9 @@ function useTexts(): Spec.Texts {
       collapseDetails: translate('collapseDetails'),
       sortAsc: translate('sortAsc'),
       sortDesc: translate('sortDesc'),
+      calendarPrevious: translate('calendarPrevious'),
+      calendarNext: translate('calendarNext'),
+      clear: translate('clear'),
     };
   }, [i18n, locale, version]);
 }

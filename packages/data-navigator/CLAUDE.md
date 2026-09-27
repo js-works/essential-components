@@ -57,9 +57,11 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - The popups of Base UI (the list of a select, a menu) share one look (`.popupPositioner`, `.popup`) and are
     rendered into the layer of the root (`LayerContext`), so they get the values of the theme.
   - Icons: inline SVGs shipped with the component (the paths of the Tabler icons, `view/icons.tsx`).
-  - Runtime dependencies: `@base-ui/react` and `@local/calendar` (the date picker of the date range filter, a sibling
-    package of the `essential-components` monorepo; a copy of this package needs a copy of it too), besides the
-    peers.
+  - Runtime dependency: `@base-ui/react`, besides the peers.
+  - The date range filter uses vanillajs-datepicker (MIT), a dev dependency only: it is bundled completely into our
+    build (a chunk loaded on first use), so an app never installs it. Its stylesheet is not used (see the filter).
+  - The builds list the licenses of everything bundled in: `dist/third-party-licenses-react.md` (the React entry) and
+    `dist/third-party-licenses.md` (the custom element, with React and Base UI).
 - Customization: a small set of general design values, the `DataNavigator.Theme` (see Configuration), not one per part.
   - The values (29), with their internal custom properties (`colorTextDimmed` → `--datnav-color-text-dimmed`):
     - Colors: `colorText`, `colorTextDimmed`, `colorSurface`, `colorBorder`, `colorHeader`, `colorHeaderHover`,
@@ -490,6 +492,8 @@ The main goal is a very nice, yet simple, API, designed together with the user.
 - Colors, spacing, radii, fonts and shadows come from the internal `--datnav-*` custom properties (the theme values,
   see Theming and Configuration), never hard-coded values.
   - The only hard-coded values are in the default theme (`src/themes/default.ts`). The stylesheet has none.
+  - No new theme values for one widget (e.g. the calendars of the date range filter): a widget uses the existing
+    ones. The theme stays a small set of general design values.
   - No derived colors (`rgba()`, `hsl()`, opacity tricks on colors). A test checks this.
   - One exception: pressed states (`:active`) may use `color-mix()`, to mix a little of `--datnav-color-text` into the
     hover or fill color (darker in light mode, lighter in dark mode). The user allowed it, to avoid a token per
@@ -899,12 +903,53 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     - `dateRangeColumnFilter()` (`view/DateRangeFilter.tsx`): a trigger in the look of the selects (`Texts.filterAll`
       while empty, dimmed; else the range, formatted with `Intl.DateTimeFormat#formatRange` (`dateStyle: 'medium'`) in
       the adapter's locale, e.g. "Sep 12 – 20, 2026"), with a calendar icon at its end, or the clear button while set.
-      It opens a Base UI `Popover` (in the layer of the root, not modal, below the trigger) with the date picker of
-      `@local/calendar` in `dateRange` mode. The second click of a range (also the same day twice) applies it and
-      closes the popover; Escape and a click outside close it without a change.
-      - The date picker is loaded on first use (`import('@local/calendar')`), so importing this package needs no DOM
-        (e.g. on a server), and registered once under the first free tag name `datnav-date-picker-<n>`.
-      - Its colors are the date picker's own, fixed ones (not the theme's), for now.
+      It opens a Base UI `Popover` (in the layer of the root, not modal, below the trigger) with two inline calendars
+      of vanillajs-datepicker (`view/dateRangePicker.ts`), side by side, that act as one calendar of two months, with
+      the range highlighted in both and today marked.
+      - The first click (in either calendar) sets the start; nothing applies yet. Until the second click, the range is
+        shown up to the day under the mouse (or the keyboard position), in the look of a picked range, and goes when the
+        mouse leaves the calendars. The second click (in either calendar) sets the end, applies the range and closes
+        the popover. An end before the
+        start is swapped; the same day twice is a range of one day. With a range set, the next click starts a new one.
+        Escape and a click outside close the popover without a change.
+      - Below the calendars (`.dateRangeFooter`, always as high as a control): what is picked so far on the left (the
+        range like on the trigger, or only its start while the end is still to come, "Sep 14, 2026 – …"; announced
+        politely), and while something is picked, a clear button on the right (`Texts.clear`, "Clear"; 80% of a
+        control high, with the text size of the filters): it removes the filter and closes the popover. No apply button: the range applies on the second click, like the other filters
+        apply at once.
+      - The keyboard: the arrow keys move the keyboard position (while one of the calendar's buttons has the focus),
+        Enter picks that day like a click (in the days view; the button's own action is prevented there).
+      - The left calendar always shows the month before the right one: they move together. The left one has only
+        its ‹ button, the right one only its ›; when one moves (a button, the keyboard, a month or year chosen in its
+        title view), the other follows. They open at the month of today and the next one, or with a range at the month
+        of its start and the next one.
+      - The days of the adjacent months are hidden. Those of the previous month keep their place (so the 1st is below
+        its day of the week), those of the next month take none (`display: none`), so there is no empty last row (the
+        library always renders six weeks); a month with more weeks makes the popover a little higher.
+      - Dense: a day and a header button are 80% of `--datnav-control-height` high (and a day as wide), the days of the
+        week 60%; the days' text is between the small and the normal size (like the filters); the calendars are
+        `--datnav-spacing-sm` apart, the footer `--datnav-spacing-xs` below them.
+      - The library's keyboard position (a gray day) is only shown while the keyboard is in that calendar.
+      - Today: its number bold and in `--datnav-color-primary`, except as an end of the range (then like every end:
+        `--datnav-color-on-primary` on the primary color).
+      - Every day that can be picked has the pointer cursor, the ends of the range too. The day under the mouse gets a
+        ring in `--datnav-color-primary` (1px, inside), the same inside the range and outside it; the ends of the range
+        keep their look. (A background was too weak to see within the range.)
+      - The start and the end are ours: the library's own `DateRangePicker` only works with two `<input>`s
+        (dropdowns) and has one date per picker, and a click on a picker's selected day reports no change (a range of
+        one day). So we handle the clicks and Enter on the days, keep the range, and give both pickers the small range
+        object the library reads for the highlighting (`rangepicker.dates`, `rangeSideIndex`), which returns our range:
+        internals of the pinned, bundled version. The pickers themselves hold no dates; `setDate` with `viewDate`
+        keeps their months.
+      - Texts come from `Intl` in the adapter's locale (names of days and months; the first day of the week from
+        `Intl.Locale#getWeekInfo`, else Monday, Sunday for `en-US`), so no locale files are needed.
+      - Accessible names: each calendar is a group named by its month title; the ‹ and › buttons by `Texts`
+        `calendarPrevious` ("Previous") and `calendarNext` ("Next"; a month, a year or a decade, depending on the view).
+        The calendars are created again when these texts or the locale change.
+      - The library is loaded on first use (a dynamic import: it touches `document` when imported, and importing this
+        package must work without a DOM).
+      - Styled by our stylesheet with the theme's values (`.dateRange`, the library's class names as `:global`), not
+        by the library's own stylesheet, so it follows the theme and the color scheme.
     - The built-in filters are small (`0.8 * --datnav-control-height`) and fill the cell. Their text is between the small
       and the normal size (`(--datnav-font-size-sm + --datnav-font-size) / 2`), and they keep their own small side padding
       (`--datnav-spacing-xs`).

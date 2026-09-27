@@ -11,6 +11,8 @@ export {
   content,
   dataRow,
   datePopup,
+  dateRange,
+  dateRangeFooter,
   detailCell,
   detailRow,
   dimmed,
@@ -137,3 +139,5 @@ declare const tooltip: string;
 declare const tooltipPositioner: string;
 declare const unsortedIcon: string;
 declare const datePopup: string;
+declare const dateRange: string;
+declare const dateRangeFooter: string;

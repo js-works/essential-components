@@ -19,6 +19,8 @@ const config = defineConfig(({ mode }) => ({
     ? {
       // After the first step, into the same directory.
       emptyOutDir: false,
+      // The licenses of everything bundled in (React, Base UI, vanillajs-datepicker, ...).
+      license: { fileName: 'third-party-licenses.md' },
       lib: {
         entry: 'src/index.ts',
         formats: ['es'],
@@ -26,6 +28,8 @@ const config = defineConfig(({ mode }) => ({
       },
     }
     : {
+      // The licenses of what is bundled into the React entry (vanillajs-datepicker).
+      license: { fileName: 'third-party-licenses-react.md' },
       lib: {
         entry: {
           react: 'src/react/index.ts',

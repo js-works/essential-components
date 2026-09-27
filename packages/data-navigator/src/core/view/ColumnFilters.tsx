@@ -64,7 +64,7 @@ function selectColumnFilter(settings: Spec.SelectColumnFilterSettings): Spec.Col
   return (props) => <SelectFilterInput {...props} {...settings} />;
 }
 
-// A date range: the date picker of `@local/calendar` in a popover. The value is `{ from, to }` (yyyy-mm-dd, both
+// A date range: two calendars (vanillajs-datepicker, see dateRangePicker.ts) in a popover. The value is `{ from, to }` (yyyy-mm-dd, both
 // inclusive, see `DataNavigator.DateRangeFilterValue`). The placeholder is the localized `Texts.filterAll`.
 function dateRangeColumnFilter(): Spec.ColumnFilter {
   return (props) => <DateRangeFilterInput {...props} />;

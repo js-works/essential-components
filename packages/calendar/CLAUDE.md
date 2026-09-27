@@ -34,8 +34,6 @@ core. Not final; the directory may be renamed later.
 - `types/index.d.ts`: the public API as a hand-written declaration, which `exports` gives other packages for their
   type checking (the core is not written for their stricter compiler options, e.g. `noUncheckedIndexedAccess`). Keep
   it in sync with `src/index.ts` and `src/date-picker-element.ts`.
-- Used by `data-navigator`'s `dateRangeColumnFilter()` (a dependency of that package): keep `DatePickerElement`'s
-  `value` (a range is `from,to`), `selection-mode`, `lang` and `change` stable.
 
 ## Known gaps (from picoui)
 

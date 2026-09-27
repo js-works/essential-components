@@ -697,7 +697,7 @@ describe('DataNavigator', () => {
       expect([shownIn('City'), shownIn('Name')]).toEqual(['Vienna', 'Ann']);
     });
 
-    it('gives a date range filter the range of its date picker, shows it formatted, and clears it', async () => {
+    it('gives a date range filter the range picked in its two calendars, shows it formatted, and clears it', async () => {
       const columns: readonly Spec.Column<Person>[] = [
         { key: 'city', header: 'Moved in', filter: dateRangeColumnFilter() },
       ];
@@ -710,32 +710,98 @@ describe('DataNavigator', () => {
 
       expect(trigger.textContent).toBe('All');
 
-      fireEvent.click(trigger);
+      // Two calendars (vanillajs-datepicker, loaded on first use), side by side, acting as one of two months.
+      const open = () => {
+        fireEvent.click(trigger);
 
-      // The date picker of @local/calendar, loaded on first use and registered under a generated tag name.
-      const picker = await waitFor(() => {
-        const element = [...document.querySelectorAll('*')].find((node) =>
-          node.localName.startsWith('datnav-date-picker-')
-        );
+        return waitFor(() => {
+          const found = [...document.querySelectorAll<HTMLElement>('.datepicker')].map((calendar) =>
+            calendar.parentElement!
+          );
 
-        expect(element).toBeDefined();
+          expect(found).toHaveLength(2);
 
-        return element as HTMLElement & { value: string };
-      });
+          return found as [HTMLElement, HTMLElement];
+        });
+      };
+      const titleOf = (calendar: HTMLElement) => calendar.querySelector('.view-switch')?.textContent;
+      // The days of the calendar's own month (the days of the adjacent months are hidden).
+      const day = (calendar: HTMLElement, date: number) =>
+        calendar.querySelectorAll<HTMLElement>('.datepicker-cell.day:not(.prev):not(.next)')[date - 1]!;
+      const isoOf = (cell: HTMLElement) => {
+        const date = new Date(Number(cell.dataset['date']));
+        const pad = (value: number) => String(value).padStart(2, '0');
 
-      // What the picker reports after the second click of a range.
-      picker.value = '2026-09-01,2026-09-20';
-      picker.dispatchEvent(new Event('change'));
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+      };
+      const closed = () => waitFor(() => expect(document.querySelector('.datepicker')).toBeNull());
 
-      await filteredWith(source, { city: { from: '2026-09-01', to: '2026-09-20' } }, 300);
+      const [left, right] = await open();
 
-      expect(trigger.textContent).toMatch(/^Sep 1\s–\s20, 2026$/);
+      // Each calendar is named by its month title; the outer buttons by our texts (the inner ones are hidden by the
+      // stylesheet). The left calendar always shows the month before the right one: they move together.
+      expect(screen.getByRole('group', { name: titleOf(left)! })).toBe(left);
+
+      const [leftTitle, rightTitle] = [titleOf(left), titleOf(right)];
+
+      fireEvent.click(within(left).getByRole('button', { name: 'Previous' }));
+      expect(titleOf(right)).toBe(leftTitle);
+
+      fireEvent.click(within(right).getByRole('button', { name: 'Next' }));
+      expect([titleOf(left), titleOf(right)]).toEqual([leftTitle, rightTitle]);
+
+      // A range within one month: two clicks in the same calendar. The first one applies nothing yet.
+      const [start, end] = [day(left, 14), day(left, 17)];
+
+      fireEvent.click(start);
+      expect(document.querySelector('.datepicker')).not.toBeNull();
+      // Below the calendars: what is picked so far, while the end is still to come.
+      expect(screen.getByText(/ – …$/)).toBeTruthy();
+
+      // Until the second click, the range follows the mouse (the days between are highlighted), and goes when it leaves.
+      fireEvent.mouseOver(end);
+      expect(left.querySelectorAll('.datepicker-cell.range')).toHaveLength(2);
+      fireEvent.mouseLeave(left);
+      expect(left.querySelectorAll('.datepicker-cell.range')).toHaveLength(0);
+
+      fireEvent.click(end);
+
+      await filteredWith(source, { city: { from: isoOf(start), to: isoOf(end) } }, 300);
+      await closed();
+      expect(trigger.textContent).not.toBe('All');
 
       await loaded();
 
-      clickClear('Moved in');
+      // An end before the start is swapped, across the two calendars.
+      const [nextLeft, nextRight] = await open();
+      const [later, earlier] = [day(nextRight, 3), day(nextLeft, 28)];
+
+      fireEvent.click(later);
+      fireEvent.click(earlier);
+
+      await filteredWith(source, { city: { from: isoOf(earlier), to: isoOf(later) } }, 300);
+      await closed();
+
+      await loaded();
+
+      // The same day twice: a range of one day.
+      const [oneLeft] = await open();
+      const single = day(oneLeft, 5);
+
+      fireEvent.click(single);
+      fireEvent.click(single);
+
+      await filteredWith(source, { city: { from: isoOf(single), to: isoOf(single) } }, 300);
+      await closed();
+
+      await loaded();
+
+      // The clear button below the calendars removes the filter and closes the popover.
+      await open();
+      fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
 
       await filteredWith(source, {}, 300);
+      await closed();
 
       expect(trigger.textContent).toBe('All');
     });
