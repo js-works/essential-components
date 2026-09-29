@@ -11,6 +11,7 @@
     "dist",
     "coverage",
     "package-lock.json",
+    "old-demos",
     "packages"
   ],
   "plugins": [

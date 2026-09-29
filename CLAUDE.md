@@ -94,6 +94,11 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
       Buttons: `--ui-button-radius: 5px`; the data navigator's `buttonRadius`, the file upload's `buttonBorderRadius`
       and the overlays' `actionRadius` (dialog buttons) are `5px`. Larger surfaces are a bit rounder: the file
       upload's frame `4px`, dialogs `6px`, toasts `5px`.
+- `old-demos/<version>/`: frozen, compiled demo pages of older versions (relative base `./`, so they work under any
+  path). Never edit them.
+  - `npm run freeze-demo` builds the current demo into `old-demos/<version of the root package.json>/` (it refuses an
+    existing folder). So: freeze first, then raise the version in the root `package.json`.
+  - The deploy workflow copies `old-demos/` into `dist/`: https://js-works.github.io/essential-components/old-demos/0.0.0/
 - `vite.config.ts`: `resolve.dedupe` makes all demos use one React, even where a package pins its own version (e.g.
   `overlays`, which gets a nested one in its `node_modules`).
 - `tsconfig.json`: `tsc` also checks the imported demo files, so the compiler options are the loosest common set: like
