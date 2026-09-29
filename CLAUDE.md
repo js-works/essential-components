@@ -43,8 +43,8 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
     element of its package (see "Demo element" in the package's `CLAUDE.md`), exported and not registered.
   - `demo/media-manager/`: the "Media Manager" tab, a demo of the root (not of a package), because it combines three
     packages: a data navigator lists the attachments, dialogs and toasts of the overlays package, and a file upload
-    (React wrapper) in a drawer adds new ones. The table is compact (`density="compact"`), striped, with a gray selection
-    (`selectionAppearance="neutral"`), and has a search, a Reload button
+    (React wrapper) in a drawer adds new ones. The table is compact (`density="compact"`), striped, with the default
+    accent selection, and has a search, a Reload button
     (`reloadable`), a column toggle menu (every column but the filename is `hideable`),
     sorting (by default by filename, ascending), paging, column filters, in the data navigator's filter view (Filename: a text filter, contains, starts with or ends with; User, Type and Size: one or
     more; Uploaded: a date range, `dateRangeColumnFilter()`; the types are a fixed list of common ones, `TYPES`; the
@@ -75,10 +75,12 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
       available in the demo.
     - "Information" (one icon-only single-row action, `show: 'both'`, tip "Information": the info icon in the action
       column of every row and in the selection bar while exactly one row is selected, before "Delete"; one entry in
-      the context menu) opens a drawer of the overlays package
+      the context menu; the default action, `default: true`: a double click on a row opens it too) opens a drawer of
+      the overlays package
       (an info dialog on the drawer surface, `dialogs.info({ surface: 'drawer' })`, with only "OK") with made-up
       details from the fake server (`getDetails()`: description, versions, downloads, tags, storage, checksum, stable
-      per attachment).
+      per attachment). Loading them takes a second (`DETAILS_TIME`); the drawer is opened in a scope
+      (`dialogs.open()`), so the dialogs show their spinner meanwhile (after 300 ms), and the drawer replaces it.
     - The type of a file is its extension in capitals (`PDF`, `XLSX`), not its MIME type: a MIME type can be very long
       (`application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`).
     - `attachments.ts`: the fake server, in memory for as long as the page is open (eleven seed files of four users, at

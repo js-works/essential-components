@@ -35,6 +35,9 @@ const DELETE_TIME = 1000;
 // Adding the uploaded files to the list takes a while too (the "Apply" button of the upload drawer shows its spinner).
 const COMMIT_TIME = 1000;
 
+// Loading the details of a file takes long enough for the spinner of the dialogs to show (it comes after 300 ms).
+const DETAILS_TIME = 1000;
+
 // The user of the page: new uploads are theirs.
 const CURRENT_USER = 'Admin';
 
@@ -233,7 +236,7 @@ type Details = {
 const TAGS = ['contract', 'finance', 'project', 'photo', 'internal', 'archive'] as const;
 
 async function getDetails(attachment: Attachment): Promise<Details> {
-  await wait(LOADING_TIME, new AbortController().signal);
+  await wait(DETAILS_TIME, new AbortController().signal);
 
   // A number from the id, the seed of every made-up value.
   const seed = [...attachment.id].reduce((sum, char) => (sum * 31 + char.charCodeAt(0)) >>> 0, 7);

@@ -199,7 +199,7 @@ function ChevronButton(props: { label: string; expanded: boolean; onClick: () =>
   const { label, expanded, onClick } = props;
 
   return (
-    <button type="button" className={styles.iconButton} aria-label={label} aria-expanded={expanded} onClick={onClick}>
+    <button type="button" className={styles.detailToggle} aria-label={label} aria-expanded={expanded} onClick={onClick}>
       <span className={styles.chevron} data-expanded={flag(expanded)}>
         <icons.ChevronRight />
       </span>

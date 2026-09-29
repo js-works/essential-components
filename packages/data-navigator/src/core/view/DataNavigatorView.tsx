@@ -9,7 +9,6 @@ import {
   flag,
   formatValue,
   hasContent,
-  startsDoubleClick,
   suppressesTextSelection,
   suppressesWordSelection,
 } from '../utils';
@@ -52,16 +51,10 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
     onDoubleClick: nav.hasDefaultAction
       ? (event: MouseEvent<HTMLElement>) => nav.doubleClickRow(event, row)
       : undefined,
-    // The second mouse down of a double click is where the browser first tells us it is one. The selection the first
-    // click made goes back here, before the double click is reported, so the row never stays changed.
-    // Shift + mouse down would also select the text between the last click and this one, and that second mouse down
-    // would select a word. Neither is wanted where the gesture already means something else.
+    // Shift + mouse down would select the text between the last click and this one, and the second mouse down of a
+    // double click would select a word. Neither is wanted where the gesture already means something else.
     onMouseDown: selection === 'multi' || nav.hasDefaultAction
       ? (event: MouseEvent<HTMLElement>) => {
-        if (nav.hasDefaultAction && startsDoubleClick(event)) {
-          nav.cancelRowClick();
-        }
-
         const range = selection === 'multi' && suppressesTextSelection(event);
         const word = nav.hasDefaultAction && suppressesWordSelection(event);
 
@@ -174,7 +167,10 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
                   texts={texts}
                   buttonRef={filterButtonRef}
                   onToggle={() => (nav.filterPanel.open ? closeFilterView() : nav.openFilters())}
-                  onClear={nav.clearFilters}
+                  onClear={() => {
+                    nav.clearFilters();
+                    if (nav.filterPanel.open) closeFilterView();
+                  }}
                 />
               )}
               columnMenu={nav.columnToggles.length > 0 && (

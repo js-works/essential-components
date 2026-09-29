@@ -923,7 +923,14 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - Single uses radio buttons.
   - Clicking a data row selects it (row click):
     - Single mode: the row becomes the selected row. Clicking the selected row again keeps it selected.
-    - Multi mode: the row is toggled (selected or deselected).
+    - Multi mode, like in a file manager (decided 2026-09-29; before, a plain click toggled the row):
+      - A plain click selects only this row (all others are deselected) and makes it the anchor of Shift + click.
+      - Ctrl/Cmd + click toggles the row (selected or deselected), and keeps the others.
+      - Shift + click: block selection (below).
+      - The checkbox of a row always toggles it, whatever the row click does. On touch devices (no Ctrl/Cmd) it is the
+        way to select several rows one by one.
+      - So the first click of a double click already leaves the selection the double click ends with (see the
+        default action), and nothing flashes.
     - No selection mode: clicking a row does nothing.
     - Only the free space of a cell selects: the padding and whatever is left beside the content. Not the text of
       the cell, and not anything a custom `render` or `renderDetail` drew.
@@ -957,8 +964,8 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     - Rows outside the range keep their state.
     - After a shift + click, the shift-clicked row is the new anchor, so the next shift + click extends from there.
     - It works for a row click and for a click on a row's checkbox.
-    - Without an anchor (or when the anchor row is not on the page), a shift + click behaves like a normal click.
-      A shift + click on the anchor row itself is also a normal click (it toggles the row).
+    - Without an anchor (or when the anchor row is not on the page), a shift + click toggles the row, like
+      Ctrl/Cmd + click. A shift + click on the anchor row itself toggles it too.
     - The anchor is forgotten whenever the selection is cleared (sorting, filters, page or page size change).
     - Shift + mouse down must not select text in the browser (except in text inputs inside cells).
     - Single mode and no selection mode ignore the shift key.
@@ -982,10 +989,12 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     assistive technology). No tooltip; `Texts.activeFilters` ("{count} active") is its description.
     It stays usable while loading (like the search box). It shows and hides the filter view, and is pressed
     (`aria-pressed`, `--datnav-color-header` as its background) while the view is shown.
-    - While filters are active and the view is not shown, a small × is joined to it (`.filterButtonGroup`, an
+    - While filters are active (whether the view is shown or not), a small × is joined to it (`.filterButtonGroup`, an
       icon-only ghost button right after it, no line between the two: each has its own hover; a thin line was tried and dropped, it looked like a second kind of divider): it removes all filters at once.
       Its name and tooltip are `Texts.clearFilters` ("Clear filters"). Redundant with "Clear all" of the pills on
       purpose (decided 2026-09-29): the × is where the filters are opened, "Clear all" where they are read.
+      - While the view is shown, the × also closes it (its draft is dropped) and gives the focus to the filter button
+        (2026-09-29; hidden while the view was shown before, so clearing there took "Clear" and "Apply").
   - The filter view (`FilterView` in `view/FilterPanel.tsx`, decided 2026-09-29): it takes the place of the column
     headers, the rows and the footer while it is shown; the toolbar stays above it, but the pill row is not shown
     (the view shows the same filters, as a draft; not rendered at all, so the toolbar gets lower by the pill row: hiding it with its room kept was tried and dropped). It has as much room as the table, and works the same on a page, in
@@ -1341,6 +1350,9 @@ The main goal is a very nice, yet simple, API, designed together with the user.
       - Transparent, no border, `--datnav-font-size-sm`, `0.75 * --datnav-control-height` high. Hovered, they get
         `--datnav-color-hover-border` (one shade over the hovered row). The details chevron and the pager buttons (the same
         icon button class) too.
+      - With `selectionAppearance="accent"` (where the row hovers in the accent tint), the action column buttons and
+        the details chevron get `--datnav-color-selected-border` instead, a darker shade of that tint, like the drag
+        handle (2026-09-29). The pager buttons (not on a row) keep the gray.
     - In a menu, the menu button follows the variant of the menu. An item of a menu is red when it is `danger`
       (the other variants look the same there).
     - Every action button carries `data-variant` with its variant.
@@ -1365,14 +1377,13 @@ The main goal is a very nice, yet simple, API, designed together with the user.
       select a word, so a selection would be the consequence of this very gesture, not something that was already
       there. Guarding on it would mean the double click almost never fires. jsdom has no text selection, so only a
       real browser shows this: the test suite mocks `getSelection` to pin it.
-    - A double click leaves the selection exactly as it was, in single and in multi mode alike.
-      - No delay and no guessed threshold: the browser counts the clicks itself and reports the count in
-        `event.detail`. The second mouse down already carries 2, which is the earliest moment anything can know a
-        double click is happening, before the second click and before the double click event.
-      - So a row click still selects at once, and the selection from before it is kept in a ref (no re-render). On
-        that second mouse down it is put back, so the row is only changed for the span of the user's own gap between
-        the two clicks.
-      - The second click of a double click never counts on its own (`event.detail >= 2`).
+    - A double click selects only its row (with a selection mode) and runs the action: its first click is a plain
+      row click, which already selects only this row (see the row click), and nothing flashes.
+      - Before (until 2026-09-29), a double click left the selection exactly as it was: the first click selected, and
+        the second mouse down put the selection from before back. The checkbox then showed a short flash, so it was
+        dropped.
+      - No delay and no guessed threshold: a row click selects at once. The second click of a double click never
+        counts on its own (`event.detail >= 2`, the browser counts the clicks itself).
       - Never invent a double click duration. It differs per system and per browser, the web platform does not
         expose it, and `event.detail` makes knowing it unnecessary.
     - The first action marked `default` wins, the rest are ignored. The type cannot check that there is only one.
@@ -1431,7 +1442,7 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - The handle: an icon button (Tabler's `grip-vertical`), dimmed, the text color on hover, `cursor: grab`, named
     `Texts.moveRow` ("Move row"), no tooltip. Its hover background is the gray of the row buttons
     (`--datnav-color-hover-border`), and with `selectionAppearance="accent"` (where the row hovers in the accent tint)
-    `--datnav-color-selected-border`, a darker shade of that tint (2026-09-29).
+    `--datnav-color-selected-border`, a darker shade of that tint (2026-09-29), like the other row buttons.
   - Pointer (mouse, touch, pen; `view/rowDrag.ts`): pressing the handle starts a drag (the pointer is captured, no
     scrolling on touch, `touch-action: none`). The row itself moves (decided 2026-09-29; a faded row with a 2px drop
     line in the primary color was the first version): it follows the pointer (an inline `translateY` on its cells and
@@ -1539,8 +1550,9 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   something else: `suppressesTextSelection` for shift (the range between the last click and this one) and
   `suppressesWordSelection` for the second mouse down of a double click (a word). Neither applies inside a text
   input, and the word one only on the free space of a cell.
-- Block selection: the anchor is the key of the last clicked row (kept in a ref, no re-render). `selectByClick` in
-  `useDataNavigator.ts` toggles a row or sets a range. The `Checkbox` widget reads `shiftKey` from the native change
+- Block selection: the anchor is the key of the last clicked row (kept in a ref, no re-render). `applyRowClick` in
+  `useDataNavigator.ts` picks: a plain click `selectOnly`, Ctrl/Cmd or Shift `selectByClick` (toggles a row or sets
+  a range). The `Checkbox` widget reads `shiftKey` from the native change
   event and passes it on. Text selection is prevented with `preventDefault` on shift + mouse down
   (`suppressesTextSelection` in `utils.ts`).
 - Row click: `isRowTarget` in `utils.ts` answers "did this hit the free space of a cell of the row".

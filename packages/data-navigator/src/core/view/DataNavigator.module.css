@@ -928,6 +928,11 @@
       border-color: transparent;
       background-color: var(--datnav-color-hover-border);
     }
+
+    /* On the accent hover of its row: a darker shade of the accent tint instead of the gray (like the drag handle). */
+    :where([data-selection-appearance='accent']) &[data-placement='row']:hover {
+      background-color: var(--datnav-color-selected-border);
+    }
   }
 
   /* Pressed: the hover or fill color with a little of the text color (darker in light mode, lighter in dark mode). */
@@ -952,6 +957,10 @@
   &[data-placement='row']:active {
     border-color: transparent;
     background-color: color-mix(in srgb, var(--datnav-color-hover-border), var(--datnav-color-text) 10%);
+  }
+
+  :where([data-selection-appearance='accent']) &[data-placement='row']:active {
+    background-color: color-mix(in srgb, var(--datnav-color-selected-border), var(--datnav-color-text) 10%);
   }
 }
 
@@ -987,6 +996,22 @@
 
   &:active:not(:disabled) {
     background-color: color-mix(in srgb, var(--datnav-color-hover-border), var(--datnav-color-text) 10%);
+  }
+}
+
+/* The details toggle. On the accent hover of its row: a darker shade of the accent tint instead of the gray (like the
+   drag handle; the same weight as the gray hover and press of `.iconButton`, and later, so these win). */
+.detailToggle {
+  composes: iconButton;
+
+  @media (hover: hover) {
+    :where([data-selection-appearance='accent']) &:hover:not(:disabled) {
+      background-color: var(--datnav-color-selected-border);
+    }
+  }
+
+  :where([data-selection-appearance='accent']) &:active:not(:disabled) {
+    background-color: color-mix(in srgb, var(--datnav-color-selected-border), var(--datnav-color-text) 10%);
   }
 }
 

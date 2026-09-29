@@ -16,6 +16,7 @@ export {
   dateRangeFooter,
   detailCell,
   detailRow,
+  detailToggle,
   dimmed,
   dragHandle,
   emptyCell,
@@ -129,6 +130,7 @@ declare const dateRange: string;
 declare const dateRangeFooter: string;
 declare const detailCell: string;
 declare const detailRow: string;
+declare const detailToggle: string;
 declare const dimmed: string;
 declare const dragHandle: string;
 declare const emptyCell: string;

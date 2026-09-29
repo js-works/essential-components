@@ -111,8 +111,6 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
 
   const sourceRef = useRef(source);
   const anchorRef = useRef<string | undefined>(undefined);
-  // What the selection was before the last row click, so the second mouse down of a double click can put it back.
-  const beforeClickRef = useRef<Selection<Row> | undefined>(undefined);
   const spinnerVisible = useDelayedFlag(loading, SPINNER_DELAY);
   const [headerRef, headerHeight] = useElementHeight<HTMLDivElement>();
   // The loading overlay ends where the scrollbar of the rows area begins.
@@ -443,8 +441,12 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     clearSelection();
   };
 
-  const applyRowClick = (key: string, shift: boolean) => {
-    if (selection === 'single') {
+  // A row click works like in a file manager: a plain click selects only this row (the anchor for Shift + click),
+  // Ctrl/Cmd + click toggles it. So the first click of a double click already leaves the selection the double click
+  // ends with, and nothing has to be put back. The checkbox toggles either way.
+  const applyRowClick = (key: string, shift: boolean, toggle: boolean) => {
+    if (selection === 'single' || (!shift && !toggle)) {
+      anchorRef.current = key;
       selectOnly(key);
     } else {
       selectByClick(key, shift);
@@ -462,26 +464,12 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
       return;
     }
 
-    // The row reacts at once, with no waiting: if a second click follows, the browser marks its mouse down as one of
-    // a double click, and `cancelRowClick` puts this back before the double click is even reported.
-    beforeClickRef.current = selected;
-    applyRowClick(key, event.shiftKey);
+    // The row reacts at once, with no waiting.
+    applyRowClick(key, event.shiftKey, event.ctrlKey || event.metaKey);
   };
 
-  // The second mouse down of a double click. The browser has already decided that it is one, so the selection the
-  // first click made goes back right away, and no threshold has to be guessed anywhere.
-  const cancelRowClick = () => {
-    const before = beforeClickRef.current;
-
-    beforeClickRef.current = undefined;
-
-    if (before !== undefined) {
-      setSelected(before);
-    }
-  };
-
-  // A double click on the free space of a row runs the default action. It never changes the selection: the first
-  // click's change was already put back by `cancelRowClick` on the mouse down that started this double click.
+  // A double click on the free space of a row runs the default action. It changes the selection no further: its first
+  // click has already selected only this row (see `applyRowClick`).
   const doubleClickRow = (event: MouseEvent<HTMLElement>, row: Row) => {
     if (defaultAction === undefined || !isPlainRowDoubleClick(event)) {
       return;
@@ -724,7 +712,6 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     selectOnly,
     selectAll,
     clickRow,
-    cancelRowClick,
     doubleClickRow,
     hasDefaultAction: defaultAction !== undefined,
 

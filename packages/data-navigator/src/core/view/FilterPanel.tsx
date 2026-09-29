@@ -35,8 +35,8 @@ type FilterButtonProps = {
 
 // The filter button of the toolbar: a funnel, its label and the number of active filters in a badge. It shows and
 // hides the filter view (which takes the place of the rows), and is pressed while the view is shown. While filters are
-// active (and the view is not shown), a small × follows it directly (no line between them; each has its own hover): it removes all filters
-// at once (like "Clear all" of the pills, on purpose: the × is where the filters are opened).
+// active, a small × follows it directly (no line between them; each has its own hover): it removes all filters at once
+// (like "Clear all" of the pills, on purpose: the × is where the filters are opened), and closes the view if it is shown.
 function FilterButton({ count, open, texts, buttonRef, onToggle, onClear }: FilterButtonProps): ReactElement {
   return (
     <span className={styles.filterButtonGroup}>
@@ -58,7 +58,7 @@ function FilterButton({ count, open, texts, buttonRef, onToggle, onClear }: Filt
         <span className={styles.buttonLabel}>{texts.filters}</span>
         {count > 0 && <span className={styles.filterBadge} aria-hidden>{count}</span>}
       </button>
-      {count > 0 && !open && (
+      {count > 0 && (
         <ActionButton
           look={{ icon: <icons.Close size={14} />, tip: texts.clearFilters }}
           variant="secondary"

@@ -202,17 +202,24 @@ function MediaManager(): ReactElement {
       toasts.success(`${filesText(rows.map((row) => row.name))} deleted`);
     };
 
-    // An info dialog on the drawer surface: only an "OK" button, and no icon (the title is the file name).
+    // An info dialog on the drawer surface: only an "OK" button, and no icon (the title is the file name). The details
+    // are loaded in a scope, so the dialogs show their spinner while they load.
     const showDetails = async (attachment: Attachment) => {
-      const details = await getDetails(attachment);
+      const scope = dialogs.open();
 
-      await dialogs.info({
-        surface: 'drawer',
-        icon: false,
-        title: attachment.name,
-        content: <DetailsTable attachment={attachment} details={details} />,
-        styles: DETAILS_STYLES,
-      });
+      try {
+        const details = await getDetails(attachment);
+
+        await scope.info({
+          surface: 'drawer',
+          icon: false,
+          title: attachment.name,
+          content: <DetailsTable attachment={attachment} details={details} />,
+          styles: DETAILS_STYLES,
+        });
+      } finally {
+        scope.dispose();
+      }
     };
 
     // The file upload in a form dialog on the drawer surface. Each file is uploaded (staged on the server) as soon as it is added; "Apply"
@@ -294,13 +301,14 @@ function MediaManager(): ReactElement {
       },
       // The details in a drawer: in the action column of every row and in the selection bar while exactly one row is
       // selected, in both places only its icon (an icon-only action: no label), with "Information" as the tooltip. One
-      // action, so one entry in the context menu.
+      // action, so one entry in the context menu. The default action: a double click on a row opens it.
       {
         type: 'singleRow',
         key: 'info',
         icon: icons.info,
         tip: 'Information',
         show: 'both',
+        default: true,
         onClick: (attachment) => void showDetails(attachment),
       },
       // In the toolbar, for the selected rows: this rows action is what makes the selection multiple.
@@ -333,7 +341,6 @@ function MediaManager(): ReactElement {
       subtitle="Upload files with the upload button in the toolbar."
       density="compact"
       striped
-      selectionAppearance="neutral"
       searchable
       reloadable
       source={fetchAttachments}

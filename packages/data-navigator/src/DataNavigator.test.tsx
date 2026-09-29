@@ -1019,14 +1019,30 @@ describe('DataNavigator', () => {
       await filteredWith(source, { name: { text: 'person', match: 'contains' }, city: 'Berlin' }, 300);
       await loaded();
 
-      // not while the filter view is shown (it has its own Clear, for the draft)
-      await openFilters();
-      expect(clear()).toBeNull();
-      click('Cancel');
-
       fireEvent.click(clear()!);
       await filteredWith(source, {}, 300);
       await loaded();
+      expect(clear()).toBeNull();
+    });
+
+    it('clears the filters with the × also while the filter view is shown, and closes the view', async () => {
+      const { source } = renderNav({ columns: filteredColumns });
+      const clear = () =>
+        document.querySelector('.filterButtonGroup')?.querySelector<HTMLElement>('[aria-label="Clear filters"]')
+          ?? null;
+
+      await loaded();
+      await openFilters();
+      typeName('person');
+      click('Apply');
+      await filteredWith(source, { name: { text: 'person', match: 'contains' } }, 300);
+      await loaded();
+
+      await openFilters();
+      fireEvent.click(clear()!);
+      await filteredWith(source, {}, 300);
+      await loaded();
+      expect(screen.queryByRole('button', { name: 'Apply' })).toBeNull();
       expect(clear()).toBeNull();
     });
   });
@@ -1449,6 +1465,7 @@ describe('DataNavigator', () => {
   // Row click selects only on the free space of a cell, never on the text itself: the text has its own element.
   const cellOf = (text: string) => screen.getByText(text).closest<HTMLElement>('[role="cell"]')!;
   const clickCell = (text: string, init?: MouseEventInit) => fireEvent.click(cellOf(text), init);
+  const isSelected = (text: string) => cellOf(text).closest('[role="row"]')?.getAttribute('aria-selected') === 'true';
   // What a browser really fires for a double click. The second mouse down already carries detail 2: that is where
   // the browser first says it is a double click, before the second click and the double click event.
   const doubleClickCell = (text: string) => {
@@ -1567,18 +1584,47 @@ describe('DataNavigator', () => {
       expect(container.querySelectorAll('.dataRow[aria-selected="true"]')).toHaveLength(1);
     });
 
-    it('toggles the row in multi mode', async () => {
+    it('selects only the clicked row in multi mode, toggles with Ctrl/Cmd, extends with Shift', async () => {
       renderNav({ selection: 'multi' });
       await loaded();
 
+      // no timers are involved: the row reacts in the same tick as the click
       clickCell('Person 01');
       expect(screen.getByText('1 selected')).toBeTruthy();
 
       clickCell('Person 02');
+      expect(screen.getByText('1 selected')).toBeTruthy();
+      expect(isSelected('Person 01')).toBe(false);
+      expect(isSelected('Person 02')).toBe(true);
+
+      clickCell('Person 01', { ctrlKey: true });
       expect(screen.getByText('2 selected')).toBeTruthy();
 
-      clickCell('Person 01');
+      clickCell('Person 01', { metaKey: true });
       expect(screen.getByText('1 selected')).toBeTruthy();
+      expect(isSelected('Person 01')).toBe(false);
+
+      // a plain click is the anchor of Shift + click
+      clickCell('Person 01');
+      clickCell('Person 03', { shiftKey: true });
+      expect(screen.getByText('3 selected')).toBeTruthy();
+    });
+
+    it('still toggles with the checkbox in multi mode', async () => {
+      renderNav({ selection: 'multi' });
+      await loaded();
+
+      clickCell('Person 01');
+
+      const checkbox = within(cellOf('Person 02').closest<HTMLElement>('[role="row"]')!)
+        .getByRole('checkbox', { name: 'Select row' });
+
+      fireEvent.click(checkbox);
+      expect(screen.getByText('2 selected')).toBeTruthy();
+
+      fireEvent.click(checkbox);
+      expect(screen.getByText('1 selected')).toBeTruthy();
+      expect(isSelected('Person 01')).toBe(true);
     });
 
     it('selects the row in single mode and keeps it selected when clicked again', async () => {
@@ -1719,64 +1765,35 @@ describe('DataNavigator', () => {
       expect(edit.mock.calls[0]![0]).toMatchObject({ name: 'Person 02' });
     });
 
-    it('puts the selection back on the second mouse down, before the double click is reported', async () => {
+    it('selects only the double clicked row, and nothing changes back in between', async () => {
       const edit = vi.fn();
 
       renderNav({ selection: 'multi', actions: [editAction(edit)] });
       await loaded();
+
+      clickCell('Person 02');
+      clickCell('Person 03', { ctrlKey: true });
+      expect(screen.getByText('2 selected')).toBeTruthy();
 
       const cell = cellOf('Person 01');
 
-      // the first click selects at once: there is no waiting and no guessed threshold anywhere
+      // the first click selects only this row, at once: there is no waiting and no guessed threshold anywhere
       fireEvent.click(cell, { detail: 1 });
       expect(screen.getByText('1 selected')).toBeTruthy();
+      expect(isSelected('Person 01')).toBe(true);
 
-      // the browser marks the second mouse down as one of a double click, and the selection goes back there,
-      // before the click and the double click that follow it
+      // the rest of the double click keeps that selection, so the row does not flash
       fireEvent.mouseDown(cell, { detail: 2 });
-      expect(screen.queryByText('1 selected')).toBeNull();
-      expect(edit).not.toHaveBeenCalled();
-
+      expect(isSelected('Person 01')).toBe(true);
       fireEvent.click(cell, { detail: 2 });
       fireEvent.doubleClick(cell, { detail: 2 });
-      expect(edit).toHaveBeenCalledTimes(1);
-      expect(screen.queryByText('1 selected')).toBeNull();
-    });
 
-    it('leaves the rest of the selection alone, in multi mode', async () => {
-      const edit = vi.fn();
-
-      renderNav({ selection: 'multi', actions: [editAction(edit)] });
-      await loaded();
-
-      clickCell('Person 02');
-      expect(screen.getByText('1 selected')).toBeTruthy();
-
-      // a double click on another row runs the action and leaves Person 02 selected, alone
-      doubleClickCell('Person 01');
       expect(edit).toHaveBeenCalledTimes(1);
       expect(screen.getByText('1 selected')).toBeTruthy();
-      expect(cellOf('Person 02').closest('[role="row"]')?.getAttribute('aria-selected')).toBe('true');
-      expect(cellOf('Person 01').closest('[role="row"]')?.getAttribute('aria-selected')).toBe('false');
-
-      // and a double click on the selected row leaves it selected
-      doubleClickCell('Person 02');
-      expect(screen.getByText('1 selected')).toBeTruthy();
+      expect(isSelected('Person 01')).toBe(true);
     });
 
-    it('selects at once on a plain click: a default action costs no delay', async () => {
-      renderNav({ selection: 'multi', actions: [editAction(vi.fn())] });
-      await loaded();
-
-      // no timers are involved: the row reacts in the same tick as the click
-      clickCell('Person 01');
-      expect(screen.getByText('1 selected')).toBeTruthy();
-
-      clickCell('Person 02');
-      expect(screen.getByText('2 selected')).toBeTruthy();
-    });
-
-    it('leaves the selected row as it was, in single mode', async () => {
+    it('selects the double clicked row, in single mode', async () => {
       const edit = vi.fn();
 
       renderNav({ actions: [{ ...editAction(edit), show: 'toolbar' as const }] });
@@ -1787,13 +1804,12 @@ describe('DataNavigator', () => {
       clickCell('Person 01');
       expect(screen.getByText('1 selected')).toBeTruthy();
 
-      // the double click runs the action but does not move the selection to Person 02
       doubleClickCell('Person 02');
 
       expect(edit).toHaveBeenCalledTimes(1);
       expect(edit.mock.calls[0]![0]).toMatchObject({ name: 'Person 02' });
-      expect(cellOf('Person 01').closest('[role="row"]')?.getAttribute('aria-selected')).toBe('true');
-      expect(cellOf('Person 02').closest('[role="row"]')?.getAttribute('aria-selected')).toBe('false');
+      expect(isSelected('Person 01')).toBe(false);
+      expect(isSelected('Person 02')).toBe(true);
     });
 
     it('works without a selection mode and from a detail row', async () => {
@@ -1936,7 +1952,7 @@ describe('DataNavigator', () => {
       shiftClick('Person 05');
       expect(screen.getByText('4 selected')).toBeTruthy();
 
-      clickCell('Person 03');
+      clickCell('Person 03', { ctrlKey: true });
       expect(screen.getByText('3 selected')).toBeTruthy();
 
       shiftClick('Person 05');
@@ -1948,7 +1964,7 @@ describe('DataNavigator', () => {
       await loaded();
 
       clickCell('Person 01');
-      clickCell('Person 04');
+      clickCell('Person 04', { ctrlKey: true });
       shiftClick('Person 06');
       expect(screen.getByText('4 selected')).toBeTruthy();
 
@@ -1968,7 +1984,7 @@ describe('DataNavigator', () => {
       expect(screen.getByText('4 selected')).toBeTruthy();
     });
 
-    it('behaves like a normal click without an anchor and on the anchor row itself', async () => {
+    it('toggles the row without an anchor and on the anchor row itself', async () => {
       renderNav({ selection: 'multi' });
       await loaded();
 

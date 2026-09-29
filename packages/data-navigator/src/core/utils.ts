@@ -8,7 +8,6 @@ export {
   isPlainRowDoubleClick,
   isShiftClick,
   isTextEditingTarget,
-  startsDoubleClick,
   suppressesTextSelection,
   suppressesWordSelection,
   textFieldKeys,
