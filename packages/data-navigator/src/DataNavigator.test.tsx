@@ -424,7 +424,8 @@ describe('DataNavigator', () => {
   });
 
   it('ends the empty state without a line below it (unlike the rows)', () => {
-    expect(declarationsOf('.emptyCell')).toMatch(/border-bottom: none/);
+    // from the stylesheet itself: jsdom's CSSOM serializes `border-bottom: none` as `medium`
+    expect(baseStylesheet.slice(baseStylesheet.indexOf('\n.emptyCell {'))).toMatch(/^[^}]*border-bottom: none;/);
     expect(declarationsOf('.cell')).toMatch(/border-bottom: 1px solid var\(--datnav-color-border\)/);
   });
 
@@ -903,8 +904,11 @@ describe('DataNavigator', () => {
       await loaded();
 
       // The clear button below the calendars removes the range and closes the calendars.
+      // (the filter view has a Clear button of its own)
       await open();
-      fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
+      fireEvent.click(
+        within(document.querySelector<HTMLElement>('.dateRangeFooter')!).getByRole('button', { name: 'Clear' }),
+      );
       await closed();
       expect(trigger().textContent).toBe('All');
       click('Apply');
@@ -2406,7 +2410,10 @@ describe('DataNavigator', () => {
 
       first.unmount();
 
-      renderNav({ actions: [menu(general('a', 'Action A'), separator(), rowsAction)] });
+      // (the selection bar has no general actions, so the menu starts with another rows action here)
+      const otherRowsAction: Spec.Action<Person> = { type: 'multiRow', key: 'q', label: 'Action Q', onClick: noop };
+
+      renderNav({ actions: [menu(otherRowsAction, separator(), rowsAction)] });
 
       await loaded();
 
@@ -2414,7 +2421,8 @@ describe('DataNavigator', () => {
 
       open();
 
-      expect(await screen.findByRole('menuitem', { name: 'Action R' })).toBeTruthy();
+      expect(await screen.findByRole('menuitem', { name: 'Action Q' })).toBeTruthy();
+      expect(screen.getByRole('menuitem', { name: 'Action R' })).toBeTruthy();
 
       expect(screen.getAllByRole('separator')).toHaveLength(1);
     });
@@ -2591,11 +2599,12 @@ describe('DataNavigator', () => {
       });
 
       await loaded();
+      // it is still in the action column (checked before the menu opens: the menu hides the rest from the a11y tree)
+      expect(screen.getAllByRole('button', { name: 'Remove this' })).toHaveLength(10);
+
       await openOn('Person 03');
 
       expect(entries()).toEqual(['Edit', '---', 'Remove']);
-      // it is still in the action column
-      expect(screen.getAllByRole('button', { name: 'Remove this' })).toHaveLength(10);
     });
 
     it('selects only the clicked row when it is not selected, keeps the selection on a selected row', async () => {
@@ -3920,7 +3929,7 @@ describe('selection controls', () => {
 
   it('makes the selection checkboxes and radios gray with the neutral appearance, and only those', () => {
     expect(baseStylesheet).toMatch(
-      /:where\(\[data-selection-appearance='neutral'\]\) :is\(\.dataRow > \.cell > \.check, \.headerTall > \.check\) \{\s*color: var\(--datnav-color-text-dimmed\);/,
+      /:where\(\[data-selection-appearance='neutral'\]\) :is\(\.dataRow > \.cell > \.check, \.groupRow > \.cell > \.check, \.headerTall > \.check\) \{\s*color: var\(--datnav-color-text-dimmed\);/,
     );
     expect(baseStylesheet).toMatch(/\n\.check \{[^}]*color: var\(--datnav-color-primary\);/);
   });
@@ -3978,7 +3987,7 @@ describe('cell text', () => {
 
 describe('accent hover', () => {
   it('tints hovered rows with the accent hover color in accent mode, after the gray hovers', () => {
-    const hover = baseStylesheet.slice(baseStylesheet.lastIndexOf('@media (hover: hover)'));
+    const hover = baseStylesheet.slice(baseStylesheet.lastIndexOf('\n@media (hover: hover)'));
     const accent = hover.indexOf('[data-selection-appearance=\'accent\']) .dataRow:hover > .cell');
 
     expect(accent).toBeGreaterThan(hover.indexOf('var(--datnav-color-stripe-hover)'));
@@ -4005,7 +4014,7 @@ describe('vertical dividers', () => {
       /\.cell\[data-selected\]\[data-divider='start'\] \{\s*border-left-color: transparent;/,
     );
 
-    const hover = baseStylesheet.slice(baseStylesheet.lastIndexOf('@media (hover: hover)'));
+    const hover = baseStylesheet.slice(baseStylesheet.lastIndexOf('\n@media (hover: hover)'));
 
     expect(hover).toMatch(
       /\.detailRow:hover > \.cell\[data-divider='end'\],[^{]*\{\s*border-right-color: transparent;/,
@@ -4029,7 +4038,7 @@ describe('sortable header hover', () => {
 
 describe('row hover', () => {
   it('draws a line on top and at the bottom of a hovered row, without moving it, and none on top of the first', () => {
-    const hover = baseStylesheet.slice(baseStylesheet.lastIndexOf('@media (hover: hover)'));
+    const hover = baseStylesheet.slice(baseStylesheet.lastIndexOf('\n@media (hover: hover)'));
 
     expect(hover).toMatch(
       /\.dataRow:hover > \.cell:not\(\[data-selected\]\),\s*\.dataRow:has\(\+ \.detailRow:hover\) > \.cell:not\(\[data-selected\]\) \{\s*margin-top: -1px;\s*border-top: 1px solid var\(--datnav-color-hover-border\);/,
