@@ -1,0 +1,52 @@
+/* The frame of the board manager. Everything else is Mantine (its variables are set on `.board-manager`). */
+
+.board-manager {
+  color: var(--mantine-color-text);
+  font-family: var(--mantine-font-family);
+  font-size: var(--mantine-font-size-sm);
+}
+
+.board-manager__app {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-md);
+}
+
+/* One line when there is room, else the breadcrumb goes below the title. */
+.board-manager__top-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mantine-spacing-xs) var(--mantine-spacing-lg);
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-sm);
+  background: var(--mantine-color-body);
+}
+
+.board-manager__title {
+  padding: 4px 6px;
+  border-radius: var(--mantine-radius-sm);
+}
+
+.board-manager__title:hover {
+  background: var(--mantine-color-default-hover);
+}
+
+.board-manager__crumbs {
+  flex-wrap: wrap;
+  row-gap: 4px;
+  min-width: 0;
+}
+
+.board-manager__home {
+  display: inline-flex;
+}
+
+.board-manager__card {
+  transition: border-color 120ms;
+}
+
+.board-manager__card:hover {
+  border-color: var(--mantine-primary-color-filled);
+}

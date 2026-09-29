@@ -34,12 +34,13 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
 - The root is the demo page of all packages:
   - `index.html`: a header with the title and, top right, the global switches (language `en-US`/`de-DE`, color
     scheme), which change `<html>` (`lang`, `data-scheme`) for every demo. Below it a split: vertical tabs on the left
-    ("Data navigator", "File upload", "Dialogs + Toasts", "Media Manager"), the chosen demo on the right.
+    ("Data navigator", "File upload", "Dialogs + Toasts", "Media Manager", "Board Manager"), the chosen demo on the
+    right.
     - The URL hash has one segment per level of tabs: `#file-upload/react`, `#dialogs-toasts/react-i18n` (the first tab,
       the data navigator, has none).
   - `demo/main.ts`: imports the demo element of each package by a relative path
     (`../packages/file-upload/demo/FileUploadDemo`) and registers it (`data-navigator-demo`, `file-upload-demo`,
-    `overlays-demo`; the root's own `media-manager-demo`). Each demo element is a light DOM custom
+    `overlays-demo`; the root's own `media-manager-demo` and `board-manager-demo`). Each demo element is a light DOM custom
     element of its package (see "Demo element" in the package's `CLAUDE.md`), exported and not registered.
   - `demo/media-manager/`: the "Media Manager" tab, a demo of the root (not of a package), because it combines three
     packages: a data navigator lists the attachments, dialogs and toasts of the overlays package, and a file upload
@@ -91,6 +92,23 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
       `attachments.ts`): a type `File` would clash with the DOM's `File`.
     - `MediaManagerDemo.tsx`: the demo element (light DOM, React inside, registered as
       `media-manager-demo`). It uses the i18n adapters of the two packages' demos, so it follows `<html lang>`.
+  - `demo/board-manager/`: the "Board Manager" tab, a demo of the root (a small app, not a product): boards and
+    committees, their meetings, agendas, minutes and documents. Mantine, React Router, Zustand, and three packages:
+    a data navigator for every list, the dialogs and toasts of the overlays package, the file upload for documents.
+    - Made to be embedded (later e.g. in XWiki, with content around it): no side navigation, a top bar with the app
+      icon, the title "Board Manager" (a menu of the modules: Home, Boards, Meetings, Members) and a breadcrumb that
+      starts with a home icon (tip "Home").
+    - Routes (`App.tsx`, a memory router): `/`, `/boards`, `/boards/:boardId` (tabs Meetings, Members),
+      `/boards/:boardId/meetings/:meetingId` and `/meetings/:meetingId` (tabs Agenda, Minutes, Documents), `/members`.
+      The route is mirrored in the hash after the tab's segment (`#board-manager/boards/b1`), only while the tab is shown.
+    - Mantine is scoped: its layered CSS, its variables and color scheme on `.board-manager` (the app, and the content
+      of each dialog through `wrapContent`), following `<html data-scheme>`; its popups without portal.
+    - `db.ts`: the fake server, a Zustand store in memory, seeded (stable) with dates relative to today: 6 boards,
+      28 people, about 50 meetings with agendas, minutes of the held ones, documents.
+    - Members: the people, with create, edit and delete. Deleting also removes their memberships, and their agenda
+      items keep no presenter (the confirmation says from how many boards). Memberships are changed on a board's page.
+    - The agenda is reordered by dragging (`reorder`), the minutes are recorded per item (a form drawer), the minutes
+      tab shows them as one document; a held meeting's minutes are approved there.
   - `demo/demo.css`: only what is specific to this page: the frame around the demos (header, tabs) is not selectable
     (`user-select: none`); inside the demos, selecting stays as their packages have it.
   - `demo/ui/`: the design language (`ui.css`, `ui.ts`), the same files as in every package. Read the header of `ui.css`
@@ -122,8 +140,9 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
 
 ## Stack
 
-- TypeScript (strict), Vite, npm workspaces. The root has dev dependencies only (`vite`, `typescript`,
-  `@vitejs/plugin-react`, `react`, `react-dom`, their types, `dprint`).
+- TypeScript (strict), Vite, npm workspaces. The root has dev dependencies (`vite`, `typescript`,
+  `@vitejs/plugin-react`, `react`, `react-dom`, their types, `dprint`; for the board manager `@mantine/core`,
+  `@mantine/hooks`, `react-router`) and `zustand`.
 - `.npmrc` (the root one counts in a workspace; npm ignores those of the packages): `ignore-scripts=true`,
   `min-release-age=7`.
   - The first workspace install (2026-09-26) was run once with `--min-release-age=5`, because `antd@6.6.5` (a dev

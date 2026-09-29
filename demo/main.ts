@@ -4,6 +4,7 @@ import './demo.css';
 import { DataNavigatorDemo } from '../packages/data-navigator/demo/DataNavigatorDemo';
 import { FileUploadDemo } from '../packages/file-upload/demo/FileUploadDemo';
 import { OverlaysDemo } from '../packages/overlays/src/demo/OverlaysDemo';
+import { BoardManagerDemo } from './board-manager/BoardManagerDemo';
 import { MediaManagerDemo } from './media-manager/MediaManagerDemo';
 import { setupUi } from './ui/ui';
 
@@ -30,3 +31,4 @@ customElements.define('file-upload-demo', FileUploadDemo);
 customElements.define('data-navigator-demo', DataNavigatorDemo);
 customElements.define('overlays-demo', OverlaysDemo);
 customElements.define('media-manager-demo', MediaManagerDemo);
+customElements.define('board-manager-demo', BoardManagerDemo);
