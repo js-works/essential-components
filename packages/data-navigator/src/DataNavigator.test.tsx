@@ -1525,12 +1525,25 @@ describe('DataNavigator', () => {
       expect(detailsCell!.matches('.cell:not([data-control])')).toBe(true);
       expect(actionCell.matches('.cell:not([data-control])')).toBe(false);
 
-      // the selection cell selects and deselects from its free space
+      // the free space of the selection cell is a click on the checkbox: it toggles and keeps the others
       fireEvent.click(selectionCell!);
       expect(screen.getByText('1 selected')).toBeTruthy();
 
+      const selectionCellOfSecondRow = container.querySelectorAll('.dataRow')[1]!.children[0]!;
+      fireEvent.click(selectionCellOfSecondRow);
+      expect(screen.getByText('2 selected')).toBeTruthy();
+
+      fireEvent.click(selectionCellOfSecondRow);
       fireEvent.click(selectionCell!);
       expect(screen.queryByText('1 selected')).toBeNull();
+
+      // the free space of the select-all cell is a click on the select-all checkbox
+      const selectAllCell = screen.getByRole('checkbox', { name: 'Select all rows' }).parentElement!;
+      fireEvent.click(selectAllCell);
+      expect(screen.getByRole('checkbox', { name: 'Deselect all rows' })).toBeTruthy();
+
+      fireEvent.click(selectAllCell);
+      expect(screen.queryByText(/selected/)).toBeNull();
 
       // so does the details toggle cell, without expanding anything
       fireEvent.click(detailsCell!);

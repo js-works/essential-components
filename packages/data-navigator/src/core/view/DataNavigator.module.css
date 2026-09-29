@@ -1986,6 +1986,32 @@
   cursor: auto;
 }
 
+/* A link in a cell keeps the pointer: `auto` above would replace the browser's own `cursor: pointer` of a link that is
+   the cell's content itself (a custom `render` returning an anchor). */
+:where(.dataRow, .detailRow) > .cell a:any-link {
+  cursor: pointer;
+}
+
+/* The meta cells (drag handle, selection, details toggle; in every row, the header and the group rows included) sit
+   closer together: half of xs on the sides that face another meta cell. The outer sides keep the normal padding: the
+   start of the first one (the table's edge) and the end of the last one (before the divider). */
+.cell[data-meta] {
+  padding-inline: calc(var(--datnav-spacing-xs) / 2);
+}
+
+.cell[data-meta~='first'] {
+  padding-inline-start: var(--datnav-spacing-sm);
+}
+
+.cell[data-meta~='last'] {
+  padding-inline-end: var(--datnav-spacing-sm);
+}
+
+/* The free space of the select-all cell is a click on its checkbox (while there are rows). */
+.headerTall[data-select] {
+  cursor: pointer;
+}
+
 .dataRow:has(+ .detailRow) > .cell {
   border-bottom-color: transparent;
 }

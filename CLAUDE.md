@@ -97,7 +97,7 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
     a data navigator for every list, the dialogs and toasts of the overlays package, the file upload for documents.
     - Made to be embedded (later e.g. in XWiki, with content around it): no side navigation, a top bar with the app
       icon, the title "Board Manager" (a menu of the modules: Home, Boards, Meetings, Members) and a breadcrumb that
-      starts with a home icon (tip "Home").
+      starts with "Home" (a neutral icon, not linked, and the text as the link; no tip).
     - Routes (`App.tsx`, a memory router): `/`, `/boards`, `/boards/:boardId` (tabs Meetings, Members),
       `/boards/:boardId/meetings/:meetingId` and `/meetings/:meetingId` (tabs Agenda, Minutes, Documents), `/members`.
       The route is mirrored in the hash after the tab's segment (`#board-manager/boards/b1`), only while the tab is shown.
@@ -105,6 +105,25 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
       of each dialog through `wrapContent`), following `<html data-scheme>`; its popups without portal.
     - `db.ts`: the fake server, a Zustand store in memory, seeded (stable) with dates relative to today: 6 boards,
       28 people, about 50 meetings with agendas, minutes of the held ones, documents.
+    - The dialogs' buttons and close button are Mantine's (`render.actionButton`, `render.closeButton` in the
+      overlays config, each in a Mantine scope): primary filled, danger filled red, secondary `default`.
+    - The toasts (medium, stacked, bottom right) are in Mantine's palette (`TOAST_THEME`, `createToastTheme()`): they
+      live in `<body>`, outside the scopes, so the colors are the theme's values (`mergeMantineTheme`), with
+      `light-dark()` for the page's scheme.
+    - Forms (`forms.tsx`) are validated by Mantine (`@mantine/form`, `useForm` uncontrolled), not by the browser:
+      `submitForm()` (`flows.ts`) opens the form dialog with `nativeValidation: false` and a `validator` that asks the
+      form (`useCheck`); the errors are shown on the inputs. The upload drawer keeps the native validation (the file
+      upload is no Mantine input and reports its own message).
+    - No native date picker: the date and time of a meeting is Mantine's `DateTimePicker` (`DD.MM.YYYY HH:mm`, its
+      popup in the dialog with a fixed position); `fromPicker()` turns its value into the fake server's `start`.
+    - `<board-manager>` (`BoardManagerElement.tsx`): the whole app in a shadow root, for a host page (e.g. XWiki).
+      `npm run build:board-manager` (`vite.board-manager.config.ts`) bundles it with everything (React, Mantine, the
+      packages) into one ES module, `dist-board-manager/board-manager.js`, with an example `index.html` beside it.
+      - Its CSS is put into the module by the build (in place of the marker `__BOARD_MANAGER_STYLES__`) and added to
+        the shadow root: nothing of it reaches the host page. The dialogs and toasts are in the shadow root too (the
+        overlays provider's mount point).
+      - `scheme` (`light`, `dark`) sets the color scheme; without it, `<html data-scheme>`, else the system's. The
+        language follows `<html lang>`. The routes are in memory only (no hash: the host page owns its URL).
     - Members: the people, with create, edit and delete. Deleting also removes their memberships, and their agenda
       items keep no presenter (the confirmation says from how many boards). Memberships are changed on a board's page.
     - The agenda is reordered by dragging (`reorder`), the minutes are recorded per item (a form drawer), the minutes
@@ -142,7 +161,9 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
 
 - TypeScript (strict), Vite, npm workspaces. The root has dev dependencies (`vite`, `typescript`,
   `@vitejs/plugin-react`, `react`, `react-dom`, their types, `dprint`; for the board manager `@mantine/core`,
-  `@mantine/hooks`, `react-router`) and `zustand`.
+  `@mantine/hooks`, `react-router`) and `zustand`, `react-icons` (the board manager's icons: its Tabler set, `tb`),
+  `@mantine/form` and `@mantine/dates` with `dayjs` (pinned to the versions the workspace has from `overlays`:
+  `9.5.1`, `1.11.23`).
 - `.npmrc` (the root one counts in a workspace; npm ignores those of the packages): `ignore-scripts=true`,
   `min-release-age=7`.
   - The first workspace install (2026-09-26) was run once with `--min-release-age=5`, because `antd@6.6.5` (a dev
@@ -156,6 +177,7 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
 - `npm run dev`: the demo page of all packages. `npm run dev -w @local/file-upload` (etc.): the demo of one package.
 - `npm run build`: typecheck + build the demo page into `dist/`.
 - `npm run build:pages`: the same for GitHub Pages (`vite build --mode pages`, base `/essential-components/`).
+- `npm run build:board-manager`: the `<board-manager>` element as one module into `dist-board-manager/`.
 - `npm run typecheck`
 - `npm run format`: dprint. `npm run format:check`
 - The tests run inside a package (`npm test -w @local/file-upload`, …).

@@ -94,6 +94,13 @@ export interface DialogsControllerConfig<C extends object> {
    */
   adapter: DialogAdapterFactory<C>;
   /**
+   * Where a dialog is mounted: read each time one opens. Default (and while it returns
+   * nothing): `document.body`. The React provider sets it to its own mount point, so the
+   * dialogs live where the provider is - in a shadow root too, where the content then
+   * gets the styles of that root. A modal `<dialog>` is in the top layer wherever it is.
+   */
+  mountTarget?: () => ParentNode | null | undefined;
+  /**
    * Theme tokens for this controller's dialogs; omit for the built-in look. (Toasts have
    * their own {@link ToastTheme}.)
    *

@@ -2,8 +2,12 @@ import { Stack, Tabs } from '@mantine/core';
 import { useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
 import { useParams } from 'react-router';
-import { icons } from '../../../packages/data-navigator/demo/icons';
-import { selectColumnFilter, useDataNavigatorController } from '../../../packages/data-navigator/src/react';
+import {
+  dateRangeColumnFilter,
+  selectColumnFilter,
+  textColumnFilter,
+  useDataNavigatorController,
+} from '../../../packages/data-navigator/src/react';
 import type { DataNavigatorComponent } from '../../../packages/data-navigator/src/react';
 import { useDialogs, useToast } from '../../../packages/overlays/src/main/bindings/react';
 import { addMember, changeRole, db, fetchBoardMembers, getBoard, removeMembers, ROLES } from '../db';
@@ -54,7 +58,7 @@ function BoardPage(): ReactElement {
 }
 
 const columns: readonly DataNavigatorComponent.Column<MemberRow>[] = [
-  { key: 'name', header: 'Name', width: 2.5, sortable: true },
+  { key: 'name', header: 'Name', width: 2.5, sortable: true, filter: textColumnFilter() },
   {
     key: 'role',
     header: 'Role',
@@ -62,7 +66,14 @@ const columns: readonly DataNavigatorComponent.Column<MemberRow>[] = [
     sortable: true,
     filter: selectColumnFilter({ options: ROLES, multiple: true }),
   },
-  { key: 'organization', header: 'Organization', width: 2.5, sortable: true, hideable: true },
+  {
+    key: 'organization',
+    header: 'Organization',
+    width: 2.5,
+    sortable: true,
+    hideable: true,
+    filter: textColumnFilter(),
+  },
   { key: 'email', header: 'Email', width: 3, hideable: true, hidden: true },
   {
     key: 'since',
@@ -70,6 +81,7 @@ const columns: readonly DataNavigatorComponent.Column<MemberRow>[] = [
     width: 1.5,
     sortable: true,
     hideable: true,
+    filter: dateRangeColumnFilter(),
     render: (row) => formatDate(row.since),
   },
 ];
@@ -85,7 +97,9 @@ function MembersTable({ boardId }: { boardId: string }): ReactElement {
     const add = async () => {
       const state = db.getState();
       const members = new Set(
-        state.memberships.filter((membership) => membership.boardId === boardId).map((membership) => membership.personId),
+        state.memberships.filter((membership) => membership.boardId === boardId).map((membership) =>
+          membership.personId
+        ),
       );
       const people = state.people.filter((person) => !members.has(person.id));
 
@@ -96,7 +110,11 @@ function MembersTable({ boardId }: { boardId: string }): ReactElement {
 
       const saved = await submitForm(
         dialogs,
-        { title: 'Add member', content: <MemberForm people={people} />, buttons: { confirm: 'Add' } },
+        {
+          title: 'Add member',
+          content: (check) => <MemberForm check={check} people={people} />,
+          buttons: { confirm: 'Add' },
+        },
         (data) => addMember(boardId, data.string('personId', ''), data.string('role', 'Member') as Role),
       );
 
@@ -109,7 +127,11 @@ function MembersTable({ boardId }: { boardId: string }): ReactElement {
     const edit = async (row: MemberRow) => {
       const saved = await submitForm(
         dialogs,
-        { title: `Role of ${row.name}`, content: <MemberForm role={row.role} />, buttons: { confirm: 'Save' } },
+        {
+          title: `Role of ${row.name}`,
+          content: (check) => <MemberForm check={check} role={row.role} />,
+          buttons: { confirm: 'Save' },
+        },
         (data) => changeRole(row.id, data.string('role', 'Member') as Role),
       );
 
@@ -141,17 +163,17 @@ function MembersTable({ boardId }: { boardId: string }): ReactElement {
     };
 
     return [
-      { type: 'general', key: 'add', label: 'Add member', icon: icons.add, onClick: () => void add() },
+      { type: 'general', key: 'add', label: 'Add member', icon: appIcons.add, onClick: () => void add() },
       {
         type: 'singleRow',
         key: 'edit',
-        icon: icons.edit,
-        tip: 'Change role',
+        icon: appIcons.edit,
+        label: 'Change role',
         show: 'both',
         default: true,
         onClick: (row) => void edit(row),
       },
-      { type: 'multiRow', key: 'remove', label: 'Remove', icon: icons.remove, onClick: (rows) => void remove(rows) },
+      { type: 'multiRow', key: 'remove', label: 'Remove', icon: appIcons.remove, onClick: (rows) => void remove(rows) },
     ];
   }, [nav, dialogs, toasts, boardId]);
 
@@ -160,7 +182,6 @@ function MembersTable({ boardId }: { boardId: string }): ReactElement {
       controller={nav}
       title="Members"
       density="compact"
-      striped
       searchable
       reloadable
       source={source}

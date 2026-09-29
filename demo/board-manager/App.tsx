@@ -1,6 +1,6 @@
-import { Anchor, Breadcrumbs, Group, Menu, Text, ThemeIcon, Tooltip, UnstyledButton } from '@mantine/core';
+import { Anchor, Breadcrumbs, Group, Menu, Text, ThemeIcon, UnstyledButton } from '@mantine/core';
 import type { ReactElement, ReactNode } from 'react';
-import { createMemoryRouter, Link, Outlet, useMatches } from 'react-router';
+import { createMemoryRouter, Link, Outlet, useLocation, useMatches } from 'react-router';
 import type { Params, RouteObject } from 'react-router';
 import { getBoard, getMeeting } from './db';
 import { BoardPage } from './pages/BoardPage';
@@ -119,17 +119,20 @@ function TopBar(): ReactElement {
   );
 }
 
-// Home (an icon), then one crumb per level of the route; the last one is the current page (not a link).
+// Home (a neutral icon, and the text as the link), then one crumb per level of the route; the last one is the current
+// page (not a link). On the home page, Home is the current page itself.
 function Crumbs(): ReactElement {
   const matches = useMatches().filter((match) => hasCrumb(match.handle));
+  const atHome = useLocation().pathname === '/';
 
   return (
     <Breadcrumbs separator="›" separatorMargin={6} className="board-manager__crumbs">
-      <Tooltip label="Home">
-        <Anchor component={Link} to="/" aria-label="Home" className="board-manager__home" c="dimmed">
-          {appIcons.home}
-        </Anchor>
-      </Tooltip>
+      <span className="board-manager__home">
+        <Text component="span" c="dimmed" display="inline-flex">{appIcons.home}</Text>
+        {atHome
+          ? <Text component="span" size="sm" fw={500} aria-current="page">Home</Text>
+          : <Anchor component={Link} to="/" size="sm">Home</Anchor>}
+      </span>
       {matches.map((match, index) => {
         const crumb = hasCrumb(match.handle) ? match.handle.crumb(match.params) : null;
 
@@ -152,7 +155,16 @@ function pathFromHash(): string | undefined {
   return hash === HASH ? '/' : hash.startsWith(`${HASH}/`) ? hash.slice(HASH.length) : undefined;
 }
 
-function createAppRouter(element: HTMLElement): { router: ReturnType<typeof createMemoryRouter>; dispose: () => void } {
+// Without an element (the `<board-manager>` element, whose host page owns the URL), only the memory router.
+function createAppRouter(
+  element?: HTMLElement,
+): { router: ReturnType<typeof createMemoryRouter>; dispose: () => void } {
+  if (element === undefined) {
+    const router = createMemoryRouter(routes);
+
+    return { router, dispose: () => router.dispose() };
+  }
+
   const router = createMemoryRouter(routes, { initialEntries: [pathFromHash() ?? '/'] });
 
   const writeHash = () => {

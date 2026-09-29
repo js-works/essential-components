@@ -131,7 +131,7 @@ function Page() {
 }
 ```
 
-Content is ordinary JSX rendered by *your* React tree — your context and theme providers are in scope inside a dialog — even though the elements themselves live at the end of `<body>`, where a modal `<dialog>` and a fixed toast stack have to be.
+Content is ordinary JSX rendered by *your* React tree — your context and theme providers are in scope inside a dialog. The elements themselves live where the provider is: it renders a mount point (`<div data-overlays>`, `display: contents`) after its children. So an app inside a shadow root keeps its dialogs and toasts in that shadow root, with its styles. A modal `<dialog>` is in the top layer wherever it is. The toast stack is `position: fixed`: an ancestor of the provider with `transform`, `filter` or `contain` makes it position against that ancestor instead of the viewport. Without the provider (the vanilla controllers), both go to `document.body`, unless `mountTarget` says otherwise.
 
 `config` is optional, and so is either half of it: `<OverlaysProvider>` on its own gives you both features with the built-in defaults.
 

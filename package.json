@@ -11,10 +11,19 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "build:pages": "tsc --noEmit && vite build --mode pages",
+    "build:board-manager": "tsc --noEmit && vite build --config vite.board-manager.config.ts",
     "freeze-demo": "test ! -e old-demos/$npm_package_version || { echo \"old-demos/$npm_package_version exists already\"; exit 1; } && tsc --noEmit && vite build --base ./ --outDir old-demos/$npm_package_version",
     "typecheck": "tsc --noEmit",
     "format": "dprint fmt",
     "format:check": "dprint check"
+  },
+  "dependencies": {
+    "@mantine/dates": "9.5.1",
+    "@mantine/form": "9.5.1",
+    "dayjs": "1.11.23",
+    "react-icons": "^5.7.0",
+    "react-router": "^8.4.0",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@types/react": "^19.3.0",
@@ -25,9 +34,5 @@
     "react-dom": "^19.3.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.0"
-  },
-  "dependencies": {
-    "react-router": "^8.4.0",
-    "zustand": "^5.0.15"
   }
 }

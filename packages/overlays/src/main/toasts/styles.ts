@@ -1,6 +1,7 @@
 // -------------------------------------------------------------------
 // Document-level chrome styles for the toast container and its slotted action
-// buttons, injected once per document. (Per-toast shadow styles live in element.ts.)
+// buttons, injected once per document or shadow root (wherever the stack is mounted).
+// (Per-toast shadow styles live in element.ts.)
 // -------------------------------------------------------------------
 
 import { css } from "../internal/css.js";
@@ -197,13 +198,26 @@ const containerStyles = css`
 }
 `;
 
-export function injectContainerStyles() {
-  if (document.getElementById("toasts-styles")) {
+// The shadow roots that have the styles already (the document is marked by the id).
+const styledShadowRoots = new WeakSet<ShadowRoot>();
+
+// Into the root the stack is mounted in: its shadow root, or the document's head.
+export function injectContainerStyles(target: ParentNode) {
+  const root = (target as Node).getRootNode();
+  const shadowRoot = root instanceof ShadowRoot ? root : null;
+
+  if (shadowRoot ? styledShadowRoots.has(shadowRoot) : document.getElementById("toasts-styles")) {
     return;
   }
 
   const style = document.createElement("style");
-  style.id = "toasts-styles";
   style.textContent = containerStyles;
-  document.head.appendChild(style);
+
+  if (shadowRoot) {
+    styledShadowRoots.add(shadowRoot);
+    shadowRoot.append(style);
+  } else {
+    style.id = "toasts-styles";
+    document.head.appendChild(style);
+  }
 }

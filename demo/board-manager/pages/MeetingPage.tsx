@@ -2,8 +2,8 @@ import { Button, List, Paper, Stack, Tabs, Text, Title } from '@mantine/core';
 import { useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
 import { useParams } from 'react-router';
-import { icons } from '../../../packages/data-navigator/demo/icons';
 import {
+  dateRangeColumnFilter,
   selectColumnFilter,
   textColumnFilter,
   useDataNavigatorController,
@@ -131,7 +131,12 @@ function MeetingPage(): ReactElement {
   };
 
   const approveButton = meeting.status === 'Held' && !meeting.minutesApproved && (
-    <Button size="xs" onClick={() => void approve()}>Approve minutes</Button>
+    <Button
+      size="xs"
+      onClick={() => void approve()}
+    >
+      Approve minutes
+    </Button>
   );
 
   return (
@@ -202,7 +207,7 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
 
   const columns = useMemo<readonly DataNavigatorComponent.Column<AgendaRow>[]>(() => [
     { key: 'position', header: '#', width: 0.5, align: 'end' },
-    { key: 'title', header: 'Item', width: 4, wrap: true },
+    { key: 'title', header: 'Item', width: 4, wrap: true, filter: textColumnFilter() },
     {
       key: 'presenter',
       header: 'Presenter',
@@ -210,7 +215,14 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
       hideable: true,
       filter: selectColumnFilter({ options: presenters, multiple: true }),
     },
-    { key: 'duration', header: 'Duration', width: 1, hideable: true, align: 'end', render: (row) => `${row.duration} min` },
+    {
+      key: 'duration',
+      header: 'Duration',
+      width: 1,
+      hideable: true,
+      align: 'end',
+      render: (row) => `${row.duration} min`,
+    },
     {
       key: 'recorded',
       header: 'Minutes',
@@ -235,7 +247,11 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
     const create = async () => {
       const saved = await submitForm(
         dialogs,
-        { title: 'New agenda item', content: <AgendaItemForm members={members()} />, buttons: { confirm: 'Add' } },
+        {
+          title: 'New agenda item',
+          content: (check) => <AgendaItemForm check={check} members={members()} />,
+          buttons: { confirm: 'Add' },
+        },
         (data) => createAgendaItem(meeting.id, values(data)),
       );
 
@@ -250,7 +266,7 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
         dialogs,
         {
           title: 'Edit agenda item',
-          content: <AgendaItemForm item={itemOf(row)} members={members()} />,
+          content: (check) => <AgendaItemForm check={check} item={itemOf(row)} members={members()} />,
           buttons: { confirm: 'Save' },
         },
         (data) => updateAgendaItem(row.id, values(data)),
@@ -276,7 +292,7 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
           surface: 'drawer',
           title: `${row.position}. ${row.title}`,
           subtitle: 'Minutes',
-          content: <MinutesForm item={item} />,
+          content: (check) => <MinutesForm check={check} item={item} />,
           buttons: { confirm: 'Save' },
         },
         (data) =>
@@ -312,18 +328,25 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
     };
 
     return [
-      { type: 'general', key: 'new', label: 'Add item', icon: icons.add, onClick: () => void create() },
+      { type: 'general', key: 'new', label: 'Add item', icon: appIcons.add, onClick: () => void create() },
       {
         type: 'singleRow',
         key: 'minutes',
         icon: appIcons.minutes,
-        tip: 'Minutes',
+        label: 'Minutes',
         show: 'both',
         default: true,
         onClick: (row) => void recordMinutes(row),
       },
-      { type: 'singleRow', key: 'edit', icon: icons.edit, tip: 'Edit', show: 'both', onClick: (row) => void edit(row) },
-      { type: 'multiRow', key: 'delete', label: 'Delete', icon: icons.remove, onClick: (rows) => void remove(rows) },
+      {
+        type: 'singleRow',
+        key: 'edit',
+        icon: appIcons.edit,
+        label: 'Edit',
+        show: 'both',
+        onClick: (row) => void edit(row),
+      },
+      { type: 'multiRow', key: 'delete', label: 'Delete', icon: appIcons.remove, onClick: (rows) => void remove(rows) },
     ];
   }, [nav, dialogs, toasts, meeting.id, meeting.boardId]);
 
@@ -411,7 +434,15 @@ const documentColumns: readonly DataNavigatorComponent.Column<MeetingDocument>[]
     hideable: true,
     filter: selectColumnFilter({ options: ['PDF', 'DOCX', 'PPTX', 'XLSX'], multiple: true }),
   },
-  { key: 'size', header: 'Size', width: 1.2, sortable: true, hideable: true, align: 'end', render: (row) => formatSize(row.size) },
+  {
+    key: 'size',
+    header: 'Size',
+    width: 1.2,
+    sortable: true,
+    hideable: true,
+    align: 'end',
+    render: (row) => formatSize(row.size),
+  },
   { key: 'user', header: 'Uploaded by', width: 2, sortable: true, hideable: true },
   {
     key: 'uploaded',
@@ -419,6 +450,7 @@ const documentColumns: readonly DataNavigatorComponent.Column<MeetingDocument>[]
     width: 2,
     sortable: true,
     hideable: true,
+    filter: dateRangeColumnFilter(),
     render: (row) => formatDateTime(row.uploaded),
   },
 ];
@@ -496,7 +528,7 @@ function DocumentsTable({ meeting }: { meeting: Meeting }): ReactElement {
     };
 
     return [
-      { type: 'general', key: 'upload', label: 'Upload', icon: icons.upload, onClick: () => void upload() },
+      { type: 'general', key: 'upload', label: 'Upload', icon: appIcons.upload, onClick: () => void upload() },
       {
         type: 'singleRow',
         key: 'download',
@@ -505,11 +537,17 @@ function DocumentsTable({ meeting }: { meeting: Meeting }): ReactElement {
         default: true,
         onClick: download,
       },
-      { type: 'multiRow', key: 'delete-selected', label: 'Delete', icon: icons.remove, onClick: (rows) => void remove(rows) },
+      {
+        type: 'multiRow',
+        key: 'delete-selected',
+        label: 'Delete',
+        icon: appIcons.remove,
+        onClick: (rows) => void remove(rows),
+      },
       {
         type: 'singleRow',
         key: 'delete',
-        icon: icons.remove,
+        icon: appIcons.remove,
         tip: 'Delete document',
         show: 'column',
         contextMenu: false,
@@ -523,7 +561,6 @@ function DocumentsTable({ meeting }: { meeting: Meeting }): ReactElement {
       controller={nav}
       title="Documents"
       density="compact"
-      striped
       searchable
       reloadable
       source={source}

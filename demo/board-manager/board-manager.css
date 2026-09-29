@@ -6,6 +6,12 @@
   font-size: var(--mantine-font-size-sm);
 }
 
+/* Links are darker than Mantine's primary color (shade 8 instead of 6) in the light scheme; the dark one keeps its own
+   (shade 4). Unlayered, so it wins over Mantine's layered rule; a `c` prop (inline) still wins over this. */
+.board-manager[data-mantine-color-scheme='light'] .mantine-Anchor-root {
+  color: var(--mantine-primary-color-8);
+}
+
 .board-manager__app {
   display: flex;
   flex-direction: column;
@@ -41,6 +47,8 @@
 
 .board-manager__home {
   display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .board-manager__card {

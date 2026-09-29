@@ -712,6 +712,10 @@ The main goal is a very nice, yet simple, API, designed together with the user.
       overlap it (the sticky header paints above), so the row would grow on hover.
     - Selected rows keep their own lines. In striped mode (no row lines) the hover lines appear all the same.
   - Only on devices that can hover (`@media (hover: hover)`), so touch devices show no sticky hover.
+- Meta columns (drag handle, selection, details toggle) sit close together (decided 2026-09-29; before, each had the
+  full cell padding on both sides): half of xs on the sides that face another meta cell, the normal padding (sm) at
+  the start of the first one and at the end of the last one. Every meta cell (data, detail, header and group rows)
+  carries `data-meta` with its outer edges (`first`, `last`, both, or empty), so they all align.
 - Separators: horizontal lines between rows and under the header, no vertical lines between data columns.
   - Two exceptions: a vertical line after the meta columns (selection, details toggle) and one before the action
     column. They run through all data rows and the detail rows.
@@ -916,7 +920,8 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     select; their Escape bubbles up to the root through the portal, and they close first). The selection pill and
     the "deselect" button at the end of the selection bar clear it too.
   - Multi uses checkboxes (with a select-all checkbox in the header). The whole selection cell is clickable, see the
-    row click below.
+    row click below. The same for the select-all cell: its free space is a click on the select-all checkbox (with the
+    pointer cursor, while there are rows).
   - Without column groups, the select-all checkbox is centered vertically in the header (on the center line of the
     column titles, which sit at the bottom of their cells). With groups, it stays at the bottom, next to the lower
     header row.
@@ -943,18 +948,21 @@ The main goal is a very nice, yet simple, API, designed together with the user.
         row above it. That covers the detail cell beside its content and the empty cells next to it.
       - What `renderDetail` returns is its own target, so a click on it does not select, like custom `render`
         output in a data cell.
-    - The two meta cells are not control cells: the selection cell (checkbox or radio) and the details toggle cell
-      (chevron). Clicking their free space selects or deselects the row, and they get the pointer cursor like a data
-      cell.
+    - The two meta cells are not control cells, and get the pointer cursor like a data cell:
+      - The selection cell (checkbox or radio, `data-select`): its free space is a click on the checkbox or radio
+        (decided 2026-09-29; before, it was a row click), so a click a few pixels beside it still hits. In multi mode
+        it toggles the row and keeps the others, with Shift + click for block selection; in single mode it selects
+        the row. It is no row click, so a double click there does not run the default action.
+      - The details toggle cell (chevron): clicking its free space is a row click.
       - The checkbox and the chevron inside them are their own click targets, so each still does its own job exactly
         once: the checkbox toggles the selection, the chevron only expands, and neither goes through the cell as
         well.
-      - Shift + click works there too, so block selection can be driven from the whole cell.
     - A click that ends a text selection made with the mouse does not count either.
     - The free space of a cell gets `cursor: pointer`, in data rows and detail rows alike, but only when a row click
       actually selects: the root carries `data-selection` with the mode, and the stylesheet keys off `single` and
       `multi`. Everything a cell shows keeps the normal caret (one rule on the children of a cell), since `cursor`
-      inherits and a value set on the content itself wins over what it would inherit.
+      inherits and a value set on the content itself wins over what it would inherit. Links in a cell
+      (`a:any-link`, also deeper inside custom output) keep `cursor: pointer`.
     - The checkbox or radio stays the way to select with the keyboard.
   - Block selection (multi mode only): shift + click changes a range of rows, like in Gmail.
     - The range goes from the anchor row (the row that was clicked last) to the shift-clicked row, both included, in

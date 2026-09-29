@@ -506,9 +506,12 @@ class Dialog extends DialogElementBase {
       }
       return;
     }
+    // Into the root the dialog is mounted in: its shadow root (a head style would not reach
+    // the content there), or the document's head.
     if (!this.#styleEl) {
       this.#styleEl = document.createElement("style");
-      document.head.append(this.#styleEl);
+      const root = this.getRootNode();
+      (root instanceof ShadowRoot ? root : document.head).append(this.#styleEl);
     }
     this.#styleEl.textContent = `.${this.scopeClass} { ${cssText} }`;
   }
@@ -1039,13 +1042,14 @@ export function mountDialog(
   id: string,
   adapterFactory: DialogAdapterFactory<any>,
   requestRender: () => void,
+  target: ParentNode,
 ): DialogMount {
   const container = document.createElement("div");
   container.id = id;
   // The host is `display: contents` and the <dialog> lives in the top layer, so the
   // container must not introduce a box of its own either.
   container.style.display = "contents";
-  document.body.append(container);
+  target.append(container);
 
   const tag = dialogElementTag();
   const adapter: DialogAdapter<any> = adapterFactory({

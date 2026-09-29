@@ -2,7 +2,6 @@ import { Anchor, Badge } from '@mantine/core';
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { icons } from '../../../packages/data-navigator/demo/icons';
 import {
   dateRangeColumnFilter,
   selectColumnFilter,
@@ -24,7 +23,7 @@ import {
 } from '../db';
 import type { MeetingRow, MeetingStatus } from '../db';
 import { confirmAndRun, submitForm } from '../flows';
-import { MeetingForm } from '../forms';
+import { fromPicker, MeetingForm } from '../forms';
 import { appIcons, countText, formatDateTime, Navigator, useDb } from '../shared';
 
 export { MeetingsTable, MinutesBadge, StatusBadge };
@@ -36,7 +35,9 @@ function StatusBadge({ status }: { status: MeetingStatus }): ReactElement {
 }
 
 // Only a held meeting has minutes: a draft until they are approved.
-function MinutesBadge({ meeting }: { meeting: { status: MeetingStatus; minutesApproved: boolean } }): ReactElement | null {
+function MinutesBadge(
+  { meeting }: { meeting: { status: MeetingStatus; minutesApproved: boolean } },
+): ReactElement | null {
   if (meeting.status !== 'Held') {
     return null;
   }
@@ -81,14 +82,16 @@ function MeetingsTable(
       render: (row) => <Anchor component={Link} to={pathOf(row)} size="sm">{row.title}</Anchor>,
     },
     ...(boardId === undefined
-      ? [{
-        key: 'board',
-        header: 'Board',
-        width: 2.5,
-        sortable: true,
-        hideable: true,
-        filter: selectColumnFilter({ options: boards.map((board) => board.name), multiple: true }),
-      } satisfies DataNavigatorComponent.Column<MeetingRow>]
+      ? [
+        {
+          key: 'board',
+          header: 'Board',
+          width: 2.5,
+          sortable: true,
+          hideable: true,
+          filter: selectColumnFilter({ options: boards.map((board) => board.name), multiple: true }),
+        } satisfies DataNavigatorComponent.Column<MeetingRow>,
+      ]
       : []),
     { key: 'location', header: 'Location', width: 2, hideable: true, hidden: boardId === undefined },
     {
@@ -114,7 +117,7 @@ function MeetingsTable(
   const actions = useMemo<readonly DataNavigatorComponent.Action<MeetingRow>[]>(() => {
     const values = (data: FormDialogData) => ({
       title: data.string('title', ''),
-      start: data.string('start', ''),
+      start: fromPicker(data.string('start', '')),
       location: data.string('location', ''),
     });
 
@@ -124,7 +127,9 @@ function MeetingsTable(
         dialogs,
         {
           title: 'New meeting',
-          content: <MeetingForm boards={boardId === undefined ? db.getState().boards : undefined} />,
+          content: (check) => (
+            <MeetingForm check={check} boards={boardId === undefined ? db.getState().boards : undefined} />
+          ),
           buttons: { confirm: 'Create' },
         },
         async (data) => {
@@ -143,7 +148,7 @@ function MeetingsTable(
         dialogs,
         {
           title: 'Edit meeting',
-          content: <MeetingForm meeting={getMeeting(db.getState(), row.id)} />,
+          content: (check) => <MeetingForm check={check} meeting={getMeeting(db.getState(), row.id)} />,
           buttons: { confirm: 'Save' },
         },
         (data) => updateMeeting(row.id, values(data)),
@@ -204,7 +209,7 @@ function MeetingsTable(
     };
 
     return [
-      { type: 'general', key: 'new', label: 'New meeting', icon: icons.add, onClick: () => void create() },
+      { type: 'general', key: 'new', label: 'New meeting', icon: appIcons.add, onClick: () => void create() },
       {
         type: 'singleRow',
         key: 'open',
@@ -214,9 +219,22 @@ function MeetingsTable(
         default: true,
         onClick: (row) => navigate(pathOf(row)),
       },
-      { type: 'singleRow', key: 'edit', icon: icons.edit, tip: 'Edit', show: 'both', onClick: (row) => void edit(row) },
-      { type: 'singleRow', key: 'cancel', label: 'Cancel meeting', show: 'toolbar', onClick: (row) => void cancel(row) },
-      { type: 'multiRow', key: 'delete', label: 'Delete', icon: icons.remove, onClick: (rows) => void remove(rows) },
+      {
+        type: 'singleRow',
+        key: 'edit',
+        icon: appIcons.edit,
+        label: 'Edit',
+        show: 'both',
+        onClick: (row) => void edit(row),
+      },
+      {
+        type: 'singleRow',
+        key: 'cancel',
+        label: 'Cancel meeting',
+        show: 'toolbar',
+        onClick: (row) => void cancel(row),
+      },
+      { type: 'multiRow', key: 'delete', label: 'Delete', icon: appIcons.remove, onClick: (rows) => void remove(rows) },
     ];
   }, [nav, dialogs, toasts, navigate, boardId, pathOf]);
 
@@ -226,7 +244,6 @@ function MeetingsTable(
       title={title}
       subtitle={subtitle}
       density="compact"
-      striped
       searchable
       reloadable
       source={source}

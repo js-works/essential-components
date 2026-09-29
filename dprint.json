@@ -9,6 +9,7 @@
   "excludes": [
     "node_modules",
     "dist",
+    "dist-board-manager",
     "coverage",
     "package-lock.json",
     "old-demos",

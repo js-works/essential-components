@@ -37,13 +37,15 @@ function formatValue(value: unknown): string {
 // Did this event hit the free space of a cell of the row? Not its text, not anything a custom `render` or
 // `renderDetail` drew, and not a control cell. Rows are `display: contents`, so the cells are the direct children of
 // the row: the target has to be one of them. That also rules out buttons, links and inputs without listing them, and
-// events from portals (an open action menu), which are not children of the row at all.
+// events from portals (an open action menu), which are not children of the row at all. The selection cell is not a
+// row target either: its free space is a click on its checkbox or radio (it handles that itself).
 function isRowTarget(event: MouseEvent<HTMLElement>): boolean {
   const target = event.target;
 
   return target instanceof Element
     && target.parentElement === event.currentTarget
-    && !target.hasAttribute('data-control');
+    && !target.hasAttribute('data-control')
+    && !target.hasAttribute('data-select');
 }
 
 // Is this click a click on the row itself, i.e. one that should select the row?

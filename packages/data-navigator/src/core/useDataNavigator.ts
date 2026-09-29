@@ -602,6 +602,13 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
   const detailsColumn = selectionColumn + (selection !== 'none' ? 1 : 0);
   const controlColumns = (reorderable ? 1 : 0) + (selection !== 'none' ? 1 : 0) + (hasDetails ? 1 : 0);
   const firstLeafColumn = controlColumns + 1;
+  const firstMetaColumn = reorderable
+    ? 'handle'
+    : selection !== 'none'
+    ? 'selection'
+    : hasDetails
+    ? 'details'
+    : undefined;
   const lastMetaColumn = hasDetails
     ? 'details'
     : selection !== 'none'
@@ -700,6 +707,9 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     announcement,
     actionColumn: firstLeafColumn + layout.leaves.length,
     dividerAfter: (column: 'handle' | 'selection' | 'details') => (lastMetaColumn === column ? 'end' : undefined),
+    // The `data-meta` of a meta cell: which outer edges of the meta columns it has (`first`, `last`, both, or none).
+    metaEdges: (column: 'handle' | 'selection' | 'details') =>
+      [column === firstMetaColumn ? 'first' : '', column === lastMetaColumn ? 'last' : ''].filter(Boolean).join(' '),
 
     keyOf,
     selectedRows,

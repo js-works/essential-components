@@ -2,8 +2,11 @@ import { Anchor } from '@mantine/core';
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { icons } from '../../../packages/data-navigator/demo/icons';
-import { textColumnFilter, useDataNavigatorController } from '../../../packages/data-navigator/src/react';
+import {
+  dateRangeColumnFilter,
+  textColumnFilter,
+  useDataNavigatorController,
+} from '../../../packages/data-navigator/src/react';
 import type { DataNavigatorComponent } from '../../../packages/data-navigator/src/react';
 import { useDialogs, useToast } from '../../../packages/overlays/src/main/bindings/react';
 import { createBoard, db, deleteBoards, fetchBoards, getBoard, updateBoard } from '../db';
@@ -24,7 +27,7 @@ const columns: readonly DataNavigatorComponent.Column<BoardRow>[] = [
     render: (row) => <Anchor component={Link} to={`/boards/${row.id}`} size="sm">{row.name}</Anchor>,
   },
   { key: 'description', header: 'Description', width: 4, hideable: true, hidden: true, wrap: true },
-  { key: 'chair', header: 'Chair', width: 2, sortable: true, hideable: true },
+  { key: 'chair', header: 'Chair', width: 2, sortable: true, hideable: true, filter: textColumnFilter() },
   { key: 'members', header: 'Members', width: 1, sortable: true, hideable: true, align: 'end' },
   { key: 'meetings', header: 'Meetings', width: 1, sortable: true, hideable: true, align: 'end' },
   {
@@ -33,6 +36,7 @@ const columns: readonly DataNavigatorComponent.Column<BoardRow>[] = [
     width: 2,
     sortable: true,
     hideable: true,
+    filter: dateRangeColumnFilter(),
     render: (row) => formatDateTime(row.nextMeeting),
   },
 ];
@@ -49,7 +53,7 @@ function BoardsPage(): ReactElement {
       let created = '';
       const saved = await submitForm(
         dialogs,
-        { title: 'New board', content: <BoardForm />, buttons: { confirm: 'Create' } },
+        { title: 'New board', content: (check) => <BoardForm check={check} />, buttons: { confirm: 'Create' } },
         async (data) => {
           created = (await createBoard({ name: data.string('name', ''), description: data.string('description', '') }))
             .id;
@@ -66,7 +70,11 @@ function BoardsPage(): ReactElement {
       const board = getBoard(db.getState(), row.id);
       const saved = await submitForm(
         dialogs,
-        { title: 'Edit board', content: <BoardForm board={board} />, buttons: { confirm: 'Save' } },
+        {
+          title: 'Edit board',
+          content: (check) => <BoardForm check={check} board={board} />,
+          buttons: { confirm: 'Save' },
+        },
         (data) => updateBoard(row.id, { name: data.string('name', ''), description: data.string('description', '') }),
       );
 
@@ -84,7 +92,9 @@ function BoardsPage(): ReactElement {
         dialogs,
         {
           title: single ? 'Delete board' : 'Delete boards',
-          content: `${single ? `Delete "${first.name}"` : `Delete the ${rows.length} selected boards`}, with ${meetings} meetings, their agendas, minutes and documents?\nThis cannot be undone.`,
+          content: `${
+            single ? `Delete "${first.name}"` : `Delete the ${rows.length} selected boards`
+          }, with ${meetings} meetings, their agendas, minutes and documents?\nThis cannot be undone.`,
           buttons: { confirm: 'Delete' },
         },
         () => deleteBoards(rows.map((row) => row.id)),
@@ -97,7 +107,7 @@ function BoardsPage(): ReactElement {
     };
 
     return [
-      { type: 'general', key: 'new', label: 'New board', icon: icons.add, onClick: () => void create() },
+      { type: 'general', key: 'new', label: 'New board', icon: appIcons.add, onClick: () => void create() },
       {
         type: 'singleRow',
         key: 'open',
@@ -107,8 +117,15 @@ function BoardsPage(): ReactElement {
         default: true,
         onClick: (row) => navigate(`/boards/${row.id}`),
       },
-      { type: 'singleRow', key: 'edit', icon: icons.edit, tip: 'Edit', show: 'both', onClick: (row) => void edit(row) },
-      { type: 'multiRow', key: 'delete', label: 'Delete', icon: icons.remove, onClick: (rows) => void remove(rows) },
+      {
+        type: 'singleRow',
+        key: 'edit',
+        icon: appIcons.edit,
+        label: 'Edit',
+        show: 'both',
+        onClick: (row) => void edit(row),
+      },
+      { type: 'multiRow', key: 'delete', label: 'Delete', icon: appIcons.remove, onClick: (rows) => void remove(rows) },
     ];
   }, [nav, dialogs, toasts, navigate]);
 
@@ -118,7 +135,6 @@ function BoardsPage(): ReactElement {
       title="Boards"
       subtitle="The boards and committees. Open one for its meetings and members."
       density="compact"
-      striped
       searchable
       reloadable
       source={fetchBoards}

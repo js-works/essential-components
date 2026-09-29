@@ -444,7 +444,9 @@ function seedDb(): Db {
           duration: 5,
           description: 'Welcome, quorum, adoption of the agenda.',
           minutes: recorded
-            ? `${chair?.name ?? 'The chair'} opened the meeting at ${time} and welcomed the members. The quorum was established.`
+            ? `${
+              chair?.name ?? 'The chair'
+            } opened the meeting at ${time} and welcomed the members. The quorum was established.`
             : '',
           decision: recorded ? 'The agenda was adopted without changes.' : '',
         },
@@ -613,9 +615,7 @@ function runQuery<Row>(
     .filter((row) =>
       Object.entries(query.filters).every(([key, value]) => options.filters?.[key]?.(row, value) ?? true)
     )
-    .filter((row) =>
-      text === '' || options.search.some((key) => String(row[key] ?? '').toLowerCase().includes(text))
-    );
+    .filter((row) => text === '' || options.search.some((key) => String(row[key] ?? '').toLowerCase().includes(text)));
 
   if (query.sort) {
     const key = query.sort.key as keyof Row;
@@ -677,7 +677,11 @@ async function fetchBoards(
 
   return runQuery(boardRows(db.getState()), query, {
     search: ['name', 'description', 'chair'],
-    filters: { name: (row, value) => matches(row.name, value) },
+    filters: {
+      name: (row, value) => matches(row.name, value),
+      chair: (row, value) => matches(row.chair, value),
+      nextMeeting: (row, value) => within(row.nextMeeting, value),
+    },
   });
 }
 
@@ -726,6 +730,7 @@ function fetchAgenda(meetingId: string): DataNavigatorComponent.Source<AgendaRow
     return runQuery(rows, query, {
       search: ['title', 'presenter', 'description', 'minutes', 'decision'],
       filters: {
+        title: (row, value) => matches(row.title, value),
         presenter: (row, value) => oneOf(row.presenter, value),
         recorded: (row, value) => oneOf(row.recorded, value),
       },
@@ -745,6 +750,7 @@ function fetchDocuments(meetingId: string): DataNavigatorComponent.Source<Meetin
         name: (row, value) => matches(row.name, value),
         type: (row, value) => oneOf(row.type, value),
         user: (row, value) => oneOf(row.user, value),
+        uploaded: (row, value) => within(row.uploaded, value),
       },
     });
   };
@@ -772,7 +778,12 @@ function fetchBoardMembers(boardId: string): DataNavigatorComponent.Source<Membe
 
     return runQuery(rows, query, {
       search: ['name', 'email', 'organization', 'role'],
-      filters: { role: (row, value) => oneOf(row.role, value) },
+      filters: {
+        name: (row, value) => matches(row.name, value),
+        role: (row, value) => oneOf(row.role, value),
+        organization: (row, value) => matches(row.organization, value),
+        since: (row, value) => within(row.since, value),
+      },
     });
   };
 }
@@ -851,7 +862,9 @@ async function createPerson(values: PersonValues): Promise<void> {
 }
 
 async function updatePerson(id: string, values: PersonValues): Promise<void> {
-  await save((state) => ({ people: state.people.map((person) => (person.id === id ? { ...person, ...values } : person)) }));
+  await save((state) => ({
+    people: state.people.map((person) => (person.id === id ? { ...person, ...values } : person)),
+  }));
 }
 
 // Deletes the people with their memberships. The agenda items they present keep no presenter.
@@ -859,7 +872,9 @@ async function deletePeople(ids: readonly string[]): Promise<void> {
   await save((state) => ({
     people: state.people.filter((person) => !ids.includes(person.id)),
     memberships: state.memberships.filter((membership) => !ids.includes(membership.personId)),
-    agendaItems: state.agendaItems.map((item) => (ids.includes(item.presenterId) ? { ...item, presenterId: '' } : item)),
+    agendaItems: state.agendaItems.map((
+      item,
+    ) => (ids.includes(item.presenterId) ? { ...item, presenterId: '' } : item)),
   }));
 }
 
@@ -944,7 +959,9 @@ type AgendaValues = Pick<AgendaItem, 'title' | 'presenterId' | 'duration' | 'des
 // A new item goes before "Any other business" (if the agenda ends with it), else at the end.
 async function createAgendaItem(meetingId: string, values: AgendaValues): Promise<void> {
   await save((state) => {
-    const items = state.agendaItems.filter((item) => item.meetingId === meetingId).sort((a, b) => a.position - b.position);
+    const items = state.agendaItems.filter((item) => item.meetingId === meetingId).sort((a, b) =>
+      a.position - b.position
+    );
     const last = items.at(-1);
     const position = last?.title === 'Any other business' ? last.position : items.length + 1;
     const created: AgendaItem = { id: newId('a'), meetingId, position, ...values, minutes: '', decision: '' };

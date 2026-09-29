@@ -25,6 +25,7 @@
   },
   "include": [
     "demo",
-    "vite.config.ts"
+    "vite.config.ts",
+    "vite.board-manager.config.ts"
   ]
 }

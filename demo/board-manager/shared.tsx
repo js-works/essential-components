@@ -1,6 +1,21 @@
 import { Group, Stack, Text, Title } from '@mantine/core';
 import { useSyncExternalStore } from 'react';
 import type { ReactElement, ReactNode } from 'react';
+import {
+  TbArrowRight,
+  TbCalendar,
+  TbChevronDown,
+  TbHome,
+  TbInfoCircle,
+  TbLayoutBoard,
+  TbNotes,
+  TbPencil,
+  TbPlus,
+  TbPresentation,
+  TbTrash,
+  TbUpload,
+  TbUsers,
+} from 'react-icons/tb';
 import { useStore } from 'zustand';
 import { i18n as navigatorI18n } from '../../packages/data-navigator/demo/i18n';
 import { createDataNavigatorComponent } from '../../packages/data-navigator/src/react';
@@ -18,6 +33,7 @@ export {
   PageHeader,
   Scope,
   SCOPE_CLASS,
+  setSchemeHost,
   useDb,
   useScheme,
 };
@@ -71,9 +87,16 @@ function countText(names: readonly string[], plural: string): string {
   return names.length === 1 ? `"${names[0]}"` : `${names.length} ${plural}`;
 }
 
-// The color scheme of the page's switch (`<html data-scheme>`: light, dark or system).
+// The `<board-manager>` element, whose `scheme` attribute (light or dark) wins over the page's switch.
+let schemeHost: HTMLElement | null = null;
+
+function setSchemeHost(element: HTMLElement | null): void {
+  schemeHost = element;
+}
+
+// The color scheme: the element's `scheme`, else the page's switch (`<html data-scheme>`: light, dark or system).
 function currentScheme(): 'light' | 'dark' {
-  const scheme = document.documentElement.dataset['scheme'];
+  const scheme = schemeHost?.getAttribute('scheme') ?? document.documentElement.dataset['scheme'];
 
   if (scheme === 'light' || scheme === 'dark') {
     return scheme;
@@ -87,6 +110,10 @@ function subscribeScheme(onChange: () => void): () => void {
   const media = matchMedia('(prefers-color-scheme: dark)');
 
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-scheme'] });
+
+  if (schemeHost !== null) {
+    observer.observe(schemeHost, { attributes: true, attributeFilter: ['scheme'] });
+  }
   media.addEventListener('change', onChange);
 
   return () => {
@@ -114,7 +141,12 @@ function Scope({ children }: { children: ReactNode }): ReactElement {
 
 // The title of a page, with a line below it and its actions on the right.
 function PageHeader(
-  { title, subtitle, badges, actions }: { title: ReactNode; subtitle?: ReactNode; badges?: ReactNode; actions?: ReactNode },
+  { title, subtitle, badges, actions }: {
+    title: ReactNode;
+    subtitle?: ReactNode;
+    badges?: ReactNode;
+    actions?: ReactNode;
+  },
 ): ReactElement {
   return (
     <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
@@ -130,77 +162,19 @@ function PageHeader(
   );
 }
 
-// The icons of the app (the paths of the Tabler icons, MIT), in the current text color.
-function icon(paths: readonly string[], size = 18) {
-  return function Icon(): ReactElement {
-    return (
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden
-        focusable="false"
-      >
-        {paths.map((path) => <path key={path} d={path} />)}
-      </svg>
-    );
-  };
-}
-
-const App = icon([
-  'M3 4l18 0',
-  'M4 4v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-10',
-  'M12 16l0 4',
-  'M9 20l6 0',
-  'M8 12l3 -3l2 2l3 -3',
-], 22);
-
-const Home = icon(['M5 12l-2 0l9 -9l9 9l-2 0', 'M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7', 'M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6']);
-
-const ChevronDown = icon(['M6 9l6 6l6 -6'], 16);
-
-const Boards = icon([
-  'M4 6a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z',
-  'M4 9h8',
-  'M12 15h8',
-  'M12 4v16',
-]);
-
-const Calendar = icon([
-  'M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z',
-  'M16 3v4',
-  'M8 3v4',
-  'M4 11h16',
-]);
-
-const Users = icon([
-  'M5 7a4 4 0 1 0 8 0a4 4 0 1 0 -8 0',
-  'M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2',
-  'M16 3.13a4 4 0 0 1 0 7.75',
-  'M21 21v-2a4 4 0 0 0 -3 -3.85',
-]);
-
-const Open = icon(['M5 12l14 0', 'M13 18l6 -6', 'M13 6l6 6'], 16);
-
-const Notes = icon([
-  'M5 5a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2z',
-  'M9 7l6 0',
-  'M9 11l6 0',
-  'M9 15l4 0',
-], 16);
-
+// The icons of the app: the Tabler icons of react-icons, in the current text color.
 const appIcons = {
-  app: <App />,
-  home: <Home />,
-  chevronDown: <ChevronDown />,
-  boards: <Boards />,
-  meetings: <Calendar />,
-  members: <Users />,
-  open: <Open />,
-  minutes: <Notes />,
+  app: <TbPresentation size={22} aria-hidden />,
+  home: <TbHome size={18} aria-hidden />,
+  chevronDown: <TbChevronDown size={16} aria-hidden />,
+  boards: <TbLayoutBoard size={18} aria-hidden />,
+  meetings: <TbCalendar size={18} aria-hidden />,
+  members: <TbUsers size={18} aria-hidden />,
+  open: <TbArrowRight size={16} aria-hidden />,
+  minutes: <TbNotes size={16} aria-hidden />,
+  add: <TbPlus size={16} aria-hidden />,
+  edit: <TbPencil size={16} aria-hidden />,
+  remove: <TbTrash size={16} aria-hidden />,
+  info: <TbInfoCircle size={16} aria-hidden />,
+  upload: <TbUpload size={16} aria-hidden />,
 };

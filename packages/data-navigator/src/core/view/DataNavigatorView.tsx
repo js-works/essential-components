@@ -5,13 +5,7 @@ import type { DataNavigatorComponent as Spec } from '../../react/api';
 import { ConfigContext } from '../config';
 import { useDataNavigator } from '../useDataNavigator';
 import type { RowGroupEntry } from '../useDataNavigator';
-import {
-  flag,
-  formatValue,
-  hasContent,
-  suppressesTextSelection,
-  suppressesWordSelection,
-} from '../utils';
+import { flag, formatValue, hasContent, suppressesTextSelection, suppressesWordSelection } from '../utils';
 import { ActionList } from './Actions';
 import * as classes from './DataNavigator.module.css';
 import { FilterButton, FilterPills, FilterView } from './FilterPanel';
@@ -93,7 +87,12 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
     return (
       <div role="row" className={classes.groupRow} inert={nav.loading}>
         {multi && (
-          <div role="cell" className={classes.groupCell} style={{ gridColumn: nav.selectionColumn }}>
+          <div
+            role="cell"
+            className={classes.groupCell}
+            style={{ gridColumn: nav.selectionColumn }}
+            data-meta={nav.metaEdges('selection')}
+          >
             <Checkbox
               label={selectedState === 'all' ? texts.deselectGroup : texts.selectGroup}
               checked={selectedState === 'all'}
@@ -237,6 +236,7 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
                             role="columnheader"
                             className={classes.headerTall}
                             style={{ gridColumn: nav.handleColumn, gridRow: nav.headerRowSpan }}
+                            data-meta={nav.metaEdges('handle')}
                           />
                         )}
                         {selection !== 'none' && (
@@ -245,6 +245,14 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
                             inert={nav.loading}
                             className={classes.headerTall}
                             style={{ gridColumn: nav.selectionColumn, gridRow: nav.headerRowSpan }}
+                            data-meta={nav.metaEdges('selection')}
+                            data-select={flag(selection === 'multi' && rows.length > 0)}
+                            onClick={(event) => {
+                              // The free space of the cell is a click on the select-all checkbox.
+                              if (event.target === event.currentTarget && selection === 'multi' && rows.length > 0) {
+                                nav.selectAll(!nav.allSelected);
+                              }
+                            }}
                           >
                             {selection === 'multi' && (
                               <Checkbox
@@ -263,6 +271,7 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
                             inert={nav.loading}
                             className={classes.headerTall}
                             style={{ gridColumn: nav.detailsColumn, gridRow: nav.headerRowSpan }}
+                            data-meta={nav.metaEdges('details')}
                           >
                             <ChevronButton
                               label={nav.allDetailsExpanded ? texts.collapseAllDetails : texts.expandAllDetails}
@@ -377,6 +386,7 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
                                       className={classes.cell}
                                       {...mark}
                                       data-divider={nav.dividerAfter('handle')}
+                                      data-meta={nav.metaEdges('handle')}
                                       data-control
                                     >
                                       <button
@@ -393,9 +403,10 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
                                     </div>
                                   )}
                                   {
-                                    /* The selection cell and the details toggle cell are not control cells: clicking their free
-                          space selects the row, like a data cell. The checkbox and the chevron inside are their own
-                          targets, so each still does its own job exactly once. */
+                                    /* The free space of the selection cell is a click on its checkbox or radio (a few pixels
+                          beside it still hit), with Shift for a range. The details toggle cell is not a control cell:
+                          clicking its free space selects the row, like a data cell. The checkbox and the chevron
+                          inside are their own targets, so each still does its own job exactly once. */
                                   }
                                   {selection !== 'none' && (
                                     <div
@@ -403,6 +414,19 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
                                       className={classes.cell}
                                       {...mark}
                                       data-divider={nav.dividerAfter('selection')}
+                                      data-meta={nav.metaEdges('selection')}
+                                      data-select
+                                      onClick={(event) => {
+                                        if (event.target !== event.currentTarget) {
+                                          return;
+                                        }
+
+                                        if (selection === 'multi') {
+                                          nav.selectByClick(key, event.shiftKey);
+                                        } else {
+                                          nav.selectOnly(key);
+                                        }
+                                      }}
                                     >
                                       {selection === 'multi'
                                         ? (
@@ -427,6 +451,7 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
                                       className={classes.cell}
                                       {...mark}
                                       data-divider={nav.dividerAfter('details')}
+                                      data-meta={nav.metaEdges('details')}
                                     >
                                       {expandable && (
                                         <ChevronButton
@@ -486,6 +511,7 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
                                         className={classes.cell}
                                         {...mark}
                                         data-divider={nav.dividerAfter('handle')}
+                                        data-meta={nav.metaEdges('handle')}
                                       />
                                     )}
                                     {selection !== 'none' && (
@@ -494,6 +520,7 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
                                         className={classes.cell}
                                         {...mark}
                                         data-divider={nav.dividerAfter('selection')}
+                                        data-meta={nav.metaEdges('selection')}
                                       />
                                     )}
                                     {nav.hasDetails && (
@@ -502,6 +529,7 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
                                         className={classes.cell}
                                         {...mark}
                                         data-divider={nav.dividerAfter('details')}
+                                        data-meta={nav.metaEdges('details')}
                                       />
                                     )}
                                     <div

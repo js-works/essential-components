@@ -1,7 +1,6 @@
 import { Anchor, List, Stack, Text } from '@mantine/core';
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
-import { icons } from '../../../packages/data-navigator/demo/icons';
 import {
   selectColumnFilter,
   textColumnFilter,
@@ -10,20 +9,11 @@ import {
 import type { DataNavigatorComponent } from '../../../packages/data-navigator/src/react';
 import { useDialogs, useToast } from '../../../packages/overlays/src/main/bindings/react';
 import type { FormDialogData } from '../../../packages/overlays/src/main/dialogs/contract/form-data';
-import {
-  createPerson,
-  db,
-  deletePeople,
-  fetchPeople,
-  getBoard,
-  getPerson,
-  localDateTime,
-  updatePerson,
-} from '../db';
+import { createPerson, db, deletePeople, fetchPeople, getBoard, getPerson, localDateTime, updatePerson } from '../db';
 import type { PersonRow } from '../db';
 import { confirmAndRun, submitForm } from '../flows';
 import { PersonForm } from '../forms';
-import { countText, formatDate, formatDateTime, Navigator, useDb } from '../shared';
+import { appIcons, countText, formatDate, formatDateTime, Navigator, useDb } from '../shared';
 
 export { MembersPage };
 
@@ -71,7 +61,7 @@ function MembersPage(): ReactElement {
     const create = async () => {
       const saved = await submitForm(
         dialogs,
-        { title: 'New member', content: <PersonForm />, buttons: { confirm: 'Create' } },
+        { title: 'New member', content: (check) => <PersonForm check={check} />, buttons: { confirm: 'Create' } },
         (data) => createPerson(values(data)),
       );
 
@@ -86,7 +76,7 @@ function MembersPage(): ReactElement {
         dialogs,
         {
           title: 'Edit member',
-          content: <PersonForm person={getPerson(db.getState(), row.id)} />,
+          content: (check) => <PersonForm check={check} person={getPerson(db.getState(), row.id)} />,
           buttons: { confirm: 'Save' },
         },
         (data) => updatePerson(row.id, values(data)),
@@ -123,20 +113,32 @@ function MembersPage(): ReactElement {
     };
 
     return [
-      { type: 'general', key: 'new', label: 'New member', icon: icons.add, onClick: () => void create() },
+      { type: 'general', key: 'new', label: 'New member', icon: appIcons.add, onClick: () => void create() },
       {
         type: 'singleRow',
         key: 'info',
-        icon: icons.info,
-        tip: 'Information',
+        icon: appIcons.info,
+        label: 'Information',
         show: 'both',
         default: true,
         onClick: (row) => {
-          void dialogs.info({ surface: 'drawer', icon: false, title: row.name, content: <PersonDetails person={row} /> });
+          void dialogs.info({
+            surface: 'drawer',
+            icon: false,
+            title: row.name,
+            content: <PersonDetails person={row} />,
+          });
         },
       },
-      { type: 'singleRow', key: 'edit', icon: icons.edit, tip: 'Edit', show: 'both', onClick: (row) => void edit(row) },
-      { type: 'multiRow', key: 'delete', label: 'Delete', icon: icons.remove, onClick: (rows) => void remove(rows) },
+      {
+        type: 'singleRow',
+        key: 'edit',
+        icon: appIcons.edit,
+        label: 'Edit',
+        show: 'both',
+        onClick: (row) => void edit(row),
+      },
+      { type: 'multiRow', key: 'delete', label: 'Delete', icon: appIcons.remove, onClick: (rows) => void remove(rows) },
     ];
   }, [nav, dialogs, toasts]);
 
@@ -146,7 +148,6 @@ function MembersPage(): ReactElement {
       title="Members"
       subtitle="Everyone who can be on a board. Add them to a board, or remove them from one, on the page of the board."
       density="compact"
-      striped
       searchable
       reloadable
       source={fetchPeople}

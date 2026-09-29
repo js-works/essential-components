@@ -256,7 +256,12 @@ function createDialogScope<C extends object>(
   let currentRefresh: (() => void) | null = null;
 
   const ensureHandle = (): DialogMount =>
-    (handle ??= mountDialog(dialogId, adapterFactory, () => currentRefresh?.()));
+    (handle ??= mountDialog(
+      dialogId,
+      adapterFactory,
+      () => currentRefresh?.(),
+      config.mountTarget?.() ?? document.body,
+    ));
 
   const noop = (): void => {};
 

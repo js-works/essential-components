@@ -138,7 +138,6 @@ export function createToastController<C>(
     return typeof option === "string" ? option : (option[type] ?? "light");
   }
 
-  injectContainerStyles();
   const tag = ensureElementRegistered();
 
   // A caller's resolver still wins outright. Without one — or for a key it declines — the
@@ -247,8 +246,21 @@ export function createToastController<C>(
     }
   }
 
-  document.body.appendChild(container);
   applyContainerOptions();
+
+  // The stack goes into the DOM with the first toast, not here: the mount target (the
+  // React provider's mount point) may not exist yet while the controller is created. Its
+  // styles go into the same root (a shadow root, or the document). The container options
+  // are applied again once it is connected (the swipe direction reads the writing mode).
+  function mountContainer(): void {
+    if (container.isConnected) {
+      return;
+    }
+    const target = opts.mountTarget?.() ?? document.body;
+    injectContainerStyles(target);
+    target.appendChild(container);
+    applyContainerOptions();
+  }
 
   // Bind the chosen adapter to this controller's container + element tag.
   const renderer = adapter({ container, tag });
@@ -422,9 +434,10 @@ export function createToastController<C>(
     }
   });
 
+  // The composed path, not the target: in a shadow root, the document sees the target
+  // retargeted to the shadow host, which the container never contains.
   const onPointerDownOutside = (event: PointerEvent): void => {
-    const target = event.target as Node | null;
-    if (!target || !container.contains(target)) {
+    if (!event.composedPath().includes(container)) {
       setExpanded(false);
     }
   };
@@ -986,6 +999,7 @@ export function createToastController<C>(
   function show(
     descriptor: { type: ToastType } & ToastOptions<C>,
   ): ToastHandle<C> {
+    mountContainer();
     const previous = getPositions();
     const duration =
       descriptor.duration ??
