@@ -1,7 +1,13 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { DataNavigator } from '../api';
-import { dateRangeColumnFilter, selectColumnFilter, textColumnFilter } from './filters';
+import {
+  booleanColumnFilter,
+  dateRangeColumnFilter,
+  numberRangeColumnFilter,
+  selectColumnFilter,
+  textColumnFilter,
+} from './filters';
 import { setupDataNavigator } from './setupDataNavigator';
 
 type Person = { id: number; name: string; city: string };
@@ -277,9 +283,13 @@ describe('column filters', () => {
     await mount(element);
 
     await waitFor(() => expect(screen.getByText('Person 01')).toBeTruthy());
-    expect(screen.getByPlaceholderText('Find a name')).toBeTruthy();
+    // The filters are in the popup of the filter button.
+    fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
+    expect(await screen.findByPlaceholderText('Find a name')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Only 1' })).toBeTruthy();
     expect(typeof dateRangeColumnFilter()).toBe('object');
+    expect(typeof numberRangeColumnFilter()).toBe('object');
+    expect(typeof booleanColumnFilter()).toBe('object');
   });
 });
 
@@ -297,7 +307,7 @@ describe('attributes', () => {
     expect(element.hasAttribute('striped')).toBe(true);
     expect(element.searchable).toBe(false);
     expect(element.reloadable).toBe(false);
-    expect(element.selectionAppearance).toBe('neutral');
+    expect(element.selectionAppearance).toBe('accent');
     expect(element.pageSize).toBe(25);
     await waitFor(() => expect(element.querySelector('[data-density="compact"]')).not.toBeNull());
 
@@ -336,7 +346,7 @@ describe('controller', () => {
       source,
       rowKey: 'id',
       columns: [{ key: 'name', header: 'Name' }],
-      actions: [{ type: 'rows', key: 'remove', label: 'Remove', onClick: () => {} }],
+      actions: [{ type: 'multiRow', key: 'remove', label: 'Remove', onClick: () => {} }],
     });
     const listener = vi.fn();
     const element = create(ElementClass);
@@ -370,7 +380,7 @@ describe('controller', () => {
       source: createSource(),
       rowKey: 'id',
       columns: [{ key: 'name', header: 'Name' }],
-      actions: [{ type: 'rows', key: 'remove', label: 'Remove', onClick: () => {} }],
+      actions: [{ type: 'multiRow', key: 'remove', label: 'Remove', onClick: () => {} }],
     });
     const listener = vi.fn();
     const element = create(ElementClass);
@@ -455,5 +465,41 @@ describe('controller', () => {
 
     expect(within(container).getByText('Person 01')).toBeTruthy();
     expect(source.mock.calls.length).toBe(calls);
+  });
+
+  it('groups the rows when the controller has groupBy, with its renderGroup as content', async () => {
+    const [ElementClass, createController] = setupDataNavigator();
+    const element = create(ElementClass);
+
+    element.controller = createController({
+      source: createSource(),
+      rowKey: 'id',
+      columns: [{ key: 'name', header: 'Name' }],
+      groupBy: (person) => (person.id <= 5 ? 'First' : 'Rest'),
+      renderGroup: (group) => `${group.key} (${group.rows.length})`,
+    });
+    await mount(element);
+
+    await waitFor(() => expect(screen.getByText('First (5)')).toBeTruthy());
+    expect(screen.getByText('Rest (20)')).toBeTruthy();
+  });
+
+  it('moves rows with the handles when the controller has reorder', async () => {
+    const [ElementClass, createController] = setupDataNavigator();
+    const reorder = vi.fn();
+    const element = create(ElementClass);
+
+    element.controller = createController({
+      source: createSource(),
+      reorder,
+      rowKey: 'id',
+      columns: [{ key: 'name', header: 'Name' }],
+    });
+    await mount(element);
+    await waitFor(() => expect(screen.getByText('Person 01')).toBeTruthy());
+
+    fireEvent.keyDown(screen.getAllByRole('button', { name: 'Move row' })[0]!, { key: 'ArrowDown', altKey: true });
+
+    await waitFor(() => expect(reorder).toHaveBeenCalledWith({ row: people[0], after: people[1], before: people[2] }));
   });
 });

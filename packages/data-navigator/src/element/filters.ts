@@ -2,7 +2,14 @@ import type { DataNavigator } from '../api';
 import * as reactFilters from '../core/view/ColumnFilters';
 import type { DataNavigatorComponent } from '../react/api';
 
-export { dateRangeColumnFilter, reactFilterOf, selectColumnFilter, textColumnFilter };
+export {
+  booleanColumnFilter,
+  dateRangeColumnFilter,
+  numberRangeColumnFilter,
+  reactFilterOf,
+  selectColumnFilter,
+  textColumnFilter,
+};
 
 // The built-in filters of the element: opaque values for the app, and each one stands for a filter of the React
 // component, which renders it.
@@ -33,4 +40,12 @@ function selectColumnFilter(settings: DataNavigator.SelectColumnFilterSettings):
 
 function dateRangeColumnFilter(): DataNavigator.BuiltInColumnFilter {
   return builtIn(reactFilters.dateRangeColumnFilter());
+}
+
+function numberRangeColumnFilter(): DataNavigator.BuiltInColumnFilter {
+  return builtIn(reactFilters.numberRangeColumnFilter());
+}
+
+function booleanColumnFilter(): DataNavigator.BuiltInColumnFilter {
+  return builtIn(reactFilters.booleanColumnFilter());
 }

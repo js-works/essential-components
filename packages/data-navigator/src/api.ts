@@ -13,6 +13,8 @@ declare namespace DataNavigator {
 
   type SelectionAppearance = 'neutral' | 'accent';
 
+  type RowActionLook = 'icon' | 'label' | 'iconAndLabel';
+
   type Sort = { key: string; direction: SortDirection };
 
   type FilterValue = string | number | boolean | null | readonly FilterValue[] | {
@@ -30,9 +32,20 @@ declare namespace DataNavigator {
   type Result<Row> = {
     rows: readonly Row[];
     total: number;
+    groups?: readonly GroupTotal[];
   };
 
+  type GroupTotal = { key: string; total: number };
+
+  type GroupBy<Row> = (keyof Row & string) | ((row: Row) => string);
+
+  type RowGroup<Row> = { key: string; rows: readonly Row[]; total: number | undefined };
+
   type Source<Row> = (query: Query, signal: AbortSignal) => Promise<Result<Row>>;
+
+  type Move<Row> = { row: Row; after: Row | undefined; before: Row | undefined };
+
+  type Reorder<Row> = (move: Move<Row>) => void | Promise<void>;
 
   type FilterProps = {
     value: FilterValue | undefined;
@@ -44,9 +57,15 @@ declare namespace DataNavigator {
 
   type TextColumnFilterSettings = { placeholder?: string };
 
+  type TextFilterMatch = 'contains' | 'startsWith' | 'endsWith';
+
+  type TextFilterValue = { text: string; match: TextFilterMatch };
+
   type SelectColumnFilterSettings = { options: readonly FilterOption[]; multiple?: boolean };
 
   type DateRangeFilterValue = { from: string; to: string };
+
+  type NumberRangeFilterValue = { from?: number; to?: number };
 
   type ColumnAlign = 'start' | 'center' | 'end';
 
@@ -86,6 +105,33 @@ declare namespace DataNavigator {
     calendarPrevious: string; // Previous
     calendarNext: string; // Next
     clear: string; // Clear
+    filters: string; // Filters
+    activeFilters: (params: { count: number }) => string; // {count} active
+    resetFilters: string; // Reset
+    applyFilters: string; // Apply
+    cancelFilters: string; // Cancel
+    clearAllFilters: string; // Clear all
+    removeFilter: string; // Remove filter
+    emptyFilters: string; // No rows match these filters
+    clearFilters: string; // Clear filters
+    textMatch: string; // Match
+    textContains: string; // contains
+    textStartsWith: string; // starts with
+    textEndsWith: string; // ends with
+    rangeFrom: string; // From
+    rangeTo: string; // To
+    filterYes: string; // Yes
+    filterNo: string; // No
+    clearSelection: string; // Clear selection
+    columns: string; // Columns
+    moveRow: string; // Move row
+    movedTo: (params: { position: number }) => string; // Moved to position {position}
+    expandGroup: string; // Show group
+    collapseGroup: string; // Hide group
+    selectGroup: string; // Select group
+    deselectGroup: string; // Deselect group
+    groupCount: (params: { count: number }) => string; // {count}
+    groupPartial: (params: { shown: number; total: number }) => string; // {shown} of {total}
   };
 
   type ThemeValue = string | { light: string; dark: string };
@@ -160,6 +206,8 @@ declare namespace DataNavigator {
     render?: (row: Row) => string | C;
     filter?: ColumnFilter<C>;
     wrap?: boolean;
+    hideable?: boolean;
+    hidden?: boolean;
   };
 
   type ColumnGroup<Row, C> = {
@@ -175,22 +223,25 @@ declare namespace DataNavigator {
     type: 'general';
     key: string;
     variant?: ActionVariant;
+    contextMenu?: boolean;
     onClick: () => void;
   } & ActionLook<C>;
 
   type RowAction<Row, C> = {
-    type: 'row';
+    type: 'singleRow';
     key: string;
     variant?: ActionVariant;
+    contextMenu?: boolean;
     onClick: (row: Row) => void;
     show?: 'column' | 'toolbar' | 'both';
     default?: boolean;
   } & ActionLook<C>;
 
   type RowsAction<Row, C> = {
-    type: 'rows';
+    type: 'multiRow';
     key: string;
     variant?: ActionVariant;
+    contextMenu?: boolean;
     onClick: (rows: readonly Row[]) => void;
   } & ActionLook<C>;
 
@@ -205,10 +256,13 @@ declare namespace DataNavigator {
 
   type ControllerOptions<Row, C> = {
     source: Source<Row>;
+    reorder?: Reorder<Row>;
     rowKey: keyof Row & string;
     columns: readonly (Column<Row, C> | ColumnGroup<Row, C>)[];
     actions?: readonly (Action<Row, C> | ActionMenu<Row, C>)[];
     renderDetail?: (row: Row) => string | C;
+    groupBy?: GroupBy<Row>;
+    renderGroup?: (group: RowGroup<Row>) => string | C;
     defaultSort?: { key: keyof Row & string; direction: SortDirection };
     title?: TextContent<C>;
     subtitle?: TextContent<C>;
@@ -231,6 +285,7 @@ declare namespace DataNavigator {
     striped: boolean;
     searchable: boolean;
     reloadable: boolean;
+    rowActionLook: RowActionLook;
     selectionAppearance: SelectionAppearance;
     pageSize: number;
     pageSizeOptions: readonly number[];

@@ -7,6 +7,7 @@ export {
   isPlainRowClick,
   isPlainRowDoubleClick,
   isShiftClick,
+  isTextEditingTarget,
   startsDoubleClick,
   suppressesTextSelection,
   suppressesWordSelection,
@@ -62,11 +63,14 @@ function isPlainRowDoubleClick(event: MouseEvent<HTMLElement>): boolean {
 
 const TEXT_EDITING_ELEMENTS = 'textarea, select, input:not([type="checkbox"], [type="radio"]), [contenteditable]';
 
+// Is this inside something where the user selects or edits text themselves?
+function isTextEditingTarget(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest(TEXT_EDITING_ELEMENTS) !== null;
+}
+
 // Is the mouse inside something where the user selects or edits text themselves? Then nothing is suppressed there.
 function isTextEditing(event: MouseEvent<HTMLElement>): boolean {
-  const target = event.target;
-
-  return target instanceof Element && target.closest(TEXT_EDITING_ELEMENTS) !== null;
+  return isTextEditingTarget(event.target);
 }
 
 // Shift + mouse down would select text between the last click and this one. Not wanted, except inside text inputs.

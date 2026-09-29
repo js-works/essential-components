@@ -1,17 +1,24 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import type { MouseEvent } from 'react';
-import { hasContent, isPlainRowClick, isPlainRowDoubleClick } from '../core/utils';
+import type { KeyboardEvent, MouseEvent } from 'react';
+import { hasContent, isPlainRowClick, isPlainRowDoubleClick, isTextEditingTarget } from '../core/utils';
 import type { DataNavigatorComponent as Spec } from '../react/api';
-import { columnItems, contextMenuItems, defaultActionOf, selectionModeOf, toolbarItems } from './actions';
+import {
+  columnItems,
+  contextMenuItems,
+  defaultActionOf,
+  generalToolbarItems,
+  selectionModeOf,
+  selectionToolbarItems,
+} from './actions';
 import { connectController, notifySelection } from './controller';
 import type { ControllerTarget } from './controller';
-import { sameValue } from './filters';
-import { useDelayedFlag, useElementHeight } from './hooks';
-import { createLayout } from './layout';
+import { sameValue, withoutKey } from './filters';
+import { useDelayedFlag, useElementHeight, useScrollbarWidth } from './hooks';
+import { createLayout, withoutHidden } from './layout';
 import { useTexts } from './texts';
 
 export { DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS, useDataNavigator };
-export type { SearchBox };
+export type { RowGroupEntry, SearchBox };
 
 const DEFAULT_PAGE_SIZE = 25;
 const DEFAULT_PAGE_SIZE_OPTIONS: readonly number[] = [10, 25, 50, 100];
@@ -20,6 +27,15 @@ const SPINNER_DELAY = 200;
 const EMPTY_RESULT: Spec.Result<never> = { rows: [], total: 0 };
 const EMPTY_KEYS: ReadonlySet<string> = new Set();
 const EMPTY_FILTERS: Readonly<Record<string, Spec.FilterValue>> = {};
+
+// The selected rows by their key, with their row objects.
+type Selection<Row> = ReadonlyMap<string, Row>;
+
+// A group of rows of the page (`groupBy`): what `renderGroup` gets, and the indexes of its rows on the page.
+type RowGroupEntry<Row> = Spec.RowGroup<Row> & { indexes: readonly number[] };
+
+// What the filter popup needs: whether it is open, and the filter to focus when it opens (from a pill).
+type FilterPanelState = { open: boolean; focusKey: string | undefined };
 
 // What a search box needs: its text and what to do on typing, Enter and Escape.
 type SearchBox = {
@@ -41,6 +57,21 @@ function withKey(keys: ReadonlySet<string>, key: string, included: boolean): Rea
   return next;
 }
 
+// The selection with these rows added (a row) or removed (undefined).
+function withRows<Row>(selection: Selection<Row>, entries: readonly (readonly [string, Row | undefined])[]) {
+  const next = new Map(selection);
+
+  for (const [key, row] of entries) {
+    if (row === undefined) {
+      next.delete(key);
+    } else {
+      next.set(key, row);
+    }
+  }
+
+  return next;
+}
+
 // The state and behavior of the data navigator, independent of any UI library.
 // An implementation renders what this hook returns with the controls of its UI library.
 function useDataNavigator<Row>(props: Spec.Props<Row>) {
@@ -48,7 +79,7 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     source,
     rowKey,
     columns,
-    selectionAppearance = 'neutral',
+    selectionAppearance = 'accent',
     density = 'normal',
     striped = false,
     renderDetail,
@@ -58,7 +89,10 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
   const selection = selectionModeOf(actions);
   const texts = useTexts();
 
-  const [sort, setSort] = useState<Spec.Sort | undefined>(props.defaultSort);
+  // A table whose rows can be moved (`reorder`) has no column sorting: the moved order is the order. Grouped rows
+  // (`groupBy`) cannot be moved (a move out of a group would change the row).
+  const reorderable = props.reorder !== undefined && props.groupBy === undefined;
+  const [sort, setSort] = useState<Spec.Sort | undefined>(reorderable ? undefined : props.defaultSort);
   const searchable = props.searchable === true;
   const [searchText, setSearchText] = useState('');
   const [search, setSearch] = useState('');
@@ -69,17 +103,20 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
   const [result, setResult] = useState<Spec.Result<Row>>(EMPTY_RESULT);
   const [loading, setLoading] = useState(true);
   const [loaded, setLoaded] = useState(false);
-  const [selectedKeys, setSelectedKeys] = useState(EMPTY_KEYS);
+  const [selected, setSelected] = useState<Selection<Row>>(() => new Map());
   const [expandedKeys, setExpandedKeys] = useState(EMPTY_KEYS);
+  const [filterPanel, setFilterPanel] = useState<FilterPanelState>({ open: false, focusKey: undefined });
   // Counts the reloads of the controller: a new count starts a new load with the same query.
   const [reloads, setReloads] = useState(0);
 
   const sourceRef = useRef(source);
   const anchorRef = useRef<string | undefined>(undefined);
   // What the selection was before the last row click, so the second mouse down of a double click can put it back.
-  const beforeClickRef = useRef<ReadonlySet<string> | undefined>(undefined);
+  const beforeClickRef = useRef<Selection<Row> | undefined>(undefined);
   const spinnerVisible = useDelayedFlag(loading, SPINNER_DELAY);
   const [headerRef, headerHeight] = useElementHeight<HTMLDivElement>();
+  // The loading overlay ends where the scrollbar of the rows area begins.
+  const [scrollerRef, scrollbarWidth] = useScrollbarWidth<HTMLDivElement>();
 
   useEffect(() => {
     sourceRef.current = source;
@@ -95,6 +132,8 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
       (next) => {
         if (current) {
           setResult(next);
+          // A new load brings the order of the source (moved rows included, once saved).
+          setMovedRows(undefined);
           setLoaded(true);
           setLoading(false);
         }
@@ -128,15 +167,105 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     return [...new Set([...options, pageSize])].sort((a, b) => a - b);
   }, [props.pageSizeOptions, pageSize]);
 
-  const layout = useMemo(() => createLayout(columns), [columns]);
+  // All columns (for the filters and the column toggle menu), and the ones shown. `hidden` counts only on a
+  // `hideable` column (it could not be shown again otherwise). The hidden columns are not kept: a remount starts again
+  // from `hidden`.
+  const allLayout = useMemo(() => createLayout(columns), [columns]);
+  const [hiddenKeys, setHiddenKeys] = useState<ReadonlySet<string>>(
+    () =>
+      new Set(
+        allLayout.leaves
+          .filter(({ column }) => column.hideable === true && column.hidden === true)
+          .map(({ column }) => column.key),
+      ),
+  );
+  const layout = useMemo(() => createLayout(withoutHidden(columns, hiddenKeys)), [columns, hiddenKeys]);
+  // The entries of the column toggle menu: the hideable columns. The last shown column cannot be hidden.
+  const columnToggles = allLayout.leaves
+    .filter(({ column }) => column.hideable === true)
+    .map(({ column }) => {
+      const shown = !hiddenKeys.has(column.key);
+
+      return { key: column.key, label: column.header, checked: shown, disabled: shown && layout.leaves.length <= 1 };
+    });
+  const toggleColumn = (key: string, shown: boolean) => setHiddenKeys(withKey(hiddenKeys, key, !shown));
   const keyOf = (row: Row): string => String(row[rowKey]);
 
-  const rows = result.rows;
-  // The same array until the rows or the selection change: the selection hook of a controller relies on that.
-  const selectedRows = useMemo(
-    () => rows.filter((row) => selectedKeys.has(String(row[rowKey]))),
-    [rows, selectedKeys, rowKey],
-  );
+  // The rows of the page in the order the user moved them to, until the next load (then the source's order counts
+  // again), or undefined.
+  const [movedRows, setMovedRows] = useState<readonly Row[] | undefined>(undefined);
+  // What a screen reader hears after a move ("Moved to position 3").
+  const [announcement, setAnnouncement] = useState('');
+  // The saves of the moves, one after the other (a move never overtakes the one before it).
+  const savingRef = useRef<Promise<void>>(Promise.resolve());
+  const reorderRef = useRef(props.reorder);
+
+  useEffect(() => {
+    reorderRef.current = props.reorder;
+  });
+
+  const rows = movedRows ?? result.rows;
+  // Rows can be moved only without search and filters (within a filtered subset, where a row lands among the hidden
+  // ones is unclear), within the page.
+  const canReorder = reorderable && search === '' && Object.keys(filters).length === 0 && rows.length > 1;
+
+  // Moves the row at `from` to `to` (indexes of the page): at once on the screen, then `reorder` saves it. If a save
+  // fails, the error is logged and the page is loaded again (the source's order is the truth).
+  const moveRow = (from: number, to: number) => {
+    if (!canReorder || loading || from === to || to < 0 || to >= rows.length) {
+      return;
+    }
+
+    const next = [...rows];
+    const [row] = next.splice(from, 1);
+
+    if (row === undefined) {
+      return;
+    }
+
+    next.splice(to, 0, row);
+    setMovedRows(next);
+    setAnnouncement(texts.movedTo({ position: to + 1 }));
+
+    const move = { row, after: next[to - 1], before: next[to + 1] };
+
+    savingRef.current = savingRef.current
+      .then(() => reorderRef.current?.(move))
+      .catch((error: unknown) => {
+        console.error(error);
+        setReloads((count) => count + 1);
+      });
+  };
+
+  // Column sorting is off in a reorderable table: `sortable` is ignored, and said so while developing.
+  useEffect(() => {
+    if (reorderable && import.meta.env.DEV && createLayout(columns).leaves.some(({ column }) => column.sortable)) {
+      console.warn('DataNavigator: `sortable` columns are ignored in a table with `reorder` (its rows are moved).');
+    }
+  }, [reorderable, columns]);
+
+  useEffect(() => {
+    if (props.reorder !== undefined && props.groupBy !== undefined && import.meta.env.DEV) {
+      console.warn('DataNavigator: `reorder` is ignored in a table with `groupBy` (grouped rows cannot be moved).');
+    }
+  }, [props.reorder, props.groupBy]);
+
+  // The selected rows (all of the current page), in the order they were selected. The same array until the selection
+  // changes:
+  // the selection hook of a controller relies on that.
+  const selectedRows = useMemo(() => [...selected.values()], [selected]);
+  const pageKeys = rows.map(keyOf);
+
+  // A new load may bring newer objects of selected rows: the selection takes them over.
+  useEffect(() => {
+    setSelected((current) => {
+      const updates = result.rows
+        .map((row) => [String(row[rowKey]), row] as const)
+        .filter(([key, row]) => current.has(key) && current.get(key) !== row);
+
+      return updates.length === 0 ? current : withRows(current, updates);
+    });
+  }, [result, rowKey]);
   const details = rows.map((row) => renderDetail?.(row) ?? null);
   // Without any data row, there is no details toggle column and no action column (header cells and dividers included).
   const hasDetails = details.some(hasContent);
@@ -146,9 +275,15 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
   const defaultAction = defaultActionOf(actions);
   const hasActionColumn = rowActions.length > 0 && rows.length > 0;
 
-  const resetView = () => {
+  const clearSelection = () => {
     anchorRef.current = undefined;
-    setSelectedKeys(EMPTY_KEYS);
+    setSelected(new Map());
+  };
+
+  // Other rows (a new page, page size, sorting, search, new filters, a reload): the selection and the details are
+  // cleared. So the selection never spans pages.
+  const resetView = () => {
+    clearSelection();
     setExpandedKeys(EMPTY_KEYS);
   };
 
@@ -168,10 +303,7 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
         resetView();
         setReloads((current) => current + 1);
       },
-      clearRowSelection: () => {
-        anchorRef.current = undefined;
-        setSelectedKeys(EMPTY_KEYS);
-      },
+      clearRowSelection: clearSelection,
       getSelectedRows: () => selectedRows,
     };
   });
@@ -195,21 +327,23 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     });
   }, [controller]);
 
-  // A new filter value starts on the first page, like a new sorting. An equal value does nothing. `undefined` removes
-  // the filter of the column.
-  const setFilter = (key: string, value: Spec.FilterValue | undefined) => {
-    if (sameValue(filters[key], value)) {
+  // New filters (all of them at once: "Apply" of the filter popup, a pill's ×, "Clear all") start on the first page and
+  // clear the selection. Equal filters do nothing.
+  const applyFilters = (next: Readonly<Record<string, Spec.FilterValue>>) => {
+    if (sameValue(filters, next)) {
       return;
     }
 
     resetView();
     setPage(1);
-    setFilters((current) =>
-      value === undefined
-        ? Object.fromEntries(Object.entries(current).filter(([name]) => name !== key))
-        : { ...current, [key]: value }
-    );
+    setFilters(next);
   };
+
+  const removeFilter = (key: string) => applyFilters(withoutKey(filters, key));
+
+  const openFilters = (focusKey?: string) => setFilterPanel({ open: true, focusKey });
+
+  const closeFilters = () => setFilterPanel({ open: false, focusKey: undefined });
 
   // A new search starts on the first page, like a new sorting.
   const applySearch = (text: string) => {
@@ -250,7 +384,12 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     setPage(1);
   };
 
+  // A new sorting clears the selection (like a new search), and starts on the first page.
   const sortBy = (key: string) => {
+    if (reorderable) {
+      return;
+    }
+
     resetView();
     setPage(1);
     setSort({ key, direction: sort?.key === key && sort.direction === 'asc' ? 'desc' : 'asc' });
@@ -259,34 +398,50 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
   // Multi mode: toggles the row, or with shift changes the range from the anchor row to this row (like Gmail).
   const selectByClick = (key: string, shift: boolean) => {
     const anchor = anchorRef.current;
-    const keys = rows.map(keyOf);
-    const anchorIndex = anchor === undefined ? -1 : keys.indexOf(anchor);
+    const anchorIndex = anchor === undefined ? -1 : pageKeys.indexOf(anchor);
+    const rowOf = (candidate: string) => rows[pageKeys.indexOf(candidate)];
 
     anchorRef.current = key;
 
     if (shift && anchor !== undefined && anchor !== key && anchorIndex !== -1) {
-      const included = selectedKeys.has(anchor);
-      const clickedIndex = keys.indexOf(key);
-      const range = keys.slice(Math.min(anchorIndex, clickedIndex), Math.max(anchorIndex, clickedIndex) + 1);
-      const next = new Set(selectedKeys);
+      const included = selected.has(anchor);
+      const clickedIndex = pageKeys.indexOf(key);
+      const range = pageKeys.slice(Math.min(anchorIndex, clickedIndex), Math.max(anchorIndex, clickedIndex) + 1);
 
-      for (const rangeKey of range) {
-        if (included) {
-          next.add(rangeKey);
-        } else {
-          next.delete(rangeKey);
-        }
-      }
-
-      setSelectedKeys(next);
+      setSelected(
+        withRows(selected, range.map((rangeKey) => [rangeKey, included ? rowOf(rangeKey) : undefined] as const)),
+      );
     } else {
-      setSelectedKeys(withKey(selectedKeys, key, !selectedKeys.has(key)));
+      setSelected(withRows(selected, [[key, selected.has(key) ? undefined : rowOf(key)]]));
     }
   };
 
-  const selectOnly = (key: string) => setSelectedKeys(new Set([key]));
+  const selectOnly = (key: string) => {
+    const row = rows[pageKeys.indexOf(key)];
 
-  const selectAll = (selected: boolean) => setSelectedKeys(selected ? new Set(rows.map(keyOf)) : EMPTY_KEYS);
+    setSelected(row === undefined ? new Map() : new Map([[key, row]]));
+  };
+
+  // The select-all checkbox: selects all rows of the page, or none.
+  const selectAll = (included: boolean) =>
+    setSelected(withRows(selected, rows.map((row) => [keyOf(row), included ? row : undefined] as const)));
+
+  const pageSelectedCount = pageKeys.filter((key) => selected.has(key)).length;
+
+  // Escape clears the selection, but only when nothing else took it: an open menu or select (their popups are in the
+  // layer, and their Escape bubbles up to here through the portal) and a text input keep theirs.
+  const keyDownRoot = (event: KeyboardEvent<HTMLElement>, layer: HTMLElement | null) => {
+    const target = event.target;
+
+    if (
+      event.key !== 'Escape' || selected.size === 0 || event.nativeEvent.isComposing || isTextEditingTarget(target)
+      || (target instanceof Node && layer?.contains(target) === true)
+    ) {
+      return;
+    }
+
+    clearSelection();
+  };
 
   const applyRowClick = (key: string, shift: boolean) => {
     if (selection === 'single') {
@@ -309,7 +464,7 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
 
     // The row reacts at once, with no waiting: if a second click follows, the browser marks its mouse down as one of
     // a double click, and `cancelRowClick` puts this back before the double click is even reported.
-    beforeClickRef.current = selectedKeys;
+    beforeClickRef.current = selected;
     applyRowClick(key, event.shiftKey);
   };
 
@@ -321,7 +476,7 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     beforeClickRef.current = undefined;
 
     if (before !== undefined) {
-      setSelectedKeys(before);
+      setSelected(before);
     }
   };
 
@@ -333,6 +488,47 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     }
 
     defaultAction.onClick(row);
+  };
+
+  // Row groups (`groupBy`): the rows of the page, in their order, in groups of consecutive rows with the same group key
+  // (the source sorts by group; unsorted rows give a group more than once). The total of a group comes from the source
+  // (`Result.groups`), if it gives one.
+  const { groupBy } = props;
+  const rowGroups = useMemo((): readonly RowGroupEntry<Row>[] | undefined => {
+    if (groupBy === undefined) {
+      return undefined;
+    }
+
+    const totals = new Map((result.groups ?? []).map(({ key, total }) => [key, total]));
+    const groups: { key: string; rows: Row[]; indexes: number[]; total: number | undefined }[] = [];
+
+    rows.forEach((row, index) => {
+      const key = typeof groupBy === 'function' ? groupBy(row) : String(row[groupBy]);
+      const last = groups[groups.length - 1];
+
+      if (last?.key === key) {
+        last.rows.push(row);
+        last.indexes.push(index);
+      } else {
+        groups.push({ key, rows: [row], indexes: [index], total: totals.get(key) });
+      }
+    });
+
+    return groups;
+  }, [groupBy, rows, result.groups]);
+
+  // Collapsed groups, by key: a matter of the view (no new load), kept across loads (a group stays collapsed on the
+  // next page).
+  const [collapsedGroups, setCollapsedGroups] = useState(EMPTY_KEYS);
+  const toggleGroup = (key: string) => setCollapsedGroups(withKey(collapsedGroups, key, !collapsedGroups.has(key)));
+
+  // The checkbox of a group (multi selection): all its rows of the page, or none.
+  const selectGroup = (group: RowGroupEntry<Row>, included: boolean) =>
+    setSelected(withRows(selected, group.rows.map((row) => [keyOf(row), included ? row : undefined] as const)));
+  const groupSelection = (group: RowGroupEntry<Row>): 'all' | 'some' | 'none' => {
+    const count = group.rows.filter((row) => selected.has(keyOf(row))).length;
+
+    return count === 0 ? 'none' : count === group.rows.length ? 'all' : 'some';
   };
 
   const toggleDetails = (key: string) => setExpandedKeys(withKey(expandedKeys, key, !expandedKeys.has(key)));
@@ -358,10 +554,10 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
       return false;
     }
 
-    const inSelection = selectedKeys.has(key);
+    const inSelection = selected.has(key);
 
     if (selection !== 'none' && !inSelection) {
-      setSelectedKeys(new Set([key]));
+      setSelected(new Map([[key, row]]));
     }
 
     setContextRows({ row, rows: selection !== 'multi' ? [] : inSelection ? selectedRows : [row] });
@@ -378,10 +574,10 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
       case 'general':
         action.onClick();
         break;
-      case 'row':
+      case 'singleRow':
         action.onClick(contextRows.row);
         break;
-      case 'rows':
+      case 'multiRow':
         action.onClick(contextRows.rows);
     }
   };
@@ -391,10 +587,10 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
       case 'general':
         action.onClick();
         break;
-      case 'rows':
+      case 'multiRow':
         action.onClick(selectedRows);
         break;
-      case 'row': {
+      case 'singleRow': {
         const [only] = selectedRows;
 
         if (only !== undefined) {
@@ -405,19 +601,31 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
   };
 
   const invokeForRow = (row: Row, action: Spec.Action<Row>) => {
-    if (action.type === 'row') {
+    if (action.type === 'singleRow') {
       action.onClick(row);
     }
   };
 
-  // Grid: the meta columns (selection, details toggle) come first, then the columns, then the action column.
-  const controlColumns = (selection !== 'none' ? 1 : 0) + (hasDetails ? 1 : 0);
+  // Grid: the meta columns (the drag handle, selection, details toggle) come first, then the columns, then the action
+  // column. The handle column is there whenever the table is reorderable (also while its handles are hidden), so the
+  // columns do not jump.
+  const handleColumn = 1;
+  const selectionColumn = reorderable ? 2 : 1;
+  const detailsColumn = selectionColumn + (selection !== 'none' ? 1 : 0);
+  const controlColumns = (reorderable ? 1 : 0) + (selection !== 'none' ? 1 : 0) + (hasDetails ? 1 : 0);
   const firstLeafColumn = controlColumns + 1;
-  const lastMetaColumn = hasDetails ? 'details' : selection !== 'none' ? 'selection' : undefined;
+  const lastMetaColumn = hasDetails
+    ? 'details'
+    : selection !== 'none'
+    ? 'selection'
+    : reorderable
+    ? 'handle'
+    : undefined;
 
   const headerRows = layout.groups.length > 0 ? 2 : 1;
 
   const gridTemplateColumns = [
+    ...(reorderable ? ['max-content'] : []),
     ...(selection !== 'none' ? ['max-content'] : []),
     ...(hasDetails ? ['max-content'] : []),
     ...layout.leaves.map(({ column }) => `minmax(0, ${column.width ?? 1}fr)`),
@@ -426,14 +634,31 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
 
   return {
     texts,
-    emptyText: search === '' && Object.keys(filters).length === 0 ? texts.empty : texts.emptySearch,
+    emptyText: Object.keys(filters).length > 0 ? texts.emptyFilters : search === '' ? texts.empty : texts.emptySearch,
     filters,
-    setFilter,
-    hasFilters: layout.leaves.some(({ column }) => column.filter !== undefined),
+    applyFilters,
+    removeFilter,
+    clearFilters: () => applyFilters(EMPTY_FILTERS),
+    // The columns with a filter, in their order. Only they are in the filter popup.
+    filterColumns: useMemo(
+      () =>
+        // Hidden columns keep their filters (and their pills).
+        allLayout.leaves.flatMap(({ column: { key, header, filter } }) =>
+          filter === undefined ? [] : [{ key, header, filter }]
+        ),
+      [allLayout],
+    ),
+    columnToggles,
+    toggleColumn,
+    filterPanel,
+    openFilters,
+    closeFilters,
     headerId: (key: string) => `${idBase}-header-${key.replace(/\W/g, '_')}`,
     isEmpty: loaded && result.rows.length === 0,
     // The Reload button of the toolbar: the same as the controller's reload().
     reload: props.reloadable === true ? () => latestRef.current.reload() : undefined,
+    // What the action column shows of an action: its icon (with the label as tooltip), its label, or both.
+    rowActionLook: props.rowActionLook ?? 'icon',
     searchBox: searchable
       ? { text: searchText, onChange: changeSearchText, onSubmit: () => applySearch(searchText), onClear: clearSearch }
       : undefined,
@@ -449,6 +674,8 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     spinnerVisible,
     headerRef,
     headerHeight,
+    scrollerRef,
+    scrollbarWidth,
 
     sort,
     sortBy,
@@ -473,17 +700,26 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     // Grid placement for the cells. The values go straight onto `grid-column` and `grid-row`, so the stylesheet needs
     // nothing of them.
     headerRowSpan: `1 / span ${headerRows}`,
-    filterRow: headerRows + 1,
     columnSpan: (column: number, span: number) => `${column} / span ${span}`,
     firstLeafColumn,
+    handleColumn,
+    selectionColumn,
+    detailsColumn,
+    // Moving rows (`reorder`): whether the table can, whether it can now (no search, no filters), and the move.
+    reorderable,
+    canReorder,
+    moveRow,
+    announcement,
     actionColumn: firstLeafColumn + layout.leaves.length,
-    dividerAfter: (column: 'selection' | 'details') => (lastMetaColumn === column ? 'end' : undefined),
+    dividerAfter: (column: 'handle' | 'selection' | 'details') => (lastMetaColumn === column ? 'end' : undefined),
 
     keyOf,
     selectedRows,
-    isSelected: (key: string) => selectedKeys.has(key),
-    allSelected: rows.length > 0 && selectedRows.length === rows.length,
-    someSelected: selectedRows.length > 0 && selectedRows.length < rows.length,
+    isSelected: (key: string) => selected.has(key),
+    allSelected: rows.length > 0 && pageSelectedCount === rows.length,
+    someSelected: pageSelectedCount > 0 && pageSelectedCount < rows.length,
+    clearSelection,
+    keyDownRoot,
     selectByClick,
     selectOnly,
     selectAll,
@@ -492,6 +728,13 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     doubleClickRow,
     hasDefaultAction: defaultAction !== undefined,
 
+    // Row groups: undefined without `groupBy`.
+    rowGroups,
+    isGroupCollapsed: (key: string) => collapsedGroups.has(key),
+    toggleGroup,
+    selectGroup,
+    groupSelection,
+
     details,
     hasDetails,
     allDetailsExpanded,
@@ -499,7 +742,10 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     toggleDetails,
     toggleAllDetails,
 
-    toolbarActions: toolbarItems(actions, selectedRows.length),
+    generalActions: generalToolbarItems(actions),
+    selectionActions: selectionToolbarItems(actions, selectedRows.length),
+    // While rows are selected, the selection bar takes the place of the toolbar's bar.
+    selectionActive: selection !== 'none' && selectedRows.length > 0,
     rowActions,
     hasActionColumn,
     invokeFromToolbar,

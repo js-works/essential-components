@@ -23,6 +23,7 @@ const UPGRADED_PROPERTIES = [
   'striped',
   'searchable',
   'reloadable',
+  'rowActionLook',
   'selectionAppearance',
   'pageSize',
   'pageSizeOptions',
@@ -41,7 +42,15 @@ function setupDataNavigator<C = Node>(
   const setup = {};
 
   class DataNavigatorElement extends HTMLElement {
-    static observedAttributes = ['density', 'striped', 'searchable', 'reloadable', 'selection-appearance', 'page-size'];
+    static observedAttributes = [
+      'density',
+      'striped',
+      'searchable',
+      'reloadable',
+      'row-action-look',
+      'selection-appearance',
+      'page-size',
+    ];
 
     #controller: DataNavigator.NavigatorController<unknown, C> | undefined;
     #pageSizeOptions: readonly number[] | undefined;
@@ -122,8 +131,19 @@ function setupDataNavigator<C = Node>(
       this.toggleAttribute('reloadable', reloadable);
     }
 
+    // What the action column shows of an action: its icon (the default), its label, or both.
+    get rowActionLook(): DataNavigator.RowActionLook {
+      const value = this.getAttribute('row-action-look');
+
+      return value === 'label' || value === 'iconAndLabel' ? value : 'icon';
+    }
+
+    set rowActionLook(look: DataNavigator.RowActionLook) {
+      this.setAttribute('row-action-look', look);
+    }
+
     get selectionAppearance(): DataNavigator.SelectionAppearance {
-      return this.getAttribute('selection-appearance') === 'accent' ? 'accent' : 'neutral';
+      return this.getAttribute('selection-appearance') === 'neutral' ? 'neutral' : 'accent';
     }
 
     set selectionAppearance(appearance: DataNavigator.SelectionAppearance) {
@@ -188,6 +208,7 @@ function setupDataNavigator<C = Node>(
         striped: this.striped,
         searchable: this.searchable,
         reloadable: this.reloadable,
+        rowActionLook: this.rowActionLook,
         selectionAppearance: this.selectionAppearance,
         pageSize: this.pageSize,
         pageSizeOptions: this.pageSizeOptions,

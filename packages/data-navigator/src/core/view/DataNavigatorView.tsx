@@ -1,9 +1,10 @@
 import { Tooltip } from '@base-ui/react/tooltip';
-import { Fragment, useContext, useState } from 'react';
+import { Fragment, useContext, useRef, useState } from 'react';
 import type { MouseEvent, ReactElement, ReactNode } from 'react';
 import type { DataNavigatorComponent as Spec } from '../../react/api';
 import { ConfigContext } from '../config';
 import { useDataNavigator } from '../useDataNavigator';
+import type { RowGroupEntry } from '../useDataNavigator';
 import {
   flag,
   formatValue,
@@ -14,23 +15,35 @@ import {
 } from '../utils';
 import { ActionList } from './Actions';
 import * as classes from './DataNavigator.module.css';
+import { FilterButton, FilterPills, FilterView } from './FilterPanel';
 import { Footer } from './Footer';
+import { icons } from './icons';
 import { LayerContext } from './layer';
 import { RowContextMenu } from './RowContextMenu';
+import { useRowDrag } from './rowDrag';
 import { Toolbar } from './Toolbar';
-import { Checkbox, ChevronButton, Radio, SortButton, Spinner } from './widgets';
+import { ActionButton, Checkbox, ChevronButton, LoadingBar, Radio, SortButton, ToggleMenu } from './widgets';
 
 export { DataNavigatorView };
 
-// The whole data navigator: the grid, the header rows, the filter row, the data rows, the detail rows and the empty
-// state. The root carries the values of the theme as its custom properties (see config.ts).
+// The whole data navigator: the toolbar (with the filter button and the pills), the grid, the header rows, the data
+// rows, the detail rows and the empty state, or the filter view in place of the grid and the footer. The root carries
+// the values of the theme as its custom properties (see config.ts).
 function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
   const { title, subtitle, empty } = props;
   const { themeStyle } = useContext(ConfigContext);
   const nav = useDataNavigator<Row>(props);
   // Where the widgets render their popups (see layer.ts).
   const [layer, setLayer] = useState<HTMLDivElement | null>(null);
+  const filterButtonRef = useRef<HTMLButtonElement>(null);
   const { texts, selection, rows, layout, sort } = nav;
+  const drag = useRowDrag(rows.length, nav.canReorder, nav.moveRow);
+
+  // Closing the filter view gives the focus back to the filter button (the focused control goes away with the view).
+  const closeFilterView = () => {
+    filterButtonRef.current?.focus();
+    nav.closeFilters();
+  };
 
   // A data row and its detail row are one unit: both select from their free space, and both suppress the text
   // selection that shift + mouse down would otherwise start.
@@ -66,6 +79,66 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
       ? <span className={classes.cellText}>{content}</span>
       : content;
 
+  // With groups (`groupBy`): the group of every row of the page, by its index.
+  const groupOfRow: (RowGroupEntry<Row> | undefined)[] = [];
+
+  for (const group of nav.rowGroups ?? []) {
+    for (const index of group.indexes) {
+      groupOfRow[index] = group;
+    }
+  }
+
+  // The header row of a group, over the whole width: a checkbox for its rows (multi selection), then a button that
+  // collapses and expands the group, with a chevron and the group's content: `renderGroup`, else its key and the number
+  // of its rows (of the source's total, when it gives one and the page shows only a part of the group).
+  const renderGroupRow = (group: RowGroupEntry<Row>): ReactElement => {
+    const collapsed = nav.isGroupCollapsed(group.key);
+    const selectedState = nav.groupSelection(group);
+    const shown = group.rows.length;
+    const multi = selection === 'multi';
+
+    return (
+      <div role="row" className={classes.groupRow} inert={nav.loading}>
+        {multi && (
+          <div role="cell" className={classes.groupCell} style={{ gridColumn: nav.selectionColumn }}>
+            <Checkbox
+              label={selectedState === 'all' ? texts.deselectGroup : texts.selectGroup}
+              checked={selectedState === 'all'}
+              indeterminate={selectedState === 'some'}
+              onChange={(checked) => nav.selectGroup(group, checked)}
+            />
+          </div>
+        )}
+        <div
+          role="cell"
+          className={classes.groupCell}
+          style={{ gridColumn: `${multi ? nav.selectionColumn + 1 : 1} / -1` }}
+        >
+          <button
+            type="button"
+            className={classes.groupToggle}
+            aria-expanded={!collapsed}
+            onClick={() => nav.toggleGroup(group.key)}
+          >
+            <span className={classes.chevron} data-expanded={flag(!collapsed)}>
+              <icons.ChevronRight />
+            </span>
+            {props.renderGroup !== undefined ? props.renderGroup(group) : (
+              <>
+                <span className={classes.groupLabel}>{group.key}</span>
+                <span className={classes.groupCount}>
+                  {group.total === undefined || group.total === shown
+                    ? texts.groupCount({ count: group.total ?? shown })
+                    : texts.groupPartial({ shown, total: group.total })}
+                </span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div
       className={classes.root}
@@ -76,6 +149,8 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
       data-selection-appearance={nav.selectionAppearance}
       data-striped={flag(nav.striped)}
       data-dimmed={flag(nav.spinnerVisible)}
+      data-dragging={flag(drag.drag !== undefined)}
+      onKeyDown={(event) => nav.keyDownRoot(event, layer)}
     >
       <LayerContext value={layer}>
         {/* Tooltips open after a short pause, and at once when moving from one trigger to the next. */}
@@ -84,334 +159,429 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
             <Toolbar
               title={title}
               subtitle={subtitle}
-              items={nav.toolbarActions}
+              generalActions={nav.generalActions}
+              selectionActions={nav.selectionActions}
               invoke={nav.invokeFromToolbar}
               texts={texts}
               search={nav.searchBox}
+              // While the filter view is shown, everything of the bar but the filter button is disabled.
+              filtering={nav.filterPanel.open}
               reload={nav.reload}
-              inert={nav.loading}
+              filterButton={nav.filterColumns.length > 0 && (
+                <FilterButton
+                  count={Object.keys(nav.filters).length}
+                  open={nav.filterPanel.open}
+                  texts={texts}
+                  buttonRef={filterButtonRef}
+                  onToggle={() => (nav.filterPanel.open ? closeFilterView() : nav.openFilters())}
+                  onClear={nav.clearFilters}
+                />
+              )}
+              columnMenu={nav.columnToggles.length > 0 && (
+                <ToggleMenu
+                  icon={<icons.Columns />}
+                  label={texts.columns}
+                  entries={nav.columnToggles}
+                  onToggle={nav.toggleColumn}
+                />
+              )}
+              // Not shown while the filter view is shown (the view shows the same filters, as a draft).
+              pills={!nav.filterPanel.open && (
+                <FilterPills
+                  columns={nav.filterColumns}
+                  filters={nav.filters}
+                  texts={texts}
+                  onOpen={nav.selectionActive ? undefined : nav.openFilters}
+                  onRemove={nav.removeFilter}
+                  onClearAll={nav.clearFilters}
+                />
+              )}
+              selectable={selection !== 'none'}
+              selectedCount={nav.selectedRows.length}
+              onCancelSelection={nav.clearSelection}
+              loading={nav.loading}
             />
-            <div className={classes.scrollArea}>
-              <div className={classes.scroller}>
-                <RowContextMenu
-                  items={nav.contextActions}
-                  prepare={nav.prepareContextMenu}
-                  invoke={nav.invokeFromContextMenu}
-                  className={classes.table}
-                  style={{ gridTemplateColumns: nav.gridTemplateColumns }}
-                >
-                  <div
-                    role="row"
-                    ref={nav.headerRef}
-                    data-filters={flag(nav.hasFilters)}
-                    data-groups={flag(nav.headerRows === 2)}
-                    className={classes.headerRow}
-                  >
-                    {selection !== 'none' && (
+            {
+              /* The grid with the footer, and the filter view: stacked in one cell, so the height is the larger of the
+              two. While the view is shown, the grid and the footer stay (with their scroll position and state) but are
+              hidden (`visibility: hidden`, inert): the table keeps its height, and nothing below it moves. */
+            }
+            <div className={classes.stack} data-filtering={flag(nav.filterPanel.open)}>
+              {nav.filterPanel.open && (
+                <FilterView
+                  columns={nav.filterColumns}
+                  filters={nav.filters}
+                  texts={texts}
+                  focusKey={nav.filterPanel.focusKey}
+                  onApply={(next) => {
+                    nav.applyFilters(next);
+                    closeFilterView();
+                  }}
+                  onCancel={closeFilterView}
+                />
+              )}
+              <div className={classes.tableArea} inert={nav.filterPanel.open}>
+                <div className={classes.scrollArea}>
+                  <div ref={nav.scrollerRef} className={classes.scroller}>
+                    <RowContextMenu
+                      items={nav.contextActions}
+                      prepare={nav.prepareContextMenu}
+                      invoke={nav.invokeFromContextMenu}
+                      className={classes.table}
+                      style={{ gridTemplateColumns: nav.gridTemplateColumns }}
+                    >
                       <div
-                        role="columnheader"
-                        inert={nav.loading}
-                        className={classes.headerTall}
-                        style={{ gridColumn: 1, gridRow: nav.headerRowSpan }}
+                        role="row"
+                        ref={nav.headerRef}
+                        data-groups={flag(nav.headerRows === 2)}
+                        className={classes.headerRow}
                       >
-                        {selection === 'multi' && (
-                          <Checkbox
-                            label={nav.allSelected ? texts.deselectAll : texts.selectAll}
-                            disabled={rows.length === 0}
-                            checked={nav.allSelected}
-                            indeterminate={nav.someSelected}
-                            onChange={(checked) => nav.selectAll(checked)}
+                        {nav.reorderable && (
+                          <div
+                            role="columnheader"
+                            className={classes.headerTall}
+                            style={{ gridColumn: nav.handleColumn, gridRow: nav.headerRowSpan }}
                           />
                         )}
-                      </div>
-                    )}
-                    {nav.hasDetails && (
-                      <div
-                        role="columnheader"
-                        inert={nav.loading}
-                        className={classes.headerTall}
-                        style={{ gridColumn: selection !== 'none' ? 2 : 1, gridRow: nav.headerRowSpan }}
-                      >
-                        <ChevronButton
-                          label={nav.allDetailsExpanded ? texts.collapseAllDetails : texts.expandAllDetails}
-                          expanded={nav.allDetailsExpanded}
-                          onClick={nav.toggleAllDetails}
-                        />
-                      </div>
-                    )}
-                    {layout.groups.map((group) => (
-                      <div
-                        key={group.start}
-                        role="columnheader"
-                        inert={nav.loading}
-                        className={classes.groupHeader}
-                        style={{ gridColumn: nav.columnSpan(nav.firstLeafColumn + group.start, group.span) }}
-                      >
-                        <div className={classes.groupTitle}>{group.header}</div>
-                      </div>
-                    ))}
-                    {nav.headerRows === 2
-                      && layout.leaves.map(({ column, grouped }, index) =>
-                        grouped
-                          ? null
-                          : (
-                            <div
-                              key={`filler-${column.key}`}
-                              role="presentation"
-                              className={classes.headerFiller}
-                              style={{ gridColumn: nav.firstLeafColumn + index }}
-                            />
-                          )
-                      )}
-                    {layout.leaves.map(({ column }, index) => (
-                      <div
-                        key={column.key}
-                        role="columnheader"
-                        inert={nav.loading}
-                        id={nav.headerId(column.key)}
-                        aria-sort={column.sortable ? nav.ariaSort(column.key) : undefined}
-                        data-align={column.align}
-                        data-sortable={flag(column.sortable === true)}
-                        onClick={column.sortable ? () => nav.sortBy(column.key) : undefined}
-                        className={nav.headerRows === 2 ? classes.headerSub : classes.headerTall}
-                        style={{ gridColumn: nav.firstLeafColumn + index }}
-                      >
-                        {column.sortable
-                          ? (
-                            <SortButton
-                              tip={sort?.key === column.key && sort.direction === 'asc'
-                                ? texts.sortDesc
-                                : texts.sortAsc}
-                              header={column.header}
-                              direction={sort?.key === column.key ? sort.direction : undefined}
-                            />
-                          )
-                          : <span className={classes.headerText}>{column.header}</span>}
-                      </div>
-                    ))}
-                    {nav.hasActionColumn && (
-                      <div
-                        role="columnheader"
-                        inert={nav.loading}
-                        className={classes.headerTall}
-                        style={{ gridColumn: nav.actionColumn, gridRow: nav.headerRowSpan }}
-                      />
-                    )}
-                    {nav.hasFilters && (
-                      <>
                         {selection !== 'none' && (
                           <div
-                            role="presentation"
-                            className={classes.filterCell}
-                            style={{ gridColumn: 1, gridRow: nav.filterRow }}
-                          />
+                            role="columnheader"
+                            inert={nav.loading}
+                            className={classes.headerTall}
+                            style={{ gridColumn: nav.selectionColumn, gridRow: nav.headerRowSpan }}
+                          >
+                            {selection === 'multi' && (
+                              <Checkbox
+                                label={nav.allSelected ? texts.deselectAll : texts.selectAll}
+                                disabled={rows.length === 0}
+                                checked={nav.allSelected}
+                                indeterminate={nav.someSelected}
+                                onChange={(checked) => nav.selectAll(checked)}
+                              />
+                            )}
+                          </div>
                         )}
                         {nav.hasDetails && (
                           <div
-                            role="presentation"
-                            className={classes.filterCell}
-                            style={{ gridColumn: selection !== 'none' ? 2 : 1, gridRow: nav.filterRow }}
-                          />
-                        )}
-                        {layout.leaves.map(({ column }, index) => (
-                          <div
-                            key={`filter-${column.key}`}
-                            role={column.filter ? 'cell' : 'presentation'}
-                            className={classes.filterCell}
-                            style={{ gridColumn: nav.firstLeafColumn + index, gridRow: nav.filterRow }}
+                            role="columnheader"
+                            inert={nav.loading}
+                            className={classes.headerTall}
+                            style={{ gridColumn: nav.detailsColumn, gridRow: nav.headerRowSpan }}
                           >
-                            {column.filter?.({
-                              value: nav.filters[column.key],
-                              onChange: (next) => nav.setFilter(column.key, next),
-                              labelledBy: nav.headerId(column.key),
-                            })}
+                            <ChevronButton
+                              label={nav.allDetailsExpanded ? texts.collapseAllDetails : texts.expandAllDetails}
+                              expanded={nav.allDetailsExpanded}
+                              onClick={nav.toggleAllDetails}
+                            />
+                          </div>
+                        )}
+                        {layout.groups.map((group) => (
+                          <div
+                            key={group.start}
+                            role="columnheader"
+                            inert={nav.loading}
+                            className={classes.groupHeader}
+                            style={{ gridColumn: nav.columnSpan(nav.firstLeafColumn + group.start, group.span) }}
+                          >
+                            <div className={classes.groupTitle}>{group.header}</div>
                           </div>
                         ))}
-                        {nav.hasActionColumn && (
-                          <div
-                            role="presentation"
-                            className={classes.filterCell}
-                            style={{ gridColumn: nav.actionColumn, gridRow: nav.filterRow }}
-                          />
-                        )}
-                      </>
-                    )}
-                  </div>
-                  {rows.map((row, index) => {
-                    const key = nav.keyOf(row);
-                    const selected = nav.isSelected(key);
-                    const detail = nav.details[index];
-                    const expandable = hasContent(detail);
-                    const expanded = expandable && nav.isExpanded(key);
+                        {nav.headerRows === 2
+                          && layout.leaves.map(({ column, grouped }, index) =>
+                            grouped
+                              ? null
+                              : (
+                                <div
+                                  key={`filler-${column.key}`}
+                                  role="presentation"
+                                  className={classes.headerFiller}
+                                  style={{ gridColumn: nav.firstLeafColumn + index }}
+                                />
+                              )
+                          )}
+                        {layout.leaves.map(({ column }, index) => {
+                          // A table whose rows are moved has no column sorting.
+                          const sortable = column.sortable === true && !nav.reorderable;
 
-                    return (
-                      <Fragment key={key}>
-                        <div
-                          role="row"
-                          className={classes.dataRow}
-                          data-row-key={key}
-                          inert={nav.loading}
-                          data-stripe={flag(nav.striped && index % 2 === 0)}
-                          aria-selected={selection !== 'none' ? selected : undefined}
-                          {...rowHandlers(row, key)}
-                        >
-                          {
-                            /* The selection cell and the details toggle cell are not control cells: clicking their free
-                          space selects the row, like a data cell. The checkbox and the chevron inside are their own
-                          targets, so each still does its own job exactly once. */
-                          }
-                          {selection !== 'none' && (
+                          return (
                             <div
-                              role="cell"
-                              className={classes.cell}
-                              data-selected={flag(selected)}
-                              data-divider={nav.dividerAfter('selection')}
+                              key={column.key}
+                              role="columnheader"
+                              inert={nav.loading}
+                              id={nav.headerId(column.key)}
+                              aria-sort={sortable ? nav.ariaSort(column.key) : undefined}
+                              data-align={column.align}
+                              data-sortable={flag(sortable)}
+                              data-sorted={flag(sort?.key === column.key)}
+                              onClick={sortable ? () => nav.sortBy(column.key) : undefined}
+                              className={nav.headerRows === 2 ? classes.headerSub : classes.headerTall}
+                              style={{ gridColumn: nav.firstLeafColumn + index }}
                             >
-                              {selection === 'multi'
+                              {sortable
                                 ? (
-                                  <Checkbox
-                                    label={selected ? texts.deselectRow : texts.selectRow}
-                                    checked={selected}
-                                    onChange={(_, shift) => nav.selectByClick(key, shift)}
+                                  <SortButton
+                                    tip={sort?.key === column.key && sort.direction === 'asc'
+                                      ? texts.sortDesc
+                                      : texts.sortAsc}
+                                    header={column.header}
+                                    direction={sort?.key === column.key ? sort.direction : undefined}
                                   />
                                 )
-                                : (
-                                  <Radio
-                                    label={selected ? texts.deselectRow : texts.selectRow}
-                                    checked={selected}
-                                    onChange={() => nav.selectOnly(key)}
-                                  />
-                                )}
+                                : <span className={classes.headerText}>{column.header}</span>}
                             </div>
-                          )}
-                          {nav.hasDetails && (
-                            <div
-                              role="cell"
-                              className={classes.cell}
-                              data-selected={flag(selected)}
-                              data-divider={nav.dividerAfter('details')}
-                            >
-                              {expandable && (
-                                <ChevronButton
-                                  label={expanded ? texts.collapseDetails : texts.expandDetails}
-                                  expanded={expanded}
-                                  onClick={() => nav.toggleDetails(key)}
-                                />
-                              )}
-                            </div>
-                          )}
-                          {layout.leaves.map(({ column }) => {
-                            const content = column.render ? column.render(row) : formatValue(row[column.key]);
-
-                            return (
-                              <div
-                                key={column.key}
-                                role="cell"
-                                className={classes.cell}
-                                data-selected={flag(selected)}
-                                data-align={column.align}
-                                data-wrap={flag(column.wrap === true)}
-                              >
-                                {cellContent(content)}
-                              </div>
-                            );
-                          })}
-                          {nav.hasActionColumn && (
-                            <div
-                              role="cell"
-                              className={classes.cell}
-                              data-selected={flag(selected)}
-                              data-divider="start"
-                              data-control
-                            >
-                              <div className={classes.rowActions}>
-                                <ActionList
-                                  items={nav.rowActions}
-                                  placement="row"
-                                  invoke={(action) => nav.invokeForRow(row, action)}
-                                />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        {expanded && (
+                          );
+                        })}
+                        {nav.hasActionColumn && (
                           <div
-                            role="row"
-                            className={classes.detailRow}
-                            data-row-key={key}
+                            role="columnheader"
                             inert={nav.loading}
-                            {...rowHandlers(row, key)}
-                          >
-                            {selection !== 'none' && (
-                              <div
-                                role="presentation"
-                                className={classes.cell}
-                                data-selected={flag(selected)}
-                                data-divider={nav.dividerAfter('selection')}
-                              />
+                            className={classes.headerTall}
+                            style={{ gridColumn: nav.actionColumn, gridRow: nav.headerRowSpan }}
+                          />
+                        )}
+                      </div>
+                      {rows.map((row, index) => {
+                        const key = nav.keyOf(row);
+                        // With groups: the header of a group comes before its first row, the rows of a collapsed group
+                        // are left out, and the stripes start again in every group.
+                        const group = groupOfRow[index];
+                        const startsGroup = group !== undefined && group.indexes[0] === index;
+                        const shown = group === undefined || !nav.isGroupCollapsed(group.key);
+                        const stripeIndex = group === undefined ? index : group.indexes.indexOf(index);
+                        const selected = nav.isSelected(key);
+                        const detail = nav.details[index];
+                        const expandable = hasContent(detail);
+                        const expanded = expandable && nav.isExpanded(key);
+                        // Every cell of the row and of its detail row: selected, and during a drag lifted and moved
+                        // with the pointer, or moved aside to make room (the transform).
+                        const look = drag.lookOf(index);
+                        const mark = { 'data-selected': flag(selected), 'data-drag': look.state, style: look.style };
+
+                        return (
+                          <Fragment key={key}>
+                            {group !== undefined && startsGroup && renderGroupRow(group)}
+                            {shown && (
+                              <>
+                                <div
+                                  role="row"
+                                  className={classes.dataRow}
+                                  data-row-key={key}
+                                  inert={nav.loading}
+                                  data-stripe={flag(nav.striped && stripeIndex % 2 === 0)}
+                                  aria-selected={selection !== 'none' ? selected : undefined}
+                                  {...rowHandlers(row, key)}
+                                >
+                                  {
+                                    /* The drag handle cell is a control cell (clicking it never selects). Its handle is only
+                          there while rows can be moved (no search, no filters); the cell stays, so nothing shifts. */
+                                  }
+                                  {nav.reorderable && (
+                                    <div
+                                      role="cell"
+                                      className={classes.cell}
+                                      {...mark}
+                                      data-divider={nav.dividerAfter('handle')}
+                                      data-control
+                                    >
+                                      <button
+                                        type="button"
+                                        className={classes.dragHandle}
+                                        aria-label={texts.moveRow}
+                                        aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
+                                        inert={!nav.canReorder}
+                                        data-inactive={flag(!nav.canReorder)}
+                                        {...drag.handleProps(index)}
+                                      >
+                                        <icons.Grip />
+                                      </button>
+                                    </div>
+                                  )}
+                                  {
+                                    /* The selection cell and the details toggle cell are not control cells: clicking their free
+                          space selects the row, like a data cell. The checkbox and the chevron inside are their own
+                          targets, so each still does its own job exactly once. */
+                                  }
+                                  {selection !== 'none' && (
+                                    <div
+                                      role="cell"
+                                      className={classes.cell}
+                                      {...mark}
+                                      data-divider={nav.dividerAfter('selection')}
+                                    >
+                                      {selection === 'multi'
+                                        ? (
+                                          <Checkbox
+                                            label={selected ? texts.deselectRow : texts.selectRow}
+                                            checked={selected}
+                                            onChange={(_, shift) => nav.selectByClick(key, shift)}
+                                          />
+                                        )
+                                        : (
+                                          <Radio
+                                            label={selected ? texts.deselectRow : texts.selectRow}
+                                            checked={selected}
+                                            onChange={() => nav.selectOnly(key)}
+                                          />
+                                        )}
+                                    </div>
+                                  )}
+                                  {nav.hasDetails && (
+                                    <div
+                                      role="cell"
+                                      className={classes.cell}
+                                      {...mark}
+                                      data-divider={nav.dividerAfter('details')}
+                                    >
+                                      {expandable && (
+                                        <ChevronButton
+                                          label={expanded ? texts.collapseDetails : texts.expandDetails}
+                                          expanded={expanded}
+                                          onClick={() => nav.toggleDetails(key)}
+                                        />
+                                      )}
+                                    </div>
+                                  )}
+                                  {layout.leaves.map(({ column }) => {
+                                    const content = column.render ? column.render(row) : formatValue(row[column.key]);
+
+                                    return (
+                                      <div
+                                        key={column.key}
+                                        role="cell"
+                                        className={classes.cell}
+                                        {...mark}
+                                        data-align={column.align}
+                                        data-wrap={flag(column.wrap === true)}
+                                      >
+                                        {cellContent(content)}
+                                      </div>
+                                    );
+                                  })}
+                                  {nav.hasActionColumn && (
+                                    <div
+                                      role="cell"
+                                      className={classes.cell}
+                                      {...mark}
+                                      data-divider="start"
+                                      data-control
+                                    >
+                                      <div className={classes.rowActions}>
+                                        <ActionList
+                                          items={nav.rowActions}
+                                          placement="row"
+                                          rowActionLook={nav.rowActionLook}
+                                          invoke={(action) => nav.invokeForRow(row, action)}
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                                {expanded && (
+                                  <div
+                                    role="row"
+                                    className={classes.detailRow}
+                                    data-row-key={key}
+                                    inert={nav.loading}
+                                    {...rowHandlers(row, key)}
+                                  >
+                                    {nav.reorderable && (
+                                      <div
+                                        role="presentation"
+                                        className={classes.cell}
+                                        {...mark}
+                                        data-divider={nav.dividerAfter('handle')}
+                                      />
+                                    )}
+                                    {selection !== 'none' && (
+                                      <div
+                                        role="presentation"
+                                        className={classes.cell}
+                                        {...mark}
+                                        data-divider={nav.dividerAfter('selection')}
+                                      />
+                                    )}
+                                    {nav.hasDetails && (
+                                      <div
+                                        role="presentation"
+                                        className={classes.cell}
+                                        {...mark}
+                                        data-divider={nav.dividerAfter('details')}
+                                      />
+                                    )}
+                                    <div
+                                      role="cell"
+                                      className={classes.detailCell}
+                                      {...mark}
+                                      style={{
+                                        ...look.style,
+                                        gridColumn: nav.columnSpan(nav.firstLeafColumn, layout.leaves.length),
+                                      }}
+                                    >
+                                      {cellContent(detail)}
+                                    </div>
+                                    {nav.hasActionColumn && (
+                                      <div
+                                        role="presentation"
+                                        className={classes.cell}
+                                        {...mark}
+                                        data-divider="start"
+                                      />
+                                    )}
+                                  </div>
+                                )}
+                              </>
                             )}
-                            {nav.hasDetails && (
-                              <div
-                                role="presentation"
-                                className={classes.cell}
-                                data-selected={flag(selected)}
-                                data-divider={nav.dividerAfter('details')}
-                              />
-                            )}
-                            <div
-                              role="cell"
-                              className={classes.detailCell}
-                              data-selected={flag(selected)}
-                              style={{ gridColumn: nav.columnSpan(nav.firstLeafColumn, layout.leaves.length) }}
-                            >
-                              {cellContent(detail)}
-                            </div>
-                            {nav.hasActionColumn && (
-                              <div
-                                role="presentation"
-                                className={classes.cell}
-                                data-selected={flag(selected)}
-                                data-divider="start"
+                          </Fragment>
+                        );
+                      })}
+                      {nav.isEmpty && (
+                        <div role="row" className={classes.row} inert={nav.loading}>
+                          <div role="cell" className={classes.emptyCell}>
+                            {empty ?? <span className={classes.dimmed}>{nav.emptyText}</span>}
+                            {empty === undefined && Object.keys(nav.filters).length > 0 && (
+                              // A ghost button in the text color (neutral, like the other view controls).
+                              <ActionButton
+                                look={{ label: texts.clearFilters }}
+                                variant="secondary"
+                                placement="tool"
+                                onClick={nav.clearFilters}
                               />
                             )}
                           </div>
-                        )}
-                      </Fragment>
-                    );
-                  })}
-                  {nav.isEmpty && (
-                    <div role="row" className={classes.row} inert={nav.loading}>
-                      <div role="cell" className={classes.emptyCell}>
-                        {empty ?? <span className={classes.dimmed}>{nav.emptyText}</span>}
-                      </div>
+                        </div>
+                      )}
+                    </RowContextMenu>
+                  </div>
+                  {nav.spinnerVisible && (
+                    <div className={classes.overlay} style={{ top: nav.headerHeight, right: nav.scrollbarWidth }}>
+                      <LoadingBar label={texts.loading} />
                     </div>
                   )}
-                </RowContextMenu>
-              </div>
-              {nav.spinnerVisible && (
-                <div className={classes.overlay} style={{ top: nav.headerHeight }}>
-                  <Spinner label={texts.loading} />
                 </div>
-              )}
-            </div>
-            {rows.length > 0 && (
-              <div inert={nav.loading}>
-                <Footer
-                  texts={texts}
-                  selectedCount={nav.selectedRows.length}
-                  total={nav.total}
-                  page={nav.page}
-                  pageCount={nav.pageCount}
-                  pageSize={nav.pageSize}
-                  pageSizeOptions={nav.pageSizeOptions}
-                  onPage={nav.goToPage}
-                  onPageSize={nav.changePageSize}
-                />
+                {rows.length > 0 && (
+                  <div inert={nav.loading}>
+                    <Footer
+                      texts={texts}
+                      total={nav.total}
+                      page={nav.page}
+                      pageCount={nav.pageCount}
+                      pageSize={nav.pageSize}
+                      pageSizeOptions={nav.pageSizeOptions}
+                      onPage={nav.goToPage}
+                      onPageSize={nav.changePageSize}
+                    />
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
         </Tooltip.Provider>
       </LayerContext>
+      {nav.reorderable && (
+        <div role="status" className={classes.liveRegion}>
+          {nav.announcement}
+        </div>
+      )}
       <div ref={setLayer} className={classes.layer} />
     </div>
   );

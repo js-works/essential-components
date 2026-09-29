@@ -12,6 +12,8 @@ declare namespace DataNavigatorComponent {
 
   type SelectionAppearance = DataNavigator.SelectionAppearance;
 
+  type RowActionLook = DataNavigator.RowActionLook;
+
   type Sort = DataNavigator.Sort;
 
   type FilterValue = DataNavigator.FilterValue;
@@ -20,7 +22,17 @@ declare namespace DataNavigatorComponent {
 
   type Result<Row> = DataNavigator.Result<Row>;
 
+  type GroupTotal = DataNavigator.GroupTotal;
+
+  type GroupBy<Row> = DataNavigator.GroupBy<Row>;
+
+  type RowGroup<Row> = DataNavigator.RowGroup<Row>;
+
   type Source<Row> = DataNavigator.Source<Row>;
+
+  type Move<Row> = DataNavigator.Move<Row>;
+
+  type Reorder<Row> = DataNavigator.Reorder<Row>;
 
   type FilterProps = DataNavigator.FilterProps;
 
@@ -28,9 +40,15 @@ declare namespace DataNavigatorComponent {
 
   type TextColumnFilterSettings = DataNavigator.TextColumnFilterSettings;
 
+  type TextFilterMatch = DataNavigator.TextFilterMatch;
+
+  type TextFilterValue = DataNavigator.TextFilterValue;
+
   type SelectColumnFilterSettings = DataNavigator.SelectColumnFilterSettings;
 
   type DateRangeFilterValue = DataNavigator.DateRangeFilterValue;
+
+  type NumberRangeFilterValue = DataNavigator.NumberRangeFilterValue;
 
   type ColumnAlign = DataNavigator.ColumnAlign;
 
@@ -57,6 +75,8 @@ declare namespace DataNavigatorComponent {
     render?: (row: Row) => ReactNode;
     filter?: ColumnFilter;
     wrap?: boolean;
+    hideable?: boolean;
+    hidden?: boolean;
   };
 
   type ColumnGroup<Row> = {
@@ -72,22 +92,25 @@ declare namespace DataNavigatorComponent {
     type: 'general';
     key: string;
     variant?: ActionVariant;
+    contextMenu?: boolean;
     onClick: () => void;
   } & ActionLook;
 
   type RowAction<Row> = {
-    type: 'row';
+    type: 'singleRow';
     key: string;
     variant?: ActionVariant;
+    contextMenu?: boolean;
     onClick: (row: Row) => void;
     show?: 'column' | 'toolbar' | 'both';
     default?: boolean;
   } & ActionLook;
 
   type RowsAction<Row> = {
-    type: 'rows';
+    type: 'multiRow';
     key: string;
     variant?: ActionVariant;
+    contextMenu?: boolean;
     onClick: (rows: readonly Row[]) => void;
   } & ActionLook;
 
@@ -102,6 +125,7 @@ declare namespace DataNavigatorComponent {
 
   type Props<Row> = {
     source: Source<Row>;
+    reorder?: Reorder<Row>;
     rowKey: keyof Row & string;
     columns: readonly (Column<Row> | ColumnGroup<Row>)[];
     title?: ReactNode;
@@ -110,6 +134,8 @@ declare namespace DataNavigatorComponent {
     density?: Density;
     striped?: boolean;
     renderDetail?: (row: Row) => ReactNode;
+    groupBy?: GroupBy<Row>;
+    renderGroup?: (group: RowGroup<Row>) => ReactNode;
     empty?: ReactNode;
     actions?: readonly (Action<Row> | ActionMenu<Row>)[];
     pageSize?: number;
@@ -117,6 +143,7 @@ declare namespace DataNavigatorComponent {
     defaultSort?: Sort;
     searchable?: boolean;
     reloadable?: boolean;
+    rowActionLook?: RowActionLook;
     controller?: Controller<Row>;
   };
 

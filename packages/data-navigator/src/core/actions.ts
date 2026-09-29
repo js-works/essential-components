@@ -1,6 +1,14 @@
 import type { DataNavigatorComponent as Spec } from '../react/api';
 
-export { columnItems, contextMenuItems, defaultActionOf, selectionModeOf, toolbarItems, variantOf };
+export {
+  columnItems,
+  contextMenuItems,
+  defaultActionOf,
+  generalToolbarItems,
+  selectionModeOf,
+  selectionToolbarItems,
+  variantOf,
+};
 export type { ActionInput, ActionItem, ContextMenuItem };
 
 // The actions and menus as the app gives them.
@@ -60,15 +68,24 @@ function withoutUselessSeparators<Child extends { type: string }>(children: read
   return result;
 }
 
-// Actions shown above the table: general ones always, row actions for exactly one, rows actions for at least one.
-function toolbarItems<Row>(items: readonly ActionInput<Row>[], selectedCount: number): readonly ActionItem<Row>[] {
+// The general actions: in the toolbar's bar while nothing is selected.
+function generalToolbarItems<Row>(items: readonly ActionInput<Row>[]): readonly ActionItem<Row>[] {
+  return filterItems(items, (action) => action.type === 'general');
+}
+
+// The actions on the selection: in the selection bar, which replaces the toolbar's bar while rows are selected. Row
+// actions (of the toolbar) for exactly one selected row, rows actions for at least one. Hidden, not disabled, otherwise.
+function selectionToolbarItems<Row>(
+  items: readonly ActionInput<Row>[],
+  selectedCount: number,
+): readonly ActionItem<Row>[] {
   return filterItems(items, (action) => {
     switch (action.type) {
       case 'general':
-        return true;
-      case 'rows':
+        return false;
+      case 'multiRow':
         return selectedCount >= 1;
-      case 'row':
+      case 'singleRow':
         return (action.show === 'toolbar' || action.show === 'both') && selectedCount === 1;
     }
   });
@@ -77,7 +94,8 @@ function toolbarItems<Row>(items: readonly ActionInput<Row>[], selectedCount: nu
 // Actions shown in the action column of every row.
 function columnItems<Row>(items: readonly ActionInput<Row>[]): readonly ActionItem<Row>[] {
   return filterItems(items, (action) => {
-    return action.type === 'row' && (action.show === undefined || action.show === 'column' || action.show === 'both');
+    return action.type === 'singleRow'
+      && (action.show === undefined || action.show === 'column' || action.show === 'both');
   });
 }
 
@@ -90,13 +108,15 @@ function contextMenuItems<Row>(
   selection: Spec.SelectionMode,
   oneRow: boolean,
 ): readonly ContextMenuItem<Row>[] {
+  // An action with `contextMenu: false` is never there (also not inside a menu), e.g. one that does the same as another.
   const applies = (action: Spec.Action<Row>) =>
-    action.type === 'general' || (action.type === 'row' ? oneRow : selection === 'multi');
+    action.contextMenu !== false
+    && (action.type === 'general' || (action.type === 'singleRow' ? oneRow : selection === 'multi'));
   const plain = items.filter((item): item is Spec.Action<Row> => item.type !== 'menu' && applies(item));
   const menus = filterItems(items.filter((item) => item.type === 'menu'), applies);
   const groups: readonly (readonly ActionItem<Row>[])[] = [
-    plain.filter((action) => action.type === 'row'),
-    plain.filter((action) => action.type === 'rows'),
+    plain.filter((action) => action.type === 'singleRow'),
+    plain.filter((action) => action.type === 'multiRow'),
     [...plain.filter((action) => action.type === 'general'), ...menus],
   ];
 
@@ -117,7 +137,9 @@ function variantOf<Row>(item: ActionItem<Row>): Spec.ActionVariant {
 function defaultActionOf<Row>(items: readonly ActionInput<Row>[]): Spec.RowAction<Row> | undefined {
   const actions = items.flatMap((item) => (item.type === 'menu' ? item.actions : [item]));
 
-  return actions.find((action): action is Spec.RowAction<Row> => action.type === 'row' && action.default === true);
+  return actions.find((action): action is Spec.RowAction<Row> =>
+    action.type === 'singleRow' && action.default === true
+  );
 }
 
 // The selection mode follows from the action definitions (never from what is visible at the moment):
@@ -125,11 +147,11 @@ function defaultActionOf<Row>(items: readonly ActionInput<Row>[]): Spec.RowActio
 function selectionModeOf<Row>(items: readonly ActionInput<Row>[]): Spec.SelectionMode {
   const actions = items.flatMap((item) => (item.type === 'menu' ? item.actions : [item]));
 
-  if (actions.some((action) => action.type === 'rows')) {
+  if (actions.some((action) => action.type === 'multiRow')) {
     return 'multi';
   }
 
-  if (actions.some((action) => action.type === 'row' && (action.show === 'toolbar' || action.show === 'both'))) {
+  if (actions.some((action) => action.type === 'singleRow' && (action.show === 'toolbar' || action.show === 'both'))) {
     return 'single';
   }
 

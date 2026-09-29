@@ -107,9 +107,29 @@ function within(date: string, filter: unknown): boolean {
   return (typeof from !== 'string' || date >= from) && (typeof to !== 'string' || date <= to);
 }
 
-// The source of the table: the column filters (filename: contains, user, type and size: one of, uploaded: a date
-// range), search (in the name, the user and
-// the type), sorting and paging.
+// A text filter is `{ text, match }`: contains, starts with or ends with, ignoring the case.
+function matches(value: string, filter: unknown): boolean {
+  if (filter === null || typeof filter !== 'object' || Array.isArray(filter)) {
+    return true;
+  }
+
+  const { text, match } = filter as { text?: unknown; match?: unknown };
+
+  if (typeof text !== 'string') {
+    return true;
+  }
+
+  const [haystack, needle] = [value.toLowerCase(), text.toLowerCase()];
+
+  return match === 'startsWith'
+    ? haystack.startsWith(needle)
+    : match === 'endsWith'
+    ? haystack.endsWith(needle)
+    : haystack.includes(needle);
+}
+
+// The source of the table: the column filters (filename: a text filter, user, type and size: one of, uploaded: a date
+// range), search (in the name, the user and the type), sorting and paging.
 async function fetchAttachments(
   query: DataNavigatorComponent.Query,
   signal: AbortSignal,
@@ -124,7 +144,7 @@ async function fetchAttachments(
   const rows = attachments
     .filter(
       (attachment) =>
-        (typeof name !== 'string' || attachment.name.toLowerCase().includes(name.toLowerCase()))
+        matches(attachment.name, name)
         && oneOf(attachment.user, user)
         && oneOf(attachment.type, type)
         && oneOf(sizeClassOf(attachment.size), size)

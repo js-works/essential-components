@@ -2,13 +2,20 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testi
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useDataNavigatorController, useDataNavigatorSelection } from './core/controllerHooks';
-import { dateRangeColumnFilter, selectColumnFilter, textColumnFilter } from './core/view/ColumnFilters';
+import {
+  booleanColumnFilter,
+  dateRangeColumnFilter,
+  numberRangeColumnFilter,
+  selectColumnFilter,
+  textColumnFilter,
+} from './core/view/ColumnFilters';
 import baseStylesheet from './core/view/DataNavigator.module.css?raw';
 import type { DataNavigatorComponent as Spec } from './react/api';
 import { createDataNavigatorComponent } from './react/createDataNavigatorComponent';
 import { antdTheme } from './themes/antd';
 import { defaultTheme } from './themes/default';
 import { mantineTheme } from './themes/mantine';
+import { softTheme } from './themes/soft';
 
 // The component under test: created without a configuration (English texts, the default theme).
 const Nav = createDataNavigatorComponent();
@@ -32,9 +39,25 @@ function createSource() {
     const { name: nameFilter, city: cityFilter } = query.filters;
     const sorted = people
       .filter((person) => text === '' || `${person.name} ${person.city}`.toLowerCase().includes(text))
-      .filter((person) =>
-        typeof nameFilter !== 'string' || person.name.toLowerCase().includes(nameFilter.toLowerCase())
-      )
+      .filter((person) => {
+        // A text filter is `{ text, match }`.
+        if (typeof nameFilter !== 'object' || nameFilter === null || Array.isArray(nameFilter)) {
+          return true;
+        }
+
+        const { text: needle, match } = nameFilter as { text?: unknown; match?: unknown };
+        const name = person.name.toLowerCase();
+
+        if (typeof needle !== 'string') {
+          return true;
+        }
+
+        return match === 'startsWith'
+          ? name.startsWith(needle.toLowerCase())
+          : match === 'endsWith'
+          ? name.endsWith(needle.toLowerCase())
+          : name.includes(needle.toLowerCase());
+      })
       .filter((person) =>
         typeof cityFilter === 'string'
           ? person.city === cityFilter
@@ -65,22 +88,11 @@ function declarationsOf(selector: string): string {
     .join(' ');
 }
 
-// The declarations of a rule for a selector that sits inside a media query with the given condition.
-function declarationsInMedia(condition: RegExp, selector: string): string {
-  return [...document.styleSheets]
-    .flatMap((sheet) => [...sheet.cssRules])
-    .filter((rule): rule is CSSMediaRule => rule instanceof CSSMediaRule && condition.test(rule.media.mediaText))
-    .flatMap((rule) => [...rule.cssRules])
-    .filter((rule): rule is CSSStyleRule => rule instanceof CSSStyleRule && rule.selectorText === selector)
-    .map((rule) => rule.cssText)
-    .join(' ');
-}
-
 // The selection mode follows from the actions (there is no selection prop). Tests that need a mode ask for it with the
 // test-only option `selection`, and get an action that needs exactly that mode.
 const selectionActions = {
-  multi: { type: 'rows', key: 'test-selection-multi', label: 'Rows action', onClick: () => {} },
-  single: { type: 'row', key: 'test-selection-single', label: 'Row action', show: 'toolbar', onClick: () => {} },
+  multi: { type: 'multiRow', key: 'test-selection-multi', label: 'Rows action', onClick: () => {} },
+  single: { type: 'singleRow', key: 'test-selection-single', label: 'Row action', show: 'toolbar', onClick: () => {} },
 } as const satisfies Record<'multi' | 'single', Spec.Action<Person>>;
 
 type NavProps = Partial<Spec.Props<Person>> & { selection?: keyof typeof selectionActions };
@@ -112,6 +124,14 @@ function click(name: string): void {
   fireEvent.click(screen.getByRole('button', { name }));
 }
 
+// The two buttons of the selection bar that clear the selection, both named "Clear selection": the pill on the left,
+// the "deselect" button on the right.
+function clearSelectionWith(button: 'pill' | 'close'): void {
+  const [pill, close] = screen.getAllByRole('button', { name: 'Clear selection' });
+
+  fireEvent.click((button === 'pill' ? pill : close)!);
+}
+
 // Chooses an option in a select (Base UI): opens its list when it is not open yet, and clicks the option.
 async function chooseIn(trigger: HTMLElement, option: string): Promise<void> {
   if (screen.queryByRole('option', { name: option }) === null) {
@@ -134,7 +154,15 @@ async function choosePageSize(size: number): Promise<void> {
   await chooseIn(screen.getByRole('combobox', { name: 'Page Size' }), String(size));
 }
 
-// The field of the filter of the column with this header (an open list is labelled by the header too).
+// Opens the filter view (in place of the rows) with the filter button of the toolbar.
+async function openFilters(): Promise<HTMLElement> {
+  fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
+
+  return screen.findByRole('region', { name: 'Filters' });
+}
+
+// The field of the filter of the column with this header, in the filter view (an open list is labelled by the
+// header too).
 function filterField(header: string): HTMLElement {
   return screen.getAllByRole('combobox', { name: header })[0]!;
 }
@@ -340,7 +368,7 @@ describe('DataNavigator', () => {
       selection: 'multi',
       source: async () => ({ rows: [], total: 0 }),
       renderDetail: () => <span>detail</span>,
-      actions: [{ type: 'row', key: 'edit', label: 'Edit', onClick: vi.fn() }],
+      actions: [{ type: 'singleRow', key: 'edit', label: 'Edit', onClick: vi.fn() }],
     });
 
     await screen.findByText('No entries');
@@ -360,7 +388,7 @@ describe('DataNavigator', () => {
     const { container } = renderNav({
       selection: 'multi',
       renderDetail: () => <span>detail</span>,
-      actions: [{ type: 'row', key: 'edit', label: 'Edit', onClick: vi.fn() }],
+      actions: [{ type: 'singleRow', key: 'edit', label: 'Edit', onClick: vi.fn() }],
     });
 
     // first load: no row yet
@@ -395,8 +423,8 @@ describe('DataNavigator', () => {
     expect(container.querySelector('[role="cell"] svg')).toBeNull();
   });
 
-  it('ends the empty state with the line below it, like the last row', () => {
-    expect(declarationsOf('.emptyCell')).not.toMatch(/border-bottom/);
+  it('ends the empty state without a line below it (unlike the rows)', () => {
+    expect(declarationsOf('.emptyCell')).toMatch(/border-bottom: none/);
     expect(declarationsOf('.cell')).toMatch(/border-bottom: 1px solid var\(--datnav-color-border\)/);
   });
 
@@ -421,7 +449,6 @@ describe('DataNavigator', () => {
   describe('column filters', () => {
     const filteredColumns: readonly Spec.Column<Person>[] = [
       { key: 'name', header: 'Name', filter: textColumnFilter() },
-
       { key: 'city', header: 'City', filter: selectColumnFilter({ options: ['Vienna', 'Berlin'] }) },
     ];
 
@@ -429,47 +456,61 @@ describe('DataNavigator', () => {
 
     const typeName = (text: string) => fireEvent.change(nameBox(), { target: { value: text } });
 
-    const enter = () => fireEvent.keyDown(nameBox(), { key: 'Enter' });
-
-    // The clear control of the filter of the column with this header (other filters may have a hidden one too).
-    const clickClear = (header: string) => {
-      const cell = screen.getByLabelText(header).closest<HTMLElement>('.filterCell')!;
-      const clear = within(cell).getByLabelText('Clear filter');
-
-      fireEvent.mouseDown(clear);
-      fireEvent.click(clear);
-    };
-
     const filteredWith = (source: ReturnType<typeof createSource>, filters: Spec.Query['filters'], timeout = 1000) =>
       waitFor(
         () => expect(source).toHaveBeenLastCalledWith(expect.objectContaining({ filters }), expect.any(AbortSignal)),
         { timeout },
       );
 
-    it('has no filter row when no column has a filter', async () => {
+    const pillTexts = () => [...document.querySelectorAll('.filterPillMain')].map((pill) => pill.textContent);
+
+    it('has no filter button when no column has a filter, and no filter row at all', async () => {
       const { container } = renderNav();
 
       await loaded();
 
-      expect(container.querySelector('.filterCell')).toBeNull();
-
-      expect(container.querySelector('.headerRow[data-filters]')).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Filters' })).toBeNull();
+      expect(container.querySelector('.headerRow input')).toBeNull();
     });
 
-    it('shows the filter row in the sticky header, with one cell per column and the header as accessible name', async () => {
-      const { container } = renderNav({ columns: filteredColumns });
+    it('shows the filter view in place of the rows, with one row per filter and the header as its label', async () => {
+      const { container } = renderNav({ columns: [...filteredColumns, { key: 'id', header: 'Id' }] });
 
       await loaded();
 
-      const header = container.querySelector('.headerRow[data-filters]')!;
+      // the filters are not in the header
+      expect(screen.queryByRole('textbox', { name: 'Name' })).toBeNull();
 
-      expect(header).not.toBeNull();
+      const panel = await openFilters();
 
-      expect(header.querySelectorAll('.filterCell')).toHaveLength(2);
+      // the grid and the footer stay, but hidden (they keep their room, so the height stays) and inert; the view lies in
+      // the same cell; the toolbar stays, with the filter button pressed
+      const stack = container.querySelector('.stack')!;
+      const tableArea = container.querySelector<HTMLElement>('.tableArea')!;
 
+      expect(stack.hasAttribute('data-filtering')).toBe(true);
+      expect(tableArea.contains(container.querySelector('.table'))).toBe(true);
+      expect(tableArea.hasAttribute('inert')).toBe(true);
+      expect(baseStylesheet).toMatch(/&\[data-filtering\] > \.tableArea \{\s*visibility: hidden;/);
+      expect(panel.parentElement).toBe(stack);
+      expect(screen.getByRole('button', { name: 'Filters' }).getAttribute('aria-pressed')).toBe('true');
+      // no headline; below the filters Cancel and Apply (Reset and Clear only when they would change something)
+      expect(within(panel).queryByText('Filters')).toBeNull();
+      expect(panel.querySelector('.filterPanelFooter')?.textContent).toBe('CancelApply');
+      expect([...panel.querySelectorAll('.filterPanelLabel')].map((label) => label.textContent)).toEqual([
+        'Name',
+        'City',
+      ]);
       expect(nameBox()).toBeTruthy();
+      expect(filterField('City')).toBeTruthy();
+      // the first filter has the focus
+      expect(document.activeElement).toBe(nameBox());
 
-      expect(screen.getByLabelText('City')).toBeTruthy();
+      // Cancel brings the rows back, and the focus goes back to the filter button
+      click('Cancel');
+      expect(stack.hasAttribute('data-filtering')).toBe(false);
+      expect(tableArea.hasAttribute('inert')).toBe(false);
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Filters' }));
     });
 
     it('shows the localized default placeholder in a text filter, or the one of the app', async () => {
@@ -481,223 +522,277 @@ describe('DataNavigator', () => {
       });
 
       await loaded();
+      await openFilters();
 
       expect(screen.getByRole('textbox', { name: 'Name' }).getAttribute('placeholder')).toBe('Filter');
-
       expect(screen.getByRole('textbox', { name: 'City' }).getAttribute('placeholder')).toBe('e.g. Vienna');
     });
 
-    it('gives the selection, details and action columns empty cells in the filter row, with the dividers', async () => {
-      const { container } = renderNav({
-        columns: filteredColumns,
-
-        selection: 'multi',
-
-        renderDetail: () => <span>detail</span>,
-
-        actions: [{ type: 'row', key: 'edit', label: 'Edit', onClick: () => {} }],
-      });
-
-      await loaded();
-
-      const cells = [...container.querySelectorAll('.headerRow .filterCell')];
-
-      // 2 columns, the selection column, the details column and the action column
-
-      expect(cells).toHaveLength(5);
-
-      expect(cells.filter((cell) => cell.getAttribute('role') === 'presentation')).toHaveLength(3);
-
-      // the filter row belongs to the header band, which has no vertical lines
-      expect(cells.filter((cell) => cell.hasAttribute('data-divider'))).toHaveLength(0);
-
-      // every filter cell sits in the grid row below the column headers (one header row here, so row 2)
-      expect(cells.map((cell) => (cell as HTMLElement).style.gridRow)).toEqual(['2', '2', '2', '2', '2']);
-    });
-
-    it('does not apply a text filter while typing, only on Enter, and goes back to the first page', async () => {
+    it('applies nothing before Apply, then all filters at once, on the first page', async () => {
       const { source } = renderNav({ columns: filteredColumns });
 
       await loaded();
-
       click('Next page');
+      await loaded();
+
+      const calls = source.mock.calls.length;
+
+      await openFilters();
+      typeName('  person 0  ');
+      await chooseFilterOption('City', 'Vienna');
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(source.mock.calls.length).toBe(calls);
+
+      click('Apply');
+
+      // the view closes, and the load starts
+      expect(screen.queryByRole('region', { name: 'Filters' })).toBeNull();
+
+      await filteredWith(source, { name: { text: 'person 0', match: 'contains' }, city: 'Vienna' }, 300);
+      expect(source.mock.calls.length).toBe(calls + 1);
+      expect(source).toHaveBeenLastCalledWith(expect.objectContaining({ page: 1 }), expect.any(AbortSignal));
+      // the badge of the filter button counts the active filters
+      expect(screen.getByRole('button', { name: 'Filters' }).querySelector('.filterBadge')?.textContent).toBe('2');
+    });
+
+    it('applies on Enter in a text input', async () => {
+      const { source } = renderNav({ columns: filteredColumns });
+
+      await loaded();
+      await openFilters();
+      typeName('person 07');
+      fireEvent.keyDown(nameBox(), { key: 'Enter' });
+
+      await filteredWith(source, { name: { text: 'person 07', match: 'contains' } }, 300);
+    });
+
+    it('throws the draft away when the popup is closed without Apply', async () => {
+      const { source } = renderNav({ columns: filteredColumns });
 
       await loaded();
 
       const calls = source.mock.calls.length;
 
-      typeName('person 0');
-
-      // neither a pause in typing nor leaving the input applies it
-
-      await new Promise((resolve) => setTimeout(resolve, 450));
-
-      fireEvent.blur(nameBox());
-
+      await openFilters();
+      typeName('person 07');
+      fireEvent.keyDown(nameBox(), { key: 'Escape' });
+      await waitFor(() => expect(screen.queryByRole('region', { name: 'Filters' })).toBeNull());
       expect(source.mock.calls.length).toBe(calls);
 
-      enter();
-
-      await filteredWith(source, { name: 'person 0' }, 200);
-
-      await loaded();
-
-      expect(source).toHaveBeenLastCalledWith(expect.objectContaining({ page: 1 }), expect.any(AbortSignal));
-
-      expect(screen.getByText('Items 1-9 / 9')).toBeTruthy();
-    });
-
-    it('applies a text filter at once on Enter, trimmed', async () => {
-      const { source } = renderNav({ columns: filteredColumns });
-
-      await loaded();
-
-      typeName('  person 07  ');
-
-      enter();
-
-      await filteredWith(source, { name: 'person 07' }, 200);
-    });
-
-    it('removes a text filter with Escape, with its clear button and when the input is emptied', async () => {
-      const { source } = renderNav({ columns: filteredColumns });
-
-      await loaded();
-
-      typeName('person 07');
-
-      enter();
-
-      await filteredWith(source, { name: 'person 07' }, 200);
-
-      await loaded();
-
-      fireEvent.keyDown(nameBox(), { key: 'Escape' });
-
-      await filteredWith(source, {}, 200);
-
+      await openFilters();
       expect((nameBox() as HTMLInputElement).value).toBe('');
+    });
+
+    it('lets a text filter match the start or the end instead, and shows where other text may be', async () => {
+      const { source } = renderNav({ columns: filteredColumns });
 
       await loaded();
+      await openFilters();
+      typeName('ber');
+      // the select in front of the text field, "contains" by default
+      const match = screen.getByRole('combobox', { name: 'Match' });
+
+      expect(match.textContent).toBe('contains');
+      await chooseIn(match, 'starts with');
+      expect(match.textContent).toBe('starts with');
+      click('Apply');
+
+      await filteredWith(source, { name: { text: 'ber', match: 'startsWith' } }, 300);
+
+      // the value in a box, the `⋯` only where other text may be (after it)
+      const pill = document.querySelector('.filterPillMain')!;
+
+      expect(pill.textContent).toBe('Name:ber⋯');
+      expect(pill.querySelector('[data-boxed]')?.textContent).toBe('ber');
+    });
+
+    it('puts the draft back to the applied filters with Reset, empties it with Clear; Apply applies it', async () => {
+      const { source } = renderNav({ columns: filteredColumns });
+
+      await loaded();
+      await openFilters();
+      typeName('person 07');
+      click('Apply');
+      await filteredWith(source, { name: { text: 'person 07', match: 'contains' } }, 300);
+      await loaded();
+
+      // Reset only while the draft differs from the applied filters, Clear only while the draft has a filter
+      const shown = (name: string) => screen.queryByRole('button', { name }) !== null;
+
+      await openFilters();
+      expect([shown('Reset'), shown('Clear')]).toEqual([false, true]);
 
       typeName('person 08');
+      expect([shown('Reset'), shown('Clear')]).toEqual([true, true]);
 
-      enter();
+      click('Reset');
+      expect((nameBox() as HTMLInputElement).value).toBe('person 07');
+      expect([shown('Reset'), shown('Clear')]).toEqual([false, true]);
 
-      await filteredWith(source, { name: 'person 08' }, 200);
+      click('Clear');
+      expect((nameBox() as HTMLInputElement).value).toBe('');
+      expect([shown('Reset'), shown('Clear')]).toEqual([true, false]);
+      click('Apply');
 
-      await loaded();
-
-      clickClear('Name');
-
-      await filteredWith(source, {}, 200);
-
-      await loaded();
-
-      typeName('person 09');
-
-      enter();
-
-      await filteredWith(source, { name: 'person 09' }, 200);
-
-      await loaded();
-
-      typeName('');
-
-      await filteredWith(source, {}, 200);
+      await filteredWith(source, {}, 300);
     });
 
-    it('does not load again for an equal value', async () => {
+    it('does not load again for equal filters', async () => {
       const { source } = renderNav({ columns: filteredColumns });
 
       await loaded();
-
+      await openFilters();
       typeName('person 07');
-
-      enter();
-
-      await filteredWith(source, { name: 'person 07' }, 200);
-
+      click('Apply');
+      await filteredWith(source, { name: { text: 'person 07', match: 'contains' } }, 300);
       await loaded();
 
       const calls = source.mock.calls.length;
 
-      // the same value once trimmed: no new load
-
+      // the same value once trimmed
+      await openFilters();
       typeName('person 07 ');
-
-      enter();
-
-      await new Promise((resolve) => setTimeout(resolve, 450));
+      click('Apply');
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       expect(source.mock.calls.length).toBe(calls);
     });
 
-    it('applies a select filter at once, and removes it with its clear control', async () => {
+    it('shows a pill per active filter: its × removes the filter, Clear all removes them all', async () => {
       const { source } = renderNav({ columns: filteredColumns });
 
       await loaded();
+      expect(document.querySelector('.filterPills')).toBeNull();
 
-      await chooseFilterOption('City', 'Vienna');
-
-      await filteredWith(source, { city: 'Vienna' }, 200);
-
+      await openFilters();
+      typeName('person');
+      await chooseFilterOption('City', 'Berlin');
+      click('Apply');
+      await filteredWith(source, { name: { text: 'person', match: 'contains' }, city: 'Berlin' }, 300);
       await loaded();
 
-      clickClear('City');
+      expect(pillTexts()).toEqual(['Name:⋯person⋯', 'City:Berlin']);
 
-      await filteredWith(source, {}, 200);
+      // no pills while the filter view is shown (it shows the same filters)
+      await openFilters();
+      expect(document.querySelector('.filterPills')).toBeNull();
+      click('Cancel');
+      expect(document.querySelector('.filterPills')).not.toBeNull();
+      expect(pillTexts()).toEqual(['Name:⋯person⋯', 'City:Berlin']);
+
+      fireEvent.click(screen.getAllByRole('button', { name: 'Remove filter' })[1]!);
+      await filteredWith(source, { name: { text: 'person', match: 'contains' } }, 300);
+      await loaded();
+      expect(pillTexts()).toEqual(['Name:⋯person⋯']);
+
+      click('Clear all');
+      await filteredWith(source, {}, 300);
+      await loaded();
+      expect(document.querySelector('.filterPills')).toBeNull();
     });
 
-    it('gives a multiple select filter an array of strings, and removes the key when nothing is selected', async () => {
+    it('opens the popup with the filter of a pill focused when the pill is clicked', async () => {
+      const { source } = renderNav({ columns: filteredColumns });
+
+      await loaded();
+      await openFilters();
+      await chooseFilterOption('City', 'Berlin');
+      click('Apply');
+      await filteredWith(source, { city: 'Berlin' }, 300);
+      await loaded();
+
+      fireEvent.click(document.querySelector('.filterPillMain')!);
+
+      await screen.findByRole('region', { name: 'Filters' });
+      await waitFor(() => expect(document.activeElement).toBe(filterField('City')));
+    });
+
+    it('gives a multiple select filter an array of strings, and summarizes a long list in its pill', async () => {
       const columns: readonly Spec.Column<Person>[] = [
         {
           key: 'city',
-
           header: 'City',
-
-          filter: selectColumnFilter({ options: ['Vienna', 'Berlin'], multiple: true }),
+          filter: selectColumnFilter({ options: ['Vienna', 'Berlin', 'Lisbon', 'Madrid'], multiple: true }),
         },
       ];
-
       const { source } = renderNav({ columns });
 
       await loaded();
-
+      await openFilters();
       await chooseFilterOption('City', 'Vienna');
-
-      await filteredWith(source, { city: ['Vienna'] }, 300);
-
+      await chooseFilterOption('City', 'Berlin');
+      click('Apply');
+      await filteredWith(source, { city: ['Vienna', 'Berlin'] }, 300);
+      expect(pillTexts()).toEqual(['City:Vienna, Berlin']);
       await loaded();
 
-      await chooseFilterOption('City', 'Berlin');
-
-      await filteredWith(source, { city: ['Vienna', 'Berlin'] }, 300);
+      await openFilters();
+      await chooseFilterOption('City', 'Lisbon');
+      click('Apply');
+      await filteredWith(source, { city: ['Vienna', 'Berlin', 'Lisbon'] }, 300);
+      expect(pillTexts()).toEqual(['City:Vienna+2']);
     });
 
     it('shows the placeholder of a select filter only while nothing is selected', async () => {
       const columns: readonly Spec.Column<Person>[] = [
         { key: 'city', header: 'City', filter: selectColumnFilter({ options: ['Vienna', 'Berlin'] }) },
-        {
-          key: 'name',
-          header: 'Name',
-          filter: selectColumnFilter({ options: ['Ann', 'Bob'], multiple: true }),
-        },
+        { key: 'name', header: 'Name', filter: selectColumnFilter({ options: ['Ann', 'Bob'], multiple: true }) },
       ];
 
       renderNav({ columns });
 
       await loaded();
+      await openFilters();
 
       expect([shownIn('City'), shownIn('Name')]).toEqual(['All', 'All']);
-
       await chooseFilterOption('City', 'Vienna');
-
       expect([shownIn('City'), shownIn('Name')]).toEqual(['Vienna', 'All']);
-
       await chooseFilterOption('Name', 'Ann');
-
       expect([shownIn('City'), shownIn('Name')]).toEqual(['Vienna', 'Ann']);
+    });
+
+    it('gives a number range filter `{ from?, to? }`, inclusive, with an open side when one is empty', async () => {
+      const columns: readonly Spec.Column<Person>[] = [
+        { key: 'id', header: 'Id', filter: numberRangeColumnFilter() },
+      ];
+      const { source } = renderNav({ columns });
+      const side = (name: 'From' | 'To') => screen.getByRole('spinbutton', { name: `Id ${name}` });
+      const apply = async (from: string, to: string, filters: Spec.Query['filters'], pill: string) => {
+        await openFilters();
+        fireEvent.change(side('From'), { target: { value: from } });
+        fireEvent.change(side('To'), { target: { value: to } });
+        click('Apply');
+        await filteredWith(source, filters, 300);
+        await loaded();
+        expect(pillTexts()).toEqual([pill]);
+      };
+
+      await loaded();
+      await apply('1000', '5000', { id: { from: 1000, to: 5000 } }, 'Id1,000–5,000');
+      await apply('1000', '', { id: { from: 1000 } }, 'Id ≥1,000');
+      await apply('', '5000', { id: { to: 5000 } }, 'Id ≤5,000');
+      await apply('7', '7', { id: { from: 7, to: 7 } }, 'Id =7');
+    });
+
+    it('gives a boolean filter true or false, and All removes it', async () => {
+      const columns: readonly Spec.Column<Person>[] = [
+        { key: 'id', header: 'Paid', filter: booleanColumnFilter() },
+      ];
+      const { source } = renderNav({ columns });
+
+      await loaded();
+      await openFilters();
+      expect(screen.getByRole('radio', { name: 'All' }).getAttribute('aria-checked')).toBe('true');
+      fireEvent.click(screen.getByRole('radio', { name: 'No' }));
+      click('Apply');
+      await filteredWith(source, { id: false }, 300);
+      await loaded();
+      expect(pillTexts()).toEqual(['Paid:No']);
+
+      await openFilters();
+      fireEvent.click(screen.getByRole('radio', { name: 'All' }));
+      click('Apply');
+      await filteredWith(source, {}, 300);
     });
 
     it('gives a date range filter the range picked in its two calendars, shows it formatted, and clears it', async () => {
@@ -709,13 +804,16 @@ describe('DataNavigator', () => {
 
       await loaded();
 
-      const trigger = screen.getByRole('button', { name: 'Moved in' });
+      const trigger = () => screen.getByRole('button', { name: 'Moved in' });
 
-      expect(trigger.textContent).toBe('All');
+      // Two calendars (vanillajs-datepicker, loaded on first use), side by side, acting as one of two months. They are
+      // in a popover of the filter's own, inside the filter view.
+      const open = async () => {
+        if (screen.queryByRole('region', { name: 'Filters' }) === null) {
+          await openFilters();
+        }
 
-      // Two calendars (vanillajs-datepicker, loaded on first use), side by side, acting as one of two months.
-      const open = () => {
-        fireEvent.click(trigger);
+        fireEvent.click(trigger());
 
         return waitFor(() => {
           const found = [...document.querySelectorAll<HTMLElement>('.datepicker')].map((calendar) =>
@@ -739,6 +837,9 @@ describe('DataNavigator', () => {
       };
       const closed = () => waitFor(() => expect(document.querySelector('.datepicker')).toBeNull());
 
+      await openFilters();
+      expect(trigger().textContent).toBe('All');
+
       const [left, right] = await open();
 
       // Each calendar is named by its month title; the outer buttons by our texts (the inner ones are hidden by the
@@ -753,7 +854,7 @@ describe('DataNavigator', () => {
       fireEvent.click(within(right).getByRole('button', { name: 'Next' }));
       expect([titleOf(left), titleOf(right)]).toEqual([leftTitle, rightTitle]);
 
-      // A range within one month: two clicks in the same calendar. The first one applies nothing yet.
+      // A range within one month: two clicks in the same calendar. The first one picks nothing yet.
       const [start, end] = [day(left, 14), day(left, 17)];
 
       fireEvent.click(start);
@@ -767,12 +868,14 @@ describe('DataNavigator', () => {
       fireEvent.mouseLeave(left);
       expect(left.querySelectorAll('.datepicker-cell.range')).toHaveLength(0);
 
+      // The second click closes the calendars; the filter view stays, and Apply applies the range.
       fireEvent.click(end);
+      await closed();
+      expect(screen.getByRole('region', { name: 'Filters' })).toBeTruthy();
+      expect(trigger().textContent).not.toBe('All');
+      click('Apply');
 
       await filteredWith(source, { city: { from: isoOf(start), to: isoOf(end) } }, 300);
-      await closed();
-      expect(trigger.textContent).not.toBe('All');
-
       await loaded();
 
       // An end before the start is swapped, across the two calendars.
@@ -781,10 +884,10 @@ describe('DataNavigator', () => {
 
       fireEvent.click(later);
       fireEvent.click(earlier);
+      await closed();
+      click('Apply');
 
       await filteredWith(source, { city: { from: isoOf(earlier), to: isoOf(later) } }, 300);
-      await closed();
-
       await loaded();
 
       // The same day twice: a range of one day.
@@ -793,41 +896,45 @@ describe('DataNavigator', () => {
 
       fireEvent.click(single);
       fireEvent.click(single);
+      await closed();
+      click('Apply');
 
       await filteredWith(source, { city: { from: isoOf(single), to: isoOf(single) } }, 300);
-      await closed();
-
       await loaded();
 
-      // The clear button below the calendars removes the filter and closes the popover.
+      // The clear button below the calendars removes the range and closes the calendars.
       await open();
       fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
+      await closed();
+      expect(trigger().textContent).toBe('All');
+      click('Apply');
 
       await filteredWith(source, {}, 300);
-      await closed();
-
-      expect(trigger.textContent).toBe('All');
     });
 
-    it('clears the selection when a filter is applied', async () => {
-      renderNav({ columns: filteredColumns, selection: 'multi' });
+    it('clears the selection when filters are applied', async () => {
+      const { source } = renderNav({ columns: filteredColumns, selection: 'multi' });
 
+      await loaded();
+      await openFilters();
+      typeName('person');
+      click('Apply');
+      await filteredWith(source, { name: { text: 'person', match: 'contains' } }, 300);
       await loaded();
 
       fireEvent.click(screen.getAllByRole('checkbox', { name: 'Select row' })[0]!);
-
       expect(screen.getByText('1 selected')).toBeTruthy();
+      // while the selection bar is shown (the filter button is not), a pill does not open the popup, but its × works
+      expect(document.querySelector('button.filterPillMain')).toBeNull();
 
-      typeName('person 0');
-
-      enter();
-
+      click('Remove filter');
+      await filteredWith(source, {}, 300);
       await loaded();
 
-      await waitFor(() => expect(screen.queryByText('1 selected')).toBeNull());
+      expect(screen.queryByText('1 selected')).toBeNull();
     });
 
-    it('keeps the filter inputs usable while loading and blocks the rest of the table', async () => {
+    it('keeps the filter button usable while loading and blocks the rest of the table', async () => {
       let calls = 0;
 
       const source = (query: Spec.Query) =>
@@ -836,38 +943,87 @@ describe('DataNavigator', () => {
       renderNav({ columns: filteredColumns, source });
 
       await loaded();
-
-      // a new filter starts a load that never ends
-
+      await openFilters();
       typeName('person');
+      click('Apply');
 
-      enter();
-
-      expect(nameBox().closest('[inert]')).toBeNull();
-
-      expect(screen.getByLabelText('City').closest('[inert]')).toBeNull();
-
-      expect(screen.getByRole('columnheader', { name: 'City' }).closest('[inert]')).not.toBeNull();
-
+      // a new filter started a load that never ends
       expect(screen.getByText('Person 01').closest('[inert]')).not.toBeNull();
-
+      expect(screen.getByRole('button', { name: 'Filters' }).closest('[inert]')).toBeNull();
       expect(screen.getByRole('button', { name: 'Next page' }).closest('[inert]')).not.toBeNull();
     });
 
-    it('keeps the filter row when the filters find nothing, and says that nothing was found', async () => {
-      renderNav({ columns: filteredColumns });
+    it('disables everything of the bar but the filter button while the filter view is shown (the search stays apart)', async () => {
+      renderNav({
+        columns: [...filteredColumns, { key: 'id', header: 'Id', hideable: true }],
+        searchable: true,
+        reloadable: true,
+        actions: [{ type: 'general', key: 'add', label: 'Add', onClick: vi.fn() }],
+      });
 
       await loaded();
 
+      const panel = await openFilters();
+      const disabled = (element: HTMLElement) => element.closest('[inert]') !== null;
+
+      // the search is not part of the filters: it stays in the toolbar, but cannot be used meanwhile
+      expect(within(panel).queryByRole('textbox', { name: 'Search' })).toBeNull();
+      expect(disabled(screen.getByRole('textbox', { name: 'Search' }))).toBe(true);
+      expect(disabled(screen.getByRole('button', { name: 'Reload' }))).toBe(true);
+      expect(disabled(screen.getByRole('button', { name: 'Add' }))).toBe(true);
+      expect(disabled(screen.getByRole('button', { name: 'Columns' }))).toBe(true);
+      expect(disabled(screen.getByRole('button', { name: 'Filters' }))).toBe(false);
+
+      // back to the rows: everything is usable again
+      click('Cancel');
+      expect(disabled(screen.getByRole('textbox', { name: 'Search' }))).toBe(false);
+      expect(disabled(screen.getByRole('button', { name: 'Add' }))).toBe(false);
+      expect(disabled(screen.getByRole('button', { name: 'Columns' }))).toBe(false);
+    });
+
+    it('says that no rows match the filters, with a way to clear them', async () => {
+      const { source } = renderNav({ columns: filteredColumns });
+
+      await loaded();
+      await openFilters();
       typeName('zzz');
+      click('Apply');
 
-      enter();
-
-      expect(await screen.findByText('No results found')).toBeTruthy();
-
-      expect(nameBox()).toBeTruthy();
-
+      expect(await screen.findByText('No rows match these filters')).toBeTruthy();
       expect(screen.queryByText('Page Size')).toBeNull();
+
+      // the button of the empty state (the × after the filter button is named the same)
+      const empty = document.querySelector<HTMLElement>('.emptyCell')!;
+
+      fireEvent.click(within(empty).getByRole('button', { name: 'Clear filters' }));
+      await filteredWith(source, {}, 300);
+    });
+
+    it('joins a × to the filter button while filters are active: it removes all of them', async () => {
+      const { source } = renderNav({ columns: filteredColumns });
+      const clear = () =>
+        document.querySelector('.filterButtonGroup')?.querySelector<HTMLElement>('[aria-label="Clear filters"]')
+          ?? null;
+
+      await loaded();
+      expect(clear()).toBeNull();
+
+      await openFilters();
+      typeName('person');
+      await chooseFilterOption('City', 'Berlin');
+      click('Apply');
+      await filteredWith(source, { name: { text: 'person', match: 'contains' }, city: 'Berlin' }, 300);
+      await loaded();
+
+      // not while the filter view is shown (it has its own Clear, for the draft)
+      await openFilters();
+      expect(clear()).toBeNull();
+      click('Cancel');
+
+      fireEvent.click(clear()!);
+      await filteredWith(source, {}, 300);
+      await loaded();
+      expect(clear()).toBeNull();
     });
   });
 
@@ -879,30 +1035,30 @@ describe('DataNavigator', () => {
       expect(screen.queryByRole('button', { name: 'Reload' })).toBeNull();
     });
 
-    it('puts the Reload button right of the search box, also without a search box', async () => {
+    it('puts the Reload button at the start of the bar, before the search box, also without a search box', async () => {
       const { unmount } = renderNav({ searchable: true, reloadable: true });
       await loaded();
 
       const reload = screen.getByRole('button', { name: 'Reload' });
 
       expect(
-        screen.getByRole('textbox', { name: 'Search' }).compareDocumentPosition(reload)
+        reload.compareDocumentPosition(screen.getByRole('textbox', { name: 'Search' }))
           & Node.DOCUMENT_POSITION_FOLLOWING,
       ).toBeTruthy();
       unmount();
 
-      renderNav({ reloadable: true });
+      const { container } = renderNav({
+        reloadable: true,
+        actions: [{ type: 'general', key: 'add', label: 'Add', onClick: vi.fn() }],
+      });
       await loaded();
 
-      expect(screen.getByRole('button', { name: 'Reload' })).toBeTruthy();
+      expect(container.querySelector('.toolbarBar')!.firstElementChild?.className).toBe('toolbarReload');
     });
 
-    it('loads the current page again, with the same query, and clears the selection', async () => {
+    it('loads the current page again, with the same query', async () => {
       const { source } = renderNav({ reloadable: true, selection: 'multi' });
       await loaded();
-
-      fireEvent.click(screen.getAllByRole('checkbox', { name: 'Select row' })[0]!);
-      expect(screen.getAllByRole('checkbox', { name: 'Deselect row' })).toHaveLength(1);
 
       const query = source.mock.lastCall![0];
 
@@ -911,7 +1067,10 @@ describe('DataNavigator', () => {
       await waitFor(() => expect(source).toHaveBeenCalledTimes(2));
       expect(source.mock.lastCall![0]).toEqual(query);
       await loaded();
-      expect(screen.queryAllByRole('checkbox', { name: 'Deselect row' })).toHaveLength(0);
+
+      // while rows are selected, the selection bar has taken the place of the bar (and of the Reload button)
+      fireEvent.click(screen.getAllByRole('checkbox', { name: 'Select row' })[0]!);
+      expect(screen.queryByRole('button', { name: 'Reload' })).toBeNull();
     });
   });
 
@@ -938,14 +1097,14 @@ describe('DataNavigator', () => {
       expect(screen.queryByRole('textbox', { name: 'Search' })).toBeNull();
     });
 
-    it('puts the search box right of the action buttons (at the right end of the bar)', async () => {
+    it('puts the search box left of the action buttons (at the start of the bar)', async () => {
       renderNav({ searchable: true, actions: [{ type: 'general', key: 'add', label: 'Add', onClick: vi.fn() }] });
 
       await loaded();
 
       const add = screen.getByRole('button', { name: 'Add' });
 
-      expect(add.compareDocumentPosition(searchBox()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(searchBox().compareDocumentPosition(add) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
 
     it('does not search while typing, only on Enter, and goes back to the first page', async () => {
@@ -1027,22 +1186,20 @@ describe('DataNavigator', () => {
       await searchedFor('', 200);
     });
 
-    it('clears the selection when the search changes', async () => {
+    it('gives way to the selection bar while rows are selected, and comes back with the search kept', async () => {
       renderNav({ searchable: true, selection: 'multi' });
 
       await loaded();
 
+      type('person');
+
       fireEvent.click(screen.getAllByRole('checkbox', { name: 'Select row' })[0]!);
 
-      expect(screen.getByText('1 selected')).toBeTruthy();
+      expect(screen.queryByRole('textbox', { name: 'Search' })).toBeNull();
 
-      type('person 0');
+      clearSelectionWith('pill');
 
-      enter();
-
-      await loaded();
-
-      await waitFor(() => expect(screen.queryByText('1 selected')).toBeNull());
+      expect((searchBox() as HTMLInputElement).value).toBe('person');
     });
 
     it('says that nothing was found for the search, unless custom empty content is given', async () => {
@@ -1103,7 +1260,7 @@ describe('DataNavigator', () => {
     });
 
     it('has checkboxes (multi) for a rows action, although its button is not visible yet', async () => {
-      renderNav({ actions: [{ type: 'rows', key: 'del', label: 'Delete', onClick: noop }] });
+      renderNav({ actions: [{ type: 'multiRow', key: 'del', label: 'Delete', onClick: noop }] });
 
       await loaded();
 
@@ -1123,7 +1280,7 @@ describe('DataNavigator', () => {
 
           label: 'More',
 
-          actions: [{ type: 'rows', key: 'archive', label: 'Archive', onClick: noop }],
+          actions: [{ type: 'multiRow', key: 'archive', label: 'Archive', onClick: noop }],
         }],
       });
 
@@ -1133,7 +1290,7 @@ describe('DataNavigator', () => {
     });
 
     it('has radio buttons (single) for a row action in the toolbar, also when it is shown in both places', async () => {
-      renderNav({ actions: [{ type: 'row', key: 'open', label: 'Open', show: 'toolbar', onClick: noop }] });
+      renderNav({ actions: [{ type: 'singleRow', key: 'open', label: 'Open', show: 'toolbar', onClick: noop }] });
 
       await loaded();
 
@@ -1141,7 +1298,7 @@ describe('DataNavigator', () => {
 
       cleanup();
 
-      renderNav({ actions: [{ type: 'row', key: 'open', label: 'Open', show: 'both', onClick: noop }] });
+      renderNav({ actions: [{ type: 'singleRow', key: 'open', label: 'Open', show: 'both', onClick: noop }] });
 
       await loaded();
 
@@ -1157,7 +1314,7 @@ describe('DataNavigator', () => {
 
           label: 'More',
 
-          actions: [{ type: 'row', key: 'open', label: 'Open', show: 'toolbar', onClick: noop }],
+          actions: [{ type: 'singleRow', key: 'open', label: 'Open', show: 'toolbar', onClick: noop }],
         }],
       });
 
@@ -1171,9 +1328,9 @@ describe('DataNavigator', () => {
         actions: [
           { type: 'general', key: 'add', label: 'Add', onClick: noop },
 
-          { type: 'row', key: 'edit', label: 'Edit', onClick: noop },
+          { type: 'singleRow', key: 'edit', label: 'Edit', onClick: noop },
 
-          { type: 'row', key: 'view', label: 'View', show: 'column', onClick: noop },
+          { type: 'singleRow', key: 'view', label: 'View', show: 'column', onClick: noop },
         ],
       });
 
@@ -1193,9 +1350,9 @@ describe('DataNavigator', () => {
     it('prefers multi when rows actions and toolbar row actions are mixed', async () => {
       renderNav({
         actions: [
-          { type: 'row', key: 'open', label: 'Open', show: 'toolbar', onClick: noop },
+          { type: 'singleRow', key: 'open', label: 'Open', show: 'toolbar', onClick: noop },
 
-          { type: 'rows', key: 'del', label: 'Delete', onClick: noop },
+          { type: 'multiRow', key: 'del', label: 'Delete', onClick: noop },
         ],
       });
 
@@ -1206,7 +1363,7 @@ describe('DataNavigator', () => {
   });
 
   describe('selection', () => {
-    it('selects rows with checkboxes and clears the selection when the page changes', async () => {
+    it('selects rows with checkboxes and clears the selection when the page or the page size changes', async () => {
       renderNav({ selection: 'multi' });
       await loaded();
 
@@ -1217,9 +1374,17 @@ describe('DataNavigator', () => {
       await loaded();
 
       expect(screen.queryByText('1 selected')).toBeNull();
+
+      fireEvent.click(screen.getAllByRole('checkbox', { name: 'Select row' })[0]!);
+      expect(screen.getByText('1 selected')).toBeTruthy();
+
+      await choosePageSize(25);
+      await loaded();
+
+      expect(screen.queryByText('1 selected')).toBeNull();
     });
 
-    it('selects all rows of the page with the header checkbox', async () => {
+    it('selects all rows of the page with the header checkbox, and deselects them again', async () => {
       renderNav({ selection: 'multi' });
       await loaded();
 
@@ -1238,6 +1403,19 @@ describe('DataNavigator', () => {
       click('Name');
       await loaded();
 
+      expect(screen.queryByText('1 selected')).toBeNull();
+    });
+
+    it('clears the selection with Escape and with the selection pill of the selection bar', async () => {
+      renderNav({ selection: 'multi' });
+      await loaded();
+
+      fireEvent.click(screen.getAllByRole('checkbox', { name: 'Select row' })[0]!);
+      fireEvent.keyDown(screen.getAllByRole('checkbox', { name: 'Deselect row' })[0]!, { key: 'Escape' });
+      expect(screen.queryByText('1 selected')).toBeNull();
+
+      fireEvent.click(screen.getAllByRole('checkbox', { name: 'Select row' })[0]!);
+      clearSelectionWith('pill');
       expect(screen.queryByText('1 selected')).toBeNull();
     });
 
@@ -1313,7 +1491,7 @@ describe('DataNavigator', () => {
       const { container } = renderNav({
         selection: 'multi',
         renderDetail: (person) => <span>{`detail ${person.id}`}</span>,
-        actions: [{ type: 'row', key: 'edit', label: 'Edit', onClick: vi.fn() }],
+        actions: [{ type: 'singleRow', key: 'edit', label: 'Edit', onClick: vi.fn() }],
       });
       await loaded();
 
@@ -1456,7 +1634,7 @@ describe('DataNavigator', () => {
       renderNav({
         selection: 'multi',
         renderDetail: (person) => <span>{`detail ${person.id}`}</span>,
-        actions: [{ type: 'row', key: 'edit', label: 'Edit', onClick: vi.fn() }],
+        actions: [{ type: 'singleRow', key: 'edit', label: 'Edit', onClick: vi.fn() }],
       });
       await loaded();
 
@@ -1476,7 +1654,7 @@ describe('DataNavigator', () => {
           type: 'menu',
           key: 'more',
           label: 'More',
-          actions: [{ type: 'row', key: 'archive', label: 'Archive', onClick: onArchive }],
+          actions: [{ type: 'singleRow', key: 'archive', label: 'Archive', onClick: onArchive }],
         }],
       });
       await loaded();
@@ -1515,7 +1693,7 @@ describe('DataNavigator', () => {
 
   describe('double click (the default action)', () => {
     const editAction = (onClick: () => void) => ({
-      type: 'row' as const,
+      type: 'singleRow' as const,
       key: 'edit',
       label: 'Edit',
       default: true,
@@ -1638,7 +1816,7 @@ describe('DataNavigator', () => {
 
       const { unmount } = renderNav({
         selection: 'multi',
-        actions: [{ type: 'row', key: 'edit', label: 'Edit', onClick: plain }],
+        actions: [{ type: 'singleRow', key: 'edit', label: 'Edit', onClick: plain }],
       });
       await loaded();
 
@@ -1653,8 +1831,8 @@ describe('DataNavigator', () => {
       renderNav({
         selection: 'multi',
         actions: [
-          { type: 'row', key: 'a', label: 'A', default: true, onClick: first },
-          { type: 'row', key: 'b', label: 'B', default: true, onClick: second },
+          { type: 'singleRow', key: 'a', label: 'A', default: true, onClick: first },
+          { type: 'singleRow', key: 'b', label: 'B', default: true, onClick: second },
         ],
       });
       await loaded();
@@ -1703,7 +1881,7 @@ describe('DataNavigator', () => {
     });
 
     it('leaves the word selection alone when no action is marked default', async () => {
-      renderNav({ actions: [{ type: 'row', key: 'edit', label: 'Edit', onClick: vi.fn() }] });
+      renderNav({ actions: [{ type: 'singleRow', key: 'edit', label: 'Edit', onClick: vi.fn() }] });
       await loaded();
 
       expect(fireEvent.mouseDown(cellOf('Person 01'), { detail: 2 })).toBe(true);
@@ -1806,6 +1984,7 @@ describe('DataNavigator', () => {
       await loaded();
       shiftClick('Person 15');
 
+      // only Person 15: the page change cleared the selection and the anchor, so it is a normal click, not a range
       expect(screen.getByText('1 selected')).toBeTruthy();
     });
 
@@ -1865,7 +2044,7 @@ describe('DataNavigator', () => {
       renderNav({
         selection: 'multi',
         renderDetail: (person) => <span>{`detail ${person.id}`}</span>,
-        actions: [{ type: 'row', key: 'edit', label: 'Edit', onClick: vi.fn() }],
+        actions: [{ type: 'singleRow', key: 'edit', label: 'Edit', onClick: vi.fn() }],
       });
       await loaded();
 
@@ -1956,7 +2135,7 @@ describe('DataNavigator', () => {
       renderNav({
         selection: 'multi',
         renderDetail: () => <span>the detail</span>,
-        actions: [{ type: 'row', key: 'edit', label: 'Edit', onClick: vi.fn() }],
+        actions: [{ type: 'singleRow', key: 'edit', label: 'Edit', onClick: vi.fn() }],
       });
       await loaded();
 
@@ -2067,7 +2246,7 @@ describe('DataNavigator', () => {
     it('works for icon-only row actions in the action column', async () => {
       const onClick = vi.fn();
 
-      renderNav({ actions: [{ type: 'row', key: 'edit', icon: icon('edit'), tip: 'Edit user', onClick }] });
+      renderNav({ actions: [{ type: 'singleRow', key: 'edit', icon: icon('edit'), tip: 'Edit user', onClick }] });
 
       await loaded();
 
@@ -2110,6 +2289,55 @@ describe('DataNavigator', () => {
       expect(exportItem.querySelector('[data-testid="icon-export"]')).not.toBeNull();
 
       expect(printItem.querySelector('[data-testid="icon-print"]')).not.toBeNull();
+    });
+
+    it('shows a row action in the action column as the table says (rowActionLook: icon by default, label, both)', async () => {
+      const onClick = vi.fn();
+      const info: Spec.RowAction<Person> = {
+        type: 'singleRow',
+        key: 'info',
+        label: 'Information',
+        icon: icon('info'),
+        show: 'both',
+        onClick,
+      };
+      const inRows = () =>
+        screen.getAllByRole('button', { name: 'Information' }).filter((button) =>
+          button.getAttribute('data-placement') === 'row'
+        );
+
+      const { unmount } = renderNav({ selection: 'multi', actions: [info] });
+      await loaded();
+
+      // the default: only the icon in the rows, named (and tipped) by the label
+      expect(inRows()).toHaveLength(10);
+      expect(inRows().every((button) => button.hasAttribute('data-icon-only') && button.textContent === '')).toBe(true);
+
+      // the same action in the selection bar (one row selected) keeps its look: icon and label
+      fireEvent.click(screen.getAllByRole('checkbox', { name: 'Select row' })[0]!);
+
+      const inToolbar = screen.getAllByRole('button', { name: 'Information' }).find((button) =>
+        button.getAttribute('data-placement') === 'toolbar'
+      )!;
+
+      expect(inToolbar.hasAttribute('data-icon-only')).toBe(false);
+      expect(inToolbar.textContent).toBe('Information');
+      fireEvent.click(inToolbar);
+      expect(onClick).toHaveBeenLastCalledWith(people[0]);
+      unmount();
+
+      // only the label
+      const labels = renderNav({ selection: 'multi', actions: [info], rowActionLook: 'label' });
+      await loaded();
+      expect(inRows()[0]!.textContent).toBe('Information');
+      expect(inRows()[0]!.querySelector('[data-testid="icon-info"]')).toBeNull();
+      labels.unmount();
+
+      // icon and label
+      renderNav({ selection: 'multi', actions: [info], rowActionLook: 'iconAndLabel' });
+      await loaded();
+      expect(inRows()[0]!.textContent).toBe('Information');
+      expect(inRows()[0]!.querySelector('[data-testid="icon-info"]')).not.toBeNull();
     });
 
     it('requires a tip for an icon-only action (checked by the compiler)', () => {
@@ -2162,7 +2390,7 @@ describe('DataNavigator', () => {
     });
 
     it('shows a separator only if a visible action follows it (a rows action is not visible without a selection)', async () => {
-      const rowsAction: Spec.Action<Person> = { type: 'rows', key: 'r', label: 'Action R', onClick: noop };
+      const rowsAction: Spec.Action<Person> = { type: 'multiRow', key: 'r', label: 'Action R', onClick: noop };
 
       const first = renderNav({ actions: [menu(general('a', 'Action A'), separator(), rowsAction)] });
 
@@ -2215,7 +2443,7 @@ describe('DataNavigator', () => {
     });
 
     it('hides a menu that has no visible action, separators do not count', async () => {
-      const rowsAction: Spec.Action<Person> = { type: 'rows', key: 'r', label: 'Action R', onClick: noop };
+      const rowsAction: Spec.Action<Person> = { type: 'multiRow', key: 'r', label: 'Action R', onClick: noop };
 
       renderNav({ actions: [menu(separator(), rowsAction)] });
 
@@ -2275,11 +2503,11 @@ describe('DataNavigator', () => {
     it('applies the variant to the actions in the action column as well', async () => {
       renderNav({
         actions: [
-          { type: 'row', key: 'edit', label: 'Edit', onClick: vi.fn() },
+          { type: 'singleRow', key: 'edit', label: 'Edit', onClick: vi.fn() },
 
-          { type: 'row', key: 'remove', label: 'Remove', variant: 'danger', onClick: vi.fn() },
+          { type: 'singleRow', key: 'remove', label: 'Remove', variant: 'danger', onClick: vi.fn() },
 
-          { type: 'row', key: 'open', label: 'Open', variant: 'primary', onClick: vi.fn() },
+          { type: 'singleRow', key: 'open', label: 'Open', variant: 'primary', onClick: vi.fn() },
         ],
       });
 
@@ -2309,20 +2537,20 @@ describe('DataNavigator', () => {
     const contextActions = (calls: string[]): readonly (Spec.Action<Person> | Spec.ActionMenu<Person>)[] => [
       { type: 'general', key: 'add', label: 'Add', onClick: () => calls.push('add') },
       {
-        type: 'rows',
+        type: 'multiRow',
         key: 'remove',
         label: 'Remove',
         onClick: (rows) => calls.push(`remove ${rows.map((row) => row.id)}`),
       },
-      { type: 'row', key: 'edit', label: 'Edit', show: 'column', onClick: (row) => calls.push(`edit ${row.id}`) },
-      { type: 'row', key: 'info', tip: 'Info', icon: <svg />, show: 'column', onClick: () => {} },
+      { type: 'singleRow', key: 'edit', label: 'Edit', show: 'column', onClick: (row) => calls.push(`edit ${row.id}`) },
+      { type: 'singleRow', key: 'info', tip: 'Info', icon: <svg />, show: 'column', onClick: () => {} },
       {
         type: 'menu',
         key: 'export',
         label: 'Export',
         actions: [
           { type: 'general', key: 'all', label: 'All', onClick: () => calls.push('all') },
-          { type: 'rows', key: 'selected', label: 'Selected', onClick: () => calls.push('selected') },
+          { type: 'multiRow', key: 'selected', label: 'Selected', onClick: () => calls.push('selected') },
         ],
       },
     ];
@@ -2351,6 +2579,23 @@ describe('DataNavigator', () => {
       expect(menu.classList.contains('menuWithIcons')).toBe(true);
       expect(menu.querySelectorAll('[role="menuitem"] > .menuIcon')).toHaveLength(5);
       expect(menu.querySelectorAll('.menuIcon svg')).toHaveLength(1);
+    });
+
+    it('leaves an action with contextMenu: false out of the menu (e.g. one that does the same as another)', async () => {
+      renderNav({
+        actions: [
+          { type: 'multiRow', key: 'remove', label: 'Remove', onClick: () => {} },
+          { type: 'singleRow', key: 'remove-row', label: 'Remove this', contextMenu: false, onClick: () => {} },
+          { type: 'singleRow', key: 'edit', label: 'Edit', onClick: () => {} },
+        ],
+      });
+
+      await loaded();
+      await openOn('Person 03');
+
+      expect(entries()).toEqual(['Edit', '---', 'Remove']);
+      // it is still in the action column
+      expect(screen.getAllByRole('button', { name: 'Remove this' })).toHaveLength(10);
     });
 
     it('selects only the clicked row when it is not selected, keeps the selection on a selected row', async () => {
@@ -2426,8 +2671,8 @@ describe('DataNavigator', () => {
 
     const actions: readonly Spec.Action<Person>[] = [
       { type: 'general', key: 'add', label: 'Add', onClick: onAdd },
-      { type: 'row', key: 'edit', label: 'Edit', show: 'both', onClick: onEdit },
-      { type: 'rows', key: 'delete', label: 'Delete', onClick: onDelete },
+      { type: 'singleRow', key: 'edit', label: 'Edit', show: 'both', onClick: onEdit },
+      { type: 'multiRow', key: 'delete', label: 'Delete', onClick: onDelete },
     ];
 
     it('shows toolbar actions only when the matching number of rows is selected', async () => {
@@ -2440,9 +2685,11 @@ describe('DataNavigator', () => {
 
       const boxes = screen.getAllByRole('checkbox', { name: 'Select row' });
 
+      // the selection bar: the actions on the selection instead of the general ones
       fireEvent.click(boxes[0]!);
       expect(screen.getByRole('button', { name: 'Delete' })).toBeTruthy();
       expect(screen.getAllByRole('button', { name: 'Edit' })).toHaveLength(11);
+      expect(screen.queryByRole('button', { name: 'Add' })).toBeNull();
 
       fireEvent.click(boxes[1]!);
       expect(screen.getAllByRole('button', { name: 'Edit' })).toHaveLength(10);
@@ -2471,7 +2718,7 @@ describe('DataNavigator', () => {
         type: 'menu',
         key: 'more',
         label: 'More',
-        actions: [{ type: 'rows', key: 'archive', label: 'Archive', onClick: vi.fn() }],
+        actions: [{ type: 'multiRow', key: 'archive', label: 'Archive', onClick: vi.fn() }],
       };
 
       renderNav({ selection: 'multi', actions: [menu] });
@@ -2487,7 +2734,7 @@ describe('DataNavigator', () => {
   });
 
   describe('header', () => {
-    it('shows the icon of an unsorted sortable column only on hover, and keeps the arrow of the sorted one', async () => {
+    it('shows a faint icon on an unsorted sortable column, and the arrow on the sorted one', async () => {
       renderNav({
         columns: [
           { key: 'name', header: 'Name', sortable: true },
@@ -2502,15 +2749,16 @@ describe('DataNavigator', () => {
       expect(iconIn('Name')).not.toBeNull();
       expect(iconIn('City')).not.toBeNull();
       expect(iconIn('Id')).toBeNull();
-      expect(declarationsOf('.unsortedIcon')).toMatch(/visibility:\s*hidden/);
-      // devices that cannot hover always show it, since nothing could reveal it there
-      expect(declarationsInMedia(/hover:\s*none/, '.unsortedIcon')).toMatch(/visibility:\s*visible/);
+      expect(declarationsOf('.unsortedIcon')).toMatch(/opacity:\s*0\.45/);
 
       click('Name');
       await loaded();
 
       expect(iconIn('Name')).toBeNull();
       expect(iconIn('City')).not.toBeNull();
+      // the sorted column is the only one in the full text color
+      expect(screen.getByRole('columnheader', { name: 'Name' }).hasAttribute('data-sorted')).toBe(true);
+      expect(screen.getByRole('columnheader', { name: 'City' }).hasAttribute('data-sorted')).toBe(false);
     });
 
     it('makes the whole sortable header cell the click target, and only that one', async () => {
@@ -2676,7 +2924,7 @@ describe('DataNavigator', () => {
       const { container } = renderNav({
         selection: 'multi',
         renderDetail: () => <span>detail</span>,
-        actions: [{ type: 'row', key: 'edit', label: 'Edit', onClick: vi.fn() }],
+        actions: [{ type: 'singleRow', key: 'edit', label: 'Edit', onClick: vi.fn() }],
         columns: [
           { key: 'id', header: 'Id', filter: textColumnFilter() },
           { header: 'Group A', columns: [{ key: 'name', header: 'Name' }] },
@@ -2687,10 +2935,9 @@ describe('DataNavigator', () => {
 
       const header = container.querySelector('.headerRow')!;
 
-      // the group header row, the column header row and the filter row are all there ...
+      // the group header row and the column header row are both there (the filters are in the popup) ...
       expect(header.querySelectorAll('.groupHeader')).toHaveLength(2);
       expect(header.querySelectorAll('.headerFiller')).toHaveLength(1);
-      expect(header.querySelectorAll('.filterCell').length).toBeGreaterThan(0);
 
       // ... and none of them has a vertical line: not between groups, not above an ungrouped column, and not
       // beside the meta or the action columns
@@ -2704,7 +2951,7 @@ describe('DataNavigator', () => {
       const { container } = renderNav({
         selection: 'multi',
         renderDetail: () => <span>detail</span>,
-        actions: [{ type: 'row', key: 'edit', label: 'Edit', onClick: vi.fn() }],
+        actions: [{ type: 'singleRow', key: 'edit', label: 'Edit', onClick: vi.fn() }],
       });
 
       await loaded();
@@ -2788,14 +3035,14 @@ describe('DataNavigator', () => {
       expect([...headerRows][0]?.getAttribute('role')).toBe('row');
     });
 
-    it('reports the selection appearance, neutral by default', async () => {
+    it('reports the selection appearance, accent by default', async () => {
       const { container, rerender } = renderNav({ selection: 'multi' });
       await loaded();
 
       const appearanceOf = () =>
         container.querySelector('[data-selection-appearance]')?.getAttribute('data-selection-appearance');
 
-      expect(appearanceOf()).toBe('neutral');
+      expect(appearanceOf()).toBe('accent');
 
       rerender(
         <Nav
@@ -2803,10 +3050,10 @@ describe('DataNavigator', () => {
           rowKey="id"
           columns={columns}
           actions={[selectionActions.multi]}
-          selectionAppearance="accent"
+          selectionAppearance="neutral"
         />,
       );
-      expect(appearanceOf()).toBe('accent');
+      expect(appearanceOf()).toBe('neutral');
     });
 
     it('frames selected rows with a line on top and at the bottom: gray, or in the selection border color with accent', async () => {
@@ -2983,14 +3230,26 @@ describe('DataNavigator', () => {
       expect(root.hasAttribute('data-dimmed')).toBe(false);
     });
 
-    it('gives the rows area and the overlay a minimum height, so the spinner always fits below the header', async () => {
+    it('gives the rows area a minimum height, and shows a thin gray bar at its top instead of a spinner', async () => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+
       const { container } = renderNav({ source: () => new Promise<Spec.Result<Person>>(() => {}) });
 
-      // no rows yet (first load): the table must not collapse to the header alone ...
+      // no rows yet (first load): the table must not collapse to the header alone
       expect(container.querySelectorAll('[role="row"]')).toHaveLength(1);
       expect(declarationsOf('.scrollArea')).toMatch(/min-height:\s*calc\(6\s*\*/);
-      // ... and the overlay keeps its own room, whatever the header costs (it is out of flow, so it adds no height)
-      expect(declarationsOf('.overlay')).toMatch(/min-height:\s*calc\(6\s*\*/);
+
+      act(() => {
+        vi.advanceTimersByTime(250);
+      });
+
+      // the bar, in the overlay (which starts below the header), in the accent color
+      const bar = screen.getByRole('status', { name: 'Loading' });
+
+      expect(bar.classList.contains('loadingBar')).toBe(true);
+      expect(bar.parentElement?.classList.contains('overlay')).toBe(true);
+      expect(declarationsOf('.loadingBar')).toMatch(/background-color: var\(--datnav-color-selected\)/);
+      expect(baseStylesheet).not.toMatch(/\.spinner/);
     });
 
     it('starts the overlay below the measured height of the header', async () => {
@@ -3137,6 +3396,8 @@ describe('DataNavigator', () => {
       ];
 
       render(<German source={createSource()} rowKey="id" columns={filtered} pageSize={10} />);
+      await loaded();
+      await openFilters();
 
       expect((await screen.findByRole('textbox', { name: 'Name' })).getAttribute('placeholder')).toBe('Filtern');
     });
@@ -3217,7 +3478,9 @@ describe('theming', () => {
 
   const rootOf = (container: HTMLElement) => container.firstElementChild as HTMLElement;
 
-  it.each([['default', defaultTheme], ['Mantine', mantineTheme], ['Ant Design', antdTheme]] as const)(
+  it.each(
+    [['default', defaultTheme], ['soft', softTheme], ['Mantine', mantineTheme], ['Ant Design', antdTheme]] as const,
+  )(
     'has a value for every design value in the %s theme',
     (_, theme) => {
       expect(Object.keys(theme)).toEqual(keys);
@@ -3246,7 +3509,7 @@ describe('theming', () => {
 
     expect(style.getPropertyValue('--datnav-color-text')).toBe('rebeccapurple');
     expect(style.getPropertyValue('--datnav-radius')).toBe('2px');
-    expect(style.getPropertyValue('--datnav-color-border')).toBe('light-dark(#a8a8a8, #5c5c5c)');
+    expect(style.getPropertyValue('--datnav-color-border')).toBe('light-dark(#c6c6c6, #474747)');
   });
 
   it('only reads its custom properties in the stylesheet: it sets none, has no hard-coded color, and mixes colors only when pressed', () => {
@@ -3385,13 +3648,17 @@ describe('native widgets', () => {
       />,
     );
     await loaded();
+    await openFilters();
 
     expect(shownIn('City')).toBe('All');
 
     await chooseFilterOption('City', 'Berlin');
-    await waitFor(() => expect(filtered()).toEqual({ city: 'Berlin' }));
     expect(screen.queryAllByRole('option').map((option) => option.textContent)).toEqual([]);
+    click('Apply');
+    await waitFor(() => expect(filtered()).toEqual({ city: 'Berlin' }));
+    await loaded();
 
+    await openFilters();
     fireEvent.click(filterField('City'));
     expect((await screen.findAllByRole('option')).map((option) => option.textContent)).toEqual([
       'All',
@@ -3405,8 +3672,9 @@ describe('native widgets', () => {
     expect(marks.map((mark) => mark?.querySelector('svg') !== null)).toEqual([false, false, true]);
 
     await chooseFilterOption('City', 'All');
-    await waitFor(() => expect(filtered()).toEqual({}));
     expect(shownIn('City')).toBe('All');
+    click('Apply');
+    await waitFor(() => expect(filtered()).toEqual({}));
   });
 
   it('keeps a multiple select filter open while options are chosen, and shows the chosen ones', async () => {
@@ -3427,10 +3695,10 @@ describe('native widgets', () => {
       />,
     );
     await loaded();
+    await openFilters();
 
     await chooseFilterOption('City', 'Vienna');
     await chooseFilterOption('City', 'Berlin');
-    await waitFor(() => expect(filtered()).toEqual({ city: ['Vienna', 'Berlin'] }));
 
     // no "All" option in a multiple select, and the list is still open
     expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual(['Vienna', 'Berlin']);
@@ -3442,12 +3710,15 @@ describe('native widgets', () => {
     expect(boxes.every((box) => box?.getAttribute('aria-hidden') === 'true' && box.getAttribute('tabindex') === '-1'))
       .toBe(true);
     expect(shownIn('City')).toBe('Vienna, Berlin');
+
+    click('Apply');
+    await waitFor(() => expect(filtered()).toEqual({ city: ['Vienna', 'Berlin'] }));
   });
 });
 
 describe('toolbar', () => {
   const add = { type: 'general', key: 'add', label: 'Add', onClick: vi.fn() } as const;
-  const remove = { type: 'rows', key: 'remove', label: 'Remove', onClick: vi.fn() } as const;
+  const remove = { type: 'multiRow', key: 'remove', label: 'Remove', onClick: vi.fn() } as const;
 
   // The rules of the stylesheet for a class, as written in the source (nested rules included).
   const rulesOf = (name: string) => {
@@ -3479,17 +3750,28 @@ describe('toolbar', () => {
     expect(bar.contains(screen.getByRole('button', { name: 'Add' }))).toBe(true);
   });
 
-  it('puts the actions on the left and the search box on the right, with the free space between them', async () => {
+  it('puts Reload and the search box on the left, then the free space, the filter button, a divider and the actions', async () => {
+    const filtered: readonly Spec.Column<Person>[] = [
+      { key: 'name', header: 'Name', filter: textColumnFilter() },
+    ];
     const { container } = render(
-      <Nav source={createSource()} rowKey="id" columns={columns} searchable actions={[add]} />,
+      <Nav source={createSource()} rowKey="id" columns={filtered} searchable reloadable actions={[add]} />,
     );
     await loaded();
 
     const parts = [...container.querySelector('.toolbarBar')!.children];
 
-    expect(parts.map((part) => part.className)).toEqual(['toolbarActions', 'toolbarSpacer', 'searchField']);
+    expect(parts.map((part) => part.className)).toEqual([
+      'toolbarReload',
+      'searchField',
+      'toolbarSpacer',
+      'filterButtonGroup',
+      'toolbarDivider',
+      'toolbarActions',
+    ]);
     expect(rulesOf('toolbarSpacer')).toMatch(/flex: 1 1 auto/);
-    expect(rulesOf('searchField')).toMatch(/width: 16rem/);
+    // the search box grows up to a maximum width
+    expect(rulesOf('toolbarBar')).toMatch(/& > \.searchField \{[^}]*flex: 0 1 22\.5rem/);
   });
 
   it('renders no heading without title and subtitle, and no bar without actions and search box', async () => {
@@ -3508,28 +3790,120 @@ describe('toolbar', () => {
     expect(searchOnly.container.querySelector('.toolbarBar')).not.toBeNull();
   });
 
-  it('adds the actions for a selection at the end of the buttons, so the others do not move', async () => {
-    render(<Nav source={createSource()} rowKey="id" columns={columns} actions={[add, remove]} />);
+  it('replaces the bar with the selection bar while rows are selected, in the same place', async () => {
+    const { container } = render(<Nav source={createSource()} rowKey="id" columns={columns} actions={[add, remove]} />);
     await loaded();
 
     const buttons = () =>
-      [...document.querySelector('.toolbarActions')!.querySelectorAll('button')].map((button) => button.textContent);
+      [...container.querySelector('.toolbarBar')!.querySelectorAll('button')].map((button) =>
+        button.getAttribute('aria-label') ?? button.textContent
+      );
+    const selectTwo = () => {
+      fireEvent.click(screen.getAllByRole('checkbox', { name: 'Select row' })[0]!);
+      fireEvent.click(screen.getAllByRole('checkbox', { name: 'Select row' })[0]!);
+    };
 
     expect(buttons()).toEqual(['Add']);
 
-    fireEvent.click(screen.getAllByRole('checkbox', { name: 'Select row' })[0]!);
+    selectTwo();
 
-    expect(buttons()).toEqual(['Add', 'Remove']);
+    // the count in a pill with a × (the whole pill is the button that clears the selection; the pill is not in the
+    // footer anymore), the actions on the selection, and an icon-only "deselect" button (a ghost button after a divider: the same as the
+    // pill, at the right, where the pointer is after the actions)
+    const bar = container.querySelector('.toolbarBar')!;
+
+    expect(bar.getAttribute('data-mode')).toBe('selection');
+    expect(bar.querySelector('.pill')?.textContent).toBe('2 selected');
+    expect(container.querySelector('.footer .pill')).toBeNull();
+    expect(buttons()).toEqual(['Clear selection', 'Remove', 'Clear selection']);
+    expect(screen.getAllByRole('button', { name: 'Clear selection' })[1]!.getAttribute('data-placement')).toBe('tool');
+    expect(screen.getByRole('status').textContent).toBe('2 selected');
+
+    clearSelectionWith('pill');
+
+    expect(container.querySelector('.toolbarBar')!.hasAttribute('data-mode')).toBe(false);
+    expect(buttons()).toEqual(['Add']);
+
+    selectTwo();
+    clearSelectionWith('close');
+
+    expect(buttons()).toEqual(['Add']);
   });
 
-  it('fills primary and danger buttons in the toolbar, and keeps the buttons in the rows link-like', () => {
+  it('has the standard buttons for the actions of the toolbar, ghost buttons for its view controls, link-like ones in the rows', async () => {
     const button = rulesOf('button');
 
-    expect(button).toMatch(/&\[data-variant='primary'\] \{[^}]*background-color: var\(--datnav-color-primary\)/);
+    // actions: primary and danger filled (secondary outlined, the base look)
     expect(button).toMatch(
-      /&\[data-variant='danger'\] \{[^}]*background-color: var\(--datnav-color-danger\);[^}]*color: var\(--datnav-color-on-primary\)/,
+      /&\[data-placement='toolbar'\]\[data-variant='primary'\] \{[^}]*background-color: var\(--datnav-color-primary\)/,
+    );
+    expect(button).toMatch(
+      /&\[data-placement='toolbar'\]\[data-variant='danger'\] \{[^}]*background-color: var\(--datnav-color-danger\);[^}]*color: var\(--datnav-color-on-primary\)/,
+    );
+    // view controls: ghost
+    expect(button).toMatch(
+      /&\[data-placement='tool'\] \{[^}]*border-color: transparent;[^}]*background-color: transparent/,
     );
     expect(button).toMatch(/&\[data-placement='row'\] \{[^}]*background-color: transparent/);
+
+    render(<Nav source={createSource()} rowKey="id" columns={columns} reloadable actions={[add]} />);
+    await loaded();
+
+    expect(screen.getByRole('button', { name: 'Add' }).getAttribute('data-placement')).toBe('toolbar');
+    expect(screen.getByRole('button', { name: 'Reload' }).getAttribute('data-placement')).toBe('tool');
+  });
+});
+
+describe('column toggle menu', () => {
+  const headers = () => screen.getAllByRole('columnheader').map((header) => header.textContent).filter(Boolean);
+  const item = (name: string) => screen.getByRole('menuitemcheckbox', { name });
+
+  it('has no menu without a hideable column', async () => {
+    render(<Nav source={createSource()} rowKey="id" columns={columns} />);
+    await loaded();
+
+    expect(screen.queryByRole('button', { name: 'Columns' })).toBeNull();
+  });
+
+  it('shows and hides the hideable columns, starts with `hidden`, and never hides the last shown column', async () => {
+    const toggled: readonly Spec.Column<Person>[] = [
+      { key: 'name', header: 'Name' },
+      { key: 'city', header: 'City', hideable: true },
+      { key: 'id', header: 'Id', hideable: true, hidden: true },
+    ];
+
+    render(<Nav source={createSource()} rowKey="id" columns={toggled} />);
+    await loaded();
+
+    expect(headers()).toEqual(['Name', 'City']);
+
+    click('Columns');
+
+    // only the hideable columns, with their state; the menu stays open while toggling
+    expect(await screen.findAllByRole('menuitemcheckbox')).toHaveLength(2);
+    expect(item('City').getAttribute('aria-checked')).toBe('true');
+    expect(item('Id').getAttribute('aria-checked')).toBe('false');
+
+    fireEvent.click(item('Id'));
+    await waitFor(() => expect(headers()).toEqual(['Name', 'City', 'Id']));
+
+    fireEvent.click(item('City'));
+    await waitFor(() => expect(headers()).toEqual(['Name', 'Id']));
+    expect(screen.getByRole('menu')).toBeTruthy();
+  });
+
+  it('keeps the last shown column: its item is disabled', async () => {
+    const toggled: readonly Spec.Column<Person>[] = [
+      { key: 'name', header: 'Name', hideable: true },
+      { key: 'city', header: 'City', hideable: true, hidden: true },
+    ];
+
+    render(<Nav source={createSource()} rowKey="id" columns={toggled} />);
+    await loaded();
+
+    click('Columns');
+
+    expect((await screen.findByRole('menuitemcheckbox', { name: 'Name' })).hasAttribute('data-disabled')).toBe(true);
   });
 });
 
@@ -3613,9 +3987,9 @@ describe('accent hover', () => {
 });
 
 describe('text selection', () => {
-  it('lets no text be selected in the toolbar, the header and the footer, except in text inputs', () => {
+  it('lets no text be selected in the toolbar, the header, the footer and the filter view, except in text inputs', () => {
     expect(baseStylesheet).toMatch(
-      /\.toolbar,\s*\.headerRow,\s*\.footer \{\s*user-select: none;\s*& :is\(input, textarea\) \{\s*user-select: text;/,
+      /\.toolbar,\s*\.headerRow,\s*\.footer,\s*\.filterView \{\s*user-select: none;\s*& :is\(input, textarea\) \{\s*user-select: text;/,
     );
     // the rows stay selectable
     expect(baseStylesheet).not.toMatch(/\.(row|dataRow|cell) \{[^}]*user-select: none/);
@@ -3683,7 +4057,7 @@ describe('controller', () => {
           rowKey="id"
           columns={columns}
           pageSize={10}
-          actions={[{ type: 'rows', key: 'remove', label: 'Remove', onClick: () => {} }]}
+          actions={[{ type: 'multiRow', key: 'remove', label: 'Remove', onClick: () => {} }]}
         />
         <button type="button" onClick={() => nav.reload()}>Reload from outside</button>
         <button type="button" onClick={() => nav.clearRowSelection()}>Clear from outside</button>
@@ -3752,5 +4126,230 @@ describe('controller', () => {
 
     expect(output()).toBe('');
     expect(screen.queryByText('2 selected')).toBeNull();
+  });
+});
+
+describe('row reordering', () => {
+  // The keys of the data rows, in the order shown.
+  const order = () =>
+    [...document.querySelectorAll('[role="row"][data-row-key]')].map((row) => row.getAttribute('data-row-key'));
+  const handles = () => screen.getAllByRole('button', { name: 'Move row', hidden: true });
+
+  it('has no drag handles without reorder', async () => {
+    renderNav();
+    await loaded();
+
+    expect(screen.queryAllByRole('button', { name: 'Move row', hidden: true })).toHaveLength(0);
+  });
+
+  it('shows a handle in every row, and ignores sortable columns and the default sort', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { source } = renderNav({ reorder: vi.fn(), defaultSort: { key: 'name', direction: 'desc' } });
+
+    await loaded();
+
+    expect(handles()).toHaveLength(10);
+    expect(source.mock.calls[0]?.[0].sort).toBeUndefined();
+    expect(screen.getByRole('columnheader', { name: 'Name' }).hasAttribute('aria-sort')).toBe(false);
+    warn.mockRestore();
+  });
+
+  it('moves a row with Alt+ArrowDown and Alt+ArrowUp, and saves each move with its neighbors', async () => {
+    const reorder = vi.fn();
+
+    renderNav({ reorder });
+    await loaded();
+
+    fireEvent.keyDown(handles()[0]!, { key: 'ArrowDown', altKey: true });
+
+    expect(order().slice(0, 3)).toEqual(['2', '1', '3']);
+    expect(screen.getAllByRole('status').map((status) => status.textContent)).toContain('Moved to position 2');
+    await waitFor(() => expect(reorder).toHaveBeenCalledTimes(1));
+    expect(reorder).toHaveBeenCalledWith({ row: people[0], after: people[1], before: people[2] });
+
+    // Without Alt, the arrows do nothing; the first row cannot go further up.
+    fireEvent.keyDown(handles()[1]!, { key: 'ArrowUp' });
+    fireEvent.keyDown(handles()[0]!, { key: 'ArrowUp', altKey: true });
+
+    expect(order().slice(0, 3)).toEqual(['2', '1', '3']);
+
+    fireEvent.keyDown(handles()[1]!, { key: 'ArrowUp', altKey: true });
+
+    expect(order().slice(0, 3)).toEqual(['1', '2', '3']);
+    await waitFor(() => expect(reorder).toHaveBeenCalledTimes(2));
+    expect(reorder).toHaveBeenLastCalledWith({ row: people[0], after: undefined, before: people[1] });
+  });
+
+  it('moves a row by dragging its handle, and not when the drag is cancelled with Escape', async () => {
+    const reorder = vi.fn();
+
+    renderNav({ reorder });
+    await loaded();
+
+    // jsdom has no layout: every row is at 0, so any point below it is after all the others.
+    fireEvent.pointerDown(handles()[0]!, { button: 0, pointerId: 1 });
+    fireEvent.pointerMove(handles()[0]!, { pointerId: 1, clientY: 100 });
+    fireEvent.keyDown(window, { key: 'Escape' });
+    fireEvent.pointerUp(handles()[0]!, { pointerId: 1 });
+
+    expect(order()[0]).toBe('1');
+
+    const handle = handles()[0]!;
+
+    fireEvent.pointerDown(handle, { button: 0, pointerId: 1 });
+    fireEvent.pointerMove(handle, { pointerId: 1, clientY: 100 });
+
+    // The dragged row follows the pointer, and the rows it passes go up to make room (nothing moves in the DOM yet).
+    const lookOf = (key: string) =>
+      document.querySelector(`[role="row"][data-row-key="${key}"] > [role="cell"]`)?.getAttribute('data-drag');
+
+    expect(lookOf('1')).toBe('dragged');
+    expect(lookOf('2')).toBe('up');
+    expect(lookOf('10')).toBe('up');
+    expect(order()[0]).toBe('1');
+
+    fireEvent.pointerUp(handle, { pointerId: 1 });
+
+    expect(order()[9]).toBe('1');
+    await waitFor(() => expect(reorder).toHaveBeenCalledWith({ row: people[0], after: people[9], before: undefined }));
+  });
+
+  it('loads the page again when a save fails', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const reorder = vi.fn(() => Promise.reject(new Error('refused')));
+    const { source } = renderNav({ reorder });
+
+    await loaded();
+    fireEvent.keyDown(handles()[0]!, { key: 'ArrowDown', altKey: true });
+
+    expect(order()[0]).toBe('2');
+    await waitFor(() => expect(source).toHaveBeenCalledTimes(2));
+    await loaded();
+    expect(order()[0]).toBe('1');
+    expect(error).toHaveBeenCalled();
+    error.mockRestore();
+  });
+
+  it('hides the handles (keeping their room) while a search is active', async () => {
+    const reorder = vi.fn();
+
+    renderNav({ reorder, searchable: true });
+    await loaded();
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Search' }), { target: { value: 'Vienna' } });
+    fireEvent.keyDown(screen.getByRole('textbox', { name: 'Search' }), { key: 'Enter' });
+    await loaded();
+
+    expect(handles().every((handle) => handle.hasAttribute('data-inactive') && handle.hasAttribute('inert'))).toBe(
+      true,
+    );
+
+    fireEvent.keyDown(handles()[0]!, { key: 'ArrowDown', altKey: true });
+
+    expect(reorder).not.toHaveBeenCalled();
+  });
+});
+
+describe('row grouping', () => {
+  // People 1–15 are in group A, the others in group B: page 1 (10 rows) is all A, page 2 has 5 of A and 5 of B.
+  const groupOf = (person: Person) => (person.id <= 15 ? 'A' : 'B');
+  const groupRows = () =>
+    [...document.querySelectorAll('[role="row"]')].filter((row) =>
+      row.querySelector('[aria-expanded]') !== null && !row.hasAttribute('data-row-key')
+    );
+  const dataRows = () => document.querySelectorAll('[role="row"][data-row-key]');
+
+  // The source with the totals of the groups on the page.
+  function withTotals(source: ReturnType<typeof createSource>): Spec.Source<Person> {
+    return async (query) => {
+      const result = await source(query);
+      const keys = [...new Set(result.rows.map(groupOf))];
+
+      return {
+        ...result,
+        groups: keys.map((key) => ({ key, total: people.filter((p) => groupOf(p) === key).length })),
+      };
+    };
+  }
+
+  it('puts a header before every group of the page, with the number of its rows', async () => {
+    renderNav({ groupBy: groupOf });
+    await loaded();
+
+    expect(groupRows().map((row) => row.textContent)).toEqual(['A10']);
+
+    click('Next page');
+    await loaded();
+
+    expect(groupRows().map((row) => row.textContent)).toEqual(['A5', 'B5']);
+  });
+
+  it('shows the part of a group that is on the page, with the totals of the source', async () => {
+    renderNav({ groupBy: groupOf, source: withTotals(createSource()) });
+    await loaded();
+
+    expect(groupRows().map((row) => row.textContent)).toEqual(['A10 of 15']);
+
+    click('Next page');
+    await loaded();
+
+    expect(groupRows().map((row) => row.textContent)).toEqual(['A5 of 15', 'B5 of 45']);
+  });
+
+  it('groups by a column key too, and renders a custom group header', async () => {
+    renderNav({ groupBy: 'city', renderGroup: (group) => `City ${group.key}: ${group.rows.length}` });
+    await loaded();
+
+    // The cities alternate, so every row is a group of its own.
+    expect(groupRows()[0]?.textContent).toBe('City Vienna: 1');
+    expect(groupRows()).toHaveLength(10);
+  });
+
+  it('collapses and expands a group without a new load, and keeps it collapsed on the next page', async () => {
+    const { source } = renderNav({ groupBy: groupOf });
+
+    await loaded();
+    const calls = source.mock.calls.length;
+    const toggle = within(groupRows()[0] as HTMLElement).getByRole('button');
+
+    fireEvent.click(toggle);
+
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(dataRows()).toHaveLength(0);
+    expect(source.mock.calls.length).toBe(calls);
+
+    click('Next page');
+    await loaded();
+
+    // A is still collapsed, B is not.
+    expect(dataRows()).toHaveLength(5);
+    expect(screen.getByText('Person 16')).toBeTruthy();
+    expect(screen.queryByText('Person 11')).toBeNull();
+  });
+
+  it('selects and deselects the rows of a group with its checkbox', async () => {
+    renderNav({ groupBy: groupOf, selection: 'multi' });
+    await loaded();
+    click('Next page');
+    await loaded();
+
+    fireEvent.click(screen.getAllByRole('checkbox', { name: 'Select group' })[1]!);
+
+    expect(screen.getByText('5 selected')).toBeTruthy();
+    expect(screen.getByRole('checkbox', { name: 'Deselect group' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Deselect group' }));
+
+    expect(screen.queryByText('5 selected')).toBeNull();
+  });
+
+  it('ignores reorder in a grouped table', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    renderNav({ groupBy: groupOf, reorder: vi.fn() });
+    await loaded();
+
+    expect(screen.queryAllByRole('button', { name: 'Move row', hidden: true })).toHaveLength(0);
+    warn.mockRestore();
   });
 });

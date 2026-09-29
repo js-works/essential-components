@@ -13,7 +13,7 @@ export type {
 };
 
 // The theme of the table.
-type DemoTheme = 'default' | 'mantine' | 'antd';
+type DemoTheme = 'default' | 'soft' | 'mantine' | 'antd';
 
 type DemoHeight = 'auto' | 'fixed';
 
@@ -40,6 +40,8 @@ type Controls = {
   variants: DemoVariants;
   setVariants: (variants: DemoVariants) => void;
   selectionAppearance: DataNavigatorComponent.SelectionAppearance;
+  rowActionLook: DataNavigatorComponent.RowActionLook;
+  setRowActionLook: (look: DataNavigatorComponent.RowActionLook) => void;
   setSelectionAppearance: (appearance: DataNavigatorComponent.SelectionAppearance) => void;
   density: DataNavigatorComponent.Density;
   setDensity: (density: DataNavigatorComponent.Density) => void;

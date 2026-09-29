@@ -238,9 +238,9 @@ describe('form association', () => {
 describe('density', () => {
   it.each(
     [
-      ['compact', 2.75],
-      ['normal', 3.322],
-      ['comfortable', 4.466],
+      ['compact', 3.018],
+      ['normal', 3.59],
+      ['comfortable', 4.734],
     ] as const,
   )('gives the empty element (%s) the height of the placeholder', async (density, em) => {
     const element = document.createElement(TAG) as Spec.Element;

@@ -32,7 +32,7 @@ function DemoControls({ controls }: { controls: Controls }): ReactElement {
       <Select
         label="Theme"
         value={controls.theme}
-        options={[['default', 'Default'], ['mantine', 'Mantine'], ['antd', 'Ant Design']]}
+        options={[['default', 'Default'], ['soft', 'Soft'], ['mantine', 'Mantine'], ['antd', 'Ant Design']]}
         onChange={controls.setTheme}
       />
       <Select
@@ -70,6 +70,12 @@ function DemoControls({ controls }: { controls: Controls }): ReactElement {
         value={controls.selectionAppearance}
         options={same('neutral', 'accent')}
         onChange={controls.setSelectionAppearance}
+      />
+      <Select
+        label="Row actions"
+        value={controls.rowActionLook}
+        options={[['icon', 'Icon'], ['label', 'Label'], ['iconAndLabel', 'Icon and label']]}
+        onChange={controls.setRowActionLook}
       />
       <Select
         label="Density"

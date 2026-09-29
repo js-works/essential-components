@@ -20,6 +20,35 @@
   flex-direction: column;
   min-height: 0;
 
+  & > :not(.stack) {
+    flex: none;
+  }
+}
+
+/* The grid with the footer (`.tableArea`) and the filter view in one grid cell, on top of each other: the height is
+   the larger of the two, so opening and closing the filter view does not change the height of the table (unless the
+   filters need more room than the rows). While the view is shown, the table area is hidden (it keeps its room). */
+.stack {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+  min-height: 0;
+
+  & > * {
+    grid-area: 1 / 1;
+    min-height: 0;
+  }
+
+  &[data-filtering] > .tableArea {
+    visibility: hidden;
+  }
+}
+
+/* The rows area (the only part that scrolls) and the footer below it. */
+.tableArea {
+  display: flex;
+  flex-direction: column;
+
   & > :not(.scrollArea) {
     flex: none;
   }
@@ -46,35 +75,49 @@
   scrollbar-gutter: stable;
 }
 
-/* Loading: the spinner sits in the visible rows area below the header, and only the rows are dimmed. */
-/* Its own minimum height (the spinner plus a generous padding), so the spinner always has room below the header,
-   whatever the header costs. The overlay is out of flow, so this never changes the height of the table. */
+/* Loading: a thin gray bar at the top of the visible rows area, right below the header (the overlay starts there, its
+   `top` is the measured height of the header), and only the rows are dimmed. The overlay is out of flow, so it never
+   changes the height of the table. */
 .overlay {
   position: absolute;
   inset: 0;
   z-index: 2;
-  min-height: calc(6 * var(--datnav-spacing-md));
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  pointer-events: none;
 }
 
 .root[data-dimmed] .row > * {
   opacity: 0.3;
 }
 
-.spinner {
+/* In the accent color: the track in its light tint (the selection color), and a segment in the primary color that
+   slides from left to right. With reduced motion (see the end of the file) the segment stands still. */
+.loadingBar {
+  position: absolute;
+  inset: 0 0 auto;
   display: block;
-  box-sizing: border-box;
-  width: calc(2 * var(--datnav-spacing-md));
-  height: calc(2 * var(--datnav-spacing-md));
-  border: 3px solid var(--datnav-color-border);
-  border-top-color: var(--datnav-color-primary);
-  border-radius: 50%;
-  animation: spin 800ms linear infinite;
+  height: 1px;
+  overflow: hidden;
+  background-color: var(--datnav-color-selected);
 
-  @media (prefers-reduced-motion: reduce) {
-    animation-duration: 2s;
+  &::before {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: 30%;
+    background-color: var(--datnav-color-primary);
+    animation: loadingSlide 2400ms ease-in-out infinite;
+  }
+}
+
+/* From just left of the track to just right of it: the segment is 30% wide, so 100% / 30% = 333%. */
+@keyframes loadingSlide {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(333%);
   }
 }
 
@@ -101,11 +144,12 @@
   }
 }
 
-/* Everything around the data (the toolbar, the header with the filter row, the footer) is not text to select: a click
-   or a drag there never starts a text selection. Text inputs inside stay selectable. The rows stay selectable too. */
+/* Everything around the data (the toolbar, the header, the footer, the filter view) is not text to select: a click or
+   a drag there never starts a text selection. Text inputs inside stay selectable. The rows stay selectable too. */
 .toolbar,
 .headerRow,
-.footer {
+.footer,
+.filterView {
   user-select: none;
 
   & :is(input, textarea) {
@@ -133,30 +177,552 @@
   line-height: 1.3;
 }
 
+/* The bar, and the selection bar that takes its place while rows are selected: the same fixed height, so nothing below
+   moves when one replaces the other. A new bar fades in with a tiny upward shift. */
 .toolbarBar {
   display: flex;
   align-items: center;
-  gap: var(--datnav-spacing-xs);
-  min-height: var(--datnav-control-height);
+  gap: calc(var(--datnav-spacing-xs) / 4);
+  height: var(--datnav-control-height);
+  min-width: 0;
+  /* The controls of the table, not its content: a larger text (16px with 14px content), in every density. */
+  font-size: calc(8 / 7 * var(--datnav-font-size));
+  animation: barIn 150ms ease;
+
+  /* The search box grows with the table, up to a maximum width; the free space goes between it and the buttons. */
+  & > .searchField {
+    flex: 0 1 22.5rem;
+    width: auto;
+    min-width: 8rem;
+    margin-inline-end: var(--datnav-spacing-xs);
+  }
+
+  /* While the filter view is shown: everything but the filter button is disabled (inert), and looks so. */
+  &[data-filtering] > [inert] {
+    opacity: 0.4;
+  }
+}
+
+@keyframes barIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
 }
 
 .toolbarSpacer {
   flex: 1 1 auto;
 }
 
-/* The Reload button, after the search box. */
-.toolbarReload {
-  display: flex;
-  flex: none;
-}
-
+/* Outlined buttons need a little more room between them than ghost buttons. */
 .toolbarActions {
   display: flex;
   flex: none;
+  align-items: center;
+  gap: calc(var(--datnav-spacing-xs) / 2);
+}
+
+/* The Reload button, at the start of the bar (before the search box, or alone on the left without one). */
+.toolbarReload {
+  display: flex;
+  flex: none;
+  margin-inline-end: calc(var(--datnav-spacing-xs) / 2);
+}
+
+/* Between the filter button and the actions, and before "Cancel" in the selection bar. */
+.toolbarDivider {
+  flex: none;
+  width: 1px;
+  height: calc(var(--datnav-control-height) / 2);
+  margin-inline: calc(var(--datnav-spacing-xs) / 2);
+  background-color: var(--datnav-color-border);
+}
+
+/* The number of selected rows in the selection bar ("2 selected ×"): the pill (`.pill`, the one the footer had),
+   inside a button that clears the selection. Hovered, the pill gets a background and its × gets darker, so the whole
+   pill reads as clickable. It scales in when it appears, and its text bumps when the number changes. */
+.selectionPill {
+  display: inline-flex;
+  flex: none;
+  margin-inline-end: var(--datnav-spacing-xs);
+  padding: 0;
+  border: none;
+  border-radius: calc(var(--datnav-control-height) / 2);
+  background-color: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transform-origin: left center;
+  animation: pillIn 160ms ease;
+
+  /* The × sits in the middle of the room between the text and the right edge: as much space after it as before it. */
+  & > .pill {
+    padding-inline-end: calc(var(--datnav-spacing-xs) / 2);
+    transition: background-color 100ms ease;
+  }
+
+  @media (hover: hover) {
+    &:hover > .pill {
+      background-color: var(--datnav-color-header);
+    }
+
+    &:hover .pillIcon {
+      color: var(--datnav-color-text);
+    }
+  }
+
+  &:active > .pill {
+    background-color: color-mix(in srgb, var(--datnav-color-header), var(--datnav-color-text) 10%);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--datnav-color-focus);
+    outline-offset: 2px;
+  }
+}
+
+.selectionCount {
+  display: inline-block;
+  animation: countBump 150ms ease;
+}
+
+@keyframes pillIn {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+}
+
+@keyframes countBump {
+  50% {
+    /* Less wide than high (the text is wide): 1.15 horizontally, 1.25 vertically. */
+    transform: scale(1.15, 1.25);
+  }
+}
+
+/* A quiet button that looks like a link (Reset, Clear all, Cancel, Clear filters). Muted: in the dimmed text color. */
+.textButton {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  box-sizing: border-box;
+  height: calc(0.75 * var(--datnav-control-height));
+  padding: 0 calc(var(--datnav-spacing-xs) / 2);
+  border: none;
+  border-radius: var(--datnav-button-radius);
+  background-color: transparent;
+  color: var(--datnav-color-primary);
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 100ms ease;
+
+  &[data-muted] {
+    color: var(--datnav-color-text-dimmed);
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--datnav-color-header);
+    }
+  }
+
+  &:active {
+    background-color: color-mix(in srgb, var(--datnav-color-header), var(--datnav-color-text) 10%);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--datnav-color-focus);
+    outline-offset: 1px;
+  }
+}
+
+/* The filter button and its × (while filters are active), right next to each other, without a line between them (a
+   line of its own looked like a second kind of divider in the bar): each part has its own hover, which shows that they
+   are two buttons. */
+.filterButtonGroup {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+}
+
+/* The count of active filters on the filter button: a small round badge in the accent color. */
+.filterBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: calc(0.55 * var(--datnav-control-height));
+  height: calc(0.55 * var(--datnav-control-height));
+  padding-inline: calc(var(--datnav-spacing-xs) / 4);
+  border-radius: calc(0.275 * var(--datnav-control-height));
+  background-color: var(--datnav-color-primary);
+  color: var(--datnav-color-on-primary);
+  font-size: calc(0.9 * var(--datnav-font-size-sm));
+  font-weight: var(--datnav-font-weight-bold);
+  line-height: 1;
+}
+
+/* The pills of the active filters, below the bar. They wrap; "Clear all" sits at the end. */
+/* A line above and below the row, edge to edge (over the side padding of the toolbar). As the last part of the
+   toolbar, the toolbar gives up its bottom padding, so the line below sits right on the column headers. */
+.filterPills {
+  display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-start;
   gap: calc(var(--datnav-spacing-xs) / 2);
+  margin-inline: calc(-1 * var(--datnav-spacing-sm));
+  padding: var(--datnav-spacing-xs) var(--datnav-spacing-sm);
+  border-block: 1px solid var(--datnav-color-border);
+
+  & > .textButton {
+    margin-inline-start: auto;
+    font-size: var(--datnav-font-size-sm);
+  }
+}
+
+.toolbar:has(> .filterPills:last-child) {
+  padding-bottom: 0;
+}
+
+/* Outlined: a gray border on a transparent background, in the text color. Only the value is cut off
+   when the pill gets too wide: the label, the `⋯` and the × always stay. */
+.filterPill {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  max-width: min(100%, 13.75rem);
+  height: calc(0.75 * var(--datnav-control-height));
+  border: 1px solid var(--datnav-color-border);
+  border-radius: calc(0.375 * var(--datnav-control-height));
+  background-color: transparent;
+  color: var(--datnav-color-text);
+  font-size: var(--datnav-font-size-sm);
+  animation: pillIn 160ms ease;
+}
+
+.filterPillMain {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  min-width: 0;
+  height: 100%;
+  padding: 0 0 0 calc(0.75 * var(--datnav-spacing-xs));
+  border: none;
+  border-radius: calc(0.375 * var(--datnav-control-height)) 0 0 calc(0.375 * var(--datnav-control-height));
+  background-color: transparent;
+  color: inherit;
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.filterPillLabel,
+.filterPillMore {
+  flex: none;
+}
+
+.filterPillValue {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.filterPillText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  /* The text of a text filter: in a small outlined box, so the `⋯` around it read as "other text". */
+  &[data-boxed] {
+    padding: 0 calc(var(--datnav-spacing-xs) / 4);
+    border: 1px solid var(--datnav-color-border);
+    border-radius: var(--datnav-radius);
+    line-height: 1.3;
+  }
+}
+
+/* The `⋯` of a text filter and the `+2` of a long list: display only, fainter. */
+.filterPillDots,
+.filterPillMore {
+  opacity: 0.6;
+}
+
+.filterPillRemove {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: calc(0.625 * var(--datnav-control-height));
+  height: calc(0.625 * var(--datnav-control-height));
+  margin-inline: calc(var(--datnav-spacing-xs) / 4);
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background-color: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: background-color 100ms ease;
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--datnav-color-hover-border);
+    }
+  }
+}
+
+.filterPillMain,
+.filterPillRemove {
+  &:focus-visible {
+    outline: 2px solid var(--datnav-color-focus);
+    outline-offset: -2px;
+  }
+}
+
+/* The filter view: over the hidden grid and footer (the toolbar stays above it), as high as they are (it stretches in
+   the cell of `.stack`), with a line on top. With a limited height of the table, only its filters scroll, the buttons
+   stay. It is opaque, so nothing of the table below shines through. */
+.filterView {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(6 * var(--datnav-spacing-md));
+  border-top: 1px solid var(--datnav-color-border);
+  background-color: var(--datnav-color-surface);
+}
+
+/* Only as high as its filters, so the buttons follow right after them (the rest of the view stays empty below). It
+   shrinks and scrolls when the table has less height than the filters need. */
+.filterViewBody {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--datnav-spacing-md) var(--datnav-spacing-sm) var(--datnav-spacing-sm);
+}
+
+/* The filters in one or two columns, centered in the view. A column has room for
+   a filter (a label of about 4rem, and the control, at most 20rem; a longer label narrows the control a little): the
+   free room before a short label adds to the gap between the columns, so it is kept small. Two when there is room for
+   both, else one. Like
+   newspaper columns: down the first, then on in the second, so each filter is only as high as it is (a grid of rows
+   made every filter as high as the tallest one of its row, which left gaps next to the text filter). */
+.filterViewColumns {
+  column-gap: var(--datnav-spacing-sm);
+  margin-inline: auto;
+}
+
+/* Below the filters: Reset Clear | Cancel [Apply], at the right end of a row as wide as the filters (set inline) and
+   centered like them, so Apply ends where the last column ends. */
+.filterPanelFooter {
+  display: flex;
+  flex: none;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: flex-end;
+  gap: calc(var(--datnav-spacing-xs) / 2);
+  margin-inline: auto;
+  padding: var(--datnav-spacing-sm);
+
+  /* A little more room before Apply than between the ghost buttons. */
+  & > .applyButton {
+    margin-inline-start: calc(var(--datnav-spacing-xs) / 2);
+  }
+}
+
+/* One filter: the label (muted, as wide as its text) on the left, the control (at most 20rem) on the right, at the
+   right end of its column. So the controls of a column line up on their right edge, whatever the labels, and every
+   label sits right before its control. A label that does not fit is cut off. Never split between the two columns. */
+.filterPanelRow {
+  display: grid;
+  grid-template-columns: minmax(0, max-content) minmax(0, 20rem);
+  justify-content: end;
+  align-items: start;
+  gap: var(--datnav-spacing-sm);
+  /* The room between two filters of a column (it was --datnav-spacing-sm). */
+  margin-bottom: var(--datnav-spacing-xs);
+  break-inside: avoid;
+}
+
+/* Right aligned, so each label sits next to its control. */
+.filterPanelLabel {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  text-align: end;
+  min-height: calc(0.8 * var(--datnav-control-height));
+  overflow: hidden;
+  color: var(--datnav-color-text-dimmed);
+  /* The normal size (it was the small one, too small next to the controls). */
+  font-size: var(--datnav-font-size);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The controls fill their column: the built-in ones (small, with a text size between the small and the normal one),
+   and a custom filter too. */
+.filterPanelControl {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  & > * {
+    width: 100%;
+    min-width: 0;
+  }
+
+  & .input {
+    height: calc(0.8 * var(--datnav-control-height));
+    padding-inline-start: var(--datnav-spacing-xs);
+    font-size: calc((var(--datnav-font-size-sm) + var(--datnav-font-size)) / 2);
+  }
+
+  & .field .select {
+    padding-inline-start: calc(var(--datnav-spacing-xs) + 1px);
+  }
+}
+
+/* A text field with a select in front of it (a text filter: how the text must match), joined to one control: the
+   select has no rounded corners on its end, the input none on its start, and their borders overlap. The focused one
+   comes to the front, so its outline is complete. */
+.prefixedField {
+  display: flex;
+  min-width: 0;
+
+  & > .field {
+    flex: 1 1 auto;
+    margin-inline-start: -1px;
+  }
+
+  & > .field .input {
+    border-start-start-radius: 0;
+    border-end-start-radius: 0;
+  }
+
+  & .input:focus-visible {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+.prefixSelect {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+
+  & .select {
+    width: auto;
+    padding-inline: calc(var(--datnav-spacing-xs) + 1px) calc(var(--datnav-spacing-xs) + 1.25rem);
+    border-start-end-radius: 0;
+    border-end-end-radius: 0;
+    background-color: transparent;
+    white-space: nowrap;
+  }
+}
+
+/* A number range: `from – to`. */
+.filterRange {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--datnav-spacing-xs) / 2);
+  color: var(--datnav-color-text-dimmed);
+
+  & > .input {
+    flex: 1 1 0;
+    padding-inline-end: var(--datnav-spacing-xs);
+    color: var(--datnav-color-text);
+    appearance: textfield;
+  }
+
+  & > .input::-webkit-inner-spin-button,
+  & > .input::-webkit-outer-spin-button {
+    margin: 0;
+    appearance: none;
+  }
+}
+
+/* An outlined button (like the secondary actions of the toolbar), as wide as its text, at the end of the footer. */
+.applyButton {
+  flex: none;
+  height: var(--datnav-control-height);
+  padding: 0 var(--datnav-spacing-md);
+  border: 1px solid var(--datnav-color-border);
+  border-radius: var(--datnav-button-radius);
+  background-color: var(--datnav-color-surface);
+  color: var(--datnav-color-text);
+  font: inherit;
+  font-weight: var(--datnav-font-weight-bold);
+  cursor: pointer;
+  transition: background-color 100ms ease;
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--datnav-color-hover);
+    }
+  }
+
+  &:active {
+    background-color: color-mix(in srgb, var(--datnav-color-hover), var(--datnav-color-text) 10%);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--datnav-color-focus);
+    outline-offset: 2px;
+  }
+}
+
+/* A row of connected buttons, one of them chosen (the match of a text filter, All/Yes/No). */
+.segmented {
+  display: inline-flex;
+  box-sizing: border-box;
+  max-width: 100%;
+  /* Outlined on a transparent background (the border and the padding together keep the old 2px around the segments). */
+  padding: 1px;
+  gap: 2px;
+  border: 1px solid var(--datnav-color-border);
+  border-radius: var(--datnav-button-radius);
+  background-color: transparent;
+  font-size: calc((var(--datnav-font-size-sm) + var(--datnav-font-size)) / 2);
+
+  &[data-small] {
+    font-size: var(--datnav-font-size-sm);
+  }
+}
+
+.segment {
+  flex: 1 1 auto;
+  box-sizing: border-box;
+  height: calc(0.8 * var(--datnav-control-height) - 4px);
+  padding: 0 var(--datnav-spacing-xs);
+  border: 1px solid transparent;
+  border-radius: calc(var(--datnav-button-radius) - 1px);
+  background-color: transparent;
+  color: var(--datnav-color-text-dimmed);
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 100ms ease;
+
+  [data-small] > & {
+    height: calc(0.65 * var(--datnav-control-height) - 4px);
+    padding: 0 calc(0.75 * var(--datnav-spacing-xs));
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      color: var(--datnav-color-text);
+    }
+  }
+
+  /* The chosen one: a light gray fill (on the transparent track). */
+  &[aria-checked='true'] {
+    background-color: var(--datnav-color-header);
+    color: var(--datnav-color-text);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--datnav-color-focus);
+    outline-offset: -2px;
+  }
 }
 
 .footer {
@@ -209,21 +775,37 @@
   display: inline-flex;
   align-items: center;
   padding-inline: var(--datnav-spacing-xs);
+  /* Outlined, like the filter pills. */
   border: 1px solid var(--datnav-color-border);
   border-radius: calc(var(--datnav-control-height) / 2);
-  background-color: var(--datnav-color-header);
+  background-color: transparent;
   font-size: var(--datnav-font-size-sm);
   font-weight: var(--datnav-font-weight-bold);
   line-height: 1.8;
   white-space: nowrap;
 }
 
+/* The × at the end of the selection pill (a picture only: the whole pill is the button), dimmed until hovered. */
+.pillIcon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  margin-inline-start: calc(var(--datnav-spacing-xs) / 2);
+  color: var(--datnav-color-text-dimmed);
+
+  & > svg {
+    display: block;
+  }
+}
+
 .dimmed {
   color: var(--datnav-color-text-dimmed);
 }
 
-/* Buttons. Toolbar: primary is filled, secondary and danger are outlined. Row: link-like, in three colors, because a
-   border or a background of their own looks odd on a hovered or selected row. */
+/* Buttons. Without a placement (e.g. the Clear of the date picker) and the actions of the toolbar: the standard
+   buttons, secondary outlined, primary and danger filled. The view controls of the toolbar (filter, reload; `tool`):
+   ghost buttons, no border and no background at rest, a gray background on hover and while their popup is open. Row:
+   link-like, in three colors, because a border or a background of their own looks odd on a hovered or selected row. */
 .button {
   display: inline-flex;
   align-items: center;
@@ -246,32 +828,76 @@
     padding: 0;
   }
 
-  &[data-variant='primary'] {
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--datnav-color-hover);
+    }
+  }
+
+  /* The actions of the toolbar: the standard buttons. Primary and danger are filled. */
+  &[data-placement='toolbar'][data-variant='primary'] {
     border-color: var(--datnav-color-primary);
     background-color: var(--datnav-color-primary);
     color: var(--datnav-color-on-primary);
   }
 
-  &[data-variant='danger'] {
+  &[data-placement='toolbar'][data-variant='danger'] {
     border-color: var(--datnav-color-danger);
     background-color: var(--datnav-color-danger);
     color: var(--datnav-color-on-primary);
   }
 
-  @media (hover: hover) {
-    &:hover {
-      background-color: var(--datnav-color-hover);
-    }
+  &[data-placement='toolbar'][data-popup-open] {
+    background-color: var(--datnav-color-hover);
+  }
 
-    &[data-variant='primary']:hover {
+  @media (hover: hover) {
+    &[data-placement='toolbar'][data-variant='primary']:hover {
       border-color: var(--datnav-color-primary-hover);
       background-color: var(--datnav-color-primary-hover);
     }
 
     /* There is no hover color for danger: the filled button keeps its red on hover. */
-    &[data-variant='danger']:hover {
+    &[data-placement='toolbar'][data-variant='danger']:hover {
       background-color: var(--datnav-color-danger);
     }
+  }
+
+  /* The view controls of the toolbar (filter, reload): ghost buttons. */
+  &[data-placement='tool'] {
+    gap: calc(0.375 * var(--datnav-spacing-xs));
+    height: calc(0.875 * var(--datnav-control-height));
+    padding: 0 calc(0.75 * var(--datnav-spacing-xs));
+    border-color: transparent;
+    background-color: transparent;
+  }
+
+  /* Icon-only: at least square. The filter button grows with its badge. */
+  &[data-placement='tool'][data-icon-only] {
+    width: auto;
+    min-width: calc(0.875 * var(--datnav-control-height));
+    padding: 0 calc(0.375 * var(--datnav-spacing-xs));
+  }
+
+  &[data-placement='tool'][data-active] > .buttonIcon {
+    color: var(--datnav-color-primary);
+  }
+
+  /* While its menu is open, or while it is pressed (the filter button while the filter view is shown). */
+  &[data-placement='tool'][data-popup-open],
+  &[data-placement='tool'][aria-pressed='true'] {
+    background-color: var(--datnav-color-header);
+  }
+
+  @media (hover: hover) {
+    &[data-placement='tool']:hover {
+      background-color: var(--datnav-color-header);
+    }
+  }
+
+  /* The Reload button while loading: its icon turns. */
+  &[data-busy] svg {
+    animation: spin 800ms linear infinite;
   }
 
   &[data-placement='row'] {
@@ -309,14 +935,18 @@
     background-color: color-mix(in srgb, var(--datnav-color-hover), var(--datnav-color-text) 10%);
   }
 
-  &[data-variant='primary']:active {
+  &[data-placement='toolbar'][data-variant='primary']:active {
     border-color: color-mix(in srgb, var(--datnav-color-primary-hover), var(--datnav-color-text) 15%);
     background-color: color-mix(in srgb, var(--datnav-color-primary-hover), var(--datnav-color-text) 15%);
   }
 
-  &[data-variant='danger']:active {
+  &[data-placement='toolbar'][data-variant='danger']:active {
     border-color: color-mix(in srgb, var(--datnav-color-danger), var(--datnav-color-text) 15%);
     background-color: color-mix(in srgb, var(--datnav-color-danger), var(--datnav-color-text) 15%);
+  }
+
+  &[data-placement='tool']:active {
+    background-color: color-mix(in srgb, var(--datnav-color-header), var(--datnav-color-text) 10%);
   }
 
   &[data-placement='row']:active {
@@ -379,7 +1009,7 @@
 .clearButton,
 .chevron {
   display: inline-flex;
-  transition: transform 150ms ease;
+  transition: transform 150ms ease, background-color 100ms ease;
 
   &[data-expanded] {
     transform: rotate(90deg);
@@ -455,7 +1085,7 @@
 
 /* selectionAppearance="neutral": the selection checkboxes and radios of the rows (and the select-all checkbox) are
    gray too, like the selected rows. Other checkboxes (for example in a custom filter) keep the primary color. */
-:where([data-selection-appearance='neutral']) :is(.dataRow > .cell > .check, .headerTall > .check) {
+:where([data-selection-appearance='neutral']) :is(.dataRow > .cell > .check, .groupRow > .cell > .check, .headerTall > .check) {
   color: var(--datnav-color-text-dimmed);
 }
 
@@ -537,20 +1167,20 @@
   padding-block: 0;
 }
 
-/* Compact: the controls of the toolbar and the footer are 0.875 × controlHeight (the rest of the flatter toolbar and
-   footer is in .toolbar and .footer). */
+/* Compact: the bar and the search box of the toolbar and the controls of the footer are 0.875 × controlHeight (the
+   rest of the flatter toolbar and footer is in .toolbar and .footer). The actions follow; the ghost view controls are small enough already. */
 :where([data-density='compact']) .toolbar {
-  & .toolbarBar {
-    min-height: calc(0.875 * var(--datnav-control-height));
-  }
-
-  & .button,
-  & .searchField .input {
+  & .toolbarBar,
+  & .button[data-placement='toolbar'] {
     height: calc(0.875 * var(--datnav-control-height));
   }
 
-  & .button[data-icon-only] {
+  & .button[data-placement='toolbar'][data-icon-only] {
     width: calc(0.875 * var(--datnav-control-height));
+  }
+
+  & .searchField .input {
+    height: calc(0.875 * var(--datnav-control-height));
   }
 }
 
@@ -564,10 +1194,6 @@
   & .pageInput {
     height: calc(0.875 * var(--datnav-control-height) - 2px);
   }
-}
-
-.filterCell .field .select {
-  padding-inline-start: calc(var(--datnav-spacing-xs) + 1px);
 }
 
 .selectText {
@@ -674,6 +1300,18 @@
   &[data-variant='danger'] {
     color: var(--datnav-color-danger);
   }
+
+  /* An item that cannot be used now (the last shown column in the column toggle menu). */
+  &[data-disabled] {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  /* The checkbox of a checkbox item is only a picture: the item handles the click. Gray, like in a multiple select. */
+  & .check {
+    color: var(--datnav-color-text-dimmed);
+    pointer-events: none;
+  }
 }
 
 /* The arrow of an item that opens a submenu (in the context menu of the rows), at its end. */
@@ -695,7 +1333,9 @@
   outline: none;
 }
 
+/* Every popup fades in with a tiny downward move. */
 .popup {
+  animation: popupIn 120ms ease;
   box-sizing: border-box;
   min-width: var(--anchor-width);
   max-height: var(--available-height);
@@ -1044,6 +1684,8 @@
      word that does not fit on a line at all (an email address) is broken at any place. */
   hyphens: auto;
   overflow-wrap: break-word;
+  /* Selecting and hovering a row fade its background. */
+  transition: background-color 120ms ease;
 
   /* selectionAppearance="neutral" (the default): a gray selection. */
   &[data-selected] {
@@ -1087,7 +1729,8 @@
 .headerRow {
   position: sticky;
   top: 0;
-  z-index: 1;
+  /* Above a dragged row (`z-index: 1`) too. */
+  z-index: 2;
   display: grid;
   grid-column: 1 / -1;
   grid-row: 1;
@@ -1133,6 +1776,8 @@
   align-items: flex-end;
   font-weight: var(--datnav-font-weight-bold);
   background-color: var(--datnav-color-surface);
+  /* Muted: the sorted column stands out in the full text color (below). */
+  color: var(--datnav-color-text-dimmed);
 
   /* Compact: a little more room than the data cells (3/4 of xs instead of half of it), so a header, often a click
      target, does not look squeezed. The group headers and the lower header row keep their own padding (later rules). */
@@ -1162,7 +1807,7 @@
     }
 
     &[data-sortable]:hover .unsortedIcon {
-      visibility: visible;
+      opacity: 1;
     }
   }
 
@@ -1172,7 +1817,12 @@
   }
 
   &[data-sortable]:focus-within .unsortedIcon {
-    visibility: visible;
+    opacity: 1;
+  }
+
+  /* The sorted column is the only one in the full text color. */
+  &[data-sorted] {
+    color: var(--datnav-color-text);
   }
 }
 
@@ -1181,36 +1831,6 @@
 .headerFiller {
   composes: header;
   grid-row: 1;
-}
-
-/* The filter row is part of the header band. Its cells are header cells in the last row of the header. */
-.filterCell {
-  composes: header;
-  align-items: center;
-  font-weight: normal;
-  /* Less horizontal padding than the other header cells, so neighboring inputs are not far apart, and a little less
-     room above, so the filters sit closer to the column headers. */
-  padding-inline: calc(var(--datnav-spacing-xs) / 2);
-  padding-top: calc(var(--datnav-spacing-xs) / 2);
-
-  /* Whatever a filter renders takes the full width of the cell (its padding stays), also a custom filter. */
-  & > * {
-    flex: 1 1 100%;
-    width: 100%;
-    min-width: 0;
-  }
-
-  /* The built-in filters are small, with a text size between the small and the normal one. */
-  & .input {
-    height: calc(0.8 * var(--datnav-control-height));
-    padding-inline-start: var(--datnav-spacing-xs);
-    font-size: calc((var(--datnav-font-size-sm) + var(--datnav-font-size)) / 2);
-  }
-}
-
-/* With a filter row, the one line of the header is under the filter row (and not under the column headers). */
-.headerRow[data-filters] > .header:not(.groupHeader, .headerFiller, .filterCell) {
-  border-bottom: none;
 }
 
 .headerTall {
@@ -1278,16 +1898,9 @@
   white-space: nowrap;
 }
 
-/* The up/down icon of a sortable column that is not sorted: visible on hover or focus only. It keeps its space. */
+/* The up/down icon of a sortable column that is not sorted: always there, but faint; clear on hover or focus. */
 .unsortedIcon {
-  visibility: hidden;
-}
-
-/* Devices that cannot hover (touch) cannot reveal the icon, so it is always visible there. */
-@media (hover: none) {
-  .unsortedIcon {
-    visibility: visible;
-  }
+  opacity: 0.45;
 }
 
 .sortButton {
@@ -1388,6 +2001,19 @@
     border-bottom-color: var(--datnav-color-hover-border);
   }
 
+  /* selectionAppearance="accent": the lines of a hovered row are in the line color of the accent selection, to go
+     with the accent hover (the same selectors, so they win at equal weight). */
+  :where([data-selection-appearance='accent']) .dataRow:hover > .cell:not([data-selected]),
+  :where([data-selection-appearance='accent']) .dataRow:has(+ .detailRow:hover) > .cell:not([data-selected]) {
+    border-top-color: var(--datnav-color-selected-border);
+  }
+
+  :where([data-selection-appearance='accent']) .dataRow:hover:not(:has(+ .detailRow)) > .cell:not([data-selected]),
+  :where([data-selection-appearance='accent']) .dataRow:hover + .detailRow > .cell:not([data-selected]),
+  :where([data-selection-appearance='accent']) .detailRow:hover > .cell:not([data-selected]) {
+    border-bottom-color: var(--datnav-color-selected-border);
+  }
+
   /* A hovered row shows no vertical dividers either (only their color goes). */
   .dataRow:hover > .cell[data-divider='end'],
   .dataRow:hover + .detailRow > .cell[data-divider='end'],
@@ -1431,12 +2057,177 @@
   display: block;
 }
 
+/* Row groups (`groupBy`): the header row of a group, over the whole width, a soft gray band with bold text (no hover
+   and no row click: only its checkbox and its toggle button act). */
+.groupRow {
+  composes: row;
+}
+
+.groupCell {
+  composes: cell;
+  background-color: var(--datnav-color-header);
+  font-weight: var(--datnav-font-weight-bold);
+}
+
+/* The toggle: the whole rest of the band, a chevron (right while collapsed, down while expanded) and the content. */
+.groupToggle {
+  display: flex;
+  flex: 1 1 auto;
+  gap: var(--datnav-spacing-xs);
+  align-items: center;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--datnav-button-radius);
+  background-color: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--datnav-color-focus);
+    outline-offset: 2px;
+  }
+}
+
+.groupLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.groupCount {
+  flex: none;
+  color: var(--datnav-color-text-dimmed);
+  font-size: var(--datnav-font-size-sm);
+  font-weight: normal;
+}
+
+/* Moving rows (`reorder`): the drag handle at the start of a row, a dimmed grip that takes the text color on hover.
+   Without search and filters only: otherwise it is hidden, with its room kept (`data-inactive`). No scrolling and no
+   text selection start on it (touch, mouse). */
+.dragHandle {
+  composes: iconButton;
+  color: var(--datnav-color-text-dimmed);
+  cursor: grab;
+  touch-action: none;
+
+  @media (hover: hover) {
+    &:hover {
+      color: var(--datnav-color-text);
+    }
+
+    /* On the accent hover of its row: a darker shade of the accent tint instead of the gray (the selection's line
+       color, one step over the row). */
+    :where([data-selection-appearance='accent']) &:hover:not(:disabled) {
+      background-color: var(--datnav-color-selected-border);
+    }
+  }
+
+  /* The same weight as the gray hover and press of `.iconButton` (and later in the file), so these win. */
+  :where([data-selection-appearance='accent']) &:active:not(:disabled) {
+    background-color: color-mix(in srgb, var(--datnav-color-selected-border), var(--datnav-color-text) 10%);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--datnav-color-focus);
+    outline-offset: -2px;
+  }
+
+  &[data-inactive] {
+    visibility: hidden;
+  }
+}
+
+/* During a drag: the grabbing hand everywhere, and no text selection. */
+.root[data-dragging] {
+  cursor: grabbing;
+  user-select: none;
+
+  & * {
+    cursor: grabbing;
+  }
+}
+
+/* The dragged row (its cells and those of its detail row, `data-drag`, moved by an inline transform) is lifted above
+   the other rows: opaque (the surface, unless the selection or the hover color it has anyway). The header stays above
+   it. */
+.row > [data-drag='dragged'] {
+  z-index: 1;
+}
+
+:where(.row > [data-drag='dragged']) {
+  background-color: var(--datnav-color-surface);
+}
+
+/* A line on top and at the bottom of the dragged row (with its detail row), of the normal width: the normal line
+   color, and with the accent appearance the line color of the accent selection. The top line overlaps the line above
+   (like the selection border), so nothing shifts. These rules weigh more than the hover and the first-row rules and
+   come after them, so the lines are the same whether the row is hovered or not (touch), and also on the first row
+   (which moves away from the header). */
+.root .table .dataRow > .cell[data-drag='dragged'] {
+  margin-top: -1px;
+  border-top: 1px solid var(--datnav-color-border);
+}
+
+.root .table .dataRow:not(:has(+ .detailRow)) > .cell[data-drag='dragged'],
+.root .table .detailRow > .cell[data-drag='dragged'] {
+  border-bottom-color: var(--datnav-color-border);
+}
+
+/* The same selectors (the attribute on the root in `:where()`, weightless), so they win at equal weight. */
+.root:where([data-selection-appearance='accent']) .table .dataRow > .cell[data-drag='dragged'] {
+  border-top-color: var(--datnav-color-selected-border);
+}
+
+.root:where([data-selection-appearance='accent']) .table .dataRow:not(:has(+ .detailRow)) > .cell[data-drag='dragged'],
+.root:where([data-selection-appearance='accent']) .table .detailRow > .cell[data-drag='dragged'] {
+  border-bottom-color: var(--datnav-color-selected-border);
+}
+
+/* The rows it passes slide aside to make room (their transform, set inline); the dragged row follows the pointer
+   without delay. Without animation with reduced motion (the rule at the end of the file weighs less than this one). */
+@media (prefers-reduced-motion: no-preference) {
+  .root[data-dragging] .row > :not([data-drag='dragged']) {
+    transition: transform 150ms ease, background-color 120ms ease;
+  }
+}
+
+/* The announcement of a move, for screen readers only. */
+.liveRegion {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* No line below it (the cells have one): an empty table ends with its text, not with a line. */
 .emptyCell {
-  /* The line below it (from .cell) closes the table, like below the last row. */
   composes: cell;
   grid-column: 1 / -1;
   flex-direction: column;
   gap: var(--datnav-spacing-xs);
   justify-content: center;
   padding: calc(2 * var(--datnav-spacing-md));
+  border-bottom: none;
+}
+
+@keyframes popupIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+/* Reduced motion (a setting of the system): no animations and no transitions (the loading bar stands still). Last in
+   the file, so it wins over the rules above at equal weight. */
+@media (prefers-reduced-motion: reduce) {
+  .root *,
+  .root *::before {
+    animation: none;
+    transition: none;
+  }
 }

@@ -15,6 +15,7 @@ type ElementSettings = {
   striped: boolean;
   searchable: boolean;
   reloadable: boolean;
+  rowActionLook: DataNavigator.RowActionLook;
   selectionAppearance: DataNavigator.SelectionAppearance;
   pageSize: number;
   pageSizeOptions: readonly number[];
@@ -115,7 +116,7 @@ function propsOf<Row, C>(
   options: DataNavigator.ControllerOptions<Row, C>,
   content: ContentRenderer,
 ): Spec.Props<Row> {
-  const { renderDetail } = options;
+  const { renderDetail, renderGroup } = options;
 
   const columnOf = (column: DataNavigator.Column<Row, C>): Spec.Column<Row> => {
     const { render } = column;
@@ -127,6 +128,8 @@ function propsOf<Row, C>(
       sortable: column.sortable,
       align: column.align,
       wrap: column.wrap,
+      hideable: column.hideable,
+      hidden: column.hidden,
       render: render === undefined ? undefined : (row) => content(render(row)),
       filter: filterOf(column.filter, content),
     };
@@ -134,6 +137,7 @@ function propsOf<Row, C>(
 
   return {
     source: options.source,
+    reorder: options.reorder,
     rowKey: options.rowKey,
     columns: options.columns.map((column) =>
       'columns' in column
@@ -144,6 +148,8 @@ function propsOf<Row, C>(
       action,
     ) => (action.type === 'menu' ? menuOf(action, content) : actionOf(action, content))),
     renderDetail: renderDetail === undefined ? undefined : (row) => content(renderDetail(row)),
+    groupBy: options.groupBy,
+    renderGroup: renderGroup === undefined ? undefined : (group) => content(renderGroup(group)),
     defaultSort: options.defaultSort,
     title: content(options.title),
     subtitle: content(options.subtitle),
@@ -187,24 +193,27 @@ function actionOf<Row, C>(action: DataNavigator.Action<Row, C>, content: Content
         type: 'general',
         key: action.key,
         variant: action.variant,
+        contextMenu: action.contextMenu,
         onClick: action.onClick,
         ...lookOf(action, content),
       };
-    case 'row':
+    case 'singleRow':
       return {
-        type: 'row',
+        type: 'singleRow',
         key: action.key,
         variant: action.variant,
+        contextMenu: action.contextMenu,
         onClick: action.onClick,
         show: action.show,
         default: action.default,
         ...lookOf(action, content),
       };
-    case 'rows':
+    case 'multiRow':
       return {
-        type: 'rows',
+        type: 'multiRow',
         key: action.key,
         variant: action.variant,
+        contextMenu: action.contextMenu,
         onClick: action.onClick,
         ...lookOf(action, content),
       };

@@ -78,6 +78,7 @@ function formatDate(iso: string): string {
   return new Intl.DateTimeFormat(locale(), { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso));
 }
 
+// Every column but the filename can be hidden with the column toggle menu of the toolbar.
 const columns: readonly DataNavigatorComponent.Column<Attachment>[] = [
   { key: 'name', header: 'Filename', width: 3, sortable: true, filter: textColumnFilter() },
   {
@@ -85,6 +86,7 @@ const columns: readonly DataNavigatorComponent.Column<Attachment>[] = [
     header: 'User',
     width: 2,
     sortable: true,
+    hideable: true,
     filter: selectColumnFilter({ options: USERS, multiple: true }),
   },
   {
@@ -92,6 +94,7 @@ const columns: readonly DataNavigatorComponent.Column<Attachment>[] = [
     header: 'Type',
     width: 1.5,
     sortable: true,
+    hideable: true,
     filter: selectColumnFilter({ options: TYPES, multiple: true }),
   },
   {
@@ -99,6 +102,7 @@ const columns: readonly DataNavigatorComponent.Column<Attachment>[] = [
     header: 'Size',
     width: 1.5,
     sortable: true,
+    hideable: true,
     align: 'end',
     render: (row) => formatSize(row.size),
     filter: selectColumnFilter({
@@ -111,6 +115,7 @@ const columns: readonly DataNavigatorComponent.Column<Attachment>[] = [
     header: 'Uploaded',
     width: 2,
     sortable: true,
+    hideable: true,
     render: (row) => formatDate(row.uploaded),
     filter: dateRangeColumnFilter(),
   },
@@ -177,18 +182,10 @@ function MediaManager(): ReactElement {
       try {
         const result = await scope.confirmCritical({
           title: single ? 'Delete file' : 'Delete files',
-          content: single ? `Delete "${first.name}"?\nThis cannot be undone.` : (
-            <>
-              <p>
-                Delete these {rows.length} files?
-                <br />
-                This cannot be undone.
-              </p>
-              <ul>
-                {rows.map((row) => <li key={row.id}>{row.name}</li>)}
-              </ul>
-            </>
-          ),
+          // Several files are not listed: the table shows which ones are selected.
+          content: single
+            ? `Delete "${first.name}"?\nThis cannot be undone.`
+            : `Delete the ${rows.length} selected files?\nThis cannot be undone.`,
           buttons: { confirm: 'Delete' },
         });
 
@@ -279,10 +276,10 @@ function MediaManager(): ReactElement {
       key: 'download',
       label: 'Download',
       actions: [
-        { type: 'row', key: 'download-file', label: 'Selected file', show: 'toolbar', onClick: download },
+        { type: 'singleRow', key: 'download-file', label: 'Selected file', show: 'toolbar', onClick: download },
         { type: 'separator' },
-        { type: 'rows', key: 'download-selected-zip', label: 'Selected files as zip', onClick: download },
-        { type: 'rows', key: 'download-selected-tgz', label: 'Selected files as tar.gz', onClick: download },
+        { type: 'multiRow', key: 'download-selected-zip', label: 'Selected files as zip', onClick: download },
+        { type: 'multiRow', key: 'download-selected-tgz', label: 'Selected files as tar.gz', onClick: download },
       ],
     };
 
@@ -295,29 +292,34 @@ function MediaManager(): ReactElement {
         icon: icons.upload,
         onClick: () => void uploadFiles(),
       },
+      // The details in a drawer: in the action column of every row and in the selection bar while exactly one row is
+      // selected, in both places only its icon (an icon-only action: no label), with "Information" as the tooltip. One
+      // action, so one entry in the context menu.
+      {
+        type: 'singleRow',
+        key: 'info',
+        icon: icons.info,
+        tip: 'Information',
+        show: 'both',
+        onClick: (attachment) => void showDetails(attachment),
+      },
       // In the toolbar, for the selected rows: this rows action is what makes the selection multiple.
       {
-        type: 'rows',
+        type: 'multiRow',
         key: 'delete-selected',
         label: 'Delete',
         icon: icons.remove,
         onClick: (rows) => void remove(rows),
       },
-      // In the action column of every row: more information in a drawer, and delete.
+      // In the action column of every row: delete.
       {
-        type: 'row',
-        key: 'info',
-        icon: icons.info,
-        tip: 'More information',
-        show: 'column',
-        onClick: (attachment) => void showDetails(attachment),
-      },
-      {
-        type: 'row',
+        type: 'singleRow',
         key: 'delete',
         icon: icons.remove,
         tip: 'Delete file',
         show: 'column',
+        // Not in the context menu: there, "Delete" (for the selection, which is the clicked row) does the same.
+        contextMenu: false,
         onClick: (attachment) => void remove([attachment]),
       },
       downloadMenu,
@@ -331,7 +333,9 @@ function MediaManager(): ReactElement {
       subtitle="Upload files with the upload button in the toolbar."
       density="compact"
       striped
+      selectionAppearance="neutral"
       searchable
+      reloadable
       source={fetchAttachments}
       rowKey="id"
       columns={columns}

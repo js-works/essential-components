@@ -11,7 +11,7 @@ import { icons } from './icons';
 import { LayerContext } from './layer';
 import { ClearButton } from './widgets';
 
-export { DateRangeFilterInput, rangeOf };
+export { DateRangeFilterInput, formatRange, rangeOf };
 
 // The date range filter: a trigger in the look of the select filters ("All", or the range, formatted for the locale),
 // and a popover with two calendars that act as one of two months (see dateRangePicker.ts): the first click sets the

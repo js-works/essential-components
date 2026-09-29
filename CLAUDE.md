@@ -43,13 +43,16 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
     element of its package (see "Demo element" in the package's `CLAUDE.md`), exported and not registered.
   - `demo/media-manager/`: the "Media Manager" tab, a demo of the root (not of a package), because it combines three
     packages: a data navigator lists the attachments, dialogs and toasts of the overlays package, and a file upload
-    (React wrapper) in a drawer adds new ones. The table is compact (`density="compact"`), striped and has a search,
-    sorting (by default by filename, ascending), paging, column filters (Filename: contains; User, Type and Size: one or
+    (React wrapper) in a drawer adds new ones. The table is compact (`density="compact"`), striped, with a gray selection
+    (`selectionAppearance="neutral"`), and has a search, a Reload button
+    (`reloadable`), a column toggle menu (every column but the filename is `hideable`),
+    sorting (by default by filename, ascending), paging, column filters, in the data navigator's filter view (Filename: a text filter, contains, starts with or ends with; User, Type and Size: one or
     more; Uploaded: a date range, `dateRangeColumnFilter()`; the types are a fixed list of common ones, `TYPES`; the
     sizes are small < 100 kB, medium 100 kB – 1 MB, large ≥ 1 MB, `SIZES`), multi-selection with "Delete" for the
-    selected rows (toolbar), and "Delete" in each row. Both ask first, in a critical confirmation dialog of the overlays
-    package (`confirmCritical`: a "Delete" button in the danger style, no confirm on Enter), with the file name or the
-    list of the selected files. Deleting takes a second (`DELETE_TIME`): the dialog is opened in a scope
+    selected rows (in the selection bar, which takes the toolbar's place while rows are selected), and "Delete" in
+    each row (`contextMenu: false`: in the context menu, the "Delete" of the selection does the same). Both ask first, in a critical confirmation dialog of the overlays
+    package (`confirmCritical`: a "Delete" button in the danger style, no confirm on Enter), with the file name, or for
+    several files only their number ("Delete the 3 selected files?", no list: the table shows which ones). Deleting takes a second (`DELETE_TIME`): the dialog is opened in a scope
     (`dialogs.open()`), so it stays open after "Delete", its button shows a spinner, and it closes when the files are
     gone (`scope.dispose()`).
     - Toasts of the overlays package, bottom right (`toasts: { placement: 'bottom-end', size: 'small', stacked: true
@@ -70,7 +73,9 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
       is selected), a separator, "Selected files as zip", "Selected files as tar.gz" (rows actions, only while rows are
       selected). Every entry opens a warning dialog of the overlays package (`dialogs.warn()`): downloading is not
       available in the demo.
-    - "More information" (an info icon in the action column of every row) opens a drawer of the overlays package
+    - "Information" (one icon-only single-row action, `show: 'both'`, tip "Information": the info icon in the action
+      column of every row and in the selection bar while exactly one row is selected, before "Delete"; one entry in
+      the context menu) opens a drawer of the overlays package
       (an info dialog on the drawer surface, `dialogs.info({ surface: 'drawer' })`, with only "OK") with made-up
       details from the fake server (`getDetails()`: description, versions, downloads, tags, storage, checksum, stable
       per attachment).

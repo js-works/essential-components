@@ -20,7 +20,8 @@ function App(): ReactElement {
   const [theme, setTheme] = useState<DemoTheme>('default');
   const [actions, setActions] = useState<DemoActions>('multi-row');
   const [variants, setVariants] = useState<DemoVariants>('off');
-  const [selectionAppearance, setSelectionAppearance] = useState<DataNavigatorComponent.SelectionAppearance>('neutral');
+  const [selectionAppearance, setSelectionAppearance] = useState<DataNavigatorComponent.SelectionAppearance>('accent');
+  const [rowActionLook, setRowActionLook] = useState<DataNavigatorComponent.RowActionLook>('icon');
   const [density, setDensity] = useState<DataNavigatorComponent.Density>('normal');
   const [striped, setStriped] = useState<DemoStriped>('on');
   const [columns, setColumns] = useState<DemoColumns>('flat');
@@ -37,6 +38,8 @@ function App(): ReactElement {
     setVariants,
     selectionAppearance,
     setSelectionAppearance,
+    rowActionLook,
+    setRowActionLook,
     density,
     setDensity,
     striped,

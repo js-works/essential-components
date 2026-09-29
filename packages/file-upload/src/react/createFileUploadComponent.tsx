@@ -34,10 +34,10 @@ const SLOTS = ['label', 'icon', 'prompt', 'limits'] as const;
 // A generated tag name: the first free one of `internal-file-upload-1`, `-2`, ...
 const TAG_PREFIX = 'internal-file-upload-';
 
-// The height of the empty element (the drop line only), relative to the theme's `fontSize`: its content (1.608em), its
-// padding (per density) and the borders (4px).
+// The height of the empty element (the drop line only), relative to the theme's `fontSize`: its content (1.876em, the
+// "Browse" button: it was 1.608em while the text buttons were 0.857em), its padding (per density) and the borders (4px).
 const placeholderHeight = (density: Spec.Density) =>
-  `calc(${Number((1.608 + 2 * DENSITY_PADDING[density].drop).toFixed(3))}em + 4px)`;
+  `calc(${Number((1.876 + 2 * DENSITY_PADDING[density].drop).toFixed(3))}em + 4px)`;
 
 const useNoI18nAdapter = (): Spec.I18nAdapter | undefined => undefined;
 

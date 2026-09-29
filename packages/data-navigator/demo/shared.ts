@@ -38,19 +38,22 @@ function createActions(
 
   // The default action: a double click on the free space of a row runs it, as well as its button.
   const edit: Item = {
-    type: 'row',
+    type: 'singleRow',
     key: 'edit',
+    label: 'Edit',
     icon: icons.edit,
     tip: 'Edit user',
     default: true,
     onClick: (user) => report(`Edit ${fullName(user)}`),
   };
 
-  // An icon-only danger action for a single row. In the action column of every row, and in single-row mode also in the
+  // A danger action for a single row (how the action column shows it: the "Row actions" selector, `rowActionLook`; the
+  // tip is its name there when only the icon is shown). In the action column of every row, and in single-row mode also in the
   // toolbar (for the selected row): that toolbar action is what needs the single selection.
   const removeRow = (show: 'column' | 'both'): Item => ({
-    type: 'row',
+    type: 'singleRow',
     key: 'delete-user',
+    label: 'Delete',
     icon: icons.remove,
     tip: 'Delete user',
     variant: danger,
@@ -59,7 +62,7 @@ function createActions(
   });
 
   const remove: Item = {
-    type: 'rows',
+    type: 'multiRow',
     key: 'delete',
     label: 'Delete',
     icon: icons.remove,
@@ -89,13 +92,13 @@ function createActions(
       actions.push(
         { type: 'separator' },
         {
-          type: 'rows',
+          type: 'multiRow',
           key: 'export-selection-csv',
           label: 'Export selection to CSV',
           onClick: (users) => report(`Export ${users.length} selected user(s) to CSV`),
         },
         {
-          type: 'rows',
+          type: 'multiRow',
           key: 'export-selection-excel',
           label: 'Export selection to Excel',
           onClick: (users) => report(`Export ${users.length} selected user(s) to Excel`),

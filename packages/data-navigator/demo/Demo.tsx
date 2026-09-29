@@ -1,15 +1,17 @@
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import {
+  booleanColumnFilter,
   createDataNavigatorComponent,
   dateRangeColumnFilter,
+  numberRangeColumnFilter,
   selectColumnFilter,
   textColumnFilter,
   useDataNavigatorController,
   useDataNavigatorSelection,
 } from '../src/react';
 import type { DataNavigatorComponent } from '../src/react';
-import { antdTheme, defaultTheme, mantineTheme } from '../src/themes';
+import { antdTheme, defaultTheme, mantineTheme, softTheme } from '../src/themes';
 import type { Controls, DemoTheme } from './controls';
 import { countries, fetchNothing, fetchUsers, roles } from './data';
 import type { User } from './data';
@@ -28,6 +30,7 @@ export { Demo };
 // I18nAdapter, and shows the one of the chosen theme.
 const navigators: Record<DemoTheme, DataNavigatorComponent.Component> = {
   default: createDataNavigatorComponent({ i18n, theme: defaultTheme }),
+  soft: createDataNavigatorComponent({ i18n, theme: softTheme }),
   mantine: createDataNavigatorComponent({ i18n, theme: mantineTheme }),
   antd: createDataNavigatorComponent({ i18n, theme: antdTheme }),
 };
@@ -36,6 +39,7 @@ const navigators: Record<DemoTheme, DataNavigatorComponent.Component> = {
 // runs no library code, so it adds static snapshots of them (`variables/`, see scripts/library-variables.mjs).
 const libraryVariables: Record<DemoTheme, string> = {
   default: '',
+  soft: '',
   mantine: mantineVariables,
   antd: antdVariables,
 };
@@ -44,11 +48,18 @@ type UserColumn = DataNavigatorComponent.Column<User>;
 
 const firstName: UserColumn = { key: 'firstName', header: 'First name', width: 2, sortable: true };
 const lastName: UserColumn = { key: 'lastName', header: 'Last name', width: 2, sortable: true };
-const email: UserColumn = { key: 'email', header: 'Email', width: 4, sortable: true };
-const country: UserColumn = { key: 'country', header: 'Country', width: 2, sortable: true };
+// The column toggle menu: every column but the names can be hidden; logins and active (below) start hidden.
+const email: UserColumn = { key: 'email', header: 'Email', width: 4, sortable: true, hideable: true };
+const country: UserColumn = { key: 'country', header: 'Country', width: 2, sortable: true, hideable: true };
 
 // The date of birth, shown as it is stored (ISO, yyyy-mm-dd).
-const dateOfBirth: UserColumn = { key: 'dateOfBirth', header: 'Date of birth', width: 2, sortable: true };
+const dateOfBirth: UserColumn = {
+  key: 'dateOfBirth',
+  header: 'Date of birth',
+  width: 2,
+  sortable: true,
+  hideable: true,
+};
 
 // Custom cell content can use the tokens of the table too, so it follows the theme.
 const role: UserColumn = {
@@ -57,7 +68,27 @@ const role: UserColumn = {
   width: 1.5,
   align: 'center',
   sortable: true,
+  hideable: true,
   render: (user) => <span className={badge}>{user.role}</span>,
+};
+
+const logins: UserColumn = {
+  key: 'logins',
+  header: 'Logins',
+  width: 1.2,
+  align: 'end',
+  sortable: true,
+  hideable: true,
+  hidden: true,
+};
+
+const active: UserColumn = {
+  key: 'active',
+  header: 'Active',
+  hideable: true,
+  hidden: true,
+  width: 1.2,
+  render: (user) => (user.active ? 'Yes' : 'No'),
 };
 
 const filterOf: Record<string, DataNavigatorComponent.ColumnFilter> = {
@@ -67,6 +98,8 @@ const filterOf: Record<string, DataNavigatorComponent.ColumnFilter> = {
   role: selectColumnFilter({ options: roles }),
   country: selectColumnFilter({ options: countries, multiple: true }),
   dateOfBirth: dateRangeColumnFilter(),
+  logins: numberRangeColumnFilter(),
+  active: booleanColumnFilter(),
 };
 
 function createColumns(
@@ -84,8 +117,18 @@ function createColumns(
       { header: 'Person', columns: [filter(firstName), filter(lastName), filter(dateOfBirth), filter(email)] },
       { header: 'Location', columns: [filter(country)] },
       filter(role),
+      { header: 'Account', columns: [filter(logins), filter(active)] },
     ]
-    : [filter(firstName), filter(lastName), filter(dateOfBirth), filter(email), filter(country), filter(role)];
+    : [
+      filter(firstName),
+      filter(lastName),
+      filter(dateOfBirth),
+      filter(email),
+      filter(country),
+      filter(role),
+      filter(logins),
+      filter(active),
+    ];
 }
 
 // The content of the demo element: plain elements only, no UI library. The page around it (title, language, color
@@ -120,6 +163,7 @@ function Demo({ controls }: { controls: Controls }): ReactElement {
           rowKey="id"
           columns={columns}
           selectionAppearance={controls.selectionAppearance}
+          rowActionLook={controls.rowActionLook}
           density={controls.density}
           striped={controls.striped === 'on'}
           actions={actions}

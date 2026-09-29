@@ -170,7 +170,8 @@ button {
   /* Darker than the other borders, so the button stands out as a control. All text buttons look the same, none in the
      accent color: as harmless as possible, because they rarely match the buttons of the app exactly. */
   border-color: color-mix(in srgb, ${border}, ${muted});
-  font-size: 0.857em;
+  /* The size of the prompt next to it (it was 0.857em, too small). */
+  font-size: 1em;
   font-weight: 600;
 
   &:hover {

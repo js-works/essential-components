@@ -59,7 +59,8 @@ function createController(onRemove: (users: readonly User[]) => void) {
         sortable: true,
         filter: textColumnFilter(),
       },
-      { key: 'email', header: 'Email', width: 2 },
+      // The column toggle menu of the toolbar can hide it.
+      { key: 'email', header: 'Email', width: 2, hideable: true },
       {
         key: 'country',
         header: () => (german() ? 'Land' : 'Country'),
@@ -75,7 +76,7 @@ function createController(onRemove: (users: readonly User[]) => void) {
     ],
     actions: [
       {
-        type: 'rows',
+        type: 'multiRow',
         key: 'remove',
         label: () => (german() ? 'Entfernen' : 'Remove'),
         variant: 'danger',

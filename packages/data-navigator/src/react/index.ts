@@ -1,11 +1,19 @@
 import { useDataNavigatorController, useDataNavigatorSelection } from '../core/controllerHooks';
-import { dateRangeColumnFilter, selectColumnFilter, textColumnFilter } from '../core/view/ColumnFilters';
+import {
+  booleanColumnFilter,
+  dateRangeColumnFilter,
+  numberRangeColumnFilter,
+  selectColumnFilter,
+  textColumnFilter,
+} from '../core/view/ColumnFilters';
 import type { DataNavigatorComponent } from './api';
 import { createDataNavigatorComponent } from './createDataNavigatorComponent';
 
 export {
+  booleanColumnFilter,
   createDataNavigatorComponent,
   dateRangeColumnFilter,
+  numberRangeColumnFilter,
   selectColumnFilter,
   textColumnFilter,
   useDataNavigatorController,
