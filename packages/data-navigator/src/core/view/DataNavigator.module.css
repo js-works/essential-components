@@ -511,8 +511,10 @@
 }
 
 /* Below the filters: Reset Clear | Cancel [Apply], at the right end of a row as wide as the filters (set inline) and
-   centered like them, so Apply ends where the last column ends. */
+   centered like them, so Apply ends where the last column ends. A gray line on top, as wide as the columns (inset by
+   the padding); it stays when the filters scroll. */
 .filterPanelFooter {
+  position: relative;
   display: flex;
   flex: none;
   box-sizing: border-box;
@@ -525,6 +527,14 @@
   /* A little more room before Apply than between the ghost buttons. */
   & > .applyButton {
     margin-inline-start: calc(var(--datnav-spacing-xs) / 2);
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    inset-inline: var(--datnav-spacing-sm);
+    border-top: 1px solid var(--datnav-color-border);
   }
 }
 

@@ -1043,7 +1043,7 @@ The main goal is a very nice, yet simple, API, designed together with the user.
       width (at most 20rem) and the controls line up on both edges. (With each label as wide as its own text, a long
       label, "Date of birth", made its control narrower than the others.) So on the left the label, the filter on the right (the `labelledBy` of the filter is the id of
       that label). Custom filters are rendered there too, as wide as the column of the controls.
-    - Footer (`.filterPanelFooter`, no line above it: removed 2026-09-29), all on the right: `Reset Clear | Cancel [Apply]`
+    - Footer (`.filterPanelFooter`; a gray line above it, as wide as the filter columns, not the view: 2026-09-30; a full-width one was removed 2026-09-29), all on the right: `Reset Clear | Cancel [Apply]`
       (2026-09-29): "Reset" (`Texts.resetFilters`), "Clear" (`Texts.clear`) and "Cancel" (`Texts.cancelFilters`) are
       ghost buttons (`data-placement="tool"`, like the view controls of the toolbar); a divider (the toolbar's)
       separates the two that change the draft from the two that close the view; "Apply" after "Cancel", a little more
