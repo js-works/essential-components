@@ -10,6 +10,8 @@ declare namespace DataNavigatorComponent {
 
   type Density = DataNavigator.Density;
 
+  type FooterMode = DataNavigator.FooterMode;
+
   type SelectionAppearance = DataNavigator.SelectionAppearance;
 
   type RowActionLook = DataNavigator.RowActionLook;
@@ -22,7 +24,7 @@ declare namespace DataNavigatorComponent {
 
   type Result<Row> = DataNavigator.Result<Row>;
 
-  type GroupTotal = DataNavigator.GroupTotal;
+  type ResultGroup = DataNavigator.ResultGroup;
 
   type GroupBy<Row> = DataNavigator.GroupBy<Row>;
 
@@ -69,7 +71,7 @@ declare namespace DataNavigatorComponent {
   type Column<Row> = {
     key: keyof Row & string;
     header: ReactNode;
-    width?: number;
+    width?: number | string;
     sortable?: boolean;
     align?: ColumnAlign;
     render?: (row: Row) => ReactNode;
@@ -114,7 +116,15 @@ declare namespace DataNavigatorComponent {
     onClick: (rows: readonly Row[]) => void;
   } & ActionLook;
 
-  type Action<Row> = GeneralAction | RowAction<Row> | RowsAction<Row>;
+  type GroupAction<Row> = {
+    type: 'group';
+    key: string;
+    variant?: ActionVariant;
+    contextMenu?: boolean;
+    onClick: (group: RowGroup<Row>) => void;
+  } & ActionLook;
+
+  type Action<Row> = GeneralAction | RowAction<Row> | RowsAction<Row> | GroupAction<Row>;
 
   type ActionMenu<Row> = {
     type: 'menu';
@@ -132,6 +142,7 @@ declare namespace DataNavigatorComponent {
     subtitle?: ReactNode;
     selectionAppearance?: SelectionAppearance;
     density?: Density;
+    footer?: FooterMode;
     striped?: boolean;
     renderDetail?: (row: Row) => ReactNode;
     groupBy?: GroupBy<Row>;

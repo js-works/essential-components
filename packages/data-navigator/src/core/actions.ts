@@ -5,6 +5,8 @@ export {
   contextMenuItems,
   defaultActionOf,
   generalToolbarItems,
+  groupContextMenuItems,
+  groupItems,
   selectionModeOf,
   selectionToolbarItems,
   variantOf,
@@ -82,6 +84,7 @@ function selectionToolbarItems<Row>(
   return filterItems(items, (action) => {
     switch (action.type) {
       case 'general':
+      case 'group':
         return false;
       case 'multiRow':
         return selectedCount >= 1;
@@ -99,6 +102,16 @@ function columnItems<Row>(items: readonly ActionInput<Row>[]): readonly ActionIt
   });
 }
 
+// Actions shown at the end of every group header (`groupBy`), in the action column.
+function groupItems<Row>(items: readonly ActionInput<Row>[]): readonly ActionItem<Row>[] {
+  return filterItems(items, (action) => action.type === 'group');
+}
+
+// The context menu of a group header: its group actions (menus as submenus), without those with `contextMenu: false`.
+function groupContextMenuItems<Row>(items: readonly ActionInput<Row>[]): readonly ContextMenuItem<Row>[] {
+  return filterItems(items, (action) => action.type === 'group' && action.contextMenu !== false);
+}
+
 // The context menu of a row: first the actions of the clicked row (all single-row actions, wherever else they are
 // shown; only while the menu is about one row, like in the toolbar), then those of the selected rows (multi-row, only
 // with a selection), then the general ones and last the menus (as submenus, with the entries that apply here). A
@@ -111,6 +124,7 @@ function contextMenuItems<Row>(
   // An action with `contextMenu: false` is never there (also not inside a menu), e.g. one that does the same as another.
   const applies = (action: Spec.Action<Row>) =>
     action.contextMenu !== false
+    && action.type !== 'group'
     && (action.type === 'general' || (action.type === 'singleRow' ? oneRow : selection === 'multi'));
   const plain = items.filter((item): item is Spec.Action<Row> => item.type !== 'menu' && applies(item));
   const menus = filterItems(items.filter((item) => item.type === 'menu'), applies);

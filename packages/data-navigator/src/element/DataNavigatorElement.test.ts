@@ -304,6 +304,7 @@ describe('attributes', () => {
     await mount(element);
 
     expect(element.density).toBe('compact');
+    expect(element.footer).toBe('always');
     expect(element.hasAttribute('striped')).toBe(true);
     expect(element.searchable).toBe(false);
     expect(element.reloadable).toBe(false);
@@ -321,6 +322,13 @@ describe('attributes', () => {
     expect(screen.getByPlaceholderText('Search')).toBeTruthy();
     expect(element.hasAttribute('reloadable')).toBe(true);
     expect(screen.getByRole('button', { name: 'Reload' })).toBeTruthy();
+    expect(screen.getByText('Page Size')).toBeTruthy();
+
+    await act(async () => {
+      element.footer = 'never';
+    });
+    expect(element.getAttribute('footer')).toBe('never');
+    expect(screen.queryByText('Page Size')).toBeNull();
   });
 
   it('starts with the page size of its attribute', async () => {
@@ -482,6 +490,34 @@ describe('controller', () => {
 
     await waitFor(() => expect(screen.getByText('First (5)')).toBeTruthy());
     expect(screen.getByText('Rest (20)')).toBeTruthy();
+  });
+
+  it('runs a group action with its group, and moves a row into another group', async () => {
+    const [ElementClass, createController] = setupDataNavigator();
+    const onClick = vi.fn();
+    const reorder = vi.fn();
+    const element = create(ElementClass);
+
+    element.controller = createController({
+      source: createSource(),
+      reorder,
+      rowKey: 'id',
+      columns: [{ key: 'name', header: 'Name' }],
+      groupBy: (person) => (person.id <= 5 ? 'First' : 'Rest'),
+      actions: [{ type: 'group', key: 'rename', label: () => 'Rename', onClick }],
+    });
+    await mount(element);
+    await waitFor(() => expect(screen.getByText('Person 01')).toBeTruthy());
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Rename' })[1]!);
+    expect(onClick).toHaveBeenCalledWith(expect.objectContaining({ key: 'Rest', total: undefined }));
+
+    // Down from the last row of "First": past the header of "Rest", to its start.
+    fireEvent.keyDown(screen.getAllByRole('button', { name: 'Move row' })[4]!, { key: 'ArrowDown', altKey: true });
+
+    await waitFor(() =>
+      expect(reorder).toHaveBeenCalledWith({ row: people[4], group: 'Rest', after: people[3], before: people[5] })
+    );
   });
 
   it('moves rows with the handles when the controller has reorder', async () => {

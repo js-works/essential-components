@@ -5,10 +5,10 @@ import type { UseFormReturnType } from '@mantine/form';
 import { useEffect } from 'react';
 import type { ReactElement } from 'react';
 import { ROLES } from './db';
-import type { AgendaItem, Board, Meeting, Person, Role } from './db';
+import type { AgendaItem, AgendaSection, Board, Meeting, Person, Role } from './db';
 import type { FormCheck } from './flows';
 
-export { AgendaItemForm, BoardForm, fromPicker, MeetingForm, MemberForm, MinutesForm, PersonForm };
+export { AgendaItemForm, AgendaSectionForm, BoardForm, fromPicker, MeetingForm, MemberForm, MinutesForm, PersonForm };
 
 // The contents of the form dialogs: Mantine inputs with a `name`, so the dialog's form collects them (`attempt.data`).
 // Mantine validates them (`useForm`, uncontrolled, with its rules), not the browser (the dialogs have
@@ -122,14 +122,21 @@ function MeetingForm(
   );
 }
 
-// The presenter is one of the board's members.
+// The presenter is one of the board's members. The section is one of the agenda's, or none: another section moves the
+// item to its end (the table moves it by dragging too).
 function AgendaItemForm(
-  { check, item, members }: { check: FormCheck; item?: AgendaItem; members: readonly Person[] },
+  { check, item, members, sections }: {
+    check: FormCheck;
+    item?: AgendaItem;
+    members: readonly Person[];
+    sections: readonly AgendaSection[];
+  },
 ): ReactElement {
   const form = useForm({
     mode: 'uncontrolled',
     initialValues: {
       title: item?.title ?? '',
+      sectionId: item?.sectionId ?? '',
       presenterId: item?.presenterId ?? members[0]?.id ?? '',
       duration: String(item?.duration ?? 15),
       description: item?.description ?? '',
@@ -152,6 +159,16 @@ function AgendaItemForm(
         key={form.key('title')}
         {...form.getInputProps('title')}
         name="title"
+      />
+      <NativeSelect
+        label="Section"
+        data={[
+          { value: '', label: '(none)' },
+          ...sections.map((section) => ({ value: section.id, label: section.title })),
+        ]}
+        key={form.key('sectionId')}
+        {...form.getInputProps('sectionId')}
+        name="sectionId"
       />
       <NativeSelect
         label="Presenter"
@@ -180,6 +197,30 @@ function AgendaItemForm(
         name="description"
       />
     </Stack>
+  );
+}
+
+// A section of an agenda: only its name.
+function AgendaSectionForm(
+  { check, section }: { check: FormCheck; section?: Pick<AgendaSection, 'title'> },
+): ReactElement {
+  const form = useForm({
+    mode: 'uncontrolled',
+    initialValues: { title: section?.title ?? '' },
+    validate: { title: isNotEmpty(REQUIRED) },
+  });
+
+  useCheck(check, form);
+
+  return (
+    <TextInput
+      label="Name"
+      withAsterisk
+      autoComplete="off"
+      key={form.key('title')}
+      {...form.getInputProps('title')}
+      name="title"
+    />
   );
 }
 

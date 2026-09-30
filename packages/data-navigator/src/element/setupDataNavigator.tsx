@@ -12,6 +12,7 @@ import { HOST_ATTRIBUTE, provideStyles } from './styles';
 export { setupDataNavigator };
 
 const DENSITIES: readonly DataNavigator.Density[] = ['compact', 'normal', 'comfortable'];
+const FOOTER_MODES: readonly DataNavigator.FooterMode[] = ['always', 'auto', 'never'];
 
 // The events that stop at the element's border (see the constructor).
 const CONTAINED_EVENTS = ['input', 'keypress', 'keydown'] as const;
@@ -20,6 +21,7 @@ const CONTAINED_EVENTS = ['input', 'keypress', 'keydown'] as const;
 const UPGRADED_PROPERTIES = [
   'controller',
   'density',
+  'footer',
   'striped',
   'searchable',
   'reloadable',
@@ -44,6 +46,7 @@ function setupDataNavigator<C = Node>(
   class DataNavigatorElement extends HTMLElement {
     static observedAttributes = [
       'density',
+      'footer',
       'striped',
       'searchable',
       'reloadable',
@@ -105,6 +108,16 @@ function setupDataNavigator<C = Node>(
 
     set density(density: DataNavigator.Density) {
       this.setAttribute('density', density);
+    }
+
+    get footer(): DataNavigator.FooterMode {
+      const value = this.getAttribute('footer');
+
+      return FOOTER_MODES.find((mode) => mode === value) ?? 'always';
+    }
+
+    set footer(footer: DataNavigator.FooterMode) {
+      this.setAttribute('footer', footer);
     }
 
     get striped(): boolean {
@@ -205,6 +218,7 @@ function setupDataNavigator<C = Node>(
     #settings(): ElementSettings {
       return {
         density: this.density,
+        footer: this.footer,
         striped: this.striped,
         searchable: this.searchable,
         reloadable: this.reloadable,

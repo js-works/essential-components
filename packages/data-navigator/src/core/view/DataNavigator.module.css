@@ -185,8 +185,8 @@
   gap: calc(var(--datnav-spacing-xs) / 4);
   height: var(--datnav-control-height);
   min-width: 0;
-  /* The controls of the table, not its content: a larger text (16px with 14px content), in every density. */
-  font-size: calc(8 / 7 * var(--datnav-font-size));
+  /* The text size of the table (it was larger, 8/7 of it, until 2026-09-30: too big next to the rows). */
+  font-size: var(--datnav-font-size);
   animation: barIn 150ms ease;
 
   /* The search box grows with the table, up to a maximum width; the free space goes between it and the buttons. */
@@ -660,7 +660,7 @@
   background-color: var(--datnav-color-surface);
   color: var(--datnav-color-text);
   font: inherit;
-  font-weight: var(--datnav-font-weight-bold);
+  font-weight: normal;
   cursor: pointer;
   transition: background-color 100ms ease;
 
@@ -829,7 +829,8 @@
   background-color: var(--datnav-color-surface);
   color: var(--datnav-color-text);
   font: inherit;
-  font-weight: var(--datnav-font-weight-bold);
+  /* The normal weight (bold until 2026-09-30), for every placement: the actions and the view controls alike. */
+  font-weight: normal;
   white-space: nowrap;
   cursor: pointer;
 
@@ -2118,19 +2119,20 @@
   display: block;
 }
 
-/* Row groups (`groupBy`): the header row of a group, over the whole width, a soft gray band with bold text (no hover
-   and no row click: only its checkbox and its toggle button act). */
+/* Row groups (`groupBy`): the header row of a group, over the whole width, a gray band (`surface-strong`: darker than
+   the hover, the neutral selection and the stripes, lighter than the lines) with bold text, of the normal height of a row (no hover and no row
+   click: only its checkbox, its toggle button and its actions act). */
 .groupRow {
   composes: row;
 }
 
 .groupCell {
   composes: cell;
-  background-color: var(--datnav-color-header);
+  background-color: var(--datnav-color-surface-strong);
   font-weight: var(--datnav-font-weight-bold);
 }
 
-/* The toggle: the whole rest of the band, a chevron (right while collapsed, down while expanded) and the content. */
+/* The toggle: the whole rest of the band, a caret (right while collapsed, down while expanded) and the content. */
 .groupToggle {
   display: flex;
   flex: 1 1 auto;
@@ -2156,6 +2158,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* The group actions at the end of the band: in the normal weight, like the row actions. */
+.groupCell > .rowActions {
+  font-weight: normal;
 }
 
 .groupCount {

@@ -4,8 +4,8 @@ import type { CSSProperties, KeyboardEvent, PointerEvent } from 'react';
 export { useRowDrag };
 export type { RowDrag };
 
-// A drag in progress: the index of the dragged row and the index it would get (both of the page), how far it is moved
-// (px), and its height (px), by which the rows between the two indexes make room.
+// A drag in progress: the line of the dragged row and the slot it would take (the number of the other lines above it),
+// how far it is moved (px), and its height (px), by which the lines between the two make room.
 type DragState = { from: number; to: number; offset: number; height: number };
 
 // What the cells of a row show of a drag: lifted and moved with the pointer, moved aside (up or down) to make room, or
@@ -15,7 +15,7 @@ type RowLook = { state: 'dragged' | 'up' | 'down' | undefined; style: CSSPropert
 type RowDrag = {
   drag: DragState | undefined;
   lookOf: (index: number) => RowLook;
-  // The handlers of the drag handle of the row at this index.
+  // The handlers of the drag handle of the row of this line.
   handleProps: (index: number) => {
     onPointerDown: (event: PointerEvent<HTMLButtonElement>) => void;
     onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
@@ -26,13 +26,14 @@ type Bounds = { top: number; bottom: number };
 
 const NO_LOOK: RowLook = { state: undefined, style: undefined };
 
-// The vertical extent of every row of the page, in the order shown: the cells of a data row and of its detail row
-// (rows are `display: contents`, so the cells are measured; the ones with the same `data-row-key` are one row).
-function rowBounds(table: Element): readonly Bounds[] {
+// The vertical extent of every line of the rows area, in the order shown: a group header, or the cells of a data row
+// and of its detail row (rows are `display: contents`, so the cells are measured; the ones with the same `data-line`
+// are one line).
+function lineBounds(table: Element): readonly Bounds[] {
   const bounds = new Map<string, Bounds>();
 
-  for (const row of table.querySelectorAll<HTMLElement>('[role="row"][data-row-key]')) {
-    const key = row.getAttribute('data-row-key') ?? '';
+  for (const row of table.querySelectorAll<HTMLElement>('[role="row"][data-line]')) {
+    const key = row.getAttribute('data-line') ?? '';
     const cell = row.firstElementChild;
 
     if (cell === null) {
@@ -52,11 +53,15 @@ function rowBounds(table: Element): readonly Bounds[] {
 }
 
 // Moving rows by dragging their handle (pointer: mouse, touch, pen) or with the keyboard (Alt+ArrowUp/ArrowDown on the
-// handle). During a drag, the row follows the pointer (within the rows of the page), and the rows between its old and
-// its new place slide aside to make room; nothing changes in the DOM until the release, which moves it
-// (`move(from, to)`). Escape and a cancelled pointer end the drag without a move. `enabled`: whether rows can be moved
-// now.
-function useRowDrag(count: number, enabled: boolean, move: (from: number, to: number) => void): RowDrag {
+// handle; a group header counts as a line, so a row passes into the next group). During a drag, the row follows the
+// pointer (within the lines of the page), and the lines between its old and its new place slide aside to
+// make room; nothing changes in the DOM until the release, which moves it (`move(from, slot)`). Escape and a cancelled
+// pointer end the drag without a move. `count`: the number of lines; `enabled`: whether rows can be moved now.
+function useRowDrag(
+  count: number,
+  enabled: boolean,
+  move: (from: number, slot: number) => void,
+): RowDrag {
   const [drag, setDrag] = useState<DragState | undefined>(undefined);
 
   const start = (event: PointerEvent<HTMLButtonElement>, from: number) => {
@@ -71,10 +76,11 @@ function useRowDrag(count: number, enabled: boolean, move: (from: number, to: nu
     event.preventDefault();
 
     const handle = event.currentTarget;
+
     // Measured once, before anything moves (the transforms would change the measures): in the coordinates of the
     // content of the rows area, so a scroll during the drag counts too.
     const startScroll = scroller.scrollTop;
-    const bounds = rowBounds(table).map(({ top, bottom }) => ({
+    const bounds = lineBounds(table).map(({ top, bottom }) => ({
       top: top + startScroll,
       bottom: bottom + startScroll,
     }));
@@ -122,7 +128,7 @@ function useRowDrag(count: number, enabled: boolean, move: (from: number, to: nu
       window.removeEventListener('keydown', onKey, true);
       setDrag(undefined);
 
-      if (commit && to !== from) {
+      if (commit) {
         move(from, to);
       }
     };
@@ -144,21 +150,26 @@ function useRowDrag(count: number, enabled: boolean, move: (from: number, to: nu
     window.addEventListener('keydown', onKey, true);
   };
 
+  // Up and down by one line (a group header counts: past it, the row goes into the next group).
+  const STEPS: Readonly<Record<string, number>> = { ArrowUp: -1, ArrowDown: 1 };
+
   const keyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
-    if (!enabled || !event.altKey || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) {
+    const by = STEPS[event.key];
+
+    if (!enabled || !event.altKey || by === undefined) {
       return;
     }
 
     event.preventDefault();
 
     const handle = event.currentTarget;
-    const to = event.key === 'ArrowUp' ? index - 1 : index + 1;
 
-    if (to >= 0 && to < count) {
-      move(index, to);
-      // The row keeps its elements, but moving a focused element in the DOM may take its focus away.
-      requestAnimationFrame(() => handle.isConnected && handle.focus());
+    if (index + by >= 0 && index + by < count) {
+      move(index, index + by);
     }
+
+    // The row keeps its elements, but moving a focused element in the DOM may take its focus away.
+    requestAnimationFrame(() => handle.isConnected && handle.focus());
   };
 
   const lookOf = (index: number): RowLook => {

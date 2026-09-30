@@ -63,14 +63,19 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - The builds list the licenses of everything bundled in: `dist/third-party-licenses-react.md` (the React entry) and
     `dist/third-party-licenses.md` (the custom element, with Preact and Base UI).
 - Customization: a small set of general design values, the `DataNavigator.Theme` (see Configuration), not one per part.
-  - The values (30), with their internal custom properties (`colorTextDimmed` → `--datnav-color-text-dimmed`):
-    - Colors: `colorText`, `colorTextDimmed`, `colorSurface`, `colorBorder`, `colorHeader`, `colorHeaderHover`,
+  - The values (31), with their internal custom properties (`colorTextDimmed` → `--datnav-color-text-dimmed`):
+    - Colors: `colorText`, `colorTextDimmed`, `colorSurface`, `colorSurfaceStrong`, `colorBorder`, `colorHeader`, `colorHeaderHover`,
       `colorHover`, `colorHoverBorder`, `colorHoverAccent`, `colorStripe`, `colorStripeHover`, `colorSelected`,
       `colorSelectedBorder`, `colorSelectedNeutral`, `colorPrimary`, `colorPrimaryHover`, `colorOnPrimary`,
       `colorDanger`, `colorFocus`.
     - Shape and type: `radius`, `buttonRadius` (buttons with a shape: text and icon buttons, the clear buttons of the
       fields and the date picker's Clear), `shadow`, `fontFamily`, `fontSize`, `fontSizeSm`, `fontWeightBold`.
     - Spacing and size: `spacingXs`, `spacingSm`, `spacingMd`, `controlHeight`.
+  - `colorSurfaceStrong` (added 2026-09-30): a stronger surface for emphasized areas (a band that sets something
+    apart), darker than the hover, the stripes and the neutral selection, lighter than the lines. A general value,
+    not one for a widget: it is used for the group header band. Default `#dadada` (dark `#3a3a3a`), soft `#e6e6e6`
+    (dark `#2e2e2e`), Mantine `gray-1` (`#f1f3f5`, dark `dark-5`; `gray-2` was too dark; Mantine's light grays are all
+    slightly bluish, and it has no neutral light gray), antd `--ant-color-fill`.
   - Every color is its own value, mapped by the theme. No colors derived with `color-mix()` (except pressed states).
   - `selectionAppearance` stays. `'neutral'` uses `colorSelectedNeutral` and a gray selection border (`colorBorder`).
   - More specific values (per part) may be added later if a library needs them (not breaking: all are optional).
@@ -162,7 +167,8 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     element usually live and die together). No event callbacks in the controller's options.
     - `onSelectionChange((rows) => …)`: `rows` is typed (`readonly User[]`).
 - Settings that do not depend on `Row` are attributes, reflected to properties (booleans default to `false`):
-  - `density` (`compact`, `normal`, `comfortable`; default `normal`), `striped`, `searchable`, `reloadable`, `row-action-look` (`rowActionLook`: `icon`, `label`, `iconAndLabel`),
+  - `density` (`compact`, `normal`, `comfortable`; default `normal`), `footer` (`always`, `auto`, `never`; default
+    `always`), `striped`, `searchable`, `reloadable`, `row-action-look` (`rowActionLook`: `icon`, `label`, `iconAndLabel`),
     `selection-appearance` (`selectionAppearance`: `neutral`, `accent`), `page-size` (`pageSize`).
   - `pageSizeOptions`: a property only (an array).
 - Content (`render`, `renderDetail`, the `header` function) is `string | C`. `C` comes from a content adapter in the
@@ -361,7 +367,8 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     React hooks around it.
   - `config.ts`: the private `ConfigContext` and `resolveConfig` (the i18n adapter, and the theme turned into the
     inline custom properties of the root).
-  - `actions.ts` (which actions are visible where), `layout.ts` (column groups), `texts.ts` (`useTexts`: texts via the
+  - `actions.ts` (which actions are visible where), `layout.ts` (column groups), `grouping.ts` (row groups: the page
+    as runs and lines, and the moves between groups; with `grouping.test.ts`), `texts.ts` (`useTexts`: texts via the
     adapter, en-US defaults), `filters.ts`, `hooks.ts`, `utils.ts`.
   - `view/`: the whole rendering. `DataNavigatorView.tsx` (grid, header rows, data rows, detail rows, empty state),
     `Toolbar.tsx` (the bar and the selection bar), `FilterPanel.tsx` (the filter button, the filter view, the pills),
@@ -391,7 +398,7 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     element as `data-navigator-demo`.
   - `DataNavigatorDemo.tsx`: the whole demo as a light DOM custom element (see "Demo element" below), with tabs:
     "React component", "Custom element", and further examples of the React component, one per tab (a new example may
-    get a tab of its own, one more entry in `EXAMPLES`): "Row reordering", "Row grouping". On connect it renders `App`
+    get a tab of its own, one more entry in `EXAMPLES`): "Row reordering", "Row grouping", "Grouped reordering". On connect it renders `App`
     into the first panel (React, `StrictMode`), mounts the element demo into the second one, each further example
     into its panel (a React root each), and calls `setupUi(this)`; on disconnect it cleans up.
   - `GroupingDemo.tsx` (the "Row grouping" tab): the users grouped by country (`groupBy="country"`, no country
@@ -404,6 +411,11 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     filter, a multi-row action ("Mark as done", a toast), striped, row details for 10 of the tasks (a note each; the
     others have none). A "Saving" selector (`succeeds`, `fails`: the save
     rejects, and the page is loaded again), and a line with the last move.
+  - `GroupedReorderDemo.tsx` + `agenda.ts` (the "Grouped reordering" tab): an agenda whose items are all in sections
+    (`groupBy="section"`, `reorder`), kept in memory (`agenda.ts`: the sections with their items; the source, 400ms,
+    with the totals of the sections; the saves, 300ms): "Opening", "Reports", "Proposals for decision", "Closing"; one
+    page. Items are moved within a section or into another one. "Delete section" (a group action, a trash icon)
+    deletes one, its items go to the blank group (section `''`, "(Blank)", at the end); a line with the last move.
   - `ElementDemo.ts` (+ `element-demo.css`): the custom element tab, plain TypeScript with DOM nodes as content: the
     same users, `setupDataNavigator` with the demo's i18n adapter, text and select filters, a role badge (a node per
     row, styled by the demo's global CSS), a rows action, switches for density, striped and searchable, and reload,
@@ -545,7 +557,7 @@ The main goal is a very nice, yet simple, API, designed together with the user.
 - Global CSS (any stylesheet that is not a CSS module) always uses BEM.
   - Format: `dn-block__element--modifier`, lowercase, words separated by hyphens, prefix `dn-`.
   - Inside CSS modules, plain local class names are fine. BEM is not needed there.
-- Custom properties: only the 29 internal `--datnav-*` ones, set from the theme. No other custom properties of our
+- Custom properties: only the 31 internal `--datnav-*` ones, set from the theme. No other custom properties of our
   own, and none for passing other runtime values to the stylesheet either: set the real property inline instead.
 - No `!important`. Never remove focus outlines. Every button and input has a `:focus-visible` outline in
   `--datnav-color-focus`.
@@ -836,8 +848,10 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     columns). The sorting stays too.
   - Not kept: after a remount the table starts again from `hidden` (like search and filters, which always start
     empty). Keeping it (e.g. in the URL or the storage) may come with the controlled query state.
-- Column width is a plain number.
-  - It is a ratio relative to the sum of all column widths.
+- Column width: `width?: number | string`.
+  - A number is a ratio relative to the sum of all the numbers (`fr`), shared out of the free width.
+  - A string is a CSS length (decided 2026-09-30), a fixed track of the grid, e.g. `'3rem'` for a number column
+    (with ratios only, a narrow column got too little room in a narrow table). The same on the element's columns.
   - Widths stay identical when the page changes.
   - Columns cannot be resized by mouse (for now).
 
@@ -978,6 +992,15 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     - Shift + mouse down must not select text in the browser (except in text inputs inside cells).
     - Single mode and no selection mode ignore the shift key.
 
+- The footer only when it is needed (decided 2026-09-30): `footer?: 'always' | 'auto' | 'never'` (default
+  `'always'`; `FooterMode`; the element's attribute `footer`, reflected like `density`).
+  - `always`: as before, whenever data rows are shown. `never`: no footer at all (for lists that never need a second
+    page). `auto`: only when there is something to page or to choose: more than one page, or more rows (`total`) than
+    the smallest page size option. So a short list (a dialog's list, an agenda) ends with its last row.
+  - Decided from the last load (the result stays while a new one runs), so the footer does not flicker during a load;
+    a search or a filter that shrinks the result to one page does take it away with `auto` (accepted: that was the
+    trade-off against `paging={false}`, a list without paging, which was proposed as the other option).
+  - The demo has a "Footer" selector (always, auto, never).
 - The default footer (navigation bar) looks like this:
   - `Items 1-50 / 245        Page Size [50 v]   << < Page [1] of 5 > >>`
   - Left: item range and total. (The selection pill that was here moved into the selection bar, 2026-09-28.)
@@ -1052,7 +1075,7 @@ The main goal is a very nice, yet simple, API, designed together with the user.
         draft differs from the applied filters, "Clear" while the draft has a filter. The divider only with one of them. (Tried before: "Reset" as a quiet text button on the left with a muted "Cancel"; dividers
         between all; `Reset Clear Cancel | [Apply]`; `Reset | Clear | Cancel [Apply]`; `Reset Clear Cancel [Apply]`.)
     - "Apply" (`Texts.applyFilters`): an outlined button like the secondary actions of the toolbar
-      (`--datnav-color-border` on the surface, the text color, bold, `--datnav-color-hover` on hover), as wide as its
+      (`--datnav-color-border` on the surface, the text color, normal weight, `--datnav-color-hover` on hover), as wide as its
       text (side padding `--datnav-spacing-md`). (It was a full-width button in the primary color at first, as the
       spec had it, then only filled.)
     - No live result count (a query may be expensive).
@@ -1242,9 +1265,9 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     - Without Reload and search box everything sits on the right: the bar stays in its place with its height, so
       every table looks the same, and the selection bar has the same line to take.
     - Buttons are `calc(--datnav-spacing-xs / 4)` apart.
-    - The bar (and the selection bar) has a larger text than the table: `8 / 7 * --datnav-font-size` (16px with the
-      default 14px), in every density. Its buttons, the search box and the selection pill are the controls of
-      the table, not its content. (Decided 2026-09-28; before, the bar had the size of the content.)
+    - The bar (and the selection bar) has the text size of the table (`--datnav-font-size`; decided 2026-09-30). From
+      2026-09-28 it had a larger one (`8 / 7 *`, 16px with the default 14px), as the controls of the table rather than
+      its content; the buttons looked too big, also next to Mantine's own. The buttons keep their height.
     - Without search box, view controls and general actions (and without a selection mode), the bar is not rendered.
   - The selection bar (IBM Carbon's batch action bar, adopted now; "tried and dropped" before, when it was a bar in the
     brand color): while at least one row is selected, it takes the place of the bar, in the same place and with the
@@ -1277,21 +1300,23 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - While loading, everything is blocked (`inert`), except the search box and the filter button.
   - The actions (of the bar and of the selection bar, `data-placement="toolbar"`): the standard buttons, as before
     the redesign: secondary outlined (`--datnav-color-border` on the surface), primary and danger filled (see Action
-    variants), `--datnav-control-height` high, bold, `calc(--datnav-spacing-xs / 2)` apart. (Ghost buttons, as the
+    variants), `--datnav-control-height` high, normal weight (bold until 2026-09-30), `calc(--datnav-spacing-xs / 2)` apart. (Ghost buttons, as the
     spec wanted, were tried first and replaced by the user, 2026-09-28.) Their menus open aligned to the end of the
     button.
   - The view controls (the filter button, the Reload button, `data-placement="tool"`): ghost buttons: no border and
     no background at rest; `--datnav-color-header` on hover and while their popup is open (`data-popup-open`) or they are pressed (`aria-pressed`, the filter button while the filter view is shown), a little
     darker while pressed. `0.875 * --datnav-control-height` high (28px), `0.75 * --datnav-spacing-xs` side padding,
-    `--datnav-button-radius`, bold like the actions (with the normal weight, "Filters" looked smaller than "Add user"
-    next to it). An icon-only one is at least square (the filter button grows with
+    `--datnav-button-radius`, in the weight of the actions: normal since 2026-09-30, like every button (actions,
+    view controls, the buttons of the filter view, row actions with a label); they were bold, and a normal "Filters"
+    next to a bold "Add user" looked smaller. An icon-only one is at least square (the filter button grows with
     its badge).
   - The Reload button's icon turns while loading (`data-busy`).
   - Animations (short, and none with the system's reduced motion setting, see "Look and feel"): a new bar (the bar or
     the selection bar) fades in with a tiny upward shift (150ms); the selection pill and the filter pills scale in
     from 0.7 (160ms, the selection pill from its left); the text of the selection pill bumps (1.15 wide and 1.25 high, 150ms; it was 1.25 in both directions, then 1.1 wide) when the count
     changes.
-- Actions come in three types: general, single-row and multi-row.
+- Actions come in four types: general, single-row, multi-row and group (the group one since 2026-09-30, see "Group
+  actions" under Row grouping).
   - The discriminator `type` of an action is `'general' | 'singleRow' | 'multiRow'` (renamed on 2026-09-29 from
     `'general' | 'row' | 'rows'`: `'row'` and `'rows'` differed by one letter, easy to misread). Only a single-row
     action has `show` and `default`. The TypeScript names of the types (`RowAction`, `RowsAction`) stay.
@@ -1435,15 +1460,18 @@ The main goal is a very nice, yet simple, API, designed together with the user.
       event there (`stopPropagation`): neither Base UI's handler nor its document listener get it.
     - Base UI keeps the open handler of its first render: it calls our latest `prepare` through a ref.
 - Row reordering (decided 2026-09-29, our own code, no library): the user moves rows, and the table tells the app.
-  - `reorder?: (move: Move<Row>) => void | Promise<void>`, `Move<Row> = { row, after, before }`: the moved row and its
-    new neighbors on the page (`undefined` at the start or the end of the page). The app saves the order (e.g. "put
-    `row` after `after`", or before `before` at the top of a page). The same option on the element's controller.
+  - `reorder?: (move: Move<Row>) => void | Promise<void>`, `Move<Row> = { row, group, after, before }`: the moved row,
+    the group it landed in (with `groupBy`, `''` for the blank group; `undefined` without `groupBy`), and its new
+    neighbors on the page (`undefined` at the start or the end of the page; in the order of the source, rows of
+    collapsed groups included). The app saves the order (e.g. "put `row` after `after`", or before `before` at the top
+    of a page) and the group. The same option on the element's controller.
   - Use cases: short lists without paging (priorities, steps, favorites) and long paged lists (a backlog). Moves stay
     within the page (no drop on another page).
   - With `reorder`, there is no column sorting: `sortable` and `defaultSort` are ignored (a warning in development);
     the order of the source is the order.
   - The handles are hidden (with their room kept, `data-inactive`, `inert`) while a search or a filter is active: where
-    a row lands among the rows hidden by them is unclear. Also on a page with a single row.
+    a row lands among the rows hidden by them is unclear. Also on a page with a single row (with `groupBy`: unless
+    there is a group header too, where the row could go).
   - The handle column: the first column (before the selection and the details toggle), `max-content`, a control cell
     (clicking it never selects), with a vertical divider when it is the last meta column. It is there whenever
     `reorder` is given, also while its handles are hidden. Its header cell is empty; detail rows get an empty cell.
@@ -1462,12 +1490,13 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     the header or below the last row). The rows between its old and its new place slide aside by its height
     (`data-drag="up"`/`"down"`, 150ms, none with reduced motion), so the gap is where it will land. Nothing changes in
     the DOM until the release. The rows are measured once at the start (the transforms would change the measures), in
-    the coordinates of the rows area, so a scroll during the drag counts. The target is the number of the other rows
-    whose middle is above the middle of the dragged row, where the pointer took it (not clamped: so the first and the
-    last place are reachable with rows of different heights). Releasing moves it; Escape and a cancelled pointer end
+    the coordinates of the rows area, so a scroll during the drag counts. The target is the number of the other lines
+    (rows, and with `groupBy` the group headers, which slide aside too; `data-line` on every row) whose middle is above
+    the middle of the dragged row, where the pointer took it (not clamped: so the first and the last place are
+    reachable with rows of different heights). Releasing moves it; Escape and a cancelled pointer end
     the drag without a move. The grabbing hand while dragging, and no text selection.
-  - Keyboard: Alt+ArrowUp / Alt+ArrowDown on the handle move the row by one (`aria-keyshortcuts`); the handle keeps
-    the focus.
+  - Keyboard: Alt+ArrowUp / Alt+ArrowDown on the handle move the row by one line (`aria-keyshortcuts`); the handle
+    keeps the focus. With `groupBy`, a group header counts as a line (see "Moving between groups").
   - A move shows at once (optimistic), and a screen reader hears `Texts.movedTo` ("Moved to position 3", a hidden
     `role="status"`). Then `reorder` saves it; the saves run one after the other, in the order of the moves. If a save
     fails (rejects), the error is logged and the page is loaded again (the source's order is the truth). The next load
@@ -1476,18 +1505,45 @@ The main goal is a very nice, yet simple, API, designed together with the user.
 - Row grouping (decided 2026-09-29): the table groups the rows of the page; the source may add the totals.
   - `groupBy?: (keyof Row & string) | ((row: Row) => string)`: a column key (its value as a string) or a function.
     The same option on the element's controller.
+  - Classic grouping, as in data grids (decided 2026-09-30): every row is in a group. An empty value (`''`, `null`,
+    `undefined`) is the blank group `''`, a normal group (like "(Blanks)" in AG Grid and Excel): the source decides
+    where it goes; its default header shows `Texts.emptyGroup` ("(Blank)"), `renderGroup` and group actions get `key:
+    ''`.
+    - Rows without a group between the groups (an outline, like an agenda with "Opening" before its sections) were
+      built first and dropped: that is tree data, not grouping. With them went the indentation of grouped rows and the
+      sideways moves (dragging left or right, Alt+ArrowLeft/ArrowRight).
   - The source delivers the rows sorted by group (the group is its first sort key; the column sort applies within the
     groups). The table groups consecutive rows with the same key, so unsorted rows give a group more than once.
-  - `Result.groups?: readonly { key, total }[]` (optional): the total of every group on the page. Without it, a group
-    counts only its rows on the page. Paging stays over rows.
+  - `Result.groups?: readonly ResultGroup[]` (optional), `ResultGroup = { key, total }` (it was `GroupTotal`): the
+    total of every group on the page. Without it, a group counts only its rows on the page. Paging stays over rows.
+  - Groups come only from the rows, as in data grids (decided 2026-09-30): there are no empty groups, and the order of
+    the groups is the order of the source (its sorting). Two additions beyond that were built and dropped for it: empty
+    groups from the source (`ResultGroup.at`, the place of an empty group's header) and dragging whole groups
+    (`reorderGroup`, with all groups collapsing during the drag).
   - `renderGroup?: (group: RowGroup<Row>) => ReactNode` (the element: `string | C`), `RowGroup = { key, rows (of the
     page), total (from the source, or undefined) }`: the content of the group header. It replaces the default (the key
     and the count). Plain content only: it is inside the toggle button.
-  - The group header row (`.groupRow`, `.groupCell`): over the whole width, a soft gray band
-    (`--datnav-color-header`) with bold text, no hover and no row click. With multi selection, a checkbox in the
+  - The group header row (`.groupRow`, `.groupCell`): over the whole width, a gray band with bold text, of the
+    normal height of a row (decided 2026-09-30): `--datnav-color-surface-strong` as its background (see Theming;
+    darker than the hover, the neutral selection and the stripes, lighter than the lines), the normal text color; the count dimmed and small. No hover and no row click. With multi selection, a checkbox in the
     selection column (`Texts.selectGroup` / `deselectGroup`, indeterminate while some are selected; gray with the
     neutral appearance) selects all rows of the group on the page, or none. The rest is one button
-    (`aria-expanded`): a chevron (right while collapsed, down while expanded) and the content.
+    (`aria-expanded`): a filled caret (Tabler's `caret-right-filled`; right while collapsed, turned down while expanded)
+    and the content. Not the chevron of the row details (decided 2026-09-30): a group hides or shows rows, the details
+    toggle a row's own content, like the triangles of outlines and spreadsheet groups.
+    - The band spans the whole width: with a checkbox and a handle column (`reorder`), an empty band cell sits in the
+      handle column, so the checkbox stays in line with the rows' checkboxes.
+    - History (2026-09-30): first a soft gray band (`--datnav-color-header`), too close to the neutral selection, the
+      row hover and the stripes, and almost white in the Mantine theme; then set apart like a section heading (room
+      above, a dimmed line on top, a larger title), which made the rows taller; then a dark band with light text
+      (`--datnav-color-text-dimmed`, the surface color as text), too much; then the line color (`#c6c6c6`), a bit too
+      dark; then the new value `colorSurfaceStrong`.
+    - The band spans the whole width: with a checkbox and a handle column (`reorder`), an empty band cell sits in the
+      handle column, so the checkbox stays in line with the rows' checkboxes.
+    - Set apart like a section heading (decided 2026-09-30; the band alone was too close to the neutral selection, the
+      row hover and the stripes, and almost white in the Mantine theme): `spacingXs + spacingSm` of room above its
+      text, a 1px line on top in `--datnav-color-text-dimmed` (overlapping the line of the row above, so nothing
+      grows; none right below the column headers), and the title at `1.07 × fontSize`.
     - The default content: the key, then the count, dimmed and small: `Texts.groupCount` ("37"), or
       `Texts.groupPartial` ("5 of 37") when the source's total is larger than the rows on the page (a group that runs
       over a page break; which side it continues on is not known, so there is no "continued").
@@ -1496,8 +1552,27 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - The stripes start again in every group.
   - Row details, the context menu, the selection and the actions work inside groups as without them. The select-all
     checkbox of the header is about all rows of the page.
-  - Not together with row reordering: with `groupBy`, `reorder` is ignored (a warning in development): a move out of
-    its group would change the row.
+  - Group actions (decided 2026-09-30): `type: 'group'` in `actions` (`GroupAction`, `onClick(group: RowGroup<Row>)`),
+    the same on the element's controller. Chosen over a separate `groupActions` prop: `actions` describes everything
+    the table offers, and menus and the context menu work the same.
+    - At the end of every group header, in the action column (the band's toggle ends before it), in the look of the
+      row actions (`rowActionLook`), in the normal weight. They may sit in a menu (`type: 'menu'`). The action column
+      is there as soon as a group has a header, also without rows or row actions.
+    - The context menu of a group header (`data-group-key` on the row): its group actions, without those with
+      `contextMenu: false`; nothing else. The context menu of a row has no group actions.
+    - Never in the toolbar or the selection bar; they do not change the selection mode.
+  - Moving between groups (decided 2026-09-30; before, `reorder` was ignored with `groupBy`): with `reorder`, a row
+    moves within its group or into another group (like dragging a row onto another group in AG Grid, which changes its
+    group value); `Move.group` says where it landed. The logic is pure (`core/grouping.ts`: the page as runs,
+    `Segment`, and its lines; `moveInSegments`), with its unit test.
+    - A row lands in the group of the line above it: below a row, right after it (also below the last row of a
+      group); right below the header of an expanded group, its start; below a collapsed group, its end (it stays
+      collapsed, its count grows); below a group whose rows were all moved away, in it. At the very top, the start of
+      the first group.
+    - Keyboard: Alt+ArrowUp on the first row of a group puts it at the end of the group above; Alt+ArrowDown on the
+      last row, at the start of the group below.
+    - A group whose rows were all moved away stays on the page, empty, until the next load.
+    - The counts in the headers change at once; the totals from the source by ±1, until the next load.
 - Row details (expandable rows) are supported.
   - A chevron column sits right next to the selection column: pointing right when collapsed, down when expanded.
   - The chevron change is animated (a CSS rotation).

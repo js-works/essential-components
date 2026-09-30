@@ -128,6 +128,32 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
       items keep no presenter (the confirmation says from how many boards). Memberships are changed on a board's page.
     - The agenda is reordered by dragging (`reorder`), the minutes are recorded per item (a form drawer), the minutes
       tab shows them as one document; a held meeting's minutes are approved there.
+    - Agenda sections (one level; the row groups of the data navigator): `agendaSections` (`{ id, meetingId, position,
+      title }`), and an item's `sectionId` (`''`: none). Sections and items share one order per meeting (`position`),
+      a section's items always follow it (`arranged()` in `db.ts`). Seed: every agenda starts with the section
+      "Introduction" (the opening and the minutes of the last meeting); with four topics or more, "Reports" and
+      "Proposals for decision" follow. The source gives the items as rows (with their
+      number: `2`, `2.1`) and the sections as `Result.groups` (key: the section's id, with its total).
+      - The table: `groupBy` (`sectionId`), `renderGroup` (`2. Finance`, the duration of its items), `reorder` (an item
+        within its section or into another one). No group actions.
+      - "Manage sections" (a general action) opens a form drawer ("Sections", "Apply" and "Cancel") with a data
+        navigator as wide as the drawer and as high as its body (`calc(100dvh - 11rem)`; `footer="auto"`): the sections
+        of the meeting in their order, also the empty ones (`#` with a fixed `3rem`, and "Name").
+        - Everything in it changes a draft (`SectionDraft`: the sections' order and names): "Add" (the plus and the
+          label, no tooltip) and "Rename" (a row action, also a double click) ask for the name in a small dialog on
+          top; "Delete" (a row action) and moving a section by its handle change the draft at once, without a
+          confirmation. The `#` shows the numbers of the agenda as it would be.
+        - "Apply" saves the whole draft at once (`saveSectionDraft`, the button shows a spinner), reloads the agenda
+          and shows "Sections saved"; "Cancel" (also Escape, the close button) drops it, without asking.
+        - `withSectionDraft()` (pure, in `db.ts`) applies a draft: a missing section is deleted (its items stay in their
+          place, without a section); the sections take the places the sections had, in the draft's order (items
+          without a section keep theirs); new ones go before "Any other business".
+      - The item form has a "Section" select: another section moves the item to its end, "(none)" keeps it in its
+        place, right after its old section.
+      - The minutes tab shows the sections as headings, their items indented.
+      - Interim: the data navigator's grouping is classic grid grouping (every row in a group; groups only from the
+        rows), so the items without a section are its blank group, shown as "No section", once per run of them (e.g.
+        before and after the sections), and an empty section is not shown in the agenda table (only in the dialog).
   - `demo/demo.css`: only what is specific to this page: the frame around the demos (header, tabs) is not selectable
     (`user-select: none`); inside the demos, selecting stays as their packages have it.
   - `demo/ui/`: the design language (`ui.css`, `ui.ts`), the same files as in every package. Read the header of `ui.css`

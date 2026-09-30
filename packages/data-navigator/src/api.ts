@@ -11,6 +11,8 @@ declare namespace DataNavigator {
 
   type Density = 'compact' | 'normal' | 'comfortable';
 
+  type FooterMode = 'always' | 'auto' | 'never';
+
   type SelectionAppearance = 'neutral' | 'accent';
 
   type RowActionLook = 'icon' | 'label' | 'iconAndLabel';
@@ -32,10 +34,10 @@ declare namespace DataNavigator {
   type Result<Row> = {
     rows: readonly Row[];
     total: number;
-    groups?: readonly GroupTotal[];
+    groups?: readonly ResultGroup[];
   };
 
-  type GroupTotal = { key: string; total: number };
+  type ResultGroup = { key: string; total: number };
 
   type GroupBy<Row> = (keyof Row & string) | ((row: Row) => string);
 
@@ -43,7 +45,7 @@ declare namespace DataNavigator {
 
   type Source<Row> = (query: Query, signal: AbortSignal) => Promise<Result<Row>>;
 
-  type Move<Row> = { row: Row; after: Row | undefined; before: Row | undefined };
+  type Move<Row> = { row: Row; group: string | undefined; after: Row | undefined; before: Row | undefined };
 
   type Reorder<Row> = (move: Move<Row>) => void | Promise<void>;
 
@@ -125,6 +127,7 @@ declare namespace DataNavigator {
     clearSelection: string; // Clear selection
     columns: string; // Columns
     moveRow: string; // Move row
+    emptyGroup: string; // (Blank)
     movedTo: (params: { position: number }) => string; // Moved to position {position}
     expandGroup: string; // Show group
     collapseGroup: string; // Hide group
@@ -140,6 +143,7 @@ declare namespace DataNavigator {
     colorText?: ThemeValue;
     colorTextDimmed?: ThemeValue;
     colorSurface?: ThemeValue;
+    colorSurfaceStrong?: ThemeValue;
     colorBorder?: ThemeValue;
     colorHeader?: ThemeValue;
     colorHeaderHover?: ThemeValue;
@@ -200,7 +204,7 @@ declare namespace DataNavigator {
   type Column<Row, C> = {
     key: keyof Row & string;
     header: TextContent<C>;
-    width?: number;
+    width?: number | string;
     sortable?: boolean;
     align?: ColumnAlign;
     render?: (row: Row) => string | C;
@@ -245,7 +249,15 @@ declare namespace DataNavigator {
     onClick: (rows: readonly Row[]) => void;
   } & ActionLook<C>;
 
-  type Action<Row, C> = GeneralAction<C> | RowAction<Row, C> | RowsAction<Row, C>;
+  type GroupAction<Row, C> = {
+    type: 'group';
+    key: string;
+    variant?: ActionVariant;
+    contextMenu?: boolean;
+    onClick: (group: RowGroup<Row>) => void;
+  } & ActionLook<C>;
+
+  type Action<Row, C> = GeneralAction<C> | RowAction<Row, C> | RowsAction<Row, C> | GroupAction<Row, C>;
 
   type ActionMenu<Row, C> = {
     type: 'menu';
@@ -282,6 +294,7 @@ declare namespace DataNavigator {
   type Element<C> = HTMLElement & {
     controller: NavigatorController<unknown, C> | undefined;
     density: Density;
+    footer: FooterMode;
     striped: boolean;
     searchable: boolean;
     reloadable: boolean;

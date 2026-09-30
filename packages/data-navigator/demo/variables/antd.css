@@ -6,6 +6,7 @@
   --ant-color-bg-container: #ffffff;
   --ant-color-border: #d9d9d9;
   --ant-color-error: #ff4d4f;
+  --ant-color-fill: rgba(0,0,0,0.15);
   --ant-color-fill-alter: rgba(0,0,0,0.02);
   --ant-color-fill-quaternary: rgba(0,0,0,0.02);
   --ant-color-fill-secondary: rgba(0,0,0,0.06);
@@ -36,6 +37,7 @@
     --ant-color-bg-container: #141414;
     --ant-color-border: #424242;
     --ant-color-error: #dc4446;
+    --ant-color-fill: rgba(255,255,255,0.18);
     --ant-color-fill-alter: rgba(255,255,255,0.04);
     --ant-color-fill-quaternary: rgba(255,255,255,0.04);
     --ant-color-fill-secondary: rgba(255,255,255,0.12);
@@ -56,6 +58,7 @@
   --ant-color-bg-container: #141414;
   --ant-color-border: #424242;
   --ant-color-error: #dc4446;
+  --ant-color-fill: rgba(255,255,255,0.18);
   --ant-color-fill-alter: rgba(255,255,255,0.04);
   --ant-color-fill-quaternary: rgba(255,255,255,0.04);
   --ant-color-fill-secondary: rgba(255,255,255,0.12);

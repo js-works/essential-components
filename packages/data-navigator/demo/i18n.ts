@@ -55,6 +55,7 @@ const GERMAN: Readonly<Record<keyof DataNavigatorComponent.Texts, string>> = {
   clearSelection: 'Auswahl aufheben',
   columns: 'Spalten',
   moveRow: 'Zeile verschieben',
+  emptyGroup: '(Leer)',
   movedTo: 'Auf Position {position} verschoben',
   expandGroup: 'Gruppe anzeigen',
   collapseGroup: 'Gruppe ausblenden',

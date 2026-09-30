@@ -165,6 +165,7 @@ function Demo({ controls }: { controls: Controls }): ReactElement {
           selectionAppearance={controls.selectionAppearance}
           rowActionLook={controls.rowActionLook}
           density={controls.density}
+          footer={controls.footer}
           striped={controls.striped === 'on'}
           actions={actions}
           pageSize={10}

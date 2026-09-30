@@ -45,6 +45,8 @@ type Controls = {
   setSelectionAppearance: (appearance: DataNavigatorComponent.SelectionAppearance) => void;
   density: DataNavigatorComponent.Density;
   setDensity: (density: DataNavigatorComponent.Density) => void;
+  footer: DataNavigatorComponent.FooterMode;
+  setFooter: (footer: DataNavigatorComponent.FooterMode) => void;
   striped: DemoStriped;
   setStriped: (striped: DemoStriped) => void;
   filters: DemoFilters;

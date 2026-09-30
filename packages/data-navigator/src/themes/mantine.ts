@@ -8,6 +8,7 @@ const mantineTheme: Required<DataNavigator.Theme> = {
   colorText: 'var(--mantine-color-text)',
   colorTextDimmed: 'var(--mantine-color-dimmed)',
   colorSurface: 'var(--mantine-color-body)',
+  colorSurfaceStrong: { light: 'var(--mantine-color-gray-1)', dark: 'var(--mantine-color-dark-5)' },
   colorBorder: 'var(--mantine-color-default-border)',
   colorHeader: 'var(--mantine-color-default-hover)',
   colorHeaderHover: 'var(--mantine-color-gray-light-hover)',

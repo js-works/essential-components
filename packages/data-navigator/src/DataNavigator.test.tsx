@@ -337,6 +337,49 @@ describe('DataNavigator', () => {
     expect(await screen.findByText('Page Size')).toBeTruthy();
   });
 
+  describe('footer', () => {
+    // A source with `count` rows.
+    const sourceOf = (count: number) => async (query: Spec.Query): Promise<Spec.Result<Person>> => ({
+      rows: people.slice(0, count).slice((query.page - 1) * query.pageSize, query.page * query.pageSize),
+      total: count,
+    });
+
+    it('is always there by default (with rows), and never with footer="never"', async () => {
+      const { unmount } = renderNav({ source: sourceOf(4) });
+
+      await loaded();
+      expect(screen.getByText('Items 1-4 / 4')).toBeTruthy();
+      unmount();
+
+      renderNav({ footer: 'never' });
+      await loaded();
+      expect(screen.queryByText('Page Size')).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Next page' })).toBeNull();
+    });
+
+    it('is there with footer="auto" only when there is something to page or to choose', async () => {
+      // 4 rows, page sizes from 10: nothing to page, nothing to choose.
+      const { unmount } = renderNav({ footer: 'auto', source: sourceOf(4) });
+
+      await loaded();
+      expect(screen.getByText('Person 04')).toBeTruthy();
+      expect(screen.queryByText('Page Size')).toBeNull();
+      unmount();
+
+      // 12 rows on a page of 25, but a page size of 10 to choose: the footer is there.
+      renderNav({ footer: 'auto', source: sourceOf(12), pageSize: 25 });
+      await loaded();
+      expect(screen.getByText('Items 1-12 / 12')).toBeTruthy();
+    });
+
+    it('is there with footer="auto" when there is more than one page', async () => {
+      renderNav({ footer: 'auto', pageSizeOptions: [10] });
+      await loaded();
+
+      expect(screen.getByText('Items 1-10 / 60')).toBeTruthy();
+    });
+  });
+
   it('shows the footer only when at least one data row is shown, also not during the first load', async () => {
     renderNav();
 
@@ -3203,6 +3246,21 @@ describe('DataNavigator', () => {
 
       expect(table?.style.gridTemplateColumns).toBe('minmax(0, 3fr) minmax(0, 1fr)');
     });
+
+    it('gives a column with a CSS length as its width that width, and the others share the rest', async () => {
+      const { container } = renderNav({
+        columns: [
+          { key: 'id', header: '#', width: '3rem' },
+          { key: 'name', header: 'Name', width: 3 },
+        ],
+      });
+
+      await loaded();
+
+      const table = container.querySelector<HTMLElement>('[role="table"]');
+
+      expect(table?.style.gridTemplateColumns).toBe('3rem minmax(0, 3fr)');
+    });
   });
 
   describe('loading', () => {
@@ -3482,6 +3540,7 @@ describe('theming', () => {
     'colorText',
     'colorTextDimmed',
     'colorSurface',
+    'colorSurfaceStrong',
     'colorBorder',
     'colorHeader',
     'colorHeaderHover',
@@ -4381,13 +4440,122 @@ describe('row grouping', () => {
     expect(screen.queryByText('5 selected')).toBeNull();
   });
 
-  it('ignores reorder in a grouped table', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  describe('group actions', () => {
+    const groupActions = (calls: string[]): readonly Spec.Action<Person>[] => [
+      {
+        type: 'group',
+        key: 'rename',
+        icon: <svg />,
+        tip: 'Rename group',
+        onClick: (group) => calls.push(`rename ${group.key} ${group.rows.length}`),
+      },
+      {
+        type: 'group',
+        key: 'hidden',
+        label: 'Only here',
+        contextMenu: false,
+        onClick: (group) => calls.push(`only ${group.key}`),
+      },
+      { type: 'singleRow', key: 'edit', label: 'Edit', onClick: (row) => calls.push(`edit ${row.id}`) },
+    ];
 
-    renderNav({ groupBy: groupOf, reorder: vi.fn() });
-    await loaded();
+    it('shows the group actions at the end of every group header, and runs them with the group', async () => {
+      const calls: string[] = [];
 
-    expect(screen.queryAllByRole('button', { name: 'Move row', hidden: true })).toHaveLength(0);
-    warn.mockRestore();
+      renderNav({ groupBy: groupOf, actions: groupActions(calls) });
+      await loaded();
+      click('Next page');
+      await loaded();
+
+      const [a, b] = groupRows() as HTMLElement[];
+
+      fireEvent.click(within(b!).getByRole('button', { name: 'Rename group' }));
+      fireEvent.click(within(a!).getByRole('button', { name: 'Only here' }));
+
+      expect(calls).toEqual(['rename B 5', 'only A']);
+      // Not in the rows: a row has only its row actions.
+      expect(within(dataRows()[0] as HTMLElement).queryByRole('button', { name: 'Rename group' })).toBeNull();
+    });
+
+    it('opens the context menu of a group header with its group actions', async () => {
+      const calls: string[] = [];
+
+      renderNav({ groupBy: groupOf, actions: groupActions(calls) });
+      await loaded();
+
+      fireEvent.contextMenu(within(groupRows()[0] as HTMLElement).getAllByRole('button')[0]!);
+      await screen.findByRole('menu');
+
+      // `contextMenu: false` leaves one out.
+      expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual(['Rename group']);
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Rename group' }));
+      expect(calls).toEqual(['rename A 10']);
+    });
+
+    it('has no group actions in the context menu of a row', async () => {
+      renderNav({ groupBy: groupOf, actions: groupActions([]) });
+      await loaded();
+
+      fireEvent.contextMenu(screen.getByText('Person 03'));
+      await screen.findByRole('menu');
+
+      expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual(['Edit']);
+    });
+  });
+
+  describe('with reorder', () => {
+    // Persons 1 and 2 are in A, 3 in B, 4 has an empty group (the blank group).
+    const sectionOf = (person: Person) => ({ 1: 'A', 2: 'A', 3: 'B' })[person.id] ?? '';
+    const source = async (): Promise<Spec.Result<Person>> => ({
+      rows: people.slice(0, 4),
+      total: 4,
+      groups: [{ key: 'A', total: 2 }, { key: 'B', total: 1 }, { key: '', total: 1 }],
+    });
+    // The rows area line by line: a group header as its text, a row as its key.
+    const lines = () =>
+      [...document.querySelectorAll('[role="row"][data-line]:not([class*="detail"])')].map((row) =>
+        row.getAttribute('data-row-key') ?? row.textContent
+      );
+    const handleOf = (id: number) =>
+      within(document.querySelector(`[data-row-key="${id}"]`) as HTMLElement).getByRole('button', {
+        name: 'Move row',
+        hidden: true,
+      });
+    const press = (id: number, key: string) => fireEvent.keyDown(handleOf(id), { key, altKey: true });
+
+    it('fills the handle column of a group header, so its band spans the whole width', async () => {
+      renderNav({ groupBy: sectionOf, reorder: vi.fn(), source, selection: 'multi' });
+      await loaded();
+
+      const cells = [...(groupRows()[0]?.children ?? [])] as HTMLElement[];
+
+      expect(cells.map((cell) => cell.style.gridColumn.split(' ')[0])).toEqual(['1', '2', '3']);
+    });
+
+    it('shows the blank group like any other group', async () => {
+      renderNav({ groupBy: sectionOf, reorder: vi.fn(), source });
+      await loaded();
+
+      expect(lines()).toEqual(['A2', '1', '2', 'B1', '3', '(Blank)1', '4']);
+    });
+
+    it('moves rows into other groups with the keyboard, and saves the group', async () => {
+      const reorder = vi.fn();
+
+      renderNav({ groupBy: sectionOf, reorder, source });
+      await loaded();
+
+      // Down from the last row of A: past the header of B, to its start.
+      press(2, 'ArrowDown');
+      expect(lines()).toEqual(['A1', '1', 'B2', '2', '3', '(Blank)1', '4']);
+      await waitFor(() => expect(reorder).toHaveBeenCalledTimes(1));
+      expect(reorder).toHaveBeenLastCalledWith({ row: people[1], group: 'B', after: people[0], before: people[2] });
+
+      // Up from the only row of the blank group: to the end of B; the blank group stays, empty.
+      press(4, 'ArrowUp');
+      expect(lines()).toEqual(['A1', '1', 'B3', '2', '3', '4', '(Blank)0']);
+      await waitFor(() => expect(reorder).toHaveBeenCalledTimes(2));
+      expect(reorder).toHaveBeenLastCalledWith({ row: people[3], group: 'B', after: people[2], before: undefined });
+    });
   });
 });

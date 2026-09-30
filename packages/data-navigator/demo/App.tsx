@@ -23,6 +23,7 @@ function App(): ReactElement {
   const [selectionAppearance, setSelectionAppearance] = useState<DataNavigatorComponent.SelectionAppearance>('accent');
   const [rowActionLook, setRowActionLook] = useState<DataNavigatorComponent.RowActionLook>('icon');
   const [density, setDensity] = useState<DataNavigatorComponent.Density>('normal');
+  const [footer, setFooter] = useState<DataNavigatorComponent.FooterMode>('always');
   const [striped, setStriped] = useState<DemoStriped>('on');
   const [columns, setColumns] = useState<DemoColumns>('flat');
   const [filters, setFilters] = useState<DemoFilters>('on');
@@ -42,6 +43,8 @@ function App(): ReactElement {
     setRowActionLook,
     density,
     setDensity,
+    footer,
+    setFooter,
     striped,
     setStriped,
     filters,

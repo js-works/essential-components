@@ -84,6 +84,12 @@ function DemoControls({ controls }: { controls: Controls }): ReactElement {
         onChange={controls.setDensity}
       />
       <Select
+        label="Footer"
+        value={controls.footer}
+        options={same('always', 'auto', 'never')}
+        onChange={controls.setFooter}
+      />
+      <Select
         label="Striped"
         value={controls.striped}
         options={same('off', 'on')}

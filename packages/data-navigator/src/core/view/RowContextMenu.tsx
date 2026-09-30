@@ -3,6 +3,7 @@ import { useContext, useEffect, useRef } from 'react';
 import type { CSSProperties, ReactElement, ReactNode } from 'react';
 import type { DataNavigatorComponent as Spec } from '../../react/api';
 import type { ActionItem, ContextMenuItem } from '../actions';
+import type { ContextTarget } from '../useDataNavigator';
 import { hasContent } from '../utils';
 import * as classes from './DataNavigator.module.css';
 import { icons } from './icons';
@@ -12,7 +13,8 @@ export { RowContextMenu };
 
 type RowContextMenuProps<Row> = {
   items: readonly ContextMenuItem<Row>[];
-  prepare: (key: string) => boolean;
+  available: (target: ContextTarget) => boolean;
+  prepare: (target: ContextTarget) => boolean;
   invoke: (action: Spec.Action<Row>) => void;
   className: string;
   style: CSSProperties;
@@ -41,9 +43,15 @@ function keepsBrowserMenu(target: Element, row: Element): boolean {
     .some((range) => range !== undefined && !range.collapsed && range.intersectsNode(row));
 }
 
-// The data row (or its detail row) an event happened in, if any.
+// The data row (or its detail row) or the group header an event happened in, if any.
 function rowOf(target: EventTarget | null | undefined): HTMLElement | null {
-  return target instanceof Element ? target.closest<HTMLElement>('[data-row-key]') : null;
+  return target instanceof Element ? target.closest<HTMLElement>('[data-row-key], [data-group-key]') : null;
+}
+
+function targetOf(row: HTMLElement): ContextTarget {
+  const group = row.dataset['groupKey'];
+
+  return group !== undefined ? { type: 'group', key: group } : { type: 'row', key: row.dataset['rowKey'] ?? '' };
 }
 
 // The text of an action or menu in the menu: its label, or the tip of an icon-only one.
@@ -61,17 +69,17 @@ function popupClassOf<Row>(list: readonly ContextMenuItem<Row>[]): string {
   return hasIcons(list) ? `${classes.popup} ${classes.menuWithIcons}` : classes.popup;
 }
 
-// The context menu of the rows (Base UI's ContextMenu: right-click, long press, the context menu key, Shift+F10): the
-// table element is its trigger. See contextMenuItems for its entries. It is rendered in the layer of the root (so it
+// The context menu of the rows and of the group headers (Base UI's ContextMenu: right-click, long press, the context
+// menu key, Shift+F10): the table element is its trigger. See contextMenuItems for its entries. It is rendered in the layer of the root (so it
 // gets the tokens of the theme).
 function RowContextMenu<Row>(props: RowContextMenuProps<Row>): ReactElement {
-  const { items, prepare, invoke, className, style, children } = props;
+  const { items, available, prepare, invoke, className, style, children } = props;
   const layer = useContext(LayerContext);
   const tableRef = useRef<HTMLDivElement>(null);
   // The latest ones: Base UI keeps the open handler of the first render, and our listener lives across renders.
-  const latest = useRef({ items, prepare });
+  const latest = useRef({ available, prepare });
 
-  latest.current = { items, prepare };
+  latest.current = { available, prepare };
 
   // Where the browser's menu is wanted (outside the data rows, see keepsBrowserMenu, and when there is nothing to show),
   // the event goes no further than the table: neither Base UI's handler nor its listener on the document (which keeps
@@ -87,7 +95,7 @@ function RowContextMenu<Row>(props: RowContextMenuProps<Row>): ReactElement {
       const row = rowOf(event.target);
 
       if (
-        row === null || latest.current.items.length === 0 || !(event.target instanceof Element)
+        row === null || !latest.current.available(targetOf(row)) || !(event.target instanceof Element)
         || keepsBrowserMenu(event.target, row)
       ) {
         event.stopPropagation();
@@ -103,12 +111,12 @@ function RowContextMenu<Row>(props: RowContextMenuProps<Row>): ReactElement {
     };
   }, []);
 
-  // When it opens (after the right-click or the long press): the row gets ready (its selection, see prepare).
+  // When it opens (after the right-click or the long press): the row or the group gets ready (see prepare).
   const onOpenChange = (open: boolean, details: { event: Event }) => {
-    const key = rowOf(details.event.target)?.dataset['rowKey'];
+    const row = rowOf(details.event.target);
 
-    if (open && key !== undefined) {
-      latest.current.prepare(key);
+    if (open && row !== null) {
+      latest.current.prepare(targetOf(row));
     }
   };
 

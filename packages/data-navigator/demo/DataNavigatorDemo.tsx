@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
 import { App } from './App';
 import { mountElementDemo } from './ElementDemo';
+import { GroupedReorderDemo } from './GroupedReorderDemo';
 import { GroupingDemo } from './GroupingDemo';
 import { ReorderDemo } from './ReorderDemo';
 import { setupUi } from './ui/ui';
@@ -15,6 +16,7 @@ export { DataNavigatorDemo };
 const EXAMPLES: readonly { readonly tab: string; readonly Example: ComponentType }[] = [
   { tab: 'Row reordering', Example: ReorderDemo },
   { tab: 'Row grouping', Example: GroupingDemo },
+  { tab: 'Grouped reordering', Example: GroupedReorderDemo },
 ];
 
 // The whole demo of the data navigator, as a light DOM custom element without attributes, so a page can show it alone

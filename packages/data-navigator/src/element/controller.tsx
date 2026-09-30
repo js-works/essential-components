@@ -12,6 +12,7 @@ export type { ElementSettings };
 // What the element adds to the controller's options: the settings that do not depend on the row type.
 type ElementSettings = {
   density: DataNavigator.Density;
+  footer: DataNavigator.FooterMode;
   striped: boolean;
   searchable: boolean;
   reloadable: boolean;
@@ -211,6 +212,15 @@ function actionOf<Row, C>(action: DataNavigator.Action<Row, C>, content: Content
     case 'multiRow':
       return {
         type: 'multiRow',
+        key: action.key,
+        variant: action.variant,
+        contextMenu: action.contextMenu,
+        onClick: action.onClick,
+        ...lookOf(action, content),
+      };
+    case 'group':
+      return {
+        type: 'group',
         key: action.key,
         variant: action.variant,
         contextMenu: action.contextMenu,

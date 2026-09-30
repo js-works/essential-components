@@ -7,18 +7,22 @@ import {
   contextMenuItems,
   defaultActionOf,
   generalToolbarItems,
+  groupContextMenuItems,
+  groupItems,
   selectionModeOf,
   selectionToolbarItems,
 } from './actions';
 import { connectController, notifySelection } from './controller';
 import type { ControllerTarget } from './controller';
 import { sameValue, withoutKey } from './filters';
+import { flatRows, groupKeyOf, linesOf, moveInSegments, segmentsOf } from './grouping';
+import type { Line, Segment } from './grouping';
 import { useDelayedFlag, useElementHeight, useScrollbarWidth } from './hooks';
 import { createLayout, withoutHidden } from './layout';
 import { useTexts } from './texts';
 
 export { DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS, useDataNavigator };
-export type { RowGroupEntry, SearchBox };
+export type { ContextTarget, RowGroupEntry, SearchBox };
 
 const DEFAULT_PAGE_SIZE = 25;
 const DEFAULT_PAGE_SIZE_OPTIONS: readonly number[] = [10, 25, 50, 100];
@@ -33,6 +37,9 @@ type Selection<Row> = ReadonlyMap<string, Row>;
 
 // A group of rows of the page (`groupBy`): what `renderGroup` gets, and the indexes of its rows on the page.
 type RowGroupEntry<Row> = Spec.RowGroup<Row> & { indexes: readonly number[] };
+
+// What a context menu is opened on: a data row (or its detail row), or a group header, by its key.
+type ContextTarget = { type: 'row' | 'group'; key: string };
 
 // What the filter popup needs: whether it is open, and the filter to focus when it opens (from a pill).
 type FilterPanelState = { open: boolean; focusKey: string | undefined };
@@ -89,9 +96,9 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
   const selection = selectionModeOf(actions);
   const texts = useTexts();
 
-  // A table whose rows can be moved (`reorder`) has no column sorting: the moved order is the order. Grouped rows
-  // (`groupBy`) cannot be moved (a move out of a group would change the row).
-  const reorderable = props.reorder !== undefined && props.groupBy === undefined;
+  // A table whose rows can be moved (`reorder`) has no column sorting: the moved order is the order. With `groupBy`,
+  // a row may be moved into another group (or out of every group).
+  const reorderable = props.reorder !== undefined;
   const [sort, setSort] = useState<Spec.Sort | undefined>(reorderable ? undefined : props.defaultSort);
   const searchable = props.searchable === true;
   const [searchText, setSearchText] = useState('');
@@ -131,7 +138,7 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
         if (current) {
           setResult(next);
           // A new load brings the order of the source (moved rows included, once saved).
-          setMovedRows(undefined);
+          setMoved(undefined);
           setLoaded(true);
           setLoading(false);
         }
@@ -159,6 +166,7 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     }
   }, [loaded, page, pageCount]);
 
+  const footerMode = props.footer ?? 'always';
   const pageSizeOptions = useMemo(() => {
     const options = props.pageSizeOptions ?? DEFAULT_PAGE_SIZE_OPTIONS;
 
@@ -189,9 +197,11 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
   const toggleColumn = (key: string, shown: boolean) => setHiddenKeys(withKey(hiddenKeys, key, !shown));
   const keyOf = (row: Row): string => String(row[rowKey]);
 
-  // The rows of the page in the order the user moved them to, until the next load (then the source's order counts
-  // again), or undefined.
-  const [movedRows, setMovedRows] = useState<readonly Row[] | undefined>(undefined);
+  // The runs of the page (see grouping.ts) as the user moved its rows, with the changes of the groups' totals, until the
+  // next load (then the source's order counts again), or undefined.
+  const [moved, setMoved] = useState<
+    { segments: readonly Segment<Row>[]; deltas: ReadonlyMap<string, number> } | undefined
+  >(undefined);
   // What a screen reader hears after a move ("Moved to position 3").
   const [announcement, setAnnouncement] = useState('');
   // The saves of the moves, one after the other (a move never overtakes the one before it).
@@ -202,38 +212,14 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     reorderRef.current = props.reorder;
   });
 
-  const rows = movedRows ?? result.rows;
-  // Rows can be moved only without search and filters (within a filtered subset, where a row lands among the hidden
-  // ones is unclear), within the page.
-  const canReorder = reorderable && search === '' && Object.keys(filters).length === 0 && rows.length > 1;
-
-  // Moves the row at `from` to `to` (indexes of the page): at once on the screen, then `reorder` saves it. If a save
-  // fails, the error is logged and the page is loaded again (the source's order is the truth).
-  const moveRow = (from: number, to: number) => {
-    if (!canReorder || loading || from === to || to < 0 || to >= rows.length) {
-      return;
-    }
-
-    const next = [...rows];
-    const [row] = next.splice(from, 1);
-
-    if (row === undefined) {
-      return;
-    }
-
-    next.splice(to, 0, row);
-    setMovedRows(next);
-    setAnnouncement(texts.movedTo({ position: to + 1 }));
-
-    const move = { row, after: next[to - 1], before: next[to + 1] };
-
-    savingRef.current = savingRef.current
-      .then(() => reorderRef.current?.(move))
-      .catch((error: unknown) => {
-        console.error(error);
-        setReloads((count) => count + 1);
-      });
-  };
+  // The runs of the page: without `groupBy` one run of all rows, with it the groups.
+  const { groupBy } = props;
+  const loadedSegments = useMemo(
+    () => segmentsOf(result.rows, groupBy === undefined ? undefined : (row: Row) => groupKeyOf(row, groupBy)),
+    [result, groupBy],
+  );
+  const segments = moved?.segments ?? loadedSegments;
+  const rows = useMemo(() => flatRows(segments), [segments]);
 
   // Column sorting is off in a reorderable table: `sortable` is ignored, and said so while developing.
   useEffect(() => {
@@ -241,12 +227,6 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
       console.warn('DataNavigator: `sortable` columns are ignored in a table with `reorder` (its rows are moved).');
     }
   }, [reorderable, columns]);
-
-  useEffect(() => {
-    if (props.reorder !== undefined && props.groupBy !== undefined && import.meta.env.DEV) {
-      console.warn('DataNavigator: `reorder` is ignored in a table with `groupBy` (grouped rows cannot be moved).');
-    }
-  }, [props.reorder, props.groupBy]);
 
   // The selected rows (all of the current page), in the order they were selected. The same array until the selection
   // changes:
@@ -271,7 +251,10 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
   const allDetailsExpanded = rowsWithDetails.length > 0 && rowsWithDetails.every((row) => expandedKeys.has(keyOf(row)));
   const rowActions = columnItems(actions);
   const defaultAction = defaultActionOf(actions);
-  const hasActionColumn = rowActions.length > 0 && rows.length > 0;
+  // The actions at the end of every group header (only with `groupBy`), in the action column too.
+  const groupActions = groupBy === undefined ? [] : groupItems(actions);
+  const hasActionColumn = (rowActions.length > 0 && rows.length > 0)
+    || (groupActions.length > 0 && segments.some((segment) => segment.key !== undefined));
 
   const clearSelection = () => {
     anchorRef.current = undefined;
@@ -478,37 +461,110 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     defaultAction.onClick(row);
   };
 
-  // Row groups (`groupBy`): the rows of the page, in their order, in groups of consecutive rows with the same group key
-  // (the source sorts by group; unsorted rows give a group more than once). The total of a group comes from the source
-  // (`Result.groups`), if it gives one.
-  const { groupBy } = props;
+  // Row groups (`groupBy`): the runs of the page with a group, each with the indexes of its rows on the page. The total
+  // of a group comes from the source (`Result.groups`), if it gives one, changed by the moves since the load.
   const rowGroups = useMemo((): readonly RowGroupEntry<Row>[] | undefined => {
     if (groupBy === undefined) {
       return undefined;
     }
 
     const totals = new Map((result.groups ?? []).map(({ key, total }) => [key, total]));
-    const groups: { key: string; rows: Row[]; indexes: number[]; total: number | undefined }[] = [];
+    const groups: RowGroupEntry<Row>[] = [];
+    let index = 0;
 
-    rows.forEach((row, index) => {
-      const key = typeof groupBy === 'function' ? groupBy(row) : String(row[groupBy]);
-      const last = groups[groups.length - 1];
+    for (const segment of segments) {
+      const indexes = segment.rows.map(() => index++);
+      const total = segment.key === undefined ? undefined : totals.get(segment.key);
 
-      if (last?.key === key) {
-        last.rows.push(row);
-        last.indexes.push(index);
-      } else {
-        groups.push({ key, rows: [row], indexes: [index], total: totals.get(key) });
+      if (segment.key !== undefined) {
+        groups.push({
+          key: segment.key,
+          rows: segment.rows,
+          indexes,
+          total: total === undefined ? undefined : total + (moved?.deltas.get(segment.key) ?? 0),
+        });
       }
-    });
+    }
 
     return groups;
-  }, [groupBy, rows, result.groups]);
+  }, [groupBy, segments, result.groups, moved]);
 
   // Collapsed groups, by key: a matter of the view (no new load), kept across loads (a group stays collapsed on the
   // next page).
   const [collapsedGroups, setCollapsedGroups] = useState(EMPTY_KEYS);
   const toggleGroup = (key: string) => setCollapsedGroups(withKey(collapsedGroups, key, !collapsedGroups.has(key)));
+  const isGroupCollapsed = (key: string) => collapsedGroups.has(key);
+
+  // The lines of the rows area, in the order shown: group headers and data rows (see grouping.ts), each with its group
+  // (the entry of `rowGroups`, undefined for a row without a group).
+  const lines = useMemo((): readonly (Line & { group: RowGroupEntry<Row> | undefined })[] => {
+    const groupOfSegment = new Map<Segment<Row>, RowGroupEntry<Row>>();
+    let group = 0;
+
+    for (const segment of segments) {
+      const entry = segment.key === undefined ? undefined : rowGroups?.[group++];
+
+      if (entry !== undefined) {
+        groupOfSegment.set(segment, entry);
+      }
+    }
+
+    return linesOf(segments, (key) => collapsedGroups.has(key)).map((line) => {
+      const segment = segments[line.segment];
+
+      return { ...line, group: segment === undefined ? undefined : groupOfSegment.get(segment) };
+    });
+  }, [segments, rowGroups, collapsedGroups]);
+
+  // Rows can be moved only without search and filters (within a filtered subset, where a row lands among the hidden
+  // ones is unclear), within the page.
+  const canReorder = reorderable && search === '' && Object.keys(filters).length === 0 && rows.length > 1;
+
+  // The move of the row of the line `from` into the slot `slot` of the other lines (see `moveInSegments`), or
+  // undefined when nothing would change.
+  const planMove = (from: number, slot: number) => {
+    const line = lines[from];
+
+    return line?.type === 'row' ? moveInSegments(segments, line.index, slot, isGroupCollapsed) : undefined;
+  };
+
+  // Moves a row (the line `from`) into the slot `slot` of the other lines (with groups, also into another group): at
+  // once on the screen, then `reorder` saves it. If a save fails, the error is logged and the page is loaded again (the
+  // source's order is the truth).
+  const moveLine = (from: number, slot: number) => {
+    const plan = canReorder && !loading ? planMove(from, slot) : undefined;
+
+    if (plan === undefined) {
+      return;
+    }
+
+    const next = flatRows(plan.segments);
+    const origin = groupBy === undefined ? undefined : segments.find((segment) => segment.rows.includes(plan.row))?.key;
+    const deltas = new Map(moved?.deltas);
+
+    if (origin !== plan.group) {
+      if (origin !== undefined) {
+        deltas.set(origin, (deltas.get(origin) ?? 0) - 1);
+      }
+
+      if (plan.group !== undefined) {
+        deltas.set(plan.group, (deltas.get(plan.group) ?? 0) + 1);
+      }
+    }
+
+    setMoved({ segments: plan.segments, deltas });
+    setAnnouncement(texts.movedTo({ position: plan.index + 1 }));
+
+    // The neighbors on the page (in the order of the source, rows of collapsed groups included).
+    const move = { row: plan.row, group: plan.group, after: next[plan.index - 1], before: next[plan.index + 1] };
+
+    savingRef.current = savingRef.current
+      .then(() => reorderRef.current?.(move))
+      .catch((error: unknown) => {
+        console.error(error);
+        setReloads((count) => count + 1);
+      });
+  };
 
   // The checkbox of a group (multi selection): all its rows of the page, or none.
   const selectGroup = (group: RowGroupEntry<Row>, included: boolean) =>
@@ -523,22 +579,41 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
 
   const toggleAllDetails = () => setExpandedKeys(allDetailsExpanded ? EMPTY_KEYS : new Set(rowsWithDetails.map(keyOf)));
 
-  // The context menu of a row: the row it was opened on, and the rows its multi-row actions get.
+  // The context menu of a row: the row it was opened on, and the rows its multi-row actions get. Of a group header: its
+  // group (then no row).
   const [contextRows, setContextRows] = useState<{ row: Row; rows: readonly Row[] }>();
+  const [contextGroup, setContextGroup] = useState<RowGroupEntry<Row>>();
+  const groupOf = (key: string) => rowGroups?.find((group) => group.key === key);
   // With several selected rows (a right-click on one of them), the menu is about all of them: no single-row actions.
-  const contextActions = contextMenuItems(
-    actions,
-    selection,
-    contextRows === undefined || contextRows.rows.length <= 1,
-  );
+  const contextActions = contextGroup !== undefined
+    ? groupContextMenuItems(actions)
+    : contextMenuItems(actions, selection, contextRows === undefined || contextRows.rows.length <= 1);
 
-  // Called when the context menu is about to open on the row with this key. Like a file manager: a row that is not
-  // selected becomes the only selected one; on a selected row the selection stays. False when there is nothing to
-  // show (then the browser's own menu opens).
-  const prepareContextMenu = (key: string): boolean => {
+  // Whether a context menu can open on this target (else the browser's own menu opens).
+  const hasContextMenu = (target: ContextTarget): boolean =>
+    target.type === 'group'
+      ? groupOf(target.key) !== undefined && groupContextMenuItems(actions).length > 0
+      : contextMenuItems(actions, selection, true).length > 0;
+
+  // Called when the context menu is about to open on a row or a group header. On a row, like a file manager: a row that
+  // is not selected becomes the only selected one; on a selected row the selection stays. False when there is nothing
+  // to show.
+  const prepareContextMenu = (target: ContextTarget): boolean => {
+    if (target.type === 'group') {
+      const group = groupOf(target.key);
+
+      setContextRows(undefined);
+      setContextGroup(group);
+
+      return group !== undefined;
+    }
+
+    const { key } = target;
     const row = rows.find((candidate) => keyOf(candidate) === key);
 
-    if (row === undefined || contextActions.length === 0) {
+    setContextGroup(undefined);
+
+    if (row === undefined || !hasContextMenu(target)) {
       return false;
     }
 
@@ -554,6 +629,14 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
   };
 
   const invokeFromContextMenu = (action: Spec.Action<Row>) => {
+    if (action.type === 'group') {
+      if (contextGroup !== undefined) {
+        action.onClick(contextGroup);
+      }
+
+      return;
+    }
+
     if (contextRows === undefined) {
       return;
     }
@@ -594,15 +677,22 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     }
   };
 
+  const invokeForGroup = (group: RowGroupEntry<Row>, action: Spec.Action<Row>) => {
+    if (action.type === 'group') {
+      action.onClick(group);
+    }
+  };
+
   // Grid: the meta columns (the drag handle, selection, details toggle) come first, then the columns, then the action
   // column. The handle column is there whenever the table is reorderable (also while its handles are hidden), so the
   // columns do not jump.
+  const hasHandleColumn = reorderable;
   const handleColumn = 1;
-  const selectionColumn = reorderable ? 2 : 1;
+  const selectionColumn = hasHandleColumn ? 2 : 1;
   const detailsColumn = selectionColumn + (selection !== 'none' ? 1 : 0);
-  const controlColumns = (reorderable ? 1 : 0) + (selection !== 'none' ? 1 : 0) + (hasDetails ? 1 : 0);
+  const controlColumns = (hasHandleColumn ? 1 : 0) + (selection !== 'none' ? 1 : 0) + (hasDetails ? 1 : 0);
   const firstLeafColumn = controlColumns + 1;
-  const firstMetaColumn = reorderable
+  const firstMetaColumn = hasHandleColumn
     ? 'handle'
     : selection !== 'none'
     ? 'selection'
@@ -613,17 +703,20 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     ? 'details'
     : selection !== 'none'
     ? 'selection'
-    : reorderable
+    : hasHandleColumn
     ? 'handle'
     : undefined;
 
   const headerRows = layout.groups.length > 0 ? 2 : 1;
 
   const gridTemplateColumns = [
-    ...(reorderable ? ['max-content'] : []),
+    ...(hasHandleColumn ? ['max-content'] : []),
     ...(selection !== 'none' ? ['max-content'] : []),
     ...(hasDetails ? ['max-content'] : []),
-    ...layout.leaves.map(({ column }) => `minmax(0, ${column.width ?? 1}fr)`),
+    // A number is a share of the free width (`fr`), a string a CSS length of its own (a fixed track, e.g. `3rem`).
+    ...layout.leaves.map(({ column }) =>
+      typeof column.width === 'string' ? column.width : `minmax(0, ${column.width ?? 1}fr)`
+    ),
     ...(hasActionColumn ? ['max-content'] : []),
   ].join(' ');
 
@@ -649,7 +742,12 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     openFilters,
     closeFilters,
     headerId: (key: string) => `${idBase}-header-${key.replace(/\W/g, '_')}`,
-    isEmpty: loaded && result.rows.length === 0,
+    // Empty groups of the source are shown too: only a page without any line is empty.
+    isEmpty: loaded && lines.length === 0,
+    // The footer (`footer`): always with rows; `auto` only when there is something to page or to choose (more than one
+    // page, or more rows than the smallest page size); `never` not. From the last load, so a new load does not flicker.
+    footerShown: rows.length > 0 && (footerMode === 'always'
+      || (footerMode === 'auto' && (pageCount > 1 || result.total > Math.min(...pageSizeOptions)))),
     // The Reload button of the toolbar: the same as the controller's reload().
     reload: props.reloadable === true ? () => latestRef.current.reload() : undefined,
     // What the action column shows of an action: its icon (with the label as tooltip), its label, or both.
@@ -703,7 +801,8 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     // Moving rows (`reorder`): whether the table can, whether it can now (no search, no filters), and the move.
     reorderable,
     canReorder,
-    moveRow,
+    hasHandleColumn,
+    moveLine,
     announcement,
     actionColumn: firstLeafColumn + layout.leaves.length,
     dividerAfter: (column: 'handle' | 'selection' | 'details') => (lastMetaColumn === column ? 'end' : undefined),
@@ -725,9 +824,10 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     doubleClickRow,
     hasDefaultAction: defaultAction !== undefined,
 
-    // Row groups: undefined without `groupBy`.
+    // Row groups: undefined without `groupBy`. The lines: the group headers and the rows, in the order shown.
     rowGroups,
-    isGroupCollapsed: (key: string) => collapsedGroups.has(key),
+    lines,
+    isGroupCollapsed,
     toggleGroup,
     selectGroup,
     groupSelection,
@@ -747,6 +847,9 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     hasActionColumn,
     invokeFromToolbar,
     invokeForRow,
+    groupActions,
+    invokeForGroup,
+    hasContextMenu,
     contextActions,
     prepareContextMenu,
     invokeFromContextMenu,

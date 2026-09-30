@@ -9,6 +9,7 @@ const antdTheme: Required<DataNavigator.Theme> = {
   colorText: 'var(--ant-color-text)',
   colorTextDimmed: 'var(--ant-color-text-secondary)',
   colorSurface: 'var(--ant-color-bg-container)',
+  colorSurfaceStrong: 'var(--ant-color-fill)',
   colorBorder: 'var(--ant-color-border)',
   colorHeader: 'var(--ant-color-fill-alter)',
   colorHeaderHover: 'var(--ant-color-fill-secondary)',
