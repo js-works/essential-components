@@ -97,7 +97,7 @@ const OVERLAYS_CONFIG: OverlaysConfig = {
       ),
     },
   },
-  toasts: { placement: 'bottom-end', size: 'small', stacked: true, appearance: 'solid', theme: TOAST_THEME },
+  toasts: { placement: 'bottom-end', size: 'small', stacked: true, theme: TOAST_THEME },
 };
 
 // Mantine follows the page's color scheme switch. It does not set the scheme on `<html>` (`getRootElement`): the

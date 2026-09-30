@@ -26,6 +26,24 @@ const STYLES = '__BOARD_MANAGER_STYLES__';
 
 const HOST_STYLES = ':host { display: block; } :host([hidden]) { display: none; }';
 
+// Keyboard and input events are composed: they would bubble out of the shadow root to the host page (e.g. XWiki's
+// keyboard shortcuts). They are stopped at the shadow root, in the bubble phase, so everything inside still gets them.
+// Mouse and focus events do pass: a host page closes its menus on a click outside of them.
+const SWALLOWED_EVENTS = [
+  'keydown',
+  'keyup',
+  'keypress',
+  'beforeinput',
+  'input',
+  'compositionstart',
+  'compositionupdate',
+  'compositionend',
+];
+
+function stopPropagation(event: Event): void {
+  event.stopPropagation();
+}
+
 // The color scheme on the root: `light-dark()` of the toasts follows it, like the page's `<html>` in the demo.
 function SchemeRoot({ router }: { router: ReturnType<typeof createAppRouter>['router'] }): ReactElement {
   return (
@@ -40,7 +58,16 @@ class BoardManagerElement extends HTMLElement {
   #disposeRouter: (() => void) | undefined;
 
   connectedCallback(): void {
-    const shadow = this.shadowRoot ?? this.attachShadow({ mode: 'open' });
+    let shadow = this.shadowRoot;
+
+    if (shadow === null) {
+      shadow = this.attachShadow({ mode: 'open' });
+
+      for (const type of SWALLOWED_EVENTS) {
+        shadow.addEventListener(type, stopPropagation);
+      }
+    }
+
     const style = document.createElement('style');
     const container = document.createElement('div');
 

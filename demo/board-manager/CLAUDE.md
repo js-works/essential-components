@@ -45,6 +45,10 @@ the root's `CLAUDE.md` apply.
     provider's mount point).
   - `scheme` (`light`, `dark`) sets the color scheme; without it, `<html data-scheme>`, else the system's. The language
     follows `<html lang>`. The routes are in memory only (no hash: the host page owns its URL).
+  - Keyboard and input events (`keydown`, `keyup`, `keypress`, `beforeinput`, `input`, `composition*`) are stopped at
+    the shadow root (bubble phase, 2026-09-30): they do not reach the host page (e.g. XWiki's shortcuts); inside, all
+    get them. Mouse and focus events pass (a host page closes its menus on a click outside). A capture listener of the
+    host page still sees them.
 
 ## Members
 
