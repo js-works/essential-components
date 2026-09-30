@@ -2,6 +2,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testi
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useDataNavigatorController, useDataNavigatorSelection } from './core/controllerHooks';
+import { dateColumnEditor, selectColumnEditor, textColumnEditor } from './core/view/ColumnEditors';
 import {
   booleanColumnFilter,
   dateRangeColumnFilter,
@@ -4427,8 +4428,22 @@ describe('row grouping', () => {
     expect(screen.queryByText('Person 11')).toBeNull();
   });
 
-  it('selects and deselects the rows of a group with its checkbox', async () => {
+  it('has no checkbox in the group headers by default (opt-in: selectableGroups)', async () => {
     renderNav({ groupBy: groupOf, selection: 'multi' });
+    await loaded();
+
+    expect(screen.queryAllByRole('checkbox', { name: 'Select group' })).toHaveLength(0);
+    // The rows keep theirs.
+    expect(screen.getAllByRole('checkbox', { name: 'Select row' }).length).toBeGreaterThan(0);
+    // The header's content starts in the first column (no empty cell of the selection column before it).
+    const cells = document.querySelector('[data-group-key]')!.querySelectorAll<HTMLElement>('[role="cell"]');
+
+    expect(cells).toHaveLength(1);
+    expect(cells[0]!.style.gridColumn).toMatch(/^1 \//);
+  });
+
+  it('selects and deselects the rows of a group with its checkbox', async () => {
+    renderNav({ groupBy: groupOf, selection: 'multi', selectableGroups: true });
     await loaded();
     click('Next page');
     await loaded();
@@ -4526,13 +4541,22 @@ describe('row grouping', () => {
       });
     const press = (id: number, key: string) => fireEvent.keyDown(handleOf(id), { key, altKey: true });
 
-    it('fills the handle column of a group header, so its band spans the whole width', async () => {
-      renderNav({ groupBy: sectionOf, reorder: vi.fn(), source, selection: 'multi' });
+    it('fills the handle column of a group header with a checkbox, so its band spans the whole width', async () => {
+      renderNav({ groupBy: sectionOf, reorder: vi.fn(), source, selection: 'multi', selectableGroups: true });
       await loaded();
 
       const cells = [...(groupRows()[0]?.children ?? [])] as HTMLElement[];
 
       expect(cells.map((cell) => cell.style.gridColumn.split(' ')[0])).toEqual(['1', '2', '3']);
+    });
+
+    it('starts the content of a group header in the first column without a checkbox', async () => {
+      renderNav({ groupBy: sectionOf, reorder: vi.fn(), source, selection: 'multi' });
+      await loaded();
+
+      const cells = [...(groupRows()[0]?.children ?? [])] as HTMLElement[];
+
+      expect(cells.map((cell) => cell.style.gridColumn.split(' ')[0])).toEqual(['1']);
     });
 
     it('shows the blank group like any other group', async () => {
@@ -4569,7 +4593,7 @@ describe('row grouping', () => {
         groups: [{ key: 'A', total: 2 }, { key: 'E', total: 0 }, { key: 'B', total: 1 }, { key: '', total: 1 }],
       });
 
-      renderNav({ groupBy: sectionOf, reorder, source: withEmpty, selection: 'multi' });
+      renderNav({ groupBy: sectionOf, reorder, source: withEmpty, selection: 'multi', selectableGroups: true });
       await loaded();
 
       expect(lines()).toEqual(['A2', '1', '2', 'E0', 'B1', '3', '(Blank)1', '4']);
@@ -4582,5 +4606,351 @@ describe('row grouping', () => {
       await waitFor(() => expect(reorder).toHaveBeenCalledTimes(1));
       expect(reorder).toHaveBeenLastCalledWith({ row: people[1], group: 'E', after: people[0], before: people[2] });
     });
+  });
+});
+
+describe('row editing', () => {
+  const editColumns: readonly Spec.Column<Person>[] = [
+    { key: 'name', header: 'Name', edit: textColumnEditor() },
+    { key: 'city', header: 'City', edit: selectColumnEditor({ options: ['Vienna', 'Berlin'] }) },
+  ];
+
+  type EditableProps = {
+    saveRow?: Spec.SaveRow<Person>;
+    createRow?: Spec.CreateRow<Person>;
+    columns?: readonly Spec.Column<Person>[];
+    editFields?: readonly Spec.EditField<Person>[];
+    source?: Spec.Source<Person>;
+  };
+
+  // A table whose "Edit" (a row action, the default one) opens the edit form through the controller, and whose "Add"
+  // (a general action) a new row.
+  function Editable(props: EditableProps): ReactElement {
+    const nav = useDataNavigatorController<Person>();
+
+    return (
+      <Nav
+        controller={nav}
+        source={props.source ?? createSource()}
+        rowKey="id"
+        columns={props.columns ?? editColumns}
+        pageSize={10}
+        searchable
+        saveRow={props.saveRow}
+        createRow={props.createRow}
+        editFields={props.editFields}
+        actions={[
+          { type: 'general', key: 'add', label: 'Add', onClick: () => nav.addRow({ id: 0, name: '', city: 'Vienna' }) },
+          { type: 'singleRow', key: 'edit', label: 'Edit', default: true, onClick: (row) => nav.editRow(row) },
+        ]}
+      />
+    );
+  }
+
+  async function editFirstRow(saveRow: Spec.SaveRow<Person>): Promise<HTMLInputElement> {
+    render(<Editable saveRow={saveRow} />);
+    await loaded();
+    fireEvent.click(screen.getAllByRole('button', { name: 'Edit' })[0]!);
+
+    return screen.getByRole<HTMLInputElement>('textbox', { name: 'Name' });
+  }
+
+  const rowOf = (key: string) =>
+    document.querySelector<HTMLElement>(`[role="row"][data-row-key="${key}"]:not([data-edit-form])`)!;
+  const form = () => document.querySelector<HTMLElement>('[data-edit-form]')!;
+
+  it('opens the form below the row, focuses its first editor, and blocks the rest of the table', async () => {
+    const input = await editFirstRow(vi.fn());
+
+    expect(input.value).toBe('Person 01');
+    expect(document.activeElement).toBe(input);
+    expect(within(form()).getByRole('group', { name: 'Edit row' })).toBeTruthy();
+    expect(within(form()).getByRole('combobox', { name: 'City' }).textContent).toBe('Vienna');
+    // Right after its row.
+    expect(rowOf('1').nextElementSibling).toBe(form());
+    expect(rowOf('1').hasAttribute('data-editing')).toBe(true);
+    expect(rowOf('1').hasAttribute('data-blocked')).toBe(false);
+    expect(rowOf('2').hasAttribute('inert')).toBe(true);
+    expect(rowOf('2').hasAttribute('data-blocked')).toBe(true);
+    expect(screen.getByPlaceholderText('Search').closest('[inert]')).not.toBeNull();
+    expect(form().closest('[inert]')).toBeNull();
+  });
+
+  it('unfolds the form (and folds its row up, in the view), but only with motion', () => {
+    expect(declarationsOf('.editFormCell')).toContain('transition: grid-template-rows 180ms');
+    expect(baseStylesheet).toMatch(/@starting-style \{\s*\.editFormCell \{\s*grid-template-rows: 0fr;/);
+  });
+
+  it('has a field for a hidden column with an editor, and for the extra fields', async () => {
+    render(
+      <Editable
+        saveRow={vi.fn()}
+        columns={[
+          { key: 'name', header: 'Name', edit: textColumnEditor() },
+          { key: 'city', header: 'City', hideable: true, hidden: true, edit: textColumnEditor() },
+        ]}
+        editFields={[{ key: 'id', label: 'Number', edit: textColumnEditor() }]}
+      />,
+    );
+    await loaded();
+    fireEvent.click(screen.getAllByRole('button', { name: 'Edit' })[0]!);
+
+    expect(within(form()).getAllByRole('textbox').map((input) => input.getAttribute('aria-labelledby'))).toHaveLength(
+      3,
+    );
+    expect(within(form()).getByRole<HTMLInputElement>('textbox', { name: 'City' }).value).toBe('Vienna');
+    expect(within(form()).getByRole<HTMLInputElement>('textbox', { name: 'Number' }).value).toBe('1');
+  });
+
+  it('saves the draft with "Save", and shows the saved row without a new load', async () => {
+    const saveRow = vi.fn();
+    const input = await editFirstRow(saveRow);
+
+    fireEvent.change(input, { target: { value: 'Ada' } });
+    await chooseIn(within(form()).getByRole('combobox', { name: 'City' }), 'Berlin');
+    fireEvent.click(within(form()).getByRole('button', { name: 'OK' }));
+
+    await waitFor(() => expect(rowOf('1').hasAttribute('data-editing')).toBe(false));
+    expect(saveRow).toHaveBeenCalledWith(people[0], { id: 1, name: 'Ada', city: 'Berlin' });
+    expect(within(rowOf('1')).getByText('Ada')).toBeTruthy();
+    expect(within(rowOf('1')).getByText('Berlin')).toBeTruthy();
+    expect(rowOf('2').hasAttribute('inert')).toBe(false);
+  });
+
+  it('saves on Enter in a text input, and takes the row that saveRow returns', async () => {
+    const saveRow = vi.fn(async (_row: Person, draft: Person) => ({ ...draft, name: draft.name.trim() }));
+    const input = await editFirstRow(saveRow);
+
+    fireEvent.change(input, { target: { value: '  Grace  ' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    await waitFor(() => expect(within(rowOf('1')).getByText('Grace')).toBeTruthy());
+    expect(saveRow).toHaveBeenCalledTimes(1);
+  });
+
+  it('cancels on Escape: the row is shown as it was, nothing is saved', async () => {
+    const saveRow = vi.fn();
+    const input = await editFirstRow(saveRow);
+
+    fireEvent.change(input, { target: { value: 'Changed' } });
+    fireEvent.keyDown(input, { key: 'Escape' });
+
+    // First the form folds up (inert meanwhile), then it closes.
+    expect(form().querySelector('[data-closing]')?.hasAttribute('inert')).toBe(true);
+
+    await waitFor(() => expect(document.querySelector('[data-edit-form]')).toBeNull());
+    expect(rowOf('1').hasAttribute('data-editing')).toBe(false);
+    expect(within(rowOf('1')).getByText('Person 01')).toBeTruthy();
+    expect(saveRow).not.toHaveBeenCalled();
+    // The focus goes back to the "Edit" of the row.
+    expect(document.activeElement).toBe(within(rowOf('1')).getByRole('button', { name: 'Edit' }));
+  });
+
+  it('cancels again when the same row is opened again right after', async () => {
+    const input = await editFirstRow(vi.fn());
+
+    fireEvent.keyDown(input, { key: 'Escape' });
+    await waitFor(() => expect(document.querySelector('[data-edit-form]')).toBeNull());
+
+    fireEvent.click(within(rowOf('1')).getByRole('button', { name: 'Edit' }));
+
+    // Open, not folding up.
+    expect(form().querySelector('[data-closing]')).toBeNull();
+
+    fireEvent.click(within(form()).getByRole('button', { name: 'Cancel' }));
+
+    await waitFor(() => expect(document.querySelector('[data-edit-form]')).toBeNull());
+  });
+
+  it('leaves edit mode without calling saveRow when nothing changed', async () => {
+    const saveRow = vi.fn();
+
+    await editFirstRow(saveRow);
+    fireEvent.click(within(form()).getByRole('button', { name: 'OK' }));
+
+    expect(rowOf('1').hasAttribute('data-editing')).toBe(false);
+    expect(saveRow).not.toHaveBeenCalled();
+  });
+
+  it('stays in edit mode when the save fails, with the message of the error', async () => {
+    const saveRow = vi.fn(async () => {
+      throw new Error('The name is taken');
+    });
+    const input = await editFirstRow(saveRow);
+
+    fireEvent.change(input, { target: { value: 'Ada' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    expect((await screen.findByRole('alert')).textContent).toBe('The name is taken');
+    expect(rowOf('1').hasAttribute('data-editing')).toBe(true);
+    expect(input.value).toBe('Ada');
+
+    // A change takes the message away.
+    fireEvent.change(input, { target: { value: 'Ada L.' } });
+
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('says that the row could not be saved when the error has no message', async () => {
+    const input = await editFirstRow(() => Promise.reject('nope'));
+
+    fireEvent.change(input, { target: { value: 'Ada' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    expect((await screen.findByRole('alert')).textContent).toBe('The row could not be saved');
+  });
+
+  it('starts edit mode with the default action (a double click on a row)', async () => {
+    render(<Editable saveRow={vi.fn()} />);
+    await loaded();
+
+    const cell = within(rowOf('3')).getAllByRole('cell')[0]!;
+
+    fireEvent.click(cell, { detail: 1 });
+    fireEvent.click(cell, { detail: 2 });
+    fireEvent.doubleClick(cell);
+
+    expect(within(form()).getByRole<HTMLInputElement>('textbox', { name: 'Name' }).value).toBe('Person 03');
+    expect(rowOf('3').nextElementSibling).toBe(form());
+  });
+
+  it('edits a date with the date editor: one calendar, a click picks the day', async () => {
+    type Dated = Person & { born: string };
+
+    const saveRow = vi.fn();
+    const dated: readonly Dated[] = [{ ...people[0]!, born: '1953-04-06' }];
+
+    function WithDate(): ReactElement {
+      const nav = useDataNavigatorController<Dated>();
+
+      return (
+        <Nav
+          controller={nav}
+          source={async () => ({ rows: dated, total: 1 })}
+          rowKey="id"
+          columns={[{ key: 'name', header: 'Name' }, { key: 'born', header: 'Born', edit: dateColumnEditor() }]}
+          saveRow={saveRow}
+          actions={[{ type: 'singleRow', key: 'edit', label: 'Edit', onClick: (row) => nav.editRow(row) }]}
+        />
+      );
+    }
+
+    render(<WithDate />);
+    await loaded();
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+
+    const trigger = within(form()).getByRole('button', { name: 'Born' });
+
+    // In the medium format of the locale (en-US without an adapter).
+    expect(trigger.textContent).toBe('Apr 6, 1953');
+
+    fireEvent.click(trigger);
+
+    const calendar = await waitFor(() => {
+      const found = [...document.querySelectorAll<HTMLElement>('.datepicker')];
+
+      expect(found).toHaveLength(1);
+
+      return found[0]!.parentElement!;
+    });
+
+    expect(calendar.querySelector('.view-switch')?.textContent).toBe('April 1953');
+    // Both buttons of the single calendar are named (none is hidden as an inner one).
+    expect(within(calendar).getByRole('button', { name: 'Previous' })).toBeTruthy();
+
+    fireEvent.click(calendar.querySelectorAll<HTMLElement>('.datepicker-cell.day:not(.prev):not(.next)')[19]!);
+
+    await waitFor(() => expect(document.querySelector('.datepicker')).toBeNull());
+    expect(trigger.textContent).toBe('Apr 20, 1953');
+
+    fireEvent.click(within(form()).getByRole('button', { name: 'OK' }));
+
+    await waitFor(() => expect(saveRow).toHaveBeenCalledWith(dated[0], { ...dated[0], born: '1953-04-20' }));
+  });
+
+  describe('a new row', () => {
+    it('comes first, with its form, and is created with createRow', async () => {
+      const createRow = vi.fn(async (draft: Person) => ({ ...draft, id: 99 }));
+
+      render(<Editable createRow={createRow} />);
+      await loaded();
+      click('Add');
+
+      expect(within(form()).getByRole('group', { name: 'New row' })).toBeTruthy();
+
+      const input = within(form()).getByRole<HTMLInputElement>('textbox', { name: 'Name' });
+
+      expect(document.activeElement).toBe(input);
+      // The new row and its form come before the first row of the page.
+      expect(rowOf('1').previousElementSibling).toBe(form());
+
+      fireEvent.change(input, { target: { value: 'Newcomer' } });
+      fireEvent.keyDown(input, { key: 'Enter' });
+
+      await waitFor(() => expect(document.querySelector('[data-edit-form]')).toBeNull());
+      expect(createRow).toHaveBeenCalledWith({ id: 0, name: 'Newcomer', city: 'Vienna' });
+      // The created row stays at the top of the page until the next load, and counts.
+      expect(rowOf('99').nextElementSibling).toBe(rowOf('1'));
+      expect(screen.getByText(/\/ 61$/)).toBeTruthy();
+    });
+
+    it('goes away on "Cancel"', async () => {
+      const createRow = vi.fn();
+
+      render(<Editable createRow={createRow} />);
+      await loaded();
+      // A click in jsdom does not focus the button, a real one does.
+      screen.getByRole('button', { name: 'Add' }).focus();
+      click('Add');
+      fireEvent.click(within(form()).getByRole('button', { name: 'Cancel' }));
+
+      await waitFor(() => expect(document.querySelector('[data-edit-form]')).toBeNull());
+      expect(document.querySelectorAll('[data-editing]')).toHaveLength(0);
+      expect(createRow).not.toHaveBeenCalled();
+      // The focus goes back to "Add".
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Add' }));
+    });
+
+    it('can be added to an empty table (no empty state meanwhile)', async () => {
+      render(<Editable createRow={vi.fn()} source={async () => ({ rows: [], total: 0 })} />);
+      await loaded();
+
+      expect(screen.getByText('No entries')).toBeTruthy();
+
+      click('Add');
+
+      expect(screen.queryByText('No entries')).toBeNull();
+      expect(within(form()).getByRole('textbox', { name: 'Name' })).toBeTruthy();
+    });
+
+    it('is not added without createRow', async () => {
+      render(<Editable saveRow={vi.fn()} />);
+      await loaded();
+      click('Add');
+
+      expect(document.querySelector('[data-edit-form]')).toBeNull();
+    });
+  });
+
+  it('edits nothing without saveRow', async () => {
+    function WithoutSave(): ReactElement {
+      const nav = useDataNavigatorController<Person>();
+
+      return (
+        <Nav
+          controller={nav}
+          source={createSource()}
+          rowKey="id"
+          columns={editColumns}
+          actions={[{ type: 'singleRow', key: 'edit', label: 'Edit', onClick: (row) => nav.editRow(row) }]}
+        />
+      );
+    }
+
+    render(<WithoutSave />);
+    await loaded();
+    fireEvent.click(screen.getAllByRole('button', { name: 'Edit' })[0]!);
+
+    expect(screen.queryByRole('textbox', { name: 'Name' })).toBeNull();
   });
 });

@@ -18,11 +18,13 @@ type DemoIcons = { add: ReactNode; edit: ReactNode; remove: ReactNode };
 // The selection mode of the table follows from these actions: general and column-only row actions need no selection,
 // a row action in the toolbar needs single selection, and a rows action needs multi selection.
 // With `variants`, "Add user" is the primary action and the deletes are danger actions. Without, all are secondary.
+// "Edit" opens the edit form of the row (`editRow` of the controller), "Add user" a new row (`addRow`).
 function createActions(
   report: (message: string) => void,
   mode: DemoActions,
   icons: DemoIcons,
   variants: boolean,
+  rows: { editRow: (user: User) => void; addRow: () => void },
 ): readonly Item[] {
   const primary = variants ? 'primary' : 'secondary';
   const danger = variants ? 'danger' : 'secondary';
@@ -33,10 +35,11 @@ function createActions(
     label: 'Add user',
     icon: icons.add,
     variant: primary,
-    onClick: () => report('Add user'),
+    onClick: rows.addRow,
   };
 
-  // The default action: a double click on the free space of a row runs it, as well as its button.
+  // The default action: a double click on the free space of a row runs it, as well as its button. It opens the edit
+  // form below the row (see `saveRow` of the table).
   const edit: Item = {
     type: 'singleRow',
     key: 'edit',
@@ -44,7 +47,7 @@ function createActions(
     icon: icons.edit,
     tip: 'Edit user',
     default: true,
-    onClick: (user) => report(`Edit ${fullName(user)}`),
+    onClick: rows.editRow,
   };
 
   // A danger action for a single row (how the action column shows it: the "Row actions" selector, `rowActionLook`; the

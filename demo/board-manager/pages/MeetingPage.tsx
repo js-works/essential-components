@@ -30,6 +30,7 @@ import {
   getMeeting,
   getPerson,
   newSectionId,
+  renameDocument,
   reorderAgenda,
   saveSectionDraft,
   setMeetingStatus,
@@ -524,72 +525,37 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
   );
 }
 
-// The name of a section in the list of the "Sections" drawer, edited in place: the draft changes on Enter or when the
-// field loses the focus (not on every key: that would reload the list and take the focus away). Escape puts the name
-// back; an empty name is not taken. Enter and Escape stay in the field (not "Apply" or "Cancel" of the drawer). A new
-// section's field gets the focus, with its name selected, so it can be typed over at once.
-function SectionNameInput({ row, focus, onRename }: {
-  row: SectionRow;
-  focus: boolean;
-  onRename: (id: string, title: string) => void;
-}) {
-  const [value, setValue] = useState(row.title);
-  const input = useRef<HTMLInputElement>(null);
-
-  // After the table has drawn the new row (and is no longer inert from its load).
-  useEffect(() => {
-    if (!focus) {
-      return undefined;
-    }
-
-    const frame = requestAnimationFrame(() => {
-      input.current?.focus();
-      input.current?.select();
-    });
-
-    return () => cancelAnimationFrame(frame);
-  }, [focus]);
-  const commit = () => {
-    const title = value.trim();
-
-    if (title === '' || title === row.title) {
-      setValue(row.title);
-    } else {
-      onRename(row.id, title);
-    }
-  };
-
-  return (
+// A text in the edit form of a data navigator (a section's name, a document's name): Mantine's input, for the column it
+// is in (the form's label names it).
+function mantineTextEditor<Row>(): DataNavigatorComponent.ColumnEditor<Row> {
+  return ({ columnKey, value, change, labelledBy }) => (
     <TextInput
-      ref={input}
       size="xs"
-      aria-label="Name"
+      aria-labelledby={labelledBy}
       autoComplete="off"
-      value={value}
-      onChange={(event) => setValue(event.currentTarget.value)}
-      onBlur={commit}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === 'Escape') {
-          event.preventDefault();
-          event.stopPropagation();
-
-          if (event.key === 'Escape') {
-            setValue(row.title);
-          }
-
-          // Enter: blurring commits.
-          event.currentTarget.blur();
-        }
-      }}
+      value={typeof value === 'string' ? value : ''}
+      // A patch of one column: the editor knows its key, not its type.
+      onChange={(event) => change({ [columnKey]: event.currentTarget.value } as Partial<Row>)}
     />
   );
 }
 
+// The trimmed name of a section from the edit form; an empty one is refused (the form shows the message).
+function sectionTitleOf(draft: SectionRow): string {
+  const title = draft.title.trim();
+
+  if (title === '') {
+    throw new Error('The name must not be empty.');
+  }
+
+  return title;
+}
+
 // The list of the "Sections" drawer: the draft of the sections (`SectionDraft`) in their order, with their numbers on
-// the agenda as it would be with the draft. The names are edited in place (`SectionNameInput`); "Add section" adds a
-// section "New section" at the end, its name selected in its field; "Delete" and moving a section by its handle change
-// the draft at once (no confirmation: "Cancel" of the drawer undoes everything). The list is as wide as the drawer and
-// fills its height.
+// the agenda as it would be with the draft. The names are edited in the data navigator's edit form: "Edit" (also a
+// double click) renames a section, "Add section" opens the form of a new one, which "Save" adds at the end. "Save" of
+// the form only changes the draft. "Delete" and moving a section by its handle change the draft at once (no
+// confirmation: "Cancel" of the drawer undoes everything). The list is as wide as the drawer and fills its height.
 function SectionsManager({ meetingId, initial, onChange }: {
   meetingId: string;
   initial: SectionDraft;
@@ -598,10 +564,6 @@ function SectionsManager({ meetingId, initial, onChange }: {
   const nav = useDataNavigatorController<SectionRow>();
   const [draft, setDraft] = useState(initial);
   const first = useRef(true);
-  // A rename changes neither the order nor the numbers: the list is not loaded again (the field shows the new name).
-  const quiet = useRef(false);
-  // The section just added, whose field gets the focus.
-  const [added, setAdded] = useState<string>();
 
   // The rows: the draft with the numbers of the agenda as it would be.
   const source = useMemo((): DataNavigatorComponent.Source<SectionRow> => {
@@ -613,8 +575,8 @@ function SectionsManager({ meetingId, initial, onChange }: {
     return async () => ({ rows, total: rows.length });
   }, [draft, meetingId]);
 
-  // A new draft: the owner hears of it, and the list is loaded again, except after a rename (its source is new; the
-  // table's effect has taken it over before this one runs).
+  // A new draft: the owner hears of it, and the list is loaded again (its source is new; the table's effect has taken it
+  // over before this one runs), with the new numbers and a new section at its place at the end.
   useEffect(() => {
     if (first.current) {
       first.current = false;
@@ -622,49 +584,51 @@ function SectionsManager({ meetingId, initial, onChange }: {
     }
 
     onChange(draft);
-
-    if (quiet.current) {
-      quiet.current = false;
-    } else {
-      nav.reload();
-    }
+    nav.reload();
   }, [draft, onChange, nav]);
 
-  const columns = useMemo((): readonly DataNavigatorComponent.Column<SectionRow>[] => {
-    const rename = (id: string, title: string) => {
-      quiet.current = true;
-      setDraft((current) => current.map((section) => (section.id === id ? { ...section, title } : section)));
-    };
-
-    return [
+  const columns = useMemo(
+    (): readonly DataNavigatorComponent.Column<SectionRow>[] => [
       { key: 'number', header: '#', width: '3rem', align: 'end' },
-      {
-        key: 'title',
-        header: 'Name',
-        render: (row) => <SectionNameInput row={row} focus={row.id === added} onRename={rename} />,
-      },
-    ];
-  }, [added]);
+      { key: 'title', header: 'Name', edit: mantineTextEditor() },
+    ],
+    [],
+  );
 
-  const actions = useMemo<readonly DataNavigatorComponent.Action<SectionRow>[]>(() => {
-    const create = () => {
-      const id = newSectionId();
+  const actions = useMemo<readonly DataNavigatorComponent.Action<SectionRow>[]>(() => [
+    {
+      type: 'general',
+      key: 'new',
+      icon: appIcons.add,
+      label: 'Add section',
+      onClick: () => nav.addRow({ id: '', title: '', number: '' }),
+    },
+    { type: 'singleRow', key: 'edit', icon: appIcons.edit, tip: 'Edit', default: true, onClick: nav.editRow },
+    {
+      type: 'singleRow',
+      key: 'delete',
+      icon: appIcons.remove,
+      tip: 'Delete',
+      onClick: (row) => setDraft((current) => current.filter((section) => section.id !== row.id)),
+    },
+  ], [nav]);
 
-      setAdded(id);
-      setDraft((current) => [...current, { id, title: 'New section' }]);
-    };
+  // "Save" of the edit form: a rename, or a new section at the end; both only change the draft.
+  const saveRow = (row: SectionRow, edited: SectionRow): SectionRow => {
+    const title = sectionTitleOf(edited);
 
-    return [
-      { type: 'general', key: 'new', icon: appIcons.add, label: 'Add section', onClick: create },
-      {
-        type: 'singleRow',
-        key: 'delete',
-        icon: appIcons.remove,
-        tip: 'Delete',
-        onClick: (row) => setDraft((current) => current.filter((section) => section.id !== row.id)),
-      },
-    ];
-  }, []);
+    setDraft((current) => current.map((section) => (section.id === row.id ? { ...section, title } : section)));
+
+    return { ...row, title };
+  };
+
+  const createRow = (created: SectionRow): SectionRow => {
+    const section = { id: newSectionId(), title: sectionTitleOf(created) };
+
+    setDraft((current) => [...current, section]);
+
+    return { ...section, number: '' };
+  };
 
   // A move: right after `after`, or right before `before` (at the top).
   const reorder = (move: DataNavigatorComponent.Move<SectionRow>) => {
@@ -689,6 +653,8 @@ function SectionsManager({ meetingId, initial, onChange }: {
         footer="auto"
         source={source}
         reorder={reorder}
+        saveRow={saveRow}
+        createRow={createRow}
         rowKey="id"
         columns={columns}
         actions={actions}
@@ -778,7 +744,15 @@ function MinutesView({ meeting, agendaItems, agendaSections, boardName }: {
 }
 
 const documentColumns: readonly DataNavigatorComponent.Column<MeetingDocument>[] = [
-  { key: 'name', header: 'Document', width: 3.5, sortable: true, filter: textColumnFilter() },
+  // Renamed in the edit form ("Rename").
+  {
+    key: 'name',
+    header: 'Document',
+    width: 3.5,
+    sortable: true,
+    filter: textColumnFilter(),
+    edit: mantineTextEditor(),
+  },
   {
     key: 'type',
     header: 'Type',
@@ -897,6 +871,16 @@ function DocumentsTable({ meeting }: { meeting: Meeting }): ReactElement {
         icon: appIcons.remove,
         onClick: (rows) => void remove(rows),
       },
+      // The name in the edit form, in the place of the row.
+      {
+        type: 'singleRow',
+        key: 'rename',
+        icon: appIcons.edit,
+        tip: 'Rename document',
+        label: 'Rename',
+        show: 'column',
+        onClick: nav.editRow,
+      },
       {
         type: 'singleRow',
         key: 'delete',
@@ -909,9 +893,19 @@ function DocumentsTable({ meeting }: { meeting: Meeting }): ReactElement {
     ];
   }, [nav, dialogs, toasts, meeting.id, meeting.title]);
 
+  // "OK" of the edit form: the new name (the fake server trims it and refuses an empty one; the form shows its message).
+  const saveRow = async (row: MeetingDocument, draft: MeetingDocument) => {
+    const renamed = await renameDocument(row.id, draft.name);
+
+    toasts.success(`"${renamed.name}" renamed`);
+
+    return renamed;
+  };
+
   return (
     <Navigator
       controller={nav}
+      saveRow={saveRow}
       title="Documents"
       density="compact"
       searchable

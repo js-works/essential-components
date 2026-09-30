@@ -3,9 +3,12 @@ import type { ReactElement } from 'react';
 import {
   booleanColumnFilter,
   createDataNavigatorComponent,
+  dateColumnEditor,
   dateRangeColumnFilter,
   numberRangeColumnFilter,
+  selectColumnEditor,
   selectColumnFilter,
+  textColumnEditor,
   textColumnFilter,
   useDataNavigatorController,
   useDataNavigatorSelection,
@@ -13,7 +16,7 @@ import {
 import type { DataNavigatorComponent } from '../src/react';
 import { antdTheme, defaultTheme, mantineTheme, softTheme } from '../src/themes';
 import type { Controls, DemoTheme } from './controls';
-import { countries, fetchNothing, fetchUsers, roles } from './data';
+import { countries, createUser, fetchNothing, fetchUsers, newUser, roles, saveUser } from './data';
 import type { User } from './data';
 import { badge, fixedHeight, note, selectedLine } from './Demo.module.css';
 import { DemoControls } from './DemoControls';
@@ -46,11 +49,44 @@ const libraryVariables: Record<DemoTheme, string> = {
 
 type UserColumn = DataNavigatorComponent.Column<User>;
 
-const firstName: UserColumn = { key: 'firstName', header: 'First name', width: 2, sortable: true };
-const lastName: UserColumn = { key: 'lastName', header: 'Last name', width: 2, sortable: true };
+// The edit form ("Edit", a double click; "Add user" for a new row): a field for every column with an editor (`edit`,
+// also a hidden one), then the extra fields, values that are no column (`editFields`).
+const editFields: readonly DataNavigatorComponent.EditField<User>[] = [
+  { key: 'city', label: 'City', edit: textColumnEditor() },
+  { key: 'notes', label: 'Notes', edit: textColumnEditor({ placeholder: 'A note about the user' }) },
+];
+
+const firstName: UserColumn = {
+  key: 'firstName',
+  header: 'First name',
+  width: 2,
+  sortable: true,
+  edit: textColumnEditor(),
+};
+const lastName: UserColumn = {
+  key: 'lastName',
+  header: 'Last name',
+  width: 2,
+  sortable: true,
+  edit: textColumnEditor(),
+};
 // The column toggle menu: every column but the names can be hidden; logins and active (below) start hidden.
-const email: UserColumn = { key: 'email', header: 'Email', width: 4, sortable: true, hideable: true };
-const country: UserColumn = { key: 'country', header: 'Country', width: 2, sortable: true, hideable: true };
+const email: UserColumn = {
+  key: 'email',
+  header: 'Email',
+  width: 4,
+  sortable: true,
+  hideable: true,
+  edit: textColumnEditor(),
+};
+const country: UserColumn = {
+  key: 'country',
+  header: 'Country',
+  width: 2,
+  sortable: true,
+  hideable: true,
+  edit: selectColumnEditor({ options: countries }),
+};
 
 // The date of birth, shown as it is stored (ISO, yyyy-mm-dd).
 const dateOfBirth: UserColumn = {
@@ -59,6 +95,8 @@ const dateOfBirth: UserColumn = {
   width: 2,
   sortable: true,
   hideable: true,
+  // A calendar, like the date range filter.
+  edit: dateColumnEditor(),
 };
 
 // Custom cell content can use the tokens of the table too, so it follows the theme.
@@ -70,6 +108,7 @@ const role: UserColumn = {
   sortable: true,
   hideable: true,
   render: (user) => <span className={badge}>{user.role}</span>,
+  edit: selectColumnEditor({ options: roles }),
 };
 
 const logins: UserColumn = {
@@ -144,7 +183,10 @@ function Demo({ controls }: { controls: Controls }): ReactElement {
     () => createColumns(controls.columns === 'grouped', controls.filters === 'on'),
     [controls.columns, controls.filters],
   );
-  const actions = createActions(show, controls.actions, icons, controls.variants === 'on');
+  const actions = createActions(show, controls.actions, icons, controls.variants === 'on', {
+    editRow: nav.editRow,
+    addRow: () => nav.addRow(newUser()),
+  });
 
   return (
     <div className="ui-stack">
@@ -170,6 +212,21 @@ function Demo({ controls }: { controls: Controls }): ReactElement {
           actions={actions}
           pageSize={10}
           pageSizeOptions={[10, 25, 50]}
+          saveRow={async (_user, draft) => {
+            const saved = await saveUser(draft);
+
+            show(`Saved ${saved.firstName} ${saved.lastName}`);
+
+            return saved;
+          }}
+          createRow={async (draft) => {
+            const created = await createUser(draft);
+
+            show(`Added ${created.firstName} ${created.lastName}`);
+
+            return created;
+          }}
+          editFields={editFields}
           defaultSort={{ key: 'lastName', direction: 'asc' }}
           renderDetail={(user) => (user.id % 3 === 0 ? null : <span className={note}>{user.notes}</span>)}
         />

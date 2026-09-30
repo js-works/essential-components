@@ -98,6 +98,8 @@ function GroupingDemo(): ReactElement {
           columns={columns}
           actions={actions}
           groupBy="country"
+          // A checkbox in every group header, for all its users on the page (opt-in).
+          selectableGroups
           renderGroup={header === 'custom'
             ? (group) => (
               <span>

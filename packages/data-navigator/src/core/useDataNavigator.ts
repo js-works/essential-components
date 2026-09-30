@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent, MouseEvent } from 'react';
 import { hasContent, isPlainRowClick, isPlainRowDoubleClick, isTextEditingTarget } from '../core/utils';
 import type { DataNavigatorComponent as Spec } from '../react/api';
@@ -40,6 +40,20 @@ type RowGroupEntry<Row> = Spec.RowGroup<Row> & { indexes: readonly number[] };
 
 // What a context menu is opened on: a data row (or its detail row), or a group header, by its key.
 type ContextTarget = { type: 'row' | 'group'; key: string };
+
+// The row in edit mode (the controller's `editRow`, saved with `saveRow`), or a new row (`addRow`, saved with
+// `createRow`, `isNew`): its row object (the template of a new one) and its draft, whether the draft is being saved,
+// and the message of a failed save. `id` tells one edit from the next. A new row has a key of its own until it is
+// saved.
+type RowEdit<Row> = {
+  id: number;
+  key: string;
+  isNew: boolean;
+  row: Row;
+  draft: Row;
+  saving: boolean;
+  error: string | undefined;
+};
 
 // What the filter popup needs: whether it is open, and the filter to focus when it opens (from a pill).
 type FilterPanelState = { open: boolean; focusKey: string | undefined };
@@ -139,6 +153,8 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
           setResult(next);
           // A new load brings the order of the source (moved rows included, once saved).
           setMoved(undefined);
+          // And other rows: a row in edit mode leaves it, its draft is dropped.
+          setEdit(undefined);
           setLoaded(true);
           setLoading(false);
         }
@@ -196,6 +212,35 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     });
   const toggleColumn = (key: string, shown: boolean) => setHiddenKeys(withKey(hiddenKeys, key, !shown));
   const keyOf = (row: Row): string => String(row[rowKey]);
+
+  // The fields of the edit form: the columns with an editor (also the hidden ones, in their order), then the extra
+  // fields (`editFields`, values that are no column).
+  const { editFields } = props;
+  const formFields = useMemo(
+    (): readonly Spec.EditField<Row>[] => [
+      ...allLayout.leaves.flatMap(({ column: { key, header, edit } }) =>
+        edit === undefined ? [] : [{ key, label: header, edit }]
+      ),
+      ...(editFields ?? []),
+    ],
+    [allLayout, editFields],
+  );
+  // Editing a row needs `saveRow`, a new row `createRow`, and both at least one field. One row at a time; meanwhile
+  // the rest of the table is blocked.
+  const editable = props.saveRow !== undefined && formFields.length > 0;
+  const creatable = props.createRow !== undefined && formFields.length > 0;
+  const [edit, setEdit] = useState<RowEdit<Row> | undefined>(undefined);
+  const editIdRef = useRef(0);
+  // The id of the edit that is shown (a save that ends after its edit was dropped changes nothing).
+  const shownEditRef = useRef<number | undefined>(undefined);
+  const saveRowRef = useRef(props.saveRow);
+  const createRowRef = useRef(props.createRow);
+
+  useEffect(() => {
+    shownEditRef.current = edit?.id;
+    saveRowRef.current = props.saveRow;
+    createRowRef.current = props.createRow;
+  });
 
   // The runs of the page (see grouping.ts) as the user moved its rows, with the changes of the groups' totals, until the
   // next load (then the source's order counts again), or undefined.
@@ -279,10 +324,18 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     reload: () => {},
     clearRowSelection: () => {},
     getSelectedRows: () => selectedRows,
+    editRow: () => {},
+    addRow: () => {},
   });
 
-  useEffect(() => {
+  // A layout effect: a call right after a render (e.g. `editRow` from a click on a row that just came) already gets the
+  // state of that render, not the one before.
+  useLayoutEffect(() => {
     latestRef.current = {
+      // The row is found on the page by its key (a row that is not shown cannot be edited).
+      editRow: (row) => editRow(row as Row),
+      // The template of a new row is a row of the app's row type.
+      addRow: (template) => addRow(template as Row),
       // The current page again, with page size, sort, search and filters kept. Selection and details are cleared,
       // like on every new load. A page that no longer exists goes to the last one (see the page count above).
       reload: () => {
@@ -310,6 +363,8 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
       reload: () => latestRef.current.reload(),
       clearRowSelection: () => latestRef.current.clearRowSelection(),
       getSelectedRows: () => latestRef.current.getSelectedRows(),
+      editRow: (row) => latestRef.current.editRow(row),
+      addRow: (template) => latestRef.current.addRow(template),
     });
   }, [controller]);
 
@@ -524,7 +579,7 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
   // Rows can be moved only without search and filters (within a filtered subset, where a row lands among the hidden
   // ones is unclear), within the page.
   // A single row can still move into another group (e.g. an empty one).
-  const canReorder = reorderable && search === '' && Object.keys(filters).length === 0
+  const canReorder = reorderable && search === '' && Object.keys(filters).length === 0 && edit === undefined
     && (rows.length > 1 || (rows.length === 1 && segments.length > 1));
 
   // The move of the row of the line `from` into the slot `slot` of the other lines (see `moveInSegments`), or
@@ -600,7 +655,7 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
   const hasContextMenu = (target: ContextTarget): boolean =>
     target.type === 'group'
       ? groupOf(target.key) !== undefined && groupContextMenuItems(actions).length > 0
-      : contextMenuItems(actions, selection, true).length > 0;
+      : target.key !== edit?.key && contextMenuItems(actions, selection, true).length > 0;
 
   // Called when the context menu is about to open on a row or a group header. On a row, like a file manager: a row that
   // is not selected becomes the only selected one; on a selected row the selection stays. False when there is nothing
@@ -690,6 +745,147 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     }
   };
 
+  // Opens the edit form. Not while loading, while the filter view is shown, or while another row is edited.
+  const canStartEdit = !loading && !filterPanel.open && edit === undefined;
+
+  // Puts a row of the page into edit mode: its draft starts as the row.
+  const editRow = (row: Row) => {
+    const key = keyOf(row);
+    const shown = rows.find((candidate) => keyOf(candidate) === key);
+
+    if (!editable || !canStartEdit || shown === undefined) {
+      return;
+    }
+
+    editIdRef.current += 1;
+    setEdit({ id: editIdRef.current, key, isNew: false, row: shown, draft: shown, saving: false, error: undefined });
+  };
+
+  // A new row at the top of the page, with its form open: its draft starts as the template.
+  const addRow = (template: Row) => {
+    if (!creatable || !canStartEdit) {
+      return;
+    }
+
+    editIdRef.current += 1;
+
+    const id = editIdRef.current;
+
+    setEdit({ id, key: `new-row-${id}`, isNew: true, row: template, draft: template, saving: false, error: undefined });
+  };
+
+  // An editor changes the draft (not while it is saved). A change takes the message of a failed save away.
+  const changeDraft = (patch: Partial<Row>) =>
+    setEdit((current) =>
+      current === undefined || current.saving
+        ? current
+        : { ...current, draft: { ...current.draft, ...patch }, error: undefined }
+    );
+
+  const cancelEdit = () => setEdit((current) => (current?.saving === true ? current : undefined));
+
+  // The saved row (what `saveRow` returns, else the draft) takes the place of the row on the page, without a new load.
+  const replaceRow = (key: string, next: Row) => {
+    const swap = (list: readonly Row[]) => list.map((candidate) => (keyOf(candidate) === key ? next : candidate));
+
+    setResult((current) => ({ ...current, rows: swap(current.rows) }));
+    setMoved((current) =>
+      current === undefined
+        ? current
+        : { ...current, segments: current.segments.map((segment) => ({ ...segment, rows: swap(segment.rows) })) }
+    );
+  };
+
+  // A created row comes first on the page (and counts), until the next load puts it where the source has it.
+  const insertRow = (created: Row) => {
+    setResult((current) => ({ ...current, rows: [created, ...current.rows], total: current.total + 1 }));
+    setMoved((current) => {
+      const [first, ...others] = current?.segments ?? [];
+
+      return current === undefined || first === undefined
+        ? current
+        : { ...current, segments: [{ ...first, rows: [created, ...first.rows] }, ...others] };
+    });
+  };
+
+  // Saves the draft ("Save", Enter): `saveRow` gets the row and the draft; for a new row, `createRow` the draft. Without
+  // a change, an edited row just leaves edit mode (a new one is always created). A rejection keeps the form open, with
+  // the message of the error (an `Error`'s message, else `Texts.saveFailed`).
+  const saveEdit = () => {
+    const current = edit;
+
+    if (current === undefined || current.saving) {
+      return;
+    }
+
+    const save = saveRowRef.current;
+    const create = createRowRef.current;
+    const draftKeys = Object.keys(current.draft as object) as (keyof Row)[];
+    const unchanged = draftKeys.every((key) => Object.is(current.draft[key], current.row[key]));
+
+    if (current.isNew ? create === undefined : save === undefined || unchanged) {
+      setEdit(undefined);
+
+      return;
+    }
+
+    const { id } = current;
+
+    setEdit({ ...current, saving: true, error: undefined });
+
+    Promise.resolve()
+      .then(() => (current.isNew ? create?.(current.draft) : save?.(current.row, current.draft)))
+      .then(
+        (saved) => {
+          if (shownEditRef.current !== id) {
+            return;
+          }
+
+          if (current.isNew) {
+            insertRow(saved ?? current.draft);
+          } else {
+            replaceRow(current.key, saved ?? current.draft);
+          }
+
+          setEdit(undefined);
+        },
+        (error: unknown) => {
+          const message = error instanceof Error && error.message !== '' ? error.message : texts.saveFailed;
+
+          setEdit((shown) => (shown?.id === id ? { ...shown, saving: false, error: message } : shown));
+        },
+      );
+  };
+
+  // The keys of the edit form: Enter in a text input saves, Escape cancels. Not in a popup of an editor (a select's
+  // list is in the layer, and its keys bubble up to here through the portal: they belong to it).
+  // `cancel`: what Escape does (the view folds the form up first, then cancels).
+  // A native event (see EditForm.tsx: a native listener on the form, so a dialog around the table sees it handled).
+  const keyDownEdit = (event: globalThis.KeyboardEvent, layer: HTMLElement | null, cancel = cancelEdit) => {
+    const target = event.target;
+
+    if (
+      edit === undefined || event.isComposing
+      || (target instanceof Node && layer?.contains(target) === true)
+    ) {
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      // It belongs to the form: the selection stays (the root would clear it), and a dialog around the table (e.g. a
+      // drawer) stays open.
+      event.preventDefault();
+      event.stopPropagation();
+      cancel();
+    } else if (
+      event.key === 'Enter' && target instanceof HTMLInputElement
+      && !['checkbox', 'radio', 'button', 'submit', 'reset'].includes(target.type)
+    ) {
+      event.preventDefault();
+      saveEdit();
+    }
+  };
+
   // Grid: the meta columns (the drag handle, selection, details toggle) come first, then the columns, then the action
   // column. The handle column is there whenever the table is reorderable (also while its handles are hidden), so the
   // columns do not jump.
@@ -750,13 +946,16 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     closeFilters,
     headerId: (key: string) => `${idBase}-header-${key.replace(/\W/g, '_')}`,
     // Empty groups of the source are shown too: only a page without any line is empty.
-    isEmpty: loaded && lines.length === 0,
+    isEmpty: loaded && lines.length === 0 && edit?.isNew !== true,
     // The footer (`footer`): always with rows; `auto` only when there is something to page or to choose (more than one
     // page, or more rows than the smallest page size); `never` not. From the last load, so a new load does not flicker.
     footerShown: rows.length > 0 && (footerMode === 'always'
       || (footerMode === 'auto' && (pageCount > 1 || result.total > Math.min(...pageSizeOptions)))),
     // The Reload button of the toolbar: the same as the controller's reload().
     reload: props.reloadable === true ? () => latestRef.current.reload() : undefined,
+    // A checkbox in every group header that selects the group's rows (opt-in, like in other grids): only with multi
+    // selection.
+    selectableGroups: props.selectableGroups === true && selection === 'multi',
     // What the action column shows of an action: its icon (with the label as tooltip), its label, or both.
     rowActionLook: props.rowActionLook ?? 'icon',
     searchBox: searchable
@@ -860,5 +1059,16 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     contextActions,
     prepareContextMenu,
     invokeFromContextMenu,
+
+    // Row editing: the edited row (undefined while none is), its draft and state, and what the editors and the buttons
+    // do. While a row is edited, the rest of the table is blocked, like while loading.
+    edit,
+    formFields,
+    fieldId: (key: string) => `${idBase}-field-${key.replace(/\W/g, '_')}`,
+    blocked: loading || edit !== undefined,
+    changeDraft,
+    saveEdit,
+    cancelEdit,
+    keyDownEdit,
   };
 }

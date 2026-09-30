@@ -2,6 +2,8 @@ export type { DataNavigator };
 
 declare const builtInFilter: unique symbol;
 
+declare const builtInEditor: unique symbol;
+
 declare const contentType: unique symbol;
 
 declare namespace DataNavigator {
@@ -48,6 +50,25 @@ declare namespace DataNavigator {
   type Move<Row> = { row: Row; group: string | undefined; after: Row | undefined; before: Row | undefined };
 
   type Reorder<Row> = (move: Move<Row>) => void | Promise<void>;
+
+  type SaveRow<Row> = (row: Row, draft: Row) => void | Row | Promise<void | Row>;
+
+  type CreateRow<Row> = (draft: Row) => Row | Promise<Row>;
+
+  type EditorProps<Row> = {
+    row: Row;
+    draft: Row;
+    columnKey: keyof Row & string;
+    value: unknown;
+    change: (patch: Partial<Row>) => void;
+    labelledBy: string;
+  };
+
+  type TextColumnEditorSettings = { placeholder?: string };
+
+  type SelectColumnEditorSettings = { options: readonly FilterOption[] };
+
+  type DateColumnEditorSettings = { placeholder?: string };
 
   type FilterProps = {
     value: FilterValue | undefined;
@@ -135,6 +156,11 @@ declare namespace DataNavigator {
     deselectGroup: string; // Deselect group
     groupCount: (params: { count: number }) => string; // {count}
     groupPartial: (params: { shown: number; total: number }) => string; // {shown} of {total}
+    confirmEdit: string; // OK
+    cancelEdit: string; // Cancel
+    saveFailed: string; // The row could not be saved
+    editRow: string; // Edit row
+    newRow: string; // New row
   };
 
   type ThemeValue = string | { light: string; dark: string };
@@ -201,6 +227,16 @@ declare namespace DataNavigator {
 
   type ColumnFilter<C> = BuiltInColumnFilter | ((props: FilterProps) => string | C);
 
+  type BuiltInColumnEditor = { readonly [builtInEditor]: true };
+
+  type ColumnEditor<Row, C> = BuiltInColumnEditor | ((props: EditorProps<Row>) => string | C);
+
+  type EditField<Row, C> = {
+    key: keyof Row & string;
+    label: TextContent<C>;
+    edit: ColumnEditor<Row, C>;
+  };
+
   type Column<Row, C> = {
     key: keyof Row & string;
     header: TextContent<C>;
@@ -209,6 +245,7 @@ declare namespace DataNavigator {
     align?: ColumnAlign;
     render?: (row: Row) => string | C;
     filter?: ColumnFilter<C>;
+    edit?: ColumnEditor<Row, C>;
     wrap?: boolean;
     hideable?: boolean;
     hidden?: boolean;
@@ -269,6 +306,9 @@ declare namespace DataNavigator {
   type ControllerOptions<Row, C> = {
     source: Source<Row>;
     reorder?: Reorder<Row>;
+    saveRow?: SaveRow<Row>;
+    createRow?: CreateRow<Row>;
+    editFields?: readonly EditField<Row, C>[];
     rowKey: keyof Row & string;
     columns: readonly (Column<Row, C> | ColumnGroup<Row, C>)[];
     actions?: readonly (Action<Row, C> | ActionMenu<Row, C>)[];
@@ -286,6 +326,8 @@ declare namespace DataNavigator {
     reload: () => void;
     clearRowSelection: () => void;
     getSelectedRows: () => readonly Row[];
+    editRow(row: Row): void;
+    addRow(template: Row): void;
     onSelectionChange: (listener: (rows: readonly Row[]) => void) => () => void;
   };
 
@@ -298,6 +340,7 @@ declare namespace DataNavigator {
     striped: boolean;
     searchable: boolean;
     reloadable: boolean;
+    selectableGroups: boolean;
     rowActionLook: RowActionLook;
     selectionAppearance: SelectionAppearance;
     pageSize: number;

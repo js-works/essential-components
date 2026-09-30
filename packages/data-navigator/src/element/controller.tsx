@@ -4,6 +4,7 @@ import { createDataNavigatorController, subscribeToSelection } from '../core/con
 import { DataNavigatorView } from '../core/view/DataNavigatorView';
 import type { DataNavigatorComponent as Spec } from '../react/api';
 import type { ContentRenderer } from './content';
+import { editorOf } from './editors';
 import { reactFilterOf } from './filters';
 
 export { bindController, controllerFactoryOf, releaseController, renderController };
@@ -16,6 +17,7 @@ type ElementSettings = {
   striped: boolean;
   searchable: boolean;
   reloadable: boolean;
+  selectableGroups: boolean;
   rowActionLook: DataNavigator.RowActionLook;
   selectionAppearance: DataNavigator.SelectionAppearance;
   pageSize: number;
@@ -44,6 +46,8 @@ function controllerFactoryOf<C>(setup: object): DataNavigator.CreateNavigatorCon
       reload: () => core.reload(),
       clearRowSelection: () => core.clearRowSelection(),
       getSelectedRows: () => core.getSelectedRows(),
+      editRow: (row: Row) => core.editRow(row),
+      addRow: (template: Row) => core.addRow(template),
       // The core also reports connecting and disconnecting: a listener only hears about a new selection (the table hands
       // out the same array until the selection changes).
       onSelectionChange: (listener: (rows: readonly Row[]) => void) => {
@@ -133,12 +137,20 @@ function propsOf<Row, C>(
       hidden: column.hidden,
       render: render === undefined ? undefined : (row) => content(render(row)),
       filter: filterOf(column.filter, content),
+      edit: editorOf(column.edit, content),
     };
   };
 
   return {
     source: options.source,
     reorder: options.reorder,
+    saveRow: options.saveRow,
+    createRow: options.createRow,
+    editFields: options.editFields?.flatMap((field) => {
+      const edit = editorOf(field.edit, content);
+
+      return edit === undefined ? [] : [{ key: field.key, label: content(field.label), edit }];
+    }),
     rowKey: options.rowKey,
     columns: options.columns.map((column) =>
       'columns' in column

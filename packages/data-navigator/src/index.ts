@@ -1,4 +1,5 @@
 import type { DataNavigator } from './api';
+import { dateColumnEditor, selectColumnEditor, textColumnEditor } from './element/editors';
 import {
   booleanColumnFilter,
   dateRangeColumnFilter,
@@ -10,10 +11,13 @@ import { setupDataNavigator } from './element/setupDataNavigator';
 
 export {
   booleanColumnFilter,
+  dateColumnEditor,
   dateRangeColumnFilter,
   numberRangeColumnFilter,
+  selectColumnEditor,
   selectColumnFilter,
   setupDataNavigator,
+  textColumnEditor,
   textColumnFilter,
 };
 export type { DataNavigator };

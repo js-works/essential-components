@@ -34,6 +34,7 @@ export {
   MEETING_STATUSES,
   newSectionId,
   removeMembers,
+  renameDocument,
   reorderAgenda,
   ROLES,
   saveSectionDraft,
@@ -1273,6 +1274,30 @@ function discardDocuments(ids: readonly string[]): void {
   for (const id of ids) {
     staged.delete(id);
   }
+}
+
+// Renames a document (the edit form of the documents table): the name trimmed, not empty; the type follows its
+// extension, like for an upload.
+async function renameDocument(id: string, name: string): Promise<MeetingDocument> {
+  const trimmed = name.trim();
+
+  if (trimmed === '') {
+    throw new Error('The name must not be empty.');
+  }
+
+  await save((state) => ({
+    documents: state.documents.map((document) =>
+      document.id === id ? { ...document, name: trimmed, type: typeOf(trimmed) } : document
+    ),
+  }));
+
+  const renamed = db.getState().documents.find((document) => document.id === id);
+
+  if (renamed === undefined) {
+    throw new Error('The document does not exist anymore.');
+  }
+
+  return renamed;
 }
 
 async function deleteDocuments(ids: readonly string[]): Promise<void> {

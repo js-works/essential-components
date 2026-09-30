@@ -25,6 +25,7 @@ const UPGRADED_PROPERTIES = [
   'striped',
   'searchable',
   'reloadable',
+  'selectableGroups',
   'rowActionLook',
   'selectionAppearance',
   'pageSize',
@@ -50,6 +51,7 @@ function setupDataNavigator<C = Node>(
       'striped',
       'searchable',
       'reloadable',
+      'selectable-groups',
       'row-action-look',
       'selection-appearance',
       'page-size',
@@ -144,6 +146,15 @@ function setupDataNavigator<C = Node>(
       this.toggleAttribute('reloadable', reloadable);
     }
 
+    // A checkbox in every group header (with `groupBy` and multi selection) that selects the rows of the group.
+    get selectableGroups(): boolean {
+      return this.hasAttribute('selectable-groups');
+    }
+
+    set selectableGroups(selectable: boolean) {
+      this.toggleAttribute('selectable-groups', selectable);
+    }
+
     // What the action column shows of an action: its icon (the default), its label, or both.
     get rowActionLook(): DataNavigator.RowActionLook {
       const value = this.getAttribute('row-action-look');
@@ -222,6 +233,7 @@ function setupDataNavigator<C = Node>(
         striped: this.striped,
         searchable: this.searchable,
         reloadable: this.reloadable,
+        selectableGroups: this.selectableGroups,
         rowActionLook: this.rowActionLook,
         selectionAppearance: this.selectionAppearance,
         pageSize: this.pageSize,

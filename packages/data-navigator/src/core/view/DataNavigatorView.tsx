@@ -1,6 +1,6 @@
 import { Tooltip } from '@base-ui/react/tooltip';
-import { Fragment, useContext, useRef, useState } from 'react';
-import type { MouseEvent, ReactElement, ReactNode } from 'react';
+import { Fragment, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import type { HTMLAttributes, MouseEvent, ReactElement, ReactNode } from 'react';
 import type { DataNavigatorComponent as Spec } from '../../react/api';
 import { ConfigContext } from '../config';
 import { useDataNavigator } from '../useDataNavigator';
@@ -8,6 +8,7 @@ import type { RowGroupEntry } from '../useDataNavigator';
 import { flag, formatValue, hasContent, suppressesTextSelection, suppressesWordSelection } from '../utils';
 import { ActionList } from './Actions';
 import * as classes from './DataNavigator.module.css';
+import { EditForm } from './EditForm';
 import { FilterButton, FilterPills, FilterView } from './FilterPanel';
 import { Footer } from './Footer';
 import { icons } from './icons';
@@ -18,6 +19,12 @@ import { Toolbar } from './Toolbar';
 import { ActionButton, Checkbox, ChevronButton, LoadingBar, Radio, SortButton, ToggleMenu } from './widgets';
 
 export { DataNavigatorView };
+
+// How long the edit form unfolds and its row folds up (the same as `.editFormCell` in the stylesheet).
+const EDIT_FORM_TIME = 180;
+
+// The folding of the edited row, both ways: kept at its end (`fill`) until it is cancelled.
+const FOLD_TIMING: KeyframeAnimationOptions = { duration: EDIT_FORM_TIME, easing: 'ease', fill: 'forwards' };
 
 // The whole data navigator: the toolbar (with the filter button and the pills), the grid, the header rows, the data
 // rows, the detail rows and the empty state, or the filter view in place of the grid and the footer. The root carries
@@ -31,6 +38,138 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
   const filterButtonRef = useRef<HTMLButtonElement>(null);
   const { texts, selection, rows, layout, sort } = nav;
   const drag = useRowDrag(nav.lines.length, nav.canReorder, nav.moveLine);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const editKey = nav.edit?.key;
+
+  // The rows of the edited row (its data row, and its detail row), not its form.
+  const editedRows = (root: HTMLElement, key: string) =>
+    [...root.querySelectorAll<HTMLElement>('[role="row"][data-row-key]:not([data-edit-form])')].filter((row) =>
+      row.getAttribute('data-row-key') === key
+    );
+
+  const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // The folding of the edited row, per cell (see below): the cell, its keyframes and its animation. And the form being
+  // folded up by "Cancel", before it closes.
+  const foldRef = useRef<{ cell: HTMLElement; keyframes: readonly Keyframe[]; animation: Animation }[]>([]);
+  // By the id of the edit, not the key of its row: the same row may be opened again right after.
+  const [closingId, setClosingId] = useState<number | undefined>(undefined);
+  const closing = nav.edit !== undefined && closingId === nav.edit.id;
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  useEffect(() => () => clearTimeout(closeTimerRef.current), []);
+
+  // "Cancel" (and Escape) the other way round: the form folds up while its row unfolds again, in the same time, and the
+  // rest of the table fades back; then the form closes. Meanwhile nothing in the form reacts. Not while the draft is
+  // saved. With reduced motion at once.
+  const cancelEdit = () => {
+    const edit = nav.edit;
+
+    if (edit === undefined || edit.saving || closing) {
+      return;
+    }
+
+    if (reducedMotion()) {
+      nav.cancelEdit();
+
+      return;
+    }
+
+    setClosingId(edit.id);
+    // Its keyframes backwards, as a new animation: `reverse()` would also turn the easing around, and the row would lag
+    // behind the form.
+    for (const fold of foldRef.current) {
+      fold.animation.cancel();
+      fold.animation = fold.cell.animate([...fold.keyframes].reverse(), FOLD_TIMING);
+    }
+
+    closeTimerRef.current = setTimeout(nav.cancelEdit, EDIT_FORM_TIME);
+  };
+
+  // The form takes the place of its row: while it unfolds (CSS, `@starting-style`), the row folds up in the same time,
+  // from its measured height to none (a Web Animation: CSS cannot animate from `auto`). It stays folded while the form
+  // is open (`fill`); "Cancel" plays it back (see above). Before the first paint, so nothing flashes. With reduced
+  // motion at once.
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+
+    if (editKey === undefined || root === null) {
+      return;
+    }
+
+    const timing = reducedMotion() ? { ...FOLD_TIMING, duration: 0 } : FOLD_TIMING;
+    const folds = editedRows(root, editKey).flatMap((row) =>
+      [...row.children].flatMap((cell) => {
+        if (!(cell instanceof HTMLElement) || typeof cell.animate !== 'function') {
+          return [];
+        }
+
+        const { paddingTop, paddingBottom, borderBottomWidth } = getComputedStyle(cell);
+        const keyframes: readonly Keyframe[] = [
+          {
+            boxSizing: 'border-box',
+            overflow: 'hidden',
+            maxHeight: `${cell.getBoundingClientRect().height}px`,
+            paddingTop,
+            paddingBottom,
+            borderBottomWidth,
+            opacity: 1,
+          },
+          {
+            boxSizing: 'border-box',
+            overflow: 'hidden',
+            maxHeight: '0px',
+            paddingTop: '0px',
+            paddingBottom: '0px',
+            borderBottomWidth: '0px',
+            opacity: 0,
+          },
+        ];
+
+        return [{ cell, keyframes, animation: cell.animate([...keyframes], timing) }];
+      })
+    );
+
+    foldRef.current = folds;
+
+    return () => {
+      // Closed another way meanwhile (e.g. by a new load): a pending close of "Cancel" is not for the next form.
+      clearTimeout(closeTimerRef.current);
+      foldRef.current = [];
+      folds.forEach((fold) => fold.animation.cancel());
+    };
+  }, [editKey]);
+
+  // The edit form gets the focus in its first editor (a text is selected), and comes into view (its buttons too), as
+  // far as it fits, once it has unfolded. When it closes, the focus goes back to where it was (e.g. the row's "Edit" or
+  // a button of the toolbar), else to the first button of the row's actions.
+  useEffect(() => {
+    const root = rootRef.current;
+
+    if (editKey === undefined || root === null) {
+      return;
+    }
+
+    const before = document.activeElement;
+    const form = root.querySelector<HTMLElement>('[data-edit-form] [role="cell"]');
+    const first = form?.querySelector<HTMLElement>(':is(input, textarea, select, button)');
+    const timer = setTimeout(() => form?.scrollIntoView({ block: 'nearest' }), EDIT_FORM_TIME);
+
+    first?.focus({ preventScroll: true });
+
+    if (first instanceof HTMLInputElement) {
+      first.select();
+    }
+
+    return () => {
+      clearTimeout(timer);
+
+      if (before instanceof HTMLElement && before.isConnected && root.contains(before) && !before.closest('[inert]')) {
+        before.focus();
+      } else if (document.activeElement === null || document.activeElement === document.body) {
+        editedRows(root, editKey)[0]?.querySelector<HTMLElement>('[data-row-actions] button')?.focus();
+      }
+    };
+  }, [editKey]);
 
   // Closing the filter view gives the focus back to the filter button (the focused control goes away with the view).
   const closeFilterView = () => {
@@ -66,25 +205,35 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
       ? <span className={classes.cellText}>{content}</span>
       : content;
 
-  // The header row of a group (the line `line`), over the whole width: a checkbox for its rows (multi selection; none
-  // for an empty group), then a button that collapses and expands the group, with a chevron and the group's content:
+  // The header row of a group (the line `line`), over the whole width: a checkbox for its rows (`selectableGroups`,
+  // with multi selection; none for an empty group), then a button that collapses and expands the group, with a chevron
+  // and the group's content (without the checkbox, it starts in the first column):
   // `renderGroup`, else its key and the number of its rows (of the source's total, when it gives one and the page
   // shows only a part of the group). The group actions at its end, in the action column. During a drag it slides aside like a row.
   const renderGroupRow = (group: RowGroupEntry<Row>, line: number): ReactElement => {
     const collapsed = nav.isGroupCollapsed(group.key);
     const selectedState = nav.groupSelection(group);
     const shown = group.rows.length;
-    const multi = selection === 'multi';
+    // With the checkbox (`selectableGroups`, only with multi selection), the toggle starts after the selection column;
+    // without it, in the first column, so the caret and the name are not pushed to the right by an empty cell.
+    const withCheckbox = nav.selectableGroups;
     const look = drag.lookOf(line);
     const withActions = nav.groupActions.length > 0;
 
     return (
-      <div role="row" className={classes.groupRow} data-line={line} data-group-key={group.key} inert={nav.loading}>
+      <div
+        role="row"
+        className={classes.groupRow}
+        data-line={line}
+        data-group-key={group.key}
+        inert={nav.blocked}
+        data-blocked={flag(nav.edit !== undefined)}
+      >
         {
           /* With a checkbox, the band starts in the selection column: an empty band cell in the handle column before
         it, so the band runs through from the left edge. */
         }
-        {multi && nav.hasHandleColumn && (
+        {withCheckbox && nav.hasHandleColumn && (
           <div
             role="presentation"
             className={classes.groupCell}
@@ -93,7 +242,7 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
             data-meta={nav.metaEdges('handle')}
           />
         )}
-        {multi && (
+        {withCheckbox && (
           <div
             role="cell"
             className={classes.groupCell}
@@ -117,7 +266,7 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
           data-drag={look.state}
           style={{
             ...look.style,
-            gridColumn: `${multi ? nav.selectionColumn + 1 : 1} / ${withActions ? nav.actionColumn : -1}`,
+            gridColumn: `${withCheckbox ? nav.selectionColumn + 1 : 1} / ${withActions ? nav.actionColumn : -1}`,
           }}
         >
           <button
@@ -163,8 +312,44 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
     );
   };
 
+  // The cells of the data columns of a row: its `render`, else its value as text.
+  const renderDataCells = (shown: Row, mark: HTMLAttributes<HTMLDivElement>): ReactNode =>
+    layout.leaves.map(({ column }) => (
+      <div
+        key={column.key}
+        role="cell"
+        className={classes.cell}
+        {...mark}
+        data-align={column.align}
+        data-wrap={flag(column.wrap === true)}
+      >
+        {cellContent(column.render ? column.render(shown) : formatValue(shown[column.key]))}
+      </div>
+    ));
+
+  // The edit form of the edited row (or of the new one), below it.
+  const renderEditForm = (edit: NonNullable<typeof nav.edit>): ReactElement => (
+    <EditForm
+      rowKey={edit.key}
+      isNew={edit.isNew}
+      row={edit.row}
+      draft={edit.draft}
+      saving={edit.saving}
+      error={edit.error}
+      fields={nav.formFields}
+      texts={texts}
+      fieldId={nav.fieldId}
+      onChange={nav.changeDraft}
+      onSave={nav.saveEdit}
+      closing={closing}
+      onCancel={cancelEdit}
+      onKeyDown={(event) => nav.keyDownEdit(event, layer, cancelEdit)}
+    />
+  );
+
   return (
     <div
+      ref={rootRef}
       className={classes.root}
       style={themeStyle}
       aria-busy={nav.loading}
@@ -174,60 +359,65 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
       data-striped={flag(nav.striped)}
       data-dimmed={flag(nav.spinnerVisible)}
       data-dragging={flag(drag.drag !== undefined)}
+      data-editing={flag(nav.edit !== undefined)}
+      data-edit-closing={flag(closing)}
       onKeyDown={(event) => nav.keyDownRoot(event, layer)}
     >
       <LayerContext value={layer}>
         {/* Tooltips open after a short pause, and at once when moving from one trigger to the next. */}
         <Tooltip.Provider delay={300}>
           <div className={classes.content}>
-            <Toolbar
-              title={title}
-              subtitle={subtitle}
-              generalActions={nav.generalActions}
-              selectionActions={nav.selectionActions}
-              invoke={nav.invokeFromToolbar}
-              texts={texts}
-              search={nav.searchBox}
-              // While the filter view is shown, everything of the bar but the filter button is disabled.
-              filtering={nav.filterPanel.open}
-              reload={nav.reload}
-              filterButton={nav.filterColumns.length > 0 && (
-                <FilterButton
-                  count={Object.keys(nav.filters).length}
-                  open={nav.filterPanel.open}
-                  texts={texts}
-                  buttonRef={filterButtonRef}
-                  onToggle={() => (nav.filterPanel.open ? closeFilterView() : nav.openFilters())}
-                  onClear={() => {
-                    nav.clearFilters();
-                    if (nav.filterPanel.open) closeFilterView();
-                  }}
-                />
-              )}
-              columnMenu={nav.columnToggles.length > 0 && (
-                <ToggleMenu
-                  icon={<icons.Columns />}
-                  label={texts.columns}
-                  entries={nav.columnToggles}
-                  onToggle={nav.toggleColumn}
-                />
-              )}
-              // Not shown while the filter view is shown (the view shows the same filters, as a draft).
-              pills={!nav.filterPanel.open && (
-                <FilterPills
-                  columns={nav.filterColumns}
-                  filters={nav.filters}
-                  texts={texts}
-                  onOpen={nav.selectionActive ? undefined : nav.openFilters}
-                  onRemove={nav.removeFilter}
-                  onClearAll={nav.clearFilters}
-                />
-              )}
-              selectable={selection !== 'none'}
-              selectedCount={nav.selectedRows.length}
-              onCancelSelection={nav.clearSelection}
-              loading={nav.loading}
-            />
+            {/* While a row is edited, the toolbar is blocked too (also the search box and the filter button). */}
+            <div className={classes.blocker} inert={nav.edit !== undefined} data-blocked={flag(nav.edit !== undefined)}>
+              <Toolbar
+                title={title}
+                subtitle={subtitle}
+                generalActions={nav.generalActions}
+                selectionActions={nav.selectionActions}
+                invoke={nav.invokeFromToolbar}
+                texts={texts}
+                search={nav.searchBox}
+                // While the filter view is shown, everything of the bar but the filter button is disabled.
+                filtering={nav.filterPanel.open}
+                reload={nav.reload}
+                filterButton={nav.filterColumns.length > 0 && (
+                  <FilterButton
+                    count={Object.keys(nav.filters).length}
+                    open={nav.filterPanel.open}
+                    texts={texts}
+                    buttonRef={filterButtonRef}
+                    onToggle={() => (nav.filterPanel.open ? closeFilterView() : nav.openFilters())}
+                    onClear={() => {
+                      nav.clearFilters();
+                      if (nav.filterPanel.open) closeFilterView();
+                    }}
+                  />
+                )}
+                columnMenu={nav.columnToggles.length > 0 && (
+                  <ToggleMenu
+                    icon={<icons.Columns />}
+                    label={texts.columns}
+                    entries={nav.columnToggles}
+                    onToggle={nav.toggleColumn}
+                  />
+                )}
+                // Not shown while the filter view is shown (the view shows the same filters, as a draft).
+                pills={!nav.filterPanel.open && (
+                  <FilterPills
+                    columns={nav.filterColumns}
+                    filters={nav.filters}
+                    texts={texts}
+                    onOpen={nav.selectionActive ? undefined : nav.openFilters}
+                    onRemove={nav.removeFilter}
+                    onClearAll={nav.clearFilters}
+                  />
+                )}
+                selectable={selection !== 'none'}
+                selectedCount={nav.selectedRows.length}
+                onCancelSelection={nav.clearSelection}
+                loading={nav.loading}
+              />
+            </div>
             {
               /* The grid with the footer, and the filter view: stacked in one cell, so the height is the larger of the
               two. While the view is shown, the grid and the footer stay (with their scroll position and state) but are
@@ -275,7 +465,7 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
                         {selection !== 'none' && (
                           <div
                             role="columnheader"
-                            inert={nav.loading}
+                            inert={nav.blocked}
                             className={classes.headerTall}
                             style={{ gridColumn: nav.selectionColumn, gridRow: nav.headerRowSpan }}
                             data-meta={nav.metaEdges('selection')}
@@ -301,7 +491,7 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
                         {nav.hasDetails && (
                           <div
                             role="columnheader"
-                            inert={nav.loading}
+                            inert={nav.blocked}
                             className={classes.headerTall}
                             style={{ gridColumn: nav.detailsColumn, gridRow: nav.headerRowSpan }}
                             data-meta={nav.metaEdges('details')}
@@ -317,7 +507,7 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
                           <div
                             key={group.start}
                             role="columnheader"
-                            inert={nav.loading}
+                            inert={nav.blocked}
                             className={classes.groupHeader}
                             style={{ gridColumn: nav.columnSpan(nav.firstLeafColumn + group.start, group.span) }}
                           >
@@ -345,7 +535,7 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
                             <div
                               key={column.key}
                               role="columnheader"
-                              inert={nav.loading}
+                              inert={nav.blocked}
                               id={nav.headerId(column.key)}
                               aria-sort={sortable ? nav.ariaSort(column.key) : undefined}
                               data-align={column.align}
@@ -372,12 +562,14 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
                         {nav.hasActionColumn && (
                           <div
                             role="columnheader"
-                            inert={nav.loading}
+                            inert={nav.blocked}
                             className={classes.headerTall}
                             style={{ gridColumn: nav.actionColumn, gridRow: nav.headerRowSpan }}
                           />
                         )}
                       </div>
+                      {/* A new row (`addRow`) is only its form, at the top of the rows. */}
+                      {nav.edit?.isNew === true && <Fragment key={nav.edit.key}>{renderEditForm(nav.edit)}</Fragment>}
                       {nav.lines.map((line, lineIndex) => {
                         // The lines: group headers and rows (the rows of a collapsed group are left out). The stripes
                         // start again in every group, and in every run of rows without a group.
@@ -409,6 +601,12 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
                         // with the pointer, or moved aside to make room (the transform).
                         const look = drag.lookOf(lineIndex);
                         const mark = { 'data-selected': flag(selected), 'data-drag': look.state, style: look.style };
+                        // In edit mode, the edit form follows the row (after its detail row) and takes its place: the
+                        // row folds up (see above). While a row is edited, every row is blocked (the form is not); the
+                        // others are faded.
+                        const edit = nav.edit?.key === key ? nav.edit : undefined;
+                        const otherEdited = nav.edit !== undefined && edit === undefined;
+                        const rowInert = nav.blocked;
 
                         return (
                           <Fragment key={key}>
@@ -417,7 +615,9 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
                               className={classes.dataRow}
                               data-row-key={key}
                               data-line={lineIndex}
-                              inert={nav.loading}
+                              inert={rowInert}
+                              data-blocked={flag(otherEdited)}
+                              data-editing={flag(edit !== undefined)}
                               data-stripe={flag(nav.striped && stripeIndex % 2 === 0)}
                               aria-selected={selection !== 'none' ? selected : undefined}
                               {...rowHandlers(row, key)}
@@ -510,22 +710,7 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
                                   )}
                                 </div>
                               )}
-                              {layout.leaves.map(({ column }) => {
-                                const content = column.render ? column.render(row) : formatValue(row[column.key]);
-
-                                return (
-                                  <div
-                                    key={column.key}
-                                    role="cell"
-                                    className={classes.cell}
-                                    {...mark}
-                                    data-align={column.align}
-                                    data-wrap={flag(column.wrap === true)}
-                                  >
-                                    {cellContent(content)}
-                                  </div>
-                                );
-                              })}
+                              {renderDataCells(row, mark)}
                               {nav.hasActionColumn && (
                                 <div
                                   role="cell"
@@ -534,7 +719,7 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
                                   data-divider="start"
                                   data-control
                                 >
-                                  <div className={classes.rowActions}>
+                                  <div className={classes.rowActions} data-row-actions>
                                     <ActionList
                                       items={nav.rowActions}
                                       placement="row"
@@ -551,7 +736,8 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
                                 className={classes.detailRow}
                                 data-row-key={key}
                                 data-line={lineIndex}
-                                inert={nav.loading}
+                                inert={rowInert}
+                                data-blocked={flag(otherEdited)}
                                 {...rowHandlers(row, key)}
                               >
                                 {nav.hasHandleColumn && (
@@ -602,11 +788,12 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
                                 )}
                               </div>
                             )}
+                            {edit !== undefined && renderEditForm(edit)}
                           </Fragment>
                         );
                       })}
                       {nav.isEmpty && (
-                        <div role="row" className={classes.row} inert={nav.loading}>
+                        <div role="row" className={classes.row} inert={nav.blocked}>
                           <div role="cell" className={classes.emptyCell}>
                             {empty ?? <span className={classes.dimmed}>{nav.emptyText}</span>}
                             {empty === undefined && Object.keys(nav.filters).length > 0 && (
@@ -630,7 +817,7 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
                   )}
                 </div>
                 {nav.footerShown && (
-                  <div inert={nav.loading}>
+                  <div inert={nav.blocked} data-blocked={flag(nav.edit !== undefined)}>
                     <Footer
                       texts={texts}
                       total={nav.total}

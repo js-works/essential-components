@@ -5,6 +5,8 @@ const targetOf = (rows: readonly unknown[] = []) => ({
   reload: vi.fn(),
   clearRowSelection: vi.fn(),
   getSelectedRows: () => rows,
+  editRow: vi.fn(),
+  addRow: vi.fn(),
 });
 
 describe('controller (core)', () => {
@@ -23,9 +25,15 @@ describe('controller (core)', () => {
 
     controller.reload();
     controller.clearRowSelection();
+    controller.editRow('a');
 
     expect(target.reload).toHaveBeenCalledTimes(1);
     expect(target.clearRowSelection).toHaveBeenCalledTimes(1);
+    expect(target.editRow).toHaveBeenCalledWith('a');
+
+    controller.addRow('b');
+
+    expect(target.addRow).toHaveBeenCalledWith('b');
     expect(controller.getSelectedRows()).toEqual(['a']);
 
     disconnect();

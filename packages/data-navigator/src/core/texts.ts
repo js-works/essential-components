@@ -70,6 +70,11 @@ const defaultTexts = {
   deselectGroup: 'Deselect group',
   groupCount: '{count}',
   groupPartial: '{shown} of {total}',
+  confirmEdit: 'OK',
+  cancelEdit: 'Cancel',
+  saveFailed: 'The row could not be saved',
+  editRow: 'Edit row',
+  newRow: 'New row',
 } as const satisfies Record<keyof Spec.Texts, string>;
 
 function createNumberFormat(locale: string): Intl.NumberFormat {
@@ -179,6 +184,11 @@ function useTexts(): Spec.Texts {
       deselectGroup: translate('deselectGroup'),
       groupCount: (params) => translate('groupCount', params),
       groupPartial: (params) => translate('groupPartial', params),
+      confirmEdit: translate('confirmEdit'),
+      cancelEdit: translate('cancelEdit'),
+      saveFailed: translate('saveFailed'),
+      editRow: translate('editRow'),
+      newRow: translate('newRow'),
     };
   }, [i18n, locale, version]);
 }

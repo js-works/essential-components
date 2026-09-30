@@ -36,6 +36,18 @@ declare namespace DataNavigatorComponent {
 
   type Reorder<Row> = DataNavigator.Reorder<Row>;
 
+  type SaveRow<Row> = DataNavigator.SaveRow<Row>;
+
+  type CreateRow<Row> = DataNavigator.CreateRow<Row>;
+
+  type EditorProps<Row> = DataNavigator.EditorProps<Row>;
+
+  type TextColumnEditorSettings = DataNavigator.TextColumnEditorSettings;
+
+  type SelectColumnEditorSettings = DataNavigator.SelectColumnEditorSettings;
+
+  type DateColumnEditorSettings = DataNavigator.DateColumnEditorSettings;
+
   type FilterProps = DataNavigator.FilterProps;
 
   type FilterOption = DataNavigator.FilterOption;
@@ -68,6 +80,14 @@ declare namespace DataNavigatorComponent {
 
   type ColumnFilter = (props: FilterProps) => ReactNode;
 
+  type ColumnEditor<Row> = (props: EditorProps<Row>) => ReactNode;
+
+  type EditField<Row> = {
+    key: keyof Row & string;
+    label: ReactNode;
+    edit: ColumnEditor<Row>;
+  };
+
   type Column<Row> = {
     key: keyof Row & string;
     header: ReactNode;
@@ -76,6 +96,7 @@ declare namespace DataNavigatorComponent {
     align?: ColumnAlign;
     render?: (row: Row) => ReactNode;
     filter?: ColumnFilter;
+    edit?: ColumnEditor<Row>;
     wrap?: boolean;
     hideable?: boolean;
     hidden?: boolean;
@@ -136,6 +157,9 @@ declare namespace DataNavigatorComponent {
   type Props<Row> = {
     source: Source<Row>;
     reorder?: Reorder<Row>;
+    saveRow?: SaveRow<Row>;
+    createRow?: CreateRow<Row>;
+    editFields?: readonly EditField<Row>[];
     rowKey: keyof Row & string;
     columns: readonly (Column<Row> | ColumnGroup<Row>)[];
     title?: ReactNode;
@@ -154,6 +178,7 @@ declare namespace DataNavigatorComponent {
     defaultSort?: Sort;
     searchable?: boolean;
     reloadable?: boolean;
+    selectableGroups?: boolean;
     rowActionLook?: RowActionLook;
     controller?: Controller<Row>;
   };
@@ -169,5 +194,7 @@ declare namespace DataNavigatorComponent {
     reload: () => void;
     clearRowSelection: () => void;
     getSelectedRows: () => readonly Row[];
+    editRow: (row: Row) => void;
+    addRow: (template: Row) => void;
   };
 }

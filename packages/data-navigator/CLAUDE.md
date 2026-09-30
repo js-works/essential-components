@@ -131,7 +131,7 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   with it (checked in the browser: rendering, sorting, search, paging, all filters, selection, actions, the menu,
   tooltips, row details, the language switch).
 - Entries (like `file-upload`):
-  - `@local/data-navigator`: the element (`setupDataNavigator`), its column filters and the types (namespace
+  - `@local/data-navigator`: the element (`setupDataNavigator`), its column filters and editors and the types (namespace
     `DataNavigator`). Preact is bundled in (as React), the app needs no React.
   - `@local/data-navigator/react`: `createDataNavigatorComponent` (renamed from `createDataNavigator`), the hooks, the
     React column filters and their types (namespace `DataNavigatorComponent`), with the app's React (an optional peer
@@ -168,7 +168,7 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     - `onSelectionChange((rows) => …)`: `rows` is typed (`readonly User[]`).
 - Settings that do not depend on `Row` are attributes, reflected to properties (booleans default to `false`):
   - `density` (`compact`, `normal`, `comfortable`; default `normal`), `footer` (`always`, `auto`, `never`; default
-    `always`), `striped`, `searchable`, `reloadable`, `row-action-look` (`rowActionLook`: `icon`, `label`, `iconAndLabel`),
+    `always`), `striped`, `searchable`, `reloadable`, `selectable-groups` (`selectableGroups`), `row-action-look` (`rowActionLook`: `icon`, `label`, `iconAndLabel`),
     `selection-appearance` (`selectionAppearance`: `neutral`, `accent`), `page-size` (`pageSize`).
   - `pageSizeOptions`: a property only (an array).
 - Content (`render`, `renderDetail`, the `header` function) is `string | C`. `C` comes from a content adapter in the
@@ -237,8 +237,9 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     and dropped: a source hook with `reload` (covers only the reload), a ref handle (the same sharing problem, and
     `null` before the mount), a hook that returns a bound component (fragile), helpers in the action callbacks (no
     triggers from outside the table), controlled props (more wiring, and still no reload).
-  - `DataNavigator.Controller<Row>` has exactly the three methods. The `controller` prop is optional: without it the
-    table works as before.
+  - `DataNavigator.Controller<Row>` has exactly these methods, and `editRow(row)` and `addRow(template)` since
+    2026-09-30 (see "Row editing and new rows"). The `controller` prop is optional: without it the table works as
+    before.
 - The framework-free core is `createDataNavigatorController()` (`src/core/controller.ts`, no React). The hooks only
   wrap it (`src/core/controllerHooks.ts`): `useDataNavigatorController` keeps one stable, `useDataNavigatorSelection`
   subscribes with `useSyncExternalStore`. The custom element's controller (see "Custom element") will build on the
@@ -301,7 +302,8 @@ The main goal is a very nice, yet simple, API, designed together with the user.
 - The stylesheet itself (`data-navigator.css`) is still imported by the app.
 - The public API of the React entry (`@local/data-navigator/react`): `createDataNavigatorComponent`,
   `useDataNavigatorController`, `useDataNavigatorSelection`, `textColumnFilter`, `selectColumnFilter`,
-  `dateRangeColumnFilter`, `numberRangeColumnFilter`, `booleanColumnFilter`, and the types (`DataNavigatorComponent.Config`, `.Theme`, `.I18nAdapter`, `.Component`,
+  `dateRangeColumnFilter`, `numberRangeColumnFilter`, `booleanColumnFilter`, `textColumnEditor`, `selectColumnEditor`,
+  `dateColumnEditor`, and the types (`DataNavigatorComponent.Config`, `.Theme`, `.I18nAdapter`, `.Component`,
   `.Controller`, `.Props`, ...). The themes (`defaultTheme`, `softTheme`, `mantineTheme`, `antdTheme`) come from
   `@local/data-navigator/themes`.
 
@@ -403,7 +405,8 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     into its panel (a React root each), and calls `setupUi(this)`; on disconnect it cleans up.
   - `GroupingDemo.tsx` (the "Row grouping" tab): the users grouped by country (`groupBy="country"`, no country
     column), 25 per page (page sizes 10, 25, 50, 100, 250), sorted by last name within the countries, searchable, text and role filters, a multi-row
-    action ("Send message", a toast), striped. The source is `fetchUsersByCountry` (`data.ts`: sorted by country
+    action ("Send message", a toast), striped, `selectableGroups` (a checkbox in every group header). The source is
+    `fetchUsersByCountry` (`data.ts`: sorted by country
     first, with the totals of the groups). Selectors: "Group totals" (from the source, or page only) and "Group
     header" (default, or a custom `renderGroup`).
   - `ReorderDemo.tsx` + `tasks.ts` (the "Row reordering" tab): a backlog of 24 tasks in the order of their priority,
@@ -1530,7 +1533,7 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     and the count). Plain content only: it is inside the toggle button.
   - The group header row (`.groupRow`, `.groupCell`): over the whole width, a gray band with bold text, of the
     normal height of a row (decided 2026-09-30): `--datnav-color-surface-strong` as its background (see Theming;
-    darker than the hover, the neutral selection and the stripes, lighter than the lines), the normal text color; the count dimmed and small. No hover and no row click. With multi selection, a checkbox in the
+    darker than the hover, the neutral selection and the stripes, lighter than the lines), the normal text color; the count dimmed and small. No hover and no row click. With `selectableGroups` and multi selection, a checkbox in the
     selection column (`Texts.selectGroup` / `deselectGroup`, indeterminate while some are selected; gray with the
     neutral appearance) selects all rows of the group on the page, or none. The rest is one button
     (`aria-expanded`): a filled caret (Tabler's `caret-right-filled`; right while collapsed, turned down while expanded)
@@ -1557,6 +1560,12 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - The stripes start again in every group.
   - Row details, the context menu, the selection and the actions work inside groups as without them. The select-all
     checkbox of the header is about all rows of the page.
+  - The group checkbox is opt-in (decided 2026-09-30, like in other grids: AG Grid's `groupSelects`, MUI X's
+    `rowSelectionPropagation`): `selectableGroups?: boolean` (default `false`; the element's attribute
+    `selectable-groups`). Without it (or without multi selection), the header's content (the caret and the name)
+    starts in the first column, over the handle and selection columns (decided 2026-09-30, the user's wish; an empty
+    cell in the selection column pushed it to the right at first). Before, every group header had one with multi
+    selection.
   - Group actions (decided 2026-09-30): `type: 'group'` in `actions` (`GroupAction`, `onClick(group: RowGroup<Row>)`),
     the same on the element's controller. Chosen over a separate `groupActions` prop: `actions` describes everything
     the table offers, and menus and the context menu work the same.
@@ -1578,6 +1587,103 @@ The main goal is a very nice, yet simple, API, designed together with the user.
       last row, at the start of the group below.
     - A group whose rows were all moved away stays on the page, empty, until the next load.
     - The counts in the headers change at once; the totals from the source by ±1, until the next load.
+- Row editing and new rows (decided 2026-09-30): an edit form below the row, over the whole width of the table, one
+  row at a time; "OK" saves the whole row.
+  - History: first like ExtJS's `RowEditing` (the editors in the cells of the row, "Save" and "Cancel" in the action
+    column). Dropped the same day: only the visible columns could be edited, and a narrow column left little room for
+    its editor.
+  - `saveRow?: SaveRow<Row>`, `(row, draft) => void | Row | Promise<void | Row>`: saves an edited row. What it returns
+    (else the draft) takes the place of the row on the page, without a new load (the app may `reload()`).
+  - `createRow?: CreateRow<Row>`, `(draft) => Row | Promise<Row>`: creates a new row; it returns the created row (with
+    its real key). Two functions, not one `saveRow(row | undefined, draft)` (decided): clear types, and a table may
+    offer only one of the two.
+  - The fields of the form: every column with `edit` (also the hidden ones, in the order of the columns; the column
+    header is the label), then `editFields?: readonly EditField<Row>[]`, `{ key, label, edit }`: values that are no
+    column (e.g. notes).
+  - `Column.edit?: ColumnEditor<Row>`, `(props: EditorProps<Row>) => ReactNode`, `EditorProps = { row, draft,
+    columnKey, value, change, labelledBy }`: `value` is the draft's value of the field, `change(patch)` merges a
+    `Partial<Row>` into the draft (so an editor may change other values too), `labelledBy` is the id of the field's
+    label. `row` is the edited row (the template of a new one).
+    - Built-in editors (factories, like the filters): `textColumnEditor({ placeholder? })` (a text input, not trimmed:
+      that is up to `saveRow`), `selectColumnEditor({ options })` (a single select that always has a value,
+      `SelectInput` in `widgets.tsx`), `dateColumnEditor({ placeholder? })` (see below). Small, like the controls of
+      the filter view.
+    - `dateColumnEditor()` (`DateInput` in `view/DateRangeFilter.tsx`, decided 2026-09-30, instead of a text input or
+      a native `<input type="date">`): a trigger in the look of the date range filter (the date in the medium format of
+      the locale, "Apr 6, 1953", or the placeholder, dimmed; a calendar icon, or the clear button while set). It opens
+      a popover with one calendar of the same library (`createDatePicker` in `dateRangePicker.ts`, next to
+      `createRangePicker`): at the month of the date (else of today), the date selected, both ‹ and › shown
+      (`data-single`), the month title up to the decades (`maxView: 3`, quick for a date of birth). A click on a day,
+      or Enter on the keyboard position, sets it and closes the popover. The value is `yyyy-mm-dd`, `''` when cleared;
+      any other text is shown as it is.
+    - The element: the same built-ins (opaque markers, `src/element/editors.tsx`), or a function `(props) => string | C`
+      that is called once when the form opens (its content, e.g. a DOM input, keeps its own state and reports with
+      `change`; a new call per render would replace the input and take its focus). `saveRow`, `createRow` and
+      `editFields` (its `label` a `TextContent<C>`) are options of the element's controller.
+  - Starting, through the controller: `editRow(row)` (the row is found on the page by its key; needs `saveRow` and a
+    field), `addRow(template)` (needs `createRow` and a field). No built-in actions: the app makes them (e.g. "Edit" as
+    the default row action, for a double click; "Add" as a general action) and calls the controller. Nothing happens
+    while loading, while the filter view is shown, or while a form is open.
+    - `addRow` takes a full row as the template (the start values), so the editors always get a complete `draft: Row`.
+      Its key does not count: the new row has a key of its own until it is saved.
+  - The form (`view/EditForm.tsx`, a row of the grid with one cell over all columns, `data-edit-form`; a `group` named
+    `Texts.editRow` "Edit row" or `Texts.newRow` "New row"): the fields, in as many columns as fit (a column: the
+    widest label, the gap and an editor of at least 12rem); below them, on the right, "Cancel" (`Texts.cancelEdit`, a
+    ghost button) and "OK" (`Texts.confirmEdit`, outlined, like "Apply" of the filter view; it was "Save",
+    `Texts.saveRow`, until 2026-09-30: "OK" in capitals, like the dialogs of the overlays package), and on the left the
+    message
+    of a failed save.
+    - The labels (decided 2026-09-30, like the filter view; they were above the editors at first): muted, right
+      aligned, before their editor, all as wide as the widest one (measured when the form opens, `scrollWidth`, and set
+      inline as the labels' `min-width` and in the width of the columns), so the editors line up. In a narrow form
+      (`@container edit-form (width < 24rem)`: a drawer, a phone) the label is above its editor, small and left
+      aligned.
+    - It takes the place of the edited row (decided 2026-09-30; before, the row stayed above it and showed the draft):
+      it follows the row (after its detail row, if it is expanded), and the row folds up while the form is open.
+    - A new row is only its form, first on the page (before its rows, also in an empty table: no empty state
+      meanwhile). (Before, an empty row with the draft stood above it.)
+    - Animation (decided 2026-09-30): when it opens, the form unfolds from no height to its own and its content fades
+      in, while its row (and its detail row) folds up to no height, in the same 180 ms (`ease`), so the rows below slide
+      by the difference; the rest of the table fades to its faded look meanwhile. Nothing with reduced motion.
+      - "Cancel" and Escape (decided 2026-09-30, the user's wish): the other way round, in the same 180 ms: the form
+        folds up (`data-closing`, inert meanwhile) while its row unfolds again and the rest of the table fades back
+        (`data-edit-closing` on the root); then the form closes (`cancelEdit` of the view, a timer; the hook's
+        `keyDownEdit` takes it as the cancel of Escape). Not while the draft is saved.
+      - "OK" (and a new load) closes it at once, and the row is back at once (the saved row takes its place).
+      - The form: CSS, a grid of one row from `0fr` to `1fr` (`@starting-style`), the padding inside the clipped part
+        (`.editFormClip`), so nothing of it shows before.
+      - The row: a Web Animation of its cells (`useLayoutEffect` in the view, before the first paint) from their
+        measured height, padding, bottom line and opacity to none (CSS cannot animate from `auto`), kept with
+        `fill: 'forwards'` while the form is open and cancelled when it closes. "Cancel" plays its keyframes backwards
+        as a new animation (not `reverse()`, which also turns the easing around: the row lagged behind the form and
+        jumped at the end). `EDIT_FORM_TIME` in the view is the stylesheet's 180 ms.
+    - The first editor gets the focus (its text selected); once the form has unfolded, it comes into view as far as it
+      fits. When it closes, the focus goes back to where it was (e.g. the row's "Edit", or "Add" in the toolbar), else
+      to the first button of the row's actions.
+    - Enter in a text input saves, Escape cancels (it does not clear the selection). Not in an editor's popup (the list
+      of a select: its keys are its own). Both are handled (`preventDefault`, `stopPropagation`), so a dialog around the
+      table (e.g. the board manager's "Sections" drawer) neither confirms on Enter nor closes on Escape.
+      - A native `keydown` listener on the form's cell, not React's `onKeyDown` (decided 2026-09-30): React handles
+        events where its root is, and the dialog of the overlays package (its `<dialog>` in a shadow root gets the
+        events of its slotted content first) confirmed on Enter before the form had marked it as handled.
+    - Everything else is blocked (`inert`): the toolbar (the search box and the filter button too), all rows, the
+      footer. The other rows, the toolbar and the footer are faded (`opacity: 0.4`); the edited row is not, and the
+      column headers are only blocked (they stay opaque over the rows). No reordering.
+  - Saving: an edited row without a change just closes the form (no call); a new row is always created. While the save
+    runs, "OK" shows a turning icon, and the editors and the buttons do nothing (the form keeps its focus). A
+    rejection keeps the form open, with the draft, and shows the message (`role="alert"`, in `colorDanger`): the
+    `Error`'s message, else `Texts.saveFailed`. The next change removes it.
+    - A created row comes first on the page, and the total grows by one, until the next load puts it where the source
+      has it (with `groupBy`, it may be a group of its own at the top until then).
+  - A new load (a reload of the controller) closes the form; the draft is dropped. "Cancel" of a new row removes it.
+  - The controller's target is kept current in a layout effect (it was a passive effect): a call right after a render
+    (e.g. `editRow` from a click on a row that just came) gets the state of that render.
+  - The demo ("React component" tab): "Edit" (the default action) opens the form of the names, the date of birth (the
+    date editor), the email, the country, the role and, as extra fields, the city and the notes; "Add user" a new user (`newUser()`).
+    `saveUser` and `createUser` in `data.ts` (in memory, 500 ms) fail for an empty name and an email without "@", and a
+    toast says "Saved …" or "Added …".
+  - Later: F2 or Enter on a focused row to start, validation per field (a message at the field) before the save,
+    required fields, the element demo.
 - Row details (expandable rows) are supported.
   - A chevron column sits right next to the selection column: pointing right when collapsed, down when expanded.
   - The chevron change is animated (a CSS rotation).
@@ -1676,9 +1782,9 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   from the page before.
 - Row reordering: scrolling the rows area while dragging near its top or bottom edge (auto-scroll); moving several
   selected rows at once; a drop onto another page.
-- Inline editing (asked for 2026-09-30, by the board manager's "Sections" drawer, which renders its own inputs for
-  now): e.g. `Column.editable` with `onEdit(row, value)`; a double click or F2 opens an input, Enter saves, Escape
-  cancels. Needs the element's counterpart, focus and keyboard handling.
+- Inline editing per cell (asked for 2026-09-30, by the board manager's "Sections" drawer, which renders its own
+  inputs for now): the edit form came first (see "Row editing and new rows"); editing single cells (a double click or
+  F2 on a cell) may follow, on the same `edit` of the columns.
 
 - Review `reloadable`: should the source say whether its data can change (and so whether the Reload button makes
   sense), instead of a prop of the table? Decided for now: a prop, like `searchable` (showing the button is a UI

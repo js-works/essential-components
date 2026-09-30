@@ -26,6 +26,7 @@ export {
   Radio,
   SearchField,
   Segmented,
+  SelectInput,
   SortButton,
   TextButton,
   ToggleMenu,
@@ -590,6 +591,32 @@ function FilterSelectField(props: FilterSelectFieldProps): ReactElement {
             <icons.ChevronDown size={14} />
           </span>
         )}
+    </div>
+  );
+}
+
+type SelectInputProps = {
+  value: string;
+  options: readonly Option[];
+  labelledBy: string;
+  onChange: (value: string) => void;
+};
+
+// A single select that always has a value (e.g. an editor of a row): the look of the other selects, with its chevron,
+// and no clear button.
+function SelectInput({ value, options, labelledBy, onChange }: SelectInputProps): ReactElement {
+  return (
+    <div className={styles.field}>
+      <SelectField
+        value={[value]}
+        multiple={false}
+        options={options}
+        naming={{ 'aria-labelledby': labelledBy }}
+        onChange={(next) => next[0] !== undefined && onChange(next[0])}
+      />
+      <span className={styles.fieldEnd}>
+        <icons.ChevronDown size={14} />
+      </span>
     </div>
   );
 }

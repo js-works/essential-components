@@ -1,6 +1,7 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { DataNavigator } from '../api';
+import { textColumnEditor } from './editors';
 import {
   booleanColumnFilter,
   dateRangeColumnFilter,
@@ -537,5 +538,75 @@ describe('controller', () => {
     fireEvent.keyDown(screen.getAllByRole('button', { name: 'Move row' })[0]!, { key: 'ArrowDown', altKey: true });
 
     await waitFor(() => expect(reorder).toHaveBeenCalledWith({ row: people[0], after: people[1], before: people[2] }));
+  });
+
+  it('edits a row with the controller: a built-in editor, and one of its own (made once, a DOM input)', async () => {
+    const [ElementClass, createController] = setupDataNavigator();
+    const saveRow = vi.fn();
+    const element = create(ElementClass);
+    const cityEditor = vi.fn((props: DataNavigator.EditorProps<Person>) => {
+      const input = document.createElement('input');
+
+      input.value = props.draft.city;
+      input.setAttribute('aria-label', 'City');
+      input.addEventListener('input', () => props.change({ city: input.value }));
+
+      return input;
+    });
+    const controller = createController({
+      source: createSource(),
+      saveRow,
+      rowKey: 'id',
+      columns: [
+        { key: 'name', header: 'Name', edit: textColumnEditor() },
+        { key: 'city', header: 'City', edit: cityEditor },
+      ],
+    });
+
+    element.controller = controller;
+    await mount(element);
+    await waitFor(() => expect(screen.getByText('Person 01')).toBeTruthy());
+
+    act(() => controller.editRow(people[0]!));
+
+    const name = screen.getByRole<HTMLInputElement>('textbox', { name: 'Name' });
+    const city = screen.getByRole<HTMLInputElement>('textbox', { name: 'City' });
+
+    fireEvent.change(name, { target: { value: 'Ada' } });
+    fireEvent.input(city, { target: { value: 'Oslo' } });
+    // Made once: typing does not make a new input.
+    expect(cityEditor).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('textbox', { name: 'City' })).toBe(city);
+
+    fireEvent.keyDown(name, { key: 'Enter' });
+
+    await waitFor(() => expect(saveRow).toHaveBeenCalledWith(people[0], { id: 1, name: 'Ada', city: 'Oslo' }));
+    await waitFor(() => expect(screen.getByText('Oslo')).toBeTruthy());
+  });
+
+  it('adds a new row with the controller, with the extra fields of editFields', async () => {
+    const [ElementClass, createController] = setupDataNavigator();
+    const createRow = vi.fn(async (draft: Person) => ({ ...draft, id: 100 }));
+    const element = create(ElementClass);
+    const controller = createController({
+      source: createSource(),
+      createRow,
+      rowKey: 'id',
+      columns: [{ key: 'name', header: 'Name', edit: textColumnEditor() }],
+      editFields: [{ key: 'city', label: () => 'Town', edit: textColumnEditor() }],
+    });
+
+    element.controller = controller;
+    await mount(element);
+    await waitFor(() => expect(screen.getByText('Person 01')).toBeTruthy());
+
+    act(() => controller.addRow({ id: 0, name: '', city: '' }));
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Name' }), { target: { value: 'Grace' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Town' }), { target: { value: 'Lisbon' } });
+    fireEvent.click(screen.getByRole('button', { name: 'OK' }));
+
+    await waitFor(() => expect(createRow).toHaveBeenCalledWith({ id: 0, name: 'Grace', city: 'Lisbon' }));
+    await waitFor(() => expect(screen.getByText('Grace')).toBeTruthy());
   });
 });

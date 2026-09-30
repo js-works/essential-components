@@ -4,6 +4,7 @@ import '@mantine/core/styles.layer.css';
 import '@mantine/dates/styles.layer.css';
 import './board-manager.css';
 import {
+  Badge,
   Button,
   CloseButton,
   createTheme,
@@ -32,10 +33,12 @@ export { App as BoardManagerApp, BoardManagerDemo };
 // for the documents of a meeting. The server is fake (db.ts), the data lives in memory.
 
 // The popups of Mantine stay inside the app (no portal to `<body>`): its variables are set on the app, not on `:root`.
+// Badges keep the case of their text (Mantine's stylesheet makes them uppercase).
 const THEME = createTheme({
   primaryColor: 'indigo',
   defaultRadius: 'sm',
   components: {
+    Badge: Badge.extend({ defaultProps: { tt: 'none' } }),
     Menu: Menu.extend({ defaultProps: { withinPortal: false } }),
     Popover: Popover.extend({ defaultProps: { withinPortal: false } }),
     Tooltip: Tooltip.extend({ defaultProps: { withinPortal: false } }),
@@ -94,7 +97,7 @@ const OVERLAYS_CONFIG: OverlaysConfig = {
       ),
     },
   },
-  toasts: { placement: 'bottom-end', size: 'medium', stacked: true, appearance: 'solid', theme: TOAST_THEME },
+  toasts: { placement: 'bottom-end', size: 'small', stacked: true, appearance: 'solid', theme: TOAST_THEME },
 };
 
 // Mantine follows the page's color scheme switch. It does not set the scheme on `<html>` (`getRootElement`): the

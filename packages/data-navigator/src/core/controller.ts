@@ -8,6 +8,8 @@ type ControllerTarget = {
   reload: () => void;
   clearRowSelection: () => void;
   getSelectedRows: () => readonly unknown[];
+  editRow: (row: unknown) => void;
+  addRow: (template: unknown) => void;
 };
 
 type ControllerState = {
@@ -18,7 +20,7 @@ type ControllerState = {
 const NO_ROWS: readonly never[] = [];
 
 // The inner state of every controller, by controller. Not part of the controller object, so the public object has
-// only its three methods.
+// only its methods.
 const states = new WeakMap<object, ControllerState>();
 
 // The framework-free core of a controller (the React hook only keeps one stable, the custom element will use it too).
@@ -30,6 +32,8 @@ function createDataNavigatorController<Row>(): Spec.Controller<Row> {
     clearRowSelection: () => state.target?.clearRowSelection(),
     // The target hands out the rows of the table, whose row type is the controller's.
     getSelectedRows: () => (state.target?.getSelectedRows() ?? NO_ROWS) as readonly Row[],
+    editRow: (row) => state.target?.editRow(row),
+    addRow: (template) => state.target?.addRow(template),
   };
 
   states.set(controller, state);

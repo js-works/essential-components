@@ -1,6 +1,6 @@
 import type { DataNavigatorComponent } from '../src/react';
 
-export { countries, fetchNothing, fetchUsers, fetchUsersByCountry, LOADING_TIME, roles };
+export { countries, createUser, fetchNothing, fetchUsers, fetchUsersByCountry, LOADING_TIME, newUser, roles, saveUser };
 export type { User };
 
 type User = {
@@ -100,7 +100,72 @@ function dateOfBirthOf(index: number): string {
   return date.toISOString().slice(0, 10);
 }
 
-const users = createUsers(245);
+// Kept in memory: a saved user (row editing) replaces the one with its id.
+const users: User[] = [...createUsers(245)];
+
+const SAVE_TIME = 500;
+
+// A user as the server takes it (edited or new): the texts trimmed. A name must not be empty, and an email needs an
+// "@": else the save fails, with a message the table shows in the edit form.
+async function checked(draft: User): Promise<User> {
+  await new Promise((resolve) => setTimeout(resolve, SAVE_TIME));
+
+  const user = {
+    ...draft,
+    firstName: draft.firstName.trim(),
+    lastName: draft.lastName.trim(),
+    email: draft.email.trim(),
+  };
+
+  if (user.firstName === '' || user.lastName === '') {
+    throw new Error('The first and the last name must not be empty.');
+  }
+
+  if (!user.email.includes('@')) {
+    throw new Error('The email address needs an "@".');
+  }
+
+  return user;
+}
+
+// Saves a user edited in the table (`saveRow`).
+async function saveUser(draft: User): Promise<User> {
+  const saved = await checked(draft);
+  const index = users.findIndex((user) => user.id === saved.id);
+
+  if (index !== -1) {
+    users[index] = saved;
+  }
+
+  return saved;
+}
+
+// The template of a new user (`addRow`): its id comes with the save.
+function newUser(): User {
+  return {
+    id: 0,
+    firstName: '',
+    lastName: '',
+    email: '',
+    role: 'Viewer',
+    city: '',
+    country: countries[0] ?? '',
+    created: new Date().toISOString().slice(0, 10),
+    dateOfBirth: '',
+    logins: 0,
+    active: true,
+    notes: '',
+  };
+}
+
+// Creates a user added in the table (`createRow`), with the next free id.
+async function createUser(draft: User): Promise<User> {
+  const created = { ...(await checked(draft)), id: Math.max(...users.map((user) => user.id)) + 1 };
+
+  users.push(created);
+
+  return created;
+}
 
 function compare(a: unknown, b: unknown): number {
   return typeof a === 'number' && typeof b === 'number' ? a - b : String(a).localeCompare(String(b));

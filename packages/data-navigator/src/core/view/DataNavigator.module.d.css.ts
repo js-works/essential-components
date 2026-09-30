@@ -1,6 +1,7 @@
 export {
   adapterContent,
   applyButton,
+  blocker,
   button,
   buttonIcon,
   buttonLabel,
@@ -19,6 +20,15 @@ export {
   detailToggle,
   dimmed,
   dragHandle,
+  editControl,
+  editError,
+  editField,
+  editFields,
+  editFooter,
+  editForm,
+  editFormCell,
+  editFormClip,
+  editLabel,
   emptyCell,
   field,
   fieldEnd,
@@ -115,6 +125,7 @@ export {
 
 declare const adapterContent: string;
 declare const applyButton: string;
+declare const blocker: string;
 declare const button: string;
 declare const buttonIcon: string;
 declare const buttonLabel: string;
@@ -133,6 +144,15 @@ declare const detailRow: string;
 declare const detailToggle: string;
 declare const dimmed: string;
 declare const dragHandle: string;
+declare const editControl: string;
+declare const editError: string;
+declare const editField: string;
+declare const editFields: string;
+declare const editFooter: string;
+declare const editForm: string;
+declare const editFormCell: string;
+declare const editFormClip: string;
+declare const editLabel: string;
 declare const emptyCell: string;
 declare const field: string;
 declare const fieldEnd: string;

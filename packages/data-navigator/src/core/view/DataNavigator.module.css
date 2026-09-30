@@ -1488,9 +1488,10 @@
   }
 
   & :global(.datepicker-controls .button.disabled),
-  /* The two calendars move together (see dateRangePicker.ts): only the outer buttons are shown. */
-  & > :first-child :global(.next-button),
-  & > :last-child :global(.prev-button) {
+  /* The two calendars move together (see dateRangePicker.ts): only the outer buttons are shown. A single calendar (the
+     date editor, `data-single`) has both. */
+  & > :first-child:not(:last-child) :global(.next-button),
+  & > :last-child:not(:first-child) :global(.prev-button) {
     visibility: hidden;
   }
 
@@ -2270,6 +2271,170 @@
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+/* Row editing (`saveRow`, `createRow`): the edited row (blocked, not faded) shows its draft, and its edit form follows
+   it over the whole width. */
+.dataRow[data-editing] > .cell {
+  cursor: auto;
+}
+
+/* It unfolds when it opens (180ms, the time of `EDIT_FORM_TIME` in the view, while its row folds up), from no height
+   to its own: a grid of one row from `0fr` to `1fr` (`@starting-style` below), with the padding inside the form, so
+   nothing of it shows before. It closes at once. */
+.editFormCell {
+  composes: cell;
+  display: grid;
+  grid-template-rows: 1fr;
+  padding: 0;
+  transition: grid-template-rows 180ms ease;
+}
+
+.editFormClip {
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Its content fades in while it unfolds. Its width decides where the labels go (see `.editField`). */
+.editForm {
+  container: edit-form / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--datnav-spacing-sm);
+  padding: var(--datnav-spacing-sm);
+  transition: opacity 180ms ease;
+}
+
+@starting-style {
+  .editFormCell {
+    grid-template-rows: 0fr;
+  }
+
+  .editForm {
+    opacity: 0;
+  }
+}
+
+/* "Cancel" (and Escape): the other way round, before it closes (its row unfolds again meanwhile, see the view). */
+.editFormCell[data-closing] {
+  grid-template-rows: 0fr;
+
+  & .editForm {
+    opacity: 0;
+  }
+}
+
+/* And the rest of the table fades back. */
+.root[data-edit-closing] :is(.blocker[data-blocked] > *, :where(.dataRow, .detailRow, .groupRow)[data-blocked] > *) {
+  opacity: 1;
+}
+
+.root[data-edit-closing] .tableArea > [data-blocked] {
+  opacity: 1;
+}
+
+/* The fields: the label above the editor, in as many columns as fit (each at least 12rem wide). */
+/* The fields: in as many columns as fit (a column: the widest label, the gap and an editor of at least 12rem; the
+   view sets it, once the labels are measured). */
+.editFields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+  gap: var(--datnav-spacing-xs) var(--datnav-spacing-md);
+}
+
+/* A field: its label (muted, right aligned, as wide as the widest one, set inline) before its editor, like the filters
+   of the filter view. */
+.editField {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--datnav-spacing-sm);
+  align-items: center;
+  min-width: 0;
+}
+
+.editLabel {
+  overflow: hidden;
+  color: var(--datnav-color-text-dimmed);
+  text-align: end;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* A narrow form (a drawer, a phone): the label above its editor, small. */
+@container edit-form (width < 24rem) {
+  .editField {
+    grid-template-columns: minmax(0, 1fr);
+    gap: calc(var(--datnav-spacing-xs) / 2);
+  }
+
+  .editLabel {
+    font-size: var(--datnav-font-size-sm);
+    text-align: start;
+  }
+}
+
+/* The editors fill their field: the built-in ones small (like the controls of the filter view), and an own one too. */
+.editControl {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  & > * {
+    width: 100%;
+    min-width: 0;
+  }
+
+  & .input {
+    height: calc(0.8 * var(--datnav-control-height));
+    padding-inline-start: var(--datnav-spacing-xs);
+    font-size: calc((var(--datnav-font-size-sm) + var(--datnav-font-size)) / 2);
+  }
+
+  & .field .select {
+    padding-inline-start: calc(var(--datnav-spacing-xs) + 1px);
+  }
+}
+
+/* The message of a failed save on the left, "Cancel" and "Save" on the right. */
+.editFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: calc(var(--datnav-spacing-xs) / 2);
+
+  & > .applyButton {
+    display: inline-flex;
+    gap: var(--datnav-spacing-xs);
+    align-items: center;
+    margin-inline-start: calc(var(--datnav-spacing-xs) / 2);
+  }
+
+  & > .applyButton[data-busy] svg {
+    animation: spin 800ms linear infinite;
+  }
+}
+
+/* While a row is edited, everything else is blocked (inert) and faded: the toolbar, the other rows, the footer. The
+   column headers are not faded (they are opaque over the scrolled rows). */
+.blocker {
+  display: contents;
+}
+
+.blocker[data-blocked] > *,
+:where(.dataRow, .detailRow, .groupRow)[data-blocked] > *,
+.tableArea > [data-blocked] {
+  opacity: 0.4;
+  /* Faded while the form unfolds, and back while it folds up after "Cancel" (after "Save" at once). */
+  transition: opacity 180ms ease, background-color 120ms ease;
+}
+
+/* The message of a failed save, at the start of the footer of the edit form. */
+.editError {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--datnav-color-danger);
+  font-size: var(--datnav-font-size-sm);
 }
 
 /* No line below it (the cells have one): an empty table ends with its text, not with a line. */

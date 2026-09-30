@@ -5,13 +5,13 @@ import type { DataNavigatorComponent as Spec } from '../../react/api';
 import { useLocale, useTexts } from '../texts';
 import { flag } from '../utils';
 import * as styles from './DataNavigator.module.css';
-import { createRangePicker } from './dateRangePicker';
+import { createDatePicker, createRangePicker } from './dateRangePicker';
 import type { RangeSelection } from './dateRangePicker';
 import { icons } from './icons';
 import { LayerContext } from './layer';
 import { ClearButton } from './widgets';
 
-export { DateRangeFilterInput, formatRange, rangeOf };
+export { DateInput, DateRangeFilterInput, formatRange, rangeOf };
 
 // The date range filter: a trigger in the look of the select filters ("All", or the range, formatted for the locale),
 // and a popover with two calendars that act as one of two months (see dateRangePicker.ts): the first click sets the
@@ -114,6 +114,98 @@ function RangePicker({ range, locale, onPick, onClear }: PickerProps): ReactElem
         )}
       </div>
     </>
+  );
+}
+
+type DateInputProps = {
+  // yyyy-mm-dd, or '' for none. Anything else is shown as it is.
+  value: string;
+  placeholder: string | undefined;
+  labelledBy: string;
+  onChange: (value: string) => void;
+};
+
+// One calendar for a single date (see createDatePicker): it starts with the date, and is created again when the locale
+// or the texts change.
+function SinglePicker(
+  { value, locale, onPick }: { value: string; locale: string; onPick: (date: string) => void },
+): ReactElement {
+  const { calendarPrevious, calendarNext } = useTexts();
+  const ref = useRef<HTMLDivElement>(null);
+  const onPickRef = useRef(onPick);
+  const initialRef = useRef(ISO_DATE.test(value) ? value : undefined);
+
+  onPickRef.current = onPick;
+
+  useEffect(() => {
+    if (ref.current === null) {
+      return;
+    }
+
+    return createDatePicker(
+      ref.current,
+      locale,
+      { previous: calendarPrevious, next: calendarNext },
+      initialRef.current,
+      (date) => onPickRef.current(date),
+    );
+  }, [locale, calendarPrevious, calendarNext]);
+
+  return (
+    <div className={styles.dateRange} data-single>
+      <div ref={ref} />
+    </div>
+  );
+}
+
+// A single date (the date editor of a row): a trigger in the look of the selects (the date in the medium format of
+// the locale, e.g. "Apr 6, 1953", or the placeholder, dimmed), with a calendar icon at its end, or the clear button
+// while a date is set. It opens a popover with one calendar; a pick sets the date and closes it.
+function DateInput({ value, placeholder, labelledBy, onChange }: DateInputProps): ReactElement {
+  const texts = useTexts();
+  const locale = useLocale();
+  const layer = useContext(LayerContext);
+  const [open, setOpen] = useState(false);
+  const shown = ISO_DATE.test(value) ? dateFormatOf(locale).format(localDate(value)) : value;
+
+  return (
+    <div className={styles.field}>
+      <BasePopover.Root open={open} onOpenChange={setOpen} modal={false}>
+        <BasePopover.Trigger
+          className={`${styles.input} ${styles.select}`}
+          data-empty={flag(value === '')}
+          aria-labelledby={labelledBy}
+        >
+          <span className={styles.selectText}>{value === '' ? placeholder : shown}</span>
+        </BasePopover.Trigger>
+        <BasePopover.Portal container={layer}>
+          <BasePopover.Positioner
+            className={styles.popupPositioner}
+            align="start"
+            sideOffset={4}
+            positionMethod="fixed"
+          >
+            <BasePopover.Popup className={`${styles.popup} ${styles.datePopup}`}>
+              <SinglePicker
+                value={value}
+                locale={locale}
+                onPick={(date) => {
+                  onChange(date);
+                  setOpen(false);
+                }}
+              />
+            </BasePopover.Popup>
+          </BasePopover.Positioner>
+        </BasePopover.Portal>
+      </BasePopover.Root>
+      {value === ''
+        ? (
+          <span className={styles.fieldEnd}>
+            <icons.Calendar size={14} />
+          </span>
+        )
+        : <ClearButton label={texts.clear} onClick={() => onChange('')} />}
+    </div>
   );
 }
 

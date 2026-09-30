@@ -63,6 +63,11 @@ const GERMAN: Readonly<Record<keyof DataNavigatorComponent.Texts, string>> = {
   deselectGroup: 'Auswahl der Gruppe aufheben',
   groupCount: '{count}',
   groupPartial: '{shown} von {total}',
+  confirmEdit: 'OK',
+  cancelEdit: 'Abbrechen',
+  saveFailed: 'Die Zeile konnte nicht gespeichert werden',
+  editRow: 'Zeile bearbeiten',
+  newRow: 'Neue Zeile',
 };
 
 const TRANSLATIONS: Readonly<Record<string, Readonly<Record<string, string | undefined>>>> = { de: GERMAN };
