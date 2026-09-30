@@ -76,4 +76,29 @@ describe('grouping', () => {
 
     expect(show(moved!.segments)).toBe('a[a.1 a.2 b.1] b[] [.1]');
   });
+
+  it('adds the empty groups of the source at their place in the order of `groups`', () => {
+    const groups = (...keys: string[]) => keys.map((key) => ({ key, total: key.startsWith('e') ? 0 : 1 }));
+
+    // Before the next group of the order that is on the page.
+    expect(show(segmentsOf(rows, keyOf, groups('a', 'e1', 'e2', 'b', '')))).toBe('a[a.1 a.2] e1[] e2[] b[b.1] [.1]');
+    expect(show(segmentsOf(rows, keyOf, groups('e1', 'a', 'b', '')))).toBe('e1[] a[a.1 a.2] b[b.1] [.1]');
+    // Else after the one before it.
+    expect(show(segmentsOf(rows, keyOf, groups('a', 'b', '', 'e1', 'e2')))).toBe('a[a.1 a.2] b[b.1] [.1] e1[] e2[]');
+    expect(show(segmentsOf(['a.1'], keyOf, groups('a', 'e1', 'x')))).toBe('a[a.1] e1[]');
+    // None without a group of the order on the page, without rows, and not for a group with rows elsewhere.
+    expect(show(segmentsOf(rows, keyOf, groups('e1')))).toBe('a[a.1 a.2] b[b.1] [.1]');
+    expect(show(segmentsOf([], keyOf, groups('a', 'e1')))).toBe('');
+    expect(show(segmentsOf(rows, keyOf, [{ key: 'a', total: 1 }, { key: 'x', total: 5 }, { key: 'b', total: 1 }])))
+      .toBe('a[a.1 a.2] b[b.1] [.1]');
+  });
+
+  it('moves a row into an empty group of the source', () => {
+    const segments = segmentsOf(rows, keyOf, [{ key: 'a', total: 2 }, { key: 'e', total: 0 }, { key: 'b', total: 1 }]);
+    // The lines without b.1: a | a.1 | a.2 | e | b | (blank) | .1; slot 4 is below the header of e.
+    const moved = move(segments, 'b.1', 4);
+
+    expect(show(moved!.segments)).toBe('a[a.1 a.2] e[b.1] b[] [.1]');
+    expect(moved?.group).toBe('e');
+  });
 });

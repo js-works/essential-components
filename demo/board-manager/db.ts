@@ -510,18 +510,16 @@ function seedDb(): Db {
         },
       ];
 
-      // Every agenda starts with the section "Introduction" (the opening and the minutes of the last meeting). With four
-      // topics or more, the first half are reports, the rest proposals, each in a section too.
+      // Only an agenda with four topics or more has sections: "Introduction" (the opening and the minutes of the last
+      // meeting), then the first half of the topics as reports, the rest as proposals. The others have none (flat).
       const half = Math.ceil(topics.length / 2);
-      const sections = [
-        { id: `s${nextSection++}`, title: 'Introduction', from: 0, to: 2 },
-        ...(topics.length >= 4
-          ? [
-            { id: `s${nextSection++}`, title: 'Reports', from: 2, to: 2 + half },
-            { id: `s${nextSection++}`, title: 'Proposals for decision', from: 2 + half, to: 2 + topics.length },
-          ]
-          : []),
-      ];
+      const sections = topics.length >= 4
+        ? [
+          { id: `s${nextSection++}`, title: 'Introduction', from: 0, to: 2 },
+          { id: `s${nextSection++}`, title: 'Reports', from: 2, to: 2 + half },
+          { id: `s${nextSection++}`, title: 'Proposals for decision', from: 2 + half, to: 2 + topics.length },
+        ]
+        : [];
       let position = 0;
 
       items.forEach((item, index) => {
@@ -763,7 +761,8 @@ function fetchMeetings(boardId?: string): DataNavigatorComponent.Source<MeetingR
 }
 
 // The items as rows, in the order of the agenda, and the sections as groups (the key is the section's id) with their
-// totals. One page holds the whole agenda. An empty section has no rows, so the table does not show it.
+// totals, then "Other" (`''`, only with items). One page holds the whole agenda (no search, no filters). An empty
+// section is a group with `total: 0`, so the table shows it.
 function fetchAgenda(meetingId: string): DataNavigatorComponent.Source<AgendaRow> {
   return async (query, signal) => {
     await wait(LOADING_TIME, signal);
@@ -779,21 +778,16 @@ function fetchAgenda(meetingId: string): DataNavigatorComponent.Source<AgendaRow
         recorded: entry.item.minutes === '' && entry.item.decision === '' ? 'No' : 'Yes',
       }]
     );
-    const groups = agenda.flatMap((entry): DataNavigatorComponent.ResultGroup[] =>
-      entry.type === 'item'
-        ? []
-        : [{ key: entry.section.id, total: rows.filter((row) => row.sectionId === entry.section.id).length }]
-    );
-    const result = runQuery(rows, query, {
-      search: ['title', 'presenter', 'description', 'minutes', 'decision'],
-      filters: {
-        title: (row, value) => matches(row.title, value),
-        presenter: (row, value) => oneOf(row.presenter, value),
-        recorded: (row, value) => oneOf(row.recorded, value),
-      },
-    });
+    const totalOf = (key: string) => rows.filter((row) => row.sectionId === key).length;
+    const groups = [
+      ...agenda.flatMap((entry) => (entry.type === 'section' ? [entry.section.id] : [])),
+      '',
+    ]
+      .map((key): DataNavigatorComponent.ResultGroup => ({ key, total: totalOf(key) }))
+      // "Other" only with items.
+      .filter((group) => group.total > 0 || group.key !== '');
 
-    return { ...result, groups };
+    return { ...runQuery(rows, query, { search: [] }), groups };
   };
 }
 
@@ -1042,7 +1036,8 @@ function agendaOf(state: Pick<Db, 'agendaItems' | 'agendaSections'>, meetingId: 
   ));
 }
 
-// Every item right after its section (after the section's other items); an item whose section is gone has none.
+// The sections, each followed by its items, then the items without a section ("Other" in the table); an item whose
+// section is gone has none. Without sections, only the items (a flat agenda).
 function arranged(entries: readonly AgendaEntry[]): AgendaEntry[] {
   const sections = new Set(entries.flatMap((entry) => (entry.type === 'section' ? [entry.section.id] : [])));
   const fixed = entries.map((entry): AgendaEntry =>
@@ -1050,14 +1045,13 @@ function arranged(entries: readonly AgendaEntry[]): AgendaEntry[] {
       ? { type: 'item', item: { ...entry.item, sectionId: '' } }
       : entry
   );
+  const itemsOf = (sectionId: string) =>
+    fixed.filter((entry) => entry.type === 'item' && entry.item.sectionId === sectionId);
 
-  return fixed
-    .filter((entry) => groupOf(entry) === '' || entry.type === 'section')
-    .flatMap((entry) =>
-      entry.type === 'section'
-        ? [entry, ...fixed.filter((other) => other.type === 'item' && other.item.sectionId === entry.section.id)]
-        : [entry]
-    );
+  return [
+    ...fixed.flatMap((entry) => (entry.type === 'section' ? [entry, ...itemsOf(entry.section.id)] : [])),
+    ...itemsOf(''),
+  ];
 }
 
 // The new state of a meeting's agenda: arranged, and the positions numbered again (1, 2, 3, ...).
@@ -1081,20 +1075,30 @@ function withAgenda(state: Db, meetingId: string, entries: readonly AgendaEntry[
   };
 }
 
-// The numbers of an agenda (arranged): `2` for a section or an item without one, `2.1` for an item in a section.
+// The numbers of an agenda (arranged), by id. A flat agenda: `1`, `2`, ... With sections: `2` for a section (also an
+// empty one) and `2.1` for its items; the items without a section are the last one, "Other" (its number under the key
+// `''`).
 function agendaNumbers(agenda: readonly AgendaEntry[]): Map<string, string> {
   const numbers = new Map<string, string>();
+  const flat = !agenda.some((entry) => entry.type === 'section');
   let top = 0;
   let sub = 0;
 
   for (const entry of agenda) {
-    if (groupOf(entry) === '' || entry.type === 'section') {
+    if (entry.type === 'section') {
       top += 1;
       sub = 0;
-      numbers.set(idOf(entry), String(top));
+      numbers.set(entry.section.id, String(top));
+    } else if (flat) {
+      numbers.set(entry.item.id, String(++top));
     } else {
-      sub += 1;
-      numbers.set(idOf(entry), `${top}.${sub}`);
+      if (entry.item.sectionId === '' && !numbers.has('')) {
+        top += 1;
+        sub = 0;
+        numbers.set('', String(top));
+      }
+
+      numbers.set(entry.item.id, `${top}.${++sub}`);
     }
   }
 
@@ -1129,8 +1133,8 @@ async function createAgendaItem(meetingId: string, values: AgendaValues): Promis
   });
 }
 
-// Another section: the item goes to the end of it. Out of its section (`sectionId: ''`): it stays in its place, right
-// after the section it was in.
+// Another section: the item goes to the end of it. Out of its section (`sectionId: ''`): to "Other", before "Any other
+// business" (else at the end).
 async function updateAgendaItem(id: string, values: Partial<Omit<AgendaItem, 'id' | 'meetingId'>>): Promise<void> {
   await save((state) => {
     const current = state.agendaItems.find((item) => item.id === id);
@@ -1146,11 +1150,8 @@ async function updateAgendaItem(id: string, values: Partial<Omit<AgendaItem, 'id
     }
 
     const rest = agendaOf(state, current.meetingId).filter((entry) => idOf(entry) !== id);
-    const anchor = rest.findIndex((entry) =>
-      entry.type === 'section'
-      && entry.section.id === (changed.sectionId === '' ? current.sectionId : changed.sectionId)
-    );
-    const index = anchor >= 0 ? blockEnd(rest, anchor) : rest.length;
+    const anchor = rest.findIndex((entry) => entry.type === 'section' && entry.section.id === changed.sectionId);
+    const index = changed.sectionId !== '' && anchor >= 0 ? blockEnd(rest, anchor) : newPlace(rest);
 
     return withAgenda(state, current.meetingId, rest.toSpliced(index, 0, { type: 'item', item: changed }));
   });
@@ -1190,7 +1191,9 @@ async function reorderAgenda(move: DataNavigatorComponent.Move<AgendaRow>): Prom
         ? indexOf(move.after) + 1
         : inSection(move.before)
         ? indexOf(move.before)
-        : header + 1
+        : header >= 0
+        ? header + 1
+        : rest.length
       : move.after !== undefined
       ? blockEnd(rest, indexOf(move.after))
       : move.before !== undefined
@@ -1203,44 +1206,17 @@ async function reorderAgenda(move: DataNavigatorComponent.Move<AgendaRow>): Prom
 
 const newSectionId = () => newId('s');
 
-// A draft of the sections (the "Sections" drawer) applied to a meeting's agenda:
-// - a section that is missing from the draft is deleted; its items stay in their place, without a section;
-// - the names are the draft's;
-// - the sections take the places of the sections before, in the order of the draft (items without a section keep
-//   theirs); new sections get new places before "Any other business" (or at the end).
+// A draft of the sections (the "Sections" drawer) applied to a meeting's agenda: the sections of the draft, in its order
+// and with its names, each with its items. A section that is missing from the draft is deleted; its items go to
+// "Other", at its start (before the items that were there already).
 function withSectionDraft(state: Db, meetingId: string, draft: SectionDraft): Partial<Db> {
-  const kept = new Set(draft.map((section) => section.id));
-  const agenda = agendaOf(state, meetingId).filter((entry) => entry.type === 'item' || kept.has(entry.section.id));
-  const itemsOf = (id: string) => agenda.filter((entry) => entry.type === 'item' && entry.item.sectionId === id);
-  // The top level: a slot where a section was (`undefined`), or an item without a section.
-  const top: (AgendaEntry | undefined)[] = agenda
-    .filter((entry) => entry.type === 'section' || !kept.has(entry.item.sectionId))
-    .map((entry) => (entry.type === 'section' ? undefined : entry));
-  const existing = new Set(agenda.flatMap((entry) => (entry.type === 'section' ? [entry.section.id] : [])));
-  const added = draft.filter((section) => !existing.has(section.id)).map(() => undefined);
-  const last = top.at(-1);
-  const place = last?.type === 'item' && last.item.title === 'Any other business' ? top.length - 1 : top.length;
+  const items = agendaOf(state, meetingId).filter((entry) => entry.type === 'item');
+  const sections = draft.map((section): AgendaEntry => ({
+    type: 'section',
+    section: { id: section.id, meetingId, position: 0, title: section.title },
+  }));
 
-  top.splice(place, 0, ...added);
-
-  const sections = [...draft];
-  const entries = top.flatMap((entry): AgendaEntry[] => {
-    if (entry !== undefined) {
-      return [entry];
-    }
-
-    const next = sections.shift();
-
-    if (next === undefined) {
-      return [];
-    }
-
-    const section: AgendaSection = { id: next.id, meetingId, position: 0, title: next.title };
-
-    return [{ type: 'section', section }, ...itemsOf(next.id)];
-  });
-
-  return withAgenda(state, meetingId, entries);
+  return withAgenda(state, meetingId, [...sections, ...items]);
 }
 
 // "Apply" of the "Sections" drawer: the whole draft at once.

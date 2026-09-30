@@ -212,10 +212,15 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     reorderRef.current = props.reorder;
   });
 
-  // The runs of the page: without `groupBy` one run of all rows, with it the groups.
+  // The runs of the page: without `groupBy` one run of all rows, with it the groups (also the empty ones of the source).
   const { groupBy } = props;
   const loadedSegments = useMemo(
-    () => segmentsOf(result.rows, groupBy === undefined ? undefined : (row: Row) => groupKeyOf(row, groupBy)),
+    () =>
+      segmentsOf(
+        result.rows,
+        groupBy === undefined ? undefined : (row: Row) => groupKeyOf(row, groupBy),
+        result.groups,
+      ),
     [result, groupBy],
   );
   const segments = moved?.segments ?? loadedSegments;
@@ -518,7 +523,9 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
 
   // Rows can be moved only without search and filters (within a filtered subset, where a row lands among the hidden
   // ones is unclear), within the page.
-  const canReorder = reorderable && search === '' && Object.keys(filters).length === 0 && rows.length > 1;
+  // A single row can still move into another group (e.g. an empty one).
+  const canReorder = reorderable && search === '' && Object.keys(filters).length === 0
+    && (rows.length > 1 || (rows.length === 1 && segments.length > 1));
 
   // The move of the row of the line `from` into the slot `slot` of the other lines (see `moveInSegments`), or
   // undefined when nothing would change.

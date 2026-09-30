@@ -1471,7 +1471,7 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     the order of the source is the order.
   - The handles are hidden (with their room kept, `data-inactive`, `inert`) while a search or a filter is active: where
     a row lands among the rows hidden by them is unclear. Also on a page with a single row (with `groupBy`: unless
-    there is a group header too, where the row could go).
+    there is another group, e.g. an empty one, where the row could go).
   - The handle column: the first column (before the selection and the details toggle), `max-content`, a control cell
     (clicking it never selects), with a vertical divider when it is the last meta column. It is there whenever
     `reorder` is given, also while its handles are hidden. Its header cell is empty; detail rows get an empty cell.
@@ -1516,10 +1516,15 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     groups). The table groups consecutive rows with the same key, so unsorted rows give a group more than once.
   - `Result.groups?: readonly ResultGroup[]` (optional), `ResultGroup = { key, total }` (it was `GroupTotal`): the
     total of every group on the page. Without it, a group counts only its rows on the page. Paging stays over rows.
-  - Groups come only from the rows, as in data grids (decided 2026-09-30): there are no empty groups, and the order of
-    the groups is the order of the source (its sorting). Two additions beyond that were built and dropped for it: empty
-    groups from the source (`ResultGroup.at`, the place of an empty group's header) and dragging whole groups
-    (`reorderGroup`, with all groups collapsing during the drag).
+  - Groups come from the rows, as in data grids (decided 2026-09-30), and the order of the groups is the order of the
+    source (its sorting). Dragging whole groups (`reorderGroup`, with all groups collapsing during the drag) was built
+    and dropped for it.
+  - Empty groups from the source (decided 2026-09-30, for an agenda section without items): a group of `Result.groups`
+    with `total: 0` that has no rows on the page gets its header (count `0`, no checkbox), at its place in the order of
+    `groups`: right before the next group of that order that is on the page, else right after the one before it; none
+    when no group of that order is on the page, or the page has no rows (the empty state). A row can be moved into it
+    (below its header). `segmentsOf` in `grouping.ts`. (A first version, with `ResultGroup.at`, the place of an empty
+    group's header, was dropped: the order of `groups` gives the place.)
   - `renderGroup?: (group: RowGroup<Row>) => ReactNode` (the element: `string | C`), `RowGroup = { key, rows (of the
     page), total (from the source, or undefined) }`: the content of the group header. It replaces the default (the key
     and the count). Plain content only: it is inside the toggle button.
@@ -1671,6 +1676,9 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   from the page before.
 - Row reordering: scrolling the rows area while dragging near its top or bottom edge (auto-scroll); moving several
   selected rows at once; a drop onto another page.
+- Inline editing (asked for 2026-09-30, by the board manager's "Sections" drawer, which renders its own inputs for
+  now): e.g. `Column.editable` with `onEdit(row, value)`; a double click or F2 opens an input, Enter saves, Escape
+  cancels. Needs the element's counterpart, focus and keyboard handling.
 
 - Review `reloadable`: should the source say whether its data can change (and so whether the Reload button makes
   sense), instead of a prop of the table? Decided for now: a prop, like `searchable` (showing the button is a UI

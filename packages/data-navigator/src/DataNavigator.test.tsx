@@ -1632,8 +1632,11 @@ describe('DataNavigator', () => {
 
       expect(beside.length).toBeGreaterThan(0);
 
-      fireEvent.click(beside[0]!);
+      fireEvent.click(screen.getAllByRole('checkbox', { name: 'Deselect row' })[0]!);
       expect(screen.queryByText('1 selected')).toBeNull();
+
+      fireEvent.click(beside[0]!);
+      expect(screen.getByText('1 selected')).toBeTruthy();
 
       // the detail row selects the row it belongs to, not another one
       fireEvent.click(detailCell);
@@ -4556,6 +4559,28 @@ describe('row grouping', () => {
       expect(lines()).toEqual(['A1', '1', 'B3', '2', '3', '4', '(Blank)0']);
       await waitFor(() => expect(reorder).toHaveBeenCalledTimes(2));
       expect(reorder).toHaveBeenLastCalledWith({ row: people[3], group: 'B', after: people[2], before: undefined });
+    });
+
+    it('shows the empty groups of the source, and moves a row into one', async () => {
+      const reorder = vi.fn();
+      // E has no rows: its header comes where `groups` puts it, between A and B.
+      const withEmpty = async (): Promise<Spec.Result<Person>> => ({
+        ...(await source()),
+        groups: [{ key: 'A', total: 2 }, { key: 'E', total: 0 }, { key: 'B', total: 1 }, { key: '', total: 1 }],
+      });
+
+      renderNav({ groupBy: sectionOf, reorder, source: withEmpty, selection: 'multi' });
+      await loaded();
+
+      expect(lines()).toEqual(['A2', '1', '2', 'E0', 'B1', '3', '(Blank)1', '4']);
+      // Nothing to select in it: no checkbox.
+      expect(screen.getAllByRole('checkbox', { name: 'Select group' })).toHaveLength(3);
+
+      // Down from the last row of A: into E.
+      press(2, 'ArrowDown');
+      expect(lines()).toEqual(['A1', '1', 'E1', '2', 'B1', '3', '(Blank)1', '4']);
+      await waitFor(() => expect(reorder).toHaveBeenCalledTimes(1));
+      expect(reorder).toHaveBeenLastCalledWith({ row: people[1], group: 'E', after: people[0], before: people[2] });
     });
   });
 });

@@ -41,6 +41,7 @@ pids
 # Testing
 jest-cache/
 .nyc_output/
+.vitest/
 
 # ESLint / Prettier cache
 .eslintcache

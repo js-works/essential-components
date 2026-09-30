@@ -99,7 +99,8 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
       icon, the title "Board Manager" (a menu of the modules: Home, Boards, Meetings, Members) and a breadcrumb that
       starts with "Home" (a neutral icon, not linked, and the text as the link; no tip).
     - Routes (`App.tsx`, a memory router): `/`, `/boards`, `/boards/:boardId` (tabs Meetings, Members),
-      `/boards/:boardId/meetings/:meetingId` and `/meetings/:meetingId` (tabs Agenda, Minutes, Documents), `/members`.
+      `/boards/:boardId/meetings/:meetingId` and `/meetings/:meetingId` (tabs Overview, Agenda, Minutes, Documents),
+      `/members`.
       The route is mirrored in the hash after the tab's segment (`#board-manager/boards/b1`), only while the tab is shown.
     - Mantine is scoped: its layered CSS, its variables and color scheme on `.board-manager` (the app, and the content
       of each dialog through `wrapContent`), following `<html data-scheme>`; its popups without portal.
@@ -126,34 +127,52 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
         language follows `<html lang>`. The routes are in memory only (no hash: the host page owns its URL).
     - Members: the people, with create, edit and delete. Deleting also removes their memberships, and their agenda
       items keep no presenter (the confirmation says from how many boards). Memberships are changed on a board's page.
+    - A meeting's page opens on "Overview" (`MeetingOverview`): its base information as labels and values (title,
+      board, date and time with the end from the agenda's duration, location, status and minutes badges, the number of
+      items and sections, documents) and "Edit", the same meeting form dialog as "Edit" in the meetings list
+      (`editMeeting()` in `MeetingsTable.tsx`). The status keeps its own buttons in the page header.
     - The agenda is reordered by dragging (`reorder`), the minutes are recorded per item (a form drawer), the minutes
       tab shows them as one document; a held meeting's minutes are approved there.
     - Agenda sections (one level; the row groups of the data navigator): `agendaSections` (`{ id, meetingId, position,
       title }`), and an item's `sectionId` (`''`: none). Sections and items share one order per meeting (`position`),
-      a section's items always follow it (`arranged()` in `db.ts`). Seed: every agenda starts with the section
-      "Introduction" (the opening and the minutes of the last meeting); with four topics or more, "Reports" and
-      "Proposals for decision" follow. The source gives the items as rows (with their
-      number: `2`, `2.1`) and the sections as `Result.groups` (key: the section's id, with its total).
+      a section's items always follow it, and the items without a section come after all sections (`arranged()` in
+      `db.ts`). Sections are optional: an agenda without any is flat (the default). Seed: only an agenda with four
+      topics or more has sections, "Introduction" (the opening and the minutes of the last meeting), "Reports" and
+      "Proposals for decision"; the others have none. The source gives the items as rows (with their number: `2`,
+      `2.1`) and the sections as `Result.groups` (key: the section's id, with its total).
+      - "Other": with sections, the items without one are a virtual last section, "Other" (the table's blank group,
+        `''`; in the minutes too). It is no section of the fake server.
+      - Numbers (`agendaNumbers()`): flat `1`, `2`, ...; with sections `2` for a section (also an empty one) and `2.1`
+        for its items, "Other" the last number (its key in the map: `''`).
       - The table: `groupBy` (`sectionId`), `renderGroup` (`2. Finance`, the duration of its items), `reorder` (an item
         within its section or into another one). No group actions.
+        - Only while the meeting has at least one section; without, no `groupBy` (plain rows). The table is remounted
+          (`key`) when the first section comes or the last one goes.
       - "Manage sections" (a general action) opens a form drawer ("Sections", "Apply" and "Cancel") with a data
         navigator as wide as the drawer and as high as its body (`calc(100dvh - 11rem)`; `footer="auto"`): the sections
         of the meeting in their order, also the empty ones (`#` with a fixed `3rem`, and "Name").
-        - Everything in it changes a draft (`SectionDraft`: the sections' order and names): "Add" (the plus and the
-          label, no tooltip) and "Rename" (a row action, also a double click) ask for the name in a small dialog on
-          top; "Delete" (a row action) and moving a section by its handle change the draft at once, without a
-          confirmation. The `#` shows the numbers of the agenda as it would be.
+        - Everything in it changes a draft (`SectionDraft`: the sections' order and names): "Add section" (the plus and
+          the label, no tooltip) adds "New section" at the end, its input focused with the name selected (no dialog);
+          "Delete" (a row action) and moving a
+          section by its handle change the draft at once, without a confirmation. The `#` shows the numbers of the
+          agenda as it would be.
+        - The names are edited in place: the "Name" column renders an input (`SectionNameInput`, custom cell content,
+          so a click into it selects no row). The draft changes on Enter or when it loses the focus (not per key: the
+          list would reload and take the focus); a rename does not reload the list. Escape puts the name back, an
+          empty name is not taken; Enter and Escape stay in the input (not "Apply"/"Cancel" of the drawer). It
+          replaced a "Rename" row action with a dialog. Inline editing in the data navigator itself may come later.
         - "Apply" saves the whole draft at once (`saveSectionDraft`, the button shows a spinner), reloads the agenda
           and shows "Sections saved"; "Cancel" (also Escape, the close button) drops it, without asking.
-        - `withSectionDraft()` (pure, in `db.ts`) applies a draft: a missing section is deleted (its items stay in their
-          place, without a section); the sections take the places the sections had, in the draft's order (items
-          without a section keep theirs); new ones go before "Any other business".
-      - The item form has a "Section" select: another section moves the item to its end, "(none)" keeps it in its
-        place, right after its old section.
-      - The minutes tab shows the sections as headings, their items indented.
-      - Interim: the data navigator's grouping is classic grid grouping (every row in a group; groups only from the
-        rows), so the items without a section are its blank group, shown as "No section", once per run of them (e.g.
-        before and after the sections), and an empty section is not shown in the agenda table (only in the dialog).
+        - `withSectionDraft()` (pure, in `db.ts`) applies a draft: the sections in the draft's order, each with its
+          items; a missing section is deleted, its items go to the start of "Other".
+      - The item form has a "Section" select (only while the meeting has sections): another section moves the item to
+        its end, "(none)" moves it to "Other" (before "Any other business").
+      - The minutes tab shows the sections and "Other" as headings, their items indented.
+      - An empty section is an empty group of the source (`Result.groups` with `total: 0`, see the data navigator), so
+        the table shows its header, and items can be dragged into it. The source gives "Other" (`''`) as the last
+        group, only with items.
+      - The agenda table has no search box and no column filters: an agenda is short, and moving its items needs all
+        of them shown.
   - `demo/demo.css`: only what is specific to this page: the frame around the demos (header, tabs) is not selectable
     (`user-select: none`); inside the demos, selecting stays as their packages have it.
   - `demo/ui/`: the design language (`ui.css`, `ui.ts`), the same files as in every package. Read the header of `ui.css`

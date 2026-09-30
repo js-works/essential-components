@@ -1,6 +1,6 @@
-import { Box, Button, Paper, Stack, Tabs, Text, Title } from '@mantine/core';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import type { ReactElement } from 'react';
+import { Box, Button, Group, Paper, SimpleGrid, Stack, Tabs, Text, TextInput, Title } from '@mantine/core';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import { useParams } from 'react-router';
 import {
   dateRangeColumnFilter,
@@ -40,9 +40,9 @@ import {
 import type { AgendaItem, AgendaRow, AgendaSection, Db, Meeting, MeetingDocument, Person, SectionDraft } from '../db';
 import { confirmAndRun, submitForm } from '../flows';
 import type { Dialogs } from '../flows';
-import { AgendaItemForm, AgendaSectionForm, MinutesForm } from '../forms';
-import { appIcons, countText, formatDateTime, formatSize, Navigator, PageHeader, useDb } from '../shared';
-import { MinutesBadge, StatusBadge } from './MeetingsTable';
+import { AgendaItemForm, MinutesForm } from '../forms';
+import { appIcons, countText, formatDateTime, formatSize, formatTime, Navigator, PageHeader, useDb } from '../shared';
+import { editMeeting, MinutesBadge, StatusBadge } from './MeetingsTable';
 import { NotFound } from './NotFound';
 
 export { MeetingPage };
@@ -99,7 +99,7 @@ function MeetingPage(): ReactElement {
   const agendaSections = useDb((state) => state.agendaSections);
   const dialogs = useDialogs();
   const toasts = useToast();
-  const [tab, setTab] = useState<string | null>('agenda');
+  const [tab, setTab] = useState<string | null>('overview');
   const duration = useMemo(
     () => agendaItems.filter((item) => item.meetingId === meetingId).reduce((sum, item) => sum + item.duration, 0),
     [agendaItems, meetingId],
@@ -172,10 +172,14 @@ function MeetingPage(): ReactElement {
       />
       <Tabs value={tab} onChange={setTab} keepMounted={false}>
         <Tabs.List>
+          <Tabs.Tab value="overview">Overview</Tabs.Tab>
           <Tabs.Tab value="agenda">Agenda</Tabs.Tab>
           <Tabs.Tab value="minutes" leftSection={appIcons.minutes}>Minutes</Tabs.Tab>
           <Tabs.Tab value="documents">Documents</Tabs.Tab>
         </Tabs.List>
+        <Tabs.Panel value="overview" pt="md">
+          <MeetingOverview meeting={meeting} boardName={boardName} duration={duration} />
+        </Tabs.Panel>
         <Tabs.Panel value="agenda" pt="md">
           <AgendaTable meeting={meeting} />
         </Tabs.Panel>
@@ -195,6 +199,65 @@ function MeetingPage(): ReactElement {
   );
 }
 
+// The base information of a meeting, as a list of labels and values, with "Edit" (the meeting form in a dialog, like
+// "Edit" in the meetings list). The end is the start plus the duration of the agenda.
+function MeetingOverview({ meeting, boardName, duration }: {
+  meeting: Meeting;
+  boardName: string;
+  duration: number;
+}): ReactElement {
+  const dialogs = useDialogs();
+  const toasts = useToast();
+  const items = useDb((state) => state.agendaItems.filter((item) => item.meetingId === meeting.id).length);
+  const sections = useDb((state) => state.agendaSections.filter((section) => section.meetingId === meeting.id).length);
+  const documents = useDb((state) => state.documents.filter((document) => document.meetingId === meeting.id).length);
+  const end = new Date(new Date(meeting.start).getTime() + duration * 60_000);
+  const count = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 's'}`;
+  const fields: readonly (readonly [string, ReactNode])[] = [
+    ['Title', meeting.title],
+    ['Board', boardName],
+    ['Date, time', `${formatDateTime(meeting.start)} – ${formatTime(end)} (${duration} min)`],
+    ['Location', meeting.location],
+    [
+      'Status',
+      <Group key="status" gap="xs">
+        <StatusBadge status={meeting.status} />
+        <MinutesBadge meeting={meeting} />
+      </Group>,
+    ],
+    [
+      'Agenda',
+      sections === 0 ? count(items, 'item') : `${count(items, 'item')} in ${count(sections, 'section')}`,
+    ],
+    ['Documents', String(documents)],
+  ];
+
+  return (
+    // No frame, like the tables of the other tabs: the title and "Edit" in one line, like their toolbars.
+    <Stack gap="md" maw={820}>
+      <Group justify="space-between">
+        <Text fw={700} size="lg">Overview</Text>
+        <Button
+          size="xs"
+          variant="default"
+          leftSection={appIcons.edit}
+          onClick={() => void editMeeting(dialogs, toasts, meeting.id)}
+        >
+          Edit
+        </Button>
+      </Group>
+      <SimpleGrid cols={2} spacing="lg" verticalSpacing="xs" style={{ gridTemplateColumns: 'max-content 1fr' }}>
+        {fields.map(([label, value]) => (
+          <Fragment key={label}>
+            <Text size="sm" c="dimmed">{label}</Text>
+            {typeof value === 'string' ? <Text size="sm">{value}</Text> : value}
+          </Fragment>
+        ))}
+      </SimpleGrid>
+    </Stack>
+  );
+}
+
 // The minutes, the decision and the description of an item, in its detail row.
 function AgendaDetail({ row }: { row: AgendaRow }): ReactElement {
   return (
@@ -210,13 +273,12 @@ function AgendaDetail({ row }: { row: AgendaRow }): ReactElement {
 // The agenda: in the order of its items (no sorting: the rows are moved with their handle, and every move is saved).
 // Each item has its minutes and decision ("Minutes", also a double click), shown in its detail row. Sections are the
 // groups of the table (`groupBy`): an item is moved within its section or into another one by dragging. The sections
-// themselves are managed in a dialog ("Manage sections": add, rename, delete, reorder).
+// themselves are managed in a dialog ("Manage sections": add, rename, delete, reorder). Without a section, the table
+// is not grouped: plain rows.
 function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
   const nav = useDataNavigatorController<AgendaRow>();
   const dialogs = useDialogs();
   const toasts = useToast();
-  const memberships = useDb((state) => state.memberships);
-  const people = useDb((state) => state.people);
   const agendaItems = useDb((state) => state.agendaItems);
   const agendaSections = useDb((state) => state.agendaSections);
   const numbers = useMemo(
@@ -224,21 +286,13 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
     [agendaItems, agendaSections, meeting.id],
   );
   const source = useMemo(() => fetchAgenda(meeting.id), [meeting.id]);
-  const presenters = useMemo(
-    () => membersOf({ memberships, people }, meeting.boardId).map((person) => person.name),
-    [memberships, people, meeting.boardId],
-  );
+  const grouped = agendaSections.some((section) => section.meetingId === meeting.id);
 
-  const columns = useMemo<readonly DataNavigatorComponent.Column<AgendaRow>[]>(() => [
+  // No filters and no search: an agenda is short, and moving its items needs all of them shown.
+  const columns: readonly DataNavigatorComponent.Column<AgendaRow>[] = [
     { key: 'number', header: '#', width: 0.5, align: 'end' },
-    { key: 'title', header: 'Item', width: 4, wrap: true, filter: textColumnFilter() },
-    {
-      key: 'presenter',
-      header: 'Presenter',
-      width: 2,
-      hideable: true,
-      filter: selectColumnFilter({ options: presenters, multiple: true }),
-    },
+    { key: 'title', header: 'Item', width: 4, wrap: true },
+    { key: 'presenter', header: 'Presenter', width: 2, hideable: true },
     {
       key: 'duration',
       header: 'Duration',
@@ -253,9 +307,8 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
       width: 1,
       hideable: true,
       align: 'center',
-      filter: selectColumnFilter({ options: ['Yes', 'No'] }),
     },
-  ], [presenters]);
+  ];
 
   const actions = useMemo<readonly DataNavigatorComponent.Action<AgendaRow>[]>(() => {
     const itemOf = (row: AgendaRow): AgendaItem | undefined =>
@@ -358,7 +411,7 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
       }
     };
 
-    // The sections in a form drawer of their own (also the empty ones, which the table cannot show). Everything in it
+    // The sections in a form drawer of their own. Everything in it
     // changes a draft: "Apply" saves it at once (the button shows a spinner meanwhile), "Cancel" drops it.
     const manageSections = async () => {
       const state = db.getState();
@@ -372,7 +425,6 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
           <SectionsManager
             meetingId={meeting.id}
             initial={draft}
-            dialogs={dialogs}
             onChange={(next) => {
               draft = next;
             }}
@@ -431,18 +483,16 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
   };
 
   // The header of a section: its number and name, and the duration of its items.
-  // Interim: the items without a section are the table's blank group (`''`), "No section", once per run of them.
+  // The items without a section are the table's blank group (`''`): "Other", always the last one.
   const renderGroup = (group: DataNavigatorComponent.RowGroup<AgendaRow>) => {
     const section = agendaSections.find((candidate) => candidate.id === group.key);
-    const duration = group.key === ''
-      ? group.rows.reduce((sum, row) => sum + row.duration, 0)
-      : agendaItems.filter((item) => item.sectionId === group.key).reduce((sum, item) => sum + item.duration, 0);
+    const duration = agendaItems
+      .filter((item) => item.meetingId === meeting.id && item.sectionId === group.key)
+      .reduce((sum, item) => sum + item.duration, 0);
 
     return (
       <>
-        <span>
-          {section === undefined ? 'No section' : numbered(numbers.get(group.key) ?? '', section.title)}
-        </span>
+        <span>{numbered(numbers.get(group.key) ?? '', section?.title ?? 'Other')}</span>
         <Text span size="xs" c="dimmed" fw={400}>{duration} min</Text>
       </>
     );
@@ -450,16 +500,19 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
 
   return (
     <Navigator
+      // A new table when the first section comes or the last one goes: no group state is carried over.
+      key={grouped ? 'grouped' : 'flat'}
       controller={nav}
       title="Agenda"
-      subtitle="Drag items by their handle, also into another section. Double click an item for its minutes."
+      subtitle={grouped
+        ? 'Drag items by their handle, also into another section. Double click an item for its minutes.'
+        : 'Drag items by their handle. Double click an item for its minutes.'}
       density="compact"
       footer="auto"
-      searchable
       source={source}
       reorder={reorder}
-      groupBy="sectionId"
-      renderGroup={renderGroup}
+      groupBy={grouped ? 'sectionId' : undefined}
+      renderGroup={grouped ? renderGroup : undefined}
       rowKey="id"
       columns={columns}
       actions={actions}
@@ -471,19 +524,84 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
   );
 }
 
+// The name of a section in the list of the "Sections" drawer, edited in place: the draft changes on Enter or when the
+// field loses the focus (not on every key: that would reload the list and take the focus away). Escape puts the name
+// back; an empty name is not taken. Enter and Escape stay in the field (not "Apply" or "Cancel" of the drawer). A new
+// section's field gets the focus, with its name selected, so it can be typed over at once.
+function SectionNameInput({ row, focus, onRename }: {
+  row: SectionRow;
+  focus: boolean;
+  onRename: (id: string, title: string) => void;
+}) {
+  const [value, setValue] = useState(row.title);
+  const input = useRef<HTMLInputElement>(null);
+
+  // After the table has drawn the new row (and is no longer inert from its load).
+  useEffect(() => {
+    if (!focus) {
+      return undefined;
+    }
+
+    const frame = requestAnimationFrame(() => {
+      input.current?.focus();
+      input.current?.select();
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [focus]);
+  const commit = () => {
+    const title = value.trim();
+
+    if (title === '' || title === row.title) {
+      setValue(row.title);
+    } else {
+      onRename(row.id, title);
+    }
+  };
+
+  return (
+    <TextInput
+      ref={input}
+      size="xs"
+      aria-label="Name"
+      autoComplete="off"
+      value={value}
+      onChange={(event) => setValue(event.currentTarget.value)}
+      onBlur={commit}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === 'Escape') {
+          event.preventDefault();
+          event.stopPropagation();
+
+          if (event.key === 'Escape') {
+            setValue(row.title);
+          }
+
+          // Enter: blurring commits.
+          event.currentTarget.blur();
+        }
+      }}
+    />
+  );
+}
+
 // The list of the "Sections" drawer: the draft of the sections (`SectionDraft`) in their order, with their numbers on
-// the agenda as it would be with the draft. "Add" and "Rename" (also a double click) ask for the
-// name in a small dialog on top; "Delete" and moving a section by its handle change the draft at once (no
-// confirmation: "Cancel" of the drawer undoes everything). The list is as wide as the drawer and fills its height.
-function SectionsManager({ meetingId, initial, dialogs, onChange }: {
+// the agenda as it would be with the draft. The names are edited in place (`SectionNameInput`); "Add section" adds a
+// section "New section" at the end, its name selected in its field; "Delete" and moving a section by its handle change
+// the draft at once (no confirmation: "Cancel" of the drawer undoes everything). The list is as wide as the drawer and
+// fills its height.
+function SectionsManager({ meetingId, initial, onChange }: {
   meetingId: string;
   initial: SectionDraft;
-  dialogs: Dialogs;
   onChange: (draft: SectionDraft) => void;
 }): ReactElement {
   const nav = useDataNavigatorController<SectionRow>();
   const [draft, setDraft] = useState(initial);
   const first = useRef(true);
+  // A rename changes neither the order nor the numbers: the list is not loaded again (the field shows the new name).
+  const quiet = useRef(false);
+  // The section just added, whose field gets the focus.
+  const [added, setAdded] = useState<string>();
 
   // The rows: the draft with the numbers of the agenda as it would be.
   const source = useMemo((): DataNavigatorComponent.Source<SectionRow> => {
@@ -495,8 +613,8 @@ function SectionsManager({ meetingId, initial, dialogs, onChange }: {
     return async () => ({ rows, total: rows.length });
   }, [draft, meetingId]);
 
-  // A new draft: the owner hears of it, and the list is loaded again (its source is new; the table's effect has taken it
-  // over before this one runs).
+  // A new draft: the owner hears of it, and the list is loaded again, except after a rename (its source is new; the
+  // table's effect has taken it over before this one runs).
   useEffect(() => {
     if (first.current) {
       first.current = false;
@@ -504,57 +622,40 @@ function SectionsManager({ meetingId, initial, dialogs, onChange }: {
     }
 
     onChange(draft);
-    nav.reload();
+
+    if (quiet.current) {
+      quiet.current = false;
+    } else {
+      nav.reload();
+    }
   }, [draft, onChange, nav]);
 
-  const actions = useMemo<readonly DataNavigatorComponent.Action<SectionRow>[]>(() => {
-    // The name in a small dialog; the draft changes only when it is confirmed.
-    const askName = async (title: string, section?: SectionRow): Promise<string | undefined> => {
-      let name: string | undefined;
-
-      await submitForm(
-        dialogs,
-        {
-          title,
-          content: (check) => <AgendaSectionForm check={check} section={section} />,
-          buttons: { confirm: section === undefined ? 'Add' : 'OK' },
-        },
-        async (data) => {
-          name = data.string('title', '');
-        },
-      );
-
-      return name;
-    };
-
-    const create = async () => {
-      const name = await askName('New section');
-
-      if (name !== undefined) {
-        setDraft((current) => [...current, { id: newSectionId(), title: name }]);
-      }
-    };
-
-    const rename = async (row: SectionRow) => {
-      const name = await askName('Rename section', row);
-
-      if (name !== undefined) {
-        setDraft((current) =>
-          current.map((section) => (section.id === row.id ? { ...section, title: name } : section))
-        );
-      }
+  const columns = useMemo((): readonly DataNavigatorComponent.Column<SectionRow>[] => {
+    const rename = (id: string, title: string) => {
+      quiet.current = true;
+      setDraft((current) => current.map((section) => (section.id === id ? { ...section, title } : section)));
     };
 
     return [
-      { type: 'general', key: 'new', icon: appIcons.add, label: 'Add', onClick: () => void create() },
+      { key: 'number', header: '#', width: '3rem', align: 'end' },
       {
-        type: 'singleRow',
-        key: 'rename',
-        icon: appIcons.edit,
-        tip: 'Rename',
-        default: true,
-        onClick: (row) => void rename(row),
+        key: 'title',
+        header: 'Name',
+        render: (row) => <SectionNameInput row={row} focus={row.id === added} onRename={rename} />,
       },
+    ];
+  }, [added]);
+
+  const actions = useMemo<readonly DataNavigatorComponent.Action<SectionRow>[]>(() => {
+    const create = () => {
+      const id = newSectionId();
+
+      setAdded(id);
+      setDraft((current) => [...current, { id, title: 'New section' }]);
+    };
+
+    return [
+      { type: 'general', key: 'new', icon: appIcons.add, label: 'Add section', onClick: create },
       {
         type: 'singleRow',
         key: 'delete',
@@ -563,7 +664,7 @@ function SectionsManager({ meetingId, initial, dialogs, onChange }: {
         onClick: (row) => setDraft((current) => current.filter((section) => section.id !== row.id)),
       },
     ];
-  }, [dialogs]);
+  }, []);
 
   // A move: right after `after`, or right before `before` (at the top).
   const reorder = (move: DataNavigatorComponent.Move<SectionRow>) => {
@@ -589,7 +690,7 @@ function SectionsManager({ meetingId, initial, dialogs, onChange }: {
         source={source}
         reorder={reorder}
         rowKey="id"
-        columns={sectionColumns}
+        columns={columns}
         actions={actions}
         empty="No sections"
         pageSize={100}
@@ -602,13 +703,8 @@ function SectionsManager({ meetingId, initial, dialogs, onChange }: {
 // A section in the list of the "Sections" drawer.
 type SectionRow = { id: string; title: string; number: string };
 
-const sectionColumns: readonly DataNavigatorComponent.Column<SectionRow>[] = [
-  { key: 'number', header: '#', width: '3rem', align: 'end' },
-  { key: 'title', header: 'Name', wrap: true },
-];
-
 // The minutes as one document: every item with its minutes and decision, in the order of the agenda; the sections as
-// headings, their items indented.
+// headings, their items indented, and "Other" for the items without a section.
 function MinutesView({ meeting, agendaItems, agendaSections, boardName }: {
   meeting: Meeting;
   agendaItems: readonly AgendaItem[];
@@ -649,7 +745,7 @@ function MinutesView({ meeting, agendaItems, agendaSections, boardName }: {
           </Text>
         </Stack>
         <Stack gap="md">
-          {agenda.map((entry) => {
+          {agenda.map((entry, index) => {
             if (entry.type === 'section') {
               return (
                 <Title key={entry.section.id} order={4} size="h5" mt="xs">
@@ -659,13 +755,20 @@ function MinutesView({ meeting, agendaItems, agendaSections, boardName }: {
             }
 
             const { item } = entry;
+            const previous = agenda[index - 1];
+            // The first item of "Other" (with sections only: `numbers` has the key `''`) starts its heading.
+            const other = item.sectionId === '' && numbers.has('')
+              && !(previous?.type === 'item' && previous.item.sectionId === '');
 
             return (
-              <Stack key={item.id} gap={2} pl={item.sectionId === '' ? 0 : 'md'}>
-                <Text fw={600} size="sm">{numbered(numbers.get(item.id) ?? '', item.title)}</Text>
-                <Text size="sm">{item.minutes === '' ? '(No minutes.)' : item.minutes}</Text>
-                {item.decision !== '' && <Text size="sm" fs="italic">Decision: {item.decision}</Text>}
-              </Stack>
+              <Fragment key={item.id}>
+                {other && <Title order={4} size="h5" mt="xs">{numbered(numbers.get('') ?? '', 'Other')}</Title>}
+                <Stack gap={2} pl={numbers.has('') || item.sectionId !== '' ? 'md' : 0}>
+                  <Text fw={600} size="sm">{numbered(numbers.get(item.id) ?? '', item.title)}</Text>
+                  <Text size="sm">{item.minutes === '' ? '(No minutes.)' : item.minutes}</Text>
+                  {item.decision !== '' && <Text size="sm" fs="italic">Decision: {item.decision}</Text>}
+                </Stack>
+              </Fragment>
             );
           })}
         </Stack>

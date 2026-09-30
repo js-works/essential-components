@@ -26,8 +26,14 @@ function groupKeyOf<Row>(row: Row, groupBy: Spec.GroupBy<Row>): string {
 }
 
 // The runs of the page: consecutive rows with the same group are one run (the source sorts by group; unsorted rows
-// give a group more than once).
-function segmentsOf<Row>(rows: readonly Row[], keyOf: ((row: Row) => string) | undefined): Segment<Row>[] {
+// give a group more than once). An empty group of the source (`Result.groups` with `total: 0`) gets a run without
+// rows, at its place in the order of `groups`: right before the next group of that order that is on the page, else
+// right after the one before it; none when no group of that order is on the page, or the page has no rows.
+function segmentsOf<Row>(
+  rows: readonly Row[],
+  keyOf: ((row: Row) => string) | undefined,
+  groups?: readonly Spec.ResultGroup[],
+): Segment<Row>[] {
   if (keyOf === undefined) {
     return [{ key: undefined, rows }];
   }
@@ -44,6 +50,31 @@ function segmentsOf<Row>(rows: readonly Row[], keyOf: ((row: Row) => string) | u
       segments.push({ key, rows: [row] });
     }
   }
+
+  if (groups === undefined || segments.length === 0) {
+    return segments;
+  }
+
+  const order = groups.map((group) => group.key);
+  const onPage = (key: string) => segments.some((segment) => segment.key === key);
+
+  groups.forEach((group, index) => {
+    if (group.total !== 0 || onPage(group.key)) {
+      return;
+    }
+
+    const next = order.slice(index + 1).find(onPage);
+    const previous = order.slice(0, index).reverse().find(onPage);
+    const at = next !== undefined
+      ? segments.findIndex((segment) => segment.key === next)
+      : previous !== undefined
+      ? segments.length - [...segments].reverse().findIndex((segment) => segment.key === previous)
+      : -1;
+
+    if (at >= 0) {
+      segments.splice(at, 0, { key: group.key, rows: [] });
+    }
+  });
 
   return segments;
 }

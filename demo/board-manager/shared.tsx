@@ -30,6 +30,7 @@ export {
   formatDate,
   formatDateTime,
   formatSize,
+  formatTime,
   Navigator,
   PageHeader,
   Scope,
@@ -57,6 +58,10 @@ function formatDateTime(value: string): string {
   return value === ''
     ? ''
     : new Intl.DateTimeFormat(locale(), { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
+}
+
+function formatTime(value: Date): string {
+  return new Intl.DateTimeFormat(locale(), { timeStyle: 'short' }).format(value);
 }
 
 function formatDate(value: string): string {

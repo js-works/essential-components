@@ -377,7 +377,7 @@ These are the first proposals behind `src/api.ts` and the element. Each one can 
   - Text buttons ("Browse", "Clear", "Upload all", decided): all in the same neutral style (border, no fill, the
     `surfaceColor` on hover), none in the accent color. Their text has the size of the prompt next to them (`1em`;
     it was `0.857em` until 2026-09-29, too small). The empty element's height follows (the React placeholder:
-    content 1.876em, see `createFileUploadComponent.tsx`). They look as harmless as possible, because they will rarely
+    content 1.806em, see `createFileUploadComponent.tsx`). They look as harmless as possible, because they will rarely
     match the buttons of the app's component library exactly, and the element is a form field, not the page's main
     action. "Upload all" keeps its icon and its place at the end. An app that wants a prominent button styles it with
     `::part()`.

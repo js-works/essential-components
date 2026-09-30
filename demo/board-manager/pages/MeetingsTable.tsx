@@ -23,10 +23,40 @@ import {
 } from '../db';
 import type { MeetingRow, MeetingStatus } from '../db';
 import { confirmAndRun, submitForm } from '../flows';
+import type { Dialogs } from '../flows';
 import { fromPicker, MeetingForm } from '../forms';
 import { appIcons, countText, formatDateTime, Navigator, useDb } from '../shared';
 
-export { MeetingsTable, MinutesBadge, StatusBadge };
+export { editMeeting, MeetingsTable, MinutesBadge, StatusBadge };
+
+type Toasts = ReturnType<typeof useToast>;
+
+// The values of the meeting form.
+const meetingValues = (data: FormDialogData) => ({
+  title: data.string('title', ''),
+  start: fromPicker(data.string('start', '')),
+  location: data.string('location', ''),
+});
+
+// "Edit" of a meeting (in the meetings list and on the meeting's overview): the meeting form in a dialog, saved before
+// it closes, then a toast. Resolves `true` when saved.
+async function editMeeting(dialogs: Dialogs, toasts: Toasts, id: string): Promise<boolean> {
+  const saved = await submitForm(
+    dialogs,
+    {
+      title: 'Edit meeting',
+      content: (check) => <MeetingForm check={check} meeting={getMeeting(db.getState(), id)} />,
+      buttons: { confirm: 'Save' },
+    },
+    (data) => updateMeeting(id, meetingValues(data)),
+  );
+
+  if (saved) {
+    toasts.success('Meeting saved');
+  }
+
+  return saved;
+}
 
 const STATUS_COLORS: Readonly<Record<MeetingStatus, string>> = { Planned: 'blue', Held: 'green', Cancelled: 'gray' };
 
@@ -115,12 +145,6 @@ function MeetingsTable(
   ], [boardId, boards, pathOf]);
 
   const actions = useMemo<readonly DataNavigatorComponent.Action<MeetingRow>[]>(() => {
-    const values = (data: FormDialogData) => ({
-      title: data.string('title', ''),
-      start: fromPicker(data.string('start', '')),
-      location: data.string('location', ''),
-    });
-
     const create = async () => {
       let created: { id: string; boardId: string } | undefined;
       const saved = await submitForm(
@@ -133,7 +157,7 @@ function MeetingsTable(
           buttons: { confirm: 'Create' },
         },
         async (data) => {
-          created = await createMeeting(boardId ?? data.string('boardId', ''), values(data));
+          created = await createMeeting(boardId ?? data.string('boardId', ''), meetingValues(data));
         },
       );
 
@@ -144,19 +168,8 @@ function MeetingsTable(
     };
 
     const edit = async (row: MeetingRow) => {
-      const saved = await submitForm(
-        dialogs,
-        {
-          title: 'Edit meeting',
-          content: (check) => <MeetingForm check={check} meeting={getMeeting(db.getState(), row.id)} />,
-          buttons: { confirm: 'Save' },
-        },
-        (data) => updateMeeting(row.id, values(data)),
-      );
-
-      if (saved) {
+      if (await editMeeting(dialogs, toasts, row.id)) {
         nav.reload();
-        toasts.success('Meeting saved');
       }
     };
 
