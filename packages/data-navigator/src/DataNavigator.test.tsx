@@ -157,6 +157,8 @@ async function choosePageSize(size: number): Promise<void> {
 
 // Opens the filter view (in place of the rows) with the filter button of the toolbar.
 async function openFilters(): Promise<HTMLElement> {
+  // A view closed before rolls up first (with the lists it left open: jsdom has no outside press that closes them).
+  await waitFor(() => expect(document.querySelector('[data-closing]')).toBeNull());
   fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
 
   return screen.findByRole('region', { name: 'Filters' });
@@ -528,15 +530,16 @@ describe('DataNavigator', () => {
 
       const panel = await openFilters();
 
-      // the grid and the footer stay, but hidden (they keep their room, so the height stays) and inert; the view lies in
-      // the same cell; the toolbar stays, with the filter button pressed
+      // the grid and the footer stay, visible but faded (they keep their room, so the height stays) and inert; the view
+      // lies in the same cell, as a sheet over their top; the toolbar stays, with the filter button pressed
       const stack = container.querySelector('.stack')!;
       const tableArea = container.querySelector<HTMLElement>('.tableArea')!;
 
       expect(stack.hasAttribute('data-filtering')).toBe(true);
       expect(tableArea.contains(container.querySelector('.table'))).toBe(true);
       expect(tableArea.hasAttribute('inert')).toBe(true);
-      expect(baseStylesheet).toMatch(/&\[data-filtering\] > \.tableArea \{\s*visibility: hidden;/);
+      expect(baseStylesheet).toMatch(/&\[data-filtering\] > \.tableArea \{\s*opacity: 0\.4;/);
+      expect(baseStylesheet).toMatch(/\.filterView \{[^}]*align-self: start;[^}]*animation: filterViewIn /);
       expect(panel.parentElement).toBe(stack);
       expect(screen.getByRole('button', { name: 'Filters' }).getAttribute('aria-pressed')).toBe('true');
       // no headline; below the filters Cancel and Apply (Reset and Clear only when they would change something)
@@ -590,8 +593,10 @@ describe('DataNavigator', () => {
 
       click('Apply');
 
-      // the view closes, and the load starts
+      // the view closes, and the load starts; it only rolls up a moment longer (inert and hidden), then it is removed
       expect(screen.queryByRole('region', { name: 'Filters' })).toBeNull();
+      expect(document.querySelector('[data-closing]')?.hasAttribute('inert')).toBe(true);
+      await waitFor(() => expect(document.querySelector('[data-closing]')).toBeNull());
 
       await filteredWith(source, { name: { text: 'person 0', match: 'contains' }, city: 'Vienna' }, 300);
       expect(source.mock.calls.length).toBe(calls + 1);
@@ -633,8 +638,22 @@ describe('DataNavigator', () => {
 
       await loaded();
       await openFilters();
+
+      // a dot after the label of a filter set in the draft (its room always kept)
+      const dotOf = (header: string) =>
+        [...document.querySelectorAll('.filterPanelLabel')].find((label) => label.textContent === header)!
+          .querySelector('.filterPanelDot')!;
+
+      expect(dotOf('Name').hasAttribute('data-set')).toBe(false);
       typeName('ber');
-      // the select in front of the text field, "contains" by default
+      expect(dotOf('Name').hasAttribute('data-set')).toBe(true);
+      // the select inside the text field, at its start, "contains" by default
+      expect(
+        document.querySelector('.prefixedField')?.firstElementChild?.contains(
+          screen.getByRole('combobox', { name: 'Match' }),
+        ),
+      )
+        .toBe(true);
       const match = screen.getByRole('combobox', { name: 'Match' });
 
       expect(match.textContent).toBe('contains');

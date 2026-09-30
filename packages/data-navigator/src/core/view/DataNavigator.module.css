@@ -27,7 +27,8 @@
 
 /* The grid with the footer (`.tableArea`) and the filter view in one grid cell, on top of each other: the height is
    the larger of the two, so opening and closing the filter view does not change the height of the table (unless the
-   filters need more room than the rows). While the view is shown, the table area is hidden (it keeps its room). */
+   filters need more room than the rows). While the view is shown, the table area stays visible below it, faded (like
+   the inert parts of the toolbar). */
 .stack {
   display: grid;
   flex: 1 1 auto;
@@ -39,8 +40,15 @@
     min-height: 0;
   }
 
+  & > .tableArea {
+    /* Back in the time the filter view rolls up. */
+    transition: opacity 250ms ease-in;
+  }
+
   &[data-filtering] > .tableArea {
-    visibility: hidden;
+    opacity: 0.4;
+    /* Faded in the time the filter view unrolls. */
+    transition: opacity 400ms cubic-bezier(0.2, 0, 0, 1);
   }
 }
 
@@ -479,15 +487,78 @@
   }
 }
 
-/* The filter view: over the hidden grid and footer (the toolbar stays above it), as high as they are (it stretches in
-   the cell of `.stack`), with a line on top. With a limited height of the table, only its filters scroll, the buttons
-   stay. It is opaque, so nothing of the table below shines through. */
+/* The filter view: a sheet over the top of the faded grid and footer (the toolbar stays above it), only as high as its
+   filters and buttons and only as wide as its filters (set inline), at the end (under the filter button, a little
+   below the toolbar, with a nose pointing to the button), with a frame and a shadow; it unrolls from its top edge and
+   fades in when it opens, and rolls up when it closes. With a limited height of the table, only its filters scroll,
+   the buttons stay. It is opaque, so nothing of the table below shines through, and above the table area (which
+   comes later and, faded, paints on its own). */
 .filterView {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
+  align-self: start;
+  justify-self: end;
+  max-height: calc(100% - var(--datnav-spacing-xs) / 2);
   min-height: calc(6 * var(--datnav-spacing-md));
-  border-top: 1px solid var(--datnav-color-border);
+  box-sizing: border-box;
+  /* Only a tiny gap below the toolbar: a larger one showed the top of the table's scrollbar (its arrow button, faded)
+     like a second nose. */
+  margin-top: calc(var(--datnav-spacing-xs) / 2);
+  /* A frame in the color of the lines (the shadow alone set it apart too little), rounder than the controls: three
+     times their radius (6px in the default theme, like the dialogs of the demos). */
+  border: 1px solid var(--datnav-color-border);
+  border-radius: calc(3 * var(--datnav-radius));
   background-color: var(--datnav-color-surface);
+  /* A tiny shadow in the color of the lines (the theme's shadow, then `0 2px 6px`, were too heavy, none too flat; no
+     hard-coded colors). */
+  box-shadow: 0 1px 3px var(--datnav-color-border);
+  animation: filterViewIn 400ms cubic-bezier(0.2, 0, 0, 1);
+
+  /* Closed: rolled up again, a bit faster, and then removed (`FILTER_VIEW_CLOSE_TIME` in `DataNavigatorView.tsx`). */
+  &[data-closing] {
+    animation: filterViewOut 250ms ease-in forwards;
+  }
+}
+
+/* The nose on the top edge of the filter view, under the middle of the filter button (its distance from the end is set
+   inline, measured): a small square turned by 45°, with the frame on its two upper sides; its middle lies on the frame of
+   the view, so its lower half covers that frame. */
+.filterViewNose {
+  position: absolute;
+  top: -6px;
+  width: 10px;
+  height: 10px;
+  box-sizing: border-box;
+  margin-inline-end: -5px;
+  border-top: 1px solid var(--datnav-color-border);
+  border-left: 1px solid var(--datnav-color-border);
+  background-color: var(--datnav-color-surface);
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+
+/* Unrolled from its top edge down, like a roller blind. The clip leaves room at the sides and below, so the shadow is
+   not cut off meanwhile, and above, for the nose. */
+@keyframes filterViewIn {
+  from {
+    opacity: 0;
+    clip-path: inset(-1rem -2rem 100% -2rem);
+  }
+  to {
+    clip-path: inset(-1rem -2rem -2rem -2rem);
+  }
+}
+
+@keyframes filterViewOut {
+  from {
+    clip-path: inset(-1rem -2rem -2rem -2rem);
+  }
+  to {
+    opacity: 0;
+    clip-path: inset(-1rem -2rem 100% -2rem);
+  }
 }
 
 /* Only as high as its filters, so the buttons follow right after them (the rest of the view stays empty below). It
@@ -496,7 +567,7 @@
   flex: 0 1 auto;
   min-height: 0;
   overflow-y: auto;
-  padding: var(--datnav-spacing-md) var(--datnav-spacing-sm) var(--datnav-spacing-sm);
+  padding: var(--datnav-spacing-md) var(--datnav-spacing-md) var(--datnav-spacing-sm);
 }
 
 /* The filters in one or two columns, centered in the view. A column has room for
@@ -511,10 +582,8 @@
 }
 
 /* Below the filters: Reset Clear | Cancel [Apply], at the right end of a row as wide as the filters (set inline) and
-   centered like them, so Apply ends where the last column ends. A gray line on top, as wide as the columns (inset by
-   the padding); it stays when the filters scroll. */
+   centered like them, so Apply ends where the last column ends. No line above it. */
 .filterPanelFooter {
-  position: relative;
   display: flex;
   flex: none;
   box-sizing: border-box;
@@ -522,19 +591,16 @@
   justify-content: flex-end;
   gap: calc(var(--datnav-spacing-xs) / 2);
   margin-inline: auto;
-  padding: var(--datnav-spacing-sm);
+  padding: var(--datnav-spacing-sm) var(--datnav-spacing-md);
+
+  /* The buttons as high as the filters (the controls of the view), not as the toolbar's. */
+  & > :is(.button[data-placement], .applyButton) {
+    height: calc(0.8 * var(--datnav-control-height));
+  }
 
   /* A little more room before Apply than between the ghost buttons. */
   & > .applyButton {
     margin-inline-start: calc(var(--datnav-spacing-xs) / 2);
-  }
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    inset-inline: var(--datnav-spacing-sm);
-    border-top: 1px solid var(--datnav-color-border);
   }
 }
 
@@ -560,11 +626,28 @@
   text-align: end;
   min-height: calc(0.8 * var(--datnav-control-height));
   overflow: hidden;
-  color: var(--datnav-color-text-dimmed);
+  /* The text color, like the labels of a form (it was the muted one, too light in some themes). */
+  color: var(--datnav-color-text);
   /* The normal size (it was the small one, too small next to the controls). */
   font-size: var(--datnav-font-size);
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* After a label: a dot in the primary color while its filter is set in the draft (the only accent besides Apply). Its
+   room is always there (hidden while not set), so the labels and controls never move. */
+.filterPanelDot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  margin-inline-start: calc(var(--datnav-spacing-xs) / 2);
+  border-radius: 50%;
+  background-color: var(--datnav-color-primary);
+  visibility: hidden;
+
+  &[data-set] {
+    visibility: visible;
+  }
 }
 
 /* The controls fill their column: the built-in ones (small, with a text size between the small and the normal one),
@@ -590,29 +673,48 @@
   }
 }
 
-/* A text field with a select in front of it (a text filter: how the text must match), joined to one control: the
-   select has no rounded corners on its end, the input none on its start, and their borders overlap. The focused one
-   comes to the front, so its outline is complete. */
+/* A text field with a select inside it, at its start (a text filter: how the text must match): the wrapper is the
+   field (its border, and the focus outline while the input is focused), the select a chip in it, 2px from its top,
+   start and bottom edge, and the input takes the rest, without a border of its own. */
 .prefixedField {
   display: flex;
+  box-sizing: border-box;
+  align-items: stretch;
   min-width: 0;
+  height: var(--datnav-control-height);
+  padding: 2px;
+  border: 1px solid var(--datnav-color-border);
+  border-radius: var(--datnav-radius);
+  background-color: var(--datnav-color-surface);
+
+  &:has(> .field .input:focus-visible) {
+    border-color: var(--datnav-color-focus);
+    outline: 1px solid var(--datnav-color-focus);
+    outline-offset: -1px;
+  }
 
   & > .field {
     flex: 1 1 auto;
-    margin-inline-start: -1px;
   }
 
   & > .field .input {
-    border-start-start-radius: 0;
-    border-end-start-radius: 0;
-  }
+    height: 100%;
+    border: none;
+    background-color: transparent;
 
-  & .input:focus-visible {
-    position: relative;
-    z-index: 1;
+    /* The wrapper shows the focus. */
+    &:focus-visible {
+      outline: none;
+    }
   }
 }
 
+.filterPanelControl .prefixedField {
+  height: calc(0.8 * var(--datnav-control-height));
+}
+
+/* The chip: like the knob of the segmented control (flat, on the surface color, with a thin border), as high as the
+   room inside the field. */
 .prefixSelect {
   position: relative;
   display: flex;
@@ -621,10 +723,11 @@
 
   & .select {
     width: auto;
+    height: 100%;
     padding-inline: calc(var(--datnav-spacing-xs) + 1px) calc(var(--datnav-spacing-xs) + 1.25rem);
-    border-start-end-radius: 0;
-    border-end-end-radius: 0;
-    background-color: transparent;
+    border-color: var(--datnav-color-border);
+    background-color: var(--datnav-color-surface);
+    color: var(--datnav-color-text);
     white-space: nowrap;
   }
 }
@@ -650,15 +753,16 @@
   }
 }
 
-/* An outlined button (like the secondary actions of the toolbar), as wide as its text, at the end of the footer. */
+/* A filled button in the primary color (like the primary actions of the toolbar), as wide as its text, at the end of
+   the footer. */
 .applyButton {
   flex: none;
   height: var(--datnav-control-height);
   padding: 0 var(--datnav-spacing-md);
-  border: 1px solid var(--datnav-color-border);
+  border: 1px solid var(--datnav-color-primary);
   border-radius: var(--datnav-button-radius);
-  background-color: var(--datnav-color-surface);
-  color: var(--datnav-color-text);
+  background-color: var(--datnav-color-primary);
+  color: var(--datnav-color-on-primary);
   font: inherit;
   font-weight: normal;
   cursor: pointer;
@@ -666,12 +770,14 @@
 
   @media (hover: hover) {
     &:hover {
-      background-color: var(--datnav-color-hover);
+      border-color: var(--datnav-color-primary-hover);
+      background-color: var(--datnav-color-primary-hover);
     }
   }
 
   &:active {
-    background-color: color-mix(in srgb, var(--datnav-color-hover), var(--datnav-color-text) 10%);
+    border-color: color-mix(in srgb, var(--datnav-color-primary-hover), var(--datnav-color-text) 15%);
+    background-color: color-mix(in srgb, var(--datnav-color-primary-hover), var(--datnav-color-text) 15%);
   }
 
   &:focus-visible {
@@ -723,9 +829,10 @@
     }
   }
 
-  /* The chosen one: a light gray fill (on the transparent track). */
+  /* The chosen one: a flat knob on the surface color (like the track), set apart by a thin border. */
   &[aria-checked='true'] {
-    background-color: var(--datnav-color-header);
+    border-color: var(--datnav-color-border);
+    background-color: var(--datnav-color-surface);
     color: var(--datnav-color-text);
   }
 

@@ -21,6 +21,11 @@ the root's `CLAUDE.md` apply.
 
 - Mantine is scoped: its layered CSS, its variables and color scheme on `.board-manager` (the app, and the content of
   each dialog through `wrapContent`), following `<html data-scheme>`; its popups without portal.
+- The components' themes follow Mantine as closely as possible (their values are Mantine's variables): the data
+  navigator's `mantineTheme`, the file upload's `MANTINE_UPLOAD_THEME` (`MeetingPage.tsx`, kept in the app: a theme in
+  the package would need its own test and demo). More contrast comes from the app's Mantine theme instead
+  (`cssVariablesResolver`, 2026-09-30): `dimmed` `gray.7` (dark `dark.1`) and `placeholder` `gray.6` (dark `dark.2`),
+  one step darker than Mantine's (lighter in dark mode); the text and the lines stay Mantine's.
 - Badges keep the case of their text (`tt: 'none'` as a default prop of `Badge` in the theme, 2026-09-30): Mantine's
   stylesheet makes them uppercase ("PLANNED").
 - The dialogs' buttons and close button are Mantine's (`render.actionButton`, `render.closeButton` in the overlays

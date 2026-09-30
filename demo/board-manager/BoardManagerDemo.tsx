@@ -15,6 +15,7 @@ import {
   Popover,
   Tooltip,
 } from '@mantine/core';
+import type { CSSVariablesResolver } from '@mantine/core';
 import { StrictMode } from 'react';
 import type { ReactElement } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -42,6 +43,21 @@ const THEME = createTheme({
     Menu: Menu.extend({ defaultProps: { withinPortal: false } }),
     Popover: Popover.extend({ defaultProps: { withinPortal: false } }),
     Tooltip: Tooltip.extend({ defaultProps: { withinPortal: false } }),
+  },
+});
+
+// More contrast than Mantine's defaults, for the app and every component in it (their themes use Mantine's variables):
+// the dimmed text (secondary texts, the table headers, the labels) and the placeholders one step darker (in dark mode:
+// lighter). The text and the lines stay Mantine's (black and `gray.4` already).
+const cssVariablesResolver: CSSVariablesResolver = () => ({
+  variables: {},
+  light: {
+    '--mantine-color-dimmed': 'var(--mantine-color-gray-7)',
+    '--mantine-color-placeholder': 'var(--mantine-color-gray-6)',
+  },
+  dark: {
+    '--mantine-color-dimmed': 'var(--mantine-color-dark-1)',
+    '--mantine-color-placeholder': 'var(--mantine-color-dark-2)',
   },
 });
 
@@ -106,6 +122,7 @@ function App({ router }: { router: ReturnType<typeof createAppRouter>['router'] 
   return (
     <MantineProvider
       theme={THEME}
+      cssVariablesResolver={cssVariablesResolver}
       forceColorScheme={useScheme()}
       cssVariablesSelector={`.${SCOPE_CLASS}`}
       deduplicateCssVariables={false}

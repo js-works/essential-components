@@ -73,7 +73,7 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     - Spacing and size: `spacingXs`, `spacingSm`, `spacingMd`, `controlHeight`.
   - `colorSurfaceStrong` (added 2026-09-30): a stronger surface for emphasized areas (a band that sets something
     apart), darker than the hover, the stripes and the neutral selection, lighter than the lines. A general value,
-    not one for a widget: it is used for the group header band. Default `#dadada` (dark `#3a3a3a`), soft `#e6e6e6`
+    not one for a widget: it is used for the group header band. Default `#e6e6e6` (`#dadada` until 2026-09-30, too dark; dark `#3a3a3a`), soft `#e6e6e6`
     (dark `#2e2e2e`), Mantine `gray-1` (`#f1f3f5`, dark `dark-5`; `gray-2` was too dark; Mantine's light grays are all
     slightly bluish, and it has no neutral light gray), antd `--ant-color-fill`.
   - Every color is its own value, mapped by the theme. No colors derived with `color-mix()` (except pressed states).
@@ -1031,20 +1031,44 @@ The main goal is a very nice, yet simple, API, designed together with the user.
         (2026-09-29; hidden while the view was shown before, so clearing there took "Clear" and "Apply").
   - The filter view (`FilterView` in `view/FilterPanel.tsx`, decided 2026-09-29): it takes the place of the column
     headers, the rows and the footer while it is shown; the toolbar stays above it, but the pill row is not shown
-    (the view shows the same filters, as a draft; not rendered at all, so the toolbar gets lower by the pill row: hiding it with its room kept was tried and dropped). It has as much room as the table, and works the same on a page, in
+    (the view shows the same filters, as a draft; not rendered at all, so the toolbar gets lower by the pill row: hiding it with its room kept was tried and dropped). It has at most as much room as the table, and works the same on a page, in
     a drawer and in a narrow column.
     - The height of the table does not change when the view opens or closes (decided 2026-09-29, the user's idea):
       the grid with the footer (`.tableArea`) and the view lie in one grid cell (`.stack`), so the height is the
-      larger of the two. While the view is shown, the table area stays but is hidden (`visibility: hidden`, and
-      `inert`). Only when the filters need more room than
+      larger of the two. While the view is shown, the table area stays visible below it, but faded (`opacity: 0.4`,
+      like the inert parts of the toolbar) and `inert`; a click on it does nothing (it does not close the view, so a
+      stray click never drops the draft). (Hidden with `visibility: hidden` until 2026-09-30: seeing only the filters
+      looked odd.) Only when the filters need more room than
       the rows (a short table) does the table grow, by that much. The table stays mounted meanwhile: its scroll
       position, expanded rows and state are still there, and closing is instant. (Before, the view replaced the grid
       and the footer, and the table got as high as the filters, usually lower; measuring the old height was
       considered.) The view is opaque (`--datnav-color-surface`).
     - Before, it was a popup (Base UI's `Popover`, below the filter button, with an arrow, 20rem wide and at most 24rem
       high; a drawer of the viewport and a panel inside the table were discussed). The user did not like the popup.
-    - It is a `<section>` named `Texts.filters` (no headline), with a line on top. It is at least as high as the rows
-      area (`calc(6 * --datnav-spacing-md)`); in a table of a limited height only its filters scroll, the footer stays. The footer follows right after the filters (the rest of the view below it stays empty), not at the bottom of the view.
+    - It is a sheet over the top of the table area (decided 2026-09-30): only as high as its filters and footer, with
+      a tiny shadow in the color of the lines (`0 1px 3px --datnav-color-border`, 2026-09-30, the user's wish; tried
+      the same day: `--datnav-shadow` and `0 2px 6px`, too heavy, and none, too flat). Only as wide as the filters (one or two columns and the gap), their side padding
+      (`--datnav-spacing-md`, in the body and the footer; `--datnav-spacing-sm` until 2026-09-30, too little) and the
+      frame, at most as wide as the table (set inline), at its right end, under the filter button (2026-09-30, the
+      user's wish; it was as wide as the table): the faded table stays visible beside it. It sits a little below the
+      toolbar (`margin-top: calc(--datnav-spacing-xs / 2)`, 4px; it was `--datnav-spacing-sm`, which showed the top
+      of the table's scrollbar, its faded arrow button in Chromium on Windows, like a second nose), all corners rounded (see the frame below), with a nose on its top edge
+      pointing to the middle of the filter button (`.filterViewNose`, a 10px square turned by 45°, with the frame on
+      its upper sides; its distance from the end of the view is measured and kept up to date with a `ResizeObserver`
+      on the view and the table, at least 16px from the corners; mirrored for right-to-left; no nose without the
+      button). On opening it unrolls from its top edge down, like a roller blind (`clip-path`), and fades in,
+      and the table fades out, both in 400ms (`cubic-bezier(0.2, 0, 0, 1)`; sliding down by 8px in 180ms, then 260ms,
+      were too subtle). Closing plays it back, a bit faster (250ms, `ease-in`): the view rolls up and the table fades
+      back. Everything else is back at once (the toolbar, the pills, the focus on the filter button); the closed view
+      stays only for its animation (`inert`, `aria-hidden`, then removed), and one opened meanwhile is a new one. No
+      animation with reduced motion (the view goes at once). (Before, it filled the whole
+      table area.)
+    - It is a `<section>` named `Texts.filters` (no headline), with a frame all around (since 2026-09-30, the user's wish: the
+      shadow alone set it apart too little; before, only a line on top), 1px, in the color of
+      the lines (`--datnav-color-border`, the nose too; tried the same day: the light accent, and the primary color of
+      Apply, 1px and 2px). Its corners are rounder than the controls: `calc(3 * --datnav-radius)` (6px in the default
+      theme, like the dialogs of the demos). It is at least
+      `calc(6 * --datnav-spacing-md)` high; in a table of a limited height only its filters scroll, the footer stays. The footer follows right after the filters and ends the sheet.
     - The search is not part of the filters (decided 2026-09-29): filters describe a subset worth coming back to (and,
       later, worth saving as a view, together with the sorting and the visible columns), the search is a quick,
       one-off lookup. So the search box stays in the toolbar. (Taking the search into the filter view as a draft
@@ -1062,14 +1086,16 @@ The main goal is a very nice, yet simple, API, designed together with the user.
       `--datnav-spacing-md`, and columns for 6rem labels: the free room before a short label made the gap look too
       wide). They are CSS columns, like newspaper columns: down the first, then on in the second, and each filter is
       only as high as it is (`break-inside: avoid`). A grid of rows made every filter as high as the tallest of its
-      row, which left gaps next to the text filter. A filter: the column header as the label (muted, in the normal size since 2026-09-29, the small
+      row, which left gaps next to the text filter. A filter: the column header as the label, followed by a dot in
+      the primary color (`.filterPanelDot`, 6px) while the filter is set in the draft (2026-09-30, the user's wish:
+      the only accent besides Apply; its room is always kept, hidden while not set, so nothing moves) (in the text color since 2026-09-30, like the labels of a form: the muted one was too light in some themes, e.g. Mantine's; in the normal size since 2026-09-29, the small
       one was too small; no fixed width since 2026-09-29, it was 4.5rem, then 6rem) right before its control. Every
       label gets the width of the widest label of the view (measured when the view opens, `scrollWidth`, and set
       inline as the first grid track of every row and in the width of the columns): so every control gets its full
       width (at most 20rem) and the controls line up on both edges. (With each label as wide as its own text, a long
       label, "Date of birth", made its control narrower than the others.) So on the left the label, the filter on the right (the `labelledBy` of the filter is the id of
       that label). Custom filters are rendered there too, as wide as the column of the controls.
-    - Footer (`.filterPanelFooter`; a gray line above it, as wide as the filter columns, not the view: 2026-09-30; a full-width one was removed 2026-09-29), all on the right: `Reset Clear | Cancel [Apply]`
+    - Footer (`.filterPanelFooter`; no line above it: a full-width one was removed 2026-09-29, one as wide as the filter columns on 2026-09-30, the user's wish), all on the right: `Reset Clear | Cancel [Apply]`
       (2026-09-29): "Reset" (`Texts.resetFilters`), "Clear" (`Texts.clear`) and "Cancel" (`Texts.cancelFilters`) are
       ghost buttons (`data-placement="tool"`, like the view controls of the toolbar); a divider (the toolbar's)
       separates the two that change the draft from the two that close the view; "Apply" after "Cancel", a little more
@@ -1077,9 +1103,12 @@ The main goal is a very nice, yet simple, API, designed together with the user.
       - "Reset" and "Clear" are shown only when they would change something (hidden, not disabled): "Reset" while the
         draft differs from the applied filters, "Clear" while the draft has a filter. The divider only with one of them. (Tried before: "Reset" as a quiet text button on the left with a muted "Cancel"; dividers
         between all; `Reset Clear Cancel | [Apply]`; `Reset | Clear | Cancel [Apply]`; `Reset Clear Cancel [Apply]`.)
-    - "Apply" (`Texts.applyFilters`): an outlined button like the secondary actions of the toolbar
-      (`--datnav-color-border` on the surface, the text color, normal weight, `--datnav-color-hover` on hover), as wide as its
-      text (side padding `--datnav-spacing-md`). (It was a full-width button in the primary color at first, as the
+    - "Apply" (`Texts.applyFilters`): a filled button in the primary color, like the primary actions of the toolbar
+      (`--datnav-color-primary`, text `--datnav-color-on-primary`, normal weight, `--datnav-color-primary-hover` on
+      hover; since 2026-09-30, the user's wish: an accent; before, outlined like the secondary actions), as wide as its
+      text (side padding `--datnav-spacing-md`). All four buttons of the footer are as high as the filters
+      (`0.8 * --datnav-control-height`, since 2026-09-30; Apply had the full control height, the ghost buttons
+      `0.875 *`, like in the toolbar). (It was a full-width button in the primary color at first, as the
       spec had it, then only filled.)
     - No live result count (a query may be expensive).
   - Everything changed in the filter view is a draft: the `onChange` of a filter changes the draft (so custom filters
@@ -1128,9 +1157,15 @@ The main goal is a very nice, yet simple, API, designed together with the user.
       the label of the filter in the filter view.
   - The built-in filters are factories, exported next to the component (and by the element's entry, as opaque
     markers):
-    - `textColumnFilter({ placeholder? })`: a text input with a select in front of it (`PrefixedTextField` in
-      `widgets.tsx`, the two joined to one control; the select is our `SelectField` with its chevron, on a
-      transparent background (it had `--datnav-color-header` at first), named `Texts.textMatch` "Match"): `contains` (default), `starts with`, `ends with`
+    - `textColumnFilter({ placeholder? })`: a text input with a select inside it, at its start (`PrefixedTextField` in
+      `widgets.tsx`; the select is our `SelectField` with its chevron, named `Texts.textMatch` "Match"). The wrapper
+      (`.prefixedField`) is the field, with the border and the focus outline of the input; the select is a chip in it,
+      2px from its top, start and bottom edge, that looks like the knob of the segmented control (flat,
+      `--datnav-color-surface`, a thin `--datnav-color-border`, the text color); the input fills the rest without a
+      border (2026-09-30, the user's wish). (Tried the same day: the chip white, then in the light accent, then the
+      select at the end of the field as quiet text without a box, which the user moved back to the start. Before
+      that, the select in front of the input, joined side by side with overlapping borders, on a transparent
+      background, at first `--datnav-color-header`.) The modes: `contains` (default), `starts with`, `ends with`
       (`Texts.textContains`, ...). (A segmented control below the input was tried first, 2026-09-28; the user replaced
       it on 2026-09-29.) When the view opens, the text input (not the select) gets the focus. The value is
       `{ text, match }` (`DataNavigator.TextFilterValue`, `match`: `'contains' | 'startsWith' | 'endsWith'`), the text
@@ -1149,8 +1184,9 @@ The main goal is a very nice, yet simple, API, designed together with the user.
       `filterNo`); the value is `true` or `false`, "All" removes the filter (and shows no pill).
     - Ranges are always inclusive on both ends. All filters are combined with AND (the source does that).
   - The segmented control (`Segmented` in `widgets.tsx`): a `radiogroup` of buttons (`role="radio"`), outlined
-    (`--datnav-color-border`) on a transparent background; the chosen one has a light gray fill
-    (`--datnav-color-header`). (At first a gray track, `--datnav-color-header`, with the chosen one on the surface
+    (`--datnav-color-border`) on a transparent background; the chosen one is a flat knob on the surface color
+    (`--datnav-color-surface`) with a thin border (`--datnav-color-border`), no shadow (2026-09-30, the user's wish).
+    (Before, the same day: in the light accent, and white with a small shadow. Before that, a light gray fill, `--datnav-color-header`, too gray. At first a gray track, `--datnav-color-header`, with the chosen one on the surface
     color with a border.) Used by the boolean filter
     (its smaller variant was for the match of the text filter, which is a select now).
   - The controls in the filter view are small (`0.8 * --datnav-control-height`), with a text size between the small and the

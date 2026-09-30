@@ -1,5 +1,5 @@
 import { useContext, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
-import type { KeyboardEvent, ReactElement, ReactNode, Ref } from 'react';
+import type { KeyboardEvent, ReactElement, ReactNode, Ref, RefObject } from 'react';
 import type { DataNavigatorComponent as Spec } from '../../react/api';
 import { sameValue, withoutKey } from '../filters';
 import { useLocale } from '../texts';
@@ -22,6 +22,9 @@ type Filters = Readonly<Record<string, Spec.FilterValue>>;
 // its first control. A select may have a hidden input of its own for forms.
 const TEXT_INPUT = 'input:not([type="hidden"], [type="checkbox"], [tabindex="-1"], [aria-hidden="true"])';
 const FOCUSABLE = `${TEXT_INPUT}, button:not([tabindex="-1"]), [role="combobox"]`;
+
+// The least distance (px) of the nose of the filter view from its corners.
+const NOSE_MARGIN = 16;
 
 type FilterButtonProps = {
   count: number;
@@ -76,6 +79,10 @@ type FilterViewProps = {
   texts: Spec.Texts;
   // The filter to focus when the view opens (a pill was clicked), else the first one.
   focusKey: string | undefined;
+  // Closed, but still rolling up (its animation).
+  closing?: boolean;
+  // The filter button: the nose of the view points to its middle.
+  anchorRef: RefObject<HTMLElement | null>;
   onApply: (filters: Filters) => void;
   onCancel: () => void;
 };
@@ -87,7 +94,7 @@ type FilterViewProps = {
 // Apply does). It is mounted on every opening, so the draft
 // starts with the applied filters each time.
 function FilterView(props: FilterViewProps): ReactElement {
-  const { columns, filters, texts, focusKey, onApply, onCancel } = props;
+  const { columns, filters, texts, focusKey, closing = false, anchorRef, onApply, onCancel } = props;
   const id = useId();
   const layer = useContext(LayerContext);
   const [draft, setDraft] = useState(filters);
@@ -115,6 +122,41 @@ function FilterView(props: FilterViewProps): ReactElement {
   // The width of the filters (one or two columns and the gap), centered in the view. The button row below gets the
   // same width (plus its side padding) and is centered too, so Apply ends where the last column ends.
   const blockWidth = single ? columnWidth : `calc(2 * ${columnWidth} + var(--datnav-spacing-sm))`;
+
+  // Where the nose sits: under the middle of the filter button, measured from the end of the view (kept a little away
+  // from its corners), again whenever the view or the table changes its size. Without the button, no nose.
+  const [noseEnd, setNoseEnd] = useState<number | undefined>(undefined);
+
+  useLayoutEffect(() => {
+    const view = ref.current;
+
+    if (view === null) {
+      return;
+    }
+
+    const update = () => {
+      const anchor = anchorRef.current;
+
+      if (anchor === null) {
+        setNoseEnd(undefined);
+        return;
+      }
+
+      const box = view.getBoundingClientRect();
+      const button = anchor.getBoundingClientRect();
+      const middle = button.left + button.width / 2;
+      const end = getComputedStyle(view).direction === 'rtl' ? middle - box.left : box.right - middle;
+
+      setNoseEnd(Math.round(Math.min(Math.max(end, NOSE_MARGIN), box.width - NOSE_MARGIN)));
+    };
+    const observer = new ResizeObserver(update);
+
+    update();
+    observer.observe(view);
+    if (view.parentElement !== null) observer.observe(view.parentElement);
+
+    return () => observer.disconnect();
+  }, []);
 
   // The control of that filter (its first input or button), or of the first one, gets the focus.
   useEffect(() => {
@@ -144,7 +186,21 @@ function FilterView(props: FilterViewProps): ReactElement {
   };
 
   return (
-    <section ref={ref} className={styles.filterView} aria-label={texts.filters} onKeyDown={keyDown}>
+    <section
+      ref={ref}
+      className={styles.filterView}
+      aria-label={texts.filters}
+      // As wide as the filters, their side padding and the frame (at most as wide as the table).
+      style={{ width: `min(100%, calc(${blockWidth} + 2 * var(--datnav-spacing-md) + 2px))` }}
+      // While it rolls up after closing: gone for the user already.
+      data-closing={flag(closing)}
+      inert={closing}
+      aria-hidden={closing || undefined}
+      onKeyDown={keyDown}
+    >
+      {noseEnd !== undefined && (
+        <span className={styles.filterViewNose} aria-hidden="true" style={{ insetInlineEnd: noseEnd }} />
+      )}
       <div className={styles.filterViewBody}>
         {/* The columns of filters, at the right edge (one column only for a single filter). */}
         <div
@@ -164,7 +220,15 @@ function FilterView(props: FilterViewProps): ReactElement {
                   ? undefined
                   : { gridTemplateColumns: `${labelWidth}px minmax(0, 20rem)` }}
               >
-                <span id={labelId} className={styles.filterPanelLabel} data-filter-label>{column.header}</span>
+                <span id={labelId} className={styles.filterPanelLabel} data-filter-label>
+                  {column.header}
+                  {/* Set in the draft: a dot after the label. Its room is always kept, so no label moves. */}
+                  <span
+                    className={styles.filterPanelDot}
+                    data-set={flag(draft[column.key] !== undefined)}
+                    aria-hidden="true"
+                  />
+                </span>
                 <div className={styles.filterPanelControl}>
                   {column.filter({
                     value: draft[column.key],
@@ -182,14 +246,14 @@ function FilterView(props: FilterViewProps): ReactElement {
       </div>
       {
         /* Below the filters, all on the right: Reset Clear | Cancel [Apply] (ghost buttons, a divider between the ones
-      that change the draft and the ones that close the view, Apply outlined).
+      that change the draft and the ones that close the view, Apply filled).
       Reset puts the draft back to the applied filters, Clear empties it; neither applies anything. Each is shown only
       when it would change something: Reset while the draft differs from the applied filters, Clear while the draft
       has a filter. The divider goes with them. */
       }
       <div
         className={styles.filterPanelFooter}
-        style={{ width: `min(100%, calc(${blockWidth} + 2 * var(--datnav-spacing-sm)))` }}
+        style={{ width: `min(100%, calc(${blockWidth} + 2 * var(--datnav-spacing-md)))` }}
       >
         {changed && (
           <ActionButton

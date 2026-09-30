@@ -8,7 +8,7 @@ const defaultTheme: Required<DataNavigator.Theme> = {
   colorText: { light: '#111', dark: '#f5f5f5' },
   colorTextDimmed: { light: '#555', dark: '#bbb' },
   colorSurface: { light: '#fff', dark: '#111' },
-  colorSurfaceStrong: { light: '#dadada', dark: '#3a3a3a' },
+  colorSurfaceStrong: { light: '#e6e6e6', dark: '#3a3a3a' },
   colorBorder: { light: '#c6c6c6', dark: '#474747' },
   colorHeader: { light: '#eee', dark: '#262626' },
   colorHeaderHover: { light: '#efefef', dark: '#262626' },

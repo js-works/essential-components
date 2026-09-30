@@ -506,7 +506,7 @@ type PrefixedTextFieldProps = FilterTextFieldProps & {
   prefix: { value: string; label: string; options: readonly Option[]; onChange: (value: string) => void };
 };
 
-// A text field with a small select in front of it, joined to one control (e.g. how a text filter matches: contains,
+// A text field with a small select inside it, at its start, as a chip (e.g. how a text filter matches: contains,
 // starts with, ends with). The select is one of ours (`SelectField`), with its chevron.
 function PrefixedTextField({ prefix, ...field }: PrefixedTextFieldProps): ReactElement {
   return (

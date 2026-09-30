@@ -23,6 +23,9 @@ export { DataNavigatorView };
 // How long the edit form unfolds and its row folds up (the same as `.editFormCell` in the stylesheet).
 const EDIT_FORM_TIME = 180;
 
+// How long the filter view rolls up after closing (the same as `.filterView[data-closing]` in the stylesheet).
+const FILTER_VIEW_CLOSE_TIME = 250;
+
 // The folding of the edited row, both ways: kept at its end (`fill`) until it is cancelled.
 const FOLD_TIMING: KeyframeAnimationOptions = { duration: EDIT_FORM_TIME, easing: 'ease', fill: 'forwards' };
 
@@ -171,11 +174,43 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
     };
   }, [editKey]);
 
+  // The filter view by a key per opening: after closing, the closed one stays a moment (by its key) and rolls up, while
+  // everything else is back at once; one opened meanwhile is a new one (a new key). With reduced motion it goes at once.
+  const [filterViewKey, setFilterViewKey] = useState(0);
+  const [closingFilterViewKey, setClosingFilterViewKey] = useState<number | undefined>(undefined);
+  const filterViewTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  useEffect(() => () => clearTimeout(filterViewTimerRef.current), []);
+
   // Closing the filter view gives the focus back to the filter button (the focused control goes away with the view).
   const closeFilterView = () => {
     filterButtonRef.current?.focus();
     nav.closeFilters();
+    setFilterViewKey((key) => key + 1);
+
+    if (!reducedMotion()) {
+      clearTimeout(filterViewTimerRef.current);
+      setClosingFilterViewKey(filterViewKey);
+      filterViewTimerRef.current = setTimeout(() => setClosingFilterViewKey(undefined), FILTER_VIEW_CLOSE_TIME);
+    }
   };
+
+  const filterView = (key: number, closing: boolean) => (
+    <FilterView
+      key={key}
+      columns={nav.filterColumns}
+      filters={nav.filters}
+      texts={texts}
+      focusKey={nav.filterPanel.focusKey}
+      closing={closing}
+      anchorRef={filterButtonRef}
+      onApply={(next) => {
+        nav.applyFilters(next);
+        closeFilterView();
+      }}
+      onCancel={closeFilterView}
+    />
+  );
 
   // A data row and its detail row are one unit: both select from their free space, and both suppress the text
   // selection that shift + mouse down would otherwise start.
@@ -420,23 +455,15 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
             </div>
             {
               /* The grid with the footer, and the filter view: stacked in one cell, so the height is the larger of the
-              two. While the view is shown, the grid and the footer stay (with their scroll position and state) but are
-              hidden (`visibility: hidden`, inert): the table keeps its height, and nothing below it moves. */
+              two. While the view is shown, the grid and the footer stay (with their scroll position and state), faded
+              and inert below it: the table keeps its height, and nothing below it moves. */
             }
             <div className={classes.stack} data-filtering={flag(nav.filterPanel.open)}>
-              {nav.filterPanel.open && (
-                <FilterView
-                  columns={nav.filterColumns}
-                  filters={nav.filters}
-                  texts={texts}
-                  focusKey={nav.filterPanel.focusKey}
-                  onApply={(next) => {
-                    nav.applyFilters(next);
-                    closeFilterView();
-                  }}
-                  onCancel={closeFilterView}
-                />
-              )}
+              {/* One list, so the closed view keeps its instance (its key) while it rolls up. */}
+              {[
+                closingFilterViewKey !== undefined && filterView(closingFilterViewKey, true),
+                nav.filterPanel.open && filterView(filterViewKey, false),
+              ]}
               <div className={classes.tableArea} inert={nav.filterPanel.open}>
                 <div className={classes.scrollArea}>
                   <div ref={nav.scrollerRef} className={classes.scroller}>

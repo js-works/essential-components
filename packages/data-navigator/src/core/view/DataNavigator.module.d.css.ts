@@ -36,6 +36,7 @@ export {
   filterBadge,
   filterButtonGroup,
   filterPanelControl,
+  filterPanelDot,
   filterPanelFooter,
   filterPanelLabel,
   filterPanelRow,
@@ -52,6 +53,7 @@ export {
   filterView,
   filterViewBody,
   filterViewColumns,
+  filterViewNose,
   footer,
   footerGroup,
   footerSide,
@@ -162,7 +164,9 @@ declare const filterButtonGroup: string;
 declare const filterView: string;
 declare const filterViewBody: string;
 declare const filterViewColumns: string;
+declare const filterViewNose: string;
 declare const filterPanelControl: string;
+declare const filterPanelDot: string;
 declare const filterPanelFooter: string;
 declare const filterPanelLabel: string;
 declare const filterPanelRow: string;
@@ -176,8 +180,6 @@ declare const filterPillText: string;
 declare const filterPillValue: string;
 declare const filterPills: string;
 declare const filterRange: string;
-declare const prefixedField: string;
-declare const prefixSelect: string;
 declare const footer: string;
 declare const footerGroup: string;
 declare const footerSide: string;
@@ -211,6 +213,8 @@ declare const pagerButton: string;
 declare const pill: string;
 declare const pillIcon: string;
 declare const popup: string;
+declare const prefixedField: string;
+declare const prefixSelect: string;
 declare const popupPositioner: string;
 declare const root: string;
 declare const row: string;
