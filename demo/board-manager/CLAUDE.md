@@ -174,6 +174,8 @@ the root's `CLAUDE.md` apply.
     The pages lie on a gray ground with a line above and below (`--mantine-color-default-border`, square corners;
     2026-10-01, the user's wish; tried the same day: a frame all around with a soft inner shadow, no gray ground, and
     only a line below).
+    - Maximizable (2026-10-01): the pages stay as wide as the dialog, so maximized they fill the window's width (like a
+      zoom); drawn at `RESOLUTION = 3`, so they stay sharp there. Not chosen: a capped page width.
   - "Print": built, loaded into a hidden frame (the browser's PDF viewer), which opens the print dialog; the frame
     stays until the next print.
   - "Download": built and saved, `<title> – <yyyy-mm-dd>.pdf`; no toast (the browser shows the download; removed

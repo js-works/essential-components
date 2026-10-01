@@ -99,8 +99,8 @@ async function downloadMeetingPdf(dialogs: Dialogs, toasts: Toasts, meeting: Mee
   }
 }
 
-// "Preview": the PDF is built (with the spinner), then an extra wide dialog with its pages, "Download" (saves the same
-// file) and "Close".
+// "Preview": the PDF is built (with the spinner), then an extra wide, maximizable dialog with its pages, "Download"
+// (saves the same file) and "Close".
 async function previewMeetingPdf(dialogs: Dialogs, toasts: Toasts, meeting: Meeting): Promise<void> {
   const scope = dialogs.open();
 
@@ -110,6 +110,7 @@ async function previewMeetingPdf(dialogs: Dialogs, toasts: Toasts, meeting: Meet
     const pages = await renderPages(file);
     const result = await scope.confirm({
       width: 'extraWide',
+      maximizable: true,
       icon: false,
       title: 'PDF preview',
       subtitle: fileName(meeting),

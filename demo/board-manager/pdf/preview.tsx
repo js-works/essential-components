@@ -12,8 +12,9 @@ export { PdfPages, renderPages };
 
 GlobalWorkerOptions.workerPort = new PdfWorker();
 
-// Sharper than the screen: the canvas has more pixels than its CSS size.
-const RESOLUTION = 2;
+// Sharper than the screen: the canvas has more pixels than its CSS size (3: still sharp in the maximized dialog, as
+// wide as the window).
+const RESOLUTION = 3;
 
 // Every page of the file as a canvas (`.board-manager__pdf-page`, as wide as the dialog).
 async function renderPages(file: Blob): Promise<HTMLCanvasElement[]> {
