@@ -131,7 +131,7 @@ declare namespace DataNavigator {
     filters: string; // Filters
     activeFilters: (params: { count: number }) => string; // {count} active
     resetFilters: string; // Reset
-    applyFilters: string; // Apply
+    applyFilters: string; // Apply filters
     cancelFilters: string; // Cancel
     clearAllFilters: string; // Clear all
     removeFilter: string; // Remove filter
@@ -157,6 +157,7 @@ declare namespace DataNavigator {
     groupCount: (params: { count: number }) => string; // {count}
     groupPartial: (params: { shown: number; total: number }) => string; // {shown} of {total}
     confirmEdit: string; // OK
+    confirmNew: string; // Add
     cancelEdit: string; // Cancel
     saveFailed: string; // The row could not be saved
     editRow: string; // Edit row

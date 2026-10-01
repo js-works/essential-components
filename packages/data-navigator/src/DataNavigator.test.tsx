@@ -546,7 +546,7 @@ describe('DataNavigator', () => {
       expect(screen.getByRole('button', { name: 'Filters' }).getAttribute('aria-pressed')).toBe('true');
       // no headline; below the filters Cancel and Apply (Reset and Clear only when they would change something)
       expect(within(panel).queryByText('Filters')).toBeNull();
-      expect(panel.querySelector('.filterPanelFooter')?.textContent).toBe('CancelApply');
+      expect(panel.querySelector('.filterPanelFooter')?.textContent).toBe('CancelApply filters');
       expect([...panel.querySelectorAll('.filterPanelLabel')].map((label) => label.textContent)).toEqual([
         'Name',
         'City',
@@ -593,7 +593,7 @@ describe('DataNavigator', () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
       expect(source.mock.calls.length).toBe(calls);
 
-      click('Apply');
+      click('Apply filters');
 
       // the view closes, and the load starts; it only rolls up a moment longer (inert and hidden), then it is removed
       expect(screen.queryByRole('region', { name: 'Filters' })).toBeNull();
@@ -661,7 +661,7 @@ describe('DataNavigator', () => {
       expect(match.textContent).toBe('contains');
       await chooseIn(match, 'starts with');
       expect(match.textContent).toBe('starts with');
-      click('Apply');
+      click('Apply filters');
 
       await filteredWith(source, { name: { text: 'ber', match: 'startsWith' } }, 300);
 
@@ -678,7 +678,7 @@ describe('DataNavigator', () => {
       await loaded();
       await openFilters();
       typeName('person 07');
-      click('Apply');
+      click('Apply filters');
       await filteredWith(source, { name: { text: 'person 07', match: 'contains' } }, 300);
       await loaded();
 
@@ -698,7 +698,7 @@ describe('DataNavigator', () => {
       click('Clear');
       expect((nameBox() as HTMLInputElement).value).toBe('');
       expect([shown('Reset'), shown('Clear')]).toEqual([true, false]);
-      click('Apply');
+      click('Apply filters');
 
       await filteredWith(source, {}, 300);
     });
@@ -709,7 +709,7 @@ describe('DataNavigator', () => {
       await loaded();
       await openFilters();
       typeName('person 07');
-      click('Apply');
+      click('Apply filters');
       await filteredWith(source, { name: { text: 'person 07', match: 'contains' } }, 300);
       await loaded();
 
@@ -718,7 +718,7 @@ describe('DataNavigator', () => {
       // the same value once trimmed
       await openFilters();
       typeName('person 07 ');
-      click('Apply');
+      click('Apply filters');
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       expect(source.mock.calls.length).toBe(calls);
@@ -733,7 +733,7 @@ describe('DataNavigator', () => {
       await openFilters();
       typeName('person');
       await chooseFilterOption('City', 'Berlin');
-      click('Apply');
+      click('Apply filters');
       await filteredWith(source, { name: { text: 'person', match: 'contains' }, city: 'Berlin' }, 300);
       await loaded();
 
@@ -763,7 +763,7 @@ describe('DataNavigator', () => {
       await loaded();
       await openFilters();
       await chooseFilterOption('City', 'Berlin');
-      click('Apply');
+      click('Apply filters');
       await filteredWith(source, { city: 'Berlin' }, 300);
       await loaded();
 
@@ -787,14 +787,14 @@ describe('DataNavigator', () => {
       await openFilters();
       await chooseFilterOption('City', 'Vienna');
       await chooseFilterOption('City', 'Berlin');
-      click('Apply');
+      click('Apply filters');
       await filteredWith(source, { city: ['Vienna', 'Berlin'] }, 300);
       expect(pillTexts()).toEqual(['City:Vienna, Berlin']);
       await loaded();
 
       await openFilters();
       await chooseFilterOption('City', 'Lisbon');
-      click('Apply');
+      click('Apply filters');
       await filteredWith(source, { city: ['Vienna', 'Berlin', 'Lisbon'] }, 300);
       expect(pillTexts()).toEqual(['City:Vienna+2']);
     });
@@ -827,7 +827,7 @@ describe('DataNavigator', () => {
         await openFilters();
         fireEvent.change(side('From'), { target: { value: from } });
         fireEvent.change(side('To'), { target: { value: to } });
-        click('Apply');
+        click('Apply filters');
         await filteredWith(source, filters, 300);
         await loaded();
         expect(pillTexts()).toEqual([pill]);
@@ -850,14 +850,14 @@ describe('DataNavigator', () => {
       await openFilters();
       expect(screen.getByRole('radio', { name: 'All' }).getAttribute('aria-checked')).toBe('true');
       fireEvent.click(screen.getByRole('radio', { name: 'No' }));
-      click('Apply');
+      click('Apply filters');
       await filteredWith(source, { id: false }, 300);
       await loaded();
       expect(pillTexts()).toEqual(['Paid:No']);
 
       await openFilters();
       fireEvent.click(screen.getByRole('radio', { name: 'All' }));
-      click('Apply');
+      click('Apply filters');
       await filteredWith(source, {}, 300);
     });
 
@@ -939,7 +939,7 @@ describe('DataNavigator', () => {
       await closed();
       expect(screen.getByRole('region', { name: 'Filters' })).toBeTruthy();
       expect(trigger().textContent).not.toBe('All');
-      click('Apply');
+      click('Apply filters');
 
       await filteredWith(source, { city: { from: isoOf(start), to: isoOf(end) } }, 300);
       await loaded();
@@ -951,7 +951,7 @@ describe('DataNavigator', () => {
       fireEvent.click(later);
       fireEvent.click(earlier);
       await closed();
-      click('Apply');
+      click('Apply filters');
 
       await filteredWith(source, { city: { from: isoOf(earlier), to: isoOf(later) } }, 300);
       await loaded();
@@ -963,7 +963,7 @@ describe('DataNavigator', () => {
       fireEvent.click(single);
       fireEvent.click(single);
       await closed();
-      click('Apply');
+      click('Apply filters');
 
       await filteredWith(source, { city: { from: isoOf(single), to: isoOf(single) } }, 300);
       await loaded();
@@ -976,7 +976,7 @@ describe('DataNavigator', () => {
       );
       await closed();
       expect(trigger().textContent).toBe('All');
-      click('Apply');
+      click('Apply filters');
 
       await filteredWith(source, {}, 300);
     });
@@ -987,7 +987,7 @@ describe('DataNavigator', () => {
       await loaded();
       await openFilters();
       typeName('person');
-      click('Apply');
+      click('Apply filters');
       await filteredWith(source, { name: { text: 'person', match: 'contains' } }, 300);
       await loaded();
 
@@ -1014,7 +1014,7 @@ describe('DataNavigator', () => {
       await loaded();
       await openFilters();
       typeName('person');
-      click('Apply');
+      click('Apply filters');
 
       // a new filter started a load that never ends
       expect(screen.getByText('Person 01').closest('[inert]')).not.toBeNull();
@@ -1056,7 +1056,7 @@ describe('DataNavigator', () => {
       await loaded();
       await openFilters();
       typeName('zzz');
-      click('Apply');
+      click('Apply filters');
 
       expect(await screen.findByText('No rows match these filters')).toBeTruthy();
       expect(screen.queryByText('Page Size')).toBeNull();
@@ -1080,7 +1080,7 @@ describe('DataNavigator', () => {
       await openFilters();
       typeName('person');
       await chooseFilterOption('City', 'Berlin');
-      click('Apply');
+      click('Apply filters');
       await filteredWith(source, { name: { text: 'person', match: 'contains' }, city: 'Berlin' }, 300);
       await loaded();
 
@@ -1099,7 +1099,7 @@ describe('DataNavigator', () => {
       await loaded();
       await openFilters();
       typeName('person');
-      click('Apply');
+      click('Apply filters');
       await filteredWith(source, { name: { text: 'person', match: 'contains' } }, 300);
       await loaded();
 
@@ -1107,7 +1107,7 @@ describe('DataNavigator', () => {
       fireEvent.click(clear()!);
       await filteredWith(source, {}, 300);
       await loaded();
-      expect(screen.queryByRole('button', { name: 'Apply' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Apply filters' })).toBeNull();
       expect(clear()).toBeNull();
     });
   });
@@ -3776,7 +3776,7 @@ describe('native widgets', () => {
 
     await chooseFilterOption('City', 'Berlin');
     expect(screen.queryAllByRole('option').map((option) => option.textContent)).toEqual([]);
-    click('Apply');
+    click('Apply filters');
     await waitFor(() => expect(filtered()).toEqual({ city: 'Berlin' }));
     await loaded();
 
@@ -3795,7 +3795,7 @@ describe('native widgets', () => {
 
     await chooseFilterOption('City', 'All');
     expect(shownIn('City')).toBe('All');
-    click('Apply');
+    click('Apply filters');
     await waitFor(() => expect(filtered()).toEqual({}));
   });
 
@@ -3833,7 +3833,7 @@ describe('native widgets', () => {
       .toBe(true);
     expect(shownIn('City')).toBe('Vienna, Berlin');
 
-    click('Apply');
+    click('Apply filters');
     await waitFor(() => expect(filtered()).toEqual({ city: ['Vienna', 'Berlin'] }));
   });
 });
@@ -4898,6 +4898,9 @@ describe('row editing', () => {
       click('Add');
 
       expect(within(form()).getByRole('group', { name: 'New row' })).toBeTruthy();
+      // "Add" instead of the "OK" of an edited row.
+      expect(within(form()).getByRole('button', { name: 'Add' })).toBeTruthy();
+      expect(within(form()).queryByRole('button', { name: 'OK' })).toBeNull();
 
       const input = within(form()).getByRole<HTMLInputElement>('textbox', { name: 'Name' });
 

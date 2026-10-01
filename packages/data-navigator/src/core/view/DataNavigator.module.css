@@ -488,8 +488,8 @@
 }
 
 /* The filter view: a sheet over the top of the faded grid and footer (the toolbar stays above it), only as high as its
-   filters and buttons and only as wide as its filters (set inline), at the end (under the filter button, a little
-   below the toolbar, with a nose pointing to the button), with a frame and a shadow; it unrolls from its top edge and
+   filters and buttons and as wide as the table (a little below the toolbar, with a nose pointing to the filter
+   button), with a line above and below; it unrolls from its top edge and
    fades in when it opens, and rolls up when it closes. With a limited height of the table, only its filters scroll,
    the buttons stay. It is opaque, so nothing of the table below shines through, and above the table area (which
    comes later and, faded, paints on its own). */
@@ -499,25 +499,20 @@
   display: flex;
   flex-direction: column;
   align-self: start;
-  justify-self: end;
+  justify-self: stretch;
   max-height: calc(100% - var(--datnav-spacing-xs) / 2);
   min-height: calc(6 * var(--datnav-spacing-md));
   box-sizing: border-box;
   /* Only a tiny gap below the toolbar: a larger one showed the top of the table's scrollbar (its arrow button, faded)
      like a second nose. */
   margin-top: calc(var(--datnav-spacing-xs) / 2);
-  /* A frame in the color of the lines (the shadow alone set it apart too little), a little rounder than the controls:
-     twice their radius (4px in the default theme, like the frame of the file upload). */
-  border: 1px solid var(--datnav-color-border);
-  border-radius: calc(2 * var(--datnav-radius));
+  /* A line above and below in the color of the lines, none at the sides, square corners, no shadow. */
+  border-block: 1px solid var(--datnav-color-border);
   background-color: var(--datnav-color-surface);
-  /* A tiny shadow in the color of the lines (the theme's shadow, then `0 2px 6px`, were too heavy, none too flat; no
-     hard-coded colors). */
-  box-shadow: 0 1px 3px var(--datnav-color-border);
 
   /* While its height is animated (`FilterView` in `FilterPanel.tsx`: unrolled from its top edge down, rolled up after
      closing): no min height, its body does not scroll, and what does not fit yet is cut off at its lower edge. The clip
-     leaves room above for the nose, and at the sides and below for the shadow. */
+     leaves room above for the nose. */
   &[data-animating] {
     min-height: 0;
     clip-path: inset(-1rem -2rem -4px -2rem);

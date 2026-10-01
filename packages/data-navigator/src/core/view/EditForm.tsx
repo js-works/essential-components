@@ -125,7 +125,7 @@ function EditForm<Row>(props: EditFormProps<Row>): ReactElement {
                 onClick={props.onSave}
               >
                 {saving && <icons.Refresh size={14} />}
-                {texts.confirmEdit}
+                {props.isNew ? texts.confirmNew : texts.confirmEdit}
               </button>
             </div>
           </div>

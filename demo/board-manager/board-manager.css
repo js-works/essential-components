@@ -151,14 +151,13 @@
   }
 }
 
-/* The pages of the PDF preview (`pdf/preview.tsx`): canvases as wide as the dialog, on a gray ground like a viewer,
-   each with a thin shadow. */
+/* The pages of the PDF preview (`pdf/preview.tsx`): canvases as wide as the dialog, each with a thin shadow (the
+   padding keeps it from being cut off at the edges). */
 .board-manager__pdf-pages {
   display: flex;
   flex-direction: column;
   gap: var(--mantine-spacing-md);
   padding: var(--mantine-spacing-md);
-  background: var(--mantine-color-default-hover);
   border-radius: var(--mantine-radius-sm);
 
   &:empty {

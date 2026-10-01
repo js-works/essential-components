@@ -604,7 +604,7 @@ describe('controller', () => {
 
     fireEvent.change(screen.getByRole('textbox', { name: 'Name' }), { target: { value: 'Grace' } });
     fireEvent.change(screen.getByRole('textbox', { name: 'Town' }), { target: { value: 'Lisbon' } });
-    fireEvent.click(screen.getByRole('button', { name: 'OK' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }));
 
     await waitFor(() => expect(createRow).toHaveBeenCalledWith({ id: 0, name: 'Grace', city: 'Lisbon' }));
     await waitFor(() => expect(screen.getByText('Grace')).toBeTruthy());

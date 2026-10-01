@@ -241,8 +241,6 @@ function FilterView(props: FilterViewProps): ReactElement {
       ref={ref}
       className={styles.filterView}
       aria-label={texts.filters}
-      // As wide as the filters, their side padding and the frame (at most as wide as the table).
-      style={{ width: `min(100%, calc(${blockWidth} + 2 * var(--datnav-spacing-md) + 2px))` }}
       // While it rolls up after closing: gone for the user already.
       data-closing={flag(closing)}
       inert={closing}

@@ -1046,14 +1046,14 @@ The main goal is a very nice, yet simple, API, designed together with the user.
       considered.) The view is opaque (`--datnav-color-surface`).
     - Before, it was a popup (Base UI's `Popover`, below the filter button, with an arrow, 20rem wide and at most 24rem
       high; a drawer of the viewport and a panel inside the table were discussed). The user did not like the popup.
-    - It is a sheet over the top of the table area (decided 2026-09-30): only as high as its filters and footer, with
-      a tiny shadow in the color of the lines (`0 1px 3px --datnav-color-border`, 2026-09-30, the user's wish; tried
-      the same day: `--datnav-shadow` and `0 2px 6px`, too heavy, and none, too flat). Only as wide as the filters (one or two columns and the gap), their side padding
-      (`--datnav-spacing-md`, in the body and the footer; `--datnav-spacing-sm` until 2026-09-30, too little) and the
-      frame, at most as wide as the table (set inline), at its right end, under the filter button (2026-09-30, the
-      user's wish; it was as wide as the table): the faded table stays visible beside it. It sits a little below the
+    - It is a sheet over the top of the table area (decided 2026-09-30): only as high as its filters and footer, without
+      a shadow (since 2026-10-01, the user's wish; before, a tiny one in the color of the lines, `0 1px 3px
+      --datnav-color-border`; tried on 2026-09-30: `--datnav-shadow` and `0 2px 6px`, too heavy). As wide as the table
+      (since 2026-10-01, the user's wish; from 2026-09-30 only as wide as the filters, their side padding and the
+      frame, at the table's right end, with the faded table visible beside it). The side padding of the body and the
+      footer is `--datnav-spacing-md` (`--datnav-spacing-sm` until 2026-09-30, too little). It sits a little below the
       toolbar (`margin-top: calc(--datnav-spacing-xs / 2)`, 4px; it was `--datnav-spacing-sm`, which showed the top
-      of the table's scrollbar, its faded arrow button in Chromium on Windows, like a second nose), all corners rounded (see the frame below), with a nose on its top edge
+      of the table's scrollbar, its faded arrow button in Chromium on Windows, like a second nose), with a nose on its top edge
       pointing to the middle of the filter button (`.filterViewNose`, a 10px square turned by 45°, with the frame on
       its upper sides; its distance from the end of the view is measured and kept up to date with a `ResizeObserver`
       on the view and the table, at least 16px from the corners; mirrored for right-to-left; no nose without the
@@ -1070,11 +1070,11 @@ The main goal is a very nice, yet simple, API, designed together with the user.
       stays only for its animation (`inert`, `aria-hidden`, then removed), and one opened meanwhile is a new one. No
       animation with reduced motion (the view goes at once). (Before, it filled the whole
       table area.)
-    - It is a `<section>` named `Texts.filters` (no headline), with a frame all around (since 2026-09-30, the user's wish: the
-      shadow alone set it apart too little; before, only a line on top), 1px, in the color of
-      the lines (`--datnav-color-border`, the nose too; tried the same day: the light accent, and the primary color of
-      Apply, 1px and 2px). Its corners are a little rounder than the controls: `calc(2 * --datnav-radius)` (4px in
-      the default theme, like the frame of the file upload; it was `3 *`, 6px like the dialogs, until 2026-10-01). It is at least
+    - It is a `<section>` named `Texts.filters` (no headline), with a line above and below and none at the sides, square
+      corners (since 2026-10-01, the user's wish, with the full width; from 2026-09-30 a frame all around with corners of
+      `calc(2 * --datnav-radius)`, `3 *` before; before that, only a line on top), 1px, in the color of
+      the lines (`--datnav-color-border`, the nose too; tried on 2026-09-30: the light accent, and the primary color of
+      Apply, 1px and 2px). It is at least
       `calc(6 * --datnav-spacing-md)` high; in a table of a limited height only its filters scroll, the footer stays. The footer follows right after the filters and ends the sheet.
     - The search is not part of the filters (decided 2026-09-29): filters describe a subset worth coming back to (and,
       later, worth saving as a view, together with the sorting and the visible columns), the search is a quick,
@@ -1110,7 +1110,9 @@ The main goal is a very nice, yet simple, API, designed together with the user.
       - "Reset" and "Clear" are shown only when they would change something (hidden, not disabled): "Reset" while the
         draft differs from the applied filters, "Clear" while the draft has a filter. The divider only with one of them. (Tried before: "Reset" as a quiet text button on the left with a muted "Cancel"; dividers
         between all; `Reset Clear Cancel | [Apply]`; `Reset | Clear | Cancel [Apply]`; `Reset Clear Cancel [Apply]`.)
-    - "Apply" (`Texts.applyFilters`): a filled button in the primary color, like the primary actions of the toolbar
+    - "Apply" (`Texts.applyFilters`, labeled "Apply filters" since 2026-10-01, the user's wish: clearer next to
+      "Cancel", and the view has the room; "Apply" before; "Show results" was dropped, since the number of results is not
+      known before applying): a filled button in the primary color, like the primary actions of the toolbar
       (`--datnav-color-primary`, text `--datnav-color-on-primary`, normal weight, `--datnav-color-primary-hover` on
       hover; since 2026-09-30, the user's wish: an accent; before, outlined like the secondary actions), as wide as its
       text (side padding `--datnav-spacing-md`). All four buttons of the footer are as high as the filters
@@ -1676,7 +1678,9 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     `Texts.editRow` "Edit row" or `Texts.newRow` "New row"): the fields, in as many columns as fit (a column: the
     widest label, the gap and an editor of at least 12rem); below them, on the right, "Cancel" (`Texts.cancelEdit`, a
     ghost button) and "OK" (`Texts.confirmEdit`, outlined, like "Apply" of the filter view; it was "Save",
-    `Texts.saveRow`, until 2026-09-30: "OK" in capitals, like the dialogs of the overlays package), and on the left the
+    `Texts.saveRow`, until 2026-09-30: "OK" in capitals, like the dialogs of the overlays package), for a new row "Add"
+    (`Texts.confirmNew`, since 2026-10-01, the user's wish: with "OK" it looked too much like the filter view; like the
+    app's "Add …" action that opens it; "Insert" sounded too technical), and on the left the
     message
     of a failed save.
     - The labels (decided 2026-09-30, like the filter view; they were above the editors at first): muted, right
