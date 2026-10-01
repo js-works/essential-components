@@ -15,6 +15,8 @@ const EXAMPLE_PAGE = `<!doctype html>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Board Manager</title>
+    <!-- An AMD loader, like on an XWiki page: the element must work beside it (see \`banner\`). -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
     <script type="module" src="./board-manager.js"></script>
   </head>
   <body style="margin: 0; padding: 16px">
@@ -77,8 +79,15 @@ const config = defineConfig({
     // again): this one is the end product, so it is minified completely.
     minify: true,
     rolldownOptions: {
-      // One file: the dynamic imports of the packages are part of it.
-      output: { inlineDynamicImports: true, minify: true },
+      output: {
+        // One file: the dynamic imports of the packages are part of it.
+        inlineDynamicImports: true,
+        minify: true,
+        // The host page may have an AMD loader (XWiki: RequireJS): UMD modules in the bundle (e.g. the hyphenation
+        // patterns of react-pdf) would register with it instead of exporting. A module-scoped `define` hides the
+        // page's one; the page's own stays as it is.
+        banner: 'var define;',
+      },
     },
     lib: {
       entry: 'demo/board-manager/BoardManagerElement.tsx',

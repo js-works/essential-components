@@ -618,8 +618,9 @@ function sectionTitleOf(draft: SectionRow): string {
 // The list of the "Sections" drawer: the draft of the sections (`SectionDraft`) in their order, with their numbers on
 // the agenda as it would be with the draft. The names are edited in the data navigator's edit form: "Edit" (also a
 // double click) renames a section, "Add section" opens the form of a new one, which "Save" adds at the end. "Save" of
-// the form only changes the draft. "Delete" and moving a section by its handle change the draft at once (no
-// confirmation: "Cancel" of the drawer undoes everything). The list is as wide as the drawer and fills its height.
+// the form only changes the draft. "Delete" (of a row, or of the selected ones) and moving a section by its handle
+// change the draft at once (no confirmation: "Cancel" of the drawer undoes everything). The list is as wide as the
+// drawer and fills its height.
 function SectionsManager({ meetingId, initial, onChange }: {
   meetingId: string;
   initial: SectionDraft;
@@ -674,6 +675,17 @@ function SectionsManager({ meetingId, initial, onChange }: {
       icon: appIcons.remove,
       tip: 'Delete',
       onClick: (row) => setDraft((current) => current.filter((section) => section.id !== row.id)),
+    },
+    {
+      type: 'multiRow',
+      key: 'delete-selected',
+      label: 'Delete',
+      icon: appIcons.remove,
+      onClick: (rows) => {
+        const ids = new Set(rows.map((row) => row.id));
+
+        setDraft((current) => current.filter((section) => !ids.has(section.id)));
+      },
     },
   ], [nav]);
 

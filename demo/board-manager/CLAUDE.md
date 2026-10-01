@@ -78,6 +78,10 @@ the root's `CLAUDE.md` apply.
   - Its CSS is put into the module by the build (in place of the marker `__BOARD_MANAGER_STYLES__`) and added to the
     shadow root: nothing of it reaches the host page. The dialogs and toasts are in the shadow root too (the overlays
     provider's mount point).
+  - An AMD loader on the host page (XWiki: RequireJS, 2026-10-01): UMD modules in the bundle took the page's `define`
+    and registered with it instead of exporting (react-pdf's hyphenation patterns: every PDF failed, `reading
+    'length'`). The bundle starts with `var define;` (`banner`), a `define` of its own module scope, so the minifier
+    drops their AMD branches; the page's `define` is untouched. The example `index.html` loads RequireJS to show it.
   - `scheme` (`light`, `dark`) sets the color scheme; without it, `<html data-scheme>`, else the system's. The language
     follows `<html lang>`. The routes are in memory only (the host page owns its URL), unless `hash` names a prefix
     (2026-10-01): `<board-manager hash="bm">` mirrors the route in `#bm/boards/b1`, like the demo tab (read on start, a
@@ -153,6 +157,9 @@ the root's `CLAUDE.md` apply.
     - The minutes are parsed by `minutes-format.ts` (no BlockNote), so the report does not load the editor.
   - "Preview": an extra wide dialog (`dialogs.confirm`, "Download" and "Close") with the pages, rendered by pdfjs
     (`pdf/preview.tsx`; its worker inlined with `?worker&inline`, so the `<board-manager>` build stays one module).
+    The pages lie on a gray ground with a line above and below (`--mantine-color-default-border`, square corners;
+    2026-10-01, the user's wish; tried the same day: a frame all around with a soft inner shadow, no gray ground, and
+    only a line below).
   - "Print": built, loaded into a hidden frame (the browser's PDF viewer), which opens the print dialog; the frame
     stays until the next print.
   - "Download": built and saved, `<title> – <yyyy-mm-dd>.pdf`; no toast (the browser shows the download; removed
@@ -211,8 +218,9 @@ the root's `CLAUDE.md` apply.
 - "Manage sections" (a general action) opens a form drawer ("Sections", "Apply" and "Cancel") with a data navigator as
   wide as the drawer and as high as its body (`calc(100dvh - 11rem)`; `footer="auto"`): the sections of the meeting in
   their order, also the empty ones (`#` with a fixed `3rem`, and "Name").
-  - Everything in it changes a draft (`SectionDraft`: the sections' order and names): "Delete" (a row action) and
-    moving a section by its handle change the draft at once, without a confirmation. The `#` shows the numbers of the
+  - Everything in it changes a draft (`SectionDraft`: the sections' order and names): "Delete" (a row action, and a
+    `multiRow` action for the selected sections, since 2026-10-01: the rows have checkboxes) and moving a section by
+    its handle change the draft at once, without a confirmation. The `#` shows the numbers of the
     agenda as it would be.
   - The names are edited in the data navigator's edit form (its row editing and new rows, see its `CLAUDE.md`): "Edit"
     (a row action, the default one: also a double click) opens the form of a section, "Add section" (the plus and the

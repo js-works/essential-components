@@ -572,15 +572,16 @@
   margin-inline: auto;
   padding: var(--datnav-spacing-sm) var(--datnav-spacing-md);
 
-  /* The buttons as high as the filters (the controls of the view), not as the toolbar's. */
-  & > :is(.button[data-placement], .applyButton) {
-    height: calc(0.8 * var(--datnav-control-height));
-  }
-
   /* A little more room before Apply than between the ghost buttons. */
   & > .applyButton {
     margin-inline-start: calc(var(--datnav-spacing-xs) / 2);
   }
+}
+
+/* The buttons of the filter view and of the edit form as high as their filters and editors (the controls of the view
+   and the form), not as the toolbar's. */
+:is(.filterPanelFooter, .editFooter) > :is(.button[data-placement], .applyButton) {
+  height: calc(0.8 * var(--datnav-control-height));
 }
 
 /* One filter: the label (muted, as wide as its text) on the left, the control (at most 20rem) on the right, at the

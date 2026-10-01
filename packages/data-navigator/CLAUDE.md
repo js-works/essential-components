@@ -1680,7 +1680,9 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     ghost button) and "OK" (`Texts.confirmEdit`, outlined, like "Apply" of the filter view; it was "Save",
     `Texts.saveRow`, until 2026-09-30: "OK" in capitals, like the dialogs of the overlays package), for a new row "Add"
     (`Texts.confirmNew`, since 2026-10-01, the user's wish: with "OK" it looked too much like the filter view; like the
-    app's "Add …" action that opens it; "Insert" sounded too technical), and on the left the
+    app's "Add …" action that opens it; "Insert" sounded too technical). Both buttons are as high as the editors and the
+    buttons of the filter view (`0.8 * --datnav-control-height`, since 2026-10-01, the user's wish; before, the full
+    control height and `0.875 *`, like in the toolbar). On the left the
     message
     of a failed save.
     - The labels (decided 2026-09-30, like the filter view; they were above the editors at first): muted, right

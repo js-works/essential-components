@@ -151,14 +151,15 @@
   }
 }
 
-/* The pages of the PDF preview (`pdf/preview.tsx`): canvases as wide as the dialog, each with a thin shadow (the
-   padding keeps it from being cut off at the edges). */
+/* The pages of the PDF preview (`pdf/preview.tsx`): canvases as wide as the dialog, each with a thin shadow, on a gray
+   ground like a viewer, with a line above and below in the color of the app's borders (square corners). */
 .board-manager__pdf-pages {
   display: flex;
   flex-direction: column;
   gap: var(--mantine-spacing-md);
   padding: var(--mantine-spacing-md);
-  border-radius: var(--mantine-radius-sm);
+  background: var(--mantine-color-default-hover);
+  border-block: 1px solid var(--mantine-color-default-border);
 
   &:empty {
     display: none;
