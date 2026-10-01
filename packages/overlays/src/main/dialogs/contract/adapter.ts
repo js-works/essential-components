@@ -17,7 +17,7 @@
 // React cannot honour) is needed.
 
 import type { DialogButtonView } from "./view.js";
-import type { DialogRenderOverrides, DialogSurface, DialogType } from "./dialog.js";
+import type { DialogRenderOverrides, DialogSurface, DialogType, DialogWidth } from "./dialog.js";
 import type { Renderable } from "./content.js";
 
 /**
@@ -31,6 +31,8 @@ import type { Renderable } from "./content.js";
 export interface DialogProps<C extends object> {
   dialogType: DialogType;
   surface: DialogSurface;
+  /** The named width of the dialog or drawer. */
+  width: DialogWidth;
   /** Caller theme, already resolved to `--dialog-*` custom properties. */
   themeVars: Record<string, string>;
   /** Caller stylesheet text, scoped by the element to its own instance. */

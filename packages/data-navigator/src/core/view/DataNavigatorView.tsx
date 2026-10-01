@@ -9,7 +9,7 @@ import { flag, formatValue, hasContent, suppressesTextSelection, suppressesWordS
 import { ActionList } from './Actions';
 import * as classes from './DataNavigator.module.css';
 import { EditForm } from './EditForm';
-import { FilterButton, FilterPills, FilterView } from './FilterPanel';
+import { FILTER_VIEW_CLOSE_TIME, FilterButton, FilterPills, FilterView } from './FilterPanel';
 import { Footer } from './Footer';
 import { icons } from './icons';
 import { LayerContext } from './layer';
@@ -22,9 +22,6 @@ export { DataNavigatorView };
 
 // How long the edit form unfolds and its row folds up (the same as `.editFormCell` in the stylesheet).
 const EDIT_FORM_TIME = 180;
-
-// How long the filter view rolls up after closing (the same as `.filterView[data-closing]` in the stylesheet).
-const FILTER_VIEW_CLOSE_TIME = 250;
 
 // The folding of the edited row, both ways: kept at its end (`fill`) until it is cancelled.
 const FOLD_TIMING: KeyframeAnimationOptions = { duration: EDIT_FORM_TIME, easing: 'ease', fill: 'forwards' };

@@ -8,17 +8,37 @@ the root's `CLAUDE.md` apply.
 ## App
 
 - Made to be embedded (later e.g. in XWiki, with content around it): no side navigation, a top bar with the app icon,
-  the title "Board Manager" (a menu of the modules: Home, Boards, Meetings, Members) and a breadcrumb that starts with
-  "Home" (a neutral icon, not linked, and the text as the link; no tip).
+  the title "Board Manager" (a menu of the modules: Home, Boards, Meetings, Members, Organizations) and a breadcrumb
+  that starts with "Home" (a neutral icon, not linked, and the text as the link; no tip).
+  - The top bar is not selectable (`user-select: none`, 2026-10-01), its menu included (no portal).
+  - The header line of an overview tab ("Overview" and its buttons) is not selectable either
+    (`.board-manager__panel-header`, 2026-10-01), like the toolbars of the tables.
+  - Always one line (no wrap): the icon and the title keep their size, the breadcrumb takes the rest and its crumbs
+    end with an ellipsis when it is too short (Home and the separators keep their size). Back and Forward are hidden while the top bar is narrower
+    than 40rem (a container query, 2026-10-01).
+  - Back and Forward at its right end (2026-10-01; `HistoryButtons` in `App.tsx`): through the memory router's history,
+    like the browser's buttons (which do not step through the app: the hash is only mirrored with `replaceState`, and
+    the element has none). Disabled at either end: `useHistoryPosition()` keeps the keys of the entries (push, replace,
+    pop). No keyboard shortcuts (Alt+arrows belong to the browser and the host page). Tooltips say where they go
+    ("Back to Boards"; Mantine's, `fz="xs"`, after 400ms; none while disabled): the history keeps each entry's path, and the name
+    is the last crumb of its routes (`matchRoutes`, the breadcrumb's `handle.crumb`), so it follows renames and new
+    pages need nothing; `/` is "Home", a path without a crumb only "Back"/"Forward".
 - Routes (`App.tsx`, a memory router): `/`, `/boards`, `/boards/:boardId` (tabs Meetings, Members),
   `/boards/:boardId/meetings/:meetingId` and `/meetings/:meetingId` (tabs Overview, Agenda, Minutes, Documents),
-  `/members`.
+  `/members`, `/members/:personId` (tabs Overview, Boards, Meetings), `/organizations`, `/organizations/:organizationId` (tabs Overview, People).
   - The route is mirrored in the hash after the tab's segment (`#board-manager/boards/b1`), only while the tab is shown.
 - `db.ts`: the fake server, a Zustand store in memory, seeded (stable) with dates relative to today: 6 boards, 28
-  people, about 50 meetings with agendas, minutes of the held ones, documents.
+  people, 8 organizations, about 50 meetings with agendas, minutes of the held ones, documents.
+
+- The column menu of the data navigator (its columns with `hideable`) only in the tables with a column hidden by
+  default (2026-10-01): Boards, Meetings, Members (and an organization's People), Organizations, a board's members.
+  Not in the agenda and the documents (no hidden column there).
 
 ## Mantine
 
+- BlockNote's stylesheet is imported into a layer of its own (`@import … layer(blocknote)` at the top of
+  `board-manager.css`, 2026-10-01): it imports Mantine's component styles again, unlayered, which won over the app's
+  rules (the breadcrumb wrapped).
 - Mantine is scoped: its layered CSS, its variables and color scheme on `.board-manager` (the app, and the content of
   each dialog through `wrapContent`), following `<html data-scheme>`; its popups without portal.
 - The components' themes follow Mantine as closely as possible (their values are Mantine's variables): the data
@@ -26,10 +46,16 @@ the root's `CLAUDE.md` apply.
   the package would need its own test and demo). More contrast comes from the app's Mantine theme instead
   (`cssVariablesResolver`, 2026-09-30): `dimmed` `gray.7` (dark `dark.1`) and `placeholder` `gray.6` (dark `dark.2`),
   one step darker than Mantine's (lighter in dark mode); the text and the lines stay Mantine's.
+- Buttons have a normal weight (`fw: 400` as a default prop of `Button` in the theme, 2026-10-01; Mantine's is 600),
+  the dialogs' buttons too.
 - Badges keep the case of their text (`tt: 'none'` as a default prop of `Badge` in the theme, 2026-09-30): Mantine's
   stylesheet makes them uppercase ("PLANNED").
 - The dialogs' buttons and close button are Mantine's (`render.actionButton`, `render.closeButton` in the overlays
   config, each in a Mantine scope): primary filled, danger filled red, secondary `default`.
+- The dialogs' own text (title, message, note) has the app's size and font (2026-10-01): the overlays dialog theme's
+  `fontSize` and `fontFamily` (`createDialogTheme`), set to Mantine's `fontSizes.sm` and `fontFamily` (the values: the
+  dialogs are outside the scopes). Before, the dialogs had their fixed 16px and the system font, larger than the app.
+  The spinner placeholder of a scope (the theme's `spinner`, 2026-10-01) is Mantine's primary filled color.
 - The toasts (small, like the Media Manager's; stacked, bottom right) are in Mantine's palette (`TOAST_THEME`,
   `createToastTheme()`): they live in `<body>`, outside the scopes, so the colors are the theme's values
   (`mergeMantineTheme`), with `light-dark()` for the page's scheme.
@@ -59,22 +85,96 @@ the root's `CLAUDE.md` apply.
 
 - The people, with create, edit and delete. Deleting also removes their memberships, and their agenda items keep no
   presenter (the confirmation says from how many boards). Memberships are changed on a board's page.
+- A member's page (`MemberPage.tsx`, 2026-10-01; it replaced the "Information" drawer of the list): the name with the
+  organization as subtitle, and three tabs:
+  - "Overview": name, email (`mailto:`), organization (a link to its page), the number of boards; "Edit" and "Delete"
+    (then back to the list), the same flows as in the list (`editPerson()`, `deletePeopleFlow()` in `PeopleTable.tsx`).
+  - "Boards": the memberships, read-only (Board as a link, Role, Since; "Open board" the default action).
+  - "Meetings": `MeetingsTable` with `personId`, the meetings of the person's boards (`fetchMeetings({ personId })`),
+    with the board column and the actions of the Meetings module; a new meeting chooses one of the person's boards. A
+    meeting opens below its board.
+- In the people tables, the name is a link to the page, and "Open" (default, also a double click) opens it.
+- `PeopleTable.tsx`: the table of the people, for the Members page and the People tab of an organization.
+- A person's organization is a reference (`organizationId`, `''`: none), a select with "(none)" in the person form; the
+  tables show its name.
+
+## Organizations
+
+- `Organization`: `name` (required, unique ignoring the case), `description`, the address (`street`, `zipCode`, `city`,
+  `country`) and `website`, all optional (2026-10-01).
+  - `country` is an ISO code (`DE`); its name is in the page's language (`Intl.DisplayNames`, `countries.ts`), a native
+    select of all countries, sorted by name.
+  - `website` is stored as a full URL: `https://` is added when the scheme is missing; anything else than an http(s) URL
+    with a dot in the host is refused ("Not a valid URL", `normalizeWebsite()`). Shown as a link (a new tab).
+  - A link that opens a new tab is marked: Tabler's `TbExternalLink` (an arrow out of a box) after the text, and
+    "(opens in a new tab)" for screen readers (`WebsiteLink`, 2026-10-01). Not the `mailto:` links.
+  - The form validates the name and the website; the fake server checks them again (`checkedOrganization()`).
+- The list (`OrganizationsPage.tsx`): Organization (a link), City, Country (a select filter of the countries in use),
+  Website, Members (the count); "New organization" (then its page), "Open" (default), "Edit", "Delete".
+- The page (`OrganizationPage.tsx`): the name with the description as subtitle; "Overview" (labels and values, "Edit"
+  and "Delete", then back to the list) and "People" (the people table of the organization: a new person belongs to it,
+  no organization column).
+- Deleting keeps the people, without an organization; the confirmation says how many (`deleteOrganizationsFlow()`).
+- Seed: the organizations of the people's former names (fixed data, no random numbers: the rest of the seed stays the
+  same; ids `o1`, ...). "Independent" became no organization, "Employee representative" the "Works Council".
 
 ## Meetings
 
 - A meeting's page opens on "Overview" (`MeetingOverview`): its base information as labels and values (title, board,
   date and time with the end from the agenda's duration, location, status and minutes badges, the number of items and
-  sections, documents) and "Edit", the same meeting form dialog as "Edit" in the meetings list (`editMeeting()` in
-  `MeetingsTable.tsx`). The status keeps its own buttons in the page header.
-- The agenda is reordered by dragging (`reorder`), the minutes are recorded per item (a form drawer), the minutes tab
+  sections, documents), "Edit", the same meeting form dialog as "Edit" in the meetings list (`editMeeting()` in
+  `MeetingsTable.tsx`), and "Delete" (2026-10-01), the same confirmation (`deleteMeetingsFlow()`), then back to where
+  it was opened (its board's page, or the meetings list). The status keeps its own buttons in the page header.
+- "PDF" (a menu on the overview, 2026-10-01): "Preview", "Print" and "Download" of the meeting's report (`pdf/`).
+  - Its icon (`appIcons.pdf`) is `TbFileExport` for now; to be checked again (tried: `TbFileTypePdf`, too small at
+    16px; `TbFileText`; `TbPdf`).
+  - `pdf/report.tsx` (`@react-pdf/renderer`, A4, the standard Helvetica): the meeting's data, the attendees (the
+    board's members by role), the agenda with sections, every item's presenter, duration, minutes (BlockNote's blocks:
+    paragraphs, headings, lists, check lists as `[x]`, quotes, code, bold/italic/underline/strike, links, mentions as
+    names) and decision, the documents; "DRAFT" while the minutes are not approved; a footer with "Page n of m" on
+    every page. An item's title, presenter and first block of minutes are one group that never
+    breaks (`wrap={false}`; `minPresenceAhead` had no effect). Black and white only, small
+    sizes (2026-10-01: 9pt text, 14pt title, 11pt headings); set apart by weight and italics, thin black lines.
+    - react-pdf 4.9: no `lineHeight` on the page (it drops the fixed footer), and a unitless one only together with a
+      `fontSize` in the same style (else far too large).
+    - The minutes are parsed by `minutes-format.ts` (no BlockNote), so the report does not load the editor.
+  - "Preview": an extra wide dialog (`dialogs.confirm`, "Download" and "Close") with the pages, rendered by pdfjs
+    (`pdf/preview.tsx`; its worker inlined with `?worker&inline`, so the `<board-manager>` build stays one module).
+  - "Print": built, loaded into a hidden frame (the browser's PDF viewer), which opens the print dialog; the frame
+    stays until the next print.
+  - "Download": built and saved, `<title> – <yyyy-mm-dd>.pdf`; no toast (the browser shows the download; removed
+    2026-10-01).
+  - All three build the PDF in a scope of the dialogs (`dialogs.open()`) and take at least 1.2s (a simulated server):
+    meanwhile the scope's spinner placeholder shows, which the preview replaces. The preview's pages are drawn
+    (pdfjs, canvases) before it opens, so it opens at its final size (`renderPages`, `PdfPages`).
+  - Both are loaded on first use (dynamic imports in `pdf/index.tsx`).
+- The agenda is reordered by dragging (`reorder`), the minutes are recorded per item (a form dialog), the minutes tab
   shows them as one document; a held meeting's minutes are approved there.
+- The minutes of an item are a BlockNote document (`minutes.tsx`, 2026-10-01; `@blocknote/core`, `react`, `mantine`
+  0.55; before, a `Textarea`): stored as its JSON in `AgendaItem.minutes` (`''` for an empty document); plain text (the
+  seed) is read as one paragraph per line.
+  - The minutes form is a centered dialog (2026-10-01; a drawer before), extra wide (`width: 'extraWide'`, 64em; the
+    overlays' named widths for dialogs and drawers: `default`, `wide` 48em, `extraWide` 64em, `full`).
+  - The dialog's editor (`MinutesEditor`) writes the JSON into a hidden input `minutes`, so the form data works as
+    before; "Decision" stays a `Textarea`. Framed like a Mantine input (`.board-manager__minutes-editor`),
+    in the app's size and font (`--mantine-font-size-sm`, `--mantine-font-family`; BlockNote's own are 16px and Inter).
+  - Mentions: `@` opens a menu of the board's members (`SuggestionMenuController`, filtered as typed); a mention is a
+    custom inline content (`mention`, prop `personId`), shown as "@<current name>", "@(deleted)" when the person is
+    gone; in the size of the text around it (`fz="inherit"`) and Mantine's accent color, like the
+    filled buttons (`.board-manager__mention`: `--mantine-primary-color-filled`), also as a link. Read-only inside the router, it links to the member's page.
+  - Shown read-only (`MinutesText`: a `BlockNoteView` with `editable={false}`, without the side menu's room) in the
+    minutes tab and an item's detail row. BlockNote looks like Mantine
+    (2026-10-01): `MANTINE_LOOK`, a BlockNote theme whose colors, radius and font are Mantine's variables (else
+    `@blocknote/mantine` styles its Mantine menus like BlockNote); with a theme object BlockNote takes the scheme from
+    its context, so `SchemeContext` gives it the app's (`useScheme()`). Its highlight colors stay its own; Inter is not
+    loaded.
 - Documents: "Upload" (a drawer with the file upload), "Download" (the default action, a warning: not available in the
-  demo), "Delete" (the selected ones, and in each row), and "Rename" (2026-09-30: a row action in each row and in the
-  context menu, a pencil, tip "Rename document"): the data navigator's edit form in the place of the row, with one
-  field, "Document" (the name). "OK" (also Enter) saves it (`renameDocument()` in `db.ts`: trimmed, an empty name is
-  refused with a message in the form; the type follows the new extension, like for an upload) and shows
-  `"<name>" renamed`.
-- The editor of a text in an edit form (a section's name, a document's name) is Mantine's `TextInput`
+  demo), "Delete" (the selected ones, and in each row), and "Rename" (a row action in each row and in the context menu,
+  a pencil, tip "Rename document"): a form dialog "Rename document" (2026-10-01; before, the data navigator's edit form
+  in the place of the row) with one field, "Name" (`DocumentForm`, required). On its first focus only the name without
+  the extension is selected, like in a file manager. "Save" saves it (`renameDocument()` in `db.ts`: trimmed, an empty
+  name refused; the type follows the new extension, like for an upload) and shows `"<name>" renamed`.
+- The editor of a text in an edit form (a section's name) is Mantine's `TextInput`
   (`mantineTextEditor()` in `MeetingPage.tsx`, for the column it is in).
 
 ## Agenda sections
@@ -120,3 +220,12 @@ the root's `CLAUDE.md` apply.
   with items.
 - The agenda table has no search box and no column filters: an agenda is short, and moving its items needs all of them
   shown.
+
+## Todo
+
+- The minutes editor (BlockNote) still looks like BlockNote, not like Mantine (2026-10-01): `MANTINE_LOOK` (a BlockNote
+  theme with Mantine's variables, `minutes.tsx`) showed no visible difference. To check in the browser: which `--bn-*`
+  variables BlockNote's stylesheet really reads where (editor, menus, toolbar), whether the theme's variables reach
+  them (set on the editor container, `applyThemedRoot` for the popups), and whether the scheme still follows the app
+  (`SchemeContext`).
+- The icon of the "PDF" menu (see Meetings).

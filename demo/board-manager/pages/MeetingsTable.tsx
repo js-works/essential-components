@@ -12,6 +12,7 @@ import type { DataNavigatorComponent } from '../../../packages/data-navigator/sr
 import { useDialogs, useToast } from '../../../packages/overlays/src/main/bindings/react';
 import type { FormDialogData } from '../../../packages/overlays/src/main/dialogs/contract/form-data';
 import {
+  boardIdsOf,
   createMeeting,
   db,
   deleteMeetings,
@@ -27,7 +28,7 @@ import type { Dialogs } from '../flows';
 import { fromPicker, MeetingForm } from '../forms';
 import { appIcons, countText, formatDateTime, Navigator, useDb } from '../shared';
 
-export { editMeeting, MeetingsTable, MinutesBadge, StatusBadge };
+export { deleteMeetingsFlow, editMeeting, MeetingsTable, MinutesBadge, StatusBadge };
 
 type Toasts = ReturnType<typeof useToast>;
 
@@ -58,6 +59,34 @@ async function editMeeting(dialogs: Dialogs, toasts: Toasts, id: string): Promis
   return saved;
 }
 
+// "Delete" of meetings (in the meetings list and on a meeting's overview): a critical confirmation (the agenda, the
+// minutes and the documents go with them), then a toast. Resolves `true` when deleted.
+async function deleteMeetingsFlow(
+  dialogs: Dialogs,
+  toasts: Toasts,
+  meetings: readonly { id: string; title: string }[],
+): Promise<boolean> {
+  const [first] = meetings;
+  const single = meetings.length === 1 && first !== undefined;
+  const done = await confirmAndRun(
+    dialogs,
+    {
+      title: single ? 'Delete meeting' : 'Delete meetings',
+      content: `${
+        single ? `Delete "${first.title}"` : `Delete the ${meetings.length} selected meetings`
+      }, with the agenda, the minutes and the documents?\nThis cannot be undone.`,
+      buttons: { confirm: 'Delete' },
+    },
+    () => deleteMeetings(meetings.map((meeting) => meeting.id)),
+  );
+
+  if (done) {
+    toasts.success(`${countText(meetings.map((meeting) => meeting.title), 'meetings')} deleted`);
+  }
+
+  return done;
+}
+
 const STATUS_COLORS: Readonly<Record<MeetingStatus, string>> = { Planned: 'blue', Held: 'green', Cancelled: 'gray' };
 
 function StatusBadge({ status }: { status: MeetingStatus }): ReactElement {
@@ -77,11 +106,14 @@ function MinutesBadge(
     : <Badge size="sm" variant="outline" color="orange">Minutes draft</Badge>;
 }
 
-// The meetings of one board (`boardId`, on the board's page) or of all boards (the "Meetings" module, with a board
-// column and filter). `pathOf` is where a meeting opens: below its board, or below "Meetings".
+// The meetings of one board (`boardId`, on the board's page), of the boards of one person (`personId`, on the member's
+// page), or of all boards (the "Meetings" module). Without a board, with a board column and filter, and a new meeting
+// chooses its board (of the person's boards, with a person). `pathOf` is where a meeting opens: below its board, or
+// below "Meetings".
 function MeetingsTable(
-  { boardId, pathOf, title, subtitle }: {
+  { boardId, personId, pathOf, title, subtitle }: {
     boardId?: string;
+    personId?: string;
     pathOf: (meeting: { id: string; boardId: string }) => string;
     title: string;
     subtitle: string;
@@ -92,7 +124,7 @@ function MeetingsTable(
   const toasts = useToast();
   const navigate = useNavigate();
   const boards = useDb((state) => state.boards);
-  const source = useMemo(() => fetchMeetings(boardId), [boardId]);
+  const source = useMemo(() => fetchMeetings({ boardId, personId }), [boardId, personId]);
 
   const columns = useMemo<readonly DataNavigatorComponent.Column<MeetingRow>[]>(() => [
     {
@@ -145,15 +177,21 @@ function MeetingsTable(
   ], [boardId, boards, pathOf]);
 
   const actions = useMemo<readonly DataNavigatorComponent.Action<MeetingRow>[]>(() => {
+    // The boards a new meeting may be for.
+    const choices = () => {
+      const state = db.getState();
+      const boardIds = personId === undefined ? undefined : boardIdsOf(state, personId);
+
+      return state.boards.filter((board) => boardIds === undefined || boardIds.includes(board.id));
+    };
+
     const create = async () => {
       let created: { id: string; boardId: string } | undefined;
       const saved = await submitForm(
         dialogs,
         {
           title: 'New meeting',
-          content: (check) => (
-            <MeetingForm check={check} boards={boardId === undefined ? db.getState().boards : undefined} />
-          ),
+          content: (check) => <MeetingForm check={check} boards={boardId === undefined ? choices() : undefined} />,
           buttons: { confirm: 'Create' },
         },
         async (data) => {
@@ -201,23 +239,8 @@ function MeetingsTable(
     };
 
     const remove = async (rows: readonly MeetingRow[]) => {
-      const [first] = rows;
-      const single = rows.length === 1 && first !== undefined;
-      const done = await confirmAndRun(
-        dialogs,
-        {
-          title: single ? 'Delete meeting' : 'Delete meetings',
-          content: `${
-            single ? `Delete "${first.title}"` : `Delete the ${rows.length} selected meetings`
-          }, with the agenda, the minutes and the documents?\nThis cannot be undone.`,
-          buttons: { confirm: 'Delete' },
-        },
-        () => deleteMeetings(rows.map((row) => row.id)),
-      );
-
-      if (done) {
+      if (await deleteMeetingsFlow(dialogs, toasts, rows)) {
         nav.reload();
-        toasts.success(`${countText(rows.map((row) => row.title), 'meetings')} deleted`);
       }
     };
 
@@ -249,7 +272,7 @@ function MeetingsTable(
       },
       { type: 'multiRow', key: 'delete', label: 'Delete', icon: appIcons.remove, onClick: (rows) => void remove(rows) },
     ];
-  }, [nav, dialogs, toasts, navigate, boardId, pathOf]);
+  }, [nav, dialogs, toasts, navigate, boardId, personId, pathOf]);
 
   return (
     <Navigator

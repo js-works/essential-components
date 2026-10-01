@@ -479,6 +479,7 @@ class Dialog extends DialogElementBase {
     this.#defaultButtonIndex = props.defaultButtonIndex;
     this.#hasForm = props.hasForm;
     this.setAttribute("data-surface", props.surface);
+    this.setAttribute("data-width", props.width);
     this.#isDrawer = props.surface === "drawer";
     this.#buttonViews = props.buttons;
 

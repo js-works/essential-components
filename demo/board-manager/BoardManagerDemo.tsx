@@ -23,6 +23,7 @@ import type { Root } from 'react-dom/client';
 import { RouterProvider } from 'react-router';
 import { OverlaysProvider } from '../../packages/overlays/src/main/bindings/react';
 import type { OverlaysConfig } from '../../packages/overlays/src/main/bindings/react';
+import { createDialogTheme } from '../../packages/overlays/src/main/dialogs/dialogs';
 import { createToastTheme } from '../../packages/overlays/src/main/toasts/toasts';
 import { createAppRouter } from './App';
 import { Scope, SCOPE_CLASS, useScheme } from './shared';
@@ -34,12 +35,14 @@ export { App as BoardManagerApp, BoardManagerDemo };
 // for the documents of a meeting. The server is fake (db.ts), the data lives in memory.
 
 // The popups of Mantine stay inside the app (no portal to `<body>`): its variables are set on the app, not on `:root`.
-// Badges keep the case of their text (Mantine's stylesheet makes them uppercase).
+// Badges keep the case of their text (Mantine's stylesheet makes them uppercase). Buttons have a normal weight (400;
+// Mantine's is 600), also those of the dialogs (Mantine's, see `render.actionButton`).
 const THEME = createTheme({
   primaryColor: 'indigo',
   defaultRadius: 'sm',
   components: {
     Badge: Badge.extend({ defaultProps: { tt: 'none' } }),
+    Button: Button.extend({ defaultProps: { fw: 400 } }),
     Menu: Menu.extend({ defaultProps: { withinPortal: false } }),
     Popover: Popover.extend({ defaultProps: { withinPortal: false } }),
     Tooltip: Tooltip.extend({ defaultProps: { withinPortal: false } }),
@@ -64,7 +67,7 @@ const cssVariablesResolver: CSSVariablesResolver = () => ({
 // The toasts in Mantine's palette. They live in `<body>`, outside the scopes, so Mantine's variables are not there:
 // the colors are the values of the theme, and `light-dark()` follows the page's scheme (`color-scheme` on `<html>`).
 // Like Mantine: a paper card (white, `dark.6`), its text and dimmed colors, the primary color for info and loading.
-const { colors, primaryColor } = mergeMantineTheme(DEFAULT_THEME, THEME);
+const { colors, primaryColor, fontSizes, fontFamily } = mergeMantineTheme(DEFAULT_THEME, THEME);
 
 const TOAST_THEME = createToastTheme({
   background: `light-dark(#fff, ${colors.dark[6]})`,
@@ -92,6 +95,14 @@ const TOAST_THEME = createToastTheme({
 const OVERLAYS_CONFIG: OverlaysConfig = {
   dialogs: {
     icons: true,
+    // The dialogs' own text (title, message) in the app's size and font, like the Mantine inputs in their content: the
+    // values of the theme (the dialogs are outside the scopes, where Mantine's variables are not set).
+    // The spinner placeholder (while a scope waits, e.g. for the PDF) in Mantine's primary filled color (shade 6, 8 dark).
+    theme: createDialogTheme({
+      fontSize: fontSizes.sm,
+      fontFamily,
+      spinner: `light-dark(${colors[primaryColor]![6]}, ${colors[primaryColor]![8]})`,
+    }),
     wrapContent: (content) => <Scope>{content}</Scope>,
     render: {
       actionButton: ({ text, variant, loading, onClick }) => (

@@ -539,7 +539,9 @@ describe('DataNavigator', () => {
       expect(tableArea.contains(container.querySelector('.table'))).toBe(true);
       expect(tableArea.hasAttribute('inert')).toBe(true);
       expect(baseStylesheet).toMatch(/&\[data-filtering\] > \.tableArea \{\s*opacity: 0\.4;/);
-      expect(baseStylesheet).toMatch(/\.filterView \{[^}]*align-self: start;[^}]*animation: filterViewIn /);
+      expect(baseStylesheet).toMatch(/\.filterView \{[^}]*align-self: start;/);
+      // its height is animated (Web Animations, not in jsdom); meanwhile no min height, and the body does not scroll
+      expect(baseStylesheet).toMatch(/&\[data-animating\] \{\s*min-height: 0;/);
       expect(panel.parentElement).toBe(stack);
       expect(screen.getByRole('button', { name: 'Filters' }).getAttribute('aria-pressed')).toBe('true');
       // no headline; below the filters Cancel and Apply (Reset and Clear only when they would change something)

@@ -31,6 +31,7 @@ export type {
   DialogRenderOverrides,
   DialogScope,
   DialogSurface,
+  DialogWidth,
   DialogsController,
   DialogsControllerConfig,
   DialogType,

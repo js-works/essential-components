@@ -1,7 +1,7 @@
-import { Box, Button, Group, Paper, SimpleGrid, Stack, Tabs, Text, TextInput, Title } from '@mantine/core';
+import { Box, Button, Group, Menu, Paper, SimpleGrid, Stack, Tabs, Text, TextInput, Title } from '@mantine/core';
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactElement, ReactNode } from 'react';
-import { useParams } from 'react-router';
+import { useLocation, useNavigate, useParams } from 'react-router';
 import {
   dateRangeColumnFilter,
   selectColumnFilter,
@@ -41,9 +41,11 @@ import {
 import type { AgendaItem, AgendaRow, AgendaSection, Db, Meeting, MeetingDocument, Person, SectionDraft } from '../db';
 import { confirmAndRun, submitForm } from '../flows';
 import type { Dialogs } from '../flows';
-import { AgendaItemForm, MinutesForm } from '../forms';
+import { AgendaItemForm, DocumentForm, MinutesForm } from '../forms';
+import { MinutesText } from '../minutes';
+import { downloadMeetingPdf, previewMeetingPdf, printMeetingPdf } from '../pdf';
 import { appIcons, countText, formatDateTime, formatSize, formatTime, Navigator, PageHeader, useDb } from '../shared';
-import { editMeeting, MinutesBadge, StatusBadge } from './MeetingsTable';
+import { deleteMeetingsFlow, editMeeting, MinutesBadge, StatusBadge } from './MeetingsTable';
 import { NotFound } from './NotFound';
 
 export { MeetingPage };
@@ -220,7 +222,8 @@ function MeetingPage(): ReactElement {
 }
 
 // The base information of a meeting, as a list of labels and values, with "Edit" (the meeting form in a dialog, like
-// "Edit" in the meetings list). The end is the start plus the duration of the agenda.
+// "Edit" in the meetings list) and "Delete" (then back to where it was opened: its board, or the meetings list). The
+// end is the start plus the duration of the agenda.
 function MeetingOverview({ meeting, boardName, duration }: {
   meeting: Meeting;
   boardName: string;
@@ -228,6 +231,8 @@ function MeetingOverview({ meeting, boardName, duration }: {
 }): ReactElement {
   const dialogs = useDialogs();
   const toasts = useToast();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
   const items = useDb((state) => state.agendaItems.filter((item) => item.meetingId === meeting.id).length);
   const sections = useDb((state) => state.agendaSections.filter((section) => section.meetingId === meeting.id).length);
   const documents = useDb((state) => state.documents.filter((document) => document.meetingId === meeting.id).length);
@@ -252,19 +257,54 @@ function MeetingOverview({ meeting, boardName, duration }: {
     ['Documents', String(documents)],
   ];
 
+  const remove = async () => {
+    if (await deleteMeetingsFlow(dialogs, toasts, [meeting])) {
+      navigate(pathname.startsWith('/boards/') ? `/boards/${meeting.boardId}` : '/meetings');
+    }
+  };
+
   return (
-    // No frame, like the tables of the other tabs: the title and "Edit" in one line, like their toolbars.
+    // No frame, like the tables of the other tabs: the title and the buttons in one line, like their toolbars.
     <Stack gap="md" maw={820}>
-      <Group justify="space-between">
+      <Group justify="space-between" className="board-manager__panel-header">
         <Text fw={700} size="lg">Overview</Text>
-        <Button
-          size="xs"
-          variant="default"
-          leftSection={appIcons.edit}
-          onClick={() => void editMeeting(dialogs, toasts, meeting.id)}
-        >
-          Edit
-        </Button>
+        <Group gap="xs">
+          <Button
+            size="xs"
+            variant="default"
+            leftSection={appIcons.edit}
+            onClick={() => void editMeeting(dialogs, toasts, meeting.id)}
+          >
+            Edit
+          </Button>
+          <Button size="xs" variant="default" color="red" leftSection={appIcons.remove} onClick={() => void remove()}>
+            Delete
+          </Button>
+          <Menu position="bottom-end" shadow="md">
+            <Menu.Target>
+              <Button size="xs" variant="default" leftSection={appIcons.pdf} rightSection={appIcons.chevronDown}>
+                PDF
+              </Button>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item
+                leftSection={appIcons.preview}
+                onClick={() => void previewMeetingPdf(dialogs, toasts, meeting)}
+              >
+                Preview
+              </Menu.Item>
+              <Menu.Item leftSection={appIcons.print} onClick={() => void printMeetingPdf(dialogs, toasts, meeting)}>
+                Print
+              </Menu.Item>
+              <Menu.Item
+                leftSection={appIcons.download}
+                onClick={() => void downloadMeetingPdf(dialogs, toasts, meeting)}
+              >
+                Download
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
       </Group>
       <SimpleGrid cols={2} spacing="lg" verticalSpacing="xs" style={{ gridTemplateColumns: 'max-content 1fr' }}>
         {fields.map(([label, value]) => (
@@ -283,7 +323,7 @@ function AgendaDetail({ row }: { row: AgendaRow }): ReactElement {
   return (
     <Stack gap={6} py={4}>
       {row.description !== '' && <Text size="sm" c="dimmed">{row.description}</Text>}
-      {row.minutes !== '' && <Text size="sm">{row.minutes}</Text>}
+      {row.minutes !== '' && <MinutesText minutes={row.minutes} empty="" />}
       {row.decision !== '' && <Text size="sm" fw={600}>Decision: {row.decision}</Text>}
       {row.minutes === '' && row.decision === '' && <Text size="sm" c="dimmed">No minutes recorded yet.</Text>}
     </Stack>
@@ -308,16 +348,16 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
   const source = useMemo(() => fetchAgenda(meeting.id), [meeting.id]);
   const grouped = agendaSections.some((section) => section.meetingId === meeting.id);
 
-  // No filters and no search: an agenda is short, and moving its items needs all of them shown.
+  // No filters and no search: an agenda is short, and moving its items needs all of them shown. No column menu either
+  // (no column is hideable): there is no column hidden by default.
   const columns: readonly DataNavigatorComponent.Column<AgendaRow>[] = [
     { key: 'number', header: '#', width: 0.5, align: 'end' },
     { key: 'title', header: 'Item', width: 4, wrap: true },
-    { key: 'presenter', header: 'Presenter', width: 2, hideable: true },
+    { key: 'presenter', header: 'Presenter', width: 2 },
     {
       key: 'duration',
       header: 'Duration',
       width: 1,
-      hideable: true,
       align: 'end',
       render: (row) => `${row.duration} min`,
     },
@@ -325,7 +365,6 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
       key: 'recorded',
       header: 'Minutes',
       width: 1,
-      hideable: true,
       align: 'center',
     },
   ];
@@ -382,7 +421,7 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
       }
     };
 
-    // In a drawer: there is room for longer minutes.
+    // In an extra wide dialog: room for the editor's blocks, its side menu and its toolbar.
     const recordMinutes = async (row: AgendaRow) => {
       const item = itemOf(row);
 
@@ -393,10 +432,10 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
       const saved = await submitForm(
         dialogs,
         {
-          surface: 'drawer',
+          width: 'extraWide',
           title: numbered(row.number, row.title),
           subtitle: 'Minutes',
-          content: (check) => <MinutesForm check={check} item={item} />,
+          content: (check) => <MinutesForm check={check} item={item} members={members()} />,
           buttons: { confirm: 'Save' },
         },
         (data) =>
@@ -544,8 +583,8 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
   );
 }
 
-// A text in the edit form of a data navigator (a section's name, a document's name): Mantine's input, for the column it
-// is in (the form's label names it).
+// A text in the edit form of a data navigator (a section's name): Mantine's input, for the column it is in (the form's
+// label names it).
 function mantineTextEditor<Row>(): DataNavigatorComponent.ColumnEditor<Row> {
   return ({ columnKey, value, change, labelledBy }) => (
     <TextInput
@@ -750,7 +789,7 @@ function MinutesView({ meeting, agendaItems, agendaSections, boardName }: {
                 {other && <Title order={4} size="h5" mt="xs">{numbered(numbers.get('') ?? '', 'Other')}</Title>}
                 <Stack gap={2} pl={numbers.has('') || item.sectionId !== '' ? 'md' : 0}>
                   <Text fw={600} size="sm">{numbered(numbers.get(item.id) ?? '', item.title)}</Text>
-                  <Text size="sm">{item.minutes === '' ? '(No minutes.)' : item.minutes}</Text>
+                  <MinutesText minutes={item.minutes} empty="(No minutes.)" />
                   {item.decision !== '' && <Text size="sm" fs="italic">Decision: {item.decision}</Text>}
                 </Stack>
               </Fragment>
@@ -763,21 +802,12 @@ function MinutesView({ meeting, agendaItems, agendaSections, boardName }: {
 }
 
 const documentColumns: readonly DataNavigatorComponent.Column<MeetingDocument>[] = [
-  // Renamed in the edit form ("Rename").
-  {
-    key: 'name',
-    header: 'Document',
-    width: 3.5,
-    sortable: true,
-    filter: textColumnFilter(),
-    edit: mantineTextEditor(),
-  },
+  { key: 'name', header: 'Document', width: 3.5, sortable: true, filter: textColumnFilter() },
   {
     key: 'type',
     header: 'Type',
     width: 1,
     sortable: true,
-    hideable: true,
     filter: selectColumnFilter({ options: ['PDF', 'DOCX', 'PPTX', 'XLSX'], multiple: true }),
   },
   {
@@ -785,17 +815,15 @@ const documentColumns: readonly DataNavigatorComponent.Column<MeetingDocument>[]
     header: 'Size',
     width: 1.2,
     sortable: true,
-    hideable: true,
     align: 'end',
     render: (row) => formatSize(row.size),
   },
-  { key: 'user', header: 'Uploaded by', width: 2, sortable: true, hideable: true },
+  { key: 'user', header: 'Uploaded by', width: 2, sortable: true },
   {
     key: 'uploaded',
     header: 'Uploaded',
     width: 2,
     sortable: true,
-    hideable: true,
     filter: dateRangeColumnFilter(),
     render: (row) => formatDateTime(row.uploaded),
   },
@@ -853,6 +881,27 @@ function DocumentsTable({ meeting }: { meeting: Meeting }): ReactElement {
       });
     };
 
+    // The name in a form dialog (the fake server trims it and refuses an empty one; the dialog shows its message).
+    const rename = async (row: MeetingDocument) => {
+      let renamed = row.name;
+      const saved = await submitForm(
+        dialogs,
+        {
+          title: 'Rename document',
+          content: (check) => <DocumentForm check={check} document={row} />,
+          buttons: { confirm: 'Save' },
+        },
+        async (data) => {
+          renamed = (await renameDocument(row.id, data.string('name', ''))).name;
+        },
+      );
+
+      if (saved) {
+        nav.reload();
+        toasts.success(`"${renamed}" renamed`);
+      }
+    };
+
     const remove = async (rows: readonly MeetingDocument[]) => {
       const [first] = rows;
       const done = await confirmAndRun(
@@ -890,7 +939,6 @@ function DocumentsTable({ meeting }: { meeting: Meeting }): ReactElement {
         icon: appIcons.remove,
         onClick: (rows) => void remove(rows),
       },
-      // The name in the edit form, in the place of the row.
       {
         type: 'singleRow',
         key: 'rename',
@@ -898,7 +946,7 @@ function DocumentsTable({ meeting }: { meeting: Meeting }): ReactElement {
         tip: 'Rename document',
         label: 'Rename',
         show: 'column',
-        onClick: nav.editRow,
+        onClick: (row) => void rename(row),
       },
       {
         type: 'singleRow',
@@ -912,19 +960,9 @@ function DocumentsTable({ meeting }: { meeting: Meeting }): ReactElement {
     ];
   }, [nav, dialogs, toasts, meeting.id, meeting.title]);
 
-  // "OK" of the edit form: the new name (the fake server trims it and refuses an empty one; the form shows its message).
-  const saveRow = async (row: MeetingDocument, draft: MeetingDocument) => {
-    const renamed = await renameDocument(row.id, draft.name);
-
-    toasts.success(`"${renamed.name}" renamed`);
-
-    return renamed;
-  };
-
   return (
     <Navigator
       controller={nav}
-      saveRow={saveRow}
       title="Documents"
       density="compact"
       searchable

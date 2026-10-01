@@ -18,9 +18,14 @@
     "format:check": "dprint check"
   },
   "dependencies": {
+    "@blocknote/core": "^0.55.0",
+    "@blocknote/mantine": "^0.55.0",
+    "@blocknote/react": "^0.55.0",
     "@mantine/dates": "9.5.1",
     "@mantine/form": "9.5.1",
+    "@react-pdf/renderer": "^4.9.0",
     "dayjs": "1.11.23",
+    "pdfjs-dist": "^6.3.289",
     "react-icons": "^5.7.0",
     "react-router": "^8.4.0",
     "zustand": "^5.0.15"

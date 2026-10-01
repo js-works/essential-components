@@ -33,6 +33,14 @@ export type DialogType =
  */
 export type DialogSurface = "dialog" | "drawer";
 
+/**
+ * How wide a dialog or a drawer is (see {@link DialogConfig.width}): `"default"` the
+ * surface's own sizing (a centered dialog fits its text, up to 26em; a drawer is 30em),
+ * `"wide"` 48em, `"extraWide"` 64em, `"full"` the whole viewport but a margin (2em on each
+ * side of a dialog, 2em on the open side of a drawer). Never wider than the viewport.
+ */
+export type DialogWidth = "default" | "wide" | "extraWide" | "full";
+
 export type ActionButtonType = "primary" | "secondary" | "danger";
 
 /**
@@ -191,6 +199,16 @@ export interface DialogConfig<C extends object> extends DialogViewConfig<C> {
    * open.
    */
   surface?: DialogSurface;
+  /**
+   * The width of the dialog or drawer (see {@link DialogWidth}). Default `"default"`. With
+   * a named width (and in every drawer), content that needs more room (a `min-width`, a
+   * wide table) still widens it, up to the viewport: it is as wide as its content's
+   * narrowest layout (`min-content`), at least this width. A centered dialog of a named
+   * width is also centered vertically (the default one is anchored near the top).
+   *
+   * Behavioural like `surface`: fixed once the dialog is open.
+   */
+  width?: DialogWidth;
   /**
    * Abort this dialog. When the signal aborts, the dialog closes immediately and the
    * call resolves `{ canceled: true, aborted: true }`. Combined with any scope-level

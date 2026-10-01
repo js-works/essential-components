@@ -31,6 +31,23 @@ export interface DialogTheme {
   buttonTransition: string;
   /** Scale an action button shrinks to while pressed, e.g. "0.97"; set "1" to disable. */
   buttonActiveScale: string;
+  /**
+   * Base font size of the dialog (title, text, note); everything sized in em scales with
+   * it. Set it to the host design system's body size, so a dialog's text matches the page
+   * and the inputs in its content.
+   */
+  fontSize: string;
+  /**
+   * Font family of the dialog's text, e.g. the host design system's body font. The
+   * built-in action buttons keep their own stack (one with a medium weight).
+   */
+  fontFamily: string;
+  /**
+   * Colour of the spinner placeholder's arc (the round dialog a scope shows while nothing
+   * has opened yet), e.g. the host design system's primary colour. Its faint ring follows
+   * the text colour.
+   */
+  spinner: string;
 }
 
 /**
@@ -54,6 +71,10 @@ export const defaultDialogTheme: DialogTheme = {
   actionRadius: "5px",
   buttonTransition: "120ms ease",
   buttonActiveScale: "1",
+  fontSize: "16px",
+  fontFamily:
+    '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  spinner: "#444",
 };
 
 /** Merge partial tokens over {@link defaultDialogTheme} to produce a full DialogTheme. */

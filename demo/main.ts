@@ -20,7 +20,7 @@ function apply(): void {
   const data = new FormData(switches);
 
   document.documentElement.lang = String(data.get('language') ?? 'en-US');
-  document.documentElement.dataset['scheme'] = String(data.get('scheme') ?? 'system');
+  document.documentElement.dataset['scheme'] = String(data.get('scheme') ?? 'light');
 }
 
 switches?.addEventListener('change', apply);

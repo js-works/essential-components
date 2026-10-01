@@ -41,13 +41,13 @@
   }
 
   & > .tableArea {
-    /* Back in the time the filter view rolls up. */
+    /* Back in the time the filter view rolls up (`FILTER_VIEW_CLOSE_TIME` in `FilterPanel.tsx`). */
     transition: opacity 250ms ease-in;
   }
 
   &[data-filtering] > .tableArea {
     opacity: 0.4;
-    /* Faded in the time the filter view unrolls. */
+    /* Faded in the time the filter view unrolls (`FILTER_VIEW_OPEN_TIME` in `FilterPanel.tsx`). */
     transition: opacity 400ms cubic-bezier(0.2, 0, 0, 1);
   }
 }
@@ -506,19 +506,25 @@
   /* Only a tiny gap below the toolbar: a larger one showed the top of the table's scrollbar (its arrow button, faded)
      like a second nose. */
   margin-top: calc(var(--datnav-spacing-xs) / 2);
-  /* A frame in the color of the lines (the shadow alone set it apart too little), rounder than the controls: three
-     times their radius (6px in the default theme, like the dialogs of the demos). */
+  /* A frame in the color of the lines (the shadow alone set it apart too little), a little rounder than the controls:
+     twice their radius (4px in the default theme, like the frame of the file upload). */
   border: 1px solid var(--datnav-color-border);
-  border-radius: calc(3 * var(--datnav-radius));
+  border-radius: calc(2 * var(--datnav-radius));
   background-color: var(--datnav-color-surface);
   /* A tiny shadow in the color of the lines (the theme's shadow, then `0 2px 6px`, were too heavy, none too flat; no
      hard-coded colors). */
   box-shadow: 0 1px 3px var(--datnav-color-border);
-  animation: filterViewIn 400ms cubic-bezier(0.2, 0, 0, 1);
 
-  /* Closed: rolled up again, a bit faster, and then removed (`FILTER_VIEW_CLOSE_TIME` in `DataNavigatorView.tsx`). */
-  &[data-closing] {
-    animation: filterViewOut 250ms ease-in forwards;
+  /* While its height is animated (`FilterView` in `FilterPanel.tsx`: unrolled from its top edge down, rolled up after
+     closing): no min height, its body does not scroll, and what does not fit yet is cut off at its lower edge. The clip
+     leaves room above for the nose, and at the sides and below for the shadow. */
+  &[data-animating] {
+    min-height: 0;
+    clip-path: inset(-1rem -2rem -4px -2rem);
+
+    & > .filterViewBody {
+      overflow-y: hidden;
+    }
   }
 }
 
@@ -537,28 +543,6 @@
   background-color: var(--datnav-color-surface);
   transform: rotate(45deg);
   pointer-events: none;
-}
-
-/* Unrolled from its top edge down, like a roller blind. The clip leaves room at the sides and below, so the shadow is
-   not cut off meanwhile, and above, for the nose. */
-@keyframes filterViewIn {
-  from {
-    opacity: 0;
-    clip-path: inset(-1rem -2rem 100% -2rem);
-  }
-  to {
-    clip-path: inset(-1rem -2rem -2rem -2rem);
-  }
-}
-
-@keyframes filterViewOut {
-  from {
-    clip-path: inset(-1rem -2rem -2rem -2rem);
-  }
-  to {
-    opacity: 0;
-    clip-path: inset(-1rem -2rem 100% -2rem);
-  }
 }
 
 /* Only as high as its filters, so the buttons follow right after them (the rest of the view stays empty below). It
@@ -1583,9 +1567,11 @@
     }
   }
 
+  /* The month and year: a medium weight (500, the user's wish, 2026-10-01), not the theme's bold: a fixed weight, as no
+     theme value says "medium". */
   & :global(.datepicker-controls .view-switch) {
     flex: auto;
-    font-weight: var(--datnav-font-weight-bold);
+    font-weight: 500;
   }
 
   & :global(.datepicker-controls .prev-button),
@@ -2544,10 +2530,12 @@
   font-size: var(--datnav-font-size-sm);
 }
 
-/* No line below it (the cells have one): an empty table ends with its text, not with a line. */
+/* No line below it (the cells have one): an empty table ends with its text, not with a line. Not selectable (the
+   default text and a custom `empty` alike), like the toolbar and the footer: it is no data. */
 .emptyCell {
   composes: cell;
   grid-column: 1 / -1;
+  user-select: none;
   flex-direction: column;
   gap: var(--datnav-spacing-xs);
   justify-content: center;

@@ -26,6 +26,9 @@ const theme = {
   dialogBackgroundColor: `var(--dialog-background, ${defaultDialogTheme.background})`,
   buttonTransition: `var(--dialog-button-transition, ${defaultDialogTheme.buttonTransition})`,
   buttonActiveScale: `var(--dialog-button-active-scale, ${defaultDialogTheme.buttonActiveScale})`,
+  fontSize: `var(--dialog-font-size, ${defaultDialogTheme.fontSize})`,
+  fontFamily: `var(--dialog-font-family, ${defaultDialogTheme.fontFamily})`,
+  spinnerColor: `var(--dialog-spinner, ${defaultDialogTheme.spinner})`,
 } as const;
 
 // Duration of the note appear/disappear (collapse) animation. Drives both the
@@ -131,17 +134,76 @@ const dialogStyles = css`
     margin-inline-start: auto;
     margin-inline-end: 0;
     margin-block: 0;
-    width: min(calc(100dvw - 2em), 30em);
-    max-width: none;
-    /* The base rule's 22em floor would exceed the panel width on a narrow phone and push
-       content out of the viewport. */
-    min-width: 0;
+    /* As wide as the content's narrowest layout (min-content: text still wraps), at least
+       the named width (data-width, below; 30em by default) and never past the viewport:
+       content that needs more room (a min-width, a wide table) widens it. The floor also
+       replaces the base rule's 22em, which would exceed the panel on a narrow phone. */
+    --named-width: 30em;
+    width: min-content;
+    min-width: min(calc(100dvw - 2em), var(--named-width));
+    max-width: calc(100dvw - 2em);
     height: 100dvh;
     max-height: none;
     border-radius: 0;
     /* The panel itself doesn't scroll — its body does (below) — so the title and the
        action buttons stay put on a long form. */
     overflow: hidden;
+  }
+
+  /* ---- Named widths (data-width) ------------------------------------------
+     For both surfaces. "default" keeps each surface's own sizing (a centered dialog sizes
+     itself to its text, up to 26em; a drawer is 30em). The others set --named-width, the
+     floor of the rules that use it: the drawer above, the centered dialog below. */
+  :host([data-width="wide"]) dialog {
+    --named-width: 48em;
+  }
+
+  :host([data-width="extraWide"]) dialog {
+    --named-width: 64em;
+  }
+
+  :host([data-width="full"]) dialog {
+    --named-width: 100dvw;
+  }
+
+  /* A centered dialog of a named width: like the drawer, as wide as its content needs, at
+     least that width, and never past the viewport (2em of it on each side). After the
+     form rule above, whose 26em floor it replaces. Centered vertically too: such a dialog
+     is large (a preview, a long form), and the base rule's top anchor (12dvh), which keeps
+     a small dialog in place while its content changes, would push it past the bottom. */
+  :host(:not([data-surface="drawer"]):is([data-width="wide"], [data-width="extraWide"], [data-width="full"])) dialog {
+    width: min-content;
+    min-width: min(calc(100dvw - 4em), var(--named-width));
+    max-width: calc(100dvw - 4em);
+    margin-block: auto;
+  }
+
+  /* Only the body scrolls, also in a centered dialog: the header (title, close button) and
+     the footer (note, action buttons) stay in place, like in the drawer below. The open
+     dialog is a column whose one child, the content, shrinks to the dialog's max-height
+     (not a max-height of its own: the content's em may differ from the dialog's, e.g. with
+     a theme's fontSize, and the few pixels between them gave the dialog a second scroll
+     bar). Not the spinner placeholder, which centers its spinner itself. */
+  :host(:not([data-surface="drawer"])) dialog[open]:not(.spinner-dialog) {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  :host(:not([data-surface="drawer"])) .dialog-content {
+    display: flex;
+    flex-direction: column;
+    flex: 0 1 auto;
+    min-height: 0;
+  }
+
+  :host(:not([data-surface="drawer"])) .dialog-content .body {
+    flex: 0 1 auto;
+    overflow-y: auto;
+  }
+
+  :host(:not([data-surface="drawer"])) .dialog-content > :not(.body) {
+    flex: none;
   }
 
   :host([data-surface="drawer"]) .dialog-content {
@@ -216,10 +278,8 @@ const dialogStyles = css`
        into text selection below so error messages can be copied. */
     user-select: none;
     min-width: 20em;
-    font-size: 16px;
-    font-family:
-      -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
-      sans-serif;
+    font-size: ${theme.fontSize};
+    font-family: ${theme.fontFamily};
   }
 
   .dialog-content .header {
@@ -549,7 +609,7 @@ const placeholderStyles = css`
     width: 2.2em;
     height: 2.2em;
     border: 3px solid color-mix(in srgb, currentColor 20%, transparent);
-    border-top: 3px solid #444;
+    border-top: 3px solid ${theme.spinnerColor};
     border-radius: 50%;
     animation: spin-plain 1s linear infinite;
     box-sizing: border-box;

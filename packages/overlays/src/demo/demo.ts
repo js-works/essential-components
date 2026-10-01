@@ -710,6 +710,9 @@ async function runDrawer(): Promise<void> {
 
     const drawer = scope.form({
       surface: "drawer",
+      // One of the named widths ("default" 30em, "wide" 48em, "extraWide" 64em, "full"); content that needs
+      // more still widens it.
+      width: "wide",
       title: "Edit customer",
       content: formContent({
         name: "Jane Doe",

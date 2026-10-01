@@ -1,17 +1,20 @@
 import { createStore } from 'zustand/vanilla';
 import type { DataNavigatorComponent } from '../../packages/data-navigator/src/react';
 import type { FileUpload } from '../../packages/file-upload/src';
+import { countryName } from './countries';
 
 export {
   addMember,
   agendaNumbers,
   agendaOf,
   approveMinutes,
+  boardIdsOf,
   changeRole,
   commitDocuments,
   createAgendaItem,
   createBoard,
   createMeeting,
+  createOrganization,
   createPerson,
   CURRENT_USER,
   db,
@@ -19,6 +22,7 @@ export {
   deleteBoards,
   deleteDocuments,
   deleteMeetings,
+  deleteOrganizations,
   deletePeople,
   discardDocuments,
   fetchAgenda,
@@ -26,13 +30,17 @@ export {
   fetchBoards,
   fetchDocuments,
   fetchMeetings,
+  fetchMemberships,
+  fetchOrganizations,
   fetchPeople,
   getBoard,
   getMeeting,
+  getOrganization,
   getPerson,
   localDateTime,
   MEETING_STATUSES,
   newSectionId,
+  normalizeWebsite,
   removeMembers,
   renameDocument,
   reorderAgenda,
@@ -42,6 +50,7 @@ export {
   updateAgendaItem,
   updateBoard,
   updateMeeting,
+  updateOrganization,
   updatePerson,
   uploadDocument,
   withSectionDraft,
@@ -60,8 +69,13 @@ export type {
   MeetingStatus,
   MemberRow,
   Membership,
+  MembershipRow,
+  Organization,
+  OrganizationRow,
+  OrganizationValues,
   Person,
   PersonRow,
+  PersonValues,
   Role,
   SectionDraft,
 };
@@ -72,7 +86,21 @@ export type {
 
 type Board = { id: string; name: string; description: string };
 
-type Person = { id: string; name: string; email: string; organization: string };
+// The address is optional, each of its parts; `country` is an ISO code (`DE`, see `countries.ts`), `website` a full URL
+// (`https://…`, see `normalizeWebsite()`).
+type Organization = {
+  id: string;
+  name: string;
+  description: string;
+  street: string;
+  zipCode: string;
+  city: string;
+  country: string;
+  website: string;
+};
+
+// `organizationId`: `''` for none.
+type Person = { id: string; name: string; email: string; organizationId: string };
 
 const ROLES = ['Chair', 'Vice chair', 'Secretary', 'Member'] as const;
 
@@ -127,6 +155,7 @@ type MeetingDocument = {
 
 type Db = {
   boards: readonly Board[];
+  organizations: readonly Organization[];
   people: readonly Person[];
   memberships: readonly Membership[];
   meetings: readonly Meeting[];
@@ -149,7 +178,14 @@ type SectionDraft = readonly { id: string; title: string }[];
 
 type MemberRow = Membership & { name: string; email: string; organization: string };
 
-type PersonRow = Person & { boards: string; roles: string; boardIds: readonly string[] };
+// A membership of a person, with the name of its board.
+type MembershipRow = Membership & { board: string };
+
+// `organization`: its name.
+type PersonRow = Person & { organization: string; boards: string; roles: string; boardIds: readonly string[] };
+
+// `countryName`: in the page's language; `people`: how many belong to it.
+type OrganizationRow = Organization & { countryName: string; people: number };
 
 // The user of the page: new documents are theirs.
 const CURRENT_USER = 'Admin';
@@ -207,6 +243,7 @@ function lowerFirst(text: string): string {
   return text.charAt(0).toLowerCase() + text.slice(1);
 }
 
+// A person and the name of their organization (`''`: none, an independent member).
 const PEOPLE: readonly (readonly [string, string])[] = [
   ['Helena Brandt', 'Brandt Holding'],
   ['Markus Weller', 'Company'],
@@ -214,28 +251,104 @@ const PEOPLE: readonly (readonly [string, string])[] = [
   ['Jonas Albrecht', 'Company'],
   ['Amira Haddad', 'Haddad & Partner Law'],
   ['Thomas Keller', 'Company'],
-  ['Claire Dubois', 'Independent'],
-  ['Viktor Horvath', 'Employee representative'],
+  ['Claire Dubois', ''],
+  ['Viktor Horvath', 'Works Council'],
   ['Mei-Ling Chen', 'Company'],
   ['Daniel Fischer', 'Company'],
-  ['Laura Moreno', 'Independent'],
-  ['Peter Novak', 'Employee representative'],
+  ['Laura Moreno', ''],
+  ['Peter Novak', 'Works Council'],
   ['Anna Schröder', 'Company'],
   ['Omar Farouk', 'Gulf Invest'],
   ['Katharina Wolf', 'Company'],
-  ['Lukas Berger', 'Employee representative'],
-  ['Isabel Costa', 'Independent'],
+  ['Lukas Berger', 'Works Council'],
+  ['Isabel Costa', ''],
   ['Felix Hartmann', 'Company'],
-  ['Nadia Petrova', 'Employee representative'],
+  ['Nadia Petrova', 'Works Council'],
   ['Ben Carter', 'Carter Advisory'],
   ['Julia Richter', 'Company'],
-  ['Hannes Vogel', 'Employee representative'],
+  ['Hannes Vogel', 'Works Council'],
   ['Lea Zimmermann', 'Company'],
-  ['Martin Kovács', 'Employee representative'],
-  ['Sarah Klein', 'Independent'],
+  ['Martin Kovács', 'Works Council'],
+  ['Sarah Klein', ''],
   ['Wei Zhang', 'Company'],
-  ['Elena Popescu', 'Employee representative'],
+  ['Elena Popescu', 'Works Council'],
   ['Robert Stein', 'Stein Family Office'],
+];
+
+// The organizations of the people (by name), without the id. Not random: the random seed of the rest stays the same.
+const ORGANIZATIONS: readonly Omit<Organization, 'id'>[] = [
+  {
+    name: 'Company',
+    description: 'The company itself: its managers and employees.',
+    street: 'Industriestraße 12',
+    zipCode: '70565',
+    city: 'Stuttgart',
+    country: 'DE',
+    website: 'https://www.company.example',
+  },
+  {
+    name: 'Works Council',
+    description: 'The elected representatives of the employees.',
+    street: 'Industriestraße 12',
+    zipCode: '70565',
+    city: 'Stuttgart',
+    country: 'DE',
+    website: '',
+  },
+  {
+    name: 'Brandt Holding',
+    description: 'The main shareholder.',
+    street: 'Königstraße 28',
+    zipCode: '70173',
+    city: 'Stuttgart',
+    country: 'DE',
+    website: 'https://www.brandt-holding.example',
+  },
+  {
+    name: 'Nordic Capital Partners',
+    description: 'A private equity investor, with a minority stake.',
+    street: 'Strandvägen 7A',
+    zipCode: '114 56',
+    city: 'Stockholm',
+    country: 'SE',
+    website: 'https://www.nordic-capital.example',
+  },
+  {
+    name: 'Haddad & Partner Law',
+    description: 'A law firm, the legal advisor of the Supervisory Board.',
+    street: 'Bockenheimer Landstraße 51',
+    zipCode: '60325',
+    city: 'Frankfurt am Main',
+    country: 'DE',
+    website: 'https://www.haddad-law.example',
+  },
+  {
+    name: 'Gulf Invest',
+    description: 'A sovereign wealth fund, a shareholder since the last capital increase.',
+    street: '',
+    zipCode: '',
+    city: 'Dubai',
+    country: 'AE',
+    website: 'https://www.gulf-invest.example',
+  },
+  {
+    name: 'Carter Advisory',
+    description: '',
+    street: '',
+    zipCode: '',
+    city: 'London',
+    country: 'GB',
+    website: '',
+  },
+  {
+    name: 'Stein Family Office',
+    description: 'The office of the founding family.',
+    street: 'Bahnhofstrasse 45',
+    zipCode: '8001',
+    city: 'Zürich',
+    country: 'CH',
+    website: 'https://www.stein-family-office.example',
+  },
 ];
 
 type BoardSeed = {
@@ -387,11 +500,13 @@ function seedDb(): Db {
   let nextId = 1;
   const id = (prefix: string) => `${prefix}${nextId++}`;
   const now = new Date();
+  // The organizations have ids of their own (`o1`, ...), so the ids of everything else do not change with them.
+  const organizations: Organization[] = ORGANIZATIONS.map((seed, index) => ({ id: `o${index + 1}`, ...seed }));
   const people: Person[] = PEOPLE.map(([name, organization]) => ({
     id: id('p'),
     name,
     email: `${name.toLowerCase().replace(/[^a-z]+/g, '.')}@example.com`,
-    organization,
+    organizationId: organizations.find((candidate) => candidate.name === organization)?.id ?? '',
   }));
   const boards: Board[] = [];
   const memberships: Membership[] = [];
@@ -571,7 +686,7 @@ function seedDb(): Db {
     meetings.push(...boardMeetings);
   }
 
-  return { boards, people, memberships, meetings, agendaItems, agendaSections, documents };
+  return { boards, organizations, people, memberships, meetings, agendaItems, agendaSections, documents };
 }
 
 // The extension in capitals, or `FILE` for a name without one.
@@ -696,6 +811,22 @@ function getPerson(state: Pick<Db, 'people'>, id: string | undefined): Person | 
   return state.people.find((person) => person.id === id);
 }
 
+function getOrganization(state: Pick<Db, 'organizations'>, id: string | undefined): Organization | undefined {
+  return state.organizations.find((organization) => organization.id === id);
+}
+
+// The boards a person is a member of.
+function boardIdsOf(state: Pick<Db, 'memberships'>, personId: string): string[] {
+  return state.memberships.filter((membership) => membership.personId === personId).map((membership) =>
+    membership.boardId
+  );
+}
+
+// The name of a person's organization; `''` for none.
+function organizationOf(state: Pick<Db, 'organizations'>, person: Person | undefined): string {
+  return getOrganization(state, person?.organizationId)?.name ?? '';
+}
+
 function boardRows(state: Db): BoardRow[] {
   const today = localDateTime(new Date());
 
@@ -742,12 +873,18 @@ function meetingRows(state: Db): MeetingRow[] {
   }));
 }
 
-// The meetings of one board, or of all boards (`boardId` undefined).
-function fetchMeetings(boardId?: string): DataNavigatorComponent.Source<MeetingRow> {
+// The meetings of one board (`boardId`), of the boards of one person (`personId`), or of all boards (neither).
+function fetchMeetings(
+  { boardId, personId }: { boardId?: string; personId?: string } = {},
+): DataNavigatorComponent.Source<MeetingRow> {
   return async (query, signal) => {
     await wait(LOADING_TIME, signal);
 
-    const rows = meetingRows(db.getState()).filter((row) => boardId === undefined || row.boardId === boardId);
+    const state = db.getState();
+    const boardIds = personId === undefined ? undefined : boardIdsOf(state, personId);
+    const rows = meetingRows(state).filter((row) =>
+      (boardId === undefined || row.boardId === boardId) && (boardIds === undefined || boardIds.includes(row.boardId))
+    );
 
     return runQuery(rows, query, {
       search: ['title', 'board', 'location', 'status'],
@@ -826,7 +963,7 @@ function fetchBoardMembers(boardId: string): DataNavigatorComponent.Source<Membe
           ...membership,
           name: person?.name ?? '',
           email: person?.email ?? '',
-          organization: person?.organization ?? '',
+          organization: organizationOf(state, person),
         };
       });
 
@@ -842,31 +979,72 @@ function fetchBoardMembers(boardId: string): DataNavigatorComponent.Source<Membe
   };
 }
 
-async function fetchPeople(
+// All people, or those of one organization (`organizationId`).
+function fetchPeople(organizationId?: string): DataNavigatorComponent.Source<PersonRow> {
+  return async (query, signal) => {
+    await wait(LOADING_TIME, signal);
+
+    const state = db.getState();
+    const rows = state.people
+      .filter((person) => organizationId === undefined || person.organizationId === organizationId)
+      .map((person): PersonRow => {
+        const memberships = state.memberships.filter((membership) => membership.personId === person.id);
+
+        return {
+          ...person,
+          organization: organizationOf(state, person),
+          boardIds: memberships.map((membership) => membership.boardId),
+          boards: memberships.map((membership) => getBoard(state, membership.boardId)?.name ?? '').join(', '),
+          roles: [...new Set(memberships.map((membership) => membership.role))].join(', '),
+        };
+      });
+
+    return runQuery(rows, query, {
+      search: ['name', 'email', 'organization', 'boards'],
+      filters: {
+        organization: (row, value) => oneOf(row.organization, value),
+        boards: (row, value) =>
+          !Array.isArray(value) || value.length === 0
+          || row.boardIds.some((boardId) => value.includes(getBoard(state, boardId)?.name)),
+      },
+    });
+  };
+}
+
+// The memberships of one person: chair first, then vice chair, secretary, members (the table's order without a sort).
+function fetchMemberships(personId: string): DataNavigatorComponent.Source<MembershipRow> {
+  return async (query, signal) => {
+    await wait(LOADING_TIME, signal);
+
+    const state = db.getState();
+    const rows = state.memberships
+      .filter((membership) => membership.personId === personId)
+      .sort((a, b) => ROLES.indexOf(a.role) - ROLES.indexOf(b.role))
+      .map((membership): MembershipRow => ({ ...membership, board: getBoard(state, membership.boardId)?.name ?? '' }));
+
+    return runQuery(rows, query, { search: ['board', 'role'] });
+  };
+}
+
+async function fetchOrganizations(
   query: DataNavigatorComponent.Query,
   signal: AbortSignal,
-): Promise<DataNavigatorComponent.Result<PersonRow>> {
+): Promise<DataNavigatorComponent.Result<OrganizationRow>> {
   await wait(LOADING_TIME, signal);
 
   const state = db.getState();
-  const rows = state.people.map((person): PersonRow => {
-    const memberships = state.memberships.filter((membership) => membership.personId === person.id);
-
-    return {
-      ...person,
-      boardIds: memberships.map((membership) => membership.boardId),
-      boards: memberships.map((membership) => getBoard(state, membership.boardId)?.name ?? '').join(', '),
-      roles: [...new Set(memberships.map((membership) => membership.role))].join(', '),
-    };
-  });
+  const rows = state.organizations.map((organization): OrganizationRow => ({
+    ...organization,
+    countryName: countryName(organization.country),
+    people: state.people.filter((person) => person.organizationId === organization.id).length,
+  }));
 
   return runQuery(rows, query, {
-    search: ['name', 'email', 'organization', 'boards'],
+    search: ['name', 'description', 'city', 'countryName', 'website'],
     filters: {
-      organization: (row, value) => oneOf(row.organization, value),
-      boards: (row, value) =>
-        !Array.isArray(value) || value.length === 0
-        || row.boardIds.some((boardId) => value.includes(getBoard(state, boardId)?.name)),
+      name: (row, value) => matches(row.name, value),
+      city: (row, value) => matches(row.city, value),
+      countryName: (row, value) => oneOf(row.countryName, value),
     },
   });
 }
@@ -908,7 +1086,7 @@ async function deleteBoards(ids: readonly string[]): Promise<void> {
   });
 }
 
-type PersonValues = Pick<Person, 'name' | 'email' | 'organization'>;
+type PersonValues = Pick<Person, 'name' | 'email' | 'organizationId'>;
 
 async function createPerson(values: PersonValues): Promise<void> {
   const person: Person = { id: newId('p'), ...values };
@@ -930,6 +1108,85 @@ async function deletePeople(ids: readonly string[]): Promise<void> {
     agendaItems: state.agendaItems.map((
       item,
     ) => (ids.includes(item.presenterId) ? { ...item, presenterId: '' } : item)),
+  }));
+}
+
+type OrganizationValues = Omit<Organization, 'id'>;
+
+// A website as it is stored: trimmed, with `https://` when it has no scheme; `''` stays empty. `undefined`: no valid
+// web address (a scheme other than http(s), or a host without a dot).
+function normalizeWebsite(value: string): string | undefined {
+  const text = value.trim();
+
+  if (text === '') {
+    return '';
+  }
+
+  const url = URL.parse(/^[a-z][a-z\d+.-]*:/i.test(text) ? text : `https://${text}`);
+
+  return url !== null && (url.protocol === 'https:' || url.protocol === 'http:') && url.hostname.includes('.')
+    ? url.href
+    : undefined;
+}
+
+// Trims the values and normalizes the website; refuses an empty name, a name another organization has (ignoring the
+// case), and an invalid website.
+function checkedOrganization(state: Db, id: string | undefined, values: OrganizationValues): OrganizationValues {
+  const name = values.name.trim();
+  const website = normalizeWebsite(values.website);
+
+  if (name === '') {
+    throw new Error('The name is required.');
+  }
+
+  if (state.organizations.some((other) => other.id !== id && other.name.toLowerCase() === name.toLowerCase())) {
+    throw new Error(`There is already an organization "${name}".`);
+  }
+
+  if (website === undefined) {
+    throw new Error('The website is not a valid URL.');
+  }
+
+  return {
+    name,
+    description: values.description.trim(),
+    street: values.street.trim(),
+    zipCode: values.zipCode.trim(),
+    city: values.city.trim(),
+    country: values.country,
+    website,
+  };
+}
+
+async function createOrganization(values: OrganizationValues): Promise<Organization> {
+  await wait(SAVE_TIME);
+
+  const organization: Organization = { id: newId('o'), ...checkedOrganization(db.getState(), undefined, values) };
+
+  db.setState((state) => ({ organizations: [...state.organizations, organization] }));
+
+  return organization;
+}
+
+async function updateOrganization(id: string, values: OrganizationValues): Promise<void> {
+  await wait(SAVE_TIME);
+
+  const checked = checkedOrganization(db.getState(), id, values);
+
+  db.setState((state) => ({
+    organizations: state.organizations.map((organization) =>
+      organization.id === id ? { ...organization, ...checked } : organization
+    ),
+  }));
+}
+
+// Deletes the organizations; their people stay, without an organization.
+async function deleteOrganizations(ids: readonly string[]): Promise<void> {
+  await save((state) => ({
+    organizations: state.organizations.filter((organization) => !ids.includes(organization.id)),
+    people: state.people.map((
+      person,
+    ) => (ids.includes(person.organizationId) ? { ...person, organizationId: '' } : person)),
   }));
 }
 

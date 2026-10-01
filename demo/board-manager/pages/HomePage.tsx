@@ -14,6 +14,7 @@ function HomePage(): ReactElement {
   const boards = useDb((state) => state.boards);
   const meetings = useDb((state) => state.meetings);
   const people = useDb((state) => state.people);
+  const organizations = useDb((state) => state.organizations);
   const { upcoming, awaiting } = useMemo(() => {
     const now = localDateTime(new Date());
 
@@ -35,7 +36,7 @@ function HomePage(): ReactElement {
           Boards and committees, their meetings, agendas and minutes. All data is made up and lives in this page only.
         </Text>
       </Stack>
-      <SimpleGrid type="container" cols={{ base: 1, '36rem': 3 }} spacing="md">
+      <SimpleGrid type="container" cols={{ base: 1, '30rem': 2, '56rem': 4 }} spacing="md">
         <ModuleCard
           to="/boards"
           icon={appIcons.boards}
@@ -49,6 +50,12 @@ function HomePage(): ReactElement {
           text={`${upcoming.length} planned, ${meetings.length} in all`}
         />
         <ModuleCard to="/members" icon={appIcons.members} title="Members" text={`${people.length} people`} />
+        <ModuleCard
+          to="/organizations"
+          icon={appIcons.organizations}
+          title="Organizations"
+          text={`${organizations.length} organizations`}
+        />
       </SimpleGrid>
       <SimpleGrid type="container" cols={{ base: 1, '48rem': 2 }} spacing="md">
         <MeetingList title="Next meetings" meetings={upcoming.slice(0, 6)} empty="No planned meetings." />

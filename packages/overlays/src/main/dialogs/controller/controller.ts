@@ -295,6 +295,7 @@ function createDialogScope<C extends object>(
         props: {
           dialogType: "info",
           surface: "dialog",
+          width: "default",
           themeVars,
           styles: null,
           hasForm: false,
@@ -671,6 +672,7 @@ function createDialogScope<C extends object>(
       props: {
         dialogType: spec.dialogType,
         surface: spec.config.surface ?? "dialog",
+        width: spec.config.width ?? "default",
         themeVars,
         styles: getStyles(spec),
         hasForm: spec.allowsForm,

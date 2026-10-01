@@ -1,14 +1,26 @@
-import { NativeSelect, Stack, Textarea, TextInput } from '@mantine/core';
+import { Group, Input, NativeSelect, Stack, Textarea, TextInput } from '@mantine/core';
 import { DateTimePicker } from '@mantine/dates';
 import { isEmail, isInRange, isNotEmpty, useForm } from '@mantine/form';
 import type { UseFormReturnType } from '@mantine/form';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { ReactElement } from 'react';
-import { ROLES } from './db';
-import type { AgendaItem, AgendaSection, Board, Meeting, Person, Role } from './db';
+import { countryOptions } from './countries';
+import { db, getOrganization, normalizeWebsite, ROLES } from './db';
+import type { AgendaItem, AgendaSection, Board, Meeting, MeetingDocument, Organization, Person, Role } from './db';
 import type { FormCheck } from './flows';
+import { MinutesEditor } from './minutes';
 
-export { AgendaItemForm, BoardForm, fromPicker, MeetingForm, MemberForm, MinutesForm, PersonForm };
+export {
+  AgendaItemForm,
+  BoardForm,
+  DocumentForm,
+  fromPicker,
+  MeetingForm,
+  MemberForm,
+  MinutesForm,
+  OrganizationForm,
+  PersonForm,
+};
 
 // The contents of the form dialogs: Mantine inputs with a `name`, so the dialog's form collects them (`attempt.data`).
 // Mantine validates them (`useForm`, uncontrolled, with its rules), not the browser (the dialogs have
@@ -202,18 +214,16 @@ function AgendaItemForm(
   );
 }
 
-// Nothing to validate: both fields may stay empty.
-function MinutesForm({ item }: { check: FormCheck; item: AgendaItem }): ReactElement {
+// Nothing to validate: both fields may stay empty. The minutes are a BlockNote document (`minutes.tsx`), with `@` for
+// a member of the board (`members`).
+function MinutesForm(
+  { item, members }: { check: FormCheck; item: AgendaItem; members: readonly Person[] },
+): ReactElement {
   return (
     <Stack gap="sm">
-      <Textarea
-        name="minutes"
-        label="Minutes"
-        description="What was presented and discussed."
-        autosize
-        minRows={8}
-        defaultValue={item.minutes}
-      />
+      <Input.Wrapper label="Minutes" description="What was presented and discussed. Type @ to mention a member.">
+        <MinutesEditor name="minutes" minutes={item.minutes} people={members} />
+      </Input.Wrapper>
       <Textarea
         name="decision"
         label="Decision"
@@ -226,13 +236,50 @@ function MinutesForm({ item }: { check: FormCheck; item: AgendaItem }): ReactEle
   );
 }
 
-function PersonForm({ check, person }: { check: FormCheck; person?: Person }): ReactElement {
+// The name of a document. When the field first gets the focus (the dialog focuses it), only the name without the
+// extension is selected, like in a file manager: typing replaces the name and keeps the type.
+function DocumentForm({ check, document }: { check: FormCheck; document: MeetingDocument }): ReactElement {
+  const form = useForm({
+    mode: 'uncontrolled',
+    initialValues: { name: document.name },
+    validate: { name: isNotEmpty(REQUIRED) },
+  });
+  const focusedRef = useRef(false);
+
+  useCheck(check, form);
+
+  return (
+    <TextInput
+      label="Name"
+      withAsterisk
+      autoComplete="off"
+      key={form.key('name')}
+      {...form.getInputProps('name')}
+      name="name"
+      onFocus={(event) => {
+        if (!focusedRef.current) {
+          focusedRef.current = true;
+          const input = event.currentTarget;
+          const dot = input.value.lastIndexOf('.');
+
+          input.setSelectionRange(0, dot > 0 ? dot : input.value.length);
+        }
+      }}
+    />
+  );
+}
+
+// A new person may get an organization preset (`organizationId`, on the page of an organization).
+function PersonForm(
+  { check, person, organizationId }: { check: FormCheck; person?: Person; organizationId?: string },
+): ReactElement {
+  const organizations = [...db.getState().organizations].sort((a, b) => a.name.localeCompare(b.name));
   const form = useForm({
     mode: 'uncontrolled',
     initialValues: {
       name: person?.name ?? '',
       email: person?.email ?? '',
-      organization: person?.organization ?? '',
+      organizationId: person?.organizationId ?? organizationId ?? '',
     },
     validate: {
       name: isNotEmpty(REQUIRED),
@@ -261,12 +308,105 @@ function PersonForm({ check, person }: { check: FormCheck; person?: Person }): R
         {...form.getInputProps('email')}
         name="email"
       />
-      <TextInput
+      <NativeSelect
         label="Organization"
+        data={[
+          { value: '', label: '(none)' },
+          ...organizations.map((organization) => ({ value: organization.id, label: organization.name })),
+        ]}
+        key={form.key('organizationId')}
+        {...form.getInputProps('organizationId')}
+        name="organizationId"
+      />
+    </Stack>
+  );
+}
+
+// The name is required and unique (ignoring the case); the address and the website are optional. The website may be
+// given without `https://` (the fake server adds it).
+function OrganizationForm({ check, organization }: { check: FormCheck; organization?: Organization }): ReactElement {
+  const others = db.getState().organizations.filter((other) => other.id !== organization?.id);
+  const form = useForm({
+    mode: 'uncontrolled',
+    initialValues: {
+      name: organization?.name ?? '',
+      description: organization?.description ?? '',
+      street: organization?.street ?? '',
+      zipCode: organization?.zipCode ?? '',
+      city: organization?.city ?? '',
+      country: organization?.country ?? '',
+      website: organization?.website ?? '',
+    },
+    validate: {
+      name: (value) =>
+        value.trim() === ''
+          ? REQUIRED
+          : others.some((other) => other.name.toLowerCase() === value.trim().toLowerCase())
+          ? 'There is already an organization with this name'
+          : null,
+      website: (value) => (normalizeWebsite(value) === undefined ? 'Not a valid URL' : null),
+    },
+  });
+
+  useCheck(check, form);
+
+  return (
+    <Stack gap="sm">
+      <TextInput
+        label="Name"
+        withAsterisk
         autoComplete="off"
-        key={form.key('organization')}
-        {...form.getInputProps('organization')}
-        name="organization"
+        key={form.key('name')}
+        {...form.getInputProps('name')}
+        name="name"
+      />
+      <Textarea
+        label="Description"
+        autosize
+        minRows={2}
+        key={form.key('description')}
+        {...form.getInputProps('description')}
+        name="description"
+      />
+      <TextInput
+        label="Street"
+        autoComplete="off"
+        key={form.key('street')}
+        {...form.getInputProps('street')}
+        name="street"
+      />
+      <Group gap="sm" align="flex-start" wrap="nowrap">
+        <TextInput
+          label="ZIP code"
+          w="8rem"
+          autoComplete="off"
+          key={form.key('zipCode')}
+          {...form.getInputProps('zipCode')}
+          name="zipCode"
+        />
+        <TextInput
+          label="City"
+          flex={1}
+          autoComplete="off"
+          key={form.key('city')}
+          {...form.getInputProps('city')}
+          name="city"
+        />
+      </Group>
+      <NativeSelect
+        label="Country"
+        data={[{ value: '', label: '(none)' }, ...countryOptions()]}
+        key={form.key('country')}
+        {...form.getInputProps('country')}
+        name="country"
+      />
+      <TextInput
+        label="Website"
+        placeholder="https://www.example.com"
+        autoComplete="off"
+        key={form.key('website')}
+        {...form.getInputProps('website')}
+        name="website"
       />
     </Stack>
   );
@@ -290,7 +430,7 @@ function MemberForm(
         <NativeSelect
           label="Person"
           withAsterisk
-          data={people.map((person) => ({ value: person.id, label: `${person.name} (${person.organization})` }))}
+          data={people.map((person) => ({ value: person.id, label: personLabel(person) }))}
           key={form.key('personId')}
           {...form.getInputProps('personId')}
           name="personId"
@@ -305,4 +445,11 @@ function MemberForm(
       />
     </Stack>
   );
+}
+
+// A person with their organization, if any: `Helena Brandt (Brandt Holding)`.
+function personLabel(person: Person): string {
+  const organization = getOrganization(db.getState(), person.organizationId)?.name;
+
+  return organization === undefined ? person.name : `${person.name} (${organization})`;
 }

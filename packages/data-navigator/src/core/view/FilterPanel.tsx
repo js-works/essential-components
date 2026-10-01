@@ -10,7 +10,7 @@ import { icons } from './icons';
 import { LayerContext } from './layer';
 import { ActionButton, TextButton } from './widgets';
 
-export { FilterButton, FilterPills, FilterView };
+export { FILTER_VIEW_CLOSE_TIME, FilterButton, FilterPills, FilterView };
 export type { FilterColumn };
 
 // A column as the filter view and the pills need it.
@@ -25,6 +25,11 @@ const FOCUSABLE = `${TEXT_INPUT}, button:not([tabindex="-1"]), [role="combobox"]
 
 // The least distance (px) of the nose of the filter view from its corners.
 const NOSE_MARGIN = 16;
+
+// How long the filter view unrolls on opening and rolls up after closing (ms; the table fades in the same times, see
+// `.stack` in the stylesheet).
+const FILTER_VIEW_OPEN_TIME = 400;
+const FILTER_VIEW_CLOSE_TIME = 250;
 
 type FilterButtonProps = {
   count: number;
@@ -157,6 +162,52 @@ function FilterView(props: FilterViewProps): ReactElement {
 
     return () => observer.disconnect();
   }, []);
+
+  // It unrolls from its top edge down on opening, and rolls up after closing: its height, measured, from 0 and back to
+  // 0 (`data-animating` lifts its min height and cuts off what does not fit yet). Closing during the opening starts from
+  // the height reached. Not with reduced motion (the view comes and goes at once), nor without `animate` (jsdom).
+  const animationRef = useRef<Animation>(undefined);
+
+  useLayoutEffect(() => {
+    const view = ref.current;
+
+    if (
+      view === null || typeof view.animate !== 'function'
+      || window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) {
+      return;
+    }
+
+    // Opening measures the full height, so without a running animation (in development, React runs this effect twice:
+    // the second run would measure the first one's height 0); closing measures the height reached, and then cancels.
+    const running = animationRef.current;
+
+    if (!closing) {
+      running?.cancel();
+      view.removeAttribute('data-animating');
+    }
+
+    const height = `${view.getBoundingClientRect().height}px`;
+
+    running?.cancel();
+    view.setAttribute('data-animating', '');
+
+    const animation = closing
+      ? view.animate([{ height }, { height: '0px', opacity: 0 }], {
+        duration: FILTER_VIEW_CLOSE_TIME,
+        easing: 'ease-in',
+        fill: 'forwards',
+      })
+      : view.animate([{ height: '0px', opacity: 0 }, { height }], {
+        duration: FILTER_VIEW_OPEN_TIME,
+        easing: 'cubic-bezier(0.2, 0, 0, 1)',
+      });
+
+    if (!closing) {
+      animation.onfinish = () => view.removeAttribute('data-animating');
+    }
+    animationRef.current = animation;
+  }, [closing]);
 
   // The control of that filter (its first input or button), or of the first one, gets the focus.
   useEffect(() => {

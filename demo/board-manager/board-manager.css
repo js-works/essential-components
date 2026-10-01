@@ -1,3 +1,8 @@
+/* BlockNote's stylesheet (the minutes editor) in a layer of its own: it imports Mantine's component styles again,
+   unlayered, which would otherwise win over the rules below (e.g. the breadcrumb's). Declared after Mantine's layer, so
+   it still wins over that one. */
+@import '@blocknote/mantine/style.css' layer(blocknote);
+
 /* The frame of the board manager. Everything else is Mantine (its variables are set on `.board-manager`). */
 
 .board-manager {
@@ -6,10 +11,11 @@
   font-size: var(--mantine-font-size-sm);
 }
 
-/* Links are darker than Mantine's primary color (shade 8 instead of 6) in the light scheme; the dark one keeps its own
-   (shade 4). Unlayered, so it wins over Mantine's layered rule; a `c` prop (inline) still wins over this. */
+/* Links are darker than Mantine's primary color (shade 9 instead of 6; 8 until 2026-10-01) in the light scheme; the
+   dark one keeps its own (shade 4). Unlayered, so it wins over Mantine's layered rule; a `c` prop (inline) still wins
+   over this. */
 .board-manager[data-mantine-color-scheme='light'] .mantine-Anchor-root {
-  color: var(--mantine-primary-color-8);
+  color: var(--mantine-primary-color-9);
 }
 
 .board-manager__app {
@@ -18,16 +24,20 @@
   gap: var(--mantine-spacing-md);
 }
 
-/* One line when there is room, else the breadcrumb goes below the title. */
+/* Always one line: the icon and the title keep their size, the breadcrumb takes the rest (its crumbs end with an
+   ellipsis when it is too short). A container: Back and Forward go when it is narrow (below). */
 .board-manager__top-bar {
+  container: board-manager-top-bar / inline-size;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: var(--mantine-spacing-xs) var(--mantine-spacing-lg);
   padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
   border: 1px solid var(--mantine-color-default-border);
   border-radius: var(--mantine-radius-sm);
   background: var(--mantine-color-body);
+  /* The app's frame (icon, title menu, breadcrumb): not selectable, like the demo page's own header. */
+  user-select: none;
 }
 
 .board-manager__title {
@@ -40,9 +50,30 @@
 }
 
 .board-manager__crumbs {
-  flex-wrap: wrap;
-  row-gap: 4px;
+  flex: 0 1 auto;
+  flex-wrap: nowrap;
   min-width: 0;
+  overflow: hidden;
+
+  /* Every crumb may shrink to an ellipsis; Home (its icon and text) and the separators keep their size. */
+  & > .mantine-Breadcrumbs-breadcrumb {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  & > .board-manager__home,
+  & > .mantine-Breadcrumbs-separator {
+    flex: none;
+  }
+}
+
+/* Back and Forward (at the end of the top bar) only where there is room for them next to the title and a breadcrumb. */
+@container board-manager-top-bar (width < 40rem) {
+  .board-manager__history {
+    display: none;
+  }
 }
 
 .board-manager__home {
@@ -57,4 +88,87 @@
 
 .board-manager__card:hover {
   border-color: var(--mantine-primary-color-filled);
+}
+
+/* A link that opens in a new tab (`WebsiteLink`): its icon right after the text, on its middle. */
+.board-manager__external-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+}
+
+/* The header line of a tab's panel (an overview: its title and buttons): not selectable, like the toolbars of the
+   tables in the other tabs. */
+.board-manager__panel-header {
+  user-select: none;
+}
+
+/* The minutes editor (BlockNote, `minutes.tsx`) in the minutes drawer: framed like a Mantine input, room for a few
+   paragraphs. Its side menu (the drag handle and the plus) sits in the editor's own padding. */
+.board-manager__minutes-editor {
+  min-height: 12rem;
+  margin-top: 4px;
+  padding-block: var(--mantine-spacing-xs);
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-sm);
+  background: var(--mantine-color-body);
+
+  &:focus-within {
+    border-color: var(--mantine-primary-color-filled);
+  }
+
+  & .bn-container,
+  & .bn-editor {
+    background: transparent;
+  }
+
+  /* The app's size and font (BlockNote's own: 16px, Inter), like the Mantine inputs around it. */
+  & .bn-editor {
+    font-family: var(--mantine-font-family);
+    font-size: var(--mantine-font-size-sm);
+  }
+}
+
+/* A mention in the minutes (`minutes.tsx`), in the editor and as a link in the read-only views: in Mantine's accent
+   color, like the filled buttons (`--mantine-primary-color-filled`: shade 6 light, 8 dark). The scheme attribute in the
+   selector outweighs the app's link color above. */
+.board-manager[data-mantine-color-scheme] .board-manager__mention {
+  color: var(--mantine-primary-color-filled);
+}
+
+/* The minutes, read-only (the minutes tab, an item's detail row): like text, without the room of the side menu and in
+   the app's font size. */
+.board-manager__minutes-text {
+  & .bn-container,
+  & .bn-editor {
+    background: transparent;
+  }
+
+  & .bn-editor {
+    padding-inline: 0;
+    font-family: var(--mantine-font-family);
+    font-size: var(--mantine-font-size-sm);
+  }
+}
+
+/* The pages of the PDF preview (`pdf/preview.tsx`): canvases as wide as the dialog, on a gray ground like a viewer,
+   each with a thin shadow. */
+.board-manager__pdf-pages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-md);
+  padding: var(--mantine-spacing-md);
+  background: var(--mantine-color-default-hover);
+  border-radius: var(--mantine-radius-sm);
+
+  &:empty {
+    display: none;
+  }
+}
+
+.board-manager__pdf-page {
+  width: 100%;
+  height: auto;
+  background: white;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.2);
 }

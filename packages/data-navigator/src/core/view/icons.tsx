@@ -37,16 +37,11 @@ const paths = {
     'M15 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0',
     'M15 19m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0',
   ],
-  calendar: [
-    'M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z',
-    'M16 3v4',
-    'M8 3v4',
-    'M4 11h16',
-  ],
 } as const;
 
 // The paths of the Bootstrap icons (MIT), filled with the current text color on a 16×16 grid: the sort arrows
-// (`BsArrowUp`, `BsArrowDown`, and a double arrow of our own from their heads) and the columns (`BsLayoutThreeColumns`).
+// (`BsArrowUp`, `BsArrowDown`, and a double arrow of our own from their heads), the columns (`BsLayoutThreeColumns`) and
+// the calendar (`BsCalendar4`).
 const filledPaths = {
   // Tabler's `caret-right-filled` (MIT, 24×24): the toggle of a group header.
   caretRight: [
@@ -63,6 +58,10 @@ const filledPaths = {
   ],
   arrowDown: [
     'M8 1a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1',
+  ],
+  // `BsCalendar4`: the trigger of the date range filter and of the date editor (Tabler's `calendar` until 2026-10-01).
+  calendar: [
+    'M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M2 2a1 1 0 0 0-1 1v1h14V3a1 1 0 0 0-1-1zm13 3H1v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1z',
   ],
   // `BsLayoutThreeColumns`: the button of the column toggle menu.
   layoutThreeColumns: [
@@ -127,7 +126,7 @@ const icons = {
   Search: icon('search'),
   Close: icon('close'),
   Check: icon('check'),
-  Calendar: icon('calendar'),
+  Calendar: filledIcon(filledPaths.calendar, 16, 'nonzero'),
   Refresh: icon('refresh'),
   Filter: icon('filter'),
   Deselect: icon('deselect'),

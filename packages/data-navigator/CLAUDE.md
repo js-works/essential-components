@@ -73,7 +73,7 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     - Spacing and size: `spacingXs`, `spacingSm`, `spacingMd`, `controlHeight`.
   - `colorSurfaceStrong` (added 2026-09-30): a stronger surface for emphasized areas (a band that sets something
     apart), darker than the hover, the stripes and the neutral selection, lighter than the lines. A general value,
-    not one for a widget: it is used for the group header band. Default `#e6e6e6` (`#dadada` until 2026-09-30, too dark; dark `#3a3a3a`), soft `#e6e6e6`
+    not one for a widget: it is used for the group header band. Default `#ededed` (`#dadada` until 2026-09-30, then `#e6e6e6` until 2026-10-01, both too dark; dark `#3a3a3a`), soft `#e6e6e6`
     (dark `#2e2e2e`), Mantine `gray-1` (`#f1f3f5`, dark `dark-5`; `gray-2` was too dark; Mantine's light grays are all
     slightly bluish, and it has no neutral light gray), antd `--ant-color-fill`.
   - Every color is its own value, mapped by the theme. No colors derived with `color-mix()` (except pressed states).
@@ -759,7 +759,8 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     (see Filtering). A custom `empty` always wins.
   - The toolbar is shown when the component is searchable, even without title and actions.
 - No text selection around the data: the toolbar (title, subtitle, buttons, pills), the header (column headers, group
-  headers), the footer and the filter view have `user-select: none`. Text inputs inside (search box, page number,
+  headers), the footer, the filter view and the empty state (its text and a custom `empty`, since 2026-10-01) have
+  `user-select: none`. Text inputs inside (search box, page number,
   the text and number inputs of the filters) stay
   selectable (`user-select: text`). The rows stay selectable, so cell text can be copied.
 - Reload: `reloadable?: boolean` (default `false`, the element's attribute `reloadable`) shows a Reload button.
@@ -1056,9 +1057,15 @@ The main goal is a very nice, yet simple, API, designed together with the user.
       pointing to the middle of the filter button (`.filterViewNose`, a 10px square turned by 45°, with the frame on
       its upper sides; its distance from the end of the view is measured and kept up to date with a `ResizeObserver`
       on the view and the table, at least 16px from the corners; mirrored for right-to-left; no nose without the
-      button). On opening it unrolls from its top edge down, like a roller blind (`clip-path`), and fades in,
-      and the table fades out, both in 400ms (`cubic-bezier(0.2, 0, 0, 1)`; sliding down by 8px in 180ms, then 260ms,
-      were too subtle). Closing plays it back, a bit faster (250ms, `ease-in`): the view rolls up and the table fades
+      button). On opening it unrolls from its top edge down, like a roller blind, and fades in, and the table
+      fades out, both in 400ms (`cubic-bezier(0.2, 0, 0, 1)`; sliding down by 8px in 180ms, then 260ms, were too
+      subtle; doubled to 800ms on 2026-10-01, then back, too slow with the height animation). Closing plays it back, a
+      bit faster (250ms, `ease-in`). The unrolling animates the view's height (2026-10-01, the user's wish; before: a `clip-path` over a
+      fixed frame): measured, from 0 and back with the Web Animations API (`FilterView`; CSS cannot animate to an
+      unknown height in every browser), so its lower edge, shadow and buttons move down with it; meanwhile
+      `data-animating` lifts its min height, keeps its body from scrolling and cuts off what does not fit yet. Closing
+      during the opening starts from the height reached. The times are `FILTER_VIEW_OPEN_TIME` and
+      `FILTER_VIEW_CLOSE_TIME` (`FilterPanel.tsx`), the table's fade in the stylesheet (`.stack`): the view rolls up and the table fades
       back. Everything else is back at once (the toolbar, the pills, the focus on the filter button); the closed view
       stays only for its animation (`inert`, `aria-hidden`, then removed), and one opened meanwhile is a new one. No
       animation with reduced motion (the view goes at once). (Before, it filled the whole
@@ -1066,8 +1073,8 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     - It is a `<section>` named `Texts.filters` (no headline), with a frame all around (since 2026-09-30, the user's wish: the
       shadow alone set it apart too little; before, only a line on top), 1px, in the color of
       the lines (`--datnav-color-border`, the nose too; tried the same day: the light accent, and the primary color of
-      Apply, 1px and 2px). Its corners are rounder than the controls: `calc(3 * --datnav-radius)` (6px in the default
-      theme, like the dialogs of the demos). It is at least
+      Apply, 1px and 2px). Its corners are a little rounder than the controls: `calc(2 * --datnav-radius)` (4px in
+      the default theme, like the frame of the file upload; it was `3 *`, 6px like the dialogs, until 2026-10-01). It is at least
       `calc(6 * --datnav-spacing-md)` high; in a table of a limited height only its filters scroll, the footer stays. The footer follows right after the filters and ends the sheet.
     - The search is not part of the filters (decided 2026-09-29): filters describe a subset worth coming back to (and,
       later, worth saving as a view, together with the sorting and the visible columns), the search is a quick,
@@ -1193,7 +1200,8 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     normal size, like the filter row had them.
   - `dateRangeColumnFilter()` (`view/DateRangeFilter.tsx`): a trigger in the look of the selects (`Texts.filterAll`
     while empty, dimmed; else the range, formatted with `Intl.DateTimeFormat#formatRange` (`dateStyle: 'medium'`) in
-    the adapter's locale, e.g. "Sep 12 – 20, 2026"), with a calendar icon at its end, or the clear button while set.
+    the adapter's locale, e.g. "Sep 12 – 20, 2026"), with a calendar icon at its end (Bootstrap's `BsCalendar4`, filled, 16×16, since 2026-10-01; Tabler's `calendar`
+    before), or the clear button while set.
     It opens a Base UI `Popover` (in the layer of the root, not modal, below the trigger) with two inline calendars
     of vanillajs-datepicker (`view/dateRangePicker.ts`), side by side, that act as one calendar of two months, with
     the range highlighted in both and today marked.
@@ -1218,6 +1226,8 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     - Dense: a day and a header button are 80% of `--datnav-control-height` high (and a day as wide), the days of the
       week 60%; the days' text is between the small and the normal size (like the filters); the calendars are
       `--datnav-spacing-md` apart, the footer `--datnav-spacing-xs` below them.
+    - The month and year above a calendar have the weight 500 (since 2026-10-01; the theme's bold before): a fixed value
+      in the stylesheet, the one exception to "no values of its own", as no theme value is a medium weight.
     - The library's keyboard position (a gray day) is only shown while the keyboard is in that calendar.
     - Today: a short bar below its number (in `--datnav-color-primary`; sized from `--datnav-control-height`: half of
       it wide, a sixteenth high, rounded), visible on every background, and its number bold and in the primary color.

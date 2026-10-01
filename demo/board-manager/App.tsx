@@ -1,15 +1,28 @@
-import { Anchor, Breadcrumbs, Group, Menu, Text, ThemeIcon, UnstyledButton } from '@mantine/core';
+import { ActionIcon, Anchor, Breadcrumbs, Group, Menu, Text, ThemeIcon, Tooltip, UnstyledButton } from '@mantine/core';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactElement, ReactNode } from 'react';
-import { createMemoryRouter, Link, Outlet, useLocation, useMatches } from 'react-router';
+import {
+  createMemoryRouter,
+  Link,
+  matchRoutes,
+  Outlet,
+  useLocation,
+  useMatches,
+  useNavigate,
+  useNavigationType,
+} from 'react-router';
 import type { Params, RouteObject } from 'react-router';
-import { getBoard, getMeeting } from './db';
+import { getBoard, getMeeting, getOrganization, getPerson } from './db';
 import { BoardPage } from './pages/BoardPage';
 import { BoardsPage } from './pages/BoardsPage';
 import { HomePage } from './pages/HomePage';
 import { MeetingPage } from './pages/MeetingPage';
 import { MeetingsPage } from './pages/MeetingsPage';
+import { MemberPage } from './pages/MemberPage';
 import { MembersPage } from './pages/MembersPage';
 import { NotFound } from './pages/NotFound';
+import { OrganizationPage } from './pages/OrganizationPage';
+import { OrganizationsPage } from './pages/OrganizationsPage';
 import { appIcons, useDb } from './shared';
 
 export { createAppRouter };
@@ -22,6 +35,7 @@ const MODULES = [
   { path: '/boards', label: 'Boards', icon: appIcons.boards },
   { path: '/meetings', label: 'Meetings', icon: appIcons.meetings },
   { path: '/members', label: 'Members', icon: appIcons.members },
+  { path: '/organizations', label: 'Organizations', icon: appIcons.organizations },
 ] as const;
 
 // A route with a crumb in the breadcrumb (its `handle`).
@@ -33,6 +47,14 @@ function hasCrumb(handle: unknown): handle is Crumb {
 
 function BoardCrumb({ id }: { id: string | undefined }): ReactNode {
   return useDb((state) => getBoard(state, id)?.name) ?? 'Board';
+}
+
+function MemberCrumb({ id }: { id: string | undefined }): ReactNode {
+  return useDb((state) => getPerson(state, id)?.name) ?? 'Member';
+}
+
+function OrganizationCrumb({ id }: { id: string | undefined }): ReactNode {
+  return useDb((state) => getOrganization(state, id)?.name) ?? 'Organization';
 }
 
 function MeetingCrumb({ id }: { id: string | undefined }): ReactNode {
@@ -72,7 +94,30 @@ const routes: RouteObject[] = [
         handle: { crumb: () => 'Meetings' } satisfies Crumb,
         children: [{ index: true, element: <MeetingsPage /> }, meetingRoute()],
       },
-      { path: 'members', handle: { crumb: () => 'Members' } satisfies Crumb, element: <MembersPage /> },
+      {
+        path: 'members',
+        handle: { crumb: () => 'Members' } satisfies Crumb,
+        children: [
+          { index: true, element: <MembersPage /> },
+          {
+            path: ':personId',
+            handle: { crumb: (params) => <MemberCrumb id={params['personId']} /> } satisfies Crumb,
+            element: <MemberPage />,
+          },
+        ],
+      },
+      {
+        path: 'organizations',
+        handle: { crumb: () => 'Organizations' } satisfies Crumb,
+        children: [
+          { index: true, element: <OrganizationsPage /> },
+          {
+            path: ':organizationId',
+            handle: { crumb: (params) => <OrganizationCrumb id={params['organizationId']} /> } satisfies Crumb,
+            element: <OrganizationPage />,
+          },
+        ],
+      },
       { path: '*', element: <NotFound /> },
     ],
   },
@@ -92,7 +137,7 @@ function Layout(): ReactElement {
 function TopBar(): ReactElement {
   return (
     <header className="board-manager__top-bar">
-      <Group gap="xs" wrap="nowrap">
+      <Group gap="xs" wrap="nowrap" flex="none">
         <ThemeIcon variant="filled" size="lg" radius="sm" aria-hidden>{appIcons.app}</ThemeIcon>
         <Menu position="bottom-start" shadow="md" width={200}>
           <Menu.Target>
@@ -115,8 +160,105 @@ function TopBar(): ReactElement {
         </Menu>
       </Group>
       <Crumbs />
+      <HistoryButtons />
     </header>
   );
+}
+
+// Back and Forward through the app's own history, like the browser's buttons: the routes live in memory (the hash
+// only mirrors them, with `replaceState`), so the browser's buttons do not step through the app's pages. Their tooltips
+// say where they go ("Back to Boards").
+function HistoryButtons(): ReactElement {
+  const navigate = useNavigate();
+  const { back, forward } = useHistoryPosition();
+
+  return (
+    <Group gap={4} ml="auto" wrap="nowrap" className="board-manager__history">
+      <Tooltip label={<HistoryTip text="Back" path={back} />} openDelay={400} fz="xs">
+        <ActionIcon
+          variant="subtle"
+          color="gray"
+          disabled={back === undefined}
+          onClick={() => void navigate(-1)}
+          aria-label="Back"
+        >
+          {appIcons.back}
+        </ActionIcon>
+      </Tooltip>
+      <Tooltip label={<HistoryTip text="Forward" path={forward} />} openDelay={400} fz="xs">
+        <ActionIcon
+          variant="subtle"
+          color="gray"
+          disabled={forward === undefined}
+          onClick={() => void navigate(1)}
+          aria-label="Forward"
+        >
+          {appIcons.forward}
+        </ActionIcon>
+      </Tooltip>
+    </Group>
+  );
+}
+
+// "Back to <page>": the page is the last crumb of the path's routes, as the breadcrumb shows it (so a renamed board
+// shows its new name); `/` is "Home". A path without a crumb gets only the text.
+function HistoryTip({ text, path }: { text: string; path: string | undefined }): ReactNode {
+  if (path === undefined) {
+    return text;
+  }
+
+  if (path === '/') {
+    return `${text} to Home`;
+  }
+
+  const match = matchRoutes(routes, path)?.findLast((candidate) => hasCrumb(candidate.route.handle));
+
+  return match !== undefined && hasCrumb(match.route.handle)
+    ? <>{text} to {match.route.handle.crumb(match.params)}</>
+    : text;
+}
+
+// Where the current location is in the memory router's history (React Router does not tell): its entries (key and
+// path), kept like the history itself: a push drops the entries after the current one and adds one, a replace changes
+// the current one, a pop (Back, Forward) moves to the entry of its key. Gives the paths of the entries before and
+// after the current one (`undefined` at either end).
+function useHistoryPosition(): { back: string | undefined; forward: string | undefined } {
+  const { key, pathname } = useLocation();
+  const action = useNavigationType();
+  const historyRef = useRef<{ entries: { key: string; path: string }[]; index: number }>({
+    entries: [{ key, path: pathname }],
+    index: 0,
+  });
+  const [position, setPosition] = useState<{ back: string | undefined; forward: string | undefined }>({
+    back: undefined,
+    forward: undefined,
+  });
+
+  useEffect(() => {
+    const history = historyRef.current;
+    const entry = { key, path: pathname };
+
+    // Already there (the first render, or the effect run twice in development).
+    if (history.entries[history.index]?.key !== key) {
+      if (action === 'PUSH') {
+        history.entries = [...history.entries.slice(0, history.index + 1), entry];
+        history.index = history.entries.length - 1;
+      } else if (action === 'REPLACE') {
+        history.entries[history.index] = entry;
+      } else {
+        const index = history.entries.findIndex((candidate) => candidate.key === key);
+
+        history.index = index === -1 ? history.index : index;
+      }
+    }
+
+    setPosition({
+      back: history.entries[history.index - 1]?.path,
+      forward: history.entries[history.index + 1]?.path,
+    });
+  }, [key, pathname, action]);
+
+  return position;
 }
 
 // Home (a neutral icon, and the text as the link), then one crumb per level of the route; the last one is the current
