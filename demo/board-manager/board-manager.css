@@ -104,8 +104,13 @@
 }
 
 /* The minutes editor (BlockNote, `minutes.tsx`) in the minutes drawer: framed like a Mantine input, room for a few
-   paragraphs. Its side menu (the drag handle and the plus) sits in the editor's own padding. */
+   paragraphs. Its side menu (the drag handle and the plus) sits in the editor's own padding.
+   It is the positioned ancestor of BlockNote's menus (portalled into its container): inside a dialog of the overlays
+   package (its content slotted into a shadow root), the dialog cannot be their `offsetParent`, so without one here
+   Floating UI measured from an element further out and, in the `<board-manager>` element, placed them off by the
+   dialog's position. */
 .board-manager__minutes-editor {
+  position: relative;
   min-height: 12rem;
   margin-top: 4px;
   padding-block: var(--mantine-spacing-xs);

@@ -49,7 +49,8 @@ function createLook(
 ): Look {
   // The popups of Mantine stay inside the app (no portal to `<body>`): its variables are set on the app, not on
   // `:root`. Badges keep the case of their text (Mantine's stylesheet makes them uppercase). Buttons have a normal
-  // weight (400; Mantine's is 600), also those of the dialogs (Mantine's, see `render.actionButton`). `autoContrast`:
+  // weight (400; Mantine's is 600), also those of the dialogs (Mantine's, see `render.actionButton`; there `xs`, like
+  // the buttons of the pages). `autoContrast`:
   // black text on a light accent.
   const theme = createTheme({
     colors: { accent, danger },
@@ -58,7 +59,11 @@ function createLook(
     defaultRadius: 'sm',
     components: {
       Badge: Badge.extend({ defaultProps: { tt: 'none' } }),
-      Button: Button.extend({ defaultProps: { fw: 400 } }),
+      Button: Button.extend({
+        defaultProps: { fw: 400 },
+        // `xs` buttons (30px high) in the app's text size (`sm`, 14px) instead of Mantine's `xs` (12px).
+        vars: (theme, props) => ({ root: props.size === 'xs' ? { '--button-fz': theme.fontSizes.sm } : {} }),
+      }),
       Menu: Menu.extend({ defaultProps: { withinPortal: false } }),
       Popover: Popover.extend({ defaultProps: { withinPortal: false } }),
       Tooltip: Tooltip.extend({ defaultProps: { withinPortal: false } }),
@@ -128,6 +133,7 @@ function createLook(
         actionButton: ({ text, variant, loading, onClick }) => (
           <Scope>
             <Button
+              size="xs"
               variant={variant === 'secondary' ? 'default' : 'filled'}
               color={variant === 'danger' ? 'danger' : undefined}
               loading={loading}

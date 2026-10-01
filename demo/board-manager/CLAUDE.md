@@ -33,6 +33,11 @@ the root's `CLAUDE.md` apply.
 - The column menu of the data navigator (its columns with `hideable`) only in the tables with a column hidden by
   default (2026-10-01): Boards, Meetings, Members (and an organization's People), Organizations, a board's members.
   Not in the agenda and the documents (no hidden column there).
+- "Delete" in the tables (decided 2026-10-01): a `multiRow` action everywhere (the selection, or a right-click on a
+  row, which selects it). Also a row action (an icon in the action column) only where deleting is frequent and cheap:
+  the documents of a meeting and the sections in the "Sections" drawer (a draft). Records much depends on (boards,
+  meetings, people, organizations, a board's members, agenda items) are deleted through the selection only, so
+  deleting is not one click away next to "Edit", and the action column stays narrow.
 
 ## Mantine
 
@@ -52,10 +57,14 @@ the root's `CLAUDE.md` apply.
   the pages use `color="danger"`, never `red`. `autoContrast` (black text on a light accent).
 - Buttons have a normal weight (`fw: 400` as a default prop of `Button` in the theme, 2026-10-01; Mantine's is 600),
   the dialogs' buttons too.
+- `xs` buttons (30px high: the pages' buttons and the dialogs') have the app's text size, `sm` (14px; `--button-fz`
+  through `vars` of `Button` in the theme, 2026-10-01, the user's wish; Mantine's `xs`, 12px, before).
 - Badges keep the case of their text (`tt: 'none'` as a default prop of `Badge` in the theme, 2026-09-30): Mantine's
   stylesheet makes them uppercase ("PLANNED").
 - The dialogs' buttons and close button are Mantine's (`render.actionButton`, `render.closeButton` in the overlays
-  config, each in a Mantine scope): primary filled, danger filled in the danger color, secondary `default`.
+  config, each in a Mantine scope): primary filled, danger filled in the danger color, secondary `default`. The
+  buttons are `size="xs"` (30px, like the buttons of the pages; 2026-10-01, the user's wish; Mantine's `sm`, 36px,
+  before).
 - The dialogs' own text (title, message, note) has the app's size and font (2026-10-01): the overlays dialog theme's
   `fontSize` and `fontFamily` (`createDialogTheme`), set to Mantine's `fontSizes.sm` and `fontFamily` (the values: the
   dialogs are outside the scopes). Before, the dialogs had their fixed 16px and the system font, larger than the app.
@@ -178,6 +187,11 @@ the root's `CLAUDE.md` apply.
   - The dialog's editor (`MinutesEditor`) writes the JSON into a hidden input `minutes`, so the form data works as
     before; "Decision" stays a `Textarea`. Framed like a Mantine input (`.board-manager__minutes-editor`),
     in the app's size and font (`--mantine-font-size-sm`, `--mantine-font-family`; BlockNote's own are 16px and Inter).
+    - The frame is `position: relative` (2026-10-01): BlockNote's menus (slash menu, toolbar, side menu, …) are
+      portalled into its container and placed by Floating UI from their `offsetParent`. In the overlays dialog, whose
+      content is slotted into its shadow root, that cannot be the `<dialog>`; in the `<board-manager>` element the menus
+      were off by the dialog's position (the demo tab was not affected). `strategy: 'fixed'` on every BlockNote
+      controller was the other option (more code, and each controller to be listed).
   - Mentions: `@` opens a menu of the board's members (`SuggestionMenuController`, filtered as typed); a mention is a
     custom inline content (`mention`, prop `personId`), shown as "@<current name>", "@(deleted)" when the person is
     gone; in the size of the text around it (`fz="inherit"`) and Mantine's accent color, like the
