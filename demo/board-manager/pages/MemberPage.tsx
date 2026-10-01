@@ -100,7 +100,13 @@ function MemberOverview({ person }: { person: Person }): ReactElement {
           >
             Edit
           </Button>
-          <Button size="xs" variant="default" color="red" leftSection={appIcons.remove} onClick={() => void remove()}>
+          <Button
+            size="xs"
+            variant="default"
+            color="danger"
+            leftSection={appIcons.remove}
+            onClick={() => void remove()}
+          >
             Delete
           </Button>
         </Group>

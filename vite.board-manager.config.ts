@@ -18,7 +18,7 @@ const EXAMPLE_PAGE = `<!doctype html>
     <script type="module" src="./board-manager.js"></script>
   </head>
   <body style="margin: 0; padding: 16px">
-    <board-manager></board-manager>
+    <board-manager hash="board-manager" accent-color="#0ca678"></board-manager>
   </body>
 </html>
 `;

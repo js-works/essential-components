@@ -277,7 +277,13 @@ function MeetingOverview({ meeting, boardName, duration }: {
           >
             Edit
           </Button>
-          <Button size="xs" variant="default" color="red" leftSection={appIcons.remove} onClick={() => void remove()}>
+          <Button
+            size="xs"
+            variant="default"
+            color="danger"
+            leftSection={appIcons.remove}
+            onClick={() => void remove()}
+          >
             Delete
           </Button>
           <Menu position="bottom-end" shadow="md">

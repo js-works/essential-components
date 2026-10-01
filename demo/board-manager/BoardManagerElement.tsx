@@ -3,7 +3,9 @@ import type { ReactElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
 import { createAppRouter } from './App';
-import { BoardManagerApp } from './BoardManagerDemo';
+import { BoardManagerApp, createLook } from './BoardManagerDemo';
+import type { Look } from './BoardManagerDemo';
+import { dangerFor, parseColor, shades } from './colors';
 import { setSchemeHost, useScheme } from './shared';
 
 export { BoardManagerElement };
@@ -13,11 +15,13 @@ export { BoardManagerElement };
 // into one module, its styles included:
 //
 //   <script type="module" src="board-manager.js"></script>
-//   <board-manager scheme="dark"></board-manager>
+//   <board-manager scheme="dark" accent-color="#0b7285"></board-manager>
 //
 // - `scheme` (`light`, `dark`): the color scheme; without it, the page's `<html data-scheme>`, else the system's.
+// - `accent-color`, `danger-color` (any CSS color): the primary and the danger color (see `#look()`).
+// - `hash` (a prefix, `hash="bm"`): the route is mirrored in the URL hash (`#bm/boards/b1`).
 // - The language follows `<html lang>` (the i18n adapters of the packages read it there).
-// - The routes are in memory only: the host page owns its URL (no hash, unlike the demo tab).
+// - Without `hash`, the routes are in memory only: the host page owns its URL.
 // - The dialogs and toasts are in the shadow root too (the overlays provider's mount point).
 
 // All CSS of the bundle (Mantine, the packages' CSS modules, the app's own): the build puts it in place of this marker
@@ -45,10 +49,12 @@ function stopPropagation(event: Event): void {
 }
 
 // The color scheme on the root: `light-dark()` of the toasts follows it, like the page's `<html>` in the demo.
-function SchemeRoot({ router }: { router: ReturnType<typeof createAppRouter>['router'] }): ReactElement {
+function SchemeRoot(
+  { router, look }: { router: ReturnType<typeof createAppRouter>['router']; look: Look },
+): ReactElement {
   return (
     <div style={{ colorScheme: useScheme() }}>
-      <BoardManagerApp router={router} />
+      <BoardManagerApp router={router} look={look} />
     </div>
   );
 }
@@ -75,15 +81,27 @@ class BoardManagerElement extends HTMLElement {
     shadow.replaceChildren(style, container);
     setSchemeHost(this);
 
-    const { router, dispose } = createAppRouter();
+    // `hash="bm"`: the route is mirrored in the URL hash (`#bm/boards/b1`); without it, in memory only. Read once.
+    const hashPrefix = this.getAttribute('hash')?.replace(/^#/, '').trim() || undefined;
+    const { router, dispose } = createAppRouter(this, hashPrefix);
 
     this.#disposeRouter = dispose;
     this.#root = createRoot(container);
     this.#root.render(
       <StrictMode>
-        <SchemeRoot router={router} />
+        <SchemeRoot router={router} look={this.#look()} />
       </StrictMode>,
     );
+  }
+
+  // `accent-color` (any CSS color): Mantine's primary color; `danger-color`: the danger buttons, errors and error
+  // toasts, by default a red that goes with the accent (`dangerFor()`). Without them (or with an invalid color),
+  // Mantine's indigo and red. Read once.
+  #look(): Look {
+    const accent = parseColor(this.getAttribute('accent-color'));
+    const danger = parseColor(this.getAttribute('danger-color')) ?? (accent && dangerFor(accent));
+
+    return createLook({ accent: accent && shades(accent), danger: danger && shades(danger) });
   }
 
   disconnectedCallback(): void {

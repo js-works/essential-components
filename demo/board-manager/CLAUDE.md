@@ -46,18 +46,22 @@ the root's `CLAUDE.md` apply.
   the package would need its own test and demo). More contrast comes from the app's Mantine theme instead
   (`cssVariablesResolver`, 2026-09-30): `dimmed` `gray.7` (dark `dark.1`) and `placeholder` `gray.6` (dark `dark.2`),
   one step darker than Mantine's (lighter in dark mode); the text and the lines stay Mantine's.
+- The look is made per element (`createLook()` in `BoardManagerDemo.tsx`, 2026-10-01): the theme, the CSS variables
+  and the overlays' config. Two colors of ten shades: `accent` (the primary color) and `danger` (danger buttons, the
+  error toasts, `--mantine-color-error`: shade 6, dark 8); by default Mantine's `indigo` and `red`. Danger buttons in
+  the pages use `color="danger"`, never `red`. `autoContrast` (black text on a light accent).
 - Buttons have a normal weight (`fw: 400` as a default prop of `Button` in the theme, 2026-10-01; Mantine's is 600),
   the dialogs' buttons too.
 - Badges keep the case of their text (`tt: 'none'` as a default prop of `Badge` in the theme, 2026-09-30): Mantine's
   stylesheet makes them uppercase ("PLANNED").
 - The dialogs' buttons and close button are Mantine's (`render.actionButton`, `render.closeButton` in the overlays
-  config, each in a Mantine scope): primary filled, danger filled red, secondary `default`.
+  config, each in a Mantine scope): primary filled, danger filled in the danger color, secondary `default`.
 - The dialogs' own text (title, message, note) has the app's size and font (2026-10-01): the overlays dialog theme's
   `fontSize` and `fontFamily` (`createDialogTheme`), set to Mantine's `fontSizes.sm` and `fontFamily` (the values: the
   dialogs are outside the scopes). Before, the dialogs had their fixed 16px and the system font, larger than the app.
-  The spinner placeholder of a scope (the theme's `spinner`, 2026-10-01) is Mantine's primary filled color.
-- The toasts (small, like the Media Manager's; stacked, bottom right) are in Mantine's palette (`TOAST_THEME`,
-  `createToastTheme()`): they live in `<body>`, outside the scopes, so the colors are the theme's values
+  The spinner placeholder of a scope (the theme's `spinner`, 2026-10-01) is the accent's filled color.
+- The toasts (small, like the Media Manager's; stacked, bottom right) are in Mantine's palette (`createToastTheme()` in
+  `createLook()`): they live in `<body>`, outside the scopes, so the colors are the theme's values
   (`mergeMantineTheme`), with `light-dark()` for the page's scheme.
 - Forms (`forms.tsx`) are validated by Mantine (`@mantine/form`, `useForm` uncontrolled), not by the browser:
   `submitForm()` (`flows.ts`) opens the form dialog with `nativeValidation: false` and a `validator` that asks the form
@@ -75,7 +79,16 @@ the root's `CLAUDE.md` apply.
     shadow root: nothing of it reaches the host page. The dialogs and toasts are in the shadow root too (the overlays
     provider's mount point).
   - `scheme` (`light`, `dark`) sets the color scheme; without it, `<html data-scheme>`, else the system's. The language
-    follows `<html lang>`. The routes are in memory only (no hash: the host page owns its URL).
+    follows `<html lang>`. The routes are in memory only (the host page owns its URL), unless `hash` names a prefix
+    (2026-10-01): `<board-manager hash="bm">` mirrors the route in `#bm/boards/b1`, like the demo tab (read on start, a
+    `hashchange` navigates; written with `replaceState`). A hash with another start is left alone (e.g. XWiki's
+    anchors). Read once, when the element is connected.
+  - `accent-color` and `danger-color` (any CSS color, 2026-10-01; read once): the `accent` and `danger` of
+    `createLook()`; an invalid color counts as none. `colors.ts` (no dependency; `chroma-js` was rejected after its
+    supply chain attack): the browser parses the color (a canvas pixel), the ten shades are made in OKLCH, the color
+    itself is shade 6. Without `danger-color`, a red that goes with the accent (`dangerFor()`): its lightness (0.55 to
+    0.66) and chroma (0.17 to 0.22); an accent within 30° of red (and not a gray) moves the red 30° away, towards
+    crimson, or towards orange red for a crimson accent.
   - Keyboard and input events (`keydown`, `keyup`, `keypress`, `beforeinput`, `input`, `composition*`) are stopped at
     the shadow root (bubble phase, 2026-09-30): they do not reach the host page (e.g. XWiki's shortcuts); inside, all
     get them. Mouse and focus events pass (a host page closes its menus on a click outside). A capture listener of the
@@ -229,3 +242,13 @@ the root's `CLAUDE.md` apply.
   them (set on the editor container, `applyThemedRoot` for the popups), and whether the scheme still follows the app
   (`SchemeContext`).
 - The icon of the "PDF" menu (see Meetings).
+- The demo tab with the real `<board-manager>` element (shadow DOM, its attributes) instead of `<board-manager-demo>`
+  (2026-10-01, open). The obstacle: the CSS, which only `build:board-manager` puts into the module (its marker); under
+  `dev` and `build:pages` Vite adds it to `<head>`. Ideas: copy the page's stylesheets into the shadow root while the
+  marker is unreplaced (a `MutationObserver` on `<head>` for HMR; the page's own CSS gets in too, check `ui.css` for
+  element selectors), or load the built module in the demo (no HMR).
+- `accent-color`/`danger-color` with `var(--some-token)` (2026-10-01, open): today it turns black (`CSS.supports`
+  accepts it, the canvas cannot resolve it and keeps its default). Idea: resolve it in the element's context first (a
+  probe in the shadow root with `style.color = value`, then `getComputedStyle(probe).color`), and treat an unchanged
+  canvas default as invalid. Read once, so a token that differs in dark mode is not followed (that would need a
+  `MutationObserver` and a new look).

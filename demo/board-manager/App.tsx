@@ -286,28 +286,29 @@ function Crumbs(): ReactElement {
   );
 }
 
-// The routes live in memory, and are mirrored in the URL hash after the segment of the page's tab:
-// `#board-manager/boards/b1/meetings/m12`. So a reload (or a shared link) opens the same page. The page's tabs keep
-// their own segments (`ui.ts`): the route is written only while the app's tab is shown, and again when it is chosen.
-const HASH = '#board-manager';
-
-function pathFromHash(): string | undefined {
+// The routes live in memory, and can be mirrored in the URL hash after a prefix: `#board-manager/boards/b1/meetings/m12`.
+// So a reload (or a shared link) opens the same page. A hash with another start is left alone (the page's other tabs,
+// `ui.ts`, or a host page's anchors). The route is written only while the element is shown (not inside `[hidden]`), and
+// again when the demo page's tab is chosen.
+function pathFromHash(prefix: string): string | undefined {
   const { hash } = location;
 
-  return hash === HASH ? '/' : hash.startsWith(`${HASH}/`) ? hash.slice(HASH.length) : undefined;
+  return hash === prefix ? '/' : hash.startsWith(`${prefix}/`) ? hash.slice(prefix.length) : undefined;
 }
 
-// Without an element (the `<board-manager>` element, whose host page owns the URL), only the memory router.
+// Without an element and a prefix (the `<board-manager>` element without `hash`), only the memory router.
 function createAppRouter(
   element?: HTMLElement,
+  hashPrefix?: string,
 ): { router: ReturnType<typeof createMemoryRouter>; dispose: () => void } {
-  if (element === undefined) {
+  if (element === undefined || hashPrefix === undefined) {
     const router = createMemoryRouter(routes);
 
     return { router, dispose: () => router.dispose() };
   }
 
-  const router = createMemoryRouter(routes, { initialEntries: [pathFromHash() ?? '/'] });
+  const prefix = `#${hashPrefix}`;
+  const router = createMemoryRouter(routes, { initialEntries: [pathFromHash(prefix) ?? '/'] });
 
   const writeHash = () => {
     if (element.closest('[hidden]') !== null) {
@@ -315,7 +316,7 @@ function createAppRouter(
     }
 
     const path = router.state.location.pathname;
-    const hash = path === '/' ? HASH : `${HASH}${path}`;
+    const hash = path === '/' ? prefix : `${prefix}${path}`;
 
     if (location.hash !== hash) {
       history.replaceState(null, '', `${location.pathname}${location.search}${hash}`);
@@ -323,7 +324,7 @@ function createAppRouter(
   };
 
   const readHash = () => {
-    const path = pathFromHash();
+    const path = pathFromHash(prefix);
 
     if (path !== undefined && path !== router.state.location.pathname) {
       void router.navigate(path);
