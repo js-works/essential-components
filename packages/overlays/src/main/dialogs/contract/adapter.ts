@@ -33,6 +33,16 @@ export interface DialogProps<C extends object> {
   surface: DialogSurface;
   /** The named width of the dialog or drawer. */
   width: DialogWidth;
+  /** Whether the dialog has a Maximize/Restore button (see DialogConfig.maximizable). */
+  maximizable: boolean;
+  /**
+   * Whether it fills the viewport now. Spec state, like the note: the controller owns it,
+   * so a maximize-button override and the element render the same state.
+   */
+  maximized: boolean;
+  /** The text of that button for its state, translated ("Maximize" or "Restore"). */
+  maximizeLabel: string;
+  onToggleMaximize: () => void;
   /** Caller theme, already resolved to `--dialog-*` custom properties. */
   themeVars: Record<string, string>;
   /** Caller stylesheet text, scoped by the element to its own instance. */

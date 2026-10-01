@@ -4,6 +4,7 @@ import '@mantine/core/styles.layer.css';
 import '@mantine/dates/styles.layer.css';
 import './board-manager.css';
 import {
+  ActionIcon,
   Badge,
   Button,
   CloseButton,
@@ -20,6 +21,7 @@ import { StrictMode } from 'react';
 import type { ReactElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
+import { TbMaximize, TbMinimize } from 'react-icons/tb';
 import { RouterProvider } from 'react-router';
 import { OverlaysProvider } from '../../packages/overlays/src/main/bindings/react';
 import type { OverlaysConfig } from '../../packages/overlays/src/main/bindings/react';
@@ -91,7 +93,7 @@ function createLook(
 
   // The toasts in Mantine's palette. They live in `<body>`, outside the scopes, so Mantine's variables are not there:
   // the colors are the values of the theme, and `light-dark()` follows the page's scheme (`color-scheme` on `<html>`).
-  // Like Mantine: a paper card (white, `dark.6`), its text and dimmed colors, the accent for info and loading.
+  // Like Mantine: a paper card (white, `dark.6`), its text and dimmed colors, the accent for info, success and loading.
   const { colors, fontSizes, fontFamily } = mergeMantineTheme(DEFAULT_THEME, theme);
 
   const toastTheme = createToastTheme({
@@ -99,7 +101,8 @@ function createLook(
     text: `light-dark(#000, ${colors.dark[0]})`,
     radius: '4px',
     infoAccent: accent[6],
-    successAccent: colors.green[6],
+    // Success in the accent too, like info (only the icon differs): one accent color in the app.
+    successAccent: accent[6],
     warnAccent: colors.orange[6],
     errorAccent: danger[6],
     loadingAccent: accent[6],
@@ -146,6 +149,15 @@ function createLook(
         closeButton: ({ onClose }) => (
           <Scope>
             <CloseButton aria-label="Close" onClick={onClose} />
+          </Scope>
+        ),
+        // A dialog with `maximizable`: like the close button (gray, subtle, its size), Tabler's maximize/minimize
+        // arrows; the label ("Maximize", "Restore") as its name and its native tooltip.
+        maximizeButton: ({ maximized, label, onToggle }) => (
+          <Scope>
+            <ActionIcon variant="subtle" color="gray" aria-label={label} title={label} onClick={onToggle}>
+              {maximized ? <TbMinimize size={18} aria-hidden /> : <TbMaximize size={18} aria-hidden />}
+            </ActionIcon>
           </Scope>
         ),
       },

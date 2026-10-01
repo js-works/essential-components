@@ -220,7 +220,7 @@ function MinutesForm(
   { item, members }: { check: FormCheck; item: AgendaItem; members: readonly Person[] },
 ): ReactElement {
   return (
-    <Stack gap="sm">
+    <Stack gap="sm" className="board-manager__minutes-form">
       <Input.Wrapper label="Minutes" description="What was presented and discussed. Type @ to mention a member.">
         <MinutesEditor name="minutes" minutes={item.minutes} people={members} />
       </Input.Wrapper>

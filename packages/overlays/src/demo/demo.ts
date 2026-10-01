@@ -799,6 +799,24 @@ async function runDrawerInfo(): Promise<void> {
   log("Info drawer result", result);
 }
 
+// `maximizable: true` puts a Maximize button before the close button: it makes the dialog
+// (or the drawer) fill the viewport, and becomes Restore, which brings its size back.
+async function runMaximizable(surface: "dialog" | "drawer"): Promise<void> {
+  const paragraph =
+    "A report to read at length: maximized, it gets the whole window, and only its body scrolls.";
+
+  const result = await dialogs.info({
+    surface,
+    width: "wide",
+    maximizable: true,
+    title: "Annual report",
+    content: html`${Array.from({ length: 12 }, () => html`<p>${paragraph}</p>`)}`,
+    styles: `p { margin: 0 0 0.75em; }`,
+  });
+
+  log("Maximizable result", result);
+}
+
 // -------------------------------------------------------------------
 // The two Lit panels (Toasts, Dialogs), each next to the result log. The demo element
 // (OverlaysDemo.ts) renders them into its tab panels.
@@ -894,6 +912,18 @@ const dialogsPanel = html`
           </button>
           <button class="ui-button" @click=${() => void runDrawerCritical()}>
             Delete in drawer (critical)
+          </button>
+        </div>
+      </section>
+
+      <section class="ui-stack ui-stack--tight">
+        <h2 class="ui-heading">Maximizable</h2>
+        <div class="overlays-row">
+          <button class="ui-button" @click=${() => void runMaximizable("dialog")}>
+            Maximizable dialog
+          </button>
+          <button class="ui-button" @click=${() => void runMaximizable("drawer")}>
+            Maximizable drawer
           </button>
         </div>
       </section>

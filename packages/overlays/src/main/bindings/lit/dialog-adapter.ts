@@ -55,6 +55,7 @@ export const litDialogAdapter: DialogAdapterFactory<TemplateResult> = ({
             ${content}
             <div slot="outro">${slots.outro}</div>
             ${note(props, slots)}
+            ${maximizeButton(props)}
             ${closeButton(props)}
             ${actionButtons(props)}
           </${t}>
@@ -89,6 +90,19 @@ function closeButton(props: DialogProps<TemplateResult>): unknown {
     return nothing;
   }
   return html`<span slot="close">${render({ onClose: props.onClose })}</span>`;
+}
+
+// Same split for the maximize button, and only for a maximizable dialog.
+function maximizeButton(props: DialogProps<TemplateResult>): unknown {
+  const render = props.render?.maximizeButton;
+  if (!render || !props.maximizable) {
+    return nothing;
+  }
+  return html`<span slot="maximize">${render({
+    maximized: props.maximized,
+    label: props.maximizeLabel,
+    onToggle: props.onToggleMaximize,
+  })}</span>`;
 }
 
 // Only overridden buttons are slotted. The default ones stay in the element's shadow

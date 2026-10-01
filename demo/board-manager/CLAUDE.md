@@ -64,7 +64,9 @@ the root's `CLAUDE.md` apply.
 - The dialogs' buttons and close button are Mantine's (`render.actionButton`, `render.closeButton` in the overlays
   config, each in a Mantine scope): primary filled, danger filled in the danger color, secondary `default`. The
   buttons are `size="xs"` (30px, like the buttons of the pages; 2026-10-01, the user's wish; Mantine's `sm`, 36px,
-  before).
+  before). The maximize button of a maximizable dialog (`render.maximizeButton`) is a gray subtle `ActionIcon` like
+  the close button, with Tabler's `TbMaximize`/`TbMinimize` and the label ("Maximize", "Restore") as its name and
+  `title`.
 - The dialogs' own text (title, message, note) has the app's size and font (2026-10-01): the overlays dialog theme's
   `fontSize` and `fontFamily` (`createDialogTheme`), set to Mantine's `fontSizes.sm` and `fontFamily` (the values: the
   dialogs are outside the scopes). Before, the dialogs had their fixed 16px and the system font, larger than the app.
@@ -72,6 +74,9 @@ the root's `CLAUDE.md` apply.
 - The toasts (small, like the Media Manager's; stacked, bottom right) are in Mantine's palette (`createToastTheme()` in
   `createLook()`): they live in `<body>`, outside the scopes, so the colors are the theme's values
   (`mergeMantineTheme`), with `light-dark()` for the page's scheme.
+  - Success toasts in the accent color, like info and loading (2026-10-01, the user's wish: one accent color in the
+    app; Mantine's `green` before): only the icon differs, so a toast from a spinner to success changes only its icon.
+    Warnings orange, errors the danger color.
 - Forms (`forms.tsx`) are validated by Mantine (`@mantine/form`, `useForm` uncontrolled), not by the browser:
   `submitForm()` (`flows.ts`) opens the form dialog with `nativeValidation: false` and a `validator` that asks the form
   (`useCheck`); the errors are shown on the inputs. The upload drawer keeps the native validation (the file upload is no
@@ -183,7 +188,12 @@ the root's `CLAUDE.md` apply.
   0.55; before, a `Textarea`): stored as its JSON in `AgendaItem.minutes` (`''` for an empty document); plain text (the
   seed) is read as one paragraph per line.
   - The minutes form is a centered dialog (2026-10-01; a drawer before), extra wide (`width: 'extraWide'`, 64em; the
-    overlays' named widths for dialogs and drawers: `default`, `wide` 48em, `extraWide` 64em, `full`).
+    overlays' named widths for dialogs and drawers: `default`, `wide` 48em, `extraWide` 64em, `full`), and
+    maximizable (`maximizable: true`, 2026-10-01: Maximize before the close button, then Restore). Maximized, the two
+    fields share the height, two thirds for the minutes editor, one for the "Decision" textarea (`[data-maximized]` of
+    the overlays' dialog element, `.board-manager__minutes-form`). The textarea gets `min-height: 100%`: Mantine's
+    `autosize` sets its height inline with `!important`, which no stylesheet beats. (Tried the same day: only the
+    minutes growing.)
   - The dialog's editor (`MinutesEditor`) writes the JSON into a hidden input `minutes`, so the form data works as
     before; "Decision" stays a `Textarea`. Framed like a Mantine input (`.board-manager__minutes-editor`),
     in the app's size and font (`--mantine-font-size-sm`, `--mantine-font-family`; BlockNote's own are 16px and Inter).

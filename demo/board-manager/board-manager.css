@@ -134,6 +134,43 @@
   }
 }
 
+/* The minutes form in the maximized dialog (`data-maximized` on the overlays' dialog element, which then makes its
+   content as high as the body's free room): the scope around the form and the form fill it, and its two fields share
+   the height, two thirds for the minutes, one for "Decision"; each field's own box (the editor, the textarea) takes
+   what its label and description leave. */
+[data-maximized] .board-manager:has(> .board-manager__minutes-form),
+[data-maximized] .board-manager__minutes-form {
+  height: 100%;
+}
+
+[data-maximized] .board-manager__minutes-form > * {
+  display: flex;
+  flex-direction: column;
+}
+
+[data-maximized] .board-manager__minutes-form > :first-child {
+  flex: 2 1 auto;
+
+  & > .board-manager__minutes-editor {
+    flex: 1 1 auto;
+  }
+}
+
+[data-maximized] .board-manager__minutes-form > :last-child {
+  flex: 1 1 auto;
+
+  /* The wrapper of the textarea (Mantine's `.mantine-Textarea-wrapper`). */
+  & > :has(> textarea) {
+    flex: 1 1 auto;
+  }
+
+  /* Mantine's `autosize` sets the textarea's height inline, with `!important`, which no stylesheet beats; a larger
+     min-height does. */
+  & textarea {
+    min-height: 100%;
+  }
+}
+
 /* A mention in the minutes (`minutes.tsx`), in the editor and as a link in the read-only views: in Mantine's accent
    color, like the filled buttons (`--mantine-primary-color-filled`: shade 6 light, 8 dark). The scheme attribute in the
    selector outweighs the app's link color above. */

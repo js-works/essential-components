@@ -158,6 +158,7 @@ function DialogHost({
     contentPart,
     createElement("div", { slot: "outro", key: "outro" }, content(slots.outro)),
     note(props, slots),
+    maximizeButton(props),
     closeButton(props),
     ...actionButtons(props),
   );
@@ -194,6 +195,25 @@ function closeButton(props: DialogProps<ReactContent>): ReactNode {
     "span",
     { slot: "close", key: "close" },
     content(render({ onClose: props.onClose })),
+  );
+}
+
+// Same split for the maximize button, and only for a maximizable dialog.
+function maximizeButton(props: DialogProps<ReactContent>): ReactNode {
+  const render = props.render?.maximizeButton;
+  if (!render || !props.maximizable) {
+    return null;
+  }
+  return createElement(
+    "span",
+    { slot: "maximize", key: "maximize" },
+    content(
+      render({
+        maximized: props.maximized,
+        label: props.maximizeLabel,
+        onToggle: props.onToggleMaximize,
+      }),
+    ),
   );
 }
 

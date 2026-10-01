@@ -4109,9 +4109,9 @@ describe('accent hover', () => {
 });
 
 describe('text selection', () => {
-  it('lets no text be selected in the toolbar, the header, the footer and the filter view, except in text inputs', () => {
+  it('lets no text be selected in the toolbar, the header, the group bands, the footer and the filter view, except in text inputs', () => {
     expect(baseStylesheet).toMatch(
-      /\.toolbar,\s*\.headerRow,\s*\.footer,\s*\.filterView \{\s*user-select: none;\s*& :is\(input, textarea\) \{\s*user-select: text;/,
+      /\.toolbar,\s*\.headerRow,\s*\.groupRow,\s*\.footer,\s*\.filterView \{\s*user-select: none;\s*& :is\(input, textarea\) \{\s*user-select: text;/,
     );
     // the rows stay selectable
     expect(baseStylesheet).not.toMatch(/\.(row|dataRow|cell) \{[^}]*user-select: none/);

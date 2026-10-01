@@ -25,6 +25,7 @@ export type {
   DialogConfig,
   ButtonRole,
   CloseButtonRender,
+  MaximizeButtonRender,
   ConfirmDialogResult,
   DecideDialogResult,
   DialogInfo,

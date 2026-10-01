@@ -13,6 +13,23 @@ export const closeIconSvg = `
   </svg>
 `;
 
+// The Maximize and Restore states of the maximize button (see DialogConfig.maximizable):
+// two diagonal arrows out of the corners, and into them (Bootstrap Icons' arrows-angle-
+// expand/-contract, like the close icon). They reach the edges of their 16×16 box, the
+// close icon does not: the viewBox has a margin of 1 on each side, so the three look the
+// same size next to each other.
+export const maximizeIconSvg = `
+  <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="currentColor" viewBox="-1 -1 18 18">
+    <path fill-rule="evenodd" d="M5.828 10.172a.5.5 0 0 0-.707 0l-4.096 4.096V11.5a.5.5 0 0 0-1 0v3.975a.5.5 0 0 0 .5.5H4.5a.5.5 0 0 0 0-1H1.732l4.096-4.096a.5.5 0 0 0 0-.707m4.344-4.344a.5.5 0 0 0 .707 0l4.096-4.096V4.5a.5.5 0 1 0 1 0V.525a.5.5 0 0 0-.5-.5H11.5a.5.5 0 0 0 0 1h2.768l-4.096 4.096a.5.5 0 0 0 0 .707"/>
+  </svg>
+`;
+
+export const restoreIconSvg = `
+  <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="currentColor" viewBox="-1 -1 18 18">
+    <path fill-rule="evenodd" d="M.172 15.828a.5.5 0 0 0 .707 0l4.096-4.096V14.5a.5.5 0 1 0 1 0v-3.975a.5.5 0 0 0-.5-.5H1.5a.5.5 0 0 0 0 1h2.768L.172 15.121a.5.5 0 0 0 0 .707M15.828.172a.5.5 0 0 0-.707 0l-4.096 4.096V1.5a.5.5 0 1 0-1 0v3.975a.5.5 0 0 0 .5.5H14.5a.5.5 0 0 0 0-1h-2.768L15.828.879a.5.5 0 0 0 0-.707"/>
+  </svg>
+`;
+
 // overflow="visible": these outlines touch the edge of the 16×16 viewBox, and the
 // default UA style clips a root <svg> to its viewBox. This icon is projected through
 // the dialog's icon <slot>, so a shadow stylesheet can't reach in to fix it via CSS

@@ -439,6 +439,8 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
         dialogs,
         {
           width: 'extraWide',
+          // Long minutes are easier to write in the whole window.
+          maximizable: true,
           title: numbered(row.number, row.title),
           subtitle: 'Minutes',
           content: (check) => <MinutesForm check={check} item={item} members={members()} />,

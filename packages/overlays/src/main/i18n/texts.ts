@@ -39,6 +39,8 @@ export const germanDialogTexts: DialogTexts = {
   titleDecideCritical: "Entscheidung",
   titleForm: "Eingabe",
   titleFormCritical: "Eingabe",
+  labelMaximize: "Maximieren",
+  labelRestore: "Wiederherstellen",
 };
 
 /** German toast texts. Same completeness guarantee as {@link germanDialogTexts}. */

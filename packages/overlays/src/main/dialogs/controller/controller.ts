@@ -296,6 +296,10 @@ function createDialogScope<C extends object>(
           dialogType: "info",
           surface: "dialog",
           width: "default",
+          maximizable: false,
+          maximized: false,
+          maximizeLabel: "",
+          onToggleMaximize: noop,
           themeVars,
           styles: null,
           hasForm: false,
@@ -630,6 +634,16 @@ function createDialogScope<C extends object>(
       rerender();
     };
 
+    // Maximized (see DialogConfig.maximizable): view state of this dialog like the note,
+    // so the element and a maximize-button override render the same. A new dialog of the
+    // scope starts unmaximized, since this lives per dialog.
+    let maximized = false;
+
+    const toggleMaximize = (): void => {
+      maximized = !maximized;
+      rerender();
+    };
+
     // The built-in icons are fresh nodes per call, so resolving on every render would
     // hand the adapter a different value each time and defeat its identity check. Cache
     // against the config field the resolution actually depends on.
@@ -673,6 +687,10 @@ function createDialogScope<C extends object>(
         dialogType: spec.dialogType,
         surface: spec.config.surface ?? "dialog",
         width: spec.config.width ?? "default",
+        maximizable: spec.config.maximizable ?? false,
+        maximized,
+        maximizeLabel: getText(maximized ? "labelRestore" : "labelMaximize"),
+        onToggleMaximize: toggleMaximize,
         themeVars,
         styles: getStyles(spec),
         hasForm: spec.allowsForm,

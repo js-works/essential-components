@@ -178,6 +178,45 @@ const dialogStyles = css`
     margin-block: auto;
   }
 
+  /* ---- Maximized (data-maximized, see DialogConfig.maximizable) --------------------
+     The whole viewport, for both surfaces and every width: no margin, no rounding. The
+     three attributes are always on the host; naming them all makes this more specific than
+     the rules of the named widths above (two conditions in their :host()). */
+  :host([data-maximized][data-surface][data-width]) dialog {
+    width: 100dvw;
+    min-width: 0;
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    margin: 0;
+    border-radius: 0;
+  }
+
+  /* Its content fills that height, so the buttons sit at the bottom edge and the body
+     takes the rest (the drawer's content does already). */
+  :host([data-maximized]:not([data-surface="drawer"])) .dialog-content {
+    flex: 1 1 auto;
+  }
+
+  :host([data-maximized]:not([data-surface="drawer"])) .dialog-content .body {
+    flex: 1 1 auto;
+  }
+
+  /* The content part passes that height on (both surfaces), so content can fill the
+     maximized dialog: the part is a column at least as high as the body's free room, and
+     the slotted content grows with it. The page takes it from there with CSS keyed on
+     [data-maximized], which is on the dialog element, an ancestor of the content in the
+     light DOM. Not shrinking: longer content still scrolls the body, as before. */
+  :host([data-maximized]) .dialog-content .body > .part[data-part="content"] {
+    flex: 1 0 auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  :host([data-maximized]) ::slotted([slot="content"]) {
+    flex: 1 0 auto;
+  }
+
   /* Only the body scrolls, also in a centered dialog: the header (title, close button) and
      the footer (note, action buttons) stay in place, like in the drawer below. The open
      dialog is a column whose one child, the content, shrinks to the dialog's max-height
@@ -454,6 +493,16 @@ const dialogStyles = css`
     background-color: color-mix(in srgb, ${theme.successColor}, black 20%);
   }
 
+  /* Maximize/Restore (only with maximizable) and close, at the end of the header, at its
+     top. Close together: they are one group, not two items of the header's gap. */
+  .header-buttons {
+    flex: none;
+    display: flex;
+    align-self: flex-start;
+    gap: 0.15em;
+  }
+
+  /* The maximize button has the look of the close button (it carries both classes). */
   .close-button {
     align-self: flex-start;
     border: none;

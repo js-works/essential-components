@@ -759,7 +759,8 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     (see Filtering). A custom `empty` always wins.
   - The toolbar is shown when the component is searchable, even without title and actions.
 - No text selection around the data: the toolbar (title, subtitle, buttons, pills), the header (column headers, group
-  headers), the footer, the filter view and the empty state (its text and a custom `empty`, since 2026-10-01) have
+  headers), the header bands of the row groups (`.groupRow`, since 2026-10-01), the footer, the filter view and the
+  empty state (its text and a custom `empty`, since 2026-10-01) have
   `user-select: none`. Text inputs inside (search box, page number,
   the text and number inputs of the filters) stay
   selectable (`user-select: text`). The rows stay selectable, so cell text can be copied.

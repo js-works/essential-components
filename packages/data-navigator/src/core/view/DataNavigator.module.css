@@ -152,10 +152,12 @@
   }
 }
 
-/* Everything around the data (the toolbar, the header, the footer, the filter view) is not text to select: a click or
-   a drag there never starts a text selection. Text inputs inside stay selectable. The rows stay selectable too. */
+/* Everything around the data (the toolbar, the header, the header bands of the row groups, the footer, the filter view)
+   is not text to select: a click or a drag there never starts a text selection. Text inputs inside stay selectable.
+   The rows stay selectable too. */
 .toolbar,
 .headerRow,
+.groupRow,
 .footer,
 .filterView {
   user-select: none;

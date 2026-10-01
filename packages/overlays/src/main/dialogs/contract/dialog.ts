@@ -66,6 +66,19 @@ export interface CloseButtonRender {
 }
 
 /**
+ * Descriptor passed to a custom maximize-button renderer (see
+ * {@link DialogConfig.maximizable}). One button with two states, like the button of a
+ * window: it maximizes the dialog, and restores it while maximized.
+ */
+export interface MaximizeButtonRender {
+  /** Whether the dialog fills the viewport now. */
+  maximized: boolean;
+  /** The button's text for its state, already translated: "Maximize" or "Restore". */
+  label: string;
+  onToggle: () => void;
+}
+
+/**
  * Descriptor passed to a custom note renderer (see {@link FormAttempt.reject}). Plain
  * strings, because the library's own note box is shadow chrome and can only be filled
  * with data — an override replaces the whole box, so it gets the same values.
@@ -88,6 +101,8 @@ export interface NoteRender {
 export interface DialogRenderOverrides<C extends object> {
   actionButton?(button: ActionButtonRender): C;
   closeButton?(close: CloseButtonRender): C;
+  /** Only rendered for a dialog with {@link DialogConfig.maximizable}. */
+  maximizeButton?(button: MaximizeButtonRender): C;
   note?(note: NoteRender): C;
 }
 
@@ -209,6 +224,20 @@ export interface DialogConfig<C extends object> extends DialogViewConfig<C> {
    * Behavioural like `surface`: fixed once the dialog is open.
    */
   width?: DialogWidth;
+  /**
+   * Whether the dialog has a Maximize button, before its close button. Default `false`.
+   * Maximized, the dialog or drawer fills the whole viewport (no margin, no rounding; the
+   * header and the buttons stay, the body scrolls), and the button becomes Restore, which
+   * brings back its size. Every dialog starts unmaximized, also the next one of a scope.
+   *
+   * While maximized, the dialog element has the attribute `data-maximized`, and the
+   * element that holds the content is as high as the body's free room. The element is an
+   * ancestor of the content in the light DOM, so a page's CSS can let content fill the
+   * height then (e.g. `[data-maximized] .editor { height: 100%; }`).
+   *
+   * Behavioural like `surface`: fixed once the dialog is open.
+   */
+  maximizable?: boolean;
   /**
    * Abort this dialog. When the signal aborts, the dialog closes immediately and the
    * call resolves `{ canceled: true, aborted: true }`. Combined with any scope-level
