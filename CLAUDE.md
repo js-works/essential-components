@@ -32,6 +32,8 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
   - `data-navigator` (`@local/data-navigator`): a data table: a custom element, and a React component (`/react`).
   - `file-upload` (`@local/file-upload`): a file upload custom element, with a React wrapper.
   - `overlays` (`@local/overlays`): dialogs and toasts.
+  - `form-validation` (`@local/form-validation`): form validation for React with Zod, a `useForm` hook. Tests only, no
+    demo (so no tab on the root page).
   - A package keeps its own tests, demo (`npm run dev` inside it) and `package-lock.json` (unused in the workspace,
     where the root lock file counts; it matters again in a standalone copy).
 - The root is the demo page of all packages:
