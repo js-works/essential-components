@@ -1,9 +1,9 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useState, useSyncExternalStore } from 'react';
+import { createContext, useContext, useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { binding, defineUseForm, formMeta } from './index';
+import { binding, defineUseForm, formMeta, type I18nAdapter, type I18nConfig } from './index';
 
 /* A minimal locale store as a stand-in for the app adapter */
 let currentLocale = 'de';
@@ -17,11 +17,18 @@ const labels: Record<string, Record<string, string>> = {
   en: { 'signup.email': 'Email', 'signup.age': 'Age' },
 };
 
-const useForm = defineUseForm({
-  i18n: {
-    useLocale: () => useSyncExternalStore((cb) => (listeners.add(cb), () => listeners.delete(cb)), () => currentLocale),
-    translate: (key, _p, locale) => labels[locale]?.[key],
+/* The app adapter: labels from the table above, everything else as the library has it */
+const adapter: I18nAdapter = {
+  currentLocale: () => currentLocale,
+  resolveText: (_ns, key, _params, defaultValue) => labels[currentLocale]?.[key] ?? defaultValue,
+  onChange: (listener) => {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
   },
+};
+
+const useForm = defineUseForm({
+  i18n: { type: 'factory', getAdapter: () => adapter },
   props: { label: 'label', error: 'errorText' },
 });
 
@@ -96,6 +103,123 @@ describe('defineUseForm', () => {
     act(() => setLocale('en'));
     expect(screen.getByRole('alert').textContent).toBe('The value must be between 18 and 120.');
     expect(screen.getByLabelText('Age')).toBeTruthy();
+  });
+
+  it('marks a field that turns invalid while typing at once, but shows its message only on blur', async () => {
+    setLocale('en');
+    const user = userEvent.setup();
+    render(<Signup onData={() => {}} />);
+    const email = screen.getByLabelText('Email');
+    await user.type(email, 'a@b.de');
+    await user.tab();
+    expect(email.getAttribute('aria-invalid')).toBeNull();
+
+    await user.click(email);
+    await user.keyboard('{Backspace}{Backspace}{Backspace}');
+    expect(email.getAttribute('aria-invalid')).toBe('true');
+    expect(email.hasAttribute('data-user-invalid')).toBe(true);
+    expect(screen.queryByRole('alert')).toBeNull();
+
+    await user.tab();
+    expect(screen.getByRole('alert').textContent).toBe('Please enter a valid email address.');
+
+    // A visible message stays while typing and goes with a valid value.
+    await user.click(email);
+    await user.keyboard('x');
+    expect(screen.getByRole('alert')).toBeTruthy();
+    await user.clear(email);
+    await user.type(email, 'a@b.de');
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(email.getAttribute('aria-invalid')).toBeNull();
+  });
+
+  it('passes `true` to the invalid prop while the message is not visible, or to the error prop if they are one', async () => {
+    const seen: unknown[] = [];
+    function Probe(props: Record<string, any>) {
+      seen.push([props['errorText'], props['invalid'], props['error']]);
+      return (
+        <input
+          name={props['name']}
+          id={props['id']}
+          ref={props['ref']}
+          onChange={props['onChange']}
+          onBlur={props['onBlur']}
+        />
+      );
+    }
+    const separate = defineUseForm({ props: { label: 'label', error: 'errorText', invalid: 'invalid' } });
+    const together = defineUseForm({ props: { label: 'label', error: 'error', invalid: 'error' } });
+    for (const use of [separate, together]) {
+      seen.length = 0;
+      function F() {
+        const { form, field } = use(z.object({ code: z.string().min(3) }), { submit: () => {} });
+        return (
+          <form {...form()}>
+            <Probe {...field.code({ label: 'Code' })} />
+          </form>
+        );
+      }
+      const user = userEvent.setup();
+      const { container, unmount } = render(<F />);
+      const input = container.querySelector('input')!;
+      await user.type(input, 'abc');
+      await user.tab();
+      await user.click(input);
+      await user.keyboard('{Backspace}');
+      expect(seen.at(-1)).toEqual(use === separate ? [undefined, true, undefined] : [undefined, undefined, true]);
+      await user.tab();
+      const text = use === separate ? (seen.at(-1) as unknown[])[0] : (seen.at(-1) as unknown[])[2];
+      expect(typeof text).toBe('string');
+      unmount();
+    }
+  });
+
+  it('gives the owner of a foreign <form> (e.g. a dialog) its validation through the hook of the config', async () => {
+    setLocale('en');
+    type Validate = (form?: HTMLFormElement) => boolean;
+    // The owner's context: the fields register their validation there, the owner asks it before it submits.
+    const Owner = createContext<{ validate?: Validate } | null>(null);
+    const useOwnedForm = defineUseForm({
+      i18n: { type: 'factory', getAdapter: () => adapter },
+      props: { label: 'label', error: 'errorText' },
+      useValidator: (validate) => {
+        const owner = useContext(Owner);
+        if (owner) owner.validate = validate;
+      },
+    });
+    const results: boolean[] = [];
+    function Fields() {
+      const { field } = useOwnedForm(z.object({ email: z.email() }), { labels: 'signup' });
+      return <TextField {...field.email()} />;
+    }
+    function Dialog() {
+      const [owner] = useState<{ validate?: Validate }>({});
+      return (
+        <Owner value={owner}>
+          <form
+            noValidate
+            onSubmit={(event) => {
+              event.preventDefault();
+              results.push(owner.validate!(event.currentTarget));
+            }}
+          >
+            <Fields />
+            <button type="submit">OK</button>
+          </form>
+        </Owner>
+      );
+    }
+    const user = userEvent.setup();
+    render(<Dialog />);
+    await user.click(screen.getByText('OK'));
+    expect(results).toEqual([false]);
+    expect(screen.getByRole('alert').textContent).toBe('Please fill out this field.');
+    expect(document.activeElement).toBe(screen.getByLabelText('Email'));
+
+    await user.type(screen.getByLabelText('Email'), 'a@b.de');
+    await user.click(screen.getByText('OK'));
+    expect(results).toEqual([false, true]);
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
   it('validates everything on submit, focuses the first field and passes the parsed data', async () => {
@@ -254,5 +378,105 @@ describe('defineUseForm', () => {
       'de-AT': 'Bitte geben Sie mindestens 2 Zeichen ein.',
       xx: 'Please enter at least 2 characters.',
     });
+  });
+});
+
+describe('i18n adapter', () => {
+  const ageSchema = z.object({ age: z.number().min(18) });
+
+  function AgeForm({ use }: { use: typeof useForm }) {
+    const { form, field } = use(ageSchema, { labels: 'signup', submit: () => {} });
+    return (
+      <form {...form()}>
+        <TextField {...field.age()} />
+      </form>
+    );
+  }
+
+  it('asks the factory once per form, with its <form> element', async () => {
+    const getAdapter = vi.fn((_el: HTMLElement) => adapter);
+    const use = defineUseForm({ i18n: { type: 'factory', getAdapter }, props: { label: 'label', error: 'errorText' } });
+    setLocale('de');
+    const { container, rerender } = render(<AgeForm use={use} />);
+    rerender(<AgeForm use={use} />);
+    expect(screen.getByLabelText('Alter')).toBeTruthy();
+    expect(getAdapter).toHaveBeenCalledTimes(1);
+    expect(getAdapter).toHaveBeenCalledWith(container.querySelector('form'));
+  });
+
+  it('calls the hook on every render, so each form follows its nearest provider', () => {
+    const Language = createContext('en');
+    const use = defineUseForm({
+      i18n: {
+        type: 'hook',
+        useAdapter: () => {
+          const locale = useContext(Language);
+          return {
+            ...adapter,
+            currentLocale: () => locale,
+            resolveText: (_n, key, _p, d) => labels[locale]?.[key] ?? d,
+          };
+        },
+      },
+      props: { label: 'label', error: 'errorText' },
+    });
+    render(
+      <>
+        <AgeForm use={use} />
+        <Language value="de">
+          <AgeForm use={use} />
+        </Language>
+      </>,
+    );
+    expect(screen.getByLabelText('Age')).toBeTruthy();
+    expect(screen.getByLabelText('Alter')).toBeTruthy();
+  });
+
+  it('passes the namespace, the key, the raw params and the text of the library', async () => {
+    const resolveText = vi.fn((_n: string, _k: string, _p: unknown, defaultValue: string) => defaultValue);
+    const use = defineUseForm({
+      appNamespace: 'myapp',
+      i18n: { type: 'hook', useAdapter: () => ({ currentLocale: () => 'en', resolveText }) },
+      props: { label: 'label', error: 'errorText' },
+    });
+    const user = userEvent.setup();
+    render(<AgeForm use={use} />);
+    await user.type(screen.getByLabelText('Age'), '5');
+    await user.tab();
+    expect(resolveText).toHaveBeenCalledWith('myapp', 'signup.age', null, 'Age');
+    expect(resolveText).toHaveBeenCalledWith(
+      'formvalidation',
+      'number.min',
+      { min: 18 },
+      screen.getByRole('alert').textContent,
+    );
+  });
+
+  it('warns about a missing label only without an adapter', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const schemaOf = () => z.object({ title: z.string() });
+    function Title({ use, labels }: { use: typeof useForm; labels: string }) {
+      const { form, field } = use(schemaOf(), { labels });
+      return (
+        <form {...form()}>
+          <TextField {...field.title()} />
+        </form>
+      );
+    }
+    const withAdapter = defineUseForm({
+      i18n: { type: 'hook', useAdapter: () => ({ currentLocale: () => 'en', resolveText: (_n, _k, _p, d) => d }) },
+      props: { label: 'label', error: 'errorText' },
+    });
+    const without = defineUseForm({ props: { label: 'label', error: 'errorText' } });
+    render(<Title use={withAdapter} labels="adapted" />);
+    expect(warn.mock.calls.some((c) => String(c[0]).includes('adapted.title'))).toBe(false);
+    render(<Title use={without} labels="plain" />);
+    expect(warn.mock.calls.some((c) => String(c[0]).includes('plain.title'))).toBe(true);
+    warn.mockRestore();
+  });
+
+  it('throws a TypeError for an unknown i18n type (e.g. the old form)', () => {
+    const old = { useLocale: () => 'en' } as unknown as I18nConfig;
+    expect(() => defineUseForm({ i18n: old })).toThrow(TypeError);
   });
 });

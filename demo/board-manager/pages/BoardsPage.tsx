@@ -53,7 +53,7 @@ function BoardsPage(): ReactElement {
       let created = '';
       const saved = await submitForm(
         dialogs,
-        { title: 'New board', content: (check) => <BoardForm check={check} />, buttons: { confirm: 'Create' } },
+        { title: 'New board', content: <BoardForm />, buttons: { confirm: 'Create' } },
         async (data) => {
           created = (await createBoard({ name: data.string('name', ''), description: data.string('description', '') }))
             .id;
@@ -72,7 +72,7 @@ function BoardsPage(): ReactElement {
         dialogs,
         {
           title: 'Edit board',
-          content: (check) => <BoardForm check={check} board={board} />,
+          content: <BoardForm board={board} />,
           buttons: { confirm: 'Save' },
         },
         (data) => updateBoard(row.id, { name: data.string('name', ''), description: data.string('description', '') }),

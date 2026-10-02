@@ -207,7 +207,9 @@ describe('content', () => {
         return () => listeners.delete(listener);
       },
     };
-    const [ElementClass, createController] = setupDataNavigator({ i18n });
+    const [ElementClass, createController] = setupDataNavigator({
+      i18n: { type: 'factory', getAdapter: () => i18n },
+    });
     const element = create(ElementClass);
 
     element.controller = createController({
@@ -224,6 +226,40 @@ describe('content', () => {
 
     expect(screen.getByText('Personen')).toBeTruthy();
     expect(screen.getByRole('columnheader', { name: 'Vorname' })).toBeTruthy();
+  });
+
+  it('asks the i18n factory once per element, with the element, on its first connect', async () => {
+    const i18n: DataNavigator.I18nAdapter = {
+      currentLocale: () => 'de-DE',
+      resolveText: (_namespace, key, _params, defaultValue) => (key === 'pageSize' ? 'Seitengröße' : defaultValue),
+    };
+    const getAdapter = vi.fn((_element: HTMLElement) => i18n);
+    const [ElementClass, createController] = setupDataNavigator({ i18n: { type: 'factory', getAdapter } });
+    const element = create(ElementClass);
+
+    expect(getAdapter).not.toHaveBeenCalled();
+
+    element.controller = createController({
+      source: createSource(),
+      rowKey: 'id',
+      columns: [{ key: 'name', header: 'Name' }],
+    });
+    await mount(element);
+    await waitFor(() => expect(screen.getByText('Seitengröße')).toBeTruthy());
+
+    await act(async () => {
+      element.remove();
+      document.body.append(element);
+    });
+
+    expect(getAdapter).toHaveBeenCalledTimes(1);
+    expect(getAdapter).toHaveBeenCalledWith(element);
+  });
+
+  it('throws a TypeError for an unknown i18n type (e.g. an adapter given directly)', () => {
+    const i18n = { currentLocale: () => 'en-US', resolveText: () => '' };
+
+    expect(() => setupDataNavigator({ i18n: i18n as unknown as DataNavigator.SetupConfig['i18n'] })).toThrow(TypeError);
   });
 
   it('renders action icons and tips, and a tip may be a function', async () => {

@@ -88,8 +88,9 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
 - TypeScript (strict), Vite, npm workspaces. The root has dev dependencies (`vite`, `typescript`,
   `@vitejs/plugin-react`, `react`, `react-dom`, their types, `dprint`; for the board manager `@mantine/core`,
   `@mantine/hooks`, `react-router`) and `zustand`, `react-icons` (the board manager's icons: its Tabler set, `tb`),
-  `@mantine/form` and `@mantine/dates` with `dayjs` (pinned to the versions the workspace has from `overlays`:
-  `9.5.1`, `1.11.23`).
+  `@mantine/dates` with `dayjs` (pinned to the versions the workspace has from `overlays`: `9.5.1`, `1.11.23`),
+  `i18next` (the board manager's translations), `zod` (the schemas of `form-validation` in the board manager).
+  `@mantine/form` was removed (2026-10-02): the board manager's forms use `form-validation`.
 - `.npmrc` (the root one counts in a workspace; npm ignores those of the packages): `ignore-scripts=true`,
   `min-release-age=7`.
   - The first workspace install (2026-09-26) was run once with `--min-release-age=5`, because `antd@6.6.5` (a dev
@@ -107,3 +108,10 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
 - `npm run typecheck`
 - `npm run format`: dprint. `npm run format:check`
 - The tests run inside a package (`npm test -w @local/file-upload`, …).
+
+## TODO
+
+- The overlays' React demo CSS (`packages/overlays/src/demo/react.css`, imported by its `react.tsx`) is global: on
+  this page it reaches every demo, e.g. its error badge of Mantine's `TextInput` (`.mantine-TextInput-error`) appeared
+  in the board manager. The board manager now has its own (`board-manager.css`, for all Mantine inputs, 2026-10-02).
+  Decide how to keep a package's demo CSS inside its demo (a scope class on the demo element, or CSS modules).

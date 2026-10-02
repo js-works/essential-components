@@ -2,7 +2,8 @@ import { Fragment } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
 import type { DataNavigator } from '../api';
-import { ConfigContext, resolveConfig } from '../core/config';
+import { checkI18nType, ConfigContext, resolveConfig } from '../core/config';
+import type { ResolvedConfig } from '../core/config';
 import { DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS } from '../core/useDataNavigator';
 import { contentRendererOf, nodeContent } from './content';
 import { bindController, controllerFactoryOf, releaseController, renderController } from './controller';
@@ -32,13 +33,16 @@ const UPGRADED_PROPERTIES = [
   'pageSizeOptions',
 ] as const;
 
-// Called once per app, with the app's theme, i18n adapter and content adapter. Returns an element class (not
+// Called once per app, with the app's theme, i18n factory and content adapter. Returns an element class (not
 // registered: the app registers it under a tag name of its choice) and the factory of its controllers, both bound to
 // this configuration. The element wraps the React view, rendered into its light DOM.
 function setupDataNavigator<C = Node>(
   config: DataNavigator.SetupConfig<C> = {},
 ): readonly [DataNavigator.ElementClass<C>, DataNavigator.CreateNavigatorController<C>] {
-  const resolved = resolveConfig({ theme: config.theme, i18n: config.i18n });
+  checkI18nType(config.i18n, ['factory']);
+
+  const resolved = resolveConfig(config.theme);
+  const getI18nAdapter = config.i18n?.getAdapter;
   // Without an adapter, `C` is `Node` (the default of the type parameter), and the default adapter renders nodes.
   const content = contentRendererOf((config.content ?? nodeContent) as DataNavigator.ContentAdapter<unknown>);
   // The identity of this setup: its controllers are only accepted by its element class.
@@ -58,6 +62,8 @@ function setupDataNavigator<C = Node>(
     ];
 
     #controller: DataNavigator.NavigatorController<unknown, C> | undefined;
+    // With the i18n adapter of this element: the factory is asked once, on the first connect, with the element.
+    #config: ResolvedConfig | undefined;
     #pageSizeOptions: readonly number[] | undefined;
     #root: Root | undefined;
     #stopListening: (() => void) | undefined;
@@ -199,12 +205,14 @@ function setupDataNavigator<C = Node>(
       this.setAttribute(HOST_ATTRIBUTE, '');
       provideStyles(this);
 
+      this.#config ??= { ...resolved, i18n: getI18nAdapter?.(this) };
+
       // Moved within one task (removed and added again): the root is still there.
       if (this.#root === undefined) {
         this.#root = createRoot(this);
         // The React view renders its own texts again on a change of the language; the content functions of the
         // controller's options are called again by rendering everything.
-        this.#stopListening = resolved.i18n?.onChange?.(() => this.#render());
+        this.#stopListening = this.#config.i18n?.onChange?.(() => this.#render());
       }
 
       this.#render();
@@ -247,7 +255,7 @@ function setupDataNavigator<C = Node>(
       const controller = this.#controller;
 
       this.#root?.render(
-        <ConfigContext value={resolved}>
+        <ConfigContext value={this.#config ?? resolved}>
           {controller === undefined
             ? null
             : <Fragment key={idOf(controller)}>{renderController(controller, this.#settings(), content)}</Fragment>}

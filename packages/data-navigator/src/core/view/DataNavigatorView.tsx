@@ -1,5 +1,5 @@
 import { Tooltip } from '@base-ui/react/tooltip';
-import { Fragment, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { HTMLAttributes, MouseEvent, ReactElement, ReactNode } from 'react';
 import type { DataNavigatorComponent as Spec } from '../../react/api';
 import { ConfigContext } from '../config';
@@ -31,7 +31,7 @@ const FOLD_TIMING: KeyframeAnimationOptions = { duration: EDIT_FORM_TIME, easing
 // the values of the theme as its custom properties (see config.ts).
 function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
   const { title, subtitle, empty } = props;
-  const { themeStyle } = useContext(ConfigContext);
+  const { themeStyle, onRoot } = useContext(ConfigContext);
   const nav = useDataNavigator<Row>(props);
   // Where the widgets render their popups (see layer.ts).
   const [layer, setLayer] = useState<HTMLDivElement | null>(null);
@@ -39,6 +39,14 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
   const { texts, selection, rows, layout, sort } = nav;
   const drag = useRowDrag(nav.lines.length, nav.canReorder, nav.moveLine);
   const rootRef = useRef<HTMLDivElement>(null);
+  // The root element, also for an i18n factory of the created component (see createDataNavigatorComponent.tsx).
+  const setRoot = useCallback((root: HTMLDivElement | null) => {
+    rootRef.current = root;
+
+    if (root !== null) {
+      onRoot?.(root);
+    }
+  }, [onRoot]);
   const editKey = nav.edit?.key;
 
   // The rows of the edited row (its data row, and its detail row), not its form.
@@ -381,7 +389,7 @@ function DataNavigatorView<Row>(props: Spec.Props<Row>): ReactElement {
 
   return (
     <div
-      ref={rootRef}
+      ref={setRoot}
       className={classes.root}
       style={themeStyle}
       aria-busy={nav.loading}

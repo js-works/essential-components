@@ -77,10 +77,30 @@ the root's `CLAUDE.md` apply.
   - Success toasts in the accent color, like info and loading (2026-10-01, the user's wish: one accent color in the
     app; Mantine's `green` before): only the icon differs, so a toast from a spinner to success changes only its icon.
     Warnings orange, errors the danger color.
-- Forms (`forms.tsx`) are validated by Mantine (`@mantine/form`, `useForm` uncontrolled), not by the browser:
-  `submitForm()` (`flows.ts`) opens the form dialog with `nativeValidation: false` and a `validator` that asks the form
-  (`useCheck`); the errors are shown on the inputs. The upload drawer keeps the native validation (the file upload is no
-  Mantine input and reports its own message).
+- Forms (`forms.tsx`) are validated by the root's `form-validation` package (2026-10-02; Mantine's `@mantine/form`
+  before), not by the browser: `submitForm()` (`flows.ts`) opens the form dialog with `nativeValidation: false` and a
+  `validator` that asks the form; the errors are shown on the inputs. The upload drawer keeps the native validation (the
+  file upload is no Mantine input and reports its own message). `MinutesForm` validates nothing.
+  - A Zod schema per form (`boardSchema`, `meetingSchema`, …) gives the rules and the required marks; the inputs get
+    their props from `field.<name>()`. `useForm` (`defineUseForm`, once) maps Mantine's `error` as both the
+    message and the invalid mark (`true`: red without a text, for a field that turned invalid while being edited).
+  - A field only some dialogs show (the board of a new meeting on the meetings page, the person of a new member) gets
+    a second schema (`meetingWithBoardSchema`, `memberWithPersonSchema`), so it is required only there.
+  - The wiring (no `check` prop): `submitForm()` puts a context (`DialogCheck`) around the content; every form
+    registers its validation there (`useValidator: useDialogValidator` in `defineUseForm`; on every render, nothing
+    outside a form dialog), and the dialog's validator asks it before "OK", with its `<form>`. A caller passes the form
+    as `content: <PersonForm … />`.
+  - The labels are translated (`labels: '<form>'`, keys like `person.email`) by the app's i18next (`i18n.ts`): its own
+    instance, English and German, the language from `<html lang>` (a `MutationObserver`), fallback English. Only the
+    labels so far; the rest of the app is English only. The adapter is given as a hook (in a dialog, a factory would
+    get the `<form>` only on the first "OK"). The messages come from the library's catalogs in the same language
+    ("Please fill out this field." instead of the former "Required"); the schemas' own texts are English.
+- The message of an invalid input is a badge below it (`board-manager.css`, 2026-10-02, taken from the overlays' React
+  demo): the danger color, a warning triangle (a CSS mask) and a nose pointing up at the field; shown only while the
+  field has the focus (`:focus-within`), hanging over the field below, so nothing moves. For every Mantine input (the
+  shared classes `.mantine-InputWrapper-error`, `.mantine-Input-wrapper`); before, only `TextInput` had it, through the
+  overlays demo's global CSS. Hidden while a date input's calendar is open (`:has([data-dates-dropdown])`; it lay half under it;
+  Mantine's `DateInput` sets no `aria-expanded`).
 - No native date picker: the date and time of a meeting is Mantine's `DateTimePicker` (`DD.MM.YYYY HH:mm`, its popup in
   the dialog with a fixed position); `fromPicker()` turns its value into the fake server's `start`.
 

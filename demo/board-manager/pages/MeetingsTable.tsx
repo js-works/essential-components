@@ -46,7 +46,7 @@ async function editMeeting(dialogs: Dialogs, toasts: Toasts, id: string): Promis
     dialogs,
     {
       title: 'Edit meeting',
-      content: (check) => <MeetingForm check={check} meeting={getMeeting(db.getState(), id)} />,
+      content: <MeetingForm meeting={getMeeting(db.getState(), id)} />,
       buttons: { confirm: 'Save' },
     },
     (data) => updateMeeting(id, meetingValues(data)),
@@ -191,7 +191,7 @@ function MeetingsTable(
         dialogs,
         {
           title: 'New meeting',
-          content: (check) => <MeetingForm check={check} boards={boardId === undefined ? choices() : undefined} />,
+          content: <MeetingForm boards={boardId === undefined ? choices() : undefined} />,
           buttons: { confirm: 'Create' },
         },
         async (data) => {

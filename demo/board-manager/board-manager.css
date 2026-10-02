@@ -103,6 +103,94 @@
   user-select: none;
 }
 
+/* The message of an invalid field as a badge below it (2026-10-02, taken from the overlays' React demo,
+   `packages/overlays/src/demo/react.css`): in the danger color, with a warning triangle in front and a nose pointing up
+   at the field. Only the focused field shows its badge (at most one on screen); it hangs over the field below, so
+   nothing moves when a message comes or goes. The red frame of an invalid field stays Mantine's.
+   For every Mantine input (the shared classes: `InputWrapper`, `Input`), not only `TextInput`; `:focus-within`, since
+   the focused element of a textarea or a select is no `<input>`. Absolute, not fixed: it stays with its field when a
+   dialog's body scrolls. */
+.board-manager .mantine-InputWrapper-root {
+  position: relative;
+}
+
+/* Mantine reserves room under the input for the message; the badge is out of the flow, so that would only push the
+   next field down. */
+.board-manager .mantine-InputWrapper-root .mantine-Input-wrapper {
+  margin-bottom: 0;
+}
+
+.board-manager .mantine-InputWrapper-error {
+  /* The nose's height, and the room above its tip (in em: proportions of the message's text). */
+  --nose: 0.35em;
+  --nose-gap: 0.12em;
+
+  position: absolute;
+  z-index: 1;
+  top: 100%;
+  inset-inline-start: 0;
+  max-width: 100%;
+  width: max-content;
+  margin-block-start: calc(var(--nose) + var(--nose-gap));
+  padding: 0.35em 0.8em;
+  border-radius: 0.45em;
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  background: var(--mantine-color-error);
+  color: #fff;
+  font-size: var(--mantine-font-size-xs);
+  line-height: 1.35;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
+
+  /* Hidden, not unmounted: the input's `aria-describedby` points here. */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-0.25em);
+
+  /* The warning triangle: a mask in the text's color (the exclamation mark a hole in it, `evenodd`). Decoration only. */
+  &::before {
+    content: '';
+    flex: none;
+    inline-size: 1.05em;
+    block-size: 1.05em;
+    background-color: currentColor;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' fill-rule='evenodd' d='M12 2 1 21h22L12 2Zm1 8h-2v5h2v-5Zm0 7h-2v2h2v-2Z'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+  }
+
+  /* The nose: a zero-height box with only its bottom border painted, a triangle pointing up. */
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    inset-inline-start: 0.9em;
+    border: var(--nose) solid transparent;
+    border-block-start-width: 0;
+    border-block-end-color: var(--mantine-color-error);
+  }
+}
+
+/* Fades in, cuts out: the transition only on the shown state. */
+.board-manager .mantine-InputWrapper-root:focus-within .mantine-InputWrapper-error {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: opacity 140ms ease-out, transform 140ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-manager .mantine-InputWrapper-root:focus-within .mantine-InputWrapper-error {
+    transition: none;
+  }
+}
+
+/* Not while a date input's calendar is open: it would lie half under the calendar. The calendar (`data-dates-dropdown`)
+   is in the field's wrapper (no portal) and mounted only while open. After the rule above, so it wins. */
+.board-manager .mantine-InputWrapper-root:has([data-dates-dropdown]) .mantine-InputWrapper-error {
+  visibility: hidden;
+}
+
 /* The minutes editor (BlockNote, `minutes.tsx`) in the minutes drawer: framed like a Mantine input, room for a few
    paragraphs. Its side menu (the drag handle and the plus) sits in the editor's own padding.
    It is the positioned ancestor of BlockNote's menus (portalled into its container): inside a dialog of the overlays

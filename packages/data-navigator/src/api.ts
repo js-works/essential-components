@@ -218,7 +218,7 @@ declare namespace DataNavigator {
 
   type SetupConfig<C = Node> = {
     theme?: Theme;
-    i18n?: I18nAdapter;
+    i18n?: { type: 'factory'; getAdapter: (element: HTMLElement) => I18nAdapter };
     content?: ContentAdapter<C>;
   };
 

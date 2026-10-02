@@ -69,6 +69,20 @@ The behavior and the open points are described in `README.md`.
 
 ## TODO
 
+- `useValidator` with the overlays' form dialog, to check in a real dialog: the validation re-renders the form
+  asynchronously (`forceRender`, batched by React when called from the dialog's click handler). When it returns
+  `false`, the dialog moves the focus to the first control with `aria-invalid="true"`; a field that gets that attribute
+  only by this validation may not have it yet at that moment (one tick too late). Our own `focusFirstInvalid()` still
+  focuses it, but the dialog may then move the focus elsewhere (`[autofocus]`). Possible fix: render synchronously
+  there (`flushSync`, which would need `react-dom`, not a peer dependency yet).
+
+- Edge case of the validation strategy vs. the browser's `:user-invalid`: a user types into a field, restores the old
+  value (e.g. types "A" into an empty required field and deletes it) and leaves it. The browser fires no `change`, so
+  the field is not "user invalid"; form-validation counts it as changed and shows the error on blur. Possible fix: a
+  field counts as changed on blur only if its value differs from the value it had on focus. Left as it is for now
+  (2026-10-02). Asking the browser (`el.matches(':user-valid, :user-invalid')`) was rejected: not every input component
+  is based on a native, form-associated element, and one form would get two different rules.
+
 - "No `any`" (the rule of the other packages: `unknown` and narrow it) is not applied yet. The code uses `any` for
   Zod internals (`_zod.def`, issue fields), `z.ZodObject<any>`, and the props of `field.x()` / `form()`
   (`Record<string, any>`, so they can be spread into any component). Decide whether and how to remove it.

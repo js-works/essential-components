@@ -80,7 +80,7 @@ const currentLocale = () => root.lang || 'en-US';
 // A minimal I18nAdapter, without any i18n library (the same shape as the one of the file-upload component, so one
 // object could serve both): the locale is the `lang` of `<html>`, texts are looked up by language (`de-AT` uses `de`),
 // and `{name}` placeholders are filled in, numbers formatted for the locale.
-const i18n: DataNavigatorComponent.I18nAdapter = {
+const adapter: DataNavigatorComponent.I18nAdapter = {
   currentLocale,
 
   resolveText: (namespace, key, params, defaultValue) => {
@@ -107,3 +107,7 @@ const i18n: DataNavigatorComponent.I18nAdapter = {
     return () => observer.disconnect();
   },
 };
+
+// The i18n config of the demos (the React component and the element alike): every data navigator shares the one
+// adapter.
+const i18n = { type: 'factory', getAdapter: () => adapter } as const;

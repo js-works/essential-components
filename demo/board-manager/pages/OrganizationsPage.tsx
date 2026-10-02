@@ -47,7 +47,7 @@ async function editOrganization(dialogs: Dialogs, toasts: Toasts, id: string): P
     dialogs,
     {
       title: 'Edit organization',
-      content: (check) => <OrganizationForm check={check} organization={getOrganization(db.getState(), id)} />,
+      content: <OrganizationForm organization={getOrganization(db.getState(), id)} />,
       buttons: { confirm: 'Save' },
     },
     (data) => updateOrganization(id, organizationValues(data)),
@@ -162,7 +162,7 @@ function OrganizationsPage(): ReactElement {
         dialogs,
         {
           title: 'New organization',
-          content: (check) => <OrganizationForm check={check} />,
+          content: <OrganizationForm />,
           buttons: { confirm: 'Create' },
         },
         async (data) => {

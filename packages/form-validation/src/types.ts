@@ -10,9 +10,10 @@ export type {
   FieldProps,
   Fields,
   FormConfig,
-  FormI18n,
   FormMeta,
   FormProps,
+  I18nAdapter,
+  I18nConfig,
   Message,
   MessageCatalog,
   MessageContext,
@@ -41,12 +42,35 @@ type MessageFn = (params: Record<string, string>, ctx: MessageContext) => string
 type Message = string | MessageFn;
 type MessageCatalog = Record<string, Message>;
 
-interface FormI18n {
-  /** A React hook: returns the current locale and triggers a re-render when it changes. */
-  useLocale(): string;
-  /** Optional: delegates to the i18n system of the app. `undefined` = not available. */
-  translate?(key: string, params: Record<string, unknown>, locale: string): string | undefined;
+/**
+ * The app's i18n system, the same shape as the adapters of the other components (data navigator, file upload), so one
+ * adapter object fits all of them.
+ */
+interface I18nAdapter {
+  currentLocale: () => string;
+  /**
+   * The namespace is `'formvalidation'` for the messages of the library, and the app namespace (see
+   * `FormConfig.appNamespace`) for the app's keys (labels, messages of the schema or the server). `defaultValue` is the
+   * text the library would show (from `messages` or its catalog, already filled in): return it if there is no
+   * translation.
+   */
+  resolveText: (
+    namespace: string,
+    key: string,
+    params: Readonly<Record<string, unknown>> | null,
+    defaultValue: string,
+  ) => string;
+  /** Reports a change of the language: the form renders again. */
+  onChange?: (listener: () => void) => () => void;
 }
+
+/**
+ * Where the adapter comes from: a factory, asked once per form with its `<form>` element (rendered with `form()`), or a
+ * React hook, called on every render (e.g. for a React context). A shared adapter: `getAdapter: () => adapter`.
+ */
+type I18nConfig =
+  | { type: 'factory'; getAdapter: (element: HTMLElement) => I18nAdapter }
+  | { type: 'hook'; useAdapter: () => I18nAdapter };
 
 /* ------------------------------------------------------------- Bindings */
 
@@ -61,6 +85,8 @@ interface BindingConfig {
   blurProp?: string;
   /** Overrides the globally configured name of the error prop. */
   errorProp?: string;
+  /** Overrides the globally configured name of the invalid prop. */
+  invalidProp?: string;
   /** Overrides the globally configured name of the label prop. */
   labelProp?: string;
   /** Reads the value from the arguments of the change callback (default: an event or a bare value). */
@@ -91,8 +117,20 @@ type FieldArg = Binding | FieldOptions | false | null | undefined;
 
 interface PropNames {
   label: string;
+  /** Gets the message, only while it is visible. */
   error: string;
+  /**
+   * Optional: gets `true` while the field is marked as invalid, also before its message is visible (see the validation
+   * strategy). The same name as `error` (e.g. Mantine's `error`): the message, or `true` without one.
+   */
+  invalid?: string;
 }
+
+/** The error prop gets the visible message; the invalid prop (if configured) `true`, or both in one prop. */
+type ErrorProps<P extends PropNames> = P extends { invalid: infer I extends string }
+  ? I extends P['error'] ? { [K in I]?: string | true }
+  : { [K in P['error']]?: string } & { [K in I]?: true }
+  : { [K in P['error']]?: string };
 
 type FieldProps<P extends PropNames> =
   & {
@@ -107,7 +145,7 @@ type FieldProps<P extends PropNames> =
     'data-user-invalid'?: '';
   }
   & { [K in P['label']]: string }
-  & { [K in P['error']]?: string }
+  & ErrorProps<P>
   & Record<string, any>;
 
 type Unwrap<T> = T extends z.ZodOptional<infer I> ? Unwrap<I>
@@ -144,7 +182,8 @@ interface UseFormOptions<S extends z.ZodObject<any>> {
   labels?: string;
   /** Initial values, e.g. for edit forms. */
   initial?: DeepPartial<z.input<S>>;
-  submit(
+  /** Called with the parsed data on a valid submit of `form()`. Optional when someone else submits (see below). */
+  submit?(
     data: z.output<S>,
     ctx: SubmitContext,
   ): void | SubmitResult | Promise<void | SubmitResult>;
@@ -171,7 +210,17 @@ interface UseFormReturn<S extends z.ZodObject<any>, P extends PropNames> {
 /* ---------------------------------------------------------------- Config */
 
 interface FormConfig<P extends PropNames = PropNames> {
-  i18n?: FormI18n;
+  i18n?: I18nConfig;
+  /** The namespace of the app's keys (labels, messages of the schema or the server) for the adapter (default: "app"). */
+  appNamespace?: string;
+  /**
+   * Optional, a React hook, called in every form on every render with the form's validation: for a `<form>` that is not
+   * the form's own (e.g. the form of a dialog, which saves itself), so its owner can ask the form before it submits.
+   * The validation shows every error, focuses the first invalid field and returns whether the form is valid; given the
+   * `<form>` element, the form uses it like one from `form()` (the i18n factory, `reset()`). Once per app, so no form
+   * needs any wiring; outside such an owner, the hook does nothing.
+   */
+  useValidator?: (validate: (form?: HTMLFormElement) => boolean) => void;
   props?: P;
   /** Bindings per semantic field type ("date", "email", "number", ... or set with formMeta). */
   bindings?: Record<string, Binding>;

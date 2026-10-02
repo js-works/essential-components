@@ -1,4 +1,5 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { createContext, useContext } from 'react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useDataNavigatorController, useDataNavigatorSelection } from './core/controllerHooks';
@@ -3481,10 +3482,12 @@ describe('DataNavigator', () => {
       resolveText: (_, key, params, defaultValue) =>
         texts[key]?.replace(/\{(\w+)\}/g, (__, name: string) => String(params?.[name])) ?? defaultValue,
     });
+    // One adapter for every instance.
+    const shared = (adapter: Spec.I18nAdapter) => ({ type: 'factory', getAdapter: () => adapter }) as const;
 
     it('uses the translations of the adapter and falls back to English for missing ones', async () => {
       const German = createDataNavigatorComponent({
-        i18n: adapterOf({ pageSize: 'Seitengröße', pageOf: 'von {pages}' }),
+        i18n: shared(adapterOf({ pageSize: 'Seitengröße', pageOf: 'von {pages}' })),
       });
 
       render(<German source={createSource()} rowKey="id" columns={columns} pageSize={10} />);
@@ -3496,7 +3499,9 @@ describe('DataNavigator', () => {
 
     it('asks the adapter with the namespace, the key, the raw params and the English text filled in', async () => {
       const resolveText = vi.fn((_: string, __: string, ___: unknown, defaultValue: string) => defaultValue);
-      const Tracked = createDataNavigatorComponent({ i18n: { currentLocale: () => 'en-US', resolveText } });
+      const Tracked = createDataNavigatorComponent({
+        i18n: shared({ currentLocale: () => 'en-US', resolveText }),
+      });
 
       render(<Tracked source={createSource()} rowKey="id" columns={columns} pageSize={10} />);
       await loaded();
@@ -3511,7 +3516,7 @@ describe('DataNavigator', () => {
     });
 
     it('translates the default placeholder of a text filter', async () => {
-      const German = createDataNavigatorComponent({ i18n: adapterOf({ filterPlaceholder: 'Filtern' }) });
+      const German = createDataNavigatorComponent({ i18n: shared(adapterOf({ filterPlaceholder: 'Filtern' })) });
       const filtered: readonly Spec.Column<Person>[] = [
         { key: 'name', header: 'Name', filter: textColumnFilter() },
       ];
@@ -3524,7 +3529,7 @@ describe('DataNavigator', () => {
     });
 
     it('formats numbers in the locale of the adapter', async () => {
-      const German = createDataNavigatorComponent({ i18n: adapterOf({}, 'de-DE') });
+      const German = createDataNavigatorComponent({ i18n: shared(adapterOf({}, 'de-DE')) });
       const many = async (query: Spec.Query) => ({ ...(await createSource()(query)), total: 12345 });
 
       render(<German source={many} rowKey="id" columns={columns} pageSize={10} />);
@@ -3536,7 +3541,7 @@ describe('DataNavigator', () => {
       let language = 'en';
       let notify = () => {};
       const Switching = createDataNavigatorComponent({
-        i18n: {
+        i18n: shared({
           currentLocale: () => language,
           resolveText: (_, key, __, defaultValue) =>
             language === 'de' && key === 'pageSize' ? 'Seitengröße' : defaultValue,
@@ -3545,7 +3550,7 @@ describe('DataNavigator', () => {
 
             return () => {};
           },
-        },
+        }),
       });
 
       render(<Switching source={createSource()} rowKey="id" columns={columns} pageSize={10} />);
@@ -3556,6 +3561,44 @@ describe('DataNavigator', () => {
       act(() => notify());
 
       expect(await screen.findByText('Seitengröße')).toBeTruthy();
+    });
+
+    it('asks an i18n factory once per instance, with its root element, and renders its texts', async () => {
+      const getAdapter = vi.fn((_element: HTMLElement) => adapterOf({ pageSize: 'Seitengröße' }));
+      const German = createDataNavigatorComponent({ i18n: { type: 'factory', getAdapter } });
+
+      render(<German source={createSource()} rowKey="id" columns={columns} pageSize={10} />);
+
+      expect(await screen.findByText('Seitengröße')).toBeTruthy();
+      expect(getAdapter).toHaveBeenCalledTimes(1);
+      expect(getAdapter.mock.calls[0]?.[0].contains(screen.getByText('Seitengröße'))).toBe(true);
+    });
+
+    it('calls an i18n hook in each instance, so each one follows its nearest provider', async () => {
+      const Language = createContext<Readonly<Record<string, string>>>({});
+      const Localized = createDataNavigatorComponent({
+        i18n: { type: 'hook', useAdapter: () => adapterOf(useContext(Language)) },
+      });
+
+      render(
+        <>
+          <Localized source={createSource()} rowKey="id" columns={columns} pageSize={10} />
+          <Language value={{ pageSize: 'Seitengröße' }}>
+            <Localized source={createSource()} rowKey="id" columns={columns} pageSize={10} />
+          </Language>
+        </>,
+      );
+
+      expect(await screen.findByText('Seitengröße')).toBeTruthy();
+      expect(screen.getByText('Page Size')).toBeTruthy();
+    });
+
+    it('throws a TypeError for an unknown i18n type (e.g. an adapter given directly)', () => {
+      const adapter = adapterOf({});
+
+      expect(() => createDataNavigatorComponent({ i18n: adapter as unknown as Spec.Config['i18n'] })).toThrow(
+        TypeError,
+      );
     });
   });
 });

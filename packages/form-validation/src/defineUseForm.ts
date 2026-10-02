@@ -1,7 +1,7 @@
 import type * as React from 'react';
-import { useEffect, useId, useReducer, useRef } from 'react';
+import { useEffect, useId, useReducer, useRef, useState } from 'react';
 import type { z } from 'zod';
-import { createTranslator, documentLocale, type ErrorData, warnOnce } from './i18n';
+import { checkI18nType, createTranslator, documentLocale, type ErrorData, warnOnce } from './i18n';
 import { DEFAULT_MESSAGE, issueToError } from './issues';
 import { mergeProps } from './merge';
 import { formRegistry, isBinding } from './meta';
@@ -10,6 +10,7 @@ import type {
   BindingConfig,
   FieldArg,
   FormConfig,
+  I18nAdapter,
   PropNames,
   SubmitContext,
   UseFormOptions,
@@ -28,6 +29,8 @@ interface Store {
   output: unknown;
   dirty: Set<string>;
   shown: Set<string>;
+  /** Shown fields that turned invalid while being edited: red only, the message follows on blur or submit. */
+  quiet: Set<string>;
   errors: Map<string, ErrorData>;
   rootError?: ErrorData | undefined;
   serverErrors: Map<string, ErrorData>;
@@ -38,6 +41,8 @@ interface Store {
   refs: Map<string, (el: Element | null) => void>;
   rendered: Set<string>;
   formEl: HTMLFormElement | null;
+  /** The i18n factory has been asked (once per form, with its <form> element). */
+  i18nAsked: boolean;
   idBase: string;
 }
 
@@ -59,6 +64,7 @@ function createStore(schema: z.ZodObject<any>, initialValues: unknown): Store {
     output: undefined,
     dirty: new Set(),
     shown: new Set(),
+    quiet: new Set(),
     errors: new Map(),
     serverErrors: new Map(),
     submitAttempted: false,
@@ -67,6 +73,7 @@ function createStore(schema: z.ZodObject<any>, initialValues: unknown): Store {
     refs: new Map(),
     rendered: new Set(),
     formEl: null,
+    i18nAsked: false,
     idBase: '',
   };
   validate(store);
@@ -101,11 +108,16 @@ function displayed(s: Store, path: string): ErrorData | undefined {
   return s.serverErrors.get(path) ?? (s.shown.has(path) ? s.errors.get(path) : undefined);
 }
 
+/** Whether the message of a displayed error is visible too (otherwise the field is only marked as invalid). */
+function messageVisible(s: Store, path: string): boolean {
+  return s.serverErrors.has(path) || !s.quiet.has(path);
+}
+
 function signature(s: Store): string {
   let sig = isValid(s) ? '1' : '0';
   for (const path of s.shown) {
     const e = displayed(s, path);
-    if (e) sig += `|${path}:${e.key}:${JSON.stringify(e.params ?? null)}`;
+    if (e) sig += `|${path}:${e.key}:${JSON.stringify(e.params ?? null)}:${messageVisible(s, path)}`;
   }
   return sig + `|r:${s.rootError?.key ?? ''}`;
 }
@@ -148,19 +160,33 @@ const identity = (v: unknown) => v;
 
 /* ------------------------------------------------------------------ Hook */
 
+const noAdapter = (): I18nAdapter | undefined => undefined;
+const noValidator = (_validate: (form?: HTMLFormElement) => boolean): void => {};
+
 const OPTION_KEYS = new Set(['label', 'labelKey', 'validateOn']);
 
 function defineUseForm<const P extends PropNames = { label: 'label'; error: 'error' }>(
   config: FormConfig<P> = {},
 ) {
   const names: PropNames = { label: 'label', error: 'error', ...config.props };
-  const i18n = config.i18n ?? documentLocale;
-  const t = createTranslator(config, i18n);
+  const { i18n } = config;
+  checkI18nType(i18n);
+  const t = createTranslator(config);
+  // Chosen once, so every render calls the same hooks.
+  const useHookAdapter = i18n?.type === 'hook' ? i18n.useAdapter : noAdapter;
+  const useValidator = config.useValidator ?? noValidator;
 
   return function useForm<S extends z.ZodObject<any>>(schema: S, options: UseFormOptions<S>): UseFormReturn<S, P> {
-    const locale = i18n.useLocale();
     const idBase = useId();
     const [, forceRender] = useReducer((n: number) => n + 1, 0);
+    // A hook runs on every render; a factory is asked once, with the <form> element (see formRef), before the first
+    // paint. Until then (the first render), the texts are those without an adapter, and no warnings.
+    const hookAdapter = useHookAdapter();
+    const [factoryAdapter, setFactoryAdapter] = useState<I18nAdapter>();
+    const adapter = hookAdapter ?? factoryAdapter;
+    const pending = i18n?.type === 'factory' && factoryAdapter === undefined;
+    const locale = adapter?.currentLocale() ?? documentLocale();
+    useEffect(() => adapter?.onChange?.(() => forceRender()), [adapter]);
     const storeRef = useRef<Store | null>(null);
     storeRef.current ??= createStore(schema, options.initial);
     const store = storeRef.current;
@@ -176,7 +202,10 @@ function defineUseForm<const P extends PropNames = { label: 'label'; error: 'err
     useEffect(() => {
       for (const [path, el] of store.elements) {
         const err = store.serverErrors.get(path) ?? store.errors.get(path);
-        (el as HTMLInputElement).setCustomValidity?.(err ? t.message(err, locale) : '');
+        (el as HTMLInputElement).setCustomValidity?.(err ? t.message(err, locale, adapter, pending) : '');
+      }
+      if (i18n?.type === 'factory' && !store.formEl) {
+        warnOnce('i18n:form', 'The i18n factory needs the <form> element: spread form() on it.');
       }
       for (const path of store.rendered) {
         if (!store.elements.has(path)) {
@@ -196,18 +225,29 @@ function defineUseForm<const P extends PropNames = { label: 'label'; error: 'err
       if (force || signature(store) !== before) forceRender();
     }
 
+    // Like the browser's :user-invalid: a field the user has left (or a submitted one) is marked as invalid at once,
+    // while typing too. But a field that turns invalid while being edited gets its message only on blur (or submit),
+    // like the native bubble, which never appears while typing. A message that was visible stays and follows the value.
     function handleChange(info: FieldInfo, value: unknown, validateOn: ValidateOn, controlled: boolean) {
+      const path = info.path;
       update(() => {
-        store.values[info.path] = value;
-        store.dirty.add(info.path);
-        if (validateOn === 'change') store.shown.add(info.path);
+        const before = displayed(store, path);
+        store.values[path] = value;
+        store.dirty.add(path);
+        if (validateOn === 'change') store.shown.add(path);
+        store.serverErrors.delete(path);
         validate(store);
-      }, controlled || store.serverErrors.delete(info.path));
+        if (!displayed(store, path)) store.quiet.delete(path);
+        else if (!before && validateOn !== 'change') store.quiet.add(path);
+      }, controlled);
     }
 
     function handleBlur(info: FieldInfo) {
       if (!store.dirty.has(info.path)) return;
-      update(() => store.shown.add(info.path));
+      update(() => {
+        store.shown.add(info.path);
+        store.quiet.delete(info.path);
+      });
     }
 
     function applyServer(fieldErrors?: Record<string, string>, formError?: string) {
@@ -232,6 +272,7 @@ function defineUseForm<const P extends PropNames = { label: 'label'; error: 'err
       store.values = { ...store.initial };
       store.dirty.clear();
       store.shown.clear();
+      store.quiet.clear();
       store.serverErrors.clear();
       store.serverFormError = undefined;
       store.submitAttempted = false;
@@ -246,6 +287,7 @@ function defineUseForm<const P extends PropNames = { label: 'label'; error: 'err
       store.submitAttempted = true;
       store.serverErrors.clear();
       store.serverFormError = undefined;
+      store.quiet.clear();
       for (const f of store.fields) store.shown.add(f.path);
       validate(store);
       if (!isValid(store)) {
@@ -262,7 +304,7 @@ function defineUseForm<const P extends PropNames = { label: 'label'; error: 'err
       store.submitting = true;
       forceRender();
       try {
-        const result = await optionsRef.current.submit(store.output as z.output<S>, ctx);
+        const result = await optionsRef.current.submit?.(store.output as z.output<S>, ctx);
         if (result) applyServer(result.fieldErrors, result.formError);
       } catch (err) {
         store.serverFormError = { key: 'submitFailed' };
@@ -272,6 +314,24 @@ function defineUseForm<const P extends PropNames = { label: 'label'; error: 'err
         forceRender();
       }
     }
+
+    // The validation for the owner of a <form> that is not ours (see FormConfig.useValidator): like a submit
+    // of `form()`, without the event and without `submit`.
+    function validateForOwner(formEl?: HTMLFormElement): boolean {
+      if (formEl) formRef(formEl);
+      store.submitAttempted = true;
+      store.serverErrors.clear();
+      store.serverFormError = undefined;
+      store.quiet.clear();
+      for (const f of store.fields) store.shown.add(f.path);
+      validate(store);
+      forceRender();
+      if (isValid(store)) return true;
+      focusFirstInvalid();
+      return false;
+    }
+
+    useValidator(validateForOwner);
 
     /* -------------------------------------------------------------- Fields */
 
@@ -319,12 +379,18 @@ function defineUseForm<const P extends PropNames = { label: 'label'; error: 'err
         id: idOf(path),
         ref: refFor(path),
         required: info.required,
-        [bind.labelProp ?? names.label]: opts.label ?? t.label(labelKey, path, locale),
-        [bind.errorProp ?? names.error]: err ? t.message(err, locale) : undefined,
+        [bind.labelProp ?? names.label]: opts.label ?? t.label(labelKey, path, locale, adapter, pending),
         [bind.changeProp ?? 'onChange']: (...a: unknown[]) =>
           handleChange(info, coerce(info, from(...a)), validateOn, controlled),
         [bind.blurProp ?? 'onBlur']: () => handleBlur(info),
       };
+      // Marked as invalid (red) and the visible message are separate (see handleChange). One prop for both (e.g.
+      // Mantine's `error`): the message, or `true` without one.
+      const errorProp = bind.errorProp ?? names.error;
+      const invalidProp = bind.invalidProp ?? names.invalid;
+      const text = err && messageVisible(store, path) ? t.message(err, locale, adapter, pending) : undefined;
+      if (invalidProp) base[invalidProp] = err ? true : undefined;
+      base[errorProp] = text ?? (invalidProp === errorProp && err ? true : undefined);
       if (controlled) base[bind.valueProp!] = to(store.values[path]);
       else base[bind.defaultValueProp ?? (isBool ? 'defaultChecked' : 'defaultValue')] = to(store.initial[path]);
       if (info.min != null) base.min = info.min;
@@ -348,6 +414,11 @@ function defineUseForm<const P extends PropNames = { label: 'label'; error: 'err
 
     const formRef = (el: HTMLFormElement | null) => {
       store.formEl = el;
+      if (el && i18n?.type === 'factory' && !store.i18nAsked) {
+        store.i18nAsked = true;
+        const created = i18n.getAdapter(el);
+        setFactoryAdapter(() => created);
+      }
     };
 
     function form(...args: Array<Record<string, unknown> | false | null | undefined>) {
@@ -364,7 +435,7 @@ function defineUseForm<const P extends PropNames = { label: 'label'; error: 'err
       field: field as UseFormReturn<S, P>['field'],
       submitting: store.submitting,
       valid: isValid(store),
-      formError: formErr ? t.message(formErr, locale) : undefined,
+      formError: formErr ? t.message(formErr, locale, adapter, pending) : undefined,
       reset,
     };
   };

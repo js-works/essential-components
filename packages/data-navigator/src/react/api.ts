@@ -184,7 +184,7 @@ declare namespace DataNavigatorComponent {
   };
 
   type Config = {
-    i18n?: I18nAdapter;
+    i18n?: NonNullable<DataNavigator.SetupConfig['i18n']> | { type: 'hook'; useAdapter: () => I18nAdapter };
     theme?: Theme;
   };
 

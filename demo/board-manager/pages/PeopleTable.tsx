@@ -38,7 +38,7 @@ async function editPerson(dialogs: Dialogs, toasts: Toasts, id: string): Promise
     dialogs,
     {
       title: 'Edit member',
-      content: (check) => <PersonForm check={check} person={getPerson(db.getState(), id)} />,
+      content: <PersonForm person={getPerson(db.getState(), id)} />,
       buttons: { confirm: 'Save' },
     },
     (data) => updatePerson(id, personValues(data)),
@@ -137,7 +137,7 @@ function PeopleTable(
         dialogs,
         {
           title: 'New member',
-          content: (check) => <PersonForm check={check} organizationId={organizationId} />,
+          content: <PersonForm organizationId={organizationId} />,
           buttons: { confirm: 'Create' },
         },
         (data) => createPerson(personValues(data)),

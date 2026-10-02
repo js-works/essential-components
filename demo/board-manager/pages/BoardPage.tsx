@@ -112,7 +112,7 @@ function MembersTable({ boardId }: { boardId: string }): ReactElement {
         dialogs,
         {
           title: 'Add member',
-          content: (check) => <MemberForm check={check} people={people} />,
+          content: <MemberForm people={people} />,
           buttons: { confirm: 'Add' },
         },
         (data) => addMember(boardId, data.string('personId', ''), data.string('role', 'Member') as Role),
@@ -129,7 +129,7 @@ function MembersTable({ boardId }: { boardId: string }): ReactElement {
         dialogs,
         {
           title: `Role of ${row.name}`,
-          content: (check) => <MemberForm check={check} role={row.role} />,
+          content: <MemberForm role={row.role} />,
           buttons: { confirm: 'Save' },
         },
         (data) => changeRole(row.id, data.string('role', 'Member') as Role),

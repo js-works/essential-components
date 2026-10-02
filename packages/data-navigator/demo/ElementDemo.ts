@@ -11,7 +11,7 @@ export { mountElementDemo };
 // The custom element tab: the same data as the React tab, in plain TypeScript with DOM nodes as content (the default
 // content adapter). Everything that depends on the row type is in the controller; the element only has the settings.
 
-// Once per app: the element class and its controller factory, bound to the theme and the i18n adapter.
+// Once per app: the element class and its controller factory, bound to the theme and the i18n factory.
 const [DataNavigatorBase, createNavigatorController] = setupDataNavigator({ theme: defaultTheme, i18n });
 
 class DemoDataNavigator extends DataNavigatorBase {}

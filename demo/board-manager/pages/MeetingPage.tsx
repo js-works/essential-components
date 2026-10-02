@@ -396,7 +396,7 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
         dialogs,
         {
           title: 'New agenda item',
-          content: (check) => <AgendaItemForm check={check} members={members()} sections={sections()} />,
+          content: <AgendaItemForm members={members()} sections={sections()} />,
           buttons: { confirm: 'Add' },
         },
         (data) => createAgendaItem(meeting.id, values(data)),
@@ -413,9 +413,7 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
         dialogs,
         {
           title: 'Edit agenda item',
-          content: (check) => (
-            <AgendaItemForm check={check} item={itemOf(row)} members={members()} sections={sections()} />
-          ),
+          content: <AgendaItemForm item={itemOf(row)} members={members()} sections={sections()} />,
           buttons: { confirm: 'Save' },
         },
         (data) => updateAgendaItem(row.id, values(data)),
@@ -443,7 +441,7 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
           maximizable: true,
           title: numbered(row.number, row.title),
           subtitle: 'Minutes',
-          content: (check) => <MinutesForm check={check} item={item} members={members()} />,
+          content: <MinutesForm item={item} members={members()} />,
           buttons: { confirm: 'Save' },
         },
         (data) =>
@@ -908,7 +906,7 @@ function DocumentsTable({ meeting }: { meeting: Meeting }): ReactElement {
         dialogs,
         {
           title: 'Rename document',
-          content: (check) => <DocumentForm check={check} document={row} />,
+          content: <DocumentForm document={row} />,
           buttons: { confirm: 'Save' },
         },
         async (data) => {

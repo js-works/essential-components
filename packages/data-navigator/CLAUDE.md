@@ -141,10 +141,10 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - Shared types (`Theme`, `I18nAdapter`, `Query`, ...) stay in `DataNavigator` of the main entry: a type-only import
     loads no bundle, so React apps may import them from there.
   - Needs the built files (`exports` to `dist/`), else the app's bundler resolves `react` itself.
-- `setupDataNavigator(config)` is called once per app with the config (theme, i18n, content adapter) and returns a
-  tuple: an element class without a type parameter, and the controller factory, both bound to that config. The app
-  names them itself and registers the class under its own tag name (and adds it to `HTMLElementTagNameMap`). We never
-  register elements ourselves.
+- `setupDataNavigator(config)` is called once per app with the config (theme, i18n factory, content adapter) and
+  returns a tuple: an element class without a type parameter, and the controller factory, both bound to that config. The
+  app names them itself and registers the class under its own tag name (and adds it to `HTMLElementTagNameMap`). We
+  never register elements ourselves.
   ```ts
   const [DataNavigatorBase, createNavigatorController] = setupDataNavigator({ theme, i18n, content: litContent });
   class DataNavigatorElement extends DataNavigatorBase {}
@@ -187,8 +187,13 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - A column `header` and an action `label` are `string | (() => string | C)`, an action `icon` is `() => C` (no
     string), an action `tip` is `string | (() => string)`.
     - Functions, because a DOM node can be in one place only (a row action's icon is in every row), and to follow the
-      locale: the element calls every text and content function again when the i18n adapter reports a change
+      locale: the element calls every text and content function again when its i18n adapter reports a change
       (`onChange`). Plain strings stay fixed.
+- Localization of the element: `i18n: { type: 'factory', getAdapter: (element: HTMLElement) => I18nAdapter }`, as in
+  the `file-upload` project (`createFileUploadClass({ i18n: { type: 'factory', getAdapter } })`). The element calls it
+  once, on its first connect, with itself (so an adapter can read e.g. the `lang` of the element or of an ancestor). It
+  may return one shared adapter or a new one per element. Another `type` (e.g. an adapter given directly) makes
+  `setupDataNavigator` throw a `TypeError`.
 - Column filters: the element's entry exports the same factories as the React entry (`textColumnFilter()`,
   `selectColumnFilter({ options, multiple })`, `dateRangeColumnFilter()`, `numberRangeColumnFilter()`,
   `booleanColumnFilter()`); internally they use the React filters.
@@ -271,7 +276,22 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - It is the only way to get the component: no ready-made, unconfigured `DataNavigator` next to it.
   - Several looks or languages in one app: several factory calls.
   - Internally the created component passes its config down with a private context (e.g. to the built-in filters).
-- Localization: `config.i18n`, an `I18nAdapter` of exactly the shape of `file-upload`'s (`currentLocale`,
+- Localization: `config.i18n`, a discriminated union on `type`, the same as the `file-upload` React wrapper's (decided
+  2026-10-02, to unify both packages). Without `i18n`: the English defaults. Another `type` (e.g. an adapter given
+  directly, as before) makes `createDataNavigatorComponent` throw a `TypeError`.
+  - `{ type: 'factory', getAdapter: (element: HTMLElement) => I18nAdapter }` (for i18n libraries that read the DOM, e.g.
+    `lang`): asked once per instance, with the root element of the table, when it is committed (a ref callback, before
+    the first paint; the texts are rendered once more, in the adapter's language). The same config object works for
+    `setupDataNavigator`. A shared adapter: `{ type: 'factory', getAdapter: () => i18n }`.
+    - Also in React (decided 2026-10-02): e.g. two parts of a page in two languages, told apart by `lang` on a
+      container and not by a React context. No `{ type: 'adapter' }` for a fixed adapter: `getAdapter: () => i18n` is
+      short enough, and written once per app.
+  - `{ type: 'hook', useAdapter: () => I18nAdapter }` (for i18n libraries with a React context): called in the
+    component on every render, so each instance follows the nearest provider. The `use` prefix keeps the hooks lint
+    rules working.
+  - Internally the adapter goes into the private `ConfigContext` per instance (with `onRoot`, the callback the view's
+    root ref calls for the factory).
+- The `I18nAdapter`: exactly the shape of `file-upload`'s (`currentLocale`,
   `resolveText(namespace, key, params, defaultValue)`, optional `onChange`).
   - Only `string`, `unknown`, `Record`, `null` and functions, nothing component-specific, so one adapter object fits
     both components (structural typing). Never change it incompatibly, only add optional members.
@@ -324,7 +344,8 @@ The main goal is a very nice, yet simple, API, designed together with the user.
 - One generic implementation with native elements. Themes for Mantine 9 and Ant Design 6. `@mantine/core` and `antd`
   are dev dependencies only, for `scripts/library-variables.mjs` (the variable snapshots of the demo); no library code
   runs in the demo.
-- i18n: no library. The app gives an `I18nAdapter` in the configuration (namespace `datanav`, see Configuration).
+- i18n: no library. The app gives an `I18nAdapter` through a factory or a hook in the configuration (namespace
+  `datanav`, see Configuration).
 - npm never runs install scripts of dependencies: `.npmrc` has `ignore-scripts=true`. (Our own `npm run` scripts are
   not affected.)
 - npm only installs versions that are at least 7 days old: `.npmrc` has `min-release-age=7`. It applies when npm
@@ -420,7 +441,7 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     page. Items are moved within a section or into another one. "Delete section" (a group action, a trash icon)
     deletes one, its items go to the blank group (section `''`, "(Blank)", at the end); a line with the last move.
   - `ElementDemo.ts` (+ `element-demo.css`): the custom element tab, plain TypeScript with DOM nodes as content: the
-    same users, `setupDataNavigator` with the demo's i18n adapter, text and select filters, a role badge (a node per
+    same users, `setupDataNavigator` with the demo's i18n factory, text and select filters, a role badge (a node per
     row, styled by the demo's global CSS), a rows action, switches for density, striped and searchable, and reload,
     clear selection and the selected rows (`onSelectionChange`). Titles, headers and labels are functions, so they
     follow the language.
@@ -428,7 +449,8 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     (`Toasts.tsx`) and inline SVG icons (`icons.tsx`, Tabler paths).
   - The Theme selector at the top switches between Default, Soft, Mantine and Ant Design. It starts with Default.
     - The demo creates one data navigator per theme at module level (`createDataNavigatorComponent({ i18n, theme })`,
-      all with the same adapter) and shows the one of the chosen theme.
+      all with the same adapter: `demo/i18n.ts` exports `i18n` as `{ type: 'factory', getAdapter: () => adapter }`) and
+      shows the one of the chosen theme.
     - The Mantine and antd themes read the variables of their library, which a real app gets from the library at
       runtime. The demo runs no library code, so it adds static snapshots of exactly the variables the two themes read
       (`demo/variables/mantine.css`, `demo/variables/antd.css`), light and dark (`prefers-color-scheme`), rendered as a
@@ -1807,8 +1829,8 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   the direct children of the row, and the click target has to be one of them and not `data-control`. Everything else
   follows from that, so there is no list of interactive elements to keep up to date. The data row and the detail row
   share one `rowHandlers(key)` in the view, so they cannot drift apart.
-- Texts: `useTexts` reads the `I18nAdapter` from the private `ConfigContext`. Without an adapter, or without a
-  translation, the en-US defaults (in `texts.ts`) are used. Numbers in texts are formatted with `Intl.NumberFormat`.
+- Texts: `useTexts` reads the `I18nAdapter` of the instance from the private `ConfigContext`. Without an adapter, or
+  without a translation, the en-US defaults (in `texts.ts`) are used. Numbers in texts are formatted with `Intl.NumberFormat`.
 - Popups (the list of a select, a menu, a tooltip) are Base UI's: it positions them (flipped when there is no room,
   kept inside the viewport, following scrolling). They are all rendered into the layer of the root (`LayerContext`).
 - Tests choose an option of a Base UI select with the pointer sequence of a real mouse (`chooseIn` in the test file):
