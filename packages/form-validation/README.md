@@ -112,21 +112,18 @@ are chained (the library first), refs combined, everything else overrides. `fals
 
 **Submit:** `submit(data, ctx)` gets the parsed, typed data. `ctx.submitter` for several buttons, `ctx.setErrors()` or
 returning `{ fieldErrors, formError }` for server errors (keys or texts), `ctx.reset()`. If `submit` throws, `formError`
-shows a generic message.
+shows a generic message, or the one `errorMessage(error)` of the config gives (a text or a key, once per app, e.g.
+`(error) => error instanceof Error ? error.message : undefined` for a server whose errors are meant for the user).
 
-**A foreign `<form>`:** when the `<form>` belongs to someone else (e.g. a dialog that saves itself), the fields are
-used without `form()`, and `submit` is optional. The owner gets the form's validation through `useValidator`, a React
-hook given once per app: every form calls it on every render with its validation, which shows every error, focuses the
-first invalid field and returns whether the form is valid. Given the `<form>` element, it is used like one from
-`form()` (the i18n factory, `reset()`). Typically the hook reads a React context the owner puts around the fields, and
-does nothing without one. So no form needs any wiring. The name is provisional.
+**A foreign `<form>`:** when the `<form>` belongs to someone else (e.g. a dialog), the fields are used without
+`form()`, and the owner runs `requestSubmit()` (stable across renders): it validates and submits like a submit of
+`form()` (`ctx.event` is absent) and resolves with the outcome, `{ ok: true }`, `{ ok: false }` (invalid, or field
+errors from the server) or `{ ok: false, error }` (the form-wide error, translated; a thrown `submit` gives the generic
+message). The overlays' form dialog takes it directly:
 
 ```tsx
-// once per app
-const useForm = defineUseForm({ useValidator: (validate) => useContext(DialogCheck)?.set(validate) });
-
-// a form in a dialog: nothing extra
-const { field } = useForm(schema, { initial: person });
+const { requestSubmit, field } = useForm(schema, { submit: save });
+return <Form confirm={requestSubmit}>…</Form>; // Form from @local/overlays/react
 ```
 
 **invalid and user-invalid:** native elements get the Zod result with `setCustomValidity()`, so `:invalid` and

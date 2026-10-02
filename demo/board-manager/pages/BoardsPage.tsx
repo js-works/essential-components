@@ -11,7 +11,7 @@ import type { DataNavigatorComponent } from '../../../packages/data-navigator/sr
 import { useDialogs, useToast } from '../../../packages/overlays/src/main/bindings/react';
 import { createBoard, db, deleteBoards, fetchBoards, getBoard, updateBoard } from '../db';
 import type { BoardRow } from '../db';
-import { confirmAndRun, submitForm } from '../flows';
+import { confirmAndRun } from '../flows';
 import { BoardForm } from '../forms';
 import { appIcons, countText, formatDateTime, Navigator } from '../shared';
 
@@ -51,14 +51,17 @@ function BoardsPage(): ReactElement {
   const actions = useMemo<readonly DataNavigatorComponent.Action<BoardRow>[]>(() => {
     const create = async () => {
       let created = '';
-      const saved = await submitForm(
-        dialogs,
-        { title: 'New board', content: <BoardForm />, buttons: { confirm: 'Create' } },
-        async (data) => {
-          created = (await createBoard({ name: data.string('name', ''), description: data.string('description', '') }))
-            .id;
-        },
-      );
+      const saved = !(await dialogs.form({
+        title: 'New board',
+        content: (
+          <BoardForm
+            save={async (values) => {
+              created = (await createBoard(values)).id;
+            }}
+          />
+        ),
+        buttons: { confirm: 'Create' },
+      })).canceled;
 
       if (saved) {
         toasts.success('Board created');
@@ -68,15 +71,11 @@ function BoardsPage(): ReactElement {
 
     const edit = async (row: BoardRow) => {
       const board = getBoard(db.getState(), row.id);
-      const saved = await submitForm(
-        dialogs,
-        {
-          title: 'Edit board',
-          content: <BoardForm board={board} />,
-          buttons: { confirm: 'Save' },
-        },
-        (data) => updateBoard(row.id, { name: data.string('name', ''), description: data.string('description', '') }),
-      );
+      const saved = !(await dialogs.form({
+        title: 'Edit board',
+        content: <BoardForm board={board} save={(values) => updateBoard(row.id, values)} />,
+        buttons: { confirm: 'Save' },
+      })).canceled;
 
       if (saved) {
         nav.reload();

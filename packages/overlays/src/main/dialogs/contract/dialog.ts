@@ -300,6 +300,25 @@ export interface FormValidator {
   validate(form: HTMLFormElement): boolean | Promise<boolean>;
 }
 
+/**
+ * The outcome of a form that confirms its dialog itself (see {@link FormConfirm}).
+ *
+ * - `{ ok: true }`: done (e.g. saved) — the dialog closes as confirmed.
+ * - `{ ok: false }`: not valid — the dialog stays open, focus goes to the first invalid field.
+ * - `{ ok: false, error }`: failed (e.g. the save) — the dialog stays open and shows `error`
+ *   as its note.
+ */
+export type FormConfirmResult = { ok: true } | { ok: false; error?: string };
+
+/**
+ * A form's own confirmation: run on the confirm click of a form dialog instead of the
+ * dialog's validation (native constraints, {@link FormValidator}). It validates, does the
+ * work (e.g. saves the parsed data) and says how it went. While a returned promise is
+ * pending, the button shows its spinner. A framework binding registers it from the
+ * dialog's content (React: `<Form confirm={…}>`).
+ */
+export type FormConfirm = () => FormConfirmResult | Promise<FormConfirmResult>;
+
 export interface FormDialogConfig<C extends object> extends DialogConfig<C> {
   validator?: FormValidator;
   /**

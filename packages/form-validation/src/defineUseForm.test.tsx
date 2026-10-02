@@ -174,52 +174,75 @@ describe('defineUseForm', () => {
     }
   });
 
-  it('gives the owner of a foreign <form> (e.g. a dialog) its validation through the hook of the config', async () => {
+  it('requestSubmit validates and submits without a <form> event, and resolves with the outcome', async () => {
     setLocale('en');
-    type Validate = (form?: HTMLFormElement) => boolean;
-    // The owner's context: the fields register their validation there, the owner asks it before it submits.
-    const Owner = createContext<{ validate?: Validate } | null>(null);
-    const useOwnedForm = defineUseForm({
-      i18n: { type: 'factory', getAdapter: () => adapter },
-      props: { label: 'label', error: 'errorText' },
-      useValidator: (validate) => {
-        const owner = useContext(Owner);
-        if (owner) owner.validate = validate;
-      },
+    const outcomes: unknown[] = [];
+    const seen = new Set<unknown>();
+    let fail: 'field' | 'throw' | undefined;
+    const submit = vi.fn(async (_data: { age: number }) => {
+      if (fail === 'field') return { fieldErrors: { age: 'Too old for us' } };
+      if (fail === 'throw') throw new Error('offline');
+      return undefined;
     });
-    const results: boolean[] = [];
-    function Fields() {
-      const { field } = useOwnedForm(z.object({ email: z.email() }), { labels: 'signup' });
-      return <TextField {...field.email()} />;
-    }
-    function Dialog() {
-      const [owner] = useState<{ validate?: Validate }>({});
+    function Owner() {
+      const { requestSubmit, field } = useForm(z.object({ age: z.number().min(18) }), { labels: 'signup', submit });
+      seen.add(requestSubmit);
       return (
-        <Owner value={owner}>
-          <form
-            noValidate
-            onSubmit={(event) => {
-              event.preventDefault();
-              results.push(owner.validate!(event.currentTarget));
-            }}
-          >
-            <Fields />
-            <button type="submit">OK</button>
-          </form>
-        </Owner>
+        <div>
+          <TextField {...field.age()} />
+          <button type="button" onClick={async () => outcomes.push(await requestSubmit())}>OK</button>
+        </div>
       );
     }
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     const user = userEvent.setup();
-    render(<Dialog />);
+    render(<Owner />);
     await user.click(screen.getByText('OK'));
-    expect(results).toEqual([false]);
+    expect(outcomes.at(-1)).toEqual({ ok: false });
     expect(screen.getByRole('alert').textContent).toBe('Please fill out this field.');
-    expect(document.activeElement).toBe(screen.getByLabelText('Email'));
+    expect(document.activeElement).toBe(screen.getByLabelText('Age'));
 
-    await user.type(screen.getByLabelText('Email'), 'a@b.de');
+    await user.type(screen.getByLabelText('Age'), '30');
     await user.click(screen.getByText('OK'));
-    expect(results).toEqual([false, true]);
-    expect(screen.queryByRole('alert')).toBeNull();
+    expect(outcomes.at(-1)).toEqual({ ok: true });
+    expect(submit).toHaveBeenLastCalledWith({ age: 30 }, expect.objectContaining({ event: undefined }));
+
+    fail = 'field';
+    await user.click(screen.getByText('OK'));
+    expect(outcomes.at(-1)).toEqual({ ok: false });
+    expect(screen.getByRole('alert').textContent).toBe('Too old for us');
+
+    fail = 'throw';
+    await user.click(screen.getByText('OK'));
+    expect(outcomes.at(-1)).toEqual({ ok: false, error: expect.any(String) });
+
+    expect(seen.size).toBe(1); // stable across renders
+  });
+
+  it('shows the message of a thrown submit through errorMessage, the generic one without it', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const schema = z.object({ code: z.string().optional() });
+    const submit = async () => {
+      throw new Error('Server down');
+    };
+    const withMessage = defineUseForm({
+      errorMessage: (error) => (error instanceof Error ? error.message : undefined),
+    });
+    const generic = defineUseForm();
+    const outcomes: unknown[] = [];
+    for (const use of [withMessage, generic]) {
+      function F() {
+        const { requestSubmit } = use(schema, { submit });
+        return <button type="button" onClick={async () => outcomes.push(await requestSubmit())}>OK</button>;
+      }
+      const { unmount } = render(<F />);
+      await userEvent.setup().click(screen.getByText('OK'));
+      unmount();
+    }
+    expect(outcomes).toEqual([{ ok: false, error: 'Server down' }, {
+      ok: false,
+      error: expect.not.stringMatching('Server down'),
+    }]);
   });
 
   it('validates everything on submit, focuses the first field and passes the parsed data', async () => {

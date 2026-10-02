@@ -9,10 +9,9 @@ import {
 } from '../../../packages/data-navigator/src/react';
 import type { DataNavigatorComponent } from '../../../packages/data-navigator/src/react';
 import { useDialogs, useToast } from '../../../packages/overlays/src/main/bindings/react';
-import type { FormDialogData } from '../../../packages/overlays/src/main/dialogs/contract/form-data';
 import { boardIdsOf, createPerson, db, deletePeople, fetchPeople, getPerson, updatePerson } from '../db';
-import type { PersonRow, PersonValues } from '../db';
-import { confirmAndRun, submitForm } from '../flows';
+import type { PersonRow } from '../db';
+import { confirmAndRun } from '../flows';
 import type { Dialogs } from '../flows';
 import { PersonForm } from '../forms';
 import { appIcons, countText, Navigator, useDb } from '../shared';
@@ -25,24 +24,14 @@ type Toasts = ReturnType<typeof useToast>;
 const memberPath = (person: { id: string }) => `/members/${person.id}`;
 
 // The values of the person form.
-const personValues = (data: FormDialogData): PersonValues => ({
-  name: data.string('name', ''),
-  email: data.string('email', ''),
-  organizationId: data.string('organizationId', ''),
-});
-
 // "Edit" of a person (in the people tables and on the member's overview): the person form in a dialog, saved before it
 // closes, then a toast. Resolves `true` when saved.
 async function editPerson(dialogs: Dialogs, toasts: Toasts, id: string): Promise<boolean> {
-  const saved = await submitForm(
-    dialogs,
-    {
-      title: 'Edit member',
-      content: <PersonForm person={getPerson(db.getState(), id)} />,
-      buttons: { confirm: 'Save' },
-    },
-    (data) => updatePerson(id, personValues(data)),
-  );
+  const saved = !(await dialogs.form({
+    title: 'Edit member',
+    content: <PersonForm person={getPerson(db.getState(), id)} save={(values) => updatePerson(id, values)} />,
+    buttons: { confirm: 'Save' },
+  })).canceled;
 
   if (saved) {
     toasts.success('Member saved');
@@ -133,15 +122,11 @@ function PeopleTable(
 
   const actions = useMemo<readonly DataNavigatorComponent.Action<PersonRow>[]>(() => {
     const create = async () => {
-      const saved = await submitForm(
-        dialogs,
-        {
-          title: 'New member',
-          content: <PersonForm organizationId={organizationId} />,
-          buttons: { confirm: 'Create' },
-        },
-        (data) => createPerson(personValues(data)),
-      );
+      const saved = !(await dialogs.form({
+        title: 'New member',
+        content: <PersonForm organizationId={organizationId} save={createPerson} />,
+        buttons: { confirm: 'Create' },
+      })).canceled;
 
       if (saved) {
         nav.reload();

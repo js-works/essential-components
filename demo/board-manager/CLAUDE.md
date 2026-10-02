@@ -78,22 +78,25 @@ the root's `CLAUDE.md` apply.
     app; Mantine's `green` before): only the icon differs, so a toast from a spinner to success changes only its icon.
     Warnings orange, errors the danger color.
 - Forms (`forms.tsx`) are validated by the root's `form-validation` package (2026-10-02; Mantine's `@mantine/form`
-  before), not by the browser: `submitForm()` (`flows.ts`) opens the form dialog with `nativeValidation: false` and a
-  `validator` that asks the form; the errors are shown on the inputs. The upload drawer keeps the native validation (the
-  file upload is no Mantine input and reports its own message). `MinutesForm` validates nothing.
-  - A Zod schema per form (`boardSchema`, `meetingSchema`, …) gives the rules and the required marks; the inputs get
-    their props from `field.<name>()`. `useForm` (`defineUseForm`, once) maps Mantine's `error` as both the
-    message and the invalid mark (`true`: red without a text, for a field that turned invalid while being edited).
+  before), not by the browser. Each form is the dialog's form: `<Form confirm={requestSubmit}>` (the overlays' React
+  `Form`); "OK" runs `requestSubmit`, which validates, shows the errors on the inputs and calls the form's `save` prop
+  with the schema's typed output; the dialog closes when it is saved and shows a failed save as its note (the library's
+  server's message). A caller opens it with `dialogs.form({ …, content: <PersonForm save={createPerson} /> })`.
+  - A Zod schema per form (`boardSchema`, `meetingSchema`, …) gives the rules and the required marks; optional strings
+    `.default('')`, the meeting's `start` a `transform` (picker value to the fake server's), the role `z.enum(ROLES)`:
+    the output fits the fake server's values, with no conversion in the pages. `useForm` (`defineUseForm`, once) maps
+    Mantine's `error` as both the message and the invalid mark (`true`: red without a text, for a field that turned
+    invalid while being edited).
   - A field only some dialogs show (the board of a new meeting on the meetings page, the person of a new member) gets
     a second schema (`meetingWithBoardSchema`, `memberWithPersonSchema`), so it is required only there.
-  - The wiring (no `check` prop): `submitForm()` puts a context (`DialogCheck`) around the content; every form
-    registers its validation there (`useValidator: useDialogValidator` in `defineUseForm`; on every render, nothing
-    outside a form dialog), and the dialog's validator asks it before "OK", with its `<form>`. A caller passes the form
-    as `content: <PersonForm … />`.
+  - `MinutesForm` too (nothing to validate): its editor is a field like the others (`MinutesEditor`, see Meetings).
+    The upload drawer keeps the native validation (the file upload is no Mantine input and reports its own message).
+  - A failed save shows the fake server's message (`errorMessage` in `defineUseForm`: its errors are meant for the
+    user), else form-validation's generic one.
   - The labels are translated (`labels: '<form>'`, keys like `person.email`) by the app's i18next (`i18n.ts`): its own
     instance, English and German, the language from `<html lang>` (a `MutationObserver`), fallback English. Only the
-    labels so far; the rest of the app is English only. The adapter is given as a hook (in a dialog, a factory would
-    get the `<form>` only on the first "OK"). The messages come from the library's catalogs in the same language
+    labels so far; the rest of the app is English only. The adapter is given as a hook (in a dialog the form has no
+    `<form>` of its own for a factory). The messages come from the library's catalogs in the same language
     ("Please fill out this field." instead of the former "Required"); the schemas' own texts are English.
 - The message of an invalid input is a badge below it (`board-manager.css`, 2026-10-02, taken from the overlays' React
   demo): the danger color, a warning triangle (a CSS mask) and a nose pointing up at the field; shown only while the
@@ -102,7 +105,7 @@ the root's `CLAUDE.md` apply.
   overlays demo's global CSS. Hidden while a date input's calendar is open (`:has([data-dates-dropdown])`; it lay half under it;
   Mantine's `DateInput` sets no `aria-expanded`).
 - No native date picker: the date and time of a meeting is Mantine's `DateTimePicker` (`DD.MM.YYYY HH:mm`, its popup in
-  the dialog with a fixed position); `fromPicker()` turns its value into the fake server's `start`.
+  the dialog with a fixed position); the meeting schema's `transform` turns its value into the fake server's `start`.
 
 ## The `<board-manager>` element
 
@@ -216,8 +219,9 @@ the root's `CLAUDE.md` apply.
     the overlays' dialog element, `.board-manager__minutes-form`). The textarea gets `min-height: 100%`: Mantine's
     `autosize` sets its height inline with `!important`, which no stylesheet beats. (Tried the same day: only the
     minutes growing.)
-  - The dialog's editor (`MinutesEditor`) writes the JSON into a hidden input `minutes`, so the form data works as
-    before; "Decision" stays a `Textarea`. Framed like a Mantine input (`.board-manager__minutes-editor`),
+  - The dialog's editor (`MinutesEditor`) is a field of form-validation (2026-10-02; a hidden input `minutes` for the
+    dialog's form data before): in Mantine's input wrapper (label, description, error), `defaultValue` and `onChange`
+    with the JSON (`toMinutes`); "Decision" stays a `Textarea`. Framed like a Mantine input (`.board-manager__minutes-editor`),
     in the app's size and font (`--mantine-font-size-sm`, `--mantine-font-family`; BlockNote's own are 16px and Inter).
     - The frame is `position: relative` (2026-10-01): BlockNote's menus (slash menu, toolbar, side menu, …) are
       portalled into its container and placed by Floating UI from their `offsetParent`. In the overlays dialog, whose

@@ -17,7 +17,13 @@
 // React cannot honour) is needed.
 
 import type { DialogButtonView } from "./view.js";
-import type { DialogRenderOverrides, DialogSurface, DialogType, DialogWidth } from "./dialog.js";
+import type {
+  DialogRenderOverrides,
+  DialogSurface,
+  DialogType,
+  DialogWidth,
+  FormConfirm,
+} from "./dialog.js";
 import type { Renderable } from "./content.js";
 
 /**
@@ -154,4 +160,10 @@ export interface DialogAdapter<C extends object> {
   render(spec: DialogSpec<C>): void;
   /** Optional teardown when the dialog goes away, e.g. unmounting a React root. */
   destroy?(): void;
+  /**
+   * The confirmation the dialog's content registered, if any (React: `<Form confirm>`).
+   * Asked on every confirm click of a form dialog; with one, it replaces the dialog's own
+   * validation (see {@link FormConfirm}).
+   */
+  getConfirm?(): FormConfirm | undefined;
 }

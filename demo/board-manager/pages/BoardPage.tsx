@@ -11,8 +11,8 @@ import {
 import type { DataNavigatorComponent } from '../../../packages/data-navigator/src/react';
 import { useDialogs, useToast } from '../../../packages/overlays/src/main/bindings/react';
 import { addMember, changeRole, db, fetchBoardMembers, getBoard, removeMembers, ROLES } from '../db';
-import type { MemberRow, Role } from '../db';
-import { confirmAndRun, submitForm } from '../flows';
+import type { MemberRow } from '../db';
+import { confirmAndRun } from '../flows';
 import { MemberForm } from '../forms';
 import { appIcons, countText, formatDate, Navigator, PageHeader, useDb } from '../shared';
 import { MeetingsTable } from './MeetingsTable';
@@ -108,15 +108,16 @@ function MembersTable({ boardId }: { boardId: string }): ReactElement {
         return;
       }
 
-      const saved = await submitForm(
-        dialogs,
-        {
-          title: 'Add member',
-          content: <MemberForm people={people} />,
-          buttons: { confirm: 'Add' },
-        },
-        (data) => addMember(boardId, data.string('personId', ''), data.string('role', 'Member') as Role),
-      );
+      const saved = !(await dialogs.form({
+        title: 'Add member',
+        content: (
+          <MemberForm
+            people={people}
+            save={(values) => addMember(boardId, values.personId ?? '', values.role)}
+          />
+        ),
+        buttons: { confirm: 'Add' },
+      })).canceled;
 
       if (saved) {
         nav.reload();
@@ -125,15 +126,11 @@ function MembersTable({ boardId }: { boardId: string }): ReactElement {
     };
 
     const edit = async (row: MemberRow) => {
-      const saved = await submitForm(
-        dialogs,
-        {
-          title: `Role of ${row.name}`,
-          content: <MemberForm role={row.role} />,
-          buttons: { confirm: 'Save' },
-        },
-        (data) => changeRole(row.id, data.string('role', 'Member') as Role),
-      );
+      const saved = !(await dialogs.form({
+        title: `Role of ${row.name}`,
+        content: <MemberForm role={row.role} save={(values) => changeRole(row.id, values.role)} />,
+        buttons: { confirm: 'Save' },
+      })).canceled;
 
       if (saved) {
         nav.reload();

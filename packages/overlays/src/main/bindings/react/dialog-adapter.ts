@@ -9,7 +9,7 @@
 // and discarded whatever the user had typed into it. Here an update is an ordinary
 // re-render, so React reconciles and the DOM (and its state) survives.
 
-import { createElement, useLayoutEffect, useRef } from "react";
+import { createContext, createElement, Fragment, useContext, useLayoutEffect, useRef } from "react";
 import { flushSync } from "react-dom";
 import type { ReactElement, ReactNode } from "react";
 import type {
@@ -18,6 +18,7 @@ import type {
   DialogSlots,
 } from "../../dialogs/contract/adapter.js";
 import type { Renderable } from "../../dialogs/contract/content.js";
+import type { FormConfirm } from "../../dialogs/contract/dialog.js";
 import type { PortalStore } from "./portals.js";
 
 /**
@@ -43,6 +44,51 @@ export interface ReactDialogAdapter {
   refresh(): void;
 }
 
+// The confirmation a form in the content registered (`<Form confirm>`), one per dialog.
+// A box rather than state: the core asks for it on a click, so nothing re-renders when
+// it changes.
+interface ConfirmBox {
+  current: FormConfirm | undefined;
+}
+
+// Provided around the content of a form dialog only, so `<Form>` anywhere else throws.
+const FormDialogContext = createContext<ConfirmBox | null>(null);
+
+export interface FormProps {
+  /**
+   * The form's own confirmation, run on the dialog's confirm click instead of the dialog's
+   * validation: it validates, does the work (e.g. saves) and returns the outcome (see
+   * {@link FormConfirm}). A form library provides it, e.g. form-validation's
+   * `requestSubmit`.
+   */
+  confirm: FormConfirm;
+  children?: ReactNode;
+}
+
+/**
+ * The form of a form dialog (`dialogs.form`), for a form that confirms the dialog itself.
+ * Renders its children only — the dialog already has the `<form>` — and registers
+ * `confirm` with the dialog. Outside the content of a form dialog it throws: there is no
+ * dialog to confirm.
+ */
+export function Form({ confirm, children }: FormProps): ReactElement {
+  const box = useContext(FormDialogContext);
+  if (!box) {
+    throw new Error("<Form> is only for the content of a form dialog (dialogs.form).");
+  }
+  // The latest one, on every commit; gone with the form.
+  useLayoutEffect(() => {
+    box.current = confirm;
+  });
+  useLayoutEffect(
+    () => () => {
+      box.current = undefined;
+    },
+    [box],
+  );
+  return createElement(Fragment, null, children);
+}
+
 export function createDialogAdapter(store: PortalStore): ReactDialogAdapter {
   // One per mounted scope; a scope removes its own on destroy.
   const pending = new Set<() => void>();
@@ -53,15 +99,17 @@ export function createDialogAdapter(store: PortalStore): ReactDialogAdapter {
     requestRender,
   }) => {
     const id = store.nextId();
+    const confirmBox: ConfirmBox = { current: undefined };
     pending.add(requestRender);
     return {
       render(spec) {
         // Synchronous commit: the core reads layout and moves focus straight after this
         // returns (the same requirement the toast adapter documents).
         flushSync(() => {
-          store.set(id, container, createElement(DialogHost, { tag, spec }));
+          store.set(id, container, createElement(DialogHost, { tag, spec, confirmBox }));
         });
       },
+      getConfirm: () => confirmBox.current,
       destroy() {
         pending.delete(requestRender);
         flushSync(() => store.remove(id));
@@ -114,9 +162,11 @@ function content(value: Renderable<ReactContent>): ReactNode {
 function DialogHost({
   tag,
   spec,
+  confirmBox,
 }: {
   tag: string;
   spec: { props: DialogProps<ReactContent>; slots: DialogSlots<ReactContent> };
+  confirmBox: ConfirmBox;
 }): ReactElement {
   const host = useRef<HTMLElement>(null);
   useLayoutEffect(() => {
@@ -140,7 +190,7 @@ function DialogHost({
           noValidate: !props.nativeValidation,
           onSubmit: preventSubmit,
         },
-        content(slots.content),
+        createElement(FormDialogContext.Provider, { value: confirmBox }, content(slots.content)),
       )
     : createElement(
         "div",

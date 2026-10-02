@@ -9,7 +9,6 @@ import {
 } from '../../../packages/data-navigator/src/react';
 import type { DataNavigatorComponent } from '../../../packages/data-navigator/src/react';
 import { useDialogs, useToast } from '../../../packages/overlays/src/main/bindings/react';
-import type { FormDialogData } from '../../../packages/overlays/src/main/dialogs/contract/form-data';
 import { countryName } from '../countries';
 import {
   createOrganization,
@@ -19,8 +18,8 @@ import {
   getOrganization,
   updateOrganization,
 } from '../db';
-import type { OrganizationRow, OrganizationValues } from '../db';
-import { confirmAndRun, submitForm } from '../flows';
+import type { OrganizationRow } from '../db';
+import { confirmAndRun } from '../flows';
 import type { Dialogs } from '../flows';
 import { OrganizationForm } from '../forms';
 import { appIcons, countText, Navigator, useDb } from '../shared';
@@ -30,28 +29,19 @@ export { deleteOrganizationsFlow, editOrganization, OrganizationsPage, WebsiteLi
 type Toasts = ReturnType<typeof useToast>;
 
 // The values of the organization form.
-const organizationValues = (data: FormDialogData): OrganizationValues => ({
-  name: data.string('name', ''),
-  description: data.string('description', ''),
-  street: data.string('street', ''),
-  zipCode: data.string('zipCode', ''),
-  city: data.string('city', ''),
-  country: data.string('country', ''),
-  website: data.string('website', ''),
-});
-
 // "Edit" of an organization (in the list and on its overview): the organization form in a dialog, saved before it
 // closes, then a toast. Resolves `true` when saved.
 async function editOrganization(dialogs: Dialogs, toasts: Toasts, id: string): Promise<boolean> {
-  const saved = await submitForm(
-    dialogs,
-    {
-      title: 'Edit organization',
-      content: <OrganizationForm organization={getOrganization(db.getState(), id)} />,
-      buttons: { confirm: 'Save' },
-    },
-    (data) => updateOrganization(id, organizationValues(data)),
-  );
+  const saved = !(await dialogs.form({
+    title: 'Edit organization',
+    content: (
+      <OrganizationForm
+        organization={getOrganization(db.getState(), id)}
+        save={(values) => updateOrganization(id, values)}
+      />
+    ),
+    buttons: { confirm: 'Save' },
+  })).canceled;
 
   if (saved) {
     toasts.success(`"${getOrganization(db.getState(), id)?.name ?? ''}" saved`);
@@ -158,17 +148,17 @@ function OrganizationsPage(): ReactElement {
   const actions = useMemo<readonly DataNavigatorComponent.Action<OrganizationRow>[]>(() => {
     const create = async () => {
       let created = '';
-      const saved = await submitForm(
-        dialogs,
-        {
-          title: 'New organization',
-          content: <OrganizationForm />,
-          buttons: { confirm: 'Create' },
-        },
-        async (data) => {
-          created = (await createOrganization(organizationValues(data))).id;
-        },
-      );
+      const saved = !(await dialogs.form({
+        title: 'New organization',
+        content: (
+          <OrganizationForm
+            save={async (values) => {
+              created = (await createOrganization(values)).id;
+            }}
+          />
+        ),
+        buttons: { confirm: 'Create' },
+      })).canceled;
 
       if (saved) {
         toasts.success('Organization created');

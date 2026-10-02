@@ -9,9 +9,8 @@ import {
   useCreateBlockNote,
 } from '@blocknote/react';
 import type { DefaultReactSuggestionItem } from '@blocknote/react';
-import { Anchor, Text } from '@mantine/core';
-import { useState } from 'react';
-import type { ReactElement, ReactNode } from 'react';
+import { Anchor, Input, Text } from '@mantine/core';
+import type { ReactElement, ReactNode, Ref } from 'react';
 import { Link, useInRouterContext } from 'react-router';
 import { getPerson } from './db';
 import type { Person } from './db';
@@ -108,13 +107,20 @@ function toMinutes(blocks: readonly unknown[]): string {
   return empty ? '' : JSON.stringify(blocks);
 }
 
-// The editor of the minutes dialog, for a form: its value is in a hidden input (`name`), so the dialog's form data has
-// it. `@` opens a menu of `people` (the board's members), filtered by what follows.
-function MinutesEditor(
-  { name, minutes, people }: { name: string; minutes: string; people: readonly Person[] },
-): ReactElement {
-  const editor = useCreateBlockNote({ schema, initialContent: toBlocks(minutes) });
-  const [value, setValue] = useState(minutes);
+// The editor of the minutes dialog, a field of a form (form-validation's contract: a label and an error prop,
+// `defaultValue`, `onChange` with the value), in Mantine's input wrapper. Its value is the minutes (`toMinutes`). `@`
+// opens a menu of `people` (the board's members), filtered by what follows.
+function MinutesEditor({ label, description, error, defaultValue = '', onChange, onBlur, ref, people }: {
+  label?: ReactNode;
+  description?: ReactNode;
+  error?: ReactNode;
+  defaultValue?: string;
+  onChange?: (value: string) => void;
+  onBlur?: () => void;
+  ref?: Ref<HTMLDivElement>;
+  people: readonly Person[];
+}): ReactElement {
+  const editor = useCreateBlockNote({ schema, initialContent: toBlocks(defaultValue) });
 
   const mentionItems = (query: string): DefaultReactSuggestionItem[] =>
     filterSuggestionItems(
@@ -126,14 +132,15 @@ function MinutesEditor(
     );
 
   return (
-    <div className="board-manager__minutes-editor">
-      <input type="hidden" name={name} value={value} />
-      <SchemeContext>
-        <BlockNoteView editor={editor} theme={MANTINE_LOOK} onChange={() => setValue(toMinutes(editor.document))}>
-          <SuggestionMenuController triggerCharacter="@" getItems={async (query) => mentionItems(query)} />
-        </BlockNoteView>
-      </SchemeContext>
-    </div>
+    <Input.Wrapper label={label} description={description} error={error}>
+      <div ref={ref} className="board-manager__minutes-editor" onBlur={onBlur}>
+        <SchemeContext>
+          <BlockNoteView editor={editor} theme={MANTINE_LOOK} onChange={() => onChange?.(toMinutes(editor.document))}>
+            <SuggestionMenuController triggerCharacter="@" getItems={async (query) => mentionItems(query)} />
+          </BlockNoteView>
+        </SchemeContext>
+      </div>
+    </Input.Wrapper>
   );
 }
 

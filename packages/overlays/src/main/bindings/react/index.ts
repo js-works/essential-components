@@ -13,5 +13,6 @@
 
 export { OverlaysProvider, useDialogs, useToast } from "./provider.js";
 export type { OverlaysConfig, OverlaysProviderProps } from "./provider.js";
-export type { ReactContent } from "./dialog-adapter.js";
+export { Form } from "./dialog-adapter.js";
+export type { FormProps, ReactContent } from "./dialog-adapter.js";
 export type { ReactToastContent } from "./toast-adapter.js";

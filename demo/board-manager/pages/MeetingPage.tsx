@@ -13,7 +13,6 @@ import { createDemoI18n } from '../../../packages/file-upload/demo/i18n';
 import type { FileUpload } from '../../../packages/file-upload/src';
 import { createFileUploadComponent } from '../../../packages/file-upload/src/react';
 import { useDialogs, useToast } from '../../../packages/overlays/src/main/bindings/react';
-import type { FormDialogData } from '../../../packages/overlays/src/main/dialogs/contract/form-data';
 import {
   agendaNumbers,
   agendaOf,
@@ -39,7 +38,7 @@ import {
   withSectionDraft,
 } from '../db';
 import type { AgendaItem, AgendaRow, AgendaSection, Db, Meeting, MeetingDocument, Person, SectionDraft } from '../db';
-import { confirmAndRun, submitForm } from '../flows';
+import { confirmAndRun } from '../flows';
 import type { Dialogs } from '../flows';
 import { AgendaItemForm, DocumentForm, MinutesForm } from '../forms';
 import { MinutesText } from '../minutes';
@@ -383,24 +382,18 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
       db.getState().agendaSections
         .filter((section) => section.meetingId === meeting.id)
         .sort((a, b) => a.position - b.position);
-    const values = (data: FormDialogData) => ({
-      sectionId: data.string('sectionId', ''),
-      title: data.string('title', ''),
-      presenterId: data.string('presenterId', ''),
-      duration: data.integer('duration', 15),
-      description: data.string('description', ''),
-    });
-
     const create = async () => {
-      const saved = await submitForm(
-        dialogs,
-        {
-          title: 'New agenda item',
-          content: <AgendaItemForm members={members()} sections={sections()} />,
-          buttons: { confirm: 'Add' },
-        },
-        (data) => createAgendaItem(meeting.id, values(data)),
-      );
+      const saved = !(await dialogs.form({
+        title: 'New agenda item',
+        content: (
+          <AgendaItemForm
+            members={members()}
+            sections={sections()}
+            save={(values) => createAgendaItem(meeting.id, values)}
+          />
+        ),
+        buttons: { confirm: 'Add' },
+      })).canceled;
 
       if (saved) {
         nav.reload();
@@ -409,15 +402,18 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
     };
 
     const edit = async (row: AgendaRow) => {
-      const saved = await submitForm(
-        dialogs,
-        {
-          title: 'Edit agenda item',
-          content: <AgendaItemForm item={itemOf(row)} members={members()} sections={sections()} />,
-          buttons: { confirm: 'Save' },
-        },
-        (data) => updateAgendaItem(row.id, values(data)),
-      );
+      const saved = !(await dialogs.form({
+        title: 'Edit agenda item',
+        content: (
+          <AgendaItemForm
+            item={itemOf(row)}
+            members={members()}
+            sections={sections()}
+            save={(values) => updateAgendaItem(row.id, values)}
+          />
+        ),
+        buttons: { confirm: 'Save' },
+      })).canceled;
 
       if (saved) {
         nav.reload();
@@ -433,20 +429,15 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
         return;
       }
 
-      const saved = await submitForm(
-        dialogs,
-        {
-          width: 'extraWide',
-          // Long minutes are easier to write in the whole window.
-          maximizable: true,
-          title: numbered(row.number, row.title),
-          subtitle: 'Minutes',
-          content: <MinutesForm item={item} members={members()} />,
-          buttons: { confirm: 'Save' },
-        },
-        (data) =>
-          updateAgendaItem(row.id, { minutes: data.string('minutes', ''), decision: data.string('decision', '') }),
-      );
+      const saved = !(await dialogs.form({
+        width: 'extraWide',
+        // Long minutes are easier to write in the whole window.
+        maximizable: true,
+        title: numbered(row.number, row.title),
+        subtitle: 'Minutes',
+        content: <MinutesForm item={item} members={members()} save={(values) => updateAgendaItem(row.id, values)} />,
+        buttons: { confirm: 'Save' },
+      })).canceled;
 
       if (saved) {
         nav.reload();
@@ -902,17 +893,18 @@ function DocumentsTable({ meeting }: { meeting: Meeting }): ReactElement {
     // The name in a form dialog (the fake server trims it and refuses an empty one; the dialog shows its message).
     const rename = async (row: MeetingDocument) => {
       let renamed = row.name;
-      const saved = await submitForm(
-        dialogs,
-        {
-          title: 'Rename document',
-          content: <DocumentForm document={row} />,
-          buttons: { confirm: 'Save' },
-        },
-        async (data) => {
-          renamed = (await renameDocument(row.id, data.string('name', ''))).name;
-        },
-      );
+      const saved = !(await dialogs.form({
+        title: 'Rename document',
+        content: (
+          <DocumentForm
+            document={row}
+            save={async (values) => {
+              renamed = (await renameDocument(row.id, values.name)).name;
+            }}
+          />
+        ),
+        buttons: { confirm: 'Save' },
+      })).canceled;
 
       if (saved) {
         nav.reload();

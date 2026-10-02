@@ -133,6 +133,23 @@ function Page() {
 
 Content is ordinary JSX rendered by *your* React tree — your context and theme providers are in scope inside a dialog. The elements themselves live where the provider is: it renders a mount point (`<div data-overlays>`, `display: contents`) after its children. So an app inside a shadow root keeps its dialogs and toasts in that shadow root, with its styles. A modal `<dialog>` is in the top layer wherever it is. The toast stack is `position: fixed`: an ancestor of the provider with `transform`, `filter` or `contain` makes it position against that ancestor instead of the viewport. Without the provider (the vanilla controllers), both go to `document.body`, unless `mountTarget` says otherwise.
 
+A form that validates and saves itself (a form library) is the dialog's form with `<Form confirm={…}>`. On the confirm
+click the dialog runs `confirm` instead of its own validation: `{ ok: true }` closes it as confirmed, `{ ok: false }`
+keeps it open (focus on the first invalid field), `{ ok: false, error }` keeps it open with `error` as its note; the
+button shows its spinner while a returned promise is pending. `<Form>` renders its children only (the dialog has the
+`<form>`) and throws outside the content of a form dialog.
+
+```tsx
+import { Form } from "@local/overlays/react";
+
+function CustomerForm({ save }: { save: (values: Customer) => Promise<void> }) {
+  const { requestSubmit, field } = useForm(customerSchema, { submit: save }); // e.g. form-validation
+  return <Form confirm={requestSubmit}>…</Form>;
+}
+
+const result = await dialogs.form({ title: "Edit customer", content: <CustomerForm save={saveCustomer} /> });
+```
+
 `config` is optional, and so is either half of it: `<OverlaysProvider>` on its own gives you both features with the built-in defaults.
 
 It is also **live**. Change it and the change applies, with no remount and nothing on screen thrown away — dialog config takes effect from the next dialog you open (one already on screen keeps what it opened with, so a half-filled form is never disturbed), and toast config is applied to the running stack immediately. There is no change detection behind it, so writing `config={{…}}` inline — a fresh object on every render — is free.

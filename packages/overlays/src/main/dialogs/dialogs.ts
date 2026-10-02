@@ -38,6 +38,8 @@ export type {
   DialogType,
   DialogViewConfig,
   FormAttempt,
+  FormConfirm,
+  FormConfirmResult,
   FormDialogConfig,
   FormDialogResult,
   DialogHandle,

@@ -13,6 +13,7 @@ import type {
   I18nAdapter,
   PropNames,
   SubmitContext,
+  SubmitOutcome,
   UseFormOptions,
   UseFormReturn,
   ValidateOn,
@@ -161,7 +162,6 @@ const identity = (v: unknown) => v;
 /* ------------------------------------------------------------------ Hook */
 
 const noAdapter = (): I18nAdapter | undefined => undefined;
-const noValidator = (_validate: (form?: HTMLFormElement) => boolean): void => {};
 
 const OPTION_KEYS = new Set(['label', 'labelKey', 'validateOn']);
 
@@ -174,11 +174,13 @@ function defineUseForm<const P extends PropNames = { label: 'label'; error: 'err
   const t = createTranslator(config);
   // Chosen once, so every render calls the same hooks.
   const useHookAdapter = i18n?.type === 'hook' ? i18n.useAdapter : noAdapter;
-  const useValidator = config.useValidator ?? noValidator;
 
   return function useForm<S extends z.ZodObject<any>>(schema: S, options: UseFormOptions<S>): UseFormReturn<S, P> {
     const idBase = useId();
     const [, forceRender] = useReducer((n: number) => n + 1, 0);
+    // `requestSubmit` is stable: it always runs the submit of the latest render.
+    const runRef = useRef<() => Promise<SubmitOutcome>>(null!);
+    const [requestSubmit] = useState(() => () => runRef.current());
     // A hook runs on every render; a factory is asked once, with the <form> element (see formRef), before the first
     // paint. Until then (the first render), the texts are those without an adapter, and no warnings.
     const hookAdapter = useHookAdapter();
@@ -281,9 +283,9 @@ function defineUseForm<const P extends PropNames = { label: 'label'; error: 'err
       forceRender();
     }
 
-    async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
-      event.preventDefault();
-      if (store.submitting) return;
+    // Validates and submits: a submit of `form()` (with its event), or `requestSubmit()` (without one).
+    async function runSubmit(event?: React.FormEvent<HTMLFormElement>): Promise<SubmitOutcome> {
+      if (store.submitting) return { ok: false };
       store.submitAttempted = true;
       store.serverErrors.clear();
       store.serverFormError = undefined;
@@ -293,11 +295,11 @@ function defineUseForm<const P extends PropNames = { label: 'label'; error: 'err
       if (!isValid(store)) {
         forceRender();
         focusFirstInvalid();
-        return;
+        return { ok: false };
       }
       const ctx: SubmitContext = {
         event,
-        submitter: ((event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null) ?? null,
+        submitter: event ? ((event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null) ?? null : null,
         setErrors: applyServer,
         reset,
       };
@@ -307,31 +309,25 @@ function defineUseForm<const P extends PropNames = { label: 'label'; error: 'err
         const result = await optionsRef.current.submit?.(store.output as z.output<S>, ctx);
         if (result) applyServer(result.fieldErrors, result.formError);
       } catch (err) {
-        store.serverFormError = { key: 'submitFailed' };
+        const message = config.errorMessage?.(err);
+        store.serverFormError = message ? { key: message, custom: true } : { key: 'submitFailed' };
         console.error(err);
       } finally {
         store.submitting = false;
         forceRender();
       }
+      if (store.serverFormError) {
+        return { ok: false, error: t.message(store.serverFormError, locale, adapter, pending) };
+      }
+      return store.serverErrors.size > 0 ? { ok: false } : { ok: true };
     }
 
-    // The validation for the owner of a <form> that is not ours (see FormConfig.useValidator): like a submit
-    // of `form()`, without the event and without `submit`.
-    function validateForOwner(formEl?: HTMLFormElement): boolean {
-      if (formEl) formRef(formEl);
-      store.submitAttempted = true;
-      store.serverErrors.clear();
-      store.serverFormError = undefined;
-      store.quiet.clear();
-      for (const f of store.fields) store.shown.add(f.path);
-      validate(store);
-      forceRender();
-      if (isValid(store)) return true;
-      focusFirstInvalid();
-      return false;
+    function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+      event.preventDefault();
+      void runSubmit(event);
     }
 
-    useValidator(validateForOwner);
+    runRef.current = () => runSubmit();
 
     /* -------------------------------------------------------------- Fields */
 
@@ -437,6 +433,7 @@ function defineUseForm<const P extends PropNames = { label: 'label'; error: 'err
       valid: isValid(store),
       formError: formErr ? t.message(formErr, locale, adapter, pending) : undefined,
       reset,
+      requestSubmit,
     };
   };
 }

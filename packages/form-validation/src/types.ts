@@ -21,6 +21,7 @@ export type {
   PluralForms,
   PropNames,
   SubmitContext,
+  SubmitOutcome,
   SubmitResult,
   UseFormOptions,
   UseFormReturn,
@@ -168,7 +169,8 @@ interface SubmitResult {
 }
 
 interface SubmitContext {
-  event: React.FormEvent<HTMLFormElement>;
+  /** The submit event of `form()`; absent for `requestSubmit()`. */
+  event?: React.FormEvent<HTMLFormElement>;
   /** The button that triggered the submit (the native `SubmitEvent.submitter`). */
   submitter: HTMLButtonElement | HTMLInputElement | null;
   setErrors(fieldErrors: Record<string, string>, formError?: string): void;
@@ -205,7 +207,16 @@ interface UseFormReturn<S extends z.ZodObject<any>, P extends PropNames> {
   /** A form-wide error (server, or an object refinement without a path), already translated. */
   formError: string | undefined;
   reset(): void;
+  /**
+   * Validates and submits like a submit of `form()`, without a `<form>` event: for a `<form>` owned by someone else
+   * (e.g. a dialog: overlays' `<Form confirm={requestSubmit}>`). Stable across renders. Resolves with the outcome:
+   * `{ ok: true }` when `submit` succeeded, `{ ok: false }` when the form is invalid or the server reported field
+   * errors, `{ ok: false, error }` with the form-wide error (server, or a thrown `submit`).
+   */
+  requestSubmit(): Promise<SubmitOutcome>;
 }
+
+type SubmitOutcome = { ok: true } | { ok: false; error?: string };
 
 /* ---------------------------------------------------------------- Config */
 
@@ -214,13 +225,10 @@ interface FormConfig<P extends PropNames = PropNames> {
   /** The namespace of the app's keys (labels, messages of the schema or the server) for the adapter (default: "app"). */
   appNamespace?: string;
   /**
-   * Optional, a React hook, called in every form on every render with the form's validation: for a `<form>` that is not
-   * the form's own (e.g. the form of a dialog, which saves itself), so its owner can ask the form before it submits.
-   * The validation shows every error, focuses the first invalid field and returns whether the form is valid; given the
-   * `<form>` element, the form uses it like one from `form()` (the i18n factory, `reset()`). Once per app, so no form
-   * needs any wiring; outside such an owner, the hook does nothing.
+   * The form-wide message of a `submit` that throws (e.g. a server error with a text for the user): a text, or a key of
+   * the app namespace. `undefined` (the default for everything): the generic message.
    */
-  useValidator?: (validate: (form?: HTMLFormElement) => boolean) => void;
+  errorMessage?: (error: unknown) => string | undefined;
   props?: P;
   /** Bindings per semantic field type ("date", "email", "number", ... or set with formMeta). */
   bindings?: Record<string, Binding>;

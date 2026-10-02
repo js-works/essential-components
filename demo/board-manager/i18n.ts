@@ -42,6 +42,7 @@ void i18n.init({
         },
         document: { name: 'Name' },
         member: { personId: 'Person', role: 'Role' },
+        minutes: { minutes: 'Minutes', decision: 'Decision' },
       },
     },
     de: {
@@ -67,6 +68,7 @@ void i18n.init({
         },
         document: { name: 'Name' },
         member: { personId: 'Person', role: 'Rolle' },
+        minutes: { minutes: 'Protokoll', decision: 'Beschluss' },
       },
     },
   },

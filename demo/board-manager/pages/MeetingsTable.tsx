@@ -10,7 +10,6 @@ import {
 } from '../../../packages/data-navigator/src/react';
 import type { DataNavigatorComponent } from '../../../packages/data-navigator/src/react';
 import { useDialogs, useToast } from '../../../packages/overlays/src/main/bindings/react';
-import type { FormDialogData } from '../../../packages/overlays/src/main/dialogs/contract/form-data';
 import {
   boardIdsOf,
   createMeeting,
@@ -23,9 +22,9 @@ import {
   updateMeeting,
 } from '../db';
 import type { MeetingRow, MeetingStatus } from '../db';
-import { confirmAndRun, submitForm } from '../flows';
+import { confirmAndRun } from '../flows';
 import type { Dialogs } from '../flows';
-import { fromPicker, MeetingForm } from '../forms';
+import { MeetingForm } from '../forms';
 import { appIcons, countText, formatDateTime, Navigator, useDb } from '../shared';
 
 export { deleteMeetingsFlow, editMeeting, MeetingsTable, MinutesBadge, StatusBadge };
@@ -33,24 +32,14 @@ export { deleteMeetingsFlow, editMeeting, MeetingsTable, MinutesBadge, StatusBad
 type Toasts = ReturnType<typeof useToast>;
 
 // The values of the meeting form.
-const meetingValues = (data: FormDialogData) => ({
-  title: data.string('title', ''),
-  start: fromPicker(data.string('start', '')),
-  location: data.string('location', ''),
-});
-
 // "Edit" of a meeting (in the meetings list and on the meeting's overview): the meeting form in a dialog, saved before
 // it closes, then a toast. Resolves `true` when saved.
 async function editMeeting(dialogs: Dialogs, toasts: Toasts, id: string): Promise<boolean> {
-  const saved = await submitForm(
-    dialogs,
-    {
-      title: 'Edit meeting',
-      content: <MeetingForm meeting={getMeeting(db.getState(), id)} />,
-      buttons: { confirm: 'Save' },
-    },
-    (data) => updateMeeting(id, meetingValues(data)),
-  );
+  const saved = !(await dialogs.form({
+    title: 'Edit meeting',
+    content: <MeetingForm meeting={getMeeting(db.getState(), id)} save={(values) => updateMeeting(id, values)} />,
+    buttons: { confirm: 'Save' },
+  })).canceled;
 
   if (saved) {
     toasts.success('Meeting saved');
@@ -187,17 +176,18 @@ function MeetingsTable(
 
     const create = async () => {
       let created: { id: string; boardId: string } | undefined;
-      const saved = await submitForm(
-        dialogs,
-        {
-          title: 'New meeting',
-          content: <MeetingForm boards={boardId === undefined ? choices() : undefined} />,
-          buttons: { confirm: 'Create' },
-        },
-        async (data) => {
-          created = await createMeeting(boardId ?? data.string('boardId', ''), meetingValues(data));
-        },
-      );
+      const saved = !(await dialogs.form({
+        title: 'New meeting',
+        content: (
+          <MeetingForm
+            boards={boardId === undefined ? choices() : undefined}
+            save={async (values) => {
+              created = await createMeeting(boardId ?? values.boardId ?? '', values);
+            }}
+          />
+        ),
+        buttons: { confirm: 'Create' },
+      })).canceled;
 
       if (saved && created !== undefined) {
         toasts.success('Meeting created');

@@ -1180,6 +1180,8 @@ export function mountDialog(
 
     getForm: () => dialogElement(container, tag)?.getForm() ?? null,
 
+    getConfirm: () => adapter.getConfirm?.(),
+
     focusFirstInvalid: () => dialogElement(container, tag)?.focusFirstInvalid(),
   };
 }

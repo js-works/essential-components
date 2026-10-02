@@ -69,12 +69,9 @@ The behavior and the open points are described in `README.md`.
 
 ## TODO
 
-- `useValidator` with the overlays' form dialog, to check in a real dialog: the validation re-renders the form
-  asynchronously (`forceRender`, batched by React when called from the dialog's click handler). When it returns
-  `false`, the dialog moves the focus to the first control with `aria-invalid="true"`; a field that gets that attribute
-  only by this validation may not have it yet at that moment (one tick too late). Our own `focusFirstInvalid()` still
-  focuses it, but the dialog may then move the focus elsewhere (`[autofocus]`). Possible fix: render synchronously
-  there (`flushSync`, which would need `react-dom`, not a peer dependency yet).
+- `requestSubmit` in the overlays' form dialog (`<Form confirm>`), to check in a real dialog: on `{ ok: false }` both
+  focus the first invalid field, form-validation at once (`focusFirstInvalid()`), the dialog by `aria-invalid="true"`,
+  which it reads a few frames later (the re-render is batched). Check that the focus ends up in the right field.
 
 - Edge case of the validation strategy vs. the browser's `:user-invalid`: a user types into a field, restores the old
   value (e.g. types "A" into an empty required field and deletes it) and leaves it. The browser fires no `change`, so
