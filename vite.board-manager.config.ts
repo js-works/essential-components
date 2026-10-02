@@ -67,9 +67,13 @@ const config = defineConfig({
   resolve: {
     dedupe: ['react', 'react-dom'],
   },
-  // A library build does not replace it on its own, and React picks its development build by it.
   define: {
+    // A library build does not replace it on its own, and React picks its development build by it.
     'process.env.NODE_ENV': JSON.stringify('production'),
+    // The host page may have Prototype.js (XWiki: 1.7.3), which replaces `Object.values` with one that also returns
+    // what it added to `Array.prototype` (e.g. react-pdf's text layout failed, `e.reduce is not a function`). The
+    // bundle uses its own (see `banner`); the page's one stays as it is.
+    'Object.values': '__boardManagerObjectValues',
   },
   build: {
     outDir: 'dist-board-manager',
@@ -85,8 +89,9 @@ const config = defineConfig({
         minify: true,
         // The host page may have an AMD loader (XWiki: RequireJS): UMD modules in the bundle (e.g. the hyphenation
         // patterns of react-pdf) would register with it instead of exporting. A module-scoped `define` hides the
-        // page's one; the page's own stays as it is.
-        banner: 'var define;',
+        // page's one; the page's own stays as it is. And the bundle's `Object.values` (see `define`), from
+        // `Object.keys` (Prototype.js keeps the browser's one).
+        banner: 'var define; var __boardManagerObjectValues = (o) => Object.keys(o).map((k) => o[k]);',
       },
     },
     lib: {

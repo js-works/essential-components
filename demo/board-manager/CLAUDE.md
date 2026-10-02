@@ -120,6 +120,10 @@ the root's `CLAUDE.md` apply.
     and registered with it instead of exporting (react-pdf's hyphenation patterns: every PDF failed, `reading
     'length'`). The bundle starts with `var define;` (`banner`), a `define` of its own module scope, so the minifier
     drops their AMD branches; the page's `define` is untouched. The example `index.html` loads RequireJS to show it.
+  - Prototype.js on the host page (XWiki: 1.7.3, 2026-10-02): it replaces `Object.values` with one that also returns
+    the methods it added to `Array.prototype` (react-pdf's text layout failed, `e.reduce is not a function`). The build
+    replaces `Object.values` with a function of the bundle (`define`, defined in the `banner`, from `Object.keys`); the
+    page's one is untouched. Not chosen: restoring the page's (it is global), the app in an iframe (much work).
   - `scheme` (`light`, `dark`) sets the color scheme; without it, `<html data-scheme>`, else the system's. The language
     follows `<html lang>`. The routes are in memory only (the host page owns its URL), unless `hash` names a prefix
     (2026-10-01): `<board-manager hash="bm">` mirrors the route in `#bm/boards/b1`, like the demo tab (read on start, a
@@ -195,6 +199,8 @@ the root's `CLAUDE.md` apply.
     - The minutes are parsed by `minutes-format.ts` (no BlockNote), so the report does not load the editor.
   - "Preview": an extra wide dialog (`dialogs.confirm`, "Download" and "Close") with the pages, rendered by pdfjs
     (`pdf/preview.tsx`; its worker inlined with `?worker&inline`, so the `<board-manager>` build stays one module).
+    It must stay a real worker (2026-10-02): on the main thread (pdfjs's "fake worker"), pdfjs refuses a page whose
+    `Array.prototype` has enumerable additions (XWiki's Prototype.js).
     The pages lie on a gray ground with a line above and below (`--mantine-color-default-border`, square corners;
     2026-10-01, the user's wish; tried the same day: a frame all around with a soft inner shadow, no gray ground, and
     only a line below).
