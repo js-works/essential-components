@@ -1,7 +1,7 @@
-import { selectColumnFilter, setupDataNavigator, textColumnFilter } from '../src';
+import { autocompleteColumnFilter, selectColumnFilter, setupDataNavigator, textColumnFilter } from '../src';
 import type { DataNavigator } from '../src';
 import { defaultTheme } from '../src/themes';
-import { countries, fetchUsers, roles } from './data';
+import { countries, fetchUsers, roles, suggestEmails } from './data';
 import type { User } from './data';
 import { i18n } from './i18n';
 import './element-demo.css';
@@ -36,6 +36,18 @@ function roleBadge(role: User['role']): Node {
   return badge;
 }
 
+// An option of the email filter: the email, with the user's name below it.
+function suggestion(email: string, name: string): Node {
+  const node = document.createElement('span');
+  const small = document.createElement('small');
+
+  node.className = 'element-demo__suggestion';
+  small.textContent = name;
+  node.append(email, small);
+
+  return node;
+}
+
 const german = () => document.documentElement.lang.startsWith('de');
 
 function createController(onRemove: (users: readonly User[]) => void) {
@@ -59,8 +71,21 @@ function createController(onRemove: (users: readonly User[]) => void) {
         sortable: true,
         filter: textColumnFilter(),
       },
-      // The column toggle menu of the toolbar can hide it.
-      { key: 'email', header: 'Email', width: 2, hideable: true },
+      // The column toggle menu of the toolbar can hide it. Its filter is an autocomplete, with DOM nodes as options.
+      {
+        key: 'email',
+        header: 'Email',
+        width: 2,
+        hideable: true,
+        filter: autocompleteColumnFilter({
+          multiple: true,
+          load: async (query, signal) =>
+            (await suggestEmails(query, signal)).map(({ name, ...option }) => ({
+              ...option,
+              content: () => suggestion(option.label, name),
+            })),
+        }),
+      },
       {
         key: 'country',
         header: () => (german() ? 'Land' : 'Country'),

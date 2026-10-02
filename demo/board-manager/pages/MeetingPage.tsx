@@ -756,13 +756,16 @@ function MinutesView({ meeting, agendaItems, agendaSections, boardName }: {
     [memberships, people, meeting.boardId],
   );
 
+  // Without minutes (planned, cancelled), the note is in the same frame as the minutes.
   if (meeting.status !== 'Held') {
     return (
-      <Text c="dimmed" size="sm">
-        {meeting.status === 'Cancelled'
-          ? 'The meeting was cancelled: there are no minutes.'
-          : 'The minutes are recorded per agenda item ("Minutes" in the agenda), during or after the meeting.'}
-      </Text>
+      <Paper withBorder p="lg" radius="sm" maw={820}>
+        <Text c="dimmed" size="sm">
+          {meeting.status === 'Cancelled'
+            ? 'The meeting was cancelled: there are no minutes.'
+            : 'The minutes are recorded per agenda item ("Minutes" in the agenda), during or after the meeting.'}
+        </Text>
+      </Paper>
     );
   }
 
@@ -773,7 +776,7 @@ function MinutesView({ meeting, agendaItems, agendaSections, boardName }: {
           <Title order={3} size="h4">Minutes of the {meeting.title}</Title>
           <Text size="sm" c="dimmed">{boardName} · {formatDateTime(meeting.start)} · {meeting.location}</Text>
           <Text size="sm" c="dimmed">Members: {attendees.join(', ')}</Text>
-          <Text size="sm" c={meeting.minutesApproved ? 'green' : 'orange'}>
+          <Text size="sm" c={meeting.minutesApproved ? 'success' : 'warning'}>
             {meeting.minutesApproved ? 'Approved.' : 'Draft: not approved yet.'}
           </Text>
         </Stack>
@@ -974,6 +977,7 @@ function DocumentsTable({ meeting }: { meeting: Meeting }): ReactElement {
     <Navigator
       controller={nav}
       title="Documents"
+      subtitle="The files for this meeting: reports, proposals, presentations. Double click one to download it."
       density="compact"
       searchable
       reloadable

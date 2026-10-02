@@ -22,7 +22,7 @@ import type { OrganizationRow } from '../db';
 import { confirmAndRun } from '../flows';
 import type { Dialogs } from '../flows';
 import { OrganizationForm } from '../forms';
-import { appIcons, countText, Navigator, useDb } from '../shared';
+import { appIcons, countText, Navigator, organizationFilter, useDb } from '../shared';
 
 export { deleteOrganizationsFlow, editOrganization, OrganizationsPage, WebsiteLink };
 
@@ -117,7 +117,7 @@ function OrganizationsPage(): ReactElement {
       header: 'Organization',
       width: 3,
       sortable: true,
-      filter: textColumnFilter(),
+      filter: organizationFilter,
       render: (row) => <Anchor component={Link} to={`/organizations/${row.id}`} size="sm">{row.name}</Anchor>,
     },
     { key: 'description', header: 'Description', width: 4, hideable: true, hidden: true, wrap: true },

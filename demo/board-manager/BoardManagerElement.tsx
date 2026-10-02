@@ -5,7 +5,7 @@ import type { Root } from 'react-dom/client';
 import { createAppRouter } from './App';
 import { BoardManagerApp, createLook } from './BoardManagerDemo';
 import type { Look } from './BoardManagerDemo';
-import { dangerFor, parseColor, shades } from './colors';
+import { parseColor, shades } from './colors';
 import { setSchemeHost, useScheme } from './shared';
 
 export { BoardManagerElement };
@@ -15,10 +15,18 @@ export { BoardManagerElement };
 // into one module, its styles included:
 //
 //   <script type="module" src="board-manager.js"></script>
-//   <board-manager scheme="dark" accent-color="#0b7285"></board-manager>
+//   <board-manager></board-manager>
+//   board-manager { color-scheme: dark; --board-manager-accent-color: #0b7285; }
 //
-// - `scheme` (`light`, `dark`): the color scheme; without it, the page's `<html data-scheme>`, else the system's.
-// - `accent-color`, `danger-color` (any CSS color): the primary and the danger color (see `#look()`).
+// - The color scheme is the CSS `color-scheme` of the element (set on it, or inherited from the page): `dark` or
+//   `light`, else the system's.
+// - The custom properties `--board-manager-accent-color`, `--board-manager-danger-color`,
+//   `--board-manager-success-color`, `--board-manager-warning-color` (any CSS color, set by the host page's CSS): the
+//   primary, danger, success and warning colors (see `#look()`).
+// - `--board-manager-font-family`, `--board-manager-font-size` (the normal text, 14px by default): the font and the text
+//   size; Mantine's other sizes follow in proportion (see `createLook()`). Live: CSS only.
+// - `--board-manager-scale` (a number, 1 by default): Mantine's scale, all its sizes (and the text, unless
+//   `--board-manager-font-size` is set). Live: CSS only.
 // - `hash` (a prefix, `hash="bm"`): the route is mirrored in the URL hash (`#bm/boards/b1`).
 // - The language follows `<html lang>` (the i18n adapters of the packages read it there).
 // - Without `hash`, the routes are in memory only: the host page owns its URL.
@@ -94,14 +102,24 @@ class BoardManagerElement extends HTMLElement {
     );
   }
 
-  // `accent-color` (any CSS color): Mantine's primary color; `danger-color`: the danger buttons, errors and error
-  // toasts, by default a red that goes with the accent (`dangerFor()`). Without them (or with an invalid color),
-  // Mantine's indigo and red. Read once.
+  // The custom properties of the host page's CSS (any CSS color; a `var()` in them is resolved by the browser):
+  // `--board-manager-accent-color` is Mantine's primary color, `--board-manager-danger-color` the danger buttons, errors
+  // and error toasts, `--board-manager-success-color` and `--board-manager-warning-color` the states of the meetings and
+  // their minutes (held, approved; a draft) and the warning toasts. Without them (or with an invalid color), Mantine's
+  // indigo, red, green and orange. Read once, on connect: there is no event for a changed custom property.
   #look(): Look {
-    const accent = parseColor(this.getAttribute('accent-color'));
-    const danger = parseColor(this.getAttribute('danger-color')) ?? (accent && dangerFor(accent));
+    const style = getComputedStyle(this);
+    const accent = parseColor(style.getPropertyValue('--board-manager-accent-color').trim());
+    const danger = parseColor(style.getPropertyValue('--board-manager-danger-color').trim());
+    const success = parseColor(style.getPropertyValue('--board-manager-success-color').trim());
+    const warning = parseColor(style.getPropertyValue('--board-manager-warning-color').trim());
 
-    return createLook({ accent: accent && shades(accent), danger: danger && shades(danger) });
+    return createLook({
+      accent: accent && shades(accent),
+      danger: danger && shades(danger),
+      success: success && shades(success),
+      warning: warning && shades(warning),
+    });
   }
 
   disconnectedCallback(): void {

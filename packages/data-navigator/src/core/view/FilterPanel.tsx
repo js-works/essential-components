@@ -217,13 +217,19 @@ function FilterView(props: FilterViewProps): ReactElement {
     (row?.querySelector<HTMLElement>(TEXT_INPUT) ?? row?.querySelector<HTMLElement>(FOCUSABLE))?.focus();
   }, []);
 
-  // Enter in a text input applies (not in a select, which opens its list on Enter), Escape cancels. The select lists
+  // Enter in a text input applies (not in a select, which opens its list on Enter, nor in an autocomplete with its
+  // list open), Escape cancels. The select lists
   // and the date popover are popups of their own (in the layer; their keys bubble up to here through the portal): their
   // keys belong to them.
   const keyDown = (event: KeyboardEvent<HTMLElement>) => {
     const target = event.target;
 
     if (event.nativeEvent.isComposing || (target instanceof Node && layer?.contains(target) === true)) {
+      return;
+    }
+
+    // The input of an autocomplete while its list is open: Enter chooses an option, Escape closes the list.
+    if (target instanceof HTMLElement && target.getAttribute('aria-expanded') === 'true') {
       return;
     }
 

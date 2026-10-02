@@ -78,13 +78,22 @@ declare namespace DataNavigator {
 
   type FilterOption = string | { value: string; label: string };
 
-  type TextColumnFilterSettings = { placeholder?: string };
+  type TextColumnFilterSettings = { placeholder?: string; matchModes?: boolean };
 
   type TextFilterMatch = 'contains' | 'startsWith' | 'endsWith';
 
   type TextFilterValue = { text: string; match: TextFilterMatch };
 
   type SelectColumnFilterSettings = { options: readonly FilterOption[]; multiple?: boolean };
+
+  type AutocompleteOption = { value: string; label: string; content?: () => string | Node };
+
+  type AutocompleteColumnFilterSettings = {
+    load: (query: string, signal: AbortSignal) => Promise<readonly AutocompleteOption[]>;
+    multiple?: boolean;
+    minQueryLength?: number;
+    maxChips?: number;
+  };
 
   type DateRangeFilterValue = { from: string; to: string };
 
@@ -145,6 +154,9 @@ declare namespace DataNavigator {
     rangeTo: string; // To
     filterYes: string; // Yes
     filterNo: string; // No
+    typeToSearch: string; // Type to search
+    loadFailed: string; // Could not load
+    removeValue: (params: { label: string }) => string; // Remove {label}
     clearSelection: string; // Clear selection
     columns: string; // Columns
     moveRow: string; // Move row

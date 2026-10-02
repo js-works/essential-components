@@ -569,13 +569,14 @@ type FilterSelectFieldProps = {
 };
 
 // A select of Base UI, for a single and for a multiple select. The value is a list of none, one or several option
-// values, whatever the mode. Both show a clear button while something is selected, in place of their arrow. A single
-// select also has an option for "nothing" (the placeholder, value ''), so it can be cleared from its list as well.
+// values, whatever the mode. Both show a clear button while something is selected, before their arrow (which is always
+// there, and turns while the list is open). A single select also has an option for "nothing" (the placeholder, value
+// ''), so it can be cleared from its list as well.
 function FilterSelectField(props: FilterSelectFieldProps): ReactElement {
   const { value, placeholder, labelledBy, clearLabel, multiple, options, onChange } = props;
 
   return (
-    <div className={styles.field}>
+    <div className={`${styles.field} ${styles.listField}`}>
       <SelectField
         value={value}
         multiple={multiple}
@@ -584,13 +585,10 @@ function FilterSelectField(props: FilterSelectFieldProps): ReactElement {
         naming={{ 'aria-labelledby': labelledBy }}
         onChange={(next) => onChange(next.filter((item) => item !== ''))}
       />
-      {value.length > 0
-        ? <ClearButton label={clearLabel} onClick={() => onChange([])} />
-        : (
-          <span className={styles.fieldEnd}>
-            <icons.ChevronDown size={14} />
-          </span>
-        )}
+      {value.length > 0 && <ClearButton label={clearLabel} onClick={() => onChange([])} />}
+      <span className={styles.fieldEnd}>
+        <icons.ChevronDown size={14} />
+      </span>
     </div>
   );
 }

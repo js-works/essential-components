@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import {
+  autocompleteColumnFilter,
   booleanColumnFilter,
   createDataNavigatorComponent,
   dateColumnEditor,
@@ -16,9 +17,9 @@ import {
 import type { DataNavigatorComponent } from '../src/react';
 import { antdTheme, defaultTheme, mantineTheme, softTheme } from '../src/themes';
 import type { Controls, DemoTheme } from './controls';
-import { countries, createUser, fetchNothing, fetchUsers, newUser, roles, saveUser } from './data';
+import { countries, createUser, fetchNothing, fetchUsers, newUser, roles, saveUser, suggestEmails } from './data';
 import type { User } from './data';
-import { badge, fixedHeight, note, selectedLine } from './Demo.module.css';
+import { badge, fixedHeight, note, selectedLine, suggestion } from './Demo.module.css';
 import { DemoControls } from './DemoControls';
 import { i18n } from './i18n';
 import { icons } from './icons';
@@ -131,9 +132,23 @@ const active: UserColumn = {
 };
 
 const filterOf: Record<string, DataNavigatorComponent.ColumnFilter> = {
-  firstName: textColumnFilter(),
-  lastName: textColumnFilter(),
-  email: textColumnFilter(),
+  // With the select of how the text must match (contains, starts with, ends with); the other text filters are plain.
+  firstName: textColumnFilter({ matchModes: true }),
+  lastName: textColumnFilter({ matchModes: true }),
+  // An autocomplete: its options are loaded while typing, each with the user's name below the email.
+  email: autocompleteColumnFilter({
+    multiple: true,
+    load: async (query, signal) =>
+      (await suggestEmails(query, signal)).map(({ name, ...option }) => ({
+        ...option,
+        content: () => (
+          <span className={suggestion}>
+            {option.label}
+            <small>{name}</small>
+          </span>
+        ),
+      })),
+  }),
   role: selectColumnFilter({ options: roles }),
   country: selectColumnFilter({ options: countries, multiple: true }),
   dateOfBirth: dateRangeColumnFilter(),

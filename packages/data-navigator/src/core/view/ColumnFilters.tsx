@@ -4,11 +4,13 @@ import type { DataNavigatorComponent as Spec } from '../../react/api';
 import { fallbackSummary, isRecord, optionsOf } from '../filters';
 import type { FilterSummary, SummaryContext } from '../filters';
 import { useTexts } from '../texts';
+import { AutocompleteFilterInput, autocompleteIdsOf } from './AutocompleteFilter';
 import * as styles from './DataNavigator.module.css';
 import { DateRangeFilterInput, formatRange, rangeOf } from './DateRangeFilter';
-import { FilterSelectField, PrefixedTextField, Segmented } from './widgets';
+import { FilterSelectField, FilterTextField, PrefixedTextField, Segmented } from './widgets';
 
 export {
+  autocompleteColumnFilter,
   booleanColumnFilter,
   dateRangeColumnFilter,
   numberRangeColumnFilter,
@@ -75,11 +77,13 @@ function numberFormatOf(locale: string): Intl.NumberFormat {
   }
 }
 
-// A text input with a select in front of it, how the text must match: contains (the default), starts with, ends with
-// (it was a segmented control below the input at first). The value is
+// A text input, with `matchModes` a select in front of it, how the text must match: contains (the default), starts
+// with, ends with (it was a segmented control below the input at first). Without `matchModes` it always contains. The
+// value is
 // `{ text, match }` with the trimmed text; an empty text removes the filter. The text being typed is kept here, so a
 // space at its end is not thrown away while typing (the value is trimmed).
-function TextFilterInput({ value, onChange, labelledBy, placeholder }: TextFilterProps): ReactElement {
+function TextFilterInput(props: TextFilterProps): ReactElement {
+  const { value, onChange, labelledBy, placeholder, matchModes = false } = props;
   const texts = useTexts();
   const current = textValueOf(value);
   const appliedText = current?.text ?? '';
@@ -100,8 +104,28 @@ function TextFilterInput({ value, onChange, labelledBy, placeholder }: TextFilte
   const emit = (nextText: string, nextMatch: Spec.TextFilterMatch) =>
     onChange(nextText.trim() === '' ? undefined : { text: nextText.trim(), match: nextMatch });
 
+  const field = {
+    value: text,
+    placeholder: placeholder ?? texts.filterPlaceholder,
+    labelledBy,
+    clearLabel: texts.clearFilter,
+    onChange: (next: string) => {
+      setText(next);
+      emit(next, match);
+    },
+    onClear: () => {
+      setText('');
+      emit('', match);
+    },
+  };
+
+  if (!matchModes) {
+    return <FilterTextField {...field} />;
+  }
+
   return (
     <PrefixedTextField
+      {...field}
       prefix={{
         value: match,
         label: texts.textMatch,
@@ -116,18 +140,6 @@ function TextFilterInput({ value, onChange, labelledBy, placeholder }: TextFilte
           setMatch(nextMatch);
           emit(text, nextMatch);
         },
-      }}
-      value={text}
-      placeholder={placeholder ?? texts.filterPlaceholder}
-      labelledBy={labelledBy}
-      clearLabel={texts.clearFilter}
-      onChange={(next) => {
-        setText(next);
-        emit(next, match);
-      }}
-      onClear={() => {
-        setText('');
-        emit('', match);
       }}
     />
   );
@@ -247,8 +259,8 @@ function BooleanFilterInput({ value, onChange, labelledBy }: Spec.FilterProps): 
 const LONG_SUMMARY = 16;
 
 // The built-in column filters.
-// A text filter: `{ text, match }`. Its placeholder is `settings.placeholder`, or the localized
-// `Texts.filterPlaceholder`.
+// A text filter: `{ text, match }`, `match` always `contains` without `settings.matchModes` (no select then). Its
+// placeholder is `settings.placeholder`, or the localized `Texts.filterPlaceholder`.
 function textColumnFilter(settings: Spec.TextColumnFilterSettings = {}): Spec.ColumnFilter {
   return withSummary(
     (props) => <TextFilterInput {...props} {...settings} />,
@@ -273,13 +285,31 @@ function selectColumnFilter(settings: Spec.SelectColumnFilterSettings): Spec.Col
 
   return withSummary(
     (props) => <SelectFilterInput {...props} {...settings} />,
-    (value) => {
-      const labels = (Array.isArray(value) ? value : [value]).map(labelOf);
-      const joined = labels.join(', ');
+    (value) => listSummary((Array.isArray(value) ? value : [value]).map(labelOf)),
+  );
+}
 
-      return labels.length > 1 && joined.length > LONG_SUMMARY
-        ? { relation: ':', value: labels[0] ?? '', more: labels.length - 1 }
-        : { relation: ':', value: joined };
+// The labels of a list of values in a pill: all of them, or the first one and how many more.
+function listSummary(labels: readonly string[]): FilterSummary {
+  const joined = labels.join(', ');
+
+  return labels.length > 1 && joined.length > LONG_SUMMARY
+    ? { relation: ':', value: labels[0] ?? '', more: labels.length - 1 }
+    : { relation: ':', value: joined };
+}
+
+// An autocomplete: its options come from `settings.load` while typing (see AutocompleteFilter.tsx). The value is the
+// value of the chosen option, or with `multiple` a list of them. The labels of the chosen options are kept by the
+// filter, for its pill (there are no initial filters, so every value was chosen in it).
+function autocompleteColumnFilter(settings: Spec.AutocompleteColumnFilterSettings): Spec.ColumnFilter {
+  const labels = new Map<string, string>();
+
+  return withSummary(
+    (props) => <AutocompleteFilterInput {...props} {...settings} labels={labels} />,
+    (value) => {
+      const ids = autocompleteIdsOf(value);
+
+      return ids.length === 0 ? undefined : listSummary(ids.map((id) => labels.get(id) ?? id));
     },
   );
 }

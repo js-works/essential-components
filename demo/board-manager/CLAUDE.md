@@ -33,6 +33,16 @@ the root's `CLAUDE.md` apply.
 - The column menu of the data navigator (its columns with `hideable`) only in the tables with a column hidden by
   default (2026-10-01): Boards, Meetings, Members (and an organization's People), Organizations, a board's members.
   Not in the agenda and the documents (no hidden column there).
+- The column of an entity's name is headed by the entity: "Board", "Meeting", "Organization", "Document", "Person"
+  (2026-10-02; the people tables said "Name" before).
+- Every column of an organization or a person is filtered by an autocomplete (2026-10-02, the data navigator's
+  `autocompleteColumnFilter`; text filters before): `organizationFilter` and `personFilter` (`shared.tsx`), on the
+  organizations, the people tables (person, organization), a board's members (person, organization) and the boards
+  (chair). Multiple, `minQueryLength: 0` (all options when the list opens, typing narrows them); each option has a
+  second line (Mantine `Text`, `xs`, dimmed): the city of an organization, the organization of a person.
+  - The options: `suggestOrganizations()` and `suggestPeople()` (`db.ts`, `LOADING_TIME`), by name.
+  - The value is the name, like the column's: the sources compare with `oneOf`. Two people of the same name would
+    both match (accepted: the chair column has only the name, not the id).
 - "Delete" in the tables (decided 2026-10-01): a `multiRow` action everywhere (the selection, or a right-click on a
   row, which selects it). Also a row action (an icon in the action column) only where deleting is frequent and cheap:
   the documents of a meeting and the sections in the "Sections" drawer (a draft). Records much depends on (boards,
@@ -45,7 +55,7 @@ the root's `CLAUDE.md` apply.
   `board-manager.css`, 2026-10-01): it imports Mantine's component styles again, unlayered, which won over the app's
   rules (the breadcrumb wrapped).
 - Mantine is scoped: its layered CSS, its variables and color scheme on `.board-manager` (the app, and the content of
-  each dialog through `wrapContent`), following `<html data-scheme>`; its popups without portal.
+  each dialog through `wrapContent`), following the CSS `color-scheme` (see the element); its popups without portal.
 - The components' themes follow Mantine as closely as possible (their values are Mantine's variables): the data
   navigator's `mantineTheme`, the file upload's `MANTINE_UPLOAD_THEME` (`MeetingPage.tsx`, kept in the app: a theme in
   the package would need its own test and demo). More contrast comes from the app's Mantine theme instead
@@ -71,9 +81,9 @@ the root's `CLAUDE.md` apply.
   `fontSize` and `fontFamily` (`createDialogTheme`), set to Mantine's `fontSizes.sm` and `fontFamily` (the values: the
   dialogs are outside the scopes). Before, the dialogs had their fixed 16px and the system font, larger than the app.
   The spinner placeholder of a scope (the theme's `spinner`, 2026-10-01) is the accent's filled color.
-- The toasts (small, like the Media Manager's; stacked, bottom right) are in Mantine's palette (`createToastTheme()` in
-  `createLook()`): they live in `<body>`, outside the scopes, so the colors are the theme's values
-  (`mergeMantineTheme`), with `light-dark()` for the page's scheme.
+- The toasts (medium since 2026-10-02, the user's wish; small, like the Media Manager's, before; stacked, bottom
+  right) are in Mantine's palette (`createToastTheme()` in `createLook()`): they live in `<body>`, outside the scopes,
+  so the colors are the theme's values (`mergeMantineTheme`), with `light-dark()` for the page's scheme.
   - Success toasts in the accent color, like info and loading (2026-10-01, the user's wish: one accent color in the
     app; Mantine's `green` before): only the icon differs, so a toast from a spinner to success changes only its icon.
     Warnings orange, errors the danger color.
@@ -107,6 +117,24 @@ the root's `CLAUDE.md` apply.
   Mantine's `DateInput` sets no `aria-expanded`).
 - No native date picker: the date and time of a meeting is Mantine's `DateTimePicker` (`DD.MM.YYYY HH:mm`, its popup in
   the dialog with a fixed position); the meeting schema's `transform` turns its value into the fake server's `start`.
+- The person of a new member ("Add member" on a board) is an `AsyncSelect` (`AsyncSelect.tsx`, 2026-10-02; a
+  `NativeSelect` of all candidates, "Name (Organization)", before): Mantine's own `Select` (`searchable`, `clearable`),
+  only fed asynchronously, so it looks and behaves like a Mantine select (popup, scroll area, keyboard, clear button and
+  chevron). (A `Combobox` of our own came first, the same day: not Mantine enough, the user's wish.)
+  - Loaded while typing, like the data navigator's autocomplete filter: `load` 250ms after the last key while the list
+    is open, a newer query aborts the older one; no filtering on the client (`filter` returns all: `load` did it).
+    `minQueryLength: 0`, so all candidates show when the list opens; while the input shows the chosen name (the list
+    opened again), `load('')` too.
+  - While loading, Mantine's `Loader` in the field (in place of the chevron). The list without options says "Type to
+    search", "Loading…", "No results" or "Could not load" (`nothingFoundMessage`).
+  - Each option shows the name, with the organization below it (dimmed, `xs`; `renderOption`, with Mantine's
+    `CheckIcon` at the chosen one, which a `renderOption` has to draw itself). Its popup is in the dialog with a fixed
+    position, like the date picker's.
+  - `suggestPeople(query, signal, among)` (`db.ts`, `LOADING_TIME`): of the candidates (the people who are not
+    members yet), those whose name or organization contains the query, by name; each option shows the organization
+    as its second line (dimmed, `xs`).
+  - It starts empty (the native select had the first person preselected): the person is required, so "OK" without one
+    shows the field's error. form-validation binds it uncontrolled (`defaultValue` in, `onChange(id)` out).
 
 ## The `<board-manager>` element
 
@@ -124,17 +152,39 @@ the root's `CLAUDE.md` apply.
     the methods it added to `Array.prototype` (react-pdf's text layout failed, `e.reduce is not a function`). The build
     replaces `Object.values` with a function of the bundle (`define`, defined in the `banner`, from `Object.keys`); the
     page's one is untouched. Not chosen: restoring the page's (it is global), the app in an iframe (much work).
-  - `scheme` (`light`, `dark`) sets the color scheme; without it, `<html data-scheme>`, else the system's. The language
-    follows `<html lang>`. The routes are in memory only (the host page owns its URL), unless `hash` names a prefix
+  - The color scheme is the element's computed CSS `color-scheme` (2026-10-02; a `scheme` attribute and
+    `<html data-scheme>` before): set on it or inherited from the page; only `dark` is dark, only `light` is light,
+    `normal` and `light dark` follow the system. In the demo tab `<html>`'s (`ui.css` sets it from `data-scheme`).
+    Changes: any attribute change of `<html>`, `<body>` or the element reads it again (`MutationObserver`; there is no
+    event for a changed computed style), and the system's setting. Not seen: a swapped stylesheet, a media query of
+    the host page, a change on another ancestor (then a reload). The language follows `<html lang>`. The routes are in memory only (the host page owns its URL), unless `hash` names a prefix
     (2026-10-01): `<board-manager hash="bm">` mirrors the route in `#bm/boards/b1`, like the demo tab (read on start, a
     `hashchange` navigates; written with `replaceState`). A hash with another start is left alone (e.g. XWiki's
     anchors). Read once, when the element is connected.
-  - `accent-color` and `danger-color` (any CSS color, 2026-10-01; read once): the `accent` and `danger` of
-    `createLook()`; an invalid color counts as none. `colors.ts` (no dependency; `chroma-js` was rejected after its
-    supply chain attack): the browser parses the color (a canvas pixel), the ten shades are made in OKLCH, the color
-    itself is shade 6. Without `danger-color`, a red that goes with the accent (`dangerFor()`): its lightness (0.55 to
-    0.66) and chroma (0.17 to 0.22); an accent within 30° of red (and not a gray) moves the red 30° away, towards
-    crimson, or towards orange red for a crimson accent.
+  - The colors are custom properties of the element, set by the host page's CSS (2026-10-02; attributes
+    `accent-color` and `danger-color` before, 2026-10-01): `--board-manager-accent-color` and
+    `--board-manager-danger-color` (any CSS color), the `accent` and `danger` of `createLook()`. Without them, or with
+    an invalid color, Mantine's indigo and red. Read once, on connect (`getComputedStyle`; there is no event for a
+    changed custom property). A `var()` in them is resolved by the browser (custom properties are computed with it).
+    `colors.ts` (no dependency; `chroma-js` was rejected after its supply chain attack): the browser parses the color
+    (a canvas pixel), the ten shades are made in OKLCH, the color itself is shade 6.
+    - `--board-manager-success-color` and `--board-manager-warning-color` (2026-10-02, the same way; Mantine's green
+      and orange by default): the theme colors `success` and `warning`, for the states of the meetings and their
+      minutes ("Held", "Minutes approved"; "Minutes draft") and the warning toasts. The success toasts stay in the
+      accent (one accent color in the app). "Planned" (blue) and "Cancelled" (gray) are no states of success or danger.
+    - No danger color derived from the accent any more (`dangerFor()`, a red that went with the accent, removed
+      2026-10-02): without `--board-manager-danger-color` it is Mantine's red; a host with a red-ish accent sets it.
+  - The font and the text size (2026-10-02): `--board-manager-font-family` and `--board-manager-font-size`, CSS only
+    (live): `createLook()`'s `cssVariablesResolver` sets Mantine's variables to them, with Mantine's values as the
+    fallbacks. The size is the app's normal text (Mantine's `sm`, 14px by default, `0.875rem`); Mantine's other sizes
+    (`xs` to `xl`) and the headings (`h1` to `h6`) keep their proportions to it. The dialogs' own text too (their
+    theme). Everything using Mantine's variables follows (the data navigator's Mantine theme, BlockNote's look).
+  - The scale (2026-10-02): `--board-manager-scale` (a number, 1 by default), CSS only (live): Mantine's
+    `--mantine-scale`, which multiplies every size of its components (control heights, spacing, radii, text), and so
+    the data navigator's (its Mantine theme). The text is 14px times the scale, unless `--board-manager-font-size` is
+    set: that is the final text size, not scaled again (the font size alone leaves the controls as they are, fine from
+    about 12 to 16px). Not scaled: what does not use Mantine's variables (the overlays' dialog frame, the file upload's
+    own sizes).
   - Keyboard and input events (`keydown`, `keyup`, `keypress`, `beforeinput`, `input`, `composition*`) are stopped at
     the shadow root (bubble phase, 2026-09-30): they do not reach the host page (e.g. XWiki's shortcuts); inside, all
     get them. Mouse and focus events pass (a host page closes its menus on a click outside). A capture listener of the
@@ -215,7 +265,8 @@ the root's `CLAUDE.md` apply.
     (pdfjs, canvases) before it opens, so it opens at its final size (`renderPages`, `PdfPages`).
   - Both are loaded on first use (dynamic imports in `pdf/index.tsx`).
 - The agenda is reordered by dragging (`reorder`), the minutes are recorded per item (a form dialog), the minutes tab
-  shows them as one document; a held meeting's minutes are approved there.
+  shows them as one document; a held meeting's minutes are approved there. Its frame (a Mantine `Paper` with a border)
+  is there without minutes too, around the note of a planned or cancelled meeting (2026-10-02).
 - The minutes of an item are a BlockNote document (`minutes.tsx`, 2026-10-01; `@blocknote/core`, `react`, `mantine`
   0.55; before, a `Textarea`): stored as its JSON in `AgendaItem.minutes` (`''` for an empty document); plain text (the
   seed) is read as one paragraph per line.
@@ -312,8 +363,5 @@ the root's `CLAUDE.md` apply.
   `dev` and `build:pages` Vite adds it to `<head>`. Ideas: copy the page's stylesheets into the shadow root while the
   marker is unreplaced (a `MutationObserver` on `<head>` for HMR; the page's own CSS gets in too, check `ui.css` for
   element selectors), or load the built module in the demo (no HMR).
-- `accent-color`/`danger-color` with `var(--some-token)` (2026-10-01, open): today it turns black (`CSS.supports`
-  accepts it, the canvas cannot resolve it and keeps its default). Idea: resolve it in the element's context first (a
-  probe in the shadow root with `style.color = value`, then `getComputedStyle(probe).color`), and treat an unchanged
-  canvas default as invalid. Read once, so a token that differs in dark mode is not followed (that would need a
-  `MutationObserver` and a new look).
+- The color custom properties are read once (2026-10-02): a token that differs in dark mode (e.g. `light-dark()`, or a
+  value set under a dark scheme selector) is not followed. That would need a new look on every change of the scheme.

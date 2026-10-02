@@ -76,7 +76,11 @@ async function deleteMeetingsFlow(
   return done;
 }
 
-const STATUS_COLORS: Readonly<Record<MeetingStatus, string>> = { Planned: 'blue', Held: 'green', Cancelled: 'gray' };
+const STATUS_COLORS: Readonly<Record<MeetingStatus, string>> = {
+  Planned: 'accent',
+  Held: 'success',
+  Cancelled: 'gray',
+};
 
 function StatusBadge({ status }: { status: MeetingStatus }): ReactElement {
   return <Badge size="sm" variant="light" color={STATUS_COLORS[status]}>{status}</Badge>;
@@ -91,8 +95,8 @@ function MinutesBadge(
   }
 
   return meeting.minutesApproved
-    ? <Badge size="sm" variant="outline" color="green">Minutes approved</Badge>
-    : <Badge size="sm" variant="outline" color="orange">Minutes draft</Badge>;
+    ? <Badge size="sm" variant="outline" color="success">Minutes approved</Badge>
+    : <Badge size="sm" variant="outline" color="warning">Minutes draft</Badge>;
 }
 
 // The meetings of one board (`boardId`, on the board's page), of the boards of one person (`personId`, on the member's

@@ -13,7 +13,7 @@ import { createBoard, db, deleteBoards, fetchBoards, getBoard, updateBoard } fro
 import type { BoardRow } from '../db';
 import { confirmAndRun } from '../flows';
 import { BoardForm } from '../forms';
-import { appIcons, countText, formatDateTime, Navigator } from '../shared';
+import { appIcons, countText, formatDateTime, Navigator, personFilter } from '../shared';
 
 export { BoardsPage };
 
@@ -27,7 +27,7 @@ const columns: readonly DataNavigatorComponent.Column<BoardRow>[] = [
     render: (row) => <Anchor component={Link} to={`/boards/${row.id}`} size="sm">{row.name}</Anchor>,
   },
   { key: 'description', header: 'Description', width: 4, hideable: true, hidden: true, wrap: true },
-  { key: 'chair', header: 'Chair', width: 2, sortable: true, hideable: true, filter: textColumnFilter() },
+  { key: 'chair', header: 'Chair', width: 2, sortable: true, hideable: true, filter: personFilter },
   { key: 'members', header: 'Members', width: 1, sortable: true, hideable: true, align: 'end' },
   { key: 'meetings', header: 'Meetings', width: 1, sortable: true, hideable: true, align: 'end' },
   {

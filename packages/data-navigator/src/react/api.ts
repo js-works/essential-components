@@ -60,6 +60,15 @@ declare namespace DataNavigatorComponent {
 
   type SelectColumnFilterSettings = DataNavigator.SelectColumnFilterSettings;
 
+  type AutocompleteOption = { value: string; label: string; content?: () => ReactNode };
+
+  type AutocompleteColumnFilterSettings = {
+    load: (query: string, signal: AbortSignal) => Promise<readonly AutocompleteOption[]>;
+    multiple?: boolean;
+    minQueryLength?: number;
+    maxChips?: number;
+  };
+
   type DateRangeFilterValue = DataNavigator.DateRangeFilterValue;
 
   type NumberRangeFilterValue = DataNavigator.NumberRangeFilterValue;

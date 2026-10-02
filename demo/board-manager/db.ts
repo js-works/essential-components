@@ -47,6 +47,8 @@ export {
   ROLES,
   saveSectionDraft,
   setMeetingStatus,
+  suggestOrganizations,
+  suggestPeople,
   updateAgendaItem,
   updateBoard,
   updateMeeting,
@@ -858,7 +860,7 @@ async function fetchBoards(
     search: ['name', 'description', 'chair'],
     filters: {
       name: (row, value) => matches(row.name, value),
-      chair: (row, value) => matches(row.chair, value),
+      chair: (row, value) => oneOf(row.chair, value),
       nextMeeting: (row, value) => within(row.nextMeeting, value),
     },
   });
@@ -970,13 +972,49 @@ function fetchBoardMembers(boardId: string): DataNavigatorComponent.Source<Membe
     return runQuery(rows, query, {
       search: ['name', 'email', 'organization', 'role'],
       filters: {
-        name: (row, value) => matches(row.name, value),
+        name: (row, value) => oneOf(row.name, value),
         role: (row, value) => oneOf(row.role, value),
-        organization: (row, value) => matches(row.organization, value),
+        organization: (row, value) => oneOf(row.organization, value),
         since: (row, value) => within(row.since, value),
       },
     });
   };
+}
+
+// The options of the organization filters (autocompletes): the organizations whose name contains the
+// query (ignoring the case), by name, with their city. The value is the name, like the column's.
+async function suggestOrganizations(
+  query: string,
+  signal: AbortSignal,
+): Promise<readonly { value: string; label: string; city: string }[]> {
+  await wait(LOADING_TIME, signal);
+
+  const needle = query.toLowerCase();
+
+  return db.getState().organizations
+    .filter((organization) => organization.name.toLowerCase().includes(needle))
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((organization) => ({ value: organization.name, label: organization.name, city: organization.city }));
+}
+
+// The options of a person (the person of a new member, an `AsyncSelect`; the person filters): of the people `among`
+// (their ids; all without it), those whose name or organization contains the query (ignoring the case), by name, with
+// the organization as the second line. The value is the id.
+async function suggestPeople(
+  query: string,
+  signal: AbortSignal,
+  among?: readonly string[],
+): Promise<readonly { value: string; label: string; description: string }[]> {
+  await wait(LOADING_TIME, signal);
+
+  const state = db.getState();
+  const needle = query.toLowerCase();
+
+  return state.people
+    .filter((person) => among === undefined || among.includes(person.id))
+    .map((person) => ({ value: person.id, label: person.name, description: organizationOf(state, person) }))
+    .filter((option) => [option.label, option.description].some((text) => text.toLowerCase().includes(needle)))
+    .sort((a, b) => a.label.localeCompare(b.label));
 }
 
 // All people, or those of one organization (`organizationId`).
@@ -1002,6 +1040,7 @@ function fetchPeople(organizationId?: string): DataNavigatorComponent.Source<Per
     return runQuery(rows, query, {
       search: ['name', 'email', 'organization', 'boards'],
       filters: {
+        name: (row, value) => oneOf(row.name, value),
         organization: (row, value) => oneOf(row.organization, value),
         boards: (row, value) =>
           !Array.isArray(value) || value.length === 0
@@ -1042,7 +1081,7 @@ async function fetchOrganizations(
   return runQuery(rows, query, {
     search: ['name', 'description', 'city', 'countryName', 'website'],
     filters: {
-      name: (row, value) => matches(row.name, value),
+      name: (row, value) => oneOf(row.name, value),
       city: (row, value) => matches(row.city, value),
       countryName: (row, value) => oneOf(row.countryName, value),
     },

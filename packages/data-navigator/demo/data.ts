@@ -1,7 +1,18 @@
 import type { DataNavigatorComponent } from '../src/react';
 
-export { countries, createUser, fetchNothing, fetchUsers, fetchUsersByCountry, LOADING_TIME, newUser, roles, saveUser };
-export type { User };
+export {
+  countries,
+  createUser,
+  fetchNothing,
+  fetchUsers,
+  fetchUsersByCountry,
+  LOADING_TIME,
+  newUser,
+  roles,
+  saveUser,
+  suggestEmails,
+};
+export type { EmailSuggestion, User };
 
 type User = {
   id: number;
@@ -19,7 +30,13 @@ type User = {
   notes: string;
 };
 
+// An option of the email filter (an autocomplete): the email, and the name of its user for the list.
+type EmailSuggestion = { value: string; label: string; name: string };
+
 const LOADING_TIME = 1000;
+
+// The simulated loading time of the email filter's options: shorter than a page of rows.
+const SUGGEST_TIME = 300;
 
 const firstNames = [
   'Ada',
@@ -172,15 +189,29 @@ function compare(a: unknown, b: unknown): number {
 }
 
 // The simulated loading time. Like a fetch, it rejects as soon as the signal is aborted.
-function wait(signal: AbortSignal): Promise<void> {
+function wait(signal: AbortSignal, time = LOADING_TIME): Promise<void> {
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(resolve, LOADING_TIME);
+    const timer = setTimeout(resolve, time);
 
     signal.addEventListener('abort', () => {
       clearTimeout(timer);
       reject(signal.reason);
     }, { once: true });
   });
+}
+
+// The options of the email filter: the users whose name or email contains the query (ignoring the case), at most 20.
+async function suggestEmails(query: string, signal: AbortSignal): Promise<readonly EmailSuggestion[]> {
+  await wait(signal, SUGGEST_TIME);
+
+  const needle = query.toLowerCase();
+
+  return users
+    .filter((user) =>
+      [user.email, `${user.firstName} ${user.lastName}`].some((value) => value.toLowerCase().includes(needle))
+    )
+    .slice(0, 20)
+    .map((user) => ({ value: user.email, label: user.email, name: `${user.firstName} ${user.lastName}` }));
 }
 
 async function fetchUsers(
@@ -260,6 +291,8 @@ function findUsers(query: DataNavigatorComponent.Query): readonly User[] {
     .filter(
       (user) =>
         matches(user.firstName, firstName) && matches(user.lastName, lastName) && matches(user.email, email)
+        // The email filter is a text filter in one tab and an autocomplete (a list of emails) in others.
+        && (!Array.isArray(email) || email.includes(user.email))
         && (typeof role !== 'string' || user.role === role)
         && (!Array.isArray(country) || country.includes(user.country))
         && within(user.dateOfBirth, dateOfBirth)

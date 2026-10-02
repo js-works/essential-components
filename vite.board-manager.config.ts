@@ -18,9 +18,17 @@ const EXAMPLE_PAGE = `<!doctype html>
     <!-- An AMD loader, like on an XWiki page: the element must work beside it (see \`banner\`). -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
     <script type="module" src="./board-manager.js"></script>
+    <!-- The colors, the font and the text size are custom properties of the element (without them, Mantine's). -->
+    <style>
+      board-manager {
+        --board-manager-accent-color: #0ca678;
+        --board-manager-font-family: Georgia, serif;
+        --board-manager-font-size: 15px;
+      }
+    </style>
   </head>
   <body style="margin: 0; padding: 16px">
-    <board-manager hash="board-manager" accent-color="#0ca678"></board-manager>
+    <board-manager hash="board-manager"></board-manager>
   </body>
 </html>
 `;

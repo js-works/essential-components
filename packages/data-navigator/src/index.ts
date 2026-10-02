@@ -1,6 +1,7 @@
 import type { DataNavigator } from './api';
 import { dateColumnEditor, selectColumnEditor, textColumnEditor } from './element/editors';
 import {
+  autocompleteColumnFilter,
   booleanColumnFilter,
   dateRangeColumnFilter,
   numberRangeColumnFilter,
@@ -10,6 +11,7 @@ import {
 import { setupDataNavigator } from './element/setupDataNavigator';
 
 export {
+  autocompleteColumnFilter,
   booleanColumnFilter,
   dateColumnEditor,
   dateRangeColumnFilter,

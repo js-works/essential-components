@@ -1,6 +1,7 @@
 import { useDataNavigatorController, useDataNavigatorSelection } from '../core/controllerHooks';
 import { dateColumnEditor, selectColumnEditor, textColumnEditor } from '../core/view/ColumnEditors';
 import {
+  autocompleteColumnFilter,
   booleanColumnFilter,
   dateRangeColumnFilter,
   numberRangeColumnFilter,
@@ -11,6 +12,7 @@ import type { DataNavigatorComponent } from './api';
 import { createDataNavigatorComponent } from './createDataNavigatorComponent';
 
 export {
+  autocompleteColumnFilter,
   booleanColumnFilter,
   createDataNavigatorComponent,
   dateColumnEditor,

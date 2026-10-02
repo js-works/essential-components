@@ -196,7 +196,7 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   `setupDataNavigator` throw a `TypeError`.
 - Column filters: the element's entry exports the same factories as the React entry (`textColumnFilter()`,
   `selectColumnFilter({ options, multiple })`, `dateRangeColumnFilter()`, `numberRangeColumnFilter()`,
-  `booleanColumnFilter()`); internally they use the React filters.
+  `booleanColumnFilter()`, `autocompleteColumnFilter()`); internally they use the React filters.
   - A custom filter is a function `(props: { value, onChange, labelledBy }) => C`, rendered by the content adapter.
 - Light DOM, no shadow root: the app's CSS reaches everything, also its own content in cells, details and filters.
   - No slots: the element owns its children (the app must not put anything inside it). `title`, `subtitle` and `empty`
@@ -322,7 +322,7 @@ The main goal is a very nice, yet simple, API, designed together with the user.
 - The stylesheet itself (`data-navigator.css`) is still imported by the app.
 - The public API of the React entry (`@local/data-navigator/react`): `createDataNavigatorComponent`,
   `useDataNavigatorController`, `useDataNavigatorSelection`, `textColumnFilter`, `selectColumnFilter`,
-  `dateRangeColumnFilter`, `numberRangeColumnFilter`, `booleanColumnFilter`, `textColumnEditor`, `selectColumnEditor`,
+  `dateRangeColumnFilter`, `numberRangeColumnFilter`, `booleanColumnFilter`, `autocompleteColumnFilter`, `textColumnEditor`, `selectColumnEditor`,
   `dateColumnEditor`, and the types (`DataNavigatorComponent.Config`, `.Theme`, `.I18nAdapter`, `.Component`,
   `.Controller`, `.Props`, ...). The themes (`defaultTheme`, `softTheme`, `mantineTheme`, `antdTheme`) come from
   `@local/data-navigator/themes`.
@@ -416,6 +416,9 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     when grouped). No city column (the users still have a city: the search and the details use it).
     - Every column but the names is `hideable` (the column toggle menu); logins and active start `hidden`. The custom
       element tab has a hideable email column.
+    - The email filter is an autocomplete (multiple, in both tabs): `suggestEmails` (`data.ts`, 300ms) loads at most
+      20 users whose name or email contains the query; each option shows the email with the name below it (JSX in
+      React, a DOM node in the element tab).
   - `index.html` + `main.ts`: the page, a shell around the demo element: a header with the title and, top right, the
     global switches (language, color scheme), which change `<html>` (`lang`, `data-scheme`). It registers the demo
     element as `data-navigator-demo`.
@@ -441,7 +444,7 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     page. Items are moved within a section or into another one. "Delete section" (a group action, a trash icon)
     deletes one, its items go to the blank group (section `''`, "(Blank)", at the end); a line with the last move.
   - `ElementDemo.ts` (+ `element-demo.css`): the custom element tab, plain TypeScript with DOM nodes as content: the
-    same users, `setupDataNavigator` with the demo's i18n factory, text and select filters, a role badge (a node per
+    same users, `setupDataNavigator` with the demo's i18n factory, text, select and autocomplete filters, a role badge (a node per
     row, styled by the demo's global CSS), a rows action, switches for density, striped and searchable, and reload,
     clear selection and the selected rows (`onSelectionChange`). Titles, headers and labels are functions, so they
     follow the language.
@@ -1189,7 +1192,11 @@ The main goal is a very nice, yet simple, API, designed together with the user.
       the label of the filter in the filter view.
   - The built-in filters are factories, exported next to the component (and by the element's entry, as opaque
     markers):
-    - `textColumnFilter({ placeholder? })`: a text input with a select inside it, at its start (`PrefixedTextField` in
+    - `textColumnFilter({ placeholder?, matchModes? })`: a plain text input (`FilterTextField`) by default, the value
+      always `{ text, match: 'contains' }` (decided 2026-10-02: the select is noise in most columns; the select was
+      always there before). With `matchModes: true`, the input with the select described here (the React demo's first
+      and last name keep it).
+      The text input with a select inside it, at its start (`PrefixedTextField` in
       `widgets.tsx`; the select is our `SelectField` with its chevron, named `Texts.textMatch` "Match"). The wrapper
       (`.prefixedField`) is the field, with the border and the focus outline of the input; the select is a chip in it,
       2px from its top, start and bottom edge, that looks like the knob of the segmented control (flat,
@@ -1205,7 +1212,8 @@ The main goal is a very nice, yet simple, API, designed together with the user.
       `Texts.filterPlaceholder` ("Filter") or `placeholder`. Its clear button (`Texts.clearFilter`) empties it.
     - `selectColumnFilter({ options, multiple? })`: unchanged (`SelectField`): the value of the chosen option, or a list
       of them with `multiple`; "All" (`Texts.filterAll`, value `''`) as the first option of a single select; a clear
-      button while something is chosen.
+      button while something is chosen, before the chevron (2026-10-02; it took the chevron's place before), like the
+      autocomplete (`.listField`).
     - `dateRangeColumnFilter()`: unchanged (see below): `{ from, to }`. The second click sets the range in the draft and
       closes the calendars (not the filter view); Clear removes it from the draft.
     - `numberRangeColumnFilter()` (new): two number inputs in one row, `from – to` (placeholders and names
@@ -1214,6 +1222,42 @@ The main goal is a very nice, yet simple, API, designed together with the user.
       open, both empty remove the filter. Native `<input type="number">`, without the spin buttons.
     - `booleanColumnFilter()` (new): a segmented control `All` / `Yes` / `No` (`Texts.filterAll`, `filterYes`,
       `filterNo`); the value is `true` or `false`, "All" removes the filter (and shows no pill).
+    - `autocompleteColumnFilter({ load, multiple?, minQueryLength?, maxChips? })` (decided 2026-10-02,
+      `view/AutocompleteFilter.tsx`): a text input whose options are loaded while typing (Base UI's `Combobox`; its
+      `Autocomplete` is for free text). The value is the `value` of the chosen option, or a list of them with
+      `multiple`.
+      - `load(query, signal)` returns `{ value, label, content? }[]` (`AutocompleteOption`). `label` is a string,
+        always: the pill, the input text and the accessible name need one. `content` is only the look of the entry in
+        the list (falls back to `label`).
+      - The types differ per entry (no generic, `BuiltInColumnFilter` stays as it is): React `content?: () =>
+        ReactNode`, the element `content?: () => string | Node`. The element renders a `Node` itself (like the
+        default content adapter), whatever the adapter of its setup, so it works with every setup (a Lit setup
+        returns a node, not a template). Its factory wraps `load` and calls the React factory.
+      - `load` is called 250ms after the last key (`LOAD_DELAY`, fixed), once the trimmed query has `minQueryLength`
+        characters (default 1; with 0 it is also called with `''` when the list opens). A newer query aborts the older
+        one (`signal`). No cache: the app decides about caching.
+      - The list shows its state (Base UI's `Status`, announced): below the minimum `Texts.typeToSearch` ("Type to
+        search"), while loading `Texts.loading` (or the previous options, faded), no options `Texts.emptySearch` ("No
+        results found"), a rejected `load` (not an abort) `Texts.loadFailed` ("Could not load"; no retry button:
+        typing again tries again; no toast, the package has no overlays).
+      - Single: the input shows the label of the chosen option. Multiple: the chosen ones are shown before the input
+        (`.chipsField`); the list shows a checkbox in front of every option, like the multiple select. The list is placed
+        below the whole field (`anchor`), not below the input, which moves right with the values before it.
+        - `maxChips` (2026-10-02, default 0): with 0, the values are comma-separated text on one line, cut off with an
+          ellipsis (the input keeps at least 4rem); else at most that many chips (the field grows with them), each
+          with a remove button (`Texts.removeValue`, "Remove {label}"), and `+N` for the rest: like a chip, without a
+          remove button, not focusable, a click opens the list (where every value has its checked box).
+        - Backspace in the empty input removes the last value, in both modes (our own handler: Base UI's removes the
+          last chip shown, which is not the last value while some are hidden).
+      - The placeholder is `Texts.filterAll` while nothing is chosen. The field ends with a clear button
+        (`Texts.clearFilter`) while something is chosen or typed, and always a chevron (2026-10-02, it replaced a
+        search icon): Base UI's `Combobox.Trigger`, a click opens or closes the list (a click on the input does not
+        close it; the multiple select's whole field is its trigger, so it has this already). Not reachable with Tab
+        and `aria-hidden` (the keyboard has the arrow keys and Escape). It turns while the list is open.
+      - The pill shows the labels (like the select: `Ann+2` when long). The filter keeps the labels of the options
+        chosen in it (there are no initial filters, so every value was chosen there).
+      - In the filter view, Enter and Escape in its input belong to the open list (choose, close): they apply or
+        cancel the view only while the list is closed (`aria-expanded`).
     - Ranges are always inclusive on both ends. All filters are combined with AND (the source does that).
   - The segmented control (`Segmented` in `widgets.tsx`): a `radiogroup` of buttons (`role="radio"`), outlined
     (`--datnav-color-border`) on a transparent background; the chosen one is a flat knob on the surface color
@@ -1279,8 +1323,9 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - Text inputs and selects outside the filter view (the search box, the page number, the page size) have a side padding of
     `0.75 * --datnav-spacing-sm`.
   - Every select (the single and the multiple select filter, the page size) is one widget, `SelectField`, on Base
-    UI's `Select`. The trigger looks like our text inputs (same classes), with our chevron, or our clear button
-    while something is chosen. It shows the chosen labels (comma separated) or the placeholder, dimmed
+    UI's `Select`. The trigger looks like our text inputs (same classes), with our chevron; in the select filters
+    (`FilterSelectField`) the clear button comes before it while something is chosen, and the chevron turns while the
+    list is open (only a picture: the whole field is the trigger, a second click on it closes the list). It shows the chosen labels (comma separated) or the placeholder, dimmed
     (`data-empty`) while nothing is chosen.
   - The list opens below the trigger (`alignItemWithTrigger={false}`, not over it as Base UI does by default), at
     least as wide as the trigger, in the look of our menus: `--datnav-color-surface`, `--datnav-color-border`,

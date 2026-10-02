@@ -26,9 +26,9 @@ import {
 } from 'react-icons/tb';
 import { useStore } from 'zustand';
 import { i18n as navigatorI18n } from '../../packages/data-navigator/demo/i18n';
-import { createDataNavigatorComponent } from '../../packages/data-navigator/src/react';
+import { autocompleteColumnFilter, createDataNavigatorComponent } from '../../packages/data-navigator/src/react';
 import { mantineTheme } from '../../packages/data-navigator/src/themes';
-import { db } from './db';
+import { db, suggestOrganizations, suggestPeople } from './db';
 import type { Db } from './db';
 
 export {
@@ -39,7 +39,9 @@ export {
   formatSize,
   formatTime,
   Navigator,
+  organizationFilter,
   PageHeader,
+  personFilter,
   Scope,
   SCOPE_CLASS,
   setSchemeHost,
@@ -52,6 +54,37 @@ export {
 
 // One data navigator component for every table. It follows `<html lang>` through the i18n adapter of its demo.
 const Navigator = createDataNavigatorComponent({ i18n: navigatorI18n, theme: mantineTheme });
+
+// The filters of every column of an organization or a person (by name, the value is the name): autocompletes, all
+// options when the list opens (`minQueryLength: 0`), each with a second line (dimmed): the city of an organization,
+// the organization of a person.
+const suggestion = (label: string, second: string) => () => (
+  <span>
+    {label}
+    {second !== '' && <Text size="xs" c="dimmed">{second}</Text>}
+  </span>
+);
+
+const organizationFilter = autocompleteColumnFilter({
+  multiple: true,
+  minQueryLength: 0,
+  load: async (query, signal) =>
+    (await suggestOrganizations(query, signal)).map(({ city, ...option }) => ({
+      ...option,
+      content: suggestion(option.label, city),
+    })),
+});
+
+const personFilter = autocompleteColumnFilter({
+  multiple: true,
+  minQueryLength: 0,
+  load: async (query, signal) =>
+    (await suggestPeople(query, signal)).map(({ description, ...option }) => ({
+      ...option,
+      value: option.label,
+      content: suggestion(option.label, description),
+    })),
+});
 
 // The fake server's state, for a page that shows it (the breadcrumb, the home page, the headers).
 function useDb<T>(selector: (state: Db) => T): T {
@@ -100,33 +133,41 @@ function countText(names: readonly string[], plural: string): string {
   return names.length === 1 ? `"${names[0]}"` : `${names.length} ${plural}`;
 }
 
-// The `<board-manager>` element, whose `scheme` attribute (light or dark) wins over the page's switch.
+// The `<board-manager>` element: its color scheme is the one of its CSS (`color-scheme`, set on it or inherited).
 let schemeHost: HTMLElement | null = null;
 
 function setSchemeHost(element: HTMLElement | null): void {
   schemeHost = element;
 }
 
-// The color scheme: the element's `scheme`, else the page's switch (`<html data-scheme>`: light, dark or system).
+// The color scheme: the computed CSS `color-scheme` of the element (else of `<html>`, in the demo tab). Only `dark` is
+// dark, only `light` is light; `normal`, `light dark` and anything else follow the system. The demo page's switch
+// sets it through `ui.css` (`<html data-scheme>`).
 function currentScheme(): 'light' | 'dark' {
-  const scheme = schemeHost?.getAttribute('scheme') ?? document.documentElement.dataset['scheme'];
+  const words = getComputedStyle(schemeHost ?? document.documentElement).colorScheme.split(/\s+/);
+  const light = words.includes('light');
+  const dark = words.includes('dark');
 
-  if (scheme === 'light' || scheme === 'dark') {
-    return scheme;
+  if (light !== dark) {
+    return dark ? 'dark' : 'light';
   }
 
   return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
+// There is no event for a changed computed style: any attribute change of `<html>`, `<body>` or the element (a class,
+// `style`, `data-scheme`, ...) reads it again (React renders only if the scheme differs). Not seen: a swapped
+// stylesheet, a media query of the host page, a change on another ancestor (then a reload is needed).
 function subscribeScheme(onChange: () => void): () => void {
   const observer = new MutationObserver(onChange);
   const media = matchMedia('(prefers-color-scheme: dark)');
 
-  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-scheme'] });
-
-  if (schemeHost !== null) {
-    observer.observe(schemeHost, { attributes: true, attributeFilter: ['scheme'] });
+  for (const element of [document.documentElement, document.body, schemeHost]) {
+    if (element !== null) {
+      observer.observe(element, { attributes: true });
+    }
   }
+
   media.addEventListener('change', onChange);
 
   return () => {

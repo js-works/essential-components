@@ -1,10 +1,10 @@
 import type { MantineColorsTuple } from '@mantine/core';
 
-export { dangerFor, parseColor, shades };
+export { parseColor, shades };
 export type { Oklch };
 
-// The colors of the `<board-manager>` element's `accent-color` and `danger-color`: any CSS color, turned into Mantine's
-// ten shades in OKLCH (no dependency). The given color is shade 6 (Mantine's filled color in light mode), the lighter
+// The colors of the `<board-manager>` element's `--board-manager-accent-color` and `--board-manager-danger-color`: any
+// CSS color, turned into Mantine's ten shades in OKLCH (no dependency). The given color is shade 6 (Mantine's filled color in light mode), the lighter
 // shades lose chroma towards an almost white tint, the darker ones keep it.
 
 type Oklch = { l: number; c: number; h: number };
@@ -51,30 +51,6 @@ function shades(color: Oklch): MantineColorsTuple {
 
     return toHex({ l: color.l - t * (color.l - darkest), c: color.c * (1 - 0.15 * t), h: color.h });
   }) as unknown as MantineColorsTuple;
-}
-
-// A red that goes with the accent: its lightness (within a readable range) and at least a clear chroma. An accent
-// close to red (within 30° of its hue, and not a gray) moves the red away from it, so a danger button still differs
-// from a primary one: towards crimson (an orange becomes not a warning), unless the accent is a crimson itself (more
-// than 10° below red), then towards orange red.
-const RED_HUE = 25;
-const MIN_DISTANCE = 30;
-
-function dangerFor(accent: Oklch): Oklch {
-  const l = Math.min(Math.max(accent.l, 0.55), 0.66);
-  const c = Math.min(Math.max(accent.c, 0.17), 0.22);
-  const distance = hueDistance(accent.h, RED_HUE);
-
-  if (accent.c < 0.05 || Math.abs(distance) >= MIN_DISTANCE) {
-    return { l, c, h: RED_HUE };
-  }
-
-  return { l, c, h: (accent.h + (distance >= -10 ? -MIN_DISTANCE : MIN_DISTANCE) + 360) % 360 };
-}
-
-// The signed difference `from - to`, in -180..180.
-function hueDistance(from: number, to: number): number {
-  return ((from - to + 540) % 360) - 180;
 }
 
 // sRGB <-> OKLCH (Björn Ottosson's OKLab).

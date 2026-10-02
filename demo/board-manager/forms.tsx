@@ -3,8 +3,9 @@ import { DateTimePicker } from '@mantine/dates';
 import { useRef } from 'react';
 import type { FocusEvent, ReactElement } from 'react';
 import { z } from 'zod';
+import { AsyncSelect } from './AsyncSelect';
 import { countryOptions } from './countries';
-import { db, getOrganization, normalizeWebsite, ROLES } from './db';
+import { db, normalizeWebsite, ROLES, suggestPeople } from './db';
 import type { AgendaItem, AgendaSection, Board, Meeting, MeetingDocument, Organization, Person, Role } from './db';
 import { MinutesEditor } from './minutes';
 import { useForm } from './useForm';
@@ -20,7 +21,8 @@ export { AgendaItemForm, BoardForm, DocumentForm, MeetingForm, MemberForm, Minut
 // The labels come from the app's i18next (`labels: '<form>'`, `i18n.ts`; a hook: in a dialog there is no `<form>` of
 // the form's own for a factory), the messages from form-validation's catalogs. Mantine's `error` gets the message, or
 // `true` (red, without a text) for a field that turned invalid while being edited.
-// Selects are native (a Mantine select would open outside the modal dialog). The date and time is Mantine's
+// Selects are native (a Mantine select would open outside the modal dialog), except the person of a new member: an
+// `AsyncSelect` (`AsyncSelect.tsx`), its popup in the dialog like the date picker's. The date and time is Mantine's
 // `DateTimePicker`, no native picker: its popup stays in the dialog (no portal, see the theme), and a fixed position
 // keeps the dialog's scrolling body from clipping it. A field only some dialogs show (the board of a new meeting, the
 // person of a new member) gets a second schema, so it is required only there.
@@ -272,7 +274,7 @@ function MemberForm(
 ): ReactElement {
   const { DialogForm, field } = useForm(people !== undefined ? memberWithPersonSchema : memberSchema, {
     labels: 'member',
-    initial: { personId: people?.[0]?.id, role: role ?? 'Member' },
+    initial: { role: role ?? 'Member' },
     submit: save,
   });
 
@@ -280,8 +282,11 @@ function MemberForm(
     <DialogForm>
       <Stack gap="sm">
         {people !== undefined && (
-          <NativeSelect
-            data={people.map((person) => ({ value: person.id, label: personLabel(person) }))}
+          // Loaded while typing, like the data navigator's autocomplete filter: all candidates when the list opens.
+          <AsyncSelect
+            minQueryLength={0}
+            placeholder="Search by name or organization"
+            load={(query, signal) => suggestPeople(query, signal, people.map((person) => person.id))}
             {...field.personId()}
           />
         )}
@@ -289,11 +294,4 @@ function MemberForm(
       </Stack>
     </DialogForm>
   );
-}
-
-// A person with their organization, if any: `Helena Brandt (Brandt Holding)`.
-function personLabel(person: Person): string {
-  const organization = getOrganization(db.getState(), person.organizationId)?.name;
-
-  return organization === undefined ? person.name : `${person.name} (${organization})`;
 }

@@ -37,16 +37,41 @@ export type { Look };
 // three packages: data navigators for every list, the dialogs and toasts of the overlays package, and a file upload
 // for the documents of a meeting. The server is fake (db.ts), the data lives in memory.
 
-// The look of the app: Mantine's theme with the accent (the primary color) and the danger color, the CSS variables
-// and the overlays' config that follow from them. Each is ten shades of Mantine (`colors.accent`, `colors.danger`);
-// without them, Mantine's `indigo` and `red`. Made once per element (the `<board-manager>` element's `accent-color`
-// and `danger-color`): the overlays provider compares its config.
+// The look of the app: Mantine's theme with the accent (the primary color), the danger, success and warning colors,
+// the CSS variables and the overlays' config that follow from them. Each is ten shades of Mantine (`colors.accent`,
+// `colors.danger`, `colors.success`, `colors.warning`); without them, Mantine's `indigo`, `red`, `green` and `orange`.
+// Success and warning are the states of the meetings and their minutes (held, approved; a draft) and the warning
+// toasts; the success toasts stay in the accent. Made once per element (the `<board-manager>` element's color custom
+// properties): the overlays provider compares its config.
 type Look = { theme: MantineThemeOverride; cssVariablesResolver: CSSVariablesResolver; overlaysConfig: OverlaysConfig };
 
+// The font of the app: `--board-manager-font-family`, else Mantine's.
+const FONT_FAMILY = `var(--board-manager-font-family, ${DEFAULT_THEME.fontFamily})`;
+
+// Mantine's text and heading sizes in px (at a 16px root), relative to its `sm` (14px), the app's normal text.
+const FONT_SIZES = { xs: 12, sm: 14, md: 16, lg: 18, xl: 20 } as const;
+const HEADING_SIZES = { h1: 34, h2: 26, h3: 22, h4: 18, h5: 16, h6: 14 } as const;
+
+// The app's normal text: `--board-manager-font-size` (final, not scaled), else Mantine's `sm` times
+// `--board-manager-scale`. Not Mantine's `--mantine-scale`: the dialogs' own text is outside Mantine's scopes.
+const TEXT_SIZE = 'var(--board-manager-font-size, calc(0.875rem * var(--board-manager-scale, 1)))';
+
+// A size in proportion to the app's normal text.
+function fontSize(px: number): string {
+  return px === FONT_SIZES.sm ? TEXT_SIZE : `calc(${TEXT_SIZE} * ${px} / 14)`;
+}
+
 function createLook(
-  { accent = DEFAULT_THEME.colors.indigo, danger = DEFAULT_THEME.colors.red }: {
+  {
+    accent = DEFAULT_THEME.colors.indigo,
+    danger = DEFAULT_THEME.colors.red,
+    success = DEFAULT_THEME.colors.green,
+    warning = DEFAULT_THEME.colors.orange,
+  }: {
     accent?: MantineColorsTuple;
     danger?: MantineColorsTuple;
+    success?: MantineColorsTuple;
+    warning?: MantineColorsTuple;
   } = {},
 ): Look {
   // The popups of Mantine stay inside the app (no portal to `<body>`): its variables are set on the app, not on
@@ -55,7 +80,7 @@ function createLook(
   // the buttons of the pages). `autoContrast`:
   // black text on a light accent.
   const theme = createTheme({
-    colors: { accent, danger },
+    colors: { accent, danger, success, warning },
     primaryColor: 'accent',
     autoContrast: true,
     defaultRadius: 'sm',
@@ -77,8 +102,23 @@ function createLook(
   // (in dark mode: lighter). The text and the lines stay Mantine's (black and `gray.4` already). The error color (the
   // inputs' errors, the data navigator's and the file upload's danger) is the danger color, shades 6 and 8 like
   // Mantine's red.
+  // The font and the text size follow the custom properties `--board-manager-font-family` and
+  // `--board-manager-font-size` (the app's normal text, Mantine's `sm`; set by the host page's CSS on the
+  // `<board-manager>` element, they reach the shadow root by inheritance; live: no JS reads them). Mantine's other sizes
+  // and the headings keep their proportions to it. Without them, Mantine's defaults.
   const cssVariablesResolver: CSSVariablesResolver = () => ({
-    variables: {},
+    variables: {
+      // Mantine's own scale: every size of its components (heights, spacing, radii) is multiplied by it.
+      '--mantine-scale': 'var(--board-manager-scale, 1)',
+      '--mantine-font-family': FONT_FAMILY,
+      '--mantine-font-family-headings': FONT_FAMILY,
+      ...Object.fromEntries(
+        Object.entries(FONT_SIZES).map(([name, px]) => [`--mantine-font-size-${name}`, fontSize(px)]),
+      ),
+      ...Object.fromEntries(
+        Object.entries(HEADING_SIZES).map(([name, px]) => [`--mantine-${name}-font-size`, fontSize(px)]),
+      ),
+    },
     light: {
       '--mantine-color-dimmed': 'var(--mantine-color-gray-7)',
       '--mantine-color-placeholder': 'var(--mantine-color-gray-6)',
@@ -94,7 +134,7 @@ function createLook(
   // The toasts in Mantine's palette. They live in `<body>`, outside the scopes, so Mantine's variables are not there:
   // the colors are the values of the theme, and `light-dark()` follows the page's scheme (`color-scheme` on `<html>`).
   // Like Mantine: a paper card (white, `dark.6`), its text and dimmed colors, the accent for info, success and loading.
-  const { colors, fontSizes, fontFamily } = mergeMantineTheme(DEFAULT_THEME, theme);
+  const { colors } = mergeMantineTheme(DEFAULT_THEME, theme);
 
   const toastTheme = createToastTheme({
     background: `light-dark(#fff, ${colors.dark[6]})`,
@@ -103,7 +143,7 @@ function createLook(
     infoAccent: accent[6],
     // Success in the accent too, like info (only the icon differs): one accent color in the app.
     successAccent: accent[6],
-    warnAccent: colors.orange[6],
+    warnAccent: warning[6],
     errorAccent: danger[6],
     loadingAccent: accent[6],
     titleColor: `light-dark(#000, ${colors.dark[0]})`,
@@ -127,8 +167,8 @@ function createLook(
       // the values of the theme (the dialogs are outside the scopes, where Mantine's variables are not set).
       // The spinner placeholder (while a scope waits, e.g. for the PDF) in the accent's filled color (shade 6, 8 dark).
       theme: createDialogTheme({
-        fontSize: fontSizes.sm,
-        fontFamily,
+        fontSize: fontSize(FONT_SIZES.sm),
+        fontFamily: FONT_FAMILY,
         spinner: `light-dark(${accent[6]}, ${accent[8]})`,
       }),
       wrapContent: (content) => <Scope>{content}</Scope>,
@@ -162,7 +202,7 @@ function createLook(
         ),
       },
     },
-    toasts: { placement: 'bottom-end', size: 'small', stacked: true, theme: toastTheme },
+    toasts: { placement: 'bottom-end', size: 'medium', stacked: true, theme: toastTheme },
   };
 
   return { theme, cssVariablesResolver, overlaysConfig };

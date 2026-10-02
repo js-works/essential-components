@@ -2,11 +2,7 @@ import { Anchor } from '@mantine/core';
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { Link, useNavigate } from 'react-router';
-import {
-  selectColumnFilter,
-  textColumnFilter,
-  useDataNavigatorController,
-} from '../../../packages/data-navigator/src/react';
+import { selectColumnFilter, useDataNavigatorController } from '../../../packages/data-navigator/src/react';
 import type { DataNavigatorComponent } from '../../../packages/data-navigator/src/react';
 import { useDialogs, useToast } from '../../../packages/overlays/src/main/bindings/react';
 import { boardIdsOf, createPerson, db, deletePeople, fetchPeople, getPerson, updatePerson } from '../db';
@@ -14,7 +10,7 @@ import type { PersonRow } from '../db';
 import { confirmAndRun } from '../flows';
 import type { Dialogs } from '../flows';
 import { PersonForm } from '../forms';
-import { appIcons, countText, Navigator, useDb } from '../shared';
+import { appIcons, countText, Navigator, organizationFilter, personFilter, useDb } from '../shared';
 
 export { deletePeopleFlow, editPerson, memberPath, PeopleTable };
 
@@ -84,16 +80,15 @@ function PeopleTable(
   const toasts = useToast();
   const navigate = useNavigate();
   const boards = useDb((state) => state.boards);
-  const organizations = useDb((state) => state.organizations);
   const source = useMemo(() => fetchPeople(organizationId), [organizationId]);
 
   const columns = useMemo<readonly DataNavigatorComponent.Column<PersonRow>[]>(() => [
     {
       key: 'name',
-      header: 'Name',
+      header: 'Person',
       width: 2.5,
       sortable: true,
-      filter: textColumnFilter(),
+      filter: personFilter,
       render: (row) => <Anchor component={Link} to={memberPath(row)} size="sm">{row.name}</Anchor>,
     },
     {
@@ -103,10 +98,7 @@ function PeopleTable(
       sortable: true,
       hideable: true,
       hidden: organizationId !== undefined,
-      filter: selectColumnFilter({
-        options: organizations.map((organization) => organization.name).sort(),
-        multiple: true,
-      }),
+      filter: organizationFilter,
     },
     { key: 'email', header: 'Email', width: 3, hideable: true, hidden: true },
     {
@@ -118,7 +110,7 @@ function PeopleTable(
       filter: selectColumnFilter({ options: boards.map((board) => board.name), multiple: true }),
     },
     { key: 'roles', header: 'Roles', width: 2, hideable: true },
-  ], [boards, organizations, organizationId]);
+  ], [boards, organizationId]);
 
   const actions = useMemo<readonly DataNavigatorComponent.Action<PersonRow>[]>(() => {
     const create = async () => {

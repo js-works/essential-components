@@ -1,6 +1,9 @@
 export {
   adapterContent,
   applyButton,
+  autocompleteList,
+  autocompletePopup,
+  autocompleteStatus,
   blocker,
   button,
   buttonIcon,
@@ -9,6 +12,13 @@ export {
   cellText,
   check,
   chevron,
+  chip,
+  chipMore,
+  chipRemove,
+  chipsField,
+  chipsInput,
+  chipsText,
+  chipText,
   clearButton,
   content,
   dataRow,
@@ -33,6 +43,7 @@ export {
   field,
   fieldEnd,
   fieldIcon,
+  fieldToggle,
   filterBadge,
   filterButtonGroup,
   filterPanelControl,
@@ -73,6 +84,7 @@ export {
   iconButton,
   input,
   layer,
+  listField,
   liveRegion,
   loadingBar,
   menuIcon,
@@ -127,6 +139,9 @@ export {
 
 declare const adapterContent: string;
 declare const applyButton: string;
+declare const autocompleteList: string;
+declare const autocompletePopup: string;
+declare const autocompleteStatus: string;
 declare const blocker: string;
 declare const button: string;
 declare const buttonIcon: string;
@@ -134,6 +149,13 @@ declare const buttonLabel: string;
 declare const cell: string;
 declare const cellText: string;
 declare const check: string;
+declare const chip: string;
+declare const chipMore: string;
+declare const chipRemove: string;
+declare const chipsField: string;
+declare const chipsInput: string;
+declare const chipsText: string;
+declare const chipText: string;
 declare const chevron: string;
 declare const clearButton: string;
 declare const content: string;
@@ -159,6 +181,7 @@ declare const emptyCell: string;
 declare const field: string;
 declare const fieldEnd: string;
 declare const fieldIcon: string;
+declare const fieldToggle: string;
 declare const filterBadge: string;
 declare const filterButtonGroup: string;
 declare const filterView: string;
@@ -199,6 +222,7 @@ declare const headerText: string;
 declare const iconButton: string;
 declare const input: string;
 declare const layer: string;
+declare const listField: string;
 declare const liveRegion: string;
 declare const menuIcon: string;
 declare const menuItem: string;

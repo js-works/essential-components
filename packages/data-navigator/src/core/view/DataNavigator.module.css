@@ -695,6 +695,17 @@
   height: calc(0.8 * var(--datnav-control-height));
 }
 
+/* The chips field of a multiple autocomplete keeps growing with its chips, from the small height of the view's
+   controls on; its input fills the room inside it. */
+.filterPanelControl .chipsField {
+  height: auto;
+  min-height: calc(0.8 * var(--datnav-control-height));
+}
+
+.filterPanelControl .chipsInput {
+  height: calc(0.8 * var(--datnav-control-height) - var(--datnav-spacing-xs) - 2px);
+}
+
 /* The chip: like the knob of the segmented control (flat, on the surface color, with a thin border), as high as the
    room inside the field. */
 .prefixSelect {
@@ -1763,6 +1774,158 @@
 
   &[data-selected] {
     font-weight: var(--datnav-font-weight-bold);
+  }
+}
+
+/* A multiple autocomplete: its values as chips, then the input, all inside one field that looks like an input. It
+   grows in height when the chips wrap. */
+.chipsField {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--datnav-spacing-xs) / 2);
+  height: auto;
+  min-height: var(--datnav-control-height);
+  padding-block: calc(var(--datnav-spacing-xs) / 2);
+  cursor: text;
+
+  &:focus-within {
+    border-color: var(--datnav-color-focus);
+    outline: 1px solid var(--datnav-color-focus);
+    outline-offset: -1px;
+  }
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+  padding-inline: var(--datnav-spacing-xs) 2px;
+  border-radius: var(--datnav-radius);
+  background-color: var(--datnav-color-header);
+  font-size: var(--datnav-font-size-sm);
+  line-height: 1.6;
+  outline: none;
+
+  &:focus-visible {
+    outline: 1px solid var(--datnav-color-focus);
+  }
+}
+
+.chipText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chipRemove {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1px;
+  border: none;
+  border-radius: var(--datnav-button-radius);
+  background-color: transparent;
+  color: var(--datnav-color-text-dimmed);
+  cursor: pointer;
+
+  @media (hover: hover) {
+    &:hover {
+      color: var(--datnav-color-text);
+    }
+  }
+}
+
+/* A field with a list (the select filters, the autocomplete) ends with the clear button (while something is chosen, or
+   typed), then always the chevron. The chevron turns while the list is open. In a select it is only a picture (the
+   whole field is the trigger); in an autocomplete it is a button of its own (`.fieldToggle`), since a click on the
+   input does not close the list. */
+.listField {
+  & .input {
+    padding-inline-end: calc(var(--datnav-spacing-xs) + 2.5rem);
+  }
+
+  & .select {
+    padding-inline-end: calc(var(--datnav-spacing-xs) + 2.5rem + 1px);
+  }
+
+  & > .clearButton:not(.fieldToggle) {
+    inset-inline-end: calc(var(--datnav-spacing-xs) / 2 + 1.25rem);
+  }
+
+  /* Only with motion: this rule weighs more than the reduced motion rule at the end of the file. */
+  @media (prefers-reduced-motion: no-preference) {
+    & > :is(.fieldEnd, .fieldToggle) svg {
+      transition: rotate 150ms ease;
+    }
+  }
+
+  &:has(> [data-popup-open]) > :is(.fieldEnd, .fieldToggle) svg {
+    rotate: 180deg;
+  }
+}
+
+/* The values as comma-separated text (`maxChips` 0): one line, cut off with an ellipsis, so the input keeps its room. */
+.chipsField[data-text] {
+  flex-wrap: nowrap;
+}
+
+.chipsText {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The `+N` of the values without a chip: like a chip, without a remove button. */
+.chipMore {
+  padding-inline-end: var(--datnav-spacing-xs);
+  cursor: pointer;
+}
+
+/* The input after the chips: no frame of its own (the field has it), the rest of the line, at least 4rem. */
+.chipsInput {
+  flex: 1 1 4rem;
+  min-width: 4rem;
+  height: calc(var(--datnav-control-height) - 2 * var(--datnav-spacing-xs) / 2 - 2px);
+  padding: 0;
+  border: none;
+  background-color: transparent;
+  color: var(--datnav-color-text);
+  font: inherit;
+  outline: none;
+
+  &::placeholder {
+    color: var(--datnav-color-text-dimmed);
+    opacity: 1;
+  }
+}
+
+/* The list of an autocomplete: no wider than 24rem, its options cut off with an ellipsis. While a newer query loads,
+   the previous options stay, faded. */
+.autocompletePopup {
+  max-width: min(24rem, var(--available-width));
+
+  & .selectItem {
+    overflow: hidden;
+  }
+
+  &[data-loading] .autocompleteList {
+    opacity: 0.5;
+  }
+}
+
+/* The state of the list (type to search, loading, no results, failed). It stays in the DOM, so screen readers hear
+   its changes: empty, it takes no room. */
+.autocompleteStatus {
+  padding: calc(var(--datnav-spacing-xs) / 2) var(--datnav-spacing-xs);
+  color: var(--datnav-color-text-dimmed);
+
+  &:empty {
+    padding: 0;
   }
 }
 

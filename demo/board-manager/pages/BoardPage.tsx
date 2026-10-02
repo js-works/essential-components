@@ -5,7 +5,6 @@ import { useParams } from 'react-router';
 import {
   dateRangeColumnFilter,
   selectColumnFilter,
-  textColumnFilter,
   useDataNavigatorController,
 } from '../../../packages/data-navigator/src/react';
 import type { DataNavigatorComponent } from '../../../packages/data-navigator/src/react';
@@ -14,7 +13,16 @@ import { addMember, changeRole, db, fetchBoardMembers, getBoard, removeMembers, 
 import type { MemberRow } from '../db';
 import { confirmAndRun } from '../flows';
 import { MemberForm } from '../forms';
-import { appIcons, countText, formatDate, Navigator, PageHeader, useDb } from '../shared';
+import {
+  appIcons,
+  countText,
+  formatDate,
+  Navigator,
+  organizationFilter,
+  PageHeader,
+  personFilter,
+  useDb,
+} from '../shared';
 import { MeetingsTable } from './MeetingsTable';
 import { NotFound } from './NotFound';
 
@@ -58,7 +66,7 @@ function BoardPage(): ReactElement {
 }
 
 const columns: readonly DataNavigatorComponent.Column<MemberRow>[] = [
-  { key: 'name', header: 'Name', width: 2.5, sortable: true, filter: textColumnFilter() },
+  { key: 'name', header: 'Person', width: 2.5, sortable: true, filter: personFilter },
   {
     key: 'role',
     header: 'Role',
@@ -72,7 +80,7 @@ const columns: readonly DataNavigatorComponent.Column<MemberRow>[] = [
     width: 2.5,
     sortable: true,
     hideable: true,
-    filter: textColumnFilter(),
+    filter: organizationFilter,
   },
   { key: 'email', header: 'Email', width: 3, hideable: true, hidden: true },
   {

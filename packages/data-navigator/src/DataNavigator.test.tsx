@@ -1,10 +1,12 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { createContext, useContext } from 'react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useDataNavigatorController, useDataNavigatorSelection } from './core/controllerHooks';
 import { dateColumnEditor, selectColumnEditor, textColumnEditor } from './core/view/ColumnEditors';
 import {
+  autocompleteColumnFilter,
   booleanColumnFilter,
   dateRangeColumnFilter,
   numberRangeColumnFilter,
@@ -636,8 +638,21 @@ describe('DataNavigator', () => {
       expect((nameBox() as HTMLInputElement).value).toBe('');
     });
 
-    it('lets a text filter match the start or the end instead, and shows where other text may be', async () => {
+    it('gives a plain text filter (no match select by default) `contains`', async () => {
       const { source } = renderNav({ columns: filteredColumns });
+
+      await loaded();
+      await openFilters();
+      typeName('ber');
+      expect(screen.queryByRole('combobox', { name: 'Match' })).toBeNull();
+      click('Apply filters');
+      await filteredWith(source, { name: { text: 'ber', match: 'contains' } }, 300);
+    });
+
+    it('lets a text filter with `matchModes` match the start or the end instead, and shows where other text may be', async () => {
+      const { source } = renderNav({
+        columns: [{ key: 'name', header: 'Name', filter: textColumnFilter({ matchModes: true }) }, filteredColumns[1]!],
+      });
 
       await loaded();
       await openFilters();
@@ -798,6 +813,142 @@ describe('DataNavigator', () => {
       click('Apply filters');
       await filteredWith(source, { city: ['Vienna', 'Berlin', 'Lisbon'] }, 300);
       expect(pillTexts()).toEqual(['City:Vienna+2']);
+    });
+
+    describe('autocomplete filter', () => {
+      const cities = ['Vienna', 'Berlin', 'Bern', 'Lisbon'];
+      const createLoad = () =>
+        vi.fn(async (query: string) =>
+          cities
+            .filter((city) => city.toLowerCase().includes(query.toLowerCase()))
+            .map((city) => ({ value: city.toLowerCase(), label: city }))
+        );
+      // Typed key by key: Base UI opens the list only for real input (a change without an input type is autofill).
+      const typeInto = async (header: string, text: string) => {
+        const input = filterField(header);
+
+        await userEvent.clear(input);
+        await userEvent.type(input, text);
+      };
+
+      it('loads its options while typing, from the minimum length on, and gives the chosen values', async () => {
+        const load = createLoad();
+        const columns: readonly Spec.Column<Person>[] = [
+          { key: 'city', header: 'City', filter: autocompleteColumnFilter({ load, multiple: true }) },
+        ];
+        const { source } = renderNav({ columns });
+
+        await loaded();
+        await openFilters();
+        await typeInto('City', 'Ber');
+        fireEvent.click(await screen.findByRole('option', { name: 'Berlin' }, { timeout: 1000 }));
+        expect(load).toHaveBeenLastCalledWith('Ber', expect.any(AbortSignal));
+        await typeInto('City', 'Vi');
+        fireEvent.click(await screen.findByRole('option', { name: 'Vienna' }, { timeout: 1000 }));
+        click('Apply filters');
+        await filteredWith(source, { city: ['berlin', 'vienna'] }, 300);
+        expect(pillTexts()).toEqual(['City:Berlin, Vienna']);
+      });
+
+      it('shows the values as text by default, or up to `maxChips` chips and `+N`; Backspace removes the last one', async () => {
+        const choose = async (header: string, query: string, option: string) => {
+          await typeInto(header, query);
+          fireEvent.click(await screen.findByRole('option', { name: option }, { timeout: 1000 }));
+        };
+        const columns: readonly Spec.Column<Person>[] = [
+          { key: 'city', header: 'City', filter: autocompleteColumnFilter({ load: createLoad(), multiple: true }) },
+          {
+            key: 'name',
+            header: 'Name',
+            filter: autocompleteColumnFilter({ load: createLoad(), multiple: true, maxChips: 1 }),
+          },
+        ];
+        const fieldOf = (header: string) => filterField(header).parentElement!;
+
+        renderNav({ columns });
+
+        await loaded();
+        await openFilters();
+        await choose('City', 'Ber', 'Berlin');
+        await choose('City', 'Vi', 'Vienna');
+        expect(fieldOf('City').textContent).toBe('Berlin, Vienna');
+        expect(within(fieldOf('City')).queryAllByRole('button')).toEqual([]);
+        // Without the click of `type`, which would open the list.
+        await userEvent.type(filterField('City'), '{Backspace}', { skipClick: true });
+        expect(fieldOf('City').textContent).toBe('Berlin');
+
+        await choose('Name', 'Ber', 'Berlin');
+        await choose('Name', 'Vi', 'Vienna');
+        await choose('Name', 'Lis', 'Lisbon');
+        expect(fieldOf('Name').textContent).toBe('Berlin+2');
+        expect(within(fieldOf('Name')).getAllByRole('button', { name: /^Remove / }).length).toBe(1);
+
+        await userEvent.clear(filterField('Name'));
+        await userEvent.type(filterField('Name'), '{Backspace}', { skipClick: true });
+        expect(fieldOf('Name').textContent).toBe('Berlin+1');
+      });
+
+      it('does not load below the minimum length, and says why', async () => {
+        const load = createLoad();
+        const columns: readonly Spec.Column<Person>[] = [
+          { key: 'city', header: 'City', filter: autocompleteColumnFilter({ load, minQueryLength: 2 }) },
+        ];
+
+        renderNav({ columns });
+
+        await loaded();
+        await openFilters();
+        await typeInto('City', 'B');
+        expect(await screen.findByText('Type to search')).toBeTruthy();
+        await new Promise((resolve) => setTimeout(resolve, 400));
+        expect(load).not.toHaveBeenCalled();
+      });
+
+      it('aborts an older query, and shows a failed or empty load', async () => {
+        const signals: AbortSignal[] = [];
+        const load = vi.fn(async (query: string, signal: AbortSignal) => {
+          signals.push(signal);
+
+          if (query === 'x') {
+            throw new Error('down');
+          }
+
+          return [];
+        });
+        const columns: readonly Spec.Column<Person>[] = [
+          { key: 'city', header: 'City', filter: autocompleteColumnFilter({ load }) },
+        ];
+
+        renderNav({ columns });
+
+        await loaded();
+        await openFilters();
+        await typeInto('City', 'x');
+        expect(await screen.findByText('Could not load', {}, { timeout: 1000 })).toBeTruthy();
+        await typeInto('City', 'xy');
+        expect(await screen.findByText('No results found', {}, { timeout: 1000 })).toBeTruthy();
+        expect(signals[0]?.aborted).toBe(true);
+      });
+
+      it('shows the label of a single value in its input, and Enter there chooses instead of applying', async () => {
+        const load = createLoad();
+        const columns: readonly Spec.Column<Person>[] = [
+          { key: 'city', header: 'City', filter: autocompleteColumnFilter({ load }) },
+        ];
+        const { source } = renderNav({ columns });
+
+        await loaded();
+        await openFilters();
+        await typeInto('City', 'Lis');
+        await screen.findByRole('option', { name: 'Lisbon' }, { timeout: 1000 });
+        fireEvent.keyDown(filterField('City'), { key: 'ArrowDown' });
+        fireEvent.keyDown(filterField('City'), { key: 'Enter' });
+        await waitFor(() => expect((filterField('City') as HTMLInputElement).value).toBe('Lisbon'));
+        expect(screen.getByRole('region', { name: 'Filters' })).toBeTruthy();
+        click('Apply filters');
+        await filteredWith(source, { city: 'lisbon' }, 300);
+        expect(pillTexts()).toEqual(['City:Lisbon']);
+      });
     });
 
     it('shows the placeholder of a select filter only while nothing is selected', async () => {
