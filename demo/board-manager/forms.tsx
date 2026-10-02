@@ -3,18 +3,16 @@ import { DateTimePicker } from '@mantine/dates';
 import { useRef } from 'react';
 import type { FocusEvent, ReactElement } from 'react';
 import { z } from 'zod';
-import { defineUseForm } from '../../packages/form-validation/src';
-import { Form } from '../../packages/overlays/src/main/bindings/react';
 import { countryOptions } from './countries';
 import { db, getOrganization, normalizeWebsite, ROLES } from './db';
 import type { AgendaItem, AgendaSection, Board, Meeting, MeetingDocument, Organization, Person, Role } from './db';
-import { i18nAdapter } from './i18n';
 import { MinutesEditor } from './minutes';
+import { useForm } from './useForm';
 
 export { AgendaItemForm, BoardForm, DocumentForm, MeetingForm, MemberForm, MinutesForm, OrganizationForm, PersonForm };
 
 // The contents of the form dialogs (`dialogs.form`), validated by form-validation (`useForm`, a Zod schema per form),
-// not by the browser. Each form is the dialog's form (`<Form confirm={requestSubmit}>` of the overlays): "OK" runs
+// not by the browser. Each form is the dialog's form (`DialogForm` of `useForm.tsx`: the overlays' `<Form>`): "OK" runs
 // `requestSubmit`, which validates, shows the errors on the inputs and calls `save` (a prop) with the schema's typed
 // output; the dialog closes when it is saved, and shows a failed save as its note (the server's message,
 // `errorMessage`). The schema gives the rules and the required marks; optional strings default to `''`, so the output
@@ -26,27 +24,21 @@ export { AgendaItemForm, BoardForm, DocumentForm, MeetingForm, MemberForm, Minut
 // `DateTimePicker`, no native picker: its popup stays in the dialog (no portal, see the theme), and a fixed position
 // keeps the dialog's scrolling body from clipping it. A field only some dialogs show (the board of a new meeting, the
 // person of a new member) gets a second schema, so it is required only there.
-const useForm = defineUseForm({
-  i18n: { type: 'hook', useAdapter: () => i18nAdapter },
-  // The fake server's errors are meant for the user (e.g. "There is already an organization with this name").
-  errorMessage: (error) => (error instanceof Error ? error.message : undefined),
-  props: { label: 'label', error: 'error', invalid: 'error' },
-});
 
 type Save<S extends z.ZodType> = (values: z.output<S>) => Promise<void>;
 
 const boardSchema = z.object({ name: z.string().trim().min(1), description: z.string().default('') });
 
 function BoardForm({ board, save }: { board?: Board; save: Save<typeof boardSchema> }): ReactElement {
-  const { requestSubmit, field } = useForm(boardSchema, { labels: 'board', initial: board, submit: save });
+  const { DialogForm, field } = useForm(boardSchema, { labels: 'board', initial: board, submit: save });
 
   return (
-    <Form confirm={requestSubmit}>
+    <DialogForm>
       <Stack gap="sm">
         <TextInput autoComplete="off" {...field.name()} />
         <Textarea autosize minRows={3} {...field.description()} />
       </Stack>
-    </Form>
+    </DialogForm>
   );
 }
 
@@ -64,7 +56,7 @@ const meetingWithBoardSchema = meetingSchema.extend({ boardId: z.string() });
 function MeetingForm(
   { meeting, boards, save }: { meeting?: Meeting; boards?: readonly Board[]; save: Save<typeof meetingSchema> },
 ): ReactElement {
-  const { requestSubmit, field } = useForm(boards !== undefined ? meetingWithBoardSchema : meetingSchema, {
+  const { DialogForm, field } = useForm(boards !== undefined ? meetingWithBoardSchema : meetingSchema, {
     labels: 'meeting',
     initial: meeting !== undefined
       ? { ...meeting, start: `${meeting.start.replace('T', ' ')}:00` }
@@ -73,7 +65,7 @@ function MeetingForm(
   });
 
   return (
-    <Form confirm={requestSubmit}>
+    <DialogForm>
       <Stack gap="sm">
         {boards !== undefined && (
           <NativeSelect data={boards.map((board) => ({ value: board.id, label: board.name }))} {...field.boardId()} />
@@ -86,7 +78,7 @@ function MeetingForm(
         />
         <TextInput autoComplete="off" {...field.location()} />
       </Stack>
-    </Form>
+    </DialogForm>
   );
 }
 
@@ -106,14 +98,14 @@ function AgendaItemForm({ item, members, sections, save }: {
   sections: readonly AgendaSection[];
   save: Save<typeof agendaItemSchema>;
 }): ReactElement {
-  const { requestSubmit, field } = useForm(agendaItemSchema, {
+  const { DialogForm, field } = useForm(agendaItemSchema, {
     labels: 'agendaItem',
     initial: item ?? { presenterId: members[0]?.id, duration: 15 },
     submit: save,
   });
 
   return (
-    <Form confirm={requestSubmit}>
+    <DialogForm>
       <Stack gap="sm">
         <TextInput autoComplete="off" {...field.title()} />
         {sections.length > 0 && (
@@ -132,7 +124,7 @@ function AgendaItemForm({ item, members, sections, save }: {
         <TextInput type="number" step={5} {...field.duration()} />
         <Textarea autosize minRows={3} {...field.description()} />
       </Stack>
-    </Form>
+    </DialogForm>
   );
 }
 
@@ -143,10 +135,10 @@ const minutesSchema = z.object({ minutes: z.string().default(''), decision: z.st
 function MinutesForm(
   { item, members, save }: { item: AgendaItem; members: readonly Person[]; save: Save<typeof minutesSchema> },
 ): ReactElement {
-  const { requestSubmit, field } = useForm(minutesSchema, { labels: 'minutes', initial: item, submit: save });
+  const { DialogForm, field } = useForm(minutesSchema, { labels: 'minutes', initial: item, submit: save });
 
   return (
-    <Form confirm={requestSubmit}>
+    <DialogForm>
       <Stack gap="sm" className="board-manager__minutes-form">
         <MinutesEditor
           description="What was presented and discussed. Type @ to mention a member."
@@ -155,7 +147,7 @@ function MinutesForm(
         />
         <Textarea description="Leave it empty if nothing was decided." autosize minRows={3} {...field.decision()} />
       </Stack>
-    </Form>
+    </DialogForm>
   );
 }
 
@@ -166,11 +158,11 @@ const documentSchema = z.object({ name: z.string().trim().min(1) });
 function DocumentForm(
   { document, save }: { document: MeetingDocument; save: Save<typeof documentSchema> },
 ): ReactElement {
-  const { requestSubmit, field } = useForm(documentSchema, { labels: 'document', initial: document, submit: save });
+  const { DialogForm, field } = useForm(documentSchema, { labels: 'document', initial: document, submit: save });
   const focusedRef = useRef(false);
 
   return (
-    <Form confirm={requestSubmit}>
+    <DialogForm>
       <TextInput
         autoComplete="off"
         {...field.name({
@@ -185,7 +177,7 @@ function DocumentForm(
           },
         })}
       />
-    </Form>
+    </DialogForm>
   );
 }
 
@@ -201,14 +193,14 @@ function PersonForm(
   { person, organizationId, save }: { person?: Person; organizationId?: string; save: Save<typeof personSchema> },
 ): ReactElement {
   const organizations = [...db.getState().organizations].sort((a, b) => a.name.localeCompare(b.name));
-  const { requestSubmit, field } = useForm(personSchema, {
+  const { DialogForm, field } = useForm(personSchema, {
     labels: 'person',
     initial: person ?? { organizationId },
     submit: save,
   });
 
   return (
-    <Form confirm={requestSubmit}>
+    <DialogForm>
       <Stack gap="sm">
         <TextInput autoComplete="off" {...field.name()} />
         <TextInput type="email" autoComplete="off" {...field.email()} />
@@ -220,7 +212,7 @@ function PersonForm(
           {...field.organizationId()}
         />
       </Stack>
-    </Form>
+    </DialogForm>
   );
 }
 
@@ -247,14 +239,14 @@ function organizationSchema(id: string | undefined) {
 function OrganizationForm(
   { organization, save }: { organization?: Organization; save: Save<ReturnType<typeof organizationSchema>> },
 ): ReactElement {
-  const { requestSubmit, field } = useForm(organizationSchema(organization?.id), {
+  const { DialogForm, field } = useForm(organizationSchema(organization?.id), {
     labels: 'organization',
     initial: organization,
     submit: save,
   });
 
   return (
-    <Form confirm={requestSubmit}>
+    <DialogForm>
       <Stack gap="sm">
         <TextInput autoComplete="off" {...field.name()} />
         <Textarea autosize minRows={2} {...field.description()} />
@@ -266,7 +258,7 @@ function OrganizationForm(
         <NativeSelect data={[{ value: '', label: '(none)' }, ...countryOptions()]} {...field.country()} />
         <TextInput placeholder="https://www.example.com" autoComplete="off" {...field.website()} />
       </Stack>
-    </Form>
+    </DialogForm>
   );
 }
 
@@ -278,14 +270,14 @@ const memberWithPersonSchema = memberSchema.extend({ personId: z.string() });
 function MemberForm(
   { people, role, save }: { people?: readonly Person[]; role?: Role; save: Save<typeof memberSchema> },
 ): ReactElement {
-  const { requestSubmit, field } = useForm(people !== undefined ? memberWithPersonSchema : memberSchema, {
+  const { DialogForm, field } = useForm(people !== undefined ? memberWithPersonSchema : memberSchema, {
     labels: 'member',
     initial: { personId: people?.[0]?.id, role: role ?? 'Member' },
     submit: save,
   });
 
   return (
-    <Form confirm={requestSubmit}>
+    <DialogForm>
       <Stack gap="sm">
         {people !== undefined && (
           <NativeSelect
@@ -295,7 +287,7 @@ function MemberForm(
         )}
         <NativeSelect data={[...ROLES]} {...field.role()} />
       </Stack>
-    </Form>
+    </DialogForm>
   );
 }
 

@@ -78,20 +78,21 @@ the root's `CLAUDE.md` apply.
     app; Mantine's `green` before): only the icon differs, so a toast from a spinner to success changes only its icon.
     Warnings orange, errors the danger color.
 - Forms (`forms.tsx`) are validated by the root's `form-validation` package (2026-10-02; Mantine's `@mantine/form`
-  before), not by the browser. Each form is the dialog's form: `<Form confirm={requestSubmit}>` (the overlays' React
-  `Form`); "OK" runs `requestSubmit`, which validates, shows the errors on the inputs and calls the form's `save` prop
+  before), not by the browser. Each form is the dialog's form: `<DialogForm>` of the app's `useForm` (`useForm.tsx`:
+  form-validation's hook, `defineUseForm` once, plus the overlays' React `Form` bound to its `requestSubmit`, a stable
+  component); "OK" runs `requestSubmit`, which validates, shows the errors on the inputs and calls the form's `save` prop
   with the schema's typed output; the dialog closes when it is saved and shows a failed save as its note (the library's
   server's message). A caller opens it with `dialogs.form({ …, content: <PersonForm save={createPerson} /> })`.
   - A Zod schema per form (`boardSchema`, `meetingSchema`, …) gives the rules and the required marks; optional strings
     `.default('')`, the meeting's `start` a `transform` (picker value to the fake server's), the role `z.enum(ROLES)`:
-    the output fits the fake server's values, with no conversion in the pages. `useForm` (`defineUseForm`, once) maps
+    the output fits the fake server's values, with no conversion in the pages. `useForm` maps
     Mantine's `error` as both the message and the invalid mark (`true`: red without a text, for a field that turned
     invalid while being edited).
   - A field only some dialogs show (the board of a new meeting on the meetings page, the person of a new member) gets
     a second schema (`meetingWithBoardSchema`, `memberWithPersonSchema`), so it is required only there.
   - `MinutesForm` too (nothing to validate): its editor is a field like the others (`MinutesEditor`, see Meetings).
     The upload drawer keeps the native validation (the file upload is no Mantine input and reports its own message).
-  - A failed save shows the fake server's message (`errorMessage` in `defineUseForm`: its errors are meant for the
+  - A failed save shows the fake server's message (`errorMessage` in `useForm.tsx`: its errors are meant for the
     user), else form-validation's generic one.
   - The labels are translated (`labels: '<form>'`, keys like `person.email`) by the app's i18next (`i18n.ts`): its own
     instance, English and German, the language from `<html lang>` (a `MutationObserver`), fallback English. Only the
