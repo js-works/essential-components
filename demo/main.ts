@@ -3,6 +3,7 @@ import './ui/ui.css';
 import './demo.css';
 import { layoutSetting, MENU, pageSettings, USER, USER_MENU } from '../packages/app-cockpit/demo/footer';
 import { createAppCockpitClass } from '../packages/app-cockpit/src';
+import type { AppCockpit } from '../packages/app-cockpit/src';
 
 // The page: an app cockpit, with every demo as one of its mini-apps. The page's settings (in the cockpit's footer) set
 // `<html lang>` and the color scheme for every demo. Each demo is a light DOM custom element of its project, loaded
@@ -23,21 +24,118 @@ const planned = async () => {
 const icon = (paths: string) =>
   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
 
+// The hourglass of the subgroup "Planned".
+const HOURGLASS = icon(
+  '<path d="M6.5 7h11"/><path d="M6.5 17h11"/><path d="M6 20v-2a6 6 0 1 1 12 0v2a1 1 0 0 1 -1 1h-10a1 1 0 0 1 -1 -1"/><path d="M6 4v2a6 6 0 1 0 12 0v-2a1 1 0 0 0 -1 -1h-10a1 1 0 0 0 -1 1"/>',
+);
+
+const MAIN = 'Essential Components';
+
+// The made-up groups: only to show a larger navigation (the group select). Their apps are placeholders
+// (`planned-demo`), without icons.
+const FAKE: Record<string, Record<string, [string, string][]>> = {
+  'Human Resources': {
+    Employees: [['Directory', 'Everyone in the company, with their teams'], [
+      'Onboarding',
+      'Checklists for new colleagues',
+    ], ['Org chart', 'Who reports to whom']],
+    Absences: [['Vacation', 'Requests and approvals'], ['Sick leave', 'Reports and certificates'], [
+      'Team calendar',
+      'Who is away when',
+    ]],
+    Payroll: [['Salaries', 'Monthly payroll runs'], ['Expenses', 'Travel and other expenses']],
+  },
+  Finance: {
+    Accounting: [['Invoices', 'Incoming and outgoing invoices'], ['Ledger', 'The general ledger'], [
+      'Payments',
+      'Transfers and their status',
+    ]],
+    Planning: [['Budgets', 'Budgets per department'], ['Forecasts', 'The expected figures of the year']],
+    Reporting: [['Reports', 'Monthly and yearly reports'], ['Dashboards', 'The key figures at a glance']],
+  },
+};
+
+const fakeApps = (): AppCockpit.MiniApp[] =>
+  Object.entries(FAKE).flatMap(([group, subgroups]) =>
+    Object.entries(subgroups).flatMap(([subgroup, apps]) =>
+      apps.map(([title, description]) => ({
+        id: `${group}-${title}`.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        title,
+        description,
+        group,
+        subgroup,
+        element: 'planned-demo',
+        attributes: { description, note: 'A made-up app, only to show a larger navigation.' },
+        load: planned,
+      }))
+    )
+  );
+
 customElements.define(
   'app-cockpit',
   createAppCockpitClass({
     title: 'App Center',
     // The search (Ctrl K), although there are only a few apps.
     search: true,
-    // The subgroup "Planned" has an icon (an hourglass); its entries have none.
+    // One group at a time (a select on top of the list): the real one, and two made-up ones. The subgroup "Planned" has
+    // an icon (an hourglass); its entries have none.
+    groupDisplay: 'select',
     groups: [
       {
-        name: 'Components',
+        name: MAIN,
+        icon: icon(
+          '<path d="M3 12l3 3l3 -3l-3 -3z"/><path d="M15 12l3 3l3 -3l-3 -3z"/><path d="M9 6l3 3l3 -3l-3 -3z"/><path d="M9 18l3 3l3 -3l-3 -3z"/>',
+        ),
+        subgroups: [{ name: 'Planned', icon: HOURGLASS }],
+      },
+      {
+        name: 'Human Resources',
+        icon: icon(
+          '<path d="M5 7a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0 -3 -3.85"/>',
+        ),
         subgroups: [
           {
-            name: 'Planned',
+            name: 'Employees',
             icon: icon(
-              '<path d="M6.5 7h11"/><path d="M6.5 17h11"/><path d="M6 20v-2a6 6 0 1 1 12 0v2a1 1 0 0 1 -1 1h-10a1 1 0 0 1 -1 -1"/><path d="M6 4v2a6 6 0 1 0 12 0v-2a1 1 0 0 0 -1 -1h-10a1 1 0 0 0 -1 1"/>',
+              '<path d="M3 7a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v10a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z"/><path d="M7 10a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M15 8l2 0"/><path d="M15 12l2 0"/><path d="M7 16l10 0"/>',
+            ),
+          },
+          {
+            name: 'Absences',
+            icon: icon(
+              '<path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M4 11h16"/><path d="M10 16l4 -2"/>',
+            ),
+          },
+          {
+            name: 'Payroll',
+            icon: icon(
+              '<path d="M7 9m0 2a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2z"/><path d="M14 14m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 9v-2a2 2 0 0 0 -2 -2h-10a2 2 0 0 0 -2 2v6a2 2 0 0 0 2 2h2"/>',
+            ),
+          },
+        ],
+      },
+      {
+        name: 'Finance',
+        icon: icon(
+          '<path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/><path d="M14.8 9a2 2 0 0 0 -1.8 -1h-2a2 2 0 1 0 0 4h2a2 2 0 1 1 0 4h-2a2 2 0 0 1 -1.8 -1"/><path d="M12 7v10"/>',
+        ),
+        subgroups: [
+          {
+            name: 'Accounting',
+            icon: icon(
+              '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"/><path d="M9 7l1 0"/><path d="M9 13l6 0"/><path d="M13 17l2 0"/>',
+            ),
+          },
+          {
+            name: 'Planning',
+            icon: icon(
+              '<path d="M10 3.2a9 9 0 1 0 10.8 10.8a1 1 0 0 0 -1 -1h-6.8a2 2 0 0 1 -2 -2v-7a.9 .9 0 0 0 -1 -.8"/><path d="M15 3.5a9 9 0 0 1 5.5 5.5h-4.5a1 1 0 0 1 -1 -1v-4.5"/>',
+            ),
+          },
+          {
+            name: 'Reporting',
+            icon: icon(
+              '<path d="M3 13a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"/><path d="M15 9a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"/><path d="M9 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"/><path d="M4 20h14"/>',
             ),
           },
         ],
@@ -59,7 +157,8 @@ customElements.define(
         id: 'data-navigator',
         title: 'Data navigator',
         description: 'A data table: search, filters, sorting, paging',
-        group: 'Components',
+        group: MAIN,
+        subgroup: 'Components',
         icon: icon('<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 4v16"/>'),
         element: 'data-navigator-demo',
         load: async () => {
@@ -73,7 +172,8 @@ customElements.define(
         id: 'file-upload',
         title: 'File upload',
         description: 'Drop or choose files, with progress and validation',
-        group: 'Components',
+        group: MAIN,
+        subgroup: 'Components',
         icon: icon('<path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/><path d="m7 9 5-5 5 5M12 4v12"/>'),
         element: 'file-upload-demo',
         load: async () => {
@@ -84,7 +184,8 @@ customElements.define(
         id: 'dialogs-toasts',
         title: 'Dialogs + Toasts',
         description: 'Confirmations, prompts, forms in dialogs, and toasts',
-        group: 'Components',
+        group: MAIN,
+        subgroup: 'Components',
         icon: icon(
           '<path d="M8 9h8M8 13h6"/><path d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3h-5l-5 3v-3H6a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3z"/>',
         ),
@@ -97,7 +198,7 @@ customElements.define(
         id: 'form-validation',
         title: 'Form validation',
         description: 'Validated forms with Zod, a useForm hook for React',
-        group: 'Components',
+        group: MAIN,
         subgroup: 'Planned',
         element: 'planned-demo',
         attributes: {
@@ -111,7 +212,7 @@ customElements.define(
         id: 'autocomplete',
         title: 'Autocomplete',
         description: 'A text input that suggests as you type',
-        group: 'Components',
+        group: MAIN,
         subgroup: 'Planned',
         element: 'planned-demo',
         attributes: {
@@ -125,7 +226,8 @@ customElements.define(
         id: 'media-manager',
         title: 'Media Manager',
         description: 'Folders and files, like a file manager',
-        group: 'Apps',
+        group: MAIN,
+        subgroup: 'Apps',
         icon: icon(
           '<path d="M9 3h3l2 2h5a2 2 0 0 1 2 2v7a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2"/><path d="M17 16v2a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2h2"/>',
         ),
@@ -138,7 +240,8 @@ customElements.define(
         id: 'board-manager',
         title: 'Board Manager',
         description: 'Boards, meetings, agendas, minutes and documents',
-        group: 'Apps',
+        group: MAIN,
+        subgroup: 'Apps',
         icon: icon(
           '<path d="M3 4l18 0"/><path d="M4 4v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-10"/><path d="M12 16l0 4"/><path d="M9 20l6 0"/><path d="M8 12l3 -3l2 2l3 -3"/>',
         ),
@@ -151,7 +254,8 @@ customElements.define(
         id: 'user-manager',
         title: 'User Manager',
         description: 'Users, groups, roles, and who may do what where',
-        group: 'Apps',
+        group: MAIN,
+        subgroup: 'Apps',
         icon: icon(
           '<path d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3"/><path d="M11 11a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M12 12l0 2.5"/>',
         ),
@@ -160,6 +264,7 @@ customElements.define(
           define('user-manager-demo', (await import('./user-manager/app/UserManagerDemo')).UserManagerDemo);
         },
       },
+      ...fakeApps(),
     ],
   }),
 );

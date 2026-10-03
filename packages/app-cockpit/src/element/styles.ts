@@ -906,6 +906,33 @@ button {
   }
 }
 
+/* A menu of the topbar: a plain panel like the sidebar's (square corners, the sidebar's colors and text size), its top
+   touching its line (a line between them), the shadow downwards. */
+.menu-popup[data-drop] {
+  padding: 0.375rem;
+  border: 0;
+  border-top: 1px solid var(--divider);
+  border-radius: 0;
+  background: var(--sidebar);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
+
+  .menu-item {
+    font-size: var(--sidebar-font-size);
+  }
+
+  /* The highlight (hover, arrow keys) from the text color: the hover token is about the panel's color in the light
+     scheme (the second line's menus). */
+  .menu-item[data-highlighted] {
+    background: color-mix(in srgb, var(--text) 9%, transparent);
+  }
+
+  @starting-style {
+    opacity: 0;
+    scale: 1;
+    translate: 0 -6px;
+  }
+}
+
 .menu-popup--choices {
   min-width: 11rem;
 }

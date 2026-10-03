@@ -41,11 +41,14 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
     where the root lock file counts; it matters again in a standalone copy).
 - The root is the demo page of all packages:
   - `index.html`: an `<app-cockpit>` (2026-10-03, `packages/app-cockpit`) that fills the window: the demos are its
-    mini-apps, in the groups "Components" ("Data navigator", "File upload", "Dialogs + Toasts"; the subgroup "Planned" (with an hourglass icon; its entries without): "Form validation",
-    "Autocomplete", 2026-10-03, placeholders of `demo/planned/PlannedDemo.ts` (`planned-demo`): what it will be, and
-    that there is no demo yet, in a light gray box with rounded corners, `demo.css`) and "Apps" ("Media
-    Manager", "Board Manager", "User Manager"; the long names, also as their titles: short ones collided with
-    their modules, decided 2026-10-03). In the cockpit's footer the cockpit's layout (sidebar or topbar, 2026-10-03) and the page's settings (language `en-US`/`de-DE`, color scheme: System, Light (the default), Dark, 2026-10-03; from
+    mini-apps, one group at a time (2026-10-03, the cockpit's `groupDisplay: 'select'`): "Essential Components" with
+    the subgroups "Components" ("Data navigator", "File upload", "Dialogs + Toasts"), "Planned" (with an hourglass
+    icon; its entries without): "Form validation", "Autocomplete", placeholders of `demo/planned/PlannedDemo.ts`
+    (`planned-demo`): what it will be, and that there is no demo yet, in a light gray box with rounded corners,
+    `demo.css`) and "Apps" ("Media Manager", "Board Manager", "User Manager"; the long names, also as their titles: short
+    ones collided with their modules, decided 2026-10-03); and two made-up groups, "Human Resources" and "Finance"
+    (`FAKE` in `demo/main.ts`), only to show a larger navigation: their apps (without icons; their subgroups with icons, 2026-10-03) are
+    `planned-demo` placeholders too. Each group has an icon. In the cockpit's footer the cockpit's layout (sidebar or topbar, 2026-10-03) and the page's settings (language `en-US`/`de-DE`, color scheme: System, Light (the default), Dark, 2026-10-03; from
     `packages/app-cockpit/demo/footer.ts`, with a made-up menu), which change `<html>` (`lang`, `data-scheme`) for every
     demo.
     - The URL hash: the app's id first, then one segment per level of tabs inside it: `#file-upload/react`,

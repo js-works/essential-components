@@ -6,13 +6,12 @@ import type { ElementPart, PartInfo } from 'lit/directive.js';
 export { spread, ZagMachines };
 
 // Zag.js in Lit: the props of a Zag part (`api.getTriggerProps()`, ...) are spread onto an element of a template by the
-// `spread` directive (attributes, ARIA, event listeners; the previous ones are removed first), and the machines live in
+// `spread` directive (attributes, ARIA, event listeners; `spreadProps` compares them with the previous ones of the
+// element, and removes what is gone, e.g. `data-highlighted` of the item left), and the machines live in
 // a registry of the element (`ZagMachines`): one per key, made on first use, started at once, stopped with the element.
 // Every change of a machine renders the element again.
 
 class SpreadDirective extends Directive {
-  #cleanup: (() => void) | undefined;
-
   constructor(info: PartInfo) {
     super(info);
 
@@ -25,9 +24,9 @@ class SpreadDirective extends Directive {
     return nothing;
   }
 
+  // Not its cleanup first: that forgets the previous props, so the attributes that are gone would stay.
   override update(part: ElementPart, [props]: [Record<string, unknown>]) {
-    this.#cleanup?.();
-    this.#cleanup = spreadProps(part.element, props);
+    spreadProps(part.element, props);
 
     return nothing;
   }

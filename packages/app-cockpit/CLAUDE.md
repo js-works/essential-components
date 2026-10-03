@@ -40,7 +40,9 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
   stopped with the element; a machine's change renders the element again. Unchanged props are kept as the previous
   objects (functions count as equal), and a machine is notified only when a prop really changed (else it would not see
   e.g. a controlled `open`, or would reposition and render endlessly). A popup anchored elsewhere than its trigger (the
-  sidebar's edge, the footer bar) gets one virtual anchor per menu, kept (a new one per render loops Floating UI).
+  sidebar's edge, the footer bar) gets one virtual anchor per menu, kept (a new one per render loops Floating UI). The
+  `spread` directive calls Zag's `spreadProps` without its cleanup first (2026-10-03): the cleanup forgets the previous
+  props, so attributes that are gone stayed (e.g. `data-highlighted`: the arrow keys seemed not to move in the menus).
 - Tooltips: one element for all, on hover (300 ms) or focus of anything with `data-tip` (`data-tip-side`), positioned
   by Floating UI; not on a button whose popup is open.
 - Zag gives a positioner the z-index of its content: it is set on the popups (`.menu-popup`, `.flyout`, …). Zag hides
@@ -60,7 +62,7 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
     second level inside its group), `element` (the tag), `attributes?`
     (set on the element), `load?` (e.g. an `import()` that defines the element).
   - Composition at build time (one Vite build; `load` gives lazy chunks).
-  - No navigation groups of its own: the host groups its apps (`group`); the root page uses "Components" and "Apps".
+  - No navigation groups of its own: the host groups its apps (`group`); the root page uses "Essential Components" (with the subgroups "Components", "Planned", "Apps") and two made-up groups, with `groupDisplay: 'select'` (2026-10-03).
 
 ## Behavior
 
@@ -144,6 +146,10 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
   - With one group (or none), its apps (and subgroup dropdowns) are in the top line, and there is no second line.
   - Entries that do not fit: a "More" dropdown at the end of their line (the line wraps into a hidden second row; the
     wrapped entries are counted after each render and resize).
+  - Its menus (subgroups, "More", the actions, the kebab, the user) look like the sidebar's (2026-10-03): plain panels,
+    square corners, the sidebar's colors and text size, their top at the bottom of their line (no gap, a line between
+    them; `data-drop`), the shadow downwards. Those of the second line follow the page's scheme, like the line (dark ones were tried, 2026-10-03, and dropped). Their highlight (hover, arrow keys) is
+    the text color at 9% (the hover token was about the light panel's own color: invisible).
   - Left and Right (Home, End) move between the entries of a line.
   - The search: a panel below the top line, centered (36rem), only as high as its content; the backdrop darkens below
     the top line.

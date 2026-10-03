@@ -361,6 +361,22 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     };
   }
 
+  // A rect for Floating UI: as wide as `element`, at the bottom of its line of the topbar (a dropdown touches the line).
+  #belowLine(element: () => Element | null): () => DOMRect {
+    return () => {
+      const target = element();
+      const rect = target?.getBoundingClientRect() ?? new DOMRect();
+      const bottom = target?.closest('.top-line, .sub-line')?.getBoundingClientRect().bottom ?? rect.bottom;
+
+      return new DOMRect(rect.left, bottom, rect.width, 0);
+    };
+  }
+
+  // The trigger of a dropdown of the topbar, by its key.
+  #dropTrigger(key: string): () => Element | null {
+    return () => this.#el(`[data-drop="${key.replace(/[^a-z0-9]+/gi, '-')}"]`);
+  }
+
   // The anchor of a menu that is not at its trigger: one virtual element per menu, kept (Floating UI starts over for a
   // new one, which renders again, endlessly), whose rect comes from the latest render.
   readonly #anchorRects = new Map<string, () => DOMRect>();
@@ -916,8 +932,10 @@ class AppCockpitElement extends LitElement implements Spec.Element {
 
     // A subgroup: a dropdown of its apps.
     const { parent, group } = entry;
-    const api = this.#menu(`tab:${parent}/${group.name}`, {
+    const key = `tab:${parent}/${group.name}`;
+    const api = this.#menu(key, {
       placement: 'bottom-start',
+      anchor: this.#belowLine(this.#dropTrigger(key)),
       onSelect: (value) => this.open(value.slice('app:'.length)),
     });
     const icon = this.#subgroupIcon(parent, group.name);
@@ -925,13 +943,14 @@ class AppCockpitElement extends LitElement implements Spec.Element {
 
     return html`<button
         class="tab tab--menu"
+        data-drop=${key.replace(/[^a-z0-9]+/gi, '-')}
         aria-current=${ifDefined(current ? 'true' : undefined)}
         ${spread(api.getTriggerProps())}
       >${
       icon === undefined ? nothing : groupIcon(icon)
     }<span class="tab-title">${group.name}</span>${chevronIcon()}</button>
       <div class="menu-positioner" ${spread(api.getPositionerProps())}>
-        <div class="menu-popup" ${spread(api.getContentProps())}>
+        <div class="menu-popup" data-drop ${spread(api.getContentProps())}>
           ${group.apps.map((app) => this.#appMenuItem(api, app))}
         </div>
       </div>`;
@@ -947,6 +966,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
   #lineMore(key: string, entries: Entry[], texts: Texts): TemplateResult {
     const api = this.#menu(`more:${key}`, {
       placement: 'bottom-end',
+      anchor: this.#belowLine(this.#dropTrigger(`more:${key}`)),
       onSelect: (value) => {
         const [kind, ...rest] = value.split(':');
         const id = rest.join(':');
@@ -963,11 +983,11 @@ class AppCockpitElement extends LitElement implements Spec.Element {
       entry.kind === 'app' ? entry.app.id === this.#active : entry.group.apps.some((app) => app.id === this.#active)
     );
 
-    return html`<button class="tab tab--more" aria-current=${ifDefined(current ? 'true' : undefined)} ${
+    return html`<button class="tab tab--more" data-drop=${`more:${key}`.replace(/[^a-z0-9]+/gi, '-')} aria-current=${ifDefined(current ? 'true' : undefined)} ${
       spread(api.getTriggerProps())
     }><span class="tab-title">${texts.more}</span>${chevronIcon()}</button>
       <div class="menu-positioner" ${spread(api.getPositionerProps())}>
-        <div class="menu-popup" ${spread(api.getContentProps())}>
+        <div class="menu-popup" data-drop ${spread(api.getContentProps())}>
           ${
       entries.map((entry) =>
         entry.kind === 'app'
@@ -998,6 +1018,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
 
     const api = this.#menu('user', {
       placement: 'bottom-end',
+      anchor: this.#belowLine(() => this.#el('.top-user')),
       onSelect: (value) => this.#select(sections, value),
     });
 
@@ -1009,7 +1030,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
         ${spread(api.getTriggerProps())}
       >${avatar}</button>
       <div class="menu-positioner" ${spread(api.getPositionerProps())}>
-        <div class="menu-popup" ${spread(api.getContentProps())}>
+        <div class="menu-popup" data-drop ${spread(api.getContentProps())}>
           <div class="menu-user">
             <span class="user-name">${user.name}</span>
             ${user.detail === undefined ? nothing : html`<span class="user-detail">${user.detail}</span>`}
@@ -1225,7 +1246,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     const side = topbar ? 'bottom' : rail ? 'right' : 'top';
     const where = (button: string) =>
       topbar
-        ? { placement: 'bottom-end' as const }
+        ? { placement: 'bottom-end' as const, anchor: this.#belowLine(() => this.#el(`.top-actions ${button}`)) }
         : rail
         ? {
           placement: 'right-end' as const,
@@ -1259,7 +1280,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
           ${spread(api.getTriggerProps())}
         >${this.#actionIcon(action)}</button>
         <div class="menu-positioner" ${spread(api.getPositionerProps())}>
-          <div class="menu-popup menu-popup--choices" ?data-flush=${!topbar} ?data-sheet=${!rail && !topbar} ${
+          <div class="menu-popup menu-popup--choices" ?data-flush=${!topbar} ?data-sheet=${!rail && !topbar} ?data-drop=${topbar} ${
         spread(api.getContentProps())
       }>
             <div class="menu-group-label">${action.label}</div>
@@ -1327,7 +1348,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
           ${spread(more.getTriggerProps())}
         >${kebabIcon()}</button>
         <div class="menu-positioner" ${spread(more.getPositionerProps())}>
-          <div class="menu-popup" ?data-flush=${!topbar} ?data-sheet=${!rail && !topbar} ${
+          <div class="menu-popup" ?data-flush=${!topbar} ?data-sheet=${!rail && !topbar} ?data-drop=${topbar} ${
         spread(more.getContentProps())
       }>
             ${this.#menuItems(more, sections)}
