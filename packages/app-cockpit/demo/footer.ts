@@ -1,6 +1,6 @@
 import type { AppCockpit } from '../src';
 
-export { layoutSetting, MENU, pageSettings, USER, USER_MENU };
+export { accentSetting, layoutSetting, MENU, pageSettings, USER, USER_MENU };
 
 // The footer of the demo pages: the page's settings (language, color scheme) as actions with choices, and a made-up
 // menu (its items only log). Icons after Tabler icons, MIT.
@@ -64,6 +64,68 @@ function pageSettings(
       },
     },
   ];
+}
+
+// The accent colors of the menu: Mantine's (shade 6), violet by default; "design" is the design language's
+// (`--ui-color-accent`).
+const ACCENTS = [
+  ['design', 'Design language', ''],
+  ['blue', 'Blue', '#228be6'],
+  ['indigo', 'Indigo', '#4c6ef5'],
+  ['violet', 'Violet', '#7950f2'],
+  ['grape', 'Grape', '#be4bdb'],
+  ['pink', 'Pink', '#e64980'],
+  ['red', 'Red', '#fa5252'],
+  ['orange', 'Orange', '#fd7e14'],
+  ['teal', 'Teal', '#12b886'],
+  ['green', 'Green', '#40c057'],
+  ['cyan', 'Cyan', '#15aabf'],
+] as const;
+
+// The page's accent color: only the custom property `--app-accent-color` on `<html>` (none for "Design language"),
+// remembered per browser; violet by default. The cockpit follows it; the page maps it to the apps' own tokens (`demo/demo.css` of the root page).
+function accentSetting(): AppCockpit.Action {
+  const root = document.documentElement;
+  let accent = 'violet';
+
+  const apply = (value: string) => {
+    const color = ACCENTS.find(([id]) => id === value)?.[2] ?? '';
+
+    accent = color === '' ? 'design' : value;
+
+    if (color === '') {
+      root.style.removeProperty('--app-accent-color');
+    } else {
+      root.style.setProperty('--app-accent-color', color);
+    }
+  };
+
+  try {
+    apply(localStorage.getItem('demo-page:accent') ?? 'violet');
+  } catch {
+    apply('violet');
+  }
+
+  return {
+    id: 'accent',
+    label: 'Accent color',
+    icon: svg(
+      '<path d="M12 21a9 9 0 0 1 0 -18c4.97 0 9 3.582 9 8c0 1.06 -.474 2.078 -1.318 2.828c-.844 .75 -1.989 1.172 -3.182 1.172h-2.5a2 2 0 0 0 -1 3.75a1.3 1.3 0 0 1 -1 2.25"/><path d="M8.5 10.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M12.5 7.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M16.5 10.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/>',
+    ),
+    choices: {
+      options: ACCENTS.map(([value, label]) => ({ value, label })),
+      value: () => accent,
+      onChange: (value) => {
+        apply(value);
+
+        try {
+          localStorage.setItem('demo-page:accent', accent);
+        } catch {
+          // Not remembered.
+        }
+      },
+    },
+  };
 }
 
 // The cockpit's layout (its attribute `layout`: sidebar or topbar), switched live and remembered per browser.

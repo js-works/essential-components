@@ -1,7 +1,7 @@
 // The design language first, so the CSS of the demos comes after it.
 import './ui/ui.css';
 import './demo.css';
-import { layoutSetting, MENU, pageSettings, USER, USER_MENU } from '../packages/app-cockpit/demo/footer';
+import { accentSetting, layoutSetting, MENU, pageSettings, USER, USER_MENU } from '../packages/app-cockpit/demo/footer';
 import { createAppCockpitClass } from '../packages/app-cockpit/src';
 import type { AppCockpit } from '../packages/app-cockpit/src';
 
@@ -29,7 +29,7 @@ const HOURGLASS = icon(
   '<path d="M6.5 7h11"/><path d="M6.5 17h11"/><path d="M6 20v-2a6 6 0 1 1 12 0v2a1 1 0 0 1 -1 1h-10a1 1 0 0 1 -1 -1"/><path d="M6 4v2a6 6 0 1 0 12 0v-2a1 1 0 0 0 -1 -1h-10a1 1 0 0 0 -1 1"/>',
 );
 
-const MAIN = 'Essential Components';
+const MAIN = 'Essentials';
 
 // The made-up groups: only to show a larger navigation (the group select). Their apps are placeholders
 // (`planned-demo`), without icons.
@@ -144,9 +144,13 @@ customElements.define(
     // Opened when the page starts without a hash.
     defaultApp: 'board-manager',
     storageKey: 'essential-components',
-    // The cockpit's layout, the page's settings (language, color scheme) and a made-up menu, from the cockpit's own demo.
+    // The cockpit's layout, the accent color, the page's settings (language, color scheme) and a made-up menu, from the cockpit's own demo.
     footer: {
-      actions: [layoutSetting(), ...pageSettings({ schemes: ['system', 'light', 'dark'], scheme: 'light' })],
+      actions: [
+        layoutSetting(),
+        accentSetting(),
+        ...pageSettings({ schemes: ['system', 'light', 'dark'], scheme: 'light' }),
+      ],
       menu: MENU,
     },
     // A made-up signed-in user, with their menu (from the cockpit's own demo).

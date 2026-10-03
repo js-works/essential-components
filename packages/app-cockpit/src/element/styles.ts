@@ -21,7 +21,10 @@ const STYLES = /* css */ `
   --divider: var(--ui-color-divider, light-dark(#dee2e6, #424242));
   --hover: var(--ui-color-hover, light-dark(#f5f5f5, #1d1d1d));
   --subtle: var(--ui-color-subtle, light-dark(#f7f7f7, #1a1a1a));
-  --accent: var(--ui-color-accent, light-dark(#0a5cc2, #78b0ff));
+  /* The accent: the host's --app-accent-color (one color; lighter in a dark scheme, e.g. the sidebar), else the design
+     language's. Without it, --app-accent is invalid (an unset var()), so the fallback counts. */
+  --app-accent: light-dark(var(--app-accent-color), color-mix(in oklab, var(--app-accent-color) 60%, white));
+  --accent: var(--app-accent, var(--ui-color-accent, light-dark(#0a5cc2, #78b0ff)));
   --shadow: var(--ui-shadow-popup, 0 4px 12px light-dark(rgb(0 0 0 / 15%), rgb(0 0 0 / 60%)));
   --radius: var(--ui-radius, 2px);
   --button-radius: var(--ui-button-radius, 5px);
@@ -102,7 +105,7 @@ button {
   grid-template-columns: var(--app-cockpit-sidebar-width) minmax(0, 1fr);
   height: 100%;
   background: var(--background);
-  transition: grid-template-columns 200ms var(--ease);
+  transition: grid-template-columns 320ms var(--ease);
 
   &[data-rail] {
     grid-template-columns: var(--app-cockpit-rail-width) minmax(0, 1fr);
@@ -1322,6 +1325,92 @@ button {
 
   &:focus-visible {
     outline: none;
+  }
+}
+
+/* Opened with the sidebar expanded: the sidebar collapses while the search slides in (both at once). The search's
+   layer and the backdrop start at the sidebar's edge and move along with it (the frame's transition). */
+.mount[data-layout='sidebar'][data-palette-from-expanded] {
+  .palette-layer,
+  .backdrop {
+    transition: left 320ms var(--ease), opacity 150ms;
+
+    @starting-style {
+      left: var(--app-cockpit-sidebar-width);
+    }
+  }
+
+  .backdrop {
+    @starting-style {
+      opacity: 0;
+    }
+  }
+}
+
+/* Closing (sidebar layout): the search slides back out to the left and the backdrop fades, while the sidebar expands
+   again (if it was expanded): the layer and the backdrop move back to its edge with it. */
+.mount[data-layout='sidebar'][data-palette-closing] {
+  .palette {
+    pointer-events: none;
+    animation: palette-out 240ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  }
+
+  .backdrop {
+    animation: backdrop-out 240ms forwards;
+  }
+
+  /* The sidebar expands as fast as the search slides out. */
+  .frame {
+    transition-duration: 240ms;
+  }
+
+  &:has(.frame:not([data-rail])) {
+    .palette-layer,
+    .backdrop {
+      left: var(--app-cockpit-sidebar-width);
+      transition: left 240ms var(--ease);
+    }
+  }
+}
+
+@keyframes palette-out {
+  to {
+    translate: -100% 0;
+  }
+}
+
+@keyframes backdrop-out {
+  to {
+    opacity: 0;
+  }
+}
+
+/* The sidebar layout: the search slides in from behind the rail, left to right. Its layer starts where the rail ends
+   and clips it, so it does not pass over the rail. */
+.mount[data-layout='sidebar'] {
+  .palette-layer {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: var(--app-cockpit-rail-width);
+    z-index: 1001;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  /* A keyframe animation, not a transition from @starting-style: that did not run again after the slide out. */
+  .palette {
+    left: 0;
+    pointer-events: auto;
+    transition: none;
+    animation: palette-in 320ms var(--ease);
+  }
+}
+
+@keyframes palette-in {
+  from {
+    translate: -100% 0;
   }
 }
 

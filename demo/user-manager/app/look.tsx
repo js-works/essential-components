@@ -41,6 +41,39 @@ const HEADING_SIZES = { h1: 34, h2: 26, h3: 22, h4: 18, h5: 16, h6: 14 } as cons
 // `--user-manager-scale`. Not Mantine's `--mantine-scale`: the dialogs' own text is outside Mantine's scopes.
 const TEXT_SIZE = 'var(--user-manager-font-size, calc(0.875rem * var(--user-manager-scale, 1)))';
 
+// The accent, live from the custom property `--user-manager-accent-color` (set by the host page's CSS, e.g. the demo page's accent
+// menu): Mantine's ten shades as mixes of it with white and black; without it, the theme's own shades (a `var()` of an
+// unset property makes a step invalid, so the fallback counts). The variables Mantine computes from the shades in JS
+// (its `darken()` and `alpha()`) follow them as `color-mix()`.
+const ACCENT_TOKEN = '--user-manager-accent-color';
+const ACCENT_MIX = [10, 22, 40, 58, 75, 88, 100, 88, 76, 62] as const;
+
+function accentVariables(accent: MantineColorsTuple): ReturnType<CSSVariablesResolver> {
+  const step = (index: number) => `${ACCENT_TOKEN}-${index}`;
+
+  return {
+    variables: Object.fromEntries(
+      ACCENT_MIX.flatMap((percent, index) => [
+        [
+          step(index),
+          index === 6
+            ? `var(${ACCENT_TOKEN})`
+            : `color-mix(in oklab, var(${ACCENT_TOKEN}) ${percent}%, ${index < 6 ? 'white' : 'black'})`,
+        ],
+        [`--mantine-color-accent-${index}`, `var(${step(index)}, ${accent[index]})`],
+      ]),
+    ),
+    light: {
+      '--mantine-color-accent-outline-hover': 'color-mix(in srgb, var(--mantine-color-accent-6) 5%, transparent)',
+    },
+    dark: {
+      '--mantine-color-accent-light': 'color-mix(in srgb, var(--mantine-color-accent-9) 50%, black)',
+      '--mantine-color-accent-light-hover': 'color-mix(in srgb, var(--mantine-color-accent-9) 70%, black)',
+      '--mantine-color-accent-outline-hover': 'color-mix(in srgb, var(--mantine-color-accent-4) 5%, transparent)',
+    },
+  };
+}
+
 // A size in proportion to the app's normal text.
 function fontSize(px: number): string {
   return px === FONT_SIZES.sm ? TEXT_SIZE : `calc(${TEXT_SIZE} * ${px} / 14)`;
@@ -91,8 +124,10 @@ function createLook(
   // `--user-manager-font-size` (the app's normal text, Mantine's `sm`; set by the host page's CSS; live: no JS
   // reads them). Mantine's other sizes
   // and the headings keep their proportions to it. Without them, Mantine's defaults.
+  const accentVars = accentVariables(accent);
   const cssVariablesResolver: CSSVariablesResolver = () => ({
     variables: {
+      ...accentVars.variables,
       // Mantine's own scale: every size of its components (heights, spacing, radii) is multiplied by it.
       '--mantine-scale': 'var(--user-manager-scale, 1)',
       '--mantine-font-family': FONT_FAMILY,
@@ -105,11 +140,13 @@ function createLook(
       ),
     },
     light: {
+      ...accentVars.light,
       '--mantine-color-dimmed': 'var(--mantine-color-gray-7)',
       '--mantine-color-placeholder': 'var(--mantine-color-gray-6)',
       '--mantine-color-error': 'var(--mantine-color-danger-6)',
     },
     dark: {
+      ...accentVars.dark,
       '--mantine-color-dimmed': 'var(--mantine-color-dark-1)',
       '--mantine-color-placeholder': 'var(--mantine-color-dark-2)',
       '--mantine-color-error': 'var(--mantine-color-danger-8)',

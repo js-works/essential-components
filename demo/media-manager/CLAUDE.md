@@ -38,6 +38,9 @@ structure completely (`demo/board-manager/STRUCTURE.md`): a reference for its ph
   `media-manager-demo`; it creates the repositories, the service and the query client, and provides them),
   `App.tsx` (routes, layout, top bar, history, the hash), `look.tsx` (Mantine's theme and the overlays' config, taken
   from the Board Manager), `media-manager.css`.
+  - The accent (2026-10-03): `--media-manager-accent-color` (any CSS color, set by the host page's CSS; the root page
+    maps its `--app-accent-color` to it), live in CSS like the Board Manager's (`accentVariables()` in `look.tsx`);
+    without it, Mantine's indigo.
 
 ## Data access
 

@@ -47,7 +47,7 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
   by Floating UI; not on a button whose popup is open.
 - Zag gives a positioner the z-index of its content: it is set on the popups (`.menu-popup`, `.flyout`, …). Zag hides
   closed popups with `hidden` (forced by `[hidden] { display: none !important }`); open animations by
-  `@starting-style` (none on closing).
+  `@starting-style` (none on closing, except the search in the sidebar layout, see there).
 - The name: `<app-cockpit>`, package `@local/app-cockpit`, types `AppCockpit.*` (clear rather than charming; e.g. not
   `tidy-cockpit`, `app-shell`).
 - No iframes (overlays could not leave them; language, scheme and routing would need syncing).
@@ -62,7 +62,7 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
     second level inside its group), `element` (the tag), `attributes?`
     (set on the element), `load?` (e.g. an `import()` that defines the element).
   - Composition at build time (one Vite build; `load` gives lazy chunks).
-  - No navigation groups of its own: the host groups its apps (`group`); the root page uses "Essential Components" (with the subgroups "Components", "Planned", "Apps") and two made-up groups, with `groupDisplay: 'select'` (2026-10-03).
+  - No navigation groups of its own: the host groups its apps (`group`); the root page uses "Essentials" (with the subgroups "Components", "Planned", "Apps") and two made-up groups, with `groupDisplay: 'select'` (2026-10-03).
 
 ## Behavior
 
@@ -167,7 +167,7 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
   `light-dark()` color inside it (also the `ui-*` tokens and the slotted parts) takes its dark side; so do the popups
   opened from it (the group select, the footer's menus). The search is a dark panel (2026-10-03; was a centered dialog): as high as the cockpit, right
   next to the rail (while it is open, the sidebar collapses to the rail, and expands again afterwards; the user's saved
-  choice is not touched) (touching it, a line between them, square corners, the sidebar's colors), 26rem wide, over the
+  choice is not touched; 2026-10-03: the sidebar collapses while the search slides in from behind it, left to right, both at once and equally long (320 ms; also the sidebar's toggle); the search's layer and the backdrop start at the sidebar's edge and move along with it, so the search never covers the sidebar; collapsing first and then opening was tried before). The slide in is a keyframe animation (`palette-in`), not a transition from `@starting-style`: after a slide out, that one did not run again (seen from the rail, 2026-10-03). Closing (2026-10-03): the search slides back out to the left (240 ms, a CSS animation) and the backdrop fades, while the sidebar expands again (also 240 ms), the layer and the backdrop moving back with its edge; Zag hides a closed dialog at once, so the cockpit keeps the parts shown (`hidden` of its own) until the animation ends (a fallback after 600 ms). Not in the topbar layout (touching it, a line between them, square corners, the sidebar's colors), 26rem wide, over the
   open app, which is only darkened (no blur; the sidebar stays as it is). A host can let the
   sidebar follow the page: `--app-cockpit-sidebar-scheme: normal`.
 - The sidebar's text is a bit smaller than the page's small text (2026-10-03, `--sidebar-font-size` 13px; labels and
@@ -180,7 +180,7 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
 - Remembered per browser (`localStorage`, `storageKey`, ignored when storage fails): the recent apps, the rail, the
   open groups.
 - The cockpit's own parts have a font of their own (`--app-cockpit-font-family`, default `system-ui`), so a mini-app's
-  global CSS (e.g. Mantine's on `body`) does not change them. Overridable: `--app-cockpit-sidebar-width` (the default width),
+  global CSS (e.g. Mantine's on `body`) does not change them. Overridable: `--app-accent-color` (2026-10-03: the accent, one color, lighter in the dark sidebar by a mix with white; else the design language's `--ui-color-accent`; the demos' "Accent color" choice, `accentSetting()` in `demo/footer.ts`, sets it on `<html>`), `--app-cockpit-sidebar-width` (the default width),
   `--app-cockpit-rail-width`, `--app-cockpit-content-padding` (around the open app).
 
 ## Layout and commands

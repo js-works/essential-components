@@ -89,6 +89,10 @@ class AppCockpitElement extends LitElement implements Spec.Element {
   #narrow = false;
   #resizing = false;
   #paletteOpen = false;
+  // The search was opened with the sidebar expanded: its layer moves along while the sidebar collapses.
+  #paletteFromExpanded = false;
+  // The search slides out (sidebar layout): it stays shown until its animation ends (Zag would hide it at once).
+  #paletteClosing: ReturnType<typeof setTimeout> | undefined;
   #query = '';
   #index = 0;
   // The group of the select (`groupDisplay: 'select'`): the open app's, and the user may look into another one.
@@ -140,6 +144,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
+    this.#closed();
     window.removeEventListener('hashchange', this.#onHashChange);
     document.removeEventListener('keydown', this.#onShortcut);
     this.#langObserver?.disconnect();
@@ -324,7 +329,14 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     this.requestUpdate();
   };
 
+  // With the sidebar expanded, it collapses to the rail while the search slides in (both at once).
   #openPalette = () => {
+    if (this.#paletteOpen) {
+      return;
+    }
+
+    this.#paletteFromExpanded = !this.#rail && !this.#topbar;
+    this.#closed();
     this.#paletteOpen = true;
     this.#query = '';
     this.#index = Math.max(0, this.#recentApps.findIndex((app) => app.id === this.#active));
@@ -333,7 +345,23 @@ class AppCockpitElement extends LitElement implements Spec.Element {
 
   #closePalette = () => {
     this.#paletteOpen = false;
+
+    // A fallback, in case its animation does not end (e.g. not running in a hidden tab).
+    if (!this.#topbar) {
+      clearTimeout(this.#paletteClosing);
+      this.#paletteClosing = setTimeout(this.#closed, 600);
+    }
+
     this.requestUpdate();
+  };
+
+  // The search's slide out has ended.
+  readonly #closed = () => {
+    if (this.#paletteClosing !== undefined) {
+      clearTimeout(this.#paletteClosing);
+      this.#paletteClosing = undefined;
+      this.requestUpdate();
+    }
   };
 
   // Ctrl+K (⌘K on a Mac) opens the search, wherever the focus is.
@@ -478,6 +506,9 @@ class AppCockpitElement extends LitElement implements Spec.Element {
       <div
         class="mount"
         data-layout=${topbar ? 'topbar' : 'sidebar'}
+        ?data-palette-from-expanded=${this.#paletteFromExpanded}
+        ?data-palette-closing=${this.#paletteClosing !== undefined}
+        style=${styleMap(style)}
         @pointerover=${this.#onTipEnter}
         @pointerout=${this.#onTipOut}
         @focusin=${this.#onTipEnter}
@@ -488,7 +519,6 @@ class AppCockpitElement extends LitElement implements Spec.Element {
           class="frame"
           ?data-rail=${rail}
           ?data-resizing=${this.#resizing}
-          style=${styleMap(style)}
         >
           ${topbar ? this.#topbarParts(texts) : this.#sidebar(texts, rail)}
           <main class="main">
@@ -983,9 +1013,9 @@ class AppCockpitElement extends LitElement implements Spec.Element {
       entry.kind === 'app' ? entry.app.id === this.#active : entry.group.apps.some((app) => app.id === this.#active)
     );
 
-    return html`<button class="tab tab--more" data-drop=${`more:${key}`.replace(/[^a-z0-9]+/gi, '-')} aria-current=${ifDefined(current ? 'true' : undefined)} ${
-      spread(api.getTriggerProps())
-    }><span class="tab-title">${texts.more}</span>${chevronIcon()}</button>
+    return html`<button class="tab tab--more" data-drop=${`more:${key}`.replace(/[^a-z0-9]+/gi, '-')} aria-current=${
+      ifDefined(current ? 'true' : undefined)
+    } ${spread(api.getTriggerProps())}><span class="tab-title">${texts.more}</span>${chevronIcon()}</button>
       <div class="menu-positioner" ${spread(api.getPositionerProps())}>
         <div class="menu-popup" data-drop ${spread(api.getContentProps())}>
           ${
@@ -1280,9 +1310,9 @@ class AppCockpitElement extends LitElement implements Spec.Element {
           ${spread(api.getTriggerProps())}
         >${this.#actionIcon(action)}</button>
         <div class="menu-positioner" ${spread(api.getPositionerProps())}>
-          <div class="menu-popup menu-popup--choices" ?data-flush=${!topbar} ?data-sheet=${!rail && !topbar} ?data-drop=${topbar} ${
-        spread(api.getContentProps())
-      }>
+          <div class="menu-popup menu-popup--choices" ?data-flush=${!topbar} ?data-sheet=${
+        !rail && !topbar
+      } ?data-drop=${topbar} ${spread(api.getContentProps())}>
             <div class="menu-group-label">${action.label}</div>
             ${
         choices.options.map((option) => {
@@ -1420,11 +1450,21 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     };
 
     let position = -1;
+    // Open, or sliding out.
+    const shown = this.#paletteOpen || this.#paletteClosing !== undefined;
 
     return html`
-      <div class="backdrop" ${spread(api.getBackdropProps())}></div>
-      <div class="palette-layer" ${spread(api.getPositionerProps())}>
-        <div class="palette" ${spread(api.getContentProps())}>
+      <div class="backdrop" ${spread({ ...api.getBackdropProps(), hidden: !shown })}></div>
+      <div class="palette-layer" ?hidden=${!shown} ${spread(api.getPositionerProps())}>
+        <div
+          class="palette"
+          @animationend=${(event: AnimationEvent) => {
+      if (event.target === event.currentTarget) {
+        this.#closed();
+      }
+    }}
+          ${spread({ ...api.getContentProps(), hidden: !shown })}
+        >
           <h2 class="visually-hidden" ${spread(api.getTitleProps())}>${texts.search}</h2>
           <div class="palette-field">
             ${searchIcon()}

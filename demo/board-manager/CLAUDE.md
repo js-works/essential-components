@@ -172,9 +172,14 @@ the root's `CLAUDE.md` apply.
     `accent-color` and `danger-color` before, 2026-10-01): `--board-manager-accent-color` and
     `--board-manager-danger-color` (any CSS color), the `accent` and `danger` of `createLook()`. Without them, or with
     an invalid color, Mantine's indigo and red. Read once, on connect (`getComputedStyle`; there is no event for a
-    changed custom property). A `var()` in them is resolved by the browser (custom properties are computed with it).
+    changed custom property). The accent also live, for the demo element too: see below. A `var()` in them is resolved by the browser (custom properties are computed with it).
     `colors.ts` (no dependency; `chroma-js` was rejected after its supply chain attack): the browser parses the color
     (a canvas pixel), the ten shades are made in OKLCH, the color itself is shade 6.
+    - The accent, live in CSS (2026-10-03): the theme's `cssVariablesResolver` sets Mantine's ten accent shades
+      (`--mantine-color-accent-0…9`) as `color-mix()` of `--board-manager-accent-color` with white and black (shade 6 is the
+      color itself), else the theme's own shades; Mantine's dark `light`, `light-hover` and the `outline-hover` follow
+      them as `color-mix()` too. So a change of the property (e.g. the root page's accent menu) needs no reload. The
+      toasts (in `<body>`, outside the app) keep the accent of the theme.
     - `--board-manager-success-color` and `--board-manager-warning-color` (2026-10-02, the same way; Mantine's green
       and orange by default): the theme colors `success` and `warning`, for the states of the meetings and their
       minutes ("Held", "Minutes approved"; "Minutes draft") and the warning toasts. The success toasts stay in the

@@ -14,3 +14,17 @@ app-cockpit {
   border-radius: 6px;
   background: var(--ui-color-subtle);
 }
+
+/* The page's accent (`--app-accent-color`, the cockpit's "Accent color" menu; else the design language's), mapped to
+   the apps' own tokens: the cockpit and the apps in one color. */
+board-manager-demo {
+  --board-manager-accent-color: var(--app-accent-color, var(--ui-color-accent));
+}
+
+media-manager-demo {
+  --media-manager-accent-color: var(--app-accent-color, var(--ui-color-accent));
+}
+
+user-manager-demo {
+  --user-manager-accent-color: var(--app-accent-color, var(--ui-color-accent));
+}
