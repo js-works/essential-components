@@ -4,6 +4,8 @@ import { defineConfig } from 'vite';
 // Floating UI) stay outside the build.
 export default defineConfig({
   build: {
+    // Only the latest Chrome, Edge, Firefox and Safari: modern CSS (e.g. `light-dark()`) stays as it is.
+    target: 'esnext',
     lib: {
       entry: { index: 'src/index.ts' },
       formats: ['es'],

@@ -111,6 +111,11 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
   `i18next` (the board manager's translations), `zod` (the schemas of `form-validation` in the board manager),
   `@tanstack/react-query` (the reads and changes of the board manager, the media manager and the user manager).
   `@mantine/form` was removed (2026-10-02): the board manager's forms use `form-validation`.
+- Browsers (2026-10-03): only the latest Chrome, Edge, Firefox and Safari. Every Vite config (the root's, the board
+  manager's, each package's) builds with `build.target: 'esnext'` (the CSS too: `cssTarget` follows it), so modern CSS
+  stays as it is. The default target let the minifier (Lightning CSS) lower `light-dark()` into variables that follow
+  the page's color scheme, not the element's `color-scheme`: on the published page the cockpit's dark sidebar and menus
+  got light colors (fine in `npm run dev`, which does not minify).
 - `.npmrc` (the root one counts in a workspace; npm ignores those of the packages): `ignore-scripts=true`,
   `min-release-age=7`.
   - The first workspace install (2026-09-26) was run once with `--min-release-age=5`, because `antd@6.6.5` (a dev

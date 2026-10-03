@@ -84,6 +84,8 @@ const config = defineConfig({
     'Object.values': '__boardManagerObjectValues',
   },
   build: {
+    // Only the latest Chrome, Edge, Firefox and Safari: modern CSS (e.g. `light-dark()`) stays as it is.
+    target: 'esnext',
     outDir: 'dist-board-manager',
     emptyOutDir: true,
     cssCodeSplit: false,
