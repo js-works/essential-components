@@ -45,11 +45,11 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
     "Autocomplete", 2026-10-03, placeholders of `demo/planned/PlannedDemo.ts` (`planned-demo`): what it will be, and
     that there is no demo yet, in a light gray box with rounded corners, `demo.css`) and "Apps" ("Media
     Manager", "Board Manager", "User Manager"; the long names, also as their titles: short ones collided with
-    their modules, decided 2026-10-03). In the cockpit's footer the page's settings (language `en-US`/`de-DE`, color scheme; from
+    their modules, decided 2026-10-03). In the cockpit's footer the cockpit's layout (sidebar or topbar, 2026-10-03) and the page's settings (language `en-US`/`de-DE`, color scheme: System, Light (the default), Dark, 2026-10-03; from
     `packages/app-cockpit/demo/footer.ts`, with a made-up menu), which change `<html>` (`lang`, `data-scheme`) for every
     demo.
     - The URL hash: the app's id first, then one segment per level of tabs inside it: `#file-upload/react`,
-      `#dialogs-toasts/react-i18n`, `#board-manager/boards/b1`. No hash: the first app (the data navigator).
+      `#dialogs-toasts/react-i18n`, `#board-manager/boards/b1`. No hash: the Board Manager (the cockpit's `defaultApp`, 2026-10-03).
   - `demo/main.ts`: creates the cockpit (`createAppCockpitClass`, title "App Center", no subtitle, with the search, a made-up
     signed-in user) with
     the demos. Each is loaded when it is opened

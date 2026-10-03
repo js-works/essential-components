@@ -70,10 +70,15 @@ export type Config = {
   footer?: Footer;
   user?: User;
   userMenu?: readonly (readonly MenuItem[])[];
+  defaultApp?: string;
   storageKey?: string;
 };
 
+// Where the navigation is: a sidebar on the left (the default), or a topbar of two lines.
+export type Layout = 'sidebar' | 'topbar';
+
 export type Element = HTMLElement & {
+  layout: Layout;
   readonly activeApp: MiniApp | undefined;
   open(id: string): void;
 };

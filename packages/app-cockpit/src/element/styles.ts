@@ -7,6 +7,8 @@ const STYLES = /* css */ `
 :host {
   --app-cockpit-sidebar-width: 16rem;
   --app-cockpit-rail-width: 4.25rem;
+  /* The topbar's top line (layout="topbar"). */
+  --app-cockpit-topbar-height: 3rem;
   --app-cockpit-content-padding: 1.25rem 1.5rem;
   /* The sidebar is dark in both color schemes of the page ("normal": it follows the page). */
   --app-cockpit-sidebar-scheme: dark;
@@ -1441,6 +1443,274 @@ button {
 
 .palette-count {
   margin-left: auto;
+}
+
+/* The topbar (layout="topbar"): a dark top line (logo, title, groups, search, actions, user), and a light line with
+   the apps of the chosen group. Entries that do not fit wrap into a hidden second row (counted, and shown in "More"). */
+
+.mount[data-layout='topbar'] {
+  .frame {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .main {
+    flex: 1;
+  }
+
+  /* The search: a panel below the top line, centered, only as high as its content. */
+  .backdrop {
+    top: var(--app-cockpit-topbar-height);
+    left: 0;
+  }
+
+  .palette {
+    top: var(--app-cockpit-topbar-height);
+    right: 0;
+    bottom: auto;
+    left: 0;
+    width: min(36rem, 100% - 2rem);
+    max-height: min(34rem, 100% - var(--app-cockpit-topbar-height) - 2rem);
+    margin-inline: auto;
+    border: 1px solid var(--divider);
+    border-top: 0;
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 12px 32px rgb(0 0 0 / 28%);
+
+    @starting-style {
+      opacity: 0;
+      translate: 0 -8px;
+    }
+  }
+}
+
+.topbar {
+  flex: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.top-line {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  height: var(--app-cockpit-topbar-height);
+  padding: 0 0.625rem 0 1rem;
+  background: var(--sidebar);
+  color: var(--text);
+  color-scheme: var(--app-cockpit-sidebar-scheme);
+  font-size: var(--sidebar-font-size);
+
+  .brand {
+    flex: 0 1 auto;
+    min-height: 0;
+    max-width: 16rem;
+    margin: 0 0.75rem 0 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .search-button {
+    margin-left: 0.25rem;
+  }
+
+  /* The icons on the dark line: white strokes. */
+  .tile,
+  .group-icon {
+    color: var(--sidebar-icon);
+  }
+}
+
+.sub-line {
+  height: 2.5rem;
+  padding: 0 0.625rem;
+  border-bottom: 1px solid var(--divider);
+  background: var(--background);
+  color: var(--text);
+  font-size: var(--sidebar-font-size);
+
+  /* Its menus follow the page's scheme, like the line. */
+  .menu-popup {
+    color-scheme: inherit;
+  }
+}
+
+.line {
+  display: flex;
+  flex: 1;
+  align-self: stretch;
+  min-width: 0;
+}
+
+.line-list {
+  position: relative;
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+
+  > li {
+    display: flex;
+    flex: none;
+    height: 100%;
+  }
+}
+
+.tab {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.375rem;
+  height: 100%;
+  padding: 0 0.75rem;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 120ms, color 120ms;
+
+  &:hover,
+  &[data-state='open'] {
+    background: var(--hover);
+    color: var(--text);
+  }
+
+  &:focus-visible {
+    outline-offset: -2px;
+  }
+
+  /* The line under the chosen entry. */
+  &::after {
+    position: absolute;
+    right: 0.5rem;
+    bottom: 0;
+    left: 0.5rem;
+    height: 2px;
+    border-radius: 2px 2px 0 0;
+    background: transparent;
+    content: '';
+  }
+
+  .tile {
+    width: 1.25rem;
+    height: 1.25rem;
+
+    svg {
+      width: 1.0625rem;
+      height: 1.0625rem;
+    }
+  }
+
+  .icon--chevron {
+    width: 0.875rem;
+    height: 0.875rem;
+    rotate: 90deg;
+    stroke-width: 2.25;
+  }
+}
+
+/* The top line: the group shown below is underlined; the group of the open app (and the open app itself, with one
+   group) is bright and bold. */
+.top-line .tab {
+  &[aria-current] {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  &[aria-pressed='true']::after,
+  &[aria-current='page']::after {
+    background: var(--accent);
+  }
+}
+
+/* The second line: the open app (or the subgroup or "More" that has it) in the accent color, underlined. */
+.sub-line .tab[aria-current] {
+  color: var(--accent);
+  font-weight: 600;
+
+  &::after {
+    background: var(--accent);
+  }
+}
+
+/* The footer's actions and menu in the top line: plain icon buttons. */
+.top-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+
+  .footer-button {
+    width: 2rem;
+    min-height: 2rem;
+    height: 2rem;
+    border-radius: 7px;
+    color: var(--muted);
+
+    &:hover,
+    &[data-state='open'] {
+      background: var(--hover);
+      color: var(--text);
+    }
+
+    &:focus-visible {
+      outline-color: var(--accent);
+      outline-offset: -2px;
+    }
+  }
+
+  .footer-badge {
+    top: 0.3125rem;
+    right: 0.3125rem;
+    border-color: var(--sidebar);
+  }
+}
+
+.top-user {
+  display: grid;
+  flex: none;
+  place-items: center;
+  margin-left: 0.375rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+
+  &:is(button) {
+    cursor: pointer;
+  }
+
+  &:focus-visible {
+    outline-offset: 1px;
+  }
+
+  .avatar {
+    width: 1.875rem;
+    height: 1.875rem;
+  }
+}
+
+/* The user's name on top of their menu (topbar). */
+.menu-user {
+  display: flex;
+  flex-direction: column;
+  padding: 0.375rem 0.5rem 0.25rem;
+
+  .user-name {
+    font-size: var(--small);
+  }
+}
+
+.menu-item[data-current] {
+  color: var(--accent);
+  font-weight: 600;
 }
 
 @media (prefers-reduced-motion: reduce) {

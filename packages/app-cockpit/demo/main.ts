@@ -5,7 +5,7 @@ import { createAppCockpitClass } from '../src';
 import type { AppCockpit } from '../src';
 import { FEW, GROUPS, MANY, SOME } from './apps';
 import { DemoApp } from './DemoApp';
-import { MENU, pageSettings, USER, USER_MENU } from './footer';
+import { layoutSetting, MENU, pageSettings, USER, USER_MENU } from './footer';
 
 // The page: a cockpit with 3, 30 or 100 apps (kept in the query string: the apps of a cockpit are fixed, so a change
 // reloads the page). Its footer has the page's settings: the number of apps, the language and the color scheme.
@@ -42,7 +42,11 @@ customElements.define(
     // The 100 apps: one group at a time (a select on top of the list).
     groupDisplay: set === 'many' ? 'select' : 'sections',
     footer: {
-      actions: [appsAction, ...pageSettings({ schemes: ['system', 'light', 'dark'], scheme: 'system' })],
+      actions: [
+        appsAction,
+        layoutSetting(),
+        ...pageSettings({ schemes: ['system', 'light', 'dark'], scheme: 'system' }),
+      ],
       menu: MENU,
     },
     user: USER,

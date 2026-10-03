@@ -1,6 +1,6 @@
 import type { AppCockpit } from '../src';
 
-export { MENU, pageSettings, USER, USER_MENU };
+export { layoutSetting, MENU, pageSettings, USER, USER_MENU };
 
 // The footer of the demo pages: the page's settings (language, color scheme) as actions with choices, and a made-up
 // menu (its items only log). Icons after Tabler icons, MIT.
@@ -64,6 +64,40 @@ function pageSettings(
       },
     },
   ];
+}
+
+// The cockpit's layout (its attribute `layout`: sidebar or topbar), switched live and remembered per browser.
+function layoutSetting(selector = 'app-cockpit'): AppCockpit.Action {
+  const cockpit = () => document.querySelector<AppCockpit.Element>(selector);
+  let layout: AppCockpit.Layout = 'sidebar';
+
+  try {
+    layout = localStorage.getItem('demo-page:layout') === 'topbar' ? 'topbar' : 'sidebar';
+  } catch {
+    // The default.
+  }
+
+  cockpit()?.setAttribute('layout', layout);
+
+  return {
+    id: 'layout',
+    label: 'Layout',
+    icon: svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/>'),
+    choices: {
+      options: [{ value: 'sidebar', label: 'Sidebar' }, { value: 'topbar', label: 'Topbar' }],
+      value: () => cockpit()?.layout ?? layout,
+      onChange: (value) => {
+        layout = value === 'topbar' ? 'topbar' : 'sidebar';
+        cockpit()?.setAttribute('layout', layout);
+
+        try {
+          localStorage.setItem('demo-page:layout', layout);
+        } catch {
+          // Not remembered.
+        }
+      },
+    },
+  };
 }
 
 // A made-up menu (the kebab menu of the footer): its items only log.

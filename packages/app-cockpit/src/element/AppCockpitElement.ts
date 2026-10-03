@@ -33,6 +33,13 @@ export { AppCockpitElement };
 
 type Status = 'loading' | 'ready' | 'failed';
 
+// An entry of a line of the topbar: an app, a group (the top line, with more than one group), or a subgroup (a
+// dropdown of its apps).
+type Entry =
+  | { kind: 'app'; app: Spec.MiniApp }
+  | { kind: 'group'; group: Group }
+  | { kind: 'subgroup'; parent: string; group: Group };
+
 // The sidebar adapts to the number of apps: up to `FEW` every app is listed, the groups are plain headings, no
 // "Recent"; more: "Recent" on top and the groups collapsible (closed by default above `MANY`, except the open app's).
 const FEW = 12;
@@ -56,11 +63,16 @@ let instances = 0;
 // (inside Zag); the tooltips are one element positioned by Floating UI directly.
 //
 // - The first segment of the URL hash is the id of the open app (`#board-manager/…`; the rest belongs to the app). No
-//   hash, or an unknown first segment at the start: the first app. Opening an app pushes a history entry.
+//   hash, or an unknown first segment at the start: `defaultApp`, else the first app. Opening an app pushes a history
+//   entry.
 // - An app is created when it is opened the first time (after its `load()`), and then kept: the others get `hidden`.
 //   Its element gets `data-hash-segment` (its id), so tabs inside it know their level.
 class AppCockpitElement extends LitElement implements Spec.Element {
   static override styles = unsafeCSS(STYLES);
+  static override properties = { layout: { reflect: true } };
+
+  // The attribute `layout`: the navigation in a sidebar (the default) or in a topbar of two lines.
+  declare layout: Spec.Layout;
 
   readonly #config: Spec.Config;
   readonly #id = `cockpit${++instances}`;
@@ -86,9 +98,12 @@ class AppCockpitElement extends LitElement implements Spec.Element {
   #tipTimer: ReturnType<typeof setTimeout> | undefined;
   #resizeObserver: ResizeObserver | undefined;
   #langObserver: MutationObserver | undefined;
+  // How many entries of each line of the topbar do not fit (they go into its "More" menu), by the line's key.
+  readonly #overflow = new Map<string, number>();
 
   constructor(config: Spec.Config) {
     super();
+    this.layout = 'sidebar';
     this.#config = config;
     this.#key = config.storageKey ?? 'app-cockpit';
     this.#recent = readStored<string[]>(`${this.#key}:recent`, []);
@@ -120,7 +135,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     this.#langObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
     window.addEventListener('hashchange', this.#onHashChange);
     document.addEventListener('keydown', this.#onShortcut);
-    this.#show(this.#app(this.#segment())?.id ?? this.#config.apps[0]?.id);
+    this.#show(this.#app(this.#segment())?.id ?? this.#defaultApp);
   }
 
   override disconnectedCallback(): void {
@@ -143,6 +158,8 @@ class AppCockpitElement extends LitElement implements Spec.Element {
           this.#narrow = narrow;
           this.requestUpdate();
         }
+
+        this.#measure();
       });
       this.#resizeObserver.observe(frame);
     }
@@ -150,6 +167,28 @@ class AppCockpitElement extends LitElement implements Spec.Element {
 
   protected override updated(): void {
     this.#placeTip();
+    this.#measure();
+  }
+
+  // The lines of the topbar wrap their entries into a hidden second row: those are counted, and shown in a "More" menu.
+  #measure(): void {
+    let changed = false;
+
+    for (const line of this.renderRoot.querySelectorAll<HTMLElement>('[data-overflow]')) {
+      const items = [...line.children] as HTMLElement[];
+      const top = items[0]?.offsetTop ?? 0;
+      const hidden = items.filter((item) => item.offsetTop > top + 1).length;
+      const key = line.dataset['overflow'] ?? '';
+
+      if ((this.#overflow.get(key) ?? 0) !== hidden) {
+        this.#overflow.set(key, hidden);
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      this.requestUpdate();
+    }
   }
 
   // --- Apps and routing ----------------------------------------------------------------------------------------------
@@ -160,12 +199,17 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     if (app !== undefined) {
       this.#show(app.id);
     } else if (location.hash === '') {
-      this.#show(this.#config.apps[0]?.id);
+      this.#show(this.#defaultApp);
     }
   };
 
   #segment(): string {
     return decodeURIComponent(location.hash.slice(1).split('/')[0] ?? '');
+  }
+
+  // The app opened without a hash: the config's `defaultApp`, else the first app.
+  get #defaultApp(): string | undefined {
+    return this.#app(this.#config.defaultApp)?.id ?? this.#config.apps[0]?.id;
   }
 
   #app(id: string | undefined): Spec.MiniApp | undefined {
@@ -240,9 +284,14 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     return this.#config.search ?? this.#many;
   }
 
+  // The topbar: by the attribute, unless too narrow (then the sidebar's rail).
+  get #topbar(): boolean {
+    return this.layout === 'topbar' && !this.#narrow;
+  }
+
   // The rail: collapsed by the user, too narrow, or while the search is open (it takes the sidebar's place).
   get #rail(): boolean {
-    return this.#collapsed || this.#narrow || this.#paletteOpen;
+    return !this.#topbar && (this.#collapsed || this.#narrow || this.#paletteOpen);
   }
 
   get #recentApps(): Spec.MiniApp[] {
@@ -403,6 +452,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
 
   protected override render(): TemplateResult {
     const texts = this.#texts;
+    const topbar = this.#topbar;
     const rail = this.#rail;
     const active = this.#app(this.#active);
     const status = active === undefined ? 'ready' : this.#status.get(active.id) ?? 'loading';
@@ -411,6 +461,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     return html`
       <div
         class="mount"
+        data-layout=${topbar ? 'topbar' : 'sidebar'}
         @pointerover=${this.#onTipEnter}
         @pointerout=${this.#onTipOut}
         @focusin=${this.#onTipEnter}
@@ -423,25 +474,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
           ?data-resizing=${this.#resizing}
           style=${styleMap(style)}
         >
-          <aside class="sidebar">
-            ${rail ? nothing : this.#resizeHandle(texts)}
-            <div class="brand">
-              <slot name="logo"><span class="brand-logo" aria-hidden="true">${gridIcon()}</span></slot>
-              <span class="brand-text">
-                <span class="brand-title">${this.#config.title ?? 'Apps'}</span>
-                ${
-      this.#config.subtitle === undefined
-        ? nothing
-        : html`<span class="brand-subtitle">${this.#config.subtitle}</span>`
-    }
-              </span>
-              ${this.#searchable && !rail ? this.#searchButton(texts, rail) : nothing}
-            </div>
-            ${this.#searchable && rail ? this.#searchButton(texts, rail) : nothing} ${this.#navigation(texts, rail)}
-            <div class="sidebar-end"><slot name="sidebar-end"></slot></div>
-            ${this.#config.user === undefined ? nothing : this.#userRow(texts, rail, this.#config.user)}
-            ${this.#footer(texts, rail)}
-          </aside>
+          ${topbar ? this.#topbarParts(texts) : this.#sidebar(texts, rail)}
           <main class="main">
             <slot></slot>
             ${
@@ -469,6 +502,31 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     }
       </div>
     `;
+  }
+
+  #sidebar(texts: Texts, rail: boolean): TemplateResult {
+    return html`<aside class="sidebar">
+            ${rail ? nothing : this.#resizeHandle(texts)}
+            <div class="brand">
+              ${this.#brand()}
+              ${this.#searchable && !rail ? this.#searchButton(texts, rail) : nothing}
+            </div>
+            ${this.#searchable && rail ? this.#searchButton(texts, rail) : nothing} ${this.#navigation(texts, rail)}
+            <div class="sidebar-end"><slot name="sidebar-end"></slot></div>
+            ${this.#config.user === undefined ? nothing : this.#userRow(texts, rail, this.#config.user)}
+            ${this.#footer(texts, rail)}
+          </aside>`;
+  }
+
+  // The logo (the slot `logo`), the title and the subtitle.
+  #brand(): TemplateResult {
+    return html`<slot name="logo"><span class="brand-logo" aria-hidden="true">${gridIcon()}</span></slot>
+      <span class="brand-text">
+        <span class="brand-title">${this.#config.title ?? 'Apps'}</span>
+        ${
+      this.#config.subtitle === undefined ? nothing : html`<span class="brand-subtitle">${this.#config.subtitle}</span>`
+    }
+      </span>`;
   }
 
   // The search: an icon button with a tooltip ("Search apps (Ctrl K)"); next to the title, or below the logo in the rail.
@@ -729,13 +787,246 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     `);
   }
 
+  // --- Topbar --------------------------------------------------------------------------------------------------------
+
+  // The topbar (`layout="topbar"`): a dark top line with the logo and the title, the groups (more than one), and on
+  // the right the search, the footer's actions and menu, and the user; below it a light line with the apps of the
+  // chosen group (its subgroups as dropdowns). With one group (or none), its apps are in the top line, and there is no
+  // second line. Entries that do not fit go into a "More" menu at the end of their line.
+  #topbarParts(texts: Texts): TemplateResult {
+    const groups = groupsOf(this.#config.apps);
+    const many = groups.length > 1;
+    const group = groups.find((candidate) => candidate.name === this.#selectedGroup) ?? groups[0];
+    const top: Entry[] = many
+      ? groups.map((candidate) => ({ kind: 'group', group: candidate }))
+      : group === undefined
+      ? []
+      : this.#entries(group);
+    const user = this.#config.user;
+
+    return html`<header class="topbar">
+      <div class="top-line">
+        <div class="brand">${this.#brand()}</div>
+        <nav class="line" aria-label=${texts.navigation} @keydown=${this.#onLineKeyDown}>${
+      this.#line('top', top, texts)
+    }</nav>
+        ${this.#searchable ? this.#searchButton(texts, false) : nothing} ${this.#footer(texts, false, true)}
+        ${user === undefined ? nothing : this.#topUser(texts, user)}
+      </div>
+      ${
+      many && group !== undefined
+        ? html`<nav class="sub-line line" aria-label=${this.#labelOf(group)} @keydown=${this.#onLineKeyDown}>${
+          this.#line(`sub:${group.name}`, this.#entries(group), texts)
+        }</nav>`
+        : nothing
+    }
+    </header>`;
+  }
+
+  // The entries of a group: its apps without a subgroup, then its subgroups.
+  #entries(group: Group): Entry[] {
+    const { loose, subgroups } = subgroupsOf(group.apps);
+
+    return [
+      ...loose.map((app) => ({ kind: 'app' as const, app })),
+      ...subgroups.map((subgroup) => ({ kind: 'subgroup' as const, parent: group.name, group: subgroup })),
+    ];
+  }
+
+  // A line of entries; Left and Right (Home, End) move between them. Those that wrap are hidden (the line is one row
+  // high) and listed in the "More" menu.
+  #line(key: string, entries: Entry[], texts: Texts): TemplateResult {
+    const hidden = Math.min(this.#overflow.get(key) ?? 0, entries.length);
+
+    return html`<ul class="line-list" data-overflow=${key}>${
+      repeat(entries, (entry) => this.#entryKey(entry), (entry) => html`<li>${this.#entry(entry)}</li>`)
+    }</ul>
+      ${hidden > 0 ? this.#lineMore(key, entries.slice(entries.length - hidden), texts) : nothing}`;
+  }
+
+  #entryKey(entry: Entry): string {
+    return entry.kind === 'app'
+      ? `app:${entry.app.id}`
+      : entry.kind === 'group'
+      ? `group:${entry.group.name}`
+      : `sub:${entry.parent}/${entry.group.name}`;
+  }
+
+  readonly #onLineKeyDown = (event: KeyboardEvent) => {
+    const nav = event.currentTarget as HTMLElement;
+    const list = nav.querySelector<HTMLElement>(':scope > .line-list');
+
+    if (list === null) {
+      return;
+    }
+
+    const top = (list.firstElementChild as HTMLElement | null)?.offsetTop ?? 0;
+    // The entries that fit, then the "More" button after the list.
+    const buttons = [
+      ...[...list.querySelectorAll<HTMLButtonElement>(':scope > li')].filter((item) => item.offsetTop <= top + 1)
+        .map((item) => item.querySelector<HTMLButtonElement>('.tab')),
+      nav.querySelector<HTMLButtonElement>(':scope > .tab--more'),
+    ].filter((button) => button != null);
+    const index = buttons.indexOf(event.composedPath()[0] as HTMLButtonElement);
+    const next = ({
+      ArrowRight: buttons[index + 1],
+      ArrowLeft: buttons[index - 1],
+      Home: buttons[0],
+      End: buttons.at(-1),
+    } as Record<string, HTMLButtonElement | undefined>)[event.key];
+
+    if (index >= 0 && next !== undefined) {
+      event.preventDefault();
+      next.focus();
+    }
+  };
+
+  #entry(entry: Entry): TemplateResult {
+    if (entry.kind === 'app') {
+      const { app } = entry;
+
+      return html`<button
+        type="button"
+        class="tab"
+        aria-current=${ifDefined(app.id === this.#active ? 'page' : undefined)}
+        title=${ifDefined(app.description)}
+        @click=${() => this.open(app.id)}
+      >${appIcon(app)}<span class="tab-title">${app.title}</span></button>`;
+    }
+
+    if (entry.kind === 'group') {
+      const { group } = entry;
+      const shown = group.name === (this.#selectedGroup ?? '');
+      const current = group.apps.some((app) => app.id === this.#active);
+      const icon = this.#groupIcon(group.name);
+
+      return html`<button
+        type="button"
+        class="tab"
+        aria-pressed=${shown}
+        aria-current=${ifDefined(current ? 'true' : undefined)}
+        @click=${() => {
+        this.#selectedGroup = group.name;
+        this.requestUpdate();
+      }}
+      >${icon === undefined ? nothing : groupIcon(icon)}<span class="tab-title">${
+        this.#labelOf(group)
+      }</span></button>`;
+    }
+
+    // A subgroup: a dropdown of its apps.
+    const { parent, group } = entry;
+    const api = this.#menu(`tab:${parent}/${group.name}`, {
+      placement: 'bottom-start',
+      onSelect: (value) => this.open(value.slice('app:'.length)),
+    });
+    const icon = this.#subgroupIcon(parent, group.name);
+    const current = group.apps.some((app) => app.id === this.#active);
+
+    return html`<button
+        class="tab tab--menu"
+        aria-current=${ifDefined(current ? 'true' : undefined)}
+        ${spread(api.getTriggerProps())}
+      >${
+      icon === undefined ? nothing : groupIcon(icon)
+    }<span class="tab-title">${group.name}</span>${chevronIcon()}</button>
+      <div class="menu-positioner" ${spread(api.getPositionerProps())}>
+        <div class="menu-popup" ${spread(api.getContentProps())}>
+          ${group.apps.map((app) => this.#appMenuItem(api, app))}
+        </div>
+      </div>`;
+  }
+
+  #appMenuItem(api: menu.Api, app: Spec.MiniApp): TemplateResult {
+    return html`<div class="menu-item" ?data-current=${app.id === this.#active} ${
+      spread(api.getItemProps({ value: `app:${app.id}` }))
+    }><span class="menu-label">${app.title}</span></div>`;
+  }
+
+  // The "More" menu of a line: its hidden entries (a group chooses it, a subgroup lists its apps under its name).
+  #lineMore(key: string, entries: Entry[], texts: Texts): TemplateResult {
+    const api = this.#menu(`more:${key}`, {
+      placement: 'bottom-end',
+      onSelect: (value) => {
+        const [kind, ...rest] = value.split(':');
+        const id = rest.join(':');
+
+        if (kind === 'group') {
+          this.#selectedGroup = id;
+          this.requestUpdate();
+        } else {
+          this.open(id);
+        }
+      },
+    });
+    const current = entries.some((entry) =>
+      entry.kind === 'app' ? entry.app.id === this.#active : entry.group.apps.some((app) => app.id === this.#active)
+    );
+
+    return html`<button class="tab tab--more" aria-current=${ifDefined(current ? 'true' : undefined)} ${
+      spread(api.getTriggerProps())
+    }><span class="tab-title">${texts.more}</span>${chevronIcon()}</button>
+      <div class="menu-positioner" ${spread(api.getPositionerProps())}>
+        <div class="menu-popup" ${spread(api.getContentProps())}>
+          ${
+      entries.map((entry) =>
+        entry.kind === 'app'
+          ? this.#appMenuItem(api, entry.app)
+          : entry.kind === 'group'
+          ? html`<div class="menu-item" ?data-current=${entry.group.name === this.#selectedGroup} ${
+            spread(api.getItemProps({ value: `group:${entry.group.name}` }))
+          }><span class="menu-label">${this.#labelOf(entry.group)}</span></div>`
+          : html`<div class="menu-group-label">${entry.group.name}</div>
+            ${entry.group.apps.map((app) => this.#appMenuItem(api, app))}`
+      )
+    }
+        </div>
+      </div>`;
+  }
+
+  // The user in the top line: the avatar (the name as the tooltip); with `userMenu` a button that opens it below,
+  // with the name and the second line on top.
+  #topUser(texts: Texts, user: Spec.User): TemplateResult {
+    const sections = this.#config.userMenu ?? [];
+    const avatar = user.avatar === undefined
+      ? html`<span class="avatar" aria-hidden="true">${initialsOf(user.name).toUpperCase()}</span>`
+      : html`<img class="avatar" src=${user.avatar} alt="" />`;
+
+    if (sections.length === 0) {
+      return html`<div class="top-user" aria-label=${user.name} data-tip=${user.name} data-tip-side="bottom">${avatar}</div>`;
+    }
+
+    const api = this.#menu('user', {
+      placement: 'bottom-end',
+      onSelect: (value) => this.#select(sections, value),
+    });
+
+    return html`<button
+        class="top-user"
+        aria-label="${texts.account}: ${user.name}"
+        data-tip=${user.name}
+        data-tip-side="bottom"
+        ${spread(api.getTriggerProps())}
+      >${avatar}</button>
+      <div class="menu-positioner" ${spread(api.getPositionerProps())}>
+        <div class="menu-popup" ${spread(api.getContentProps())}>
+          <div class="menu-user">
+            <span class="user-name">${user.name}</span>
+            ${user.detail === undefined ? nothing : html`<span class="user-detail">${user.detail}</span>`}
+          </div>
+          <div class="menu-separator"></div>
+          ${this.#menuItems(api, sections)}
+        </div>
+      </div>`;
+  }
+
   // --- Zag menus -----------------------------------------------------------------------------------------------------
 
   // A menu (Zag): `key` for its machine, where it opens, and what choosing an item does.
   #menu(
     key: string,
     options: {
-      placement: 'right-start' | 'right-end' | 'top-start';
+      placement: 'right-start' | 'right-end' | 'top-start' | 'bottom-start' | 'bottom-end';
       anchor?: () => DOMRect;
       sameWidth?: boolean;
       onSelect: (value: string) => void;
@@ -926,13 +1217,16 @@ class AppCockpitElement extends LitElement implements Spec.Element {
   // The footer of the sidebar: a dark bar of segments: the sidebar's toggle, the host's actions (icon buttons; with
   // `choices` a menu of options), and a kebab button with the host's menu. Its menus are plain panels: with the sidebar
   // expanded a sheet on top of the footer, as wide as the sidebar; in the rail to the right, touching the sidebar.
-  #footer(texts: Texts, rail: boolean): TemplateResult {
+  // In the topbar, the same segments (without the toggle) at the right end of the top line, their menus below them.
+  #footer(texts: Texts, rail: boolean, topbar = false): TemplateResult {
     const footer = this.#config.footer ?? {};
     const actions = footer.actions ?? [];
     const sections = (footer.menu ?? []).filter((section) => section.length > 0);
-    const side = rail ? 'right' : 'top';
+    const side = topbar ? 'bottom' : rail ? 'right' : 'top';
     const where = (button: string) =>
-      rail
+      topbar
+        ? { placement: 'bottom-end' as const }
+        : rail
         ? {
           placement: 'right-end' as const,
           anchor: this.#besideSidebar(() => this.#el(button)),
@@ -965,7 +1259,9 @@ class AppCockpitElement extends LitElement implements Spec.Element {
           ${spread(api.getTriggerProps())}
         >${this.#actionIcon(action)}</button>
         <div class="menu-positioner" ${spread(api.getPositionerProps())}>
-          <div class="menu-popup menu-popup--choices" data-flush ?data-sheet=${!rail} ${spread(api.getContentProps())}>
+          <div class="menu-popup menu-popup--choices" ?data-flush=${!topbar} ?data-sheet=${!rail && !topbar} ${
+        spread(api.getContentProps())
+      }>
             <div class="menu-group-label">${action.label}</div>
             ${
         choices.options.map((option) => {
@@ -989,11 +1285,11 @@ class AppCockpitElement extends LitElement implements Spec.Element {
       onSelect: (value) => this.#select(sections, value),
     });
 
-    return html`<div class="footer" role="toolbar" aria-label=${texts.footer} aria-orientation=${
-      rail ? 'vertical' : 'horizontal'
-    }>
+    return html`<div class=${
+      topbar ? 'top-actions' : 'footer'
+    } role="toolbar" aria-label=${texts.footer} aria-orientation=${rail ? 'vertical' : 'horizontal'}>
       ${
-      this.#narrow
+      this.#narrow || topbar
         ? nothing
         : html`<button
           type="button"
@@ -1031,7 +1327,9 @@ class AppCockpitElement extends LitElement implements Spec.Element {
           ${spread(more.getTriggerProps())}
         >${kebabIcon()}</button>
         <div class="menu-positioner" ${spread(more.getPositionerProps())}>
-          <div class="menu-popup" data-flush ?data-sheet=${!rail} ${spread(more.getContentProps())}>
+          <div class="menu-popup" ?data-flush=${!topbar} ?data-sheet=${!rail && !topbar} ${
+        spread(more.getContentProps())
+      }>
             ${this.#menuItems(more, sections)}
           </div>
         </div>

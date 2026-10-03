@@ -1,7 +1,7 @@
 // The design language first, so the CSS of the demos comes after it.
 import './ui/ui.css';
 import './demo.css';
-import { MENU, pageSettings, USER, USER_MENU } from '../packages/app-cockpit/demo/footer';
+import { layoutSetting, MENU, pageSettings, USER, USER_MENU } from '../packages/app-cockpit/demo/footer';
 import { createAppCockpitClass } from '../packages/app-cockpit/src';
 
 // The page: an app cockpit, with every demo as one of its mini-apps. The page's settings (in the cockpit's footer) set
@@ -43,9 +43,14 @@ customElements.define(
         ],
       },
     ],
+    // Opened when the page starts without a hash.
+    defaultApp: 'board-manager',
     storageKey: 'essential-components',
-    // The page's settings (language, color scheme) and a made-up menu, from the cockpit's own demo.
-    footer: { actions: pageSettings({ schemes: ['light', 'dark'], scheme: 'light' }), menu: MENU },
+    // The cockpit's layout, the page's settings (language, color scheme) and a made-up menu, from the cockpit's own demo.
+    footer: {
+      actions: [layoutSetting(), ...pageSettings({ schemes: ['system', 'light', 'dark'], scheme: 'light' })],
+      menu: MENU,
+    },
     // A made-up signed-in user, with their menu (from the cockpit's own demo).
     user: USER,
     userMenu: USER_MENU,

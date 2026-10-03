@@ -51,7 +51,7 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
 - No iframes (overlays could not leave them; language, scheme and routing would need syncing).
 - Implemented 2026-10-03 (the user asked to build it the way proposed, without discussing each step):
   - `createAppCockpitClass(config)`, like `createFileUploadClass`: `{ title?, subtitle?, search?, user?, userMenu?, apps, groups?, groupDisplay?, footer?,
-    storageKey? }`;
+    defaultApp?, storageKey? }`;
     `groups`: `{ name, icon?, subgroups?: { name, icon? }[] }[]`, extra data of the groups and their
     subgroups (by the `group` and `subgroup` of the apps), for now their icons. The host
     registers the class itself (`customElements.define('app-cockpit', …)`).
@@ -65,7 +65,8 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
 ## Behavior
 
 - Routing: the first segment of the URL hash is the open app's id; the rest belongs to the app. No hash (or an unknown
-  first segment at the start): the first app. Opening an app pushes a history entry (Back and Forward go through the
+  first segment at the start): the app `defaultApp` (2026-10-03, an app's id; the root page: the Board Manager), else
+  the first app. Opening an app pushes a history entry (Back and Forward go through the
   apps); an unknown first segment later (e.g. a host's anchor) is ignored.
 - An app is created when it is opened the first time (after `load()`; meanwhile a spinner, on an error a message with
   "Try again"), then kept: the others get `hidden`, so each keeps its state. Its element gets `data-hash-segment` (its
@@ -127,9 +128,28 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
   With few apps (2026-10-03), the rail shows the apps, but each subgroup as one button (its icon, else its initials)
   with the same flyout of its apps (e.g. "Planned" on the root page).
 - Up and Down (Home, End) move between the buttons of the sidebar.
-- The cockpit uses only the left column (2026-10-03): no top bar; the right side is the open app alone. The host's
+- With `layout="sidebar"`, the cockpit uses only the left column (2026-10-03): no top bar; the right side is the open app alone. The host's
   parts: the `logo` slot (replaces the default logo: four filled squares, two of them lighter, in the accent color on no background) and the `sidebar-end` slot (at the bottom of the sidebar, above
   the footer, e.g. global switches; hidden in the rail).
+- `layout` (2026-10-03): an attribute (and property, reflected; `AppCockpit.Layout`), `sidebar` (the default) or
+  `topbar`, switchable live. The topbar: two lines over the open app, with the same data (not a config option, so a
+  host can switch it):
+  - The top line, dark like the sidebar (`--app-cockpit-topbar-height`, 3rem): logo and title (and subtitle), the
+    groups as entries (with their icons; the one shown below underlined in the accent color, the open app's bright and
+    bold; a click shows its apps below, without opening one, like the group select), then on the right the search
+    button, the footer's actions and kebab (icon buttons; their menus plain dropdowns below them; no sidebar toggle),
+    and the user's avatar (its menu below it, with the name and the second line on top).
+  - The second line, light (the page's scheme): the apps of the chosen group as tabs (the open app in the accent color,
+    underlined), each subgroup as a dropdown tab of its apps.
+  - With one group (or none), its apps (and subgroup dropdowns) are in the top line, and there is no second line.
+  - Entries that do not fit: a "More" dropdown at the end of their line (the line wraps into a hidden second row; the
+    wrapped entries are counted after each render and resize).
+  - Left and Right (Home, End) move between the entries of a line.
+  - The search: a panel below the top line, centered (36rem), only as high as its content; the backdrop darkens below
+    the top line.
+  - No `sidebar-end` slot (like the rail). Below 768px of the cockpit's width: the sidebar's rail, as before.
+  - The demos (the package's and the root page): a "Layout" choice in the footer (`layoutSetting()` in
+    `demo/footer.ts`), remembered per browser.
 - `search` (2026-10-03): the search button and Ctrl+K also with few apps (`true`), or never (`false`); without it, only
   with more than 12 apps. The root page uses `true`.
 - A subtle line (`--divider`) below the header (logo, title, search), from edge to edge of the sidebar, also in the
