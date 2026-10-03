@@ -81,7 +81,9 @@ function Frame(props: FrameProps): ReactElement {
   const [resizing, setResizing] = useState(false);
   const [narrow, setNarrow] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const rail = collapsed || narrow;
+  // The rail: collapsed by the user, too narrow, or while the search is open (it takes the sidebar's place; the user's
+  // choice is kept for after it).
+  const rail = collapsed || narrow || paletteOpen;
   const many = apps.length > FEW;
   // The search: with many apps, or when the host asks for it (`search: true`; `false`: never).
   const searchable = search ?? many;

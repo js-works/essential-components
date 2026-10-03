@@ -12,7 +12,8 @@ export { Palette };
 
 type Section = { label: string; matches: readonly Match[] };
 
-// The search for apps (a command palette): a field, the matching apps below it. Without a query: the recent apps,
+// The search for apps: a dark panel as high as the cockpit, right next to the rail (the sidebar collapses while it is
+// open; touching it, a line between them), over the open app (which is darkened): a field, the matching apps below it. Without a query: the recent apps,
 // then all apps by group. Up and Down choose, Enter opens, Escape closes.
 function Palette({ open, onOpenChange, apps, recent, active, texts, portal, onOpen }: {
   open: boolean;

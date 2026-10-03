@@ -15,6 +15,10 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
 - `src/api.ts` holds the draft API types we are discussing. Types only, flat exports; `src/index.ts` re-exports them
   as a namespace: `export type * as AppCockpit from './api'` (`AppCockpit.MiniApp`).
 - Always add the decisions (also small ones) to this file, in the same step as the code.
+- Decided 2026-10-03 for the later rewrite (not now): Lit (web components, templates) and Zag.js (framework-agnostic
+  headless state machines: menu, select, dialog, tooltip, tree view, combobox; with its vanilla adapter, props spread
+  onto Lit's elements) instead of React and Base UI. Before it: freeze the features, write browser tests against the
+  current version.
 - The cockpit may later become (almost) vanilla (no React, no Base UI; `@floating-ui/dom` for positioning popups is
   fine, to be replaced by the Popover API and CSS anchor positioning once every browser has them; the user's plan,
   2026-10-03, not now). Every decision is
@@ -128,8 +132,10 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
   Headquarters").
 - The sidebar is dark in both color schemes of the page (2026-10-03): it has `color-scheme: dark`, so every
   `light-dark()` color inside it (also the `ui-*` tokens and the slotted parts) takes its dark side; so do the popups
-  opened from it (the group select, the footer's menus). The search palette is dark too (2026-10-03, the sidebar's color, in both schemes of the page). Behind it the page only gets darker
-  (no blur). A host can let the
+  opened from it (the group select, the footer's menus). The search is a dark panel (2026-10-03; was a centered dialog): as high as the cockpit, right
+  next to the rail (while it is open, the sidebar collapses to the rail, and expands again afterwards; the user's saved
+  choice is not touched) (touching it, a line between them, square corners, the sidebar's colors), 26rem wide, over the
+  open app, which is only darkened (no blur; the sidebar stays as it is). A host can let the
   sidebar follow the page: `--app-cockpit-sidebar-scheme: normal`.
 - The sidebar's text is a bit smaller than the page's small text (2026-10-03, `--sidebar-font-size` 13px; labels and
   counts `--sidebar-font-size-tiny` 10px); the popups (menus, group select, search) keep their size.

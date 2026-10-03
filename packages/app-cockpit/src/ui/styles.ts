@@ -54,6 +54,7 @@ const STYLES = /* css */ `
 }
 
 .mount {
+  position: relative;
   height: 100%;
 }
 
@@ -1245,10 +1246,12 @@ button {
 /* The search (command palette) */
 
 .backdrop {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 1000;
-  /* Only darker, no blur. */
+  /* Only darker, no blur; only the open app (it starts where the rail ends: the sidebar is a rail while the search is
+     open). */
+  left: var(--app-cockpit-rail-width);
   background: light-dark(rgb(0 0 0 / 45%), rgb(0 0 0 / 60%));
   transition: opacity 150ms;
 
@@ -1259,29 +1262,29 @@ button {
 }
 
 .palette {
-  position: fixed;
-  top: min(12vh, 7rem);
-  left: 50%;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* Right next to the rail (the sidebar is a rail while the search is open). */
+  left: var(--app-cockpit-rail-width);
   z-index: 1001;
   display: flex;
   flex-direction: column;
-  width: min(40rem, calc(100vw - 2rem));
-  max-height: min(34rem, calc(100vh - 2 * min(12vh, 7rem)));
+  width: min(26rem, 100%);
   overflow: hidden;
-  border: 1px solid var(--divider);
-  border-radius: 6px;
+  border-left: 1px solid var(--divider);
   /* Dark like the sidebar, in both schemes of the page (it belongs to the cockpit's frame). */
   background: var(--sidebar);
   color: var(--text);
-  box-shadow: 0 24px 64px rgb(0 0 0 / 45%), var(--shadow);
+  box-shadow: 8px 0 24px rgb(0 0 0 / 22%);
   color-scheme: var(--app-cockpit-sidebar-scheme);
-  translate: -50% 0;
-  transition: opacity 150ms, scale 150ms var(--ease);
+  font-family: var(--app-cockpit-font-family, system-ui, sans-serif);
+  transition: opacity 150ms, translate 180ms var(--ease);
 
   &[data-starting-style],
   &[data-ending-style] {
     opacity: 0;
-    scale: 0.98;
+    translate: -8px 0;
   }
 
   &:focus-visible {
