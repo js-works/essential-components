@@ -2,7 +2,7 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import type { Plugin } from 'vite';
 
-// `npm run build:board-manager`: the `<board-manager>` custom element (demo/board-manager/BoardManagerElement.tsx) as
+// `npm run build:board-manager`: the `<board-manager>` custom element (demo/board-manager/app/BoardManagerElement.tsx) as
 // one ES module with everything it needs (React, Mantine, the packages), into `dist-board-manager/`. Its CSS is not a
 // file of its own: `inlineStyles()` puts it into the module, which adds it to the element's shadow root. So nothing of
 // it reaches the host page. `index.html` next to it is an example page.
@@ -103,7 +103,7 @@ const config = defineConfig({
       },
     },
     lib: {
-      entry: 'demo/board-manager/BoardManagerElement.tsx',
+      entry: 'demo/board-manager/app/BoardManagerElement.tsx',
       formats: ['es'],
       fileName: () => 'board-manager.js',
     },

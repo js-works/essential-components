@@ -4,7 +4,7 @@ import './demo.css';
 import { DataNavigatorDemo } from '../packages/data-navigator/demo/DataNavigatorDemo';
 import { FileUploadDemo } from '../packages/file-upload/demo/FileUploadDemo';
 import { OverlaysDemo } from '../packages/overlays/src/demo/OverlaysDemo';
-import { BoardManagerDemo } from './board-manager/BoardManagerDemo';
+import { BoardManagerDemo } from './board-manager/app/BoardManagerDemo';
 import { MediaManagerDemo } from './media-manager/MediaManagerDemo';
 import { setupUi } from './ui/ui';
 

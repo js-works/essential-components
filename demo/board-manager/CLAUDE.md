@@ -5,6 +5,8 @@ committees, their meetings, agendas, minutes and documents. Mantine, React Route
 navigator for every list, the dialogs and toasts of the overlays package, the file upload for documents. The rules of
 the root's `CLAUDE.md` apply.
 
+- File structure (the target, open questions, decisions): `STRUCTURE.md`. Read it before moving or adding files.
+
 ## App
 
 - Made to be embedded (later e.g. in XWiki, with content around it): no side navigation, a top bar with the app icon,
@@ -27,8 +29,9 @@ the root's `CLAUDE.md` apply.
   `/boards/:boardId/meetings/:meetingId` and `/meetings/:meetingId` (tabs Overview, Agenda, Minutes, Documents),
   `/members`, `/members/:personId` (tabs Overview, Boards, Meetings), `/organizations`, `/organizations/:organizationId` (tabs Overview, People).
   - The route is mirrored in the hash after the tab's segment (`#board-manager/boards/b1`), only while the tab is shown.
-- `db.ts`: the fake server, a Zustand store in memory, seeded (stable) with dates relative to today: 6 boards, 28
-  people, 8 organizations, about 50 meetings with agendas, minutes of the held ones, documents.
+- `infra/in-memory/`: the fake server, a Zustand store in memory (`store.ts`, `seed.ts`, one file per entity), seeded (stable) with dates relative to today: 6 boards, 28
+  people, 8 organizations, about 50 meetings with agendas, minutes of the held ones, documents. The entity types it
+  stores (`Board`, `Meeting`, …, `ROLES`, `MEETING_STATUSES`) are in `domain/`, one file per entity.
 
 - The column menu of the data navigator (its columns with `hideable`) only in the tables with a column hidden by
   default (2026-10-01): Boards, Meetings, Members (and an organization's People), Organizations, a board's members.
@@ -40,7 +43,7 @@ the root's `CLAUDE.md` apply.
   organizations, the people tables (person, organization), a board's members (person, organization) and the boards
   (chair). Multiple, `minQueryLength: 0` (all options when the list opens, typing narrows them); each option has a
   second line (Mantine `Text`, `xs`, dimmed): the city of an organization, the organization of a person.
-  - The options: `suggestOrganizations()` and `suggestPeople()` (`db.ts`, `LOADING_TIME`), by name.
+  - The options: `suggestOrganizations()` and `suggestPeople()` (`infra/in-memory/`, `LOADING_TIME`), by name.
   - The value is the name, like the column's: the sources compare with `oneOf`. Two people of the same name would
     both match (accepted: the chair column has only the name, not the id).
 - "Delete" in the tables (decided 2026-10-01): a `multiRow` action everywhere (the selection, or a right-click on a
@@ -130,7 +133,7 @@ the root's `CLAUDE.md` apply.
   - Each option shows the name, with the organization below it (dimmed, `xs`; `renderOption`, with Mantine's
     `CheckIcon` at the chosen one, which a `renderOption` has to draw itself). Its popup is in the dialog with a fixed
     position, like the date picker's.
-  - `suggestPeople(query, signal, among)` (`db.ts`, `LOADING_TIME`): of the candidates (the people who are not
+  - `suggestPeople(query, signal, among)` (`infra/in-memory/people.ts`, `LOADING_TIME`): of the candidates (the people who are not
     members yet), those whose name or organization contains the query, by name; each option shows the organization
     as its second line (dimmed, `xs`).
   - It starts empty (the native select had the first person preselected): the person is required, so "OK" without one
@@ -300,7 +303,7 @@ the root's `CLAUDE.md` apply.
   demo), "Delete" (the selected ones, and in each row), and "Rename" (a row action in each row and in the context menu,
   a pencil, tip "Rename document"): a form dialog "Rename document" (2026-10-01; before, the data navigator's edit form
   in the place of the row) with one field, "Name" (`DocumentForm`, required). On its first focus only the name without
-  the extension is selected, like in a file manager. "Save" saves it (`renameDocument()` in `db.ts`: trimmed, an empty
+  the extension is selected, like in a file manager. "Save" saves it (`renameDocument()` in `infra/in-memory/documents.ts`: trimmed, an empty
   name refused; the type follows the new extension, like for an upload) and shows `"<name>" renamed`.
 - The editor of a text in an edit form (a section's name) is Mantine's `TextInput`
   (`mantineTextEditor()` in `MeetingPage.tsx`, for the column it is in).
@@ -309,7 +312,7 @@ the root's `CLAUDE.md` apply.
 
 - One level; the row groups of the data navigator: `agendaSections` (`{ id, meetingId, position, title }`), and an
   item's `sectionId` (`''`: none). Sections and items share one order per meeting (`position`), a section's items
-  always follow it, and the items without a section come after all sections (`arranged()` in `db.ts`).
+  always follow it, and the items without a section come after all sections (`arranged()` in `domain/agenda.ts`).
 - Sections are optional: an agenda without any is flat (the default). Seed: only an agenda with four topics or more has
   sections, "Introduction" (the opening and the minutes of the last meeting), "Reports" and "Proposals for decision";
   the others have none.
@@ -339,7 +342,7 @@ the root's `CLAUDE.md` apply.
     cell), which had replaced a "Rename" row action with a dialog.
   - "Apply" saves the whole draft at once (`saveSectionDraft`, the button shows a spinner), reloads the agenda and shows
     "Sections saved"; "Cancel" (also Escape, the close button) drops it, without asking.
-  - `withSectionDraft()` (pure, in `db.ts`) applies a draft: the sections in the draft's order, each with its items; a
+  - `withSectionDraft()` (pure, in `infra/in-memory/agenda.ts`) applies a draft: the sections in the draft's order, each with its items; a
     missing section is deleted, its items go to the start of "Other".
 - The item form has a "Section" select (only while the meeting has sections): another section moves the item to its
   end, "(none)" moves it to "Other" (before "Any other business").
