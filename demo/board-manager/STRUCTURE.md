@@ -119,8 +119,8 @@ interface ProductRepository {
 
 ## Open questions
 
-- Phase 2 of the data access, one topic at a time: reactive reads (how pages learn about changes without reading the
-  store), repositories with domain criteria, row types in the features, services and wiring in `app/`.
+- Phase 2 of the data access, one topic at a time: how TanStack Query is used (query keys, the data navigator's
+  reload), repositories with domain criteria, row types in the features, services and wiring in `app/`.
 
 ## Not there yet
 
@@ -153,3 +153,6 @@ interface ProductRepository {
   ddd-forum), not `infrastructure/`, `data/`, `adapters/` (strictly also the UI) or `server/`.
 - 2026-10-03: the generic query blocks (`Range`, `Sort`, `Paging`, `Page`) live in `domain/query.ts` (the vocabulary of
   the repositories), not in `shared/`: `domain/` stays free of outside imports.
+- 2026-10-03: reads and changes in the UI go through TanStack Query (`@tanstack/react-query`): `useQuery` over the
+  services, `useMutation` with `invalidateQueries` for changes, so every page showing changed data reloads. Not our own
+  change events with a hook, and not a client store as a cache.

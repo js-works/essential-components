@@ -31,7 +31,7 @@ function HomePage(): ReactElement {
   return (
     <Stack gap="lg">
       <Stack gap={2}>
-        <Title order={2} size="h3">Welcome</Title>
+        <Title order={2} size="h3">Main</Title>
         <Text size="sm" c="dimmed">
           Boards and committees, their meetings, agendas and minutes. All data is made up and lives in this page only.
         </Text>

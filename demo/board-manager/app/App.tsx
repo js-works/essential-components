@@ -138,7 +138,13 @@ function TopBar(): ReactElement {
   return (
     <header className="board-manager__top-bar">
       <Group gap="xs" wrap="nowrap" flex="none">
-        <ThemeIcon variant="filled" size="lg" radius="sm" aria-hidden>{appIcons.app}</ThemeIcon>
+        <Tooltip label="Overview" openDelay={400} fz="xs">
+          <Link to="/" className="board-manager__app-icon" aria-label="Overview">
+            <ThemeIcon variant="filled" size="lg" radius="sm" aria-hidden>
+              {appIcons.app}
+            </ThemeIcon>
+          </Link>
+        </Tooltip>
         <Menu position="bottom-start" shadow="md" width={200}>
           <Menu.Target>
             <UnstyledButton className="board-manager__title" aria-label="Board Manager: modules">
@@ -149,7 +155,7 @@ function TopBar(): ReactElement {
             </UnstyledButton>
           </Menu.Target>
           <Menu.Dropdown>
-            <Menu.Item component={Link} to="/" leftSection={appIcons.home}>Home</Menu.Item>
+            <Menu.Item component={Link} to="/" leftSection={appIcons.home}>Main</Menu.Item>
             <Menu.Divider />
             {MODULES.map((module) => (
               <Menu.Item key={module.path} component={Link} to={module.path} leftSection={module.icon}>
@@ -201,14 +207,14 @@ function HistoryButtons(): ReactElement {
 }
 
 // "Back to <page>": the page is the last crumb of the path's routes, as the breadcrumb shows it (so a renamed board
-// shows its new name); `/` is "Home". A path without a crumb gets only the text.
+// shows its new name); `/` is "Main". A path without a crumb gets only the text.
 function HistoryTip({ text, path }: { text: string; path: string | undefined }): ReactNode {
   if (path === undefined) {
     return text;
   }
 
   if (path === '/') {
-    return `${text} to Home`;
+    return `${text} to Main`;
   }
 
   const match = matchRoutes(routes, path)?.findLast((candidate) => hasCrumb(candidate.route.handle));
@@ -261,20 +267,24 @@ function useHistoryPosition(): { back: string | undefined; forward: string | und
   return position;
 }
 
-// Home (a neutral icon, and the text as the link), then one crumb per level of the route; the last one is the current
-// page (not a link). On the home page, Home is the current page itself.
-function Crumbs(): ReactElement {
+// Main (a neutral icon, and the text as the link), then one crumb per level of the route; the last one is the current
+// page (not a link). On the main page, Main is the current page itself.
+function Crumbs(): ReactElement | null {
   const matches = useMatches().filter((match) => hasCrumb(match.handle));
   const atHome = useLocation().pathname === '/';
 
+  // On the start page, no breadcrumb: it would only be the house of the page itself.
+  if (atHome) {
+    return null;
+  }
+
   return (
     <Breadcrumbs separator="›" separatorMargin={6} className="board-manager__crumbs">
-      <span className="board-manager__home">
-        <Text component="span" c="dimmed" display="inline-flex">{appIcons.home}</Text>
-        {atHome
-          ? <Text component="span" size="sm" fw={500} aria-current="page">Home</Text>
-          : <Anchor component={Link} to="/" size="sm">Home</Anchor>}
-      </span>
+      <Tooltip label="Overview" openDelay={400} fz="xs">
+        <Anchor component={Link} to="/" className="board-manager__home" aria-label="Overview">
+          {appIcons.home}
+        </Anchor>
+      </Tooltip>
       {matches.map((match, index) => {
         const crumb = hasCrumb(match.handle) ? match.handle.crumb(match.params) : null;
 
@@ -332,9 +342,10 @@ function createAppRouter(
   };
 
   const unsubscribe = router.subscribe(writeHash);
-  // The tab's panel is shown (`hidden` removed) when its tab is chosen: then the tabs have just written `#board-manager`.
+  // The tab's panel, or the cockpit's mini-app (`data-hash-segment`), is shown (`hidden` removed) when it is chosen:
+  // then the tabs or the cockpit have just written `#board-manager`.
   const observer = new MutationObserver(writeHash);
-  const panel = element.closest('.ui-tabs__panel');
+  const panel = element.closest('.ui-tabs__panel, [data-hash-segment]');
 
   if (panel !== null) {
     observer.observe(panel, { attributes: true, attributeFilter: ['hidden'] });

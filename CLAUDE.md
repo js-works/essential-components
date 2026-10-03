@@ -34,28 +34,47 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
   - `overlays` (`@local/overlays`): dialogs and toasts.
   - `form-validation` (`@local/form-validation`): form validation for React with Zod, a `useForm` hook. Tests only, no
     demo (so no tab on the root page).
+  - `app-cockpit` (`@local/app-cockpit`, `<app-cockpit>`): an admin panel shell for office mini-apps
+    (micro-frontends): only a sidebar with the apps (search, recent, groups; from a few apps up to hundreds); the
+    open app fills the rest. React + Base UI in its shadow DOM, styled with the `ui-*` tokens. The root's demo page uses it.
   - A package keeps its own tests, demo (`npm run dev` inside it) and `package-lock.json` (unused in the workspace,
     where the root lock file counts; it matters again in a standalone copy).
 - The root is the demo page of all packages:
-  - `index.html`: a header with the title and, top right, the global switches (language `en-US`/`de-DE`, color
-    scheme), which change `<html>` (`lang`, `data-scheme`) for every demo. Below it a split: vertical tabs on the left
-    ("Data navigator", "File upload", "Dialogs + Toasts", "Media Manager", "Board Manager"), the chosen demo on the
-    right.
-    - The URL hash has one segment per level of tabs: `#file-upload/react`, `#dialogs-toasts/react-i18n` (the first tab,
-      the data navigator, has none).
-  - `demo/main.ts`: imports the demo element of each package by a relative path
-    (`../packages/file-upload/demo/FileUploadDemo`) and registers it (`data-navigator-demo`, `file-upload-demo`,
-    `overlays-demo`; the root's own `media-manager-demo` and `board-manager-demo`). Each demo element is a light DOM custom
-    element of its package (see "Demo element" in the package's `CLAUDE.md`), exported and not registered.
-  - `demo/media-manager/`: the "Media Manager" tab, a demo of the root (not of a package): a data navigator lists
-    files, with the dialogs and toasts of the overlays package and a file upload in a drawer. Details:
-    `demo/media-manager/CLAUDE.md`.
-  - `demo/board-manager/`: the "Board Manager" tab, a demo of the root (a small app, not a product): boards and
+  - `index.html`: an `<app-cockpit>` (2026-10-03, `packages/app-cockpit`) that fills the window: the demos are its
+    mini-apps, in the groups "Components" ("Data navigator", "File upload", "Dialogs + Toasts"; the subgroup "Planned" (with an hourglass icon; its entries without): "Form validation",
+    "Autocomplete", 2026-10-03, placeholders of `demo/planned/PlannedDemo.ts` (`planned-demo`): what it will be, and
+    that there is no demo yet, in a light gray box with rounded corners, `demo.css`) and "Apps" ("Media
+    Manager", "Board Manager", "User Manager"; the long names, also as their titles: short ones collided with
+    their modules, decided 2026-10-03). In the cockpit's footer the page's settings (language `en-US`/`de-DE`, color scheme; from
+    `packages/app-cockpit/demo/footer.ts`, with a made-up menu), which change `<html>` (`lang`, `data-scheme`) for every
+    demo.
+    - The URL hash: the app's id first, then one segment per level of tabs inside it: `#file-upload/react`,
+      `#dialogs-toasts/react-i18n`, `#board-manager/boards/b1`. No hash: the first app (the data navigator).
+  - `demo/main.ts`: creates the cockpit (`createAppCockpitClass`, title "App Center", no subtitle, with the search, a made-up
+    signed-in user) with
+    the demos. Each is loaded when it is opened
+    the first time (`load`: a dynamic `import()` by a relative path, e.g. `../packages/file-upload/demo/FileUploadDemo`)
+    and registered then (`data-navigator-demo`, `file-upload-demo`, `overlays-demo`; the root's own `media-manager-demo`,
+    `board-manager-demo` and `user-manager-demo`). Each demo element is a light DOM custom element of its package (see "Demo element" in
+    the package's `CLAUDE.md`), exported and not registered.
+  - `demo/media-manager/`: the "Media Manager" app, a demo of the root (not of a package): a small file manager
+    (folders and files: a folder tree, a data navigator per folder, dialogs and toasts, a file upload in a drawer), in
+    the Board Manager's look (Mantine). Built in the Board Manager's target structure (domain, `infra/in-memory/`,
+    a service per feature, TanStack Query). Details: `demo/media-manager/CLAUDE.md`.
+  - The root's apps (Media Manager, Board Manager, User Manager) work standalone and embedded (e.g. in the cockpit):
+    no greetings like "Welcome" on their start pages, and no "Home" (2026-10-03): the start page is "Main" (German
+    "Hauptseite"): its title, its menu entry. The breadcrumb starts with a house icon only (a link to the start page, the
+    tooltip "Overview"; none on the start page itself; 2026-10-03, a try); the app icon in the top bar is a link to the start page
+    too.
+  - `demo/user-manager/`: the "User Manager" app, a demo of the root: users, groups, roles and grants (who has which
+    role where, on a scope tree, inherited downwards; allow only), with a check of access that says why. The Board
+    Manager's look, the Media Manager's architecture. Details: `demo/user-manager/CLAUDE.md`.
+  - `demo/board-manager/`: the "Board Manager" app, a demo of the root (a small app, not a product): boards and
     committees, their meetings, agendas, minutes and documents, with Mantine, React Router, Zustand and all three
     packages; also as a `<board-manager>` element for a host page (`npm run build:board-manager`). Details:
     `demo/board-manager/CLAUDE.md`.
-  - `demo/demo.css`: only what is specific to this page: the frame around the demos (header, tabs) is not selectable
-    (`user-select: none`); inside the demos, selecting stays as their packages have it.
+  - `demo/demo.css`: only what is specific to this page: the cockpit fills the window (`100dvh`). (Its frame is not
+    selectable, by the cockpit's own CSS; inside the demos, selecting stays as their packages have it.)
   - `demo/ui/`: the design language (`ui.css`, `ui.ts`), the same files as in every package. Read the header of `ui.css`
     before changing it, and copy a change into all copies (`demo/ui/` here, and in each package).
     - Its `ui-*` tokens are the default look: the packages' default themes follow them, and a change of a token is
@@ -89,7 +108,8 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
   `@vitejs/plugin-react`, `react`, `react-dom`, their types, `dprint`; for the board manager `@mantine/core`,
   `@mantine/hooks`, `react-router`) and `zustand`, `react-icons` (the board manager's icons: its Tabler set, `tb`),
   `@mantine/dates` with `dayjs` (pinned to the versions the workspace has from `overlays`: `9.5.1`, `1.11.23`),
-  `i18next` (the board manager's translations), `zod` (the schemas of `form-validation` in the board manager).
+  `i18next` (the board manager's translations), `zod` (the schemas of `form-validation` in the board manager),
+  `@tanstack/react-query` (the reads and changes of the board manager, the media manager and the user manager).
   `@mantine/form` was removed (2026-10-02): the board manager's forms use `form-validation`.
 - `.npmrc` (the root one counts in a workspace; npm ignores those of the packages): `ignore-scripts=true`,
   `min-release-age=7`.

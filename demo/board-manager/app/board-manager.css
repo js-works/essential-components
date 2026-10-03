@@ -28,6 +28,9 @@
    ellipsis when it is too short). A container: Back and Forward go when it is narrow (below). */
 .board-manager__top-bar {
   container: board-manager-top-bar / inline-size;
+  /* A container is a containing block for its popups (tooltips, menus), but Floating UI (Mantine's positioning) only
+     knows that from `contain`: without it, they open far off to the side. */
+  contain: layout;
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
@@ -76,10 +79,31 @@
   }
 }
 
+/* The app icon at the start of the top bar: a link to the start page too (tooltip "Overview"), a bit lighter on
+   hover. */
+.board-manager__app-icon {
+  display: inline-flex;
+  border-radius: var(--mantine-radius-sm);
+  transition: filter 120ms;
+
+  &:hover {
+    filter: brightness(1.12);
+  }
+}
+
+/* The first crumb: a house icon only (its name, "Overview", as the tooltip and the label), a link to the start page.
+   On the start page there is no breadcrumb. */
 .board-manager__home {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  padding: 2px;
+  border-radius: var(--mantine-radius-sm);
+  color: var(--mantine-color-dimmed);
+
+  &:is(a):hover {
+    background: var(--mantine-color-default-hover);
+    color: var(--mantine-color-text);
+  }
 }
 
 .board-manager__card {

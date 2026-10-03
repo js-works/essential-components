@@ -1,0 +1,201 @@
+/* The frame of the media manager, like the Board Manager's. Everything else is Mantine (its variables are set on
+   `.user-manager`). */
+
+.user-manager {
+  color: var(--mantine-color-text);
+  font-family: var(--mantine-font-family);
+  font-size: var(--mantine-font-size-sm);
+}
+
+/* Links are darker than Mantine's primary color in the light scheme (shade 9), like in the Board Manager. */
+.user-manager[data-mantine-color-scheme='light'] .mantine-Anchor-root {
+  color: var(--mantine-primary-color-9);
+}
+
+.user-manager__app {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-md);
+}
+
+/* Always one line: the icon and the title keep their size, the breadcrumb takes the rest (its crumbs end with an
+   ellipsis when it is too short). A container: Back and Forward go when it is narrow. */
+.user-manager__top-bar {
+  container: user-manager-top-bar / inline-size;
+  /* A container is a containing block for its popups (tooltips, menus), but Floating UI (Mantine's positioning) only
+     knows that from `contain`: without it, they open far off to the side. */
+  contain: layout;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--mantine-spacing-xs) var(--mantine-spacing-lg);
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-sm);
+  background: var(--mantine-color-body);
+  user-select: none;
+}
+
+.user-manager__title {
+  padding: 4px 6px;
+  border-radius: var(--mantine-radius-sm);
+  white-space: nowrap;
+}
+
+.user-manager__title:hover {
+  background: var(--mantine-color-default-hover);
+}
+
+.user-manager__crumbs {
+  flex: 0 1 auto;
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow: hidden;
+
+  & > .mantine-Breadcrumbs-breadcrumb {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  & > .user-manager__home,
+  & > .mantine-Breadcrumbs-separator {
+    flex: none;
+  }
+}
+
+/* The app icon at the start of the top bar: a link to the start page too (tooltip "Overview"), a bit lighter on
+   hover. */
+.user-manager__app-icon {
+  display: inline-flex;
+  border-radius: var(--mantine-radius-sm);
+  transition: filter 120ms;
+
+  &:hover {
+    filter: brightness(1.12);
+  }
+}
+
+/* The first crumb: a house icon only (its name, "Overview", as the tooltip and the label), a link to the start page.
+   On the start page there is no breadcrumb. */
+.user-manager__home {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  border-radius: var(--mantine-radius-sm);
+  color: var(--mantine-color-dimmed);
+
+  &:is(a):hover {
+    background: var(--mantine-color-default-hover);
+    color: var(--mantine-color-text);
+  }
+}
+
+@container user-manager-top-bar (width < 40rem) {
+  .user-manager__history {
+    display: none;
+  }
+}
+
+/* A node of the scope trees (the grant dialog, the check of access): the chevron (an expander, hidden without subfolders), then
+   the folder's button. */
+.user-manager .mantine-Tree-node > div {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Mantine's own highlight of a selected node (the whole row) is not used: the folder's button shows it. */
+.user-manager .mantine-Tree-label[data-selected] {
+  background: none;
+}
+
+.user-manager__tree-toggle {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--mantine-radius-sm);
+  color: var(--mantine-color-dimmed);
+
+  & svg {
+    transition: rotate 120ms;
+  }
+
+  &[data-expanded] svg {
+    rotate: 90deg;
+  }
+
+  &[data-hidden] {
+    visibility: hidden;
+  }
+
+  &:hover {
+    background: var(--mantine-color-default-hover);
+  }
+}
+
+.user-manager__tree-node {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 30px;
+  padding: 2px 8px 2px 4px;
+  border-radius: var(--mantine-radius-sm);
+
+  &:hover:not(:disabled) {
+    background: var(--mantine-color-default-hover);
+  }
+
+  &[aria-current='page'],
+  &[data-chosen] {
+    background: var(--mantine-primary-color-light);
+    color: var(--mantine-primary-color-light-color);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+
+
+.user-manager__main {
+  min-width: 0;
+}
+
+/* The header line of a page and the tabs: not selectable, like the toolbars of the tables. */
+.user-manager__page-header,
+.user-manager__tabs {
+  user-select: none;
+}
+
+.user-manager__card {
+  height: 100%;
+  transition: border-color 120ms;
+}
+
+.user-manager__card:hover {
+  border-color: var(--mantine-primary-color-filled);
+}
+
+.user-manager__matrix-head {
+  border-bottom: 1px solid var(--mantine-color-default-border);
+  background: var(--mantine-color-default-hover);
+}
+
+/* The bar above a role's permissions: "Save" and "Reset"; marked while there are unsaved changes. */
+.user-manager__save-bar {
+  padding: 6px 6px 6px 12px;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-sm);
+
+  &[data-dirty] {
+    border-color: var(--mantine-color-warning-5);
+    background: var(--mantine-color-warning-light);
+  }
+}

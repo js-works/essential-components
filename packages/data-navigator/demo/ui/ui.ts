@@ -14,6 +14,9 @@ export { setupUi };
 //   `aria-orientation`; Home, End) select a tab and show its panel, the others get `hidden`.
 // - The URL hash keeps the selection, one segment per level of nested tabs (`#settings/advanced`), so a reload stays
 //   on it. A segment is the text of the tab in kebab case. Trailing first tabs are left out, so the default is no hash.
+// - An element with `data-hash-segment` owns a level too, with that segment: e.g. a mini-app of an app cockpit
+//   (`<board-manager-demo data-hash-segment="board-manager">`), which shows one app at a time. The tabs inside it are one
+//   level deeper (`#board-manager/…`), and when it is shown again (`hidden` removed), the hash gets their selection.
 
 type Tabs = {
   readonly tablist: HTMLElement;
@@ -44,10 +47,11 @@ function setupTabs(tablist: HTMLElement): () => void {
   const panels = [...(tablist.parentElement?.children ?? [])].filter((child): child is HTMLElement =>
     child instanceof HTMLElement && child.classList.contains('ui-tabs__panel')
   );
+  const owners = segmentOwners(tablist);
   let level = 0;
 
   for (let parent = tablist.parentElement; parent !== null; parent = parent.parentElement) {
-    level += parent.classList.contains('ui-tabs__panel') ? 1 : 0;
+    level += parent.classList.contains('ui-tabs__panel') || parent.hasAttribute('data-hash-segment') ? 1 : 0;
   }
 
   const vertical = tablist.classList.contains('ui-tabs--vertical');
@@ -128,14 +132,39 @@ function setupTabs(tablist: HTMLElement): () => void {
     });
   }
 
+  // Shown again (an owner of a segment lost `hidden`): the hash gets the selection of these tabs.
+  const observer = new MutationObserver(() => {
+    if (tablist.closest('[hidden]') === null) {
+      updateHash();
+    }
+  });
+
+  for (const owner of owners) {
+    observer.observe(owner, { attributes: true, attributeFilter: ['hidden'] });
+  }
+
   allTabs.add(entry);
   entry.selectFromHash();
   window.addEventListener('hashchange', entry.selectFromHash);
 
   return () => {
     allTabs.delete(entry);
+    observer.disconnect();
     window.removeEventListener('hashchange', entry.selectFromHash);
   };
+}
+
+// The ancestors of an element that own a segment of the hash themselves (`data-hash-segment`).
+function segmentOwners(element: HTMLElement): HTMLElement[] {
+  const owners: HTMLElement[] = [];
+
+  for (let parent = element.parentElement; parent !== null; parent = parent.parentElement) {
+    if (parent.hasAttribute('data-hash-segment')) {
+      owners.push(parent);
+    }
+  }
+
+  return owners;
 }
 
 // The text of a tab in kebab case: "Custom element" is `custom-element`.
@@ -152,6 +181,21 @@ function updateHash(): void {
 
     if (tab !== undefined && tablist.isConnected && tablist.closest('[hidden]') === null) {
       levels[level] = { segment: segmentOf(tab), first: tab === tabs[0] };
+
+      // The levels above that are owned by an element (`data-hash-segment`) keep its segment.
+      let above = level;
+
+      for (let parent = tablist.parentElement; parent !== null; parent = parent.parentElement) {
+        if (parent.classList.contains('ui-tabs__panel') || parent.hasAttribute('data-hash-segment')) {
+          above -= 1;
+
+          const segment = parent.getAttribute('data-hash-segment');
+
+          if (segment !== null && above >= 0) {
+            levels[above] = { segment, first: false };
+          }
+        }
+      }
     }
   }
 

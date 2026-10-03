@@ -1,9 +1,16 @@
-/* What is specific to this page. The page itself is styled by the design language in `ui/ui.css`. */
+/* What is specific to this page. The page itself is styled by the design language in `ui/ui.css`, the frame around
+   the demos by the app cockpit. */
 
-/* The frame around the demos (title, global switches, the tabs of the demos) cannot be selected, so a click or a drag
-   there never selects text. Inside the demos, selecting stays as their projects have it. */
-.ui-page__header,
-.ui-split__side {
-  -webkit-user-select: none;
-  user-select: none;
+/* The cockpit fills the window; each demo scrolls inside it. */
+app-cockpit {
+  height: 100dvh;
+}
+
+/* The note of a planned component ("Planned: there is no demo yet."): in a light gray box with rounded corners. */
+.planned-demo__note {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--ui-color-divider);
+  border-radius: 6px;
+  background: var(--ui-color-subtle);
 }

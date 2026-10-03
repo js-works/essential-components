@@ -1,0 +1,248 @@
+/* The frame of the media manager, like the Board Manager's. Everything else is Mantine (its variables are set on
+   `.media-manager`). */
+
+.media-manager {
+  color: var(--mantine-color-text);
+  font-family: var(--mantine-font-family);
+  font-size: var(--mantine-font-size-sm);
+}
+
+/* Links are darker than Mantine's primary color in the light scheme (shade 9), like in the Board Manager. */
+.media-manager[data-mantine-color-scheme='light'] .mantine-Anchor-root {
+  color: var(--mantine-primary-color-9);
+}
+
+.media-manager__app {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-md);
+}
+
+/* Always one line: the icon and the title keep their size, the breadcrumb takes the rest (its crumbs end with an
+   ellipsis when it is too short). A container: Back and Forward go when it is narrow. */
+.media-manager__top-bar {
+  container: media-manager-top-bar / inline-size;
+  /* A container is a containing block for its popups (tooltips, menus), but Floating UI (Mantine's positioning) only
+     knows that from `contain`: without it, they open far off to the side. */
+  contain: layout;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--mantine-spacing-xs) var(--mantine-spacing-lg);
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-sm);
+  background: var(--mantine-color-body);
+  user-select: none;
+}
+
+.media-manager__title {
+  padding: 4px 6px;
+  white-space: nowrap;
+}
+
+.media-manager__crumbs {
+  flex: 0 1 auto;
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow: hidden;
+
+  & > .mantine-Breadcrumbs-breadcrumb {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  & > .media-manager__home,
+  & > .mantine-Breadcrumbs-separator {
+    flex: none;
+  }
+}
+
+/* The app icon at the start of the top bar: a link to the start page too (tooltip "Overview"), a bit lighter on
+   hover. */
+.media-manager__app-icon {
+  display: inline-flex;
+  border-radius: var(--mantine-radius-sm);
+  transition: filter 120ms;
+
+  &:hover {
+    filter: brightness(1.12);
+  }
+}
+
+/* The first crumb: a house icon only (its name, "Overview", as the tooltip and the label), a link to the start page.
+   On the start page there is no breadcrumb. */
+.media-manager__home {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  border-radius: var(--mantine-radius-sm);
+  color: var(--mantine-color-dimmed);
+
+  &:is(a):hover {
+    background: var(--mantine-color-default-hover);
+    color: var(--mantine-color-text);
+  }
+}
+
+@container media-manager-top-bar (width < 40rem) {
+  .media-manager__history {
+    display: none;
+  }
+}
+
+/* The folder tree on the left, the open folder's contents on the right; below 48rem the tree goes (the breadcrumb and
+   the table still lead everywhere). */
+.media-manager__body {
+  container: media-manager-body / inline-size;
+  display: grid;
+  grid-template-columns: 15.5rem minmax(0, 1fr);
+  gap: var(--mantine-spacing-md);
+  align-items: start;
+}
+
+.media-manager__side {
+  position: sticky;
+  top: 0;
+  max-height: calc(100dvh - 8rem);
+  padding: var(--mantine-spacing-xs) 4px;
+  overflow: auto;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-sm);
+  background: var(--mantine-color-body);
+  user-select: none;
+  scrollbar-width: thin;
+}
+
+@container media-manager-body (width < 48rem) {
+  .media-manager__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .media-manager__side {
+    display: none;
+  }
+}
+
+.media-manager__main {
+  min-width: 0;
+}
+
+/* A node of the folder trees (the side, the move dialog): the chevron (an expander, hidden without subfolders), then
+   the folder's button. */
+.media-manager .mantine-Tree-node > div,
+.media-manager__move-tree .mantine-Tree-node > div {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Mantine's own highlight of a selected node (the whole row) is not used: the folder's button shows it. */
+.media-manager .mantine-Tree-label[data-selected] {
+  background: none;
+}
+
+.media-manager__tree-toggle {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--mantine-radius-sm);
+  color: var(--mantine-color-dimmed);
+
+  & svg {
+    transition: rotate 120ms;
+  }
+
+  &[data-expanded] svg {
+    rotate: 90deg;
+  }
+
+  &[data-hidden] {
+    visibility: hidden;
+  }
+
+  &:hover {
+    background: var(--mantine-color-default-hover);
+  }
+}
+
+.media-manager__tree-node {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 30px;
+  padding: 2px 8px 2px 4px;
+  border-radius: var(--mantine-radius-sm);
+
+  &:hover:not(:disabled) {
+    background: var(--mantine-color-default-hover);
+  }
+
+  &[aria-current='page'],
+  &[data-chosen] {
+    background: var(--mantine-primary-color-light);
+    color: var(--mantine-primary-color-light-color);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+.media-manager__move-tree {
+  max-height: 20rem;
+  overflow: auto;
+}
+
+/* The icon of a file in the table, in a color per kind (Mantine's palette). */
+.media-manager__kind {
+  color: var(--mantine-color-gray-6);
+}
+
+.media-manager__entry {
+  &[data-kind='image'] .media-manager__kind {
+    color: var(--mantine-color-teal-6);
+  }
+
+  &[data-kind='video'] .media-manager__kind {
+    color: var(--mantine-color-grape-6);
+  }
+
+  &[data-kind='audio'] .media-manager__kind {
+    color: var(--mantine-color-pink-6);
+  }
+
+  &[data-kind='document'] .media-manager__kind {
+    color: var(--mantine-color-blue-6);
+  }
+
+  &[data-kind='spreadsheet'] .media-manager__kind {
+    color: var(--mantine-color-green-7);
+  }
+
+  &[data-kind='presentation'] .media-manager__kind {
+    color: var(--mantine-color-orange-6);
+  }
+
+  &[data-kind='archive'] .media-manager__kind {
+    color: var(--mantine-color-yellow-7);
+  }
+}
+
+/* The preview of a file in its drawer (made up): an image as a colored picture, every other kind its icon on gray. */
+.media-manager__preview {
+  aspect-ratio: 16 / 10;
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-color-default-hover);
+  color: var(--mantine-color-dimmed);
+
+  &[data-kind='image'] {
+    color: rgb(255 255 255 / 85%);
+  }
+}

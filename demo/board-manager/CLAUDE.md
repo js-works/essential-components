@@ -10,13 +10,17 @@ the root's `CLAUDE.md` apply.
 ## App
 
 - Made to be embedded (later e.g. in XWiki, with content around it): no side navigation, a top bar with the app icon,
-  the title "Board Manager" (a menu of the modules: Home, Boards, Meetings, Members, Organizations) and a breadcrumb
-  that starts with "Home" (a neutral icon, not linked, and the text as the link; no tip).
+  the title "Board Manager" (a menu of the modules: Main, Boards, Meetings, Members, Organizations) and a breadcrumb
+  that starts with a house icon only (2026-10-03: a link to the start page, its tooltip and label "Overview"). On the
+  start page there is no breadcrumb. The app icon is a link to the start page too (tooltip "Overview", lighter on
+  hover; 2026-10-03). "Main", not
+  "Home" (2026-10-03): the app works standalone and embedded, where "Home" means the host's; the start page's title
+  is "Main" too (not "Overview", the first tab of several pages).
   - The top bar is not selectable (`user-select: none`, 2026-10-01), its menu included (no portal).
   - The header line of an overview tab ("Overview" and its buttons) is not selectable either
     (`.board-manager__panel-header`, 2026-10-01), like the toolbars of the tables.
   - Always one line (no wrap): the icon and the title keep their size, the breadcrumb takes the rest and its crumbs
-    end with an ellipsis when it is too short (Home and the separators keep their size). Back and Forward are hidden while the top bar is narrower
+    end with an ellipsis when it is too short (Main and the separators keep their size). Back and Forward are hidden while the top bar is narrower
     than 40rem (a container query, 2026-10-01).
   - Back and Forward at its right end (2026-10-01; `HistoryButtons` in `App.tsx`): through the memory router's history,
     like the browser's buttons (which do not step through the app: the hash is only mirrored with `replaceState`, and
@@ -24,7 +28,7 @@ the root's `CLAUDE.md` apply.
     pop). No keyboard shortcuts (Alt+arrows belong to the browser and the host page). Tooltips say where they go
     ("Back to Boards"; Mantine's, `fz="xs"`, after 400ms; none while disabled): the history keeps each entry's path, and the name
     is the last crumb of its routes (`matchRoutes`, the breadcrumb's `handle.crumb`), so it follows renames and new
-    pages need nothing; `/` is "Home", a path without a crumb only "Back"/"Forward".
+    pages need nothing; `/` is "Main", a path without a crumb only "Back"/"Forward".
 - Routes (`App.tsx`, a memory router): `/`, `/boards`, `/boards/:boardId` (tabs Meetings, Members),
   `/boards/:boardId/meetings/:meetingId` and `/meetings/:meetingId` (tabs Overview, Agenda, Minutes, Documents),
   `/members`, `/members/:personId` (tabs Overview, Boards, Meetings), `/organizations`, `/organizations/:organizationId` (tabs Overview, People).

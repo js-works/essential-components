@@ -1,6 +1,7 @@
 import { Group, Stack, Text, Title } from '@mantine/core';
 import { useSyncExternalStore } from 'react';
 import type { ReactElement, ReactNode } from 'react';
+import { IoMdHome } from 'react-icons/io';
 import {
   TbArrowLeft,
   TbArrowRight,
@@ -11,7 +12,6 @@ import {
   TbExternalLink,
   TbEye,
   TbFileExport,
-  TbHome,
   TbInfoCircle,
   TbLayoutBoard,
   TbNotes,
@@ -219,7 +219,7 @@ function PageHeader(
 // The icons of the app: the Tabler icons of react-icons, in the current text color.
 const appIcons = {
   app: <TbPresentation size={22} aria-hidden />,
-  home: <TbHome size={18} aria-hidden />,
+  home: <IoMdHome size={18} aria-hidden />,
   chevronDown: <TbChevronDown size={16} aria-hidden />,
   boards: <TbLayoutBoard size={18} aria-hidden />,
   meetings: <TbCalendar size={18} aria-hidden />,
