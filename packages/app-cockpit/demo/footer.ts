@@ -1,8 +1,8 @@
 import type { AppCockpit } from '../src';
 
-export { accentSetting, layoutSetting, MENU, pageSettings, USER, USER_MENU };
+export { accentSetting, MENU, navigationSetting, pageSettings, USER, USER_MENU };
 
-// The footer of the demo pages: the page's settings (language, color scheme) as actions with choices, and a made-up
+// The footer of the demo pages: the page's settings (the color scheme; the language in the kebab menu) as actions with choices, and a made-up
 // menu (its items only log). Icons after Tabler icons, MIT.
 const svg = (paths: string) =>
   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
@@ -35,19 +35,6 @@ function pageSettings(
   root.dataset['scheme'] = schemes.includes(stored('scheme', scheme) as never) ? stored('scheme', scheme) : scheme;
 
   return [
-    {
-      id: 'language',
-      label: 'Language',
-      icon: svg('<path d="M4 5h7M9 3v2c0 4.4-2.2 8-5 8M5 9c0 2.1 2.9 3.9 6.6 4M12 20l4-9 4 9M19.1 18h-6.2"/>'),
-      choices: {
-        options: [{ value: 'en-US', label: 'English' }, { value: 'de-DE', label: 'Deutsch' }],
-        value: () => root.lang,
-        onChange: (value) => {
-          root.lang = value;
-          store('language', value);
-        },
-      },
-    },
     {
       id: 'scheme',
       label: 'Color scheme',
@@ -88,10 +75,12 @@ function accentSetting(): AppCockpit.Action {
   const root = document.documentElement;
   let accent = 'violet';
 
+  // An unknown value (e.g. "default", remembered before 2026-10-03): violet.
   const apply = (value: string) => {
-    const color = ACCENTS.find(([id]) => id === value)?.[2] ?? '';
+    const [id, , color] = ACCENTS.find(([candidate]) => candidate === value)
+      ?? ACCENTS.find(([candidate]) => candidate === 'violet')!;
 
-    accent = color === '' ? 'design' : value;
+    accent = id;
 
     if (color === '') {
       root.style.removeProperty('--app-accent-color');
@@ -128,41 +117,87 @@ function accentSetting(): AppCockpit.Action {
   };
 }
 
-// The cockpit's layout (its attribute `layout`: sidebar or topbar), switched live and remembered per browser.
-function layoutSetting(selector = 'app-cockpit'): AppCockpit.Action {
+// The cockpit's navigation (2026-10-03, one button for two settings): its position (the attribute `layout`: sidebar or
+// topbar) and its colors (`nav-scheme`: always dark, or like the page). Switched live, remembered per browser.
+function navigationSetting(selector = 'app-cockpit'): AppCockpit.Action {
   const cockpit = () => document.querySelector<AppCockpit.Element>(selector);
-  let layout: AppCockpit.Layout = 'sidebar';
+  const stored = (key: string) => {
+    try {
+      return localStorage.getItem(`demo-page:${key}`);
+    } catch {
+      return null;
+    }
+  };
+  const set = (key: string, attribute: string, value: string) => {
+    cockpit()?.setAttribute(attribute, value);
 
-  try {
-    layout = localStorage.getItem('demo-page:layout') === 'topbar' ? 'topbar' : 'sidebar';
-  } catch {
-    // The default.
-  }
+    try {
+      localStorage.setItem(`demo-page:${key}`, value);
+    } catch {
+      // Not remembered.
+    }
+  };
+  const layout: AppCockpit.Layout = stored('layout') === 'topbar' ? 'topbar' : 'sidebar';
+  const scheme: AppCockpit.NavScheme = stored('nav-scheme') === 'page' ? 'page' : 'dark';
 
   cockpit()?.setAttribute('layout', layout);
+  cockpit()?.setAttribute('nav-scheme', scheme);
+
+  const item = (key: string, attribute: string, value: string, label: string, current: () => string) => ({
+    id: `${key}:${value}`,
+    label,
+    checked: () => current() === value,
+    onSelect: () => set(key, attribute, value),
+  });
+  const currentLayout = () => cockpit()?.layout ?? layout;
+  const currentScheme = () => cockpit()?.navScheme ?? scheme;
 
   return {
-    id: 'layout',
-    label: 'Layout',
+    id: 'navigation',
+    label: 'Navigation',
     icon: svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/>'),
-    choices: {
-      options: [{ value: 'sidebar', label: 'Sidebar' }, { value: 'topbar', label: 'Topbar' }],
-      value: () => cockpit()?.layout ?? layout,
-      onChange: (value) => {
-        layout = value === 'topbar' ? 'topbar' : 'sidebar';
-        cockpit()?.setAttribute('layout', layout);
-
-        try {
-          localStorage.setItem('demo-page:layout', layout);
-        } catch {
-          // Not remembered.
-        }
+    menu: [
+      {
+        label: 'Position',
+        items: [
+          item('layout', 'layout', 'sidebar', 'Sidebar', currentLayout),
+          item('layout', 'layout', 'topbar', 'Topbar', currentLayout),
+        ],
       },
-    },
+      {
+        label: 'Colors',
+        items: [
+          item('nav-scheme', 'nav-scheme', 'dark', 'Dark', currentScheme),
+          item('nav-scheme', 'nav-scheme', 'page', 'Like the page', currentScheme),
+        ],
+      },
+    ],
   };
 }
 
 // A made-up menu (the kebab menu of the footer): its items only log.
+// The page's language (`<html lang>`, set by `pageSettings()`), a section of the kebab menu (2026-10-03; an action of
+// the footer before): the current one checked.
+const LANGUAGES = [{ value: 'en-US', label: 'English' }, { value: 'de-DE', label: 'Deutsch' }];
+
+const languageSection: AppCockpit.MenuSection = {
+  label: 'Language',
+  items: LANGUAGES.map(({ value, label }) => ({
+    id: `language:${value}`,
+    label,
+    checked: () => document.documentElement.lang === value,
+    onSelect: () => {
+      document.documentElement.lang = value;
+
+      try {
+        localStorage.setItem('demo-page:language', value);
+      } catch {
+        // Not remembered.
+      }
+    },
+  })),
+};
+
 const MENU: AppCockpit.Footer['menu'] = [
   [
     {
@@ -175,6 +210,7 @@ const MENU: AppCockpit.Footer['menu'] = [
       onSelect: log('Keyboard shortcuts'),
     },
   ],
+  languageSection,
   [
     {
       id: 'whats-new',
@@ -187,7 +223,7 @@ const MENU: AppCockpit.Footer['menu'] = [
 ];
 
 // The signed-in user of the demo pages (made up), and their menu (its items only log).
-const USER: AppCockpit.User = { name: 'Anna Schröder', detail: 'anna.schroeder@acme.example' };
+const USER: AppCockpit.User = { name: 'Jane Doe', detail: 'jane.doe@acme.example' };
 
 const USER_MENU: AppCockpit.Config['userMenu'] = [
   [{

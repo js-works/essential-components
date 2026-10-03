@@ -98,7 +98,7 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
   on top): the avatar (an image URL, else the initials on the accent color), the name and a second line (e.g. the
   email). With `userMenu` (sections of menu items, like the footer's menu), the row is a button with a chevron that
   opens it to the right of the sidebar (touching it, its bottom at the row's; also in the rail, where only the avatar
-  shows, the name as the tooltip). The demos: "Anna Schröder", with Profile, Settings, Sign out (moved
+  shows, the name as the tooltip). The demos: "Jane Doe" (2026-10-03; "Anna Schröder" before), with Profile, Settings, Sign out (moved
   from the kebab menu, which keeps Keyboard shortcuts, What's new, About).
 - Footer (2026-10-03): a dark gray bar at the bottom of the sidebar (a bit lighter than the dark sidebar), flush with its edges, in
   segments (`role="toolbar"`): on the left the sidebar's toggle, in the middle the host's actions (`footer.actions`:
@@ -106,8 +106,13 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
   the toggle and the kebab (they grow), a red dot for `badge`; with
   `choices` (`{ options: { value, label }[], value(), onChange }`, 2026-10-03) the button opens a menu with the options,
   the current one checked, read from `value()` whenever it renders, so the host keeps the state), on the right a kebab
-  button with the host's menu (`footer.menu`: sections of `{ id, label, icon?, shortcut?, onSelect? }`, separated by
-  lines; Zag `menu`). With the sidebar expanded, the footer's menus (the kebab's, the choices) open as a sheet
+  button with the host's menu (`footer.menu`: sections of `{ id, label, icon?, shortcut?, checked?, onSelect? }`, separated by
+  lines; Zag `menu`). A section (`MenuSection`, 2026-10-03) is an array of items, or `{ label?, items }` with a small
+  uppercase label on top; an item with `checked` (a function, read whenever the menu renders, so the host keeps the
+  state) is a radio option with a check in place of its icon (also in `userMenu`). The demos' kebab: the page's language
+  as such a section ("Language": English, Deutsch; a footer action before, 2026-10-03: too many buttons). A footer
+  action can have such a menu too (`menu`, sections, in place of `choices`; 2026-10-03), e.g. several settings behind
+  one button. With the sidebar expanded, the footer's menus (the kebab's, the choices) open as a sheet
   on top of the footer (2026-10-03): as wide as the sidebar, square corners, a line on top, the sidebar's colors, only as
   high as their entries. Without actions or menu, those segments are left out. In the rail, the
   segments are stacked (the toggle at the bottom), and the footer's menus (the kebab's, the choices) open to the right
@@ -119,7 +124,8 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
   focused; `role="separator"`): drag it, or Left/Right (Shift: more) when focused; a double click goes back to the
   default. 200 to 420 px, remembered per browser (`storageKey`). The default is 16rem (2026-10-03; 17rem, then 15rem before;
   `--app-cockpit-sidebar-width`). No handle in the rail.
-- The sidebar collapses to a rail of icons (the toggle in the footer, remembered per browser; always below 768px of
+- The sidebar collapses to a rail of icons (the toggle in the footer, and the logo, 2026-10-03: a button with the same
+  tooltip, not below 768px nor in the topbar; remembered per browser; always below 768px of
   the cockpit's own width, then without the toggle), with tooltips. The rail of many apps (2026-10-03): with groups, one button per group (its icon, else
   its initials; the open app's group marked like an open app; its name as the tooltip), each opening a flyout (Zag
   `menu`): a panel at its button that touches the sidebar (no gap, square corners, a line between them, the
@@ -154,8 +160,15 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
   - The search: a panel below the top line, centered (36rem), only as high as its content; the backdrop darkens below
     the top line.
   - No `sidebar-end` slot (like the rail). Below 768px of the cockpit's width: the sidebar's rail, as before.
-  - The demos (the package's and the root page): a "Layout" choice in the footer (`layoutSetting()` in
-    `demo/footer.ts`), remembered per browser.
+  - The demos (the package's and the root page): a "Navigation" button in the footer (`navigationSetting()` in
+    `demo/footer.ts`, 2026-10-03; a "Layout" choice before) with two sections: "Position" (Sidebar, Topbar) and
+    "Colors" (Dark, Like the page; see `nav-scheme`), remembered per browser.
+- `nav-scheme` (2026-10-03): an attribute (and property `navScheme`, reflected; `AppCockpit.NavScheme`), `dark` (the
+  default) or `page`. Not "light": a light navigation on a dark page makes no sense. `page` follows the page (light on a
+  light page, dark on a dark one); it sets `--app-cockpit-sidebar-scheme: normal` (a host's own value still wins).
+  With a light navigation: the footer a light gray bar (its light side; dark in the dark navigation as before), the
+  avatar's initials in the accent, and in the topbar a line between the top line and the second one. The demos: the
+  section "Colors" of the footer's "Navigation" button (Dark, Like the page).
 - `search` (2026-10-03): the search button and Ctrl+K also with few apps (`true`), or never (`false`); without it, only
   with more than 12 apps. The root page uses `true`.
 - A subtle line (`--divider`) below the header (logo, title, search), from edge to edge of the sidebar, also in the

@@ -52,6 +52,17 @@ const RECENT = 5;
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 420;
 
+// The sections of a menu with their items, the empty ones left out.
+const sectionsOf = (sections: readonly Spec.MenuSection[]) =>
+  sections
+    .map((section) =>
+      ('items' in section ? section : { label: undefined, items: section }) as {
+        label?: string | undefined;
+        items: readonly Spec.MenuItem[];
+      }
+    )
+    .filter((section) => section.items.length > 0);
+
 const clamp = (value: number) => Math.round(Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, value)));
 const isMac = () => /mac|iphone|ipad/i.test(navigator.platform || navigator.userAgent);
 
@@ -69,10 +80,12 @@ let instances = 0;
 //   Its element gets `data-hash-segment` (its id), so tabs inside it know their level.
 class AppCockpitElement extends LitElement implements Spec.Element {
   static override styles = unsafeCSS(STYLES);
-  static override properties = { layout: { reflect: true } };
+  static override properties = { layout: { reflect: true }, navScheme: { attribute: 'nav-scheme', reflect: true } };
 
   // The attribute `layout`: the navigation in a sidebar (the default) or in a topbar of two lines.
   declare layout: Spec.Layout;
+  // The attribute `nav-scheme`: the navigation always dark (the default), or like the page (only CSS: `:host([nav-scheme])`).
+  declare navScheme: Spec.NavScheme;
 
   readonly #config: Spec.Config;
   readonly #id = `cockpit${++instances}`;
@@ -108,6 +121,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
   constructor(config: Spec.Config) {
     super();
     this.layout = 'sidebar';
+    this.navScheme = 'dark';
     this.#config = config;
     this.#key = config.storageKey ?? 'app-cockpit';
     this.#recent = readStored<string[]>(`${this.#key}:recent`, []);
@@ -554,7 +568,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     return html`<aside class="sidebar">
             ${rail ? nothing : this.#resizeHandle(texts)}
             <div class="brand">
-              ${this.#brand()}
+              ${this.#brand(texts, rail)}
               ${this.#searchable && !rail ? this.#searchButton(texts, rail) : nothing}
             </div>
             ${this.#searchable && rail ? this.#searchButton(texts, rail) : nothing} ${this.#navigation(texts, rail)}
@@ -565,8 +579,25 @@ class AppCockpitElement extends LitElement implements Spec.Element {
   }
 
   // The logo (the slot `logo`), the title and the subtitle.
-  #brand(): TemplateResult {
-    return html`<slot name="logo"><span class="brand-logo" aria-hidden="true">${gridIcon()}</span></slot>
+  // In the sidebar (not when it is always a rail, below 768px), the logo is a button that toggles the sidebar, like the
+  // footer's toggle.
+  #brand(texts: Texts, rail?: boolean): TemplateResult {
+    const logo = html`<slot name="logo"><span class="brand-logo" aria-hidden="true">${gridIcon()}</span></slot>`;
+    const label = rail ? texts.expand : texts.collapse;
+
+    return html`${
+      rail === undefined || this.#narrow
+        ? logo
+        : html`<button
+          type="button"
+          class="brand-toggle"
+          aria-label=${label}
+          aria-expanded=${!rail}
+          data-tip=${label}
+          data-tip-side=${rail ? 'right' : 'bottom'}
+          @click=${this.#toggleCollapsed}
+        >${logo}</button>`
+    }
       <span class="brand-text">
         <span class="brand-title">${this.#config.title ?? 'Apps'}</span>
         ${
@@ -852,7 +883,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
 
     return html`<header class="topbar">
       <div class="top-line">
-        <div class="brand">${this.#brand()}</div>
+        <div class="brand">${this.#brand(texts)}</div>
         <nav class="line" aria-label=${texts.navigation} @keydown=${this.#onLineKeyDown}>${
       this.#line('top', top, texts)
     }</nav>
@@ -1042,7 +1073,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
       ? html`<span class="avatar" aria-hidden="true">${initialsOf(user.name).toUpperCase()}</span>`
       : html`<img class="avatar" src=${user.avatar} alt="" />`;
 
-    if (sections.length === 0) {
+    if (sectionsOf(sections).length === 0) {
       return html`<div class="top-user" aria-label=${user.name} data-tip=${user.name} data-tip-side="bottom">${avatar}</div>`;
     }
 
@@ -1102,23 +1133,40 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     } as menu.Props);
   }
 
-  #menuItems(api: menu.Api, sections: readonly (readonly Spec.MenuItem[])[]): TemplateResult[] {
-    return sections.filter((section) => section.length > 0).flatMap((section, index) => [
+  // The sections of a menu, separated by lines, each with its label. An item with `checked` is a radio option (a check
+  // in place of its icon, on the checked one).
+  #menuItems(api: menu.Api, sections: readonly Spec.MenuSection[]): TemplateResult[] {
+    return sectionsOf(sections).flatMap((section, index) => [
       ...(index > 0 ? [html`<div class="menu-separator" ${spread(api.getSeparatorProps())}></div>`] : []),
-      ...section.map((item) =>
-        html`<div class="menu-item" ${spread(api.getItemProps({ value: item.id }))}>
+      ...(section.label === undefined ? [] : [html`<div class="menu-group-label">${section.label}</div>`]),
+      ...section.items.map((item) => {
+        if (item.checked !== undefined) {
+          const checked = item.checked();
+
+          return html`<div class="menu-item" ?data-checked=${checked} ${
+            spread(api.getOptionItemProps({ type: 'radio', value: item.id, checked, onCheckedChange: () => {} }))
+          }>
+            <span class="menu-icon menu-check" ?data-checked=${checked}>${checkIcon()}</span>
+            <span class="menu-label">${item.label}</span>
+          </div>`;
+        }
+
+        return html`<div class="menu-item" ${spread(api.getItemProps({ value: item.id }))}>
           <span class="menu-icon" aria-hidden="true">${item.icon === undefined ? nothing : unsafeHTML(item.icon)}</span>
           <span class="menu-label">${item.label}</span>
           ${item.shortcut === undefined ? nothing : html`<kbd class="key">${item.shortcut}</kbd>`}
-        </div>`
-      ),
+        </div>`;
+      }),
     ]);
   }
 
-  #select(sections: readonly (readonly Spec.MenuItem[])[], value: string): void {
-    for (const section of sections) {
-      section.find((item) => item.id === value)?.onSelect?.();
+  // The item `value` was chosen: its `onSelect`, and the menu renders again (a choice's check moves).
+  #select(sections: readonly Spec.MenuSection[], value: string): void {
+    for (const section of sectionsOf(sections)) {
+      section.items.find((item) => item.id === value)?.onSelect?.();
     }
+
+    this.requestUpdate();
   }
 
   // A group (or a subgroup) in the rail: its button (its name as the tooltip), and a panel with its apps (the apps
@@ -1233,7 +1281,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
       </span>
     `;
 
-    if (sections.length === 0) {
+    if (sectionsOf(sections).length === 0) {
       return html`<div class="user-row">
         <div class="user-button" aria-label=${ifDefined(rail ? user.name : undefined)} data-tip=${
         ifDefined(rail ? user.name : undefined)
@@ -1272,7 +1320,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
   #footer(texts: Texts, rail: boolean, topbar = false): TemplateResult {
     const footer = this.#config.footer ?? {};
     const actions = footer.actions ?? [];
-    const sections = (footer.menu ?? []).filter((section) => section.length > 0);
+    const sections = footer.menu ?? [];
     const side = topbar ? 'bottom' : rail ? 'right' : 'top';
     const where = (button: string) =>
       topbar
@@ -1287,6 +1335,30 @@ class AppCockpitElement extends LitElement implements Spec.Element {
           anchor: () => this.#el('.footer')?.getBoundingClientRect() ?? new DOMRect(),
           sameWidth: true,
         };
+
+    // An action with a menu of sections: like the kebab's menu, at this button.
+    const sectionMenu = (action: Spec.Action, sections: readonly Spec.MenuSection[]) => {
+      const api = this.#menu(`action:${action.id}`, {
+        ...where(`[data-action="${action.id}"]`),
+        onSelect: (value) => this.#select(sections, value),
+      });
+
+      return html`
+        <button
+          class="footer-button"
+          data-action=${action.id}
+          aria-label=${action.label}
+          data-tip=${action.label}
+          data-tip-side=${side}
+          ${spread(api.getTriggerProps())}
+        >${this.#actionIcon(action)}</button>
+        <div class="menu-positioner" ${spread(api.getPositionerProps())}>
+          <div class="menu-popup menu-popup--choices" ?data-flush=${!topbar} ?data-sheet=${
+        !rail && !topbar
+      } ?data-drop=${topbar} ${spread(api.getContentProps())}>${this.#menuItems(api, sections)}</div>
+        </div>
+      `;
+    };
 
     const choiceMenu = (action: Spec.Action, choices: Spec.Choices) => {
       const button = `[data-action="${action.id}"]`;
@@ -1331,7 +1403,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
       `;
     };
 
-    const more = sections.length === 0 ? undefined : this.#menu('more', {
+    const more = sectionsOf(sections).length === 0 ? undefined : this.#menu('more', {
       ...where('.footer-more'),
       onSelect: (value) => this.#select(sections, value),
     });
@@ -1355,7 +1427,9 @@ class AppCockpitElement extends LitElement implements Spec.Element {
       <div class="footer-actions">
         ${
       actions.map((action) =>
-        action.choices === undefined
+        action.menu !== undefined
+          ? sectionMenu(action, action.menu)
+          : action.choices === undefined
           ? html`<button
             type="button"
             class="footer-button"

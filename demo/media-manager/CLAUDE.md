@@ -54,8 +54,8 @@ structure completely (`demo/board-manager/STRUCTURE.md`): a reference for its ph
 ## App
 
 - Top bar (like the Board Manager's): the app icon, "Media Manager", the open folder's path as a breadcrumb (a house icon
-  only, a link to all files with the tooltip "Overview", like the other apps; then one crumb per folder; the last one
-  not a link; none for all files; the app icon is a link to all files too), Back and Forward through the app's
+  only, a link to all files with the label "Overview" (no tooltip, 2026-10-03), like the other apps; then one crumb per folder; the last one
+  not a link; none for all files; the app icon is a link to all files too, but not while they are shown, 2026-10-03), Back and Forward through the app's
   own history (tooltips "Back to Logos"; hidden below 40rem of the top bar).
 - Below it: the folder tree on the left (15.5rem, sticky; hidden below 48rem of the app's width), the open folder's
   contents on the right.

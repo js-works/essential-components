@@ -31,6 +31,10 @@
   /* A container is a containing block for its popups (tooltips, menus), but Floating UI (Mantine's positioning) only
      knows that from `contain`: without it, they open far off to the side. */
   contain: layout;
+  /* `contain: layout` makes the bar a stacking context: its popups' z-index counts only inside it. Above the page below
+     it, or the menus open under its content (e.g. the start page's tiles). */
+  position: relative;
+  z-index: 100;
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
@@ -86,12 +90,13 @@
   border-radius: var(--mantine-radius-sm);
   transition: filter 120ms;
 
-  &:hover {
+  /* Only as a link (not on the start page). */
+  &:is(a):hover {
     filter: brightness(1.12);
   }
 }
 
-/* The first crumb: a house icon only (its name, "Overview", as the tooltip and the label), a link to the start page.
+/* The first crumb: a house icon only (its name, "Overview", as the label), a link to the start page.
    On the start page there is no breadcrumb. */
 .board-manager__home {
   display: inline-flex;

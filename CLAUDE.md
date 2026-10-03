@@ -48,12 +48,12 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
     `demo.css`) and "Apps" ("Media Manager", "Board Manager", "User Manager"; the long names, also as their titles: short
     ones collided with their modules, decided 2026-10-03); and two made-up groups, "Human Resources" and "Finance"
     (`FAKE` in `demo/main.ts`), only to show a larger navigation: their apps (without icons; their subgroups with icons, 2026-10-03) are
-    `planned-demo` placeholders too. Each group has an icon. In the cockpit's footer the cockpit's layout (sidebar or topbar, 2026-10-03), the accent color (2026-10-03: one of Mantine's usual colors, violet by default, or "Design language", i.e. `ui.css`'s; it only sets `--app-accent-color` on `<html>`, which `demo/demo.css` maps to the apps' `--board-manager-accent-color`, `--media-manager-accent-color`, `--user-manager-accent-color`, with the design language's accent as the fallback, so the cockpit and the apps have one color; the package demos keep `ui.css`'s) and the page's settings (language `en-US`/`de-DE`, color scheme: System, Light (the default), Dark, 2026-10-03; from
+    `planned-demo` placeholders too. Each group has an icon. In the cockpit's footer the cockpit's navigation (one button, 2026-10-03: its position, sidebar or topbar, and its colors, dark or like the page), the accent color (2026-10-03: one of Mantine's usual colors, violet by default, or "Design language", i.e. `ui.css`'s; it only sets `--app-accent-color` on `<html>`, which `demo/demo.css` maps to the apps' `--board-manager-accent-color`, `--media-manager-accent-color`, `--user-manager-accent-color`, with the design language's accent as the fallback, so the cockpit and the apps have one color; the package demos keep `ui.css`'s) and the page's settings (the language `en-US`/`de-DE` in the kebab menu, 2026-10-03; the color scheme: System, Light (the default), Dark, 2026-10-03; from
     `packages/app-cockpit/demo/footer.ts`, with a made-up menu), which change `<html>` (`lang`, `data-scheme`) for every
     demo.
     - The URL hash: the app's id first, then one segment per level of tabs inside it: `#file-upload/react`,
       `#dialogs-toasts/react-i18n`, `#board-manager/boards/b1`. No hash: the Board Manager (the cockpit's `defaultApp`, 2026-10-03).
-  - `demo/main.ts`: creates the cockpit (`createAppCockpitClass`, title "App Center", no subtitle, with the search, a made-up
+  - `demo/main.ts`: creates the cockpit (`createAppCockpitClass`, title "Back Office", subtitle "Acme Corporate" (2026-10-03; "App Center" without a subtitle before), with the search, a made-up
     signed-in user) with
     the demos. Each is loaded when it is opened
     the first time (`load`: a dynamic `import()` by a relative path, e.g. `../packages/file-upload/demo/FileUploadDemo`)
@@ -67,8 +67,8 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
   - The root's apps (Media Manager, Board Manager, User Manager) work standalone and embedded (e.g. in the cockpit):
     no greetings like "Welcome" on their start pages, and no "Home" (2026-10-03): the start page is "Main" (German
     "Hauptseite"): its title, its menu entry. The breadcrumb starts with a house icon only (a link to the start page, the
-    tooltip "Overview"; none on the start page itself; 2026-10-03, a try); the app icon in the top bar is a link to the start page
-    too.
+    label "Overview", no tooltip (2026-10-03); none on the start page itself; 2026-10-03, a try); the app icon in the top bar is a link to the start page
+    too (no tooltip either; on the start page itself only an icon, not clickable, 2026-10-03).
   - `demo/user-manager/`: the "User Manager" app, a demo of the root: users, groups, roles and grants (who has which
     role where, on a scope tree, inherited downwards; allow only), with a check of access that says why. The Board
     Manager's look, the Media Manager's architecture. Details: `demo/user-manager/CLAUDE.md`.

@@ -5,7 +5,7 @@ import { createAppCockpitClass } from '../src';
 import type { AppCockpit } from '../src';
 import { FEW, GROUPS, MANY, SOME } from './apps';
 import { DemoApp } from './DemoApp';
-import { accentSetting, layoutSetting, MENU, pageSettings, USER, USER_MENU } from './footer';
+import { accentSetting, MENU, navigationSetting, pageSettings, USER, USER_MENU } from './footer';
 
 // The page: a cockpit with 3, 30 or 100 apps (kept in the query string: the apps of a cockpit are fixed, so a change
 // reloads the page). Its footer has the page's settings: the number of apps, the language and the color scheme.
@@ -44,7 +44,7 @@ customElements.define(
     footer: {
       actions: [
         appsAction,
-        layoutSetting(),
+        navigationSetting(),
         accentSetting(),
         ...pageSettings({ schemes: ['system', 'light', 'dark'], scheme: 'system' }),
       ],

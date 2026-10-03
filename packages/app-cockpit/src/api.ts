@@ -39,6 +39,8 @@ export type Action = {
   badge?: boolean;
   onSelect?: () => void;
   choices?: Choices;
+  // A menu of sections (with labels and checked items), e.g. several settings behind one button.
+  menu?: readonly MenuSection[];
 };
 
 export type MenuItem = {
@@ -46,8 +48,13 @@ export type MenuItem = {
   label: string;
   icon?: string;
   shortcut?: string;
+  // A choice: checked or not, read whenever the menu renders (the host keeps the state); a check in place of the icon.
+  checked?: () => boolean;
   onSelect?: () => void;
 };
+
+// A section of a menu (separated by lines): its items, or with a label on top.
+export type MenuSection = readonly MenuItem[] | { label?: string; items: readonly MenuItem[] };
 
 export type User = {
   name: string;
@@ -57,7 +64,7 @@ export type User = {
 
 export type Footer = {
   actions?: readonly Action[];
-  menu?: readonly (readonly MenuItem[])[];
+  menu?: readonly MenuSection[];
 };
 
 export type Config = {
@@ -69,7 +76,7 @@ export type Config = {
   groupDisplay?: 'sections' | 'select';
   footer?: Footer;
   user?: User;
-  userMenu?: readonly (readonly MenuItem[])[];
+  userMenu?: readonly MenuSection[];
   defaultApp?: string;
   storageKey?: string;
 };
@@ -77,8 +84,12 @@ export type Config = {
 // Where the navigation is: a sidebar on the left (the default), or a topbar of two lines.
 export type Layout = 'sidebar' | 'topbar';
 
+// The navigation's colors: always dark (the default), or like the page (light on a light page, dark on a dark one).
+export type NavScheme = 'dark' | 'page';
+
 export type Element = HTMLElement & {
   layout: Layout;
+  navScheme: NavScheme;
   readonly activeApp: MiniApp | undefined;
   open(id: string): void;
 };

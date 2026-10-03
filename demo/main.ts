@@ -1,7 +1,14 @@
 // The design language first, so the CSS of the demos comes after it.
 import './ui/ui.css';
 import './demo.css';
-import { accentSetting, layoutSetting, MENU, pageSettings, USER, USER_MENU } from '../packages/app-cockpit/demo/footer';
+import {
+  accentSetting,
+  MENU,
+  navigationSetting,
+  pageSettings,
+  USER,
+  USER_MENU,
+} from '../packages/app-cockpit/demo/footer';
 import { createAppCockpitClass } from '../packages/app-cockpit/src';
 import type { AppCockpit } from '../packages/app-cockpit/src';
 
@@ -74,7 +81,8 @@ const fakeApps = (): AppCockpit.MiniApp[] =>
 customElements.define(
   'app-cockpit',
   createAppCockpitClass({
-    title: 'App Center',
+    title: 'Back Office',
+    subtitle: 'Acme Corporate',
     // The search (Ctrl K), although there are only a few apps.
     search: true,
     // One group at a time (a select on top of the list): the real one, and two made-up ones. The subgroup "Planned" has
@@ -144,10 +152,11 @@ customElements.define(
     // Opened when the page starts without a hash.
     defaultApp: 'board-manager',
     storageKey: 'essential-components',
-    // The cockpit's layout, the accent color, the page's settings (language, color scheme) and a made-up menu, from the cockpit's own demo.
+    // The cockpit's navigation (position and colors), the accent color, the page's color scheme, and a made-up menu
+    // with the page's language, from the cockpit's own demo.
     footer: {
       actions: [
-        layoutSetting(),
+        navigationSetting(),
         accentSetting(),
         ...pageSettings({ schemes: ['system', 'light', 'dark'], scheme: 'light' }),
       ],

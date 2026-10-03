@@ -11,9 +11,11 @@ the root's `CLAUDE.md` apply.
 
 - Made to be embedded (later e.g. in XWiki, with content around it): no side navigation, a top bar with the app icon,
   the title "Board Manager" (a menu of the modules: Main, Boards, Meetings, Members, Organizations) and a breadcrumb
-  that starts with a house icon only (2026-10-03: a link to the start page, its tooltip and label "Overview"). On the
-  start page there is no breadcrumb. The app icon is a link to the start page too (tooltip "Overview", lighter on
-  hover; 2026-10-03). "Main", not
+  that starts with a house icon only (2026-10-03: a link to the start page, its label "Overview"; no tooltip, 2026-10-03). On the
+  start page there is no breadcrumb. The app icon is a link to the start page too (label "Overview", no tooltip, lighter on
+  hover; 2026-10-03; on the start page only an icon, not clickable). The top bar is above the page below it (2026-10-03,
+  `position: relative; z-index: 100`; the same in the Media Manager and the User Manager): its `contain: layout` makes
+  it a stacking context, so its menus opened under the start page's tiles. "Main", not
   "Home" (2026-10-03): the app works standalone and embedded, where "Home" means the host's; the start page's title
   is "Main" too (not "Overview", the first tab of several pages).
   - The top bar is not selectable (`user-select: none`, 2026-10-01), its menu included (no portal).

@@ -57,8 +57,8 @@ Started 2026-10-03.
 
 - Top bar like the Board Manager's: the app icon (`TbShieldLock`, also the cockpit's), "User Manager" with the menu of
   the modules (Main, Users, Groups, Roles, Access, Check access, Permissions), the breadcrumb (a house icon only, a link to the start
-  page with the tooltip "Overview", like the Board Manager's; then module › name; none on
-  the start page; the app icon is a link to it too),
+  page with the label "Overview" (no tooltip, 2026-10-03), like the Board Manager's; then module › name; none on
+  the start page; the app icon is a link to it too, but not on it, 2026-10-03),
   Back and Forward.
 - Routes: `/`, `/users`, `/users/:userId`, `/groups`, `/groups/:groupId`, `/roles`, `/roles/:roleId`, `/access`,
   `/check`, `/permissions`; mirrored in the hash after `#user-manager`.

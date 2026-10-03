@@ -44,6 +44,17 @@ const STYLES = /* css */ `
   color: var(--text);
 }
 
+/* nav-scheme="page": the navigation follows the page (light on a light page, dark on a dark one). A host's own
+   --app-cockpit-sidebar-scheme still wins (the page's CSS comes before :host). In the topbar, a line between the top
+   line and the second one (both light then). */
+:host([nav-scheme='page']) {
+  --app-cockpit-sidebar-scheme: normal;
+
+  .top-line {
+    border-bottom: 1px solid var(--divider);
+  }
+}
+
 /* The cockpit's own parts have a font of their own, so a mini-app's global CSS (e.g. a font on body) does not change
    them. The host itself keeps inheriting, so the mini-apps (its light-DOM children) do not get it. */
 .frame,
@@ -147,6 +158,28 @@ button {
     flex: none;
     max-width: 2.25rem;
     max-height: 2.25rem;
+  }
+}
+
+/* The logo as the sidebar's toggle: a plain button around it. */
+.brand-toggle {
+  display: grid;
+  flex: none;
+  place-items: center;
+  margin: 0 -0.25rem;
+  padding: 0 0.25rem;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 120ms;
+
+  &:hover {
+    background: var(--hover);
+  }
+
+  &:focus-visible {
+    outline-offset: -2px;
   }
 }
 
@@ -675,7 +708,8 @@ button {
   border-radius: 50%;
   object-fit: cover;
   background: color-mix(in srgb, var(--accent) 35%, var(--sidebar));
-  color: #fff;
+  /* White on the dark navigation, the accent on a light one (nav-scheme="page"). */
+  color: light-dark(var(--accent), #fff);
   font-size: 0.75rem;
   font-weight: 650;
   letter-spacing: 0.02em;
@@ -709,10 +743,11 @@ button {
    edges. */
 
 .footer {
-  --footer-background: light-dark(#33373d, #31353b);
-  --footer-text: light-dark(#d5d8dc, #c4c7cc);
-  --footer-hover: light-dark(rgb(255 255 255 / 9%), rgb(255 255 255 / 7%));
-  --footer-divider: rgb(255 255 255 / 10%);
+  /* The dark side: the dark navigation (the default); the light side: a light one (nav-scheme="page"), a light gray. */
+  --footer-background: light-dark(#e6e8eb, #31353b);
+  --footer-text: light-dark(#40454c, #c4c7cc);
+  --footer-hover: light-dark(rgb(0 0 0 / 6%), rgb(255 255 255 / 7%));
+  --footer-divider: light-dark(rgb(0 0 0 / 9%), rgb(255 255 255 / 10%));
 
   display: flex;
   flex: none;
@@ -721,7 +756,7 @@ button {
   margin: 0 -0.75rem -0.75rem;
   background: var(--footer-background);
   color: var(--footer-text);
-  color-scheme: dark;
+  color-scheme: var(--app-cockpit-sidebar-scheme);
 }
 
 .footer-actions {
@@ -749,7 +784,7 @@ button {
   &:hover,
   &[data-state='open'] {
     background: var(--footer-hover);
-    color: #fff;
+    color: light-dark(#111, #fff);
   }
 
   &:focus-visible {

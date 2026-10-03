@@ -84,17 +84,25 @@ function Layout(): ReactElement {
   );
 }
 
+// The app icon is a link to the start page, but not on the start page itself.
 function TopBar(): ReactElement {
+  const atHome = useLocation().pathname === '/';
+  const appIcon = (
+    <ThemeIcon variant="filled" size="lg" radius="sm" aria-hidden>
+      {appIcons.app}
+    </ThemeIcon>
+  );
+
   return (
     <header className="user-manager__top-bar">
       <Group gap="xs" wrap="nowrap" flex="none">
-        <Tooltip label="Overview" openDelay={400} fz="xs">
-          <Link to="/" className="user-manager__app-icon" aria-label="Overview">
-            <ThemeIcon variant="filled" size="lg" radius="sm" aria-hidden>
-              {appIcons.app}
-            </ThemeIcon>
-          </Link>
-        </Tooltip>
+        {atHome
+          ? <span className="user-manager__app-icon">{appIcon}</span>
+          : (
+            <Link to="/" className="user-manager__app-icon" aria-label="Overview">
+              {appIcon}
+            </Link>
+          )}
         <Menu position="bottom-start" shadow="md" width={200}>
           <Menu.Target>
             <UnstyledButton className="user-manager__title" aria-label="User Manager: modules">
@@ -135,11 +143,9 @@ function Crumbs(): ReactElement | null {
 
   return (
     <Breadcrumbs separator="›" separatorMargin={6} className="user-manager__crumbs">
-      <Tooltip label="Overview" openDelay={400} fz="xs">
-        <Anchor component={Link} to="/" className="user-manager__home" aria-label="Overview">
-          {appIcons.home}
-        </Anchor>
-      </Tooltip>
+      <Anchor component={Link} to="/" className="user-manager__home" aria-label="Overview">
+        {appIcons.home}
+      </Anchor>
       {crumbs.map((crumb, index) =>
         index === crumbs.length - 1
           ? <Text key={crumb.to} size="sm" fw={500} aria-current="page">{crumb.label}</Text>

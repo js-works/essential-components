@@ -49,17 +49,25 @@ function Layout(): ReactElement {
   );
 }
 
+// The app icon is a link to the start page, but not on the start page itself.
 function TopBar(): ReactElement {
+  const atHome = useLocation().pathname === '/';
+  const appIcon = (
+    <ThemeIcon variant="filled" size="lg" radius="sm" aria-hidden>
+      {appIcons.app}
+    </ThemeIcon>
+  );
+
   return (
     <header className="media-manager__top-bar">
       <Group gap="xs" wrap="nowrap" flex="none">
-        <Tooltip label="Overview" openDelay={400} fz="xs">
-          <Link to="/" className="media-manager__app-icon" aria-label="Overview">
-            <ThemeIcon variant="filled" size="lg" radius="sm" aria-hidden>
-              {appIcons.app}
-            </ThemeIcon>
-          </Link>
-        </Tooltip>
+        {atHome
+          ? <span className="media-manager__app-icon">{appIcon}</span>
+          : (
+            <Link to="/" className="media-manager__app-icon" aria-label="Overview">
+              {appIcon}
+            </Link>
+          )}
         <Text fw={700} size="md" className="media-manager__title">Media Manager</Text>
       </Group>
       <Crumbs />
@@ -87,11 +95,9 @@ function Crumbs(): ReactElement | null {
 
   return (
     <Breadcrumbs separator="›" separatorMargin={6} className="media-manager__crumbs">
-      <Tooltip label="Overview" openDelay={400} fz="xs">
-        <Anchor component={Link} to="/" className="media-manager__home" aria-label="Overview">
-          {appIcons.home}
-        </Anchor>
-      </Tooltip>
+      <Anchor component={Link} to="/" className="media-manager__home" aria-label="Overview">
+        {appIcons.home}
+      </Anchor>
       {path.map((folder, index) =>
         index === path.length - 1
           ? <Text key={folder.id} size="sm" fw={500} aria-current="page">{folder.name}</Text>
