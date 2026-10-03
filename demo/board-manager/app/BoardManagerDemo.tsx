@@ -13,6 +13,7 @@ import {
   MantineProvider,
   Menu,
   mergeMantineTheme,
+  mergeThemeOverrides,
   Popover,
   Tooltip,
 } from '@mantine/core';
@@ -23,6 +24,7 @@ import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
 import { TbMaximize, TbMinimize } from 'react-icons/tb';
 import { RouterProvider } from 'react-router';
+import { combineCssVariables, modernTheme } from '../../../packages/mantine-themes/src';
 import { OverlaysProvider } from '../../../packages/overlays/src/main/bindings/react';
 import type { OverlaysConfig } from '../../../packages/overlays/src/main/bindings/react';
 import { createDialogTheme } from '../../../packages/overlays/src/main/dialogs/dialogs';
@@ -112,23 +114,26 @@ function createLook(
   // weight (400; Mantine's is 600), also those of the dialogs (Mantine's, see `render.actionButton`; there `xs`, like
   // the buttons of the pages). `autoContrast`:
   // black text on a light accent.
-  const theme = createTheme({
-    colors: { accent, danger, success, warning },
-    primaryColor: 'accent',
-    autoContrast: true,
-    defaultRadius: 'sm',
-    components: {
-      Badge: Badge.extend({ defaultProps: { tt: 'none' } }),
-      Button: Button.extend({
-        defaultProps: { fw: 400 },
-        // `xs` buttons (30px high) in the app's text size (`sm`, 14px) instead of Mantine's `xs` (12px).
-        vars: (theme, props) => ({ root: props.size === 'xs' ? { '--button-fz': theme.fontSizes.sm } : {} }),
-      }),
-      Menu: Menu.extend({ defaultProps: { withinPortal: false } }),
-      Popover: Popover.extend({ defaultProps: { withinPortal: false } }),
-      Tooltip: Tooltip.extend({ defaultProps: { withinPortal: false } }),
-    },
-  });
+  const theme = mergeThemeOverrides(
+    modernTheme.theme,
+    createTheme({
+      colors: { accent, danger, success, warning },
+      primaryColor: 'accent',
+      autoContrast: true,
+      defaultRadius: 'sm',
+      components: {
+        Badge: Badge.extend({ defaultProps: { tt: 'none' } }),
+        Button: Button.extend({
+          defaultProps: { fw: 400 },
+          // `xs` buttons (30px high) in the app's text size (`sm`, 14px) instead of Mantine's `xs` (12px).
+          vars: (theme, props) => ({ root: props.size === 'xs' ? { '--button-fz': theme.fontSizes.sm } : {} }),
+        }),
+        Menu: Menu.extend({ defaultProps: { withinPortal: false } }),
+        Popover: Popover.extend({ defaultProps: { withinPortal: false } }),
+        Tooltip: Tooltip.extend({ defaultProps: { withinPortal: false } }),
+      },
+    }),
+  );
 
   // More contrast than Mantine's defaults, for the app and every component in it (their themes use Mantine's
   // variables): the dimmed text (secondary texts, the table headers, the labels) and the placeholders one step darker
@@ -140,7 +145,7 @@ function createLook(
   // `<board-manager>` element, they reach the shadow root by inheritance; live: no JS reads them). Mantine's other sizes
   // and the headings keep their proportions to it. Without them, Mantine's defaults.
   const accentVars = accentVariables(accent);
-  const cssVariablesResolver: CSSVariablesResolver = () => ({
+  const ownVariables: CSSVariablesResolver = () => ({
     variables: {
       ...accentVars.variables,
       // Mantine's own scale: every size of its components (heights, spacing, radii) is multiplied by it.
@@ -156,27 +161,25 @@ function createLook(
     },
     light: {
       ...accentVars.light,
-      '--mantine-color-dimmed': 'var(--mantine-color-gray-7)',
-      '--mantine-color-placeholder': 'var(--mantine-color-gray-6)',
       '--mantine-color-error': 'var(--mantine-color-danger-6)',
     },
     dark: {
       ...accentVars.dark,
-      '--mantine-color-dimmed': 'var(--mantine-color-dark-1)',
-      '--mantine-color-placeholder': 'var(--mantine-color-dark-2)',
       '--mantine-color-error': 'var(--mantine-color-danger-8)',
     },
   });
+  // `modernTheme`'s variables (the borders, the dimmed text and the placeholders one step stronger), then the app's.
+  const cssVariablesResolver = combineCssVariables(modernTheme.cssVariablesResolver, ownVariables);
 
   // The toasts in Mantine's palette. They live in `<body>`, outside the scopes, so Mantine's variables are not there:
   // the colors are the values of the theme, and `light-dark()` follows the page's scheme (`color-scheme` on `<html>`).
   // Like Mantine: a paper card (white, `dark.6`), its text and dimmed colors, the accent for info, success and loading.
-  const { colors } = mergeMantineTheme(DEFAULT_THEME, theme);
+  const { colors, radius } = mergeMantineTheme(DEFAULT_THEME, theme);
 
   const toastTheme = createToastTheme({
     background: `light-dark(#fff, ${colors.dark[6]})`,
     text: `light-dark(#000, ${colors.dark[0]})`,
-    radius: '4px',
+    radius: radius.md,
     infoAccent: accent[6],
     // Success in the accent too, like info (only the icon differs): one accent color in the app.
     successAccent: accent[6],
@@ -204,6 +207,8 @@ function createLook(
       // the values of the theme (the dialogs are outside the scopes, where Mantine's variables are not set).
       // The spinner placeholder (while a scope waits, e.g. for the PDF) in the accent's filled color (shade 6, 8 dark).
       theme: createDialogTheme({
+        radius: radius.lg,
+        actionRadius: radius.sm,
         fontSize: fontSize(FONT_SIZES.sm),
         fontFamily: FONT_FAMILY,
         spinner: `light-dark(${accent[6]}, ${accent[8]})`,

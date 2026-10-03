@@ -10,7 +10,7 @@ const STYLES = /* css */ `
   /* The topbar's top line (layout="topbar"). */
   --app-cockpit-topbar-height: 3rem;
   --app-cockpit-content-padding: 1.25rem 1.5rem;
-  /* The sidebar is dark in both color schemes of the page ("normal": it follows the page). */
+  /* The sidebar is dark in both color schemes of the page (nav-scheme="page": it follows the page). */
   --app-cockpit-sidebar-scheme: dark;
 
   --background: var(--ui-color-background, Canvas);
@@ -48,7 +48,9 @@ const STYLES = /* css */ `
    --app-cockpit-sidebar-scheme still wins (the page's CSS comes before :host). In the topbar, a line between the top
    line and the second one (both light then). */
 :host([nav-scheme='page']) {
-  --app-cockpit-sidebar-scheme: normal;
+  /* "initial" makes the property "not set" (guaranteed invalid), so the "inherit" of every var(…, inherit) counts: the
+     page's scheme. ("normal" would be light, also on a dark page.) */
+  --app-cockpit-sidebar-scheme: initial;
 
   .top-line {
     border-bottom: 1px solid var(--divider);
@@ -137,7 +139,7 @@ button {
   background: var(--sidebar);
   color: var(--text);
   /* Every light-dark() color inside resolves to its dark side (also the ui-* tokens and the slotted parts). */
-  color-scheme: var(--app-cockpit-sidebar-scheme);
+  color-scheme: var(--app-cockpit-sidebar-scheme, inherit);
   -webkit-user-select: none;
   user-select: none;
 }
@@ -582,7 +584,7 @@ button {
 }
 
 .select-popup {
-  color-scheme: var(--app-cockpit-sidebar-scheme);
+  color-scheme: var(--app-cockpit-sidebar-scheme, inherit);
   min-width: var(--reference-width);
   padding: 0.25rem;
   border: 1px solid var(--divider);
@@ -756,7 +758,7 @@ button {
   margin: 0 -0.75rem -0.75rem;
   background: var(--footer-background);
   color: var(--footer-text);
-  color-scheme: var(--app-cockpit-sidebar-scheme);
+  color-scheme: var(--app-cockpit-sidebar-scheme, inherit);
 }
 
 .footer-actions {
@@ -851,7 +853,7 @@ button {
 }
 
 .menu-popup {
-  color-scheme: var(--app-cockpit-sidebar-scheme);
+  color-scheme: var(--app-cockpit-sidebar-scheme, inherit);
   min-width: 13rem;
   padding: 0.25rem;
   border: 1px solid var(--divider);
@@ -1016,7 +1018,7 @@ button {
   background: var(--sidebar);
   color: var(--text);
   box-shadow: 8px 0 24px rgb(0 0 0 / 18%);
-  color-scheme: var(--app-cockpit-sidebar-scheme);
+  color-scheme: var(--app-cockpit-sidebar-scheme, inherit);
   font-family: var(--app-cockpit-font-family, system-ui, sans-serif);
   font-size: var(--sidebar-font-size);
   outline: none;
@@ -1349,7 +1351,7 @@ button {
   background: var(--sidebar);
   color: var(--text);
   box-shadow: 8px 0 24px rgb(0 0 0 / 22%);
-  color-scheme: var(--app-cockpit-sidebar-scheme);
+  color-scheme: var(--app-cockpit-sidebar-scheme, inherit);
   font-family: var(--app-cockpit-font-family, system-ui, sans-serif);
   transition: opacity 150ms, translate 180ms var(--ease);
 
@@ -1649,7 +1651,7 @@ button {
   padding: 0 0.625rem 0 1rem;
   background: var(--sidebar);
   color: var(--text);
-  color-scheme: var(--app-cockpit-sidebar-scheme);
+  color-scheme: var(--app-cockpit-sidebar-scheme, inherit);
   font-size: var(--sidebar-font-size);
 
   .brand {

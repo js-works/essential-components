@@ -37,6 +37,12 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
   - `app-cockpit` (`@local/app-cockpit`, `<app-cockpit>`): an admin panel shell for office mini-apps
     (micro-frontends): only a sidebar with the apps (search, recent, groups; from a few apps up to hundreds); the
     open app fills the rest. Lit + Zag.js in its shadow DOM, styled with the `ui-*` tokens. The root's demo page uses it.
+  - `app-login` (`@local/app-login`, 2026-10-03): a generic login screen for apps (React, Mantine): `LoginScreen`, and
+    `mountLoginScreen()` for a host without React. The root page shows it when signed out.
+  - `mantine-themes` (`@local/mantine-themes`, 2026-10-04): a few nicer Mantine themes, to be used easily:
+    `createMantineTheme({ colors, size, variant })` gives the theme and the CSS variables resolver for a
+    `MantineProvider`; named color setups; `modernTheme` (smaller corners, a bit more contrast), which the root's three
+    apps use (2026-10-04, merged into their own themes); a demo.
   - A package keeps its own tests, demo (`npm run dev` inside it) and `package-lock.json` (unused in the workspace,
     where the root lock file counts; it matters again in a standalone copy).
 - The root is the demo page of all packages:
@@ -51,6 +57,12 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
     `planned-demo` placeholders too. Each group has an icon. In the cockpit's footer the cockpit's navigation (one button, 2026-10-03: its position, sidebar or topbar, and its colors, dark or like the page), the accent color (2026-10-03: one of Mantine's usual colors, violet by default, or "Design language", i.e. `ui.css`'s; it only sets `--app-accent-color` on `<html>`, which `demo/demo.css` maps to the apps' `--board-manager-accent-color`, `--media-manager-accent-color`, `--user-manager-accent-color`, with the design language's accent as the fallback, so the cockpit and the apps have one color; the package demos keep `ui.css`'s) and the page's settings (the language `en-US`/`de-DE` in the kebab menu, 2026-10-03; the color scheme: System, Light (the default), Dark, 2026-10-03; from
     `packages/app-cockpit/demo/footer.ts`, with a made-up menu), which change `<html>` (`lang`, `data-scheme`) for every
     demo.
+    - Signing out (2026-10-03; the user menu's "Sign out") shows the login screen (`packages/app-login`) in place of
+      the cockpit (`hidden`), animated (2026-10-04): the cockpit fades out (250 ms), then the login screen fades in (350 ms;
+      `demo/demo.css`, `signOut()` in `demo/main.ts`; none with reduced motion); any username and password sign in again (after 500 ms); with "Forgot password?" and "Create an account" (made-up
+      server: the username "taken" exists already) and made-up providers ("Continue with Microsoft", "Google", "Company SSO"),
+      which sign in after 700 ms. Signed out is remembered per
+      browser (`demo-page:signed-in`). Its accent is the page's (`--app-login-accent-color` in `demo/demo.css`).
     - The URL hash: the app's id first, then one segment per level of tabs inside it: `#file-upload/react`,
       `#dialogs-toasts/react-i18n`, `#board-manager/boards/b1`. No hash: the Board Manager (the cockpit's `defaultApp`, 2026-10-03).
   - `demo/main.ts`: creates the cockpit (`createAppCockpitClass`, title "Back Office", subtitle "Acme Corporate" (2026-10-03; "App Center" without a subtitle before), with the search, a made-up

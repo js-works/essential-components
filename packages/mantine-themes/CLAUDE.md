@@ -1,0 +1,68 @@
+# mantine-themes
+
+`@local/mantine-themes`: a few nicer Mantine themes, to be used easily. Created 2026-10-04. The rules of the root's
+`CLAUDE.md` apply.
+
+## Working rules
+
+- Design first: discuss the API step by step.
+  - Do NOT implement anything until the user gives an explicit GO.
+- Keep answers short. One topic per step.
+- When offering alternatives, number them, add small code examples, and always state which one is proposed and how
+  confident that proposal is (e.g. a percentage).
+- English is the language of the project: code, comments, docs. The conversation may be German.
+- Never run `git commit` or `git push`.
+- `src/api.ts` holds the API types. Types only, flat exports; `src/index.ts` re-exports them as a namespace:
+  `export type * as MantineThemes from './api'` (`MantineThemes.Options`).
+- Always add the decisions (also small ones) to this file, in the same step as the code.
+
+## Decided (2026-10-04)
+
+- Mantine and React are peer dependencies (`@mantine/core` `^9.5.1`, `react` `>=19`); the workspace has 9.5.1, pinned
+  in the dev dependencies like `overlays` and `app-login`.
+- Library mode, only the latest browsers (`build.target: 'esnext'`), Mantine and React stay outside the build.
+- Idea taken from `shoelace-themes` (github.com/js-works/shoelace-themes, MIT, a prototype from 2023, looked at
+  2026-10-04): a theme is the combination of independent axes (colors, size, variant, light/dark) and a few named color
+  setups. Not taken: its Shoelace tokens, its builder chain, its dark mode derived by swapping shades (Mantine does the
+  dark mode), `loadTheme()` (Mantine has its `MantineProvider`).
+- `createMantineTheme(options?)` returns `{ theme, cssVariablesResolver }` for a `MantineProvider` (`src/create.ts`):
+  - `colors`: a name of `colorSetups` or `{ primary?, success?, warning?, danger? }` (hex colors only, no DOM needed:
+    also for the server). Each is made into ten shades (`src/colors.ts`, OKLCH, the color is shade 6; the Board
+    Manager's `colors.ts` without the browser): the theme colors `accent` (the primary color), `success`, `warning`,
+    `danger`, the names the root's apps use. Not given: Mantine's indigo, green, orange, red. An unknown name or an
+    invalid color throws (a typo should not pass silently).
+  - `size`: `default` or `compact` (Mantine's `scale` 0.9: every size, also the text).
+  - `variant`: `default` (Mantine's own look) or `modern` (nearly square corners `0 1 2 3 4px`, the system's UI font
+    for text and headings, headings 600, buttons 500, badges not uppercase, the inputs' borders one step stronger:
+    `gray.5`, `dark.3`).
+  - `accentProperty` (e.g. `--app-accent-color`): the accent live from this custom property (any CSS color, set by the
+    page's CSS): the same CSS-only mechanism as the root's apps (ten shades as `color-mix()` of it with white and black;
+    the theme's own shades where it is not set; Mantine's dark `light` and `outline-hover` as `color-mix()`).
+  - Always `autoContrast`, `defaultRadius: 'sm'`.
+- `modernTheme` (2026-10-04): the ready-made modern theme, `createMantineTheme({ variant: 'modern' })` (a `Kit`), and
+  `combineCssVariables(...resolvers)` to combine CSS variables resolvers (the later ones win). The modern parts are in
+  `src/modern.ts` (`modernOverride`, `modernVariables`: one source for `createMantineTheme()` and the apps):
+  - smaller corners: `0 1 2 3 4px` instead of Mantine's `2 4 8 16 32px` (the default radius `sm`: 1px instead of 4px);
+  - a bit more contrast, each one step stronger than Mantine's: the borders (`gray.5`, dark `dark.3`), the secondary text
+    (`gray.7`, dark `dark.1`) and the placeholders (`gray.6`, dark `dark.2`);
+  - the system's UI font, headings 600, buttons 500, badges not uppercase.
+  - An app with its own theme merges it: `mergeThemeOverrides(modernTheme.theme, ownTheme)` and
+    `combineCssVariables(modernTheme.cssVariablesResolver, ownResolver)`. The root's apps do (see their `CLAUDE.md`).
+- `colorSetups` (`src/color-setups.ts`): `blue`, `skyBlue`, `pacificBlue`, `bostonBlue`, `teal`, `violet`, `orchid`,
+  `cranberry`, `pink`, `orange`, `coral`, `tomato`, `bootstrap` (all four colors), `baseweb`; a primary color and, where
+  Mantine's red does not go well with it, a danger color. From `shoelace-themes`, without the very light ones
+  (aquamarine, turquoise, horizon: no contrast in a filled button). Its `default` is called `blue` here (`default`
+  would mean "not given": Mantine's indigo).
+
+## Not set up yet
+
+- More themes (the user is looking for some), more variants and sizes.
+- Fonts (the `modern` variant uses the system's), the toasts and dialogs of `overlays` in the theme.
+- Tests.
+
+## Layout and commands
+
+- `src/api.ts` (types), `src/create.ts` (`createMantineTheme()`), `src/colors.ts` (shades), `src/color-setups.ts`.
+- `demo/` (`npm run dev`): Mantine's components on a page, with the choices on top: the colors, the size, the variant,
+  the color scheme, and a live accent (a color input that sets `--demo-accent-color`).
+- `npm run typecheck`, `npm run build` (library mode: `dist/index.js`), `npm run format`.

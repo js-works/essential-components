@@ -4,6 +4,41 @@
 /* The cockpit fills the window; each demo scrolls inside it. */
 app-cockpit {
   height: 100dvh;
+
+  /* Signed out (the login screen instead): the element's own `display` (its :host rule) would win over `hidden`. */
+  &[hidden] {
+    display: none;
+  }
+
+  /* Signing out: it fades out first (`data-fading`, set by `demo/main.ts`), then the login screen fades in. */
+  transition: opacity 250ms ease;
+
+  &[data-fading] {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+/* The login screen (packages/app-login), signed out: its accent is the page's, like the cockpit's and the apps'. */
+.login-host {
+  --app-login-accent-color: var(--app-accent-color, var(--ui-color-accent));
+  animation: login-fade-in 350ms ease-out;
+}
+
+@keyframes login-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  app-cockpit {
+    transition: none;
+  }
+
+  .login-host {
+    animation: none;
+  }
 }
 
 /* The note of a planned component ("Planned: there is no demo yet."): in a light gray box with rounded corners. */

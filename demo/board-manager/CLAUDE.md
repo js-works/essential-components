@@ -174,7 +174,11 @@ the root's `CLAUDE.md` apply.
     `accent-color` and `danger-color` before, 2026-10-01): `--board-manager-accent-color` and
     `--board-manager-danger-color` (any CSS color), the `accent` and `danger` of `createLook()`. Without them, or with
     an invalid color, Mantine's indigo and red. Read once, on connect (`getComputedStyle`; there is no event for a
-    changed custom property). The accent also live, for the demo element too: see below. A `var()` in them is resolved by the browser (custom properties are computed with it).
+    changed custom property). The accent also live, for the demo element too: see below.
+  - The theme is `modernTheme` of `packages/mantine-themes` merged with the app's own (2026-10-04): smaller corners
+    (`1 2 3 4px`, the default radius 1px) and a bit more contrast (the borders, the dimmed text and the placeholders one
+    step stronger, which this look had partly itself before); the toasts and the dialogs take the radii too. The app's
+    own settings win (the Board Manager: the colors, the font and the size by custom properties, the button weight 400). A `var()` in them is resolved by the browser (custom properties are computed with it).
     `colors.ts` (no dependency; `chroma-js` was rejected after its supply chain attack): the browser parses the color
     (a canvas pixel), the ten shades are made in OKLCH, the color itself is shade 6.
     - The accent, live in CSS (2026-10-03): the theme's `cssVariablesResolver` sets Mantine's ten accent shades

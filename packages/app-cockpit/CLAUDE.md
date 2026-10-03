@@ -98,7 +98,8 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
   on top): the avatar (an image URL, else the initials on the accent color), the name and a second line (e.g. the
   email). With `userMenu` (sections of menu items, like the footer's menu), the row is a button with a chevron that
   opens it to the right of the sidebar (touching it, its bottom at the row's; also in the rail, where only the avatar
-  shows, the name as the tooltip). The demos: "Jane Doe" (2026-10-03; "Anna Schröder" before), with Profile, Settings, Sign out (moved
+  shows, the name as the tooltip). The demos: "Jane Doe" (2026-10-03; "Anna Schröder" before), with Profile, Settings, Sign out (`userMenu(signOut)` in `demo/footer.ts`; on the root page "Sign out" shows the
+  login screen of `packages/app-login`, 2026-10-03; else it logs) (moved
   from the kebab menu, which keeps Keyboard shortcuts, What's new, About).
 - Footer (2026-10-03): a dark gray bar at the bottom of the sidebar (a bit lighter than the dark sidebar), flush with its edges, in
   segments (`role="toolbar"`): on the left the sidebar's toggle, in the middle the host's actions (`footer.actions`:
@@ -162,10 +163,13 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
   - No `sidebar-end` slot (like the rail). Below 768px of the cockpit's width: the sidebar's rail, as before.
   - The demos (the package's and the root page): a "Navigation" button in the footer (`navigationSetting()` in
     `demo/footer.ts`, 2026-10-03; a "Layout" choice before) with two sections: "Position" (Sidebar, Topbar) and
-    "Colors" (Dark, Like the page; see `nav-scheme`), remembered per browser.
+    "Colors" (Dark, Like the page; see `nav-scheme`; the demos start with "Like the page", 2026-10-03), remembered per
+    browser.
 - `nav-scheme` (2026-10-03): an attribute (and property `navScheme`, reflected; `AppCockpit.NavScheme`), `dark` (the
   default) or `page`. Not "light": a light navigation on a dark page makes no sense. `page` follows the page (light on a
-  light page, dark on a dark one); it sets `--app-cockpit-sidebar-scheme: normal` (a host's own value still wins).
+  light page, dark on a dark one); it sets `--app-cockpit-sidebar-scheme: initial` (a host's own value still wins): the sidebar's `color-scheme` is
+  `var(--app-cockpit-sidebar-scheme, inherit)`, so "not set" inherits the page's scheme (fixed 2026-10-04: with `normal`,
+  which means light, the navigation stayed light on a dark page).
   With a light navigation: the footer a light gray bar (its light side; dark in the dark navigation as before), the
   avatar's initials in the accent, and in the topbar a line between the top line and the second one. The demos: the
   section "Colors" of the footer's "Navigation" button (Dark, Like the page).
@@ -182,7 +186,7 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
   next to the rail (while it is open, the sidebar collapses to the rail, and expands again afterwards; the user's saved
   choice is not touched; 2026-10-03: the sidebar collapses while the search slides in from behind it, left to right, both at once and equally long (320 ms; also the sidebar's toggle); the search's layer and the backdrop start at the sidebar's edge and move along with it, so the search never covers the sidebar; collapsing first and then opening was tried before). The slide in is a keyframe animation (`palette-in`), not a transition from `@starting-style`: after a slide out, that one did not run again (seen from the rail, 2026-10-03). Closing (2026-10-03): the search slides back out to the left (240 ms, a CSS animation) and the backdrop fades, while the sidebar expands again (also 240 ms), the layer and the backdrop moving back with its edge; Zag hides a closed dialog at once, so the cockpit keeps the parts shown (`hidden` of its own) until the animation ends (a fallback after 600 ms). Not in the topbar layout (touching it, a line between them, square corners, the sidebar's colors), 26rem wide, over the
   open app, which is only darkened (no blur; the sidebar stays as it is). A host can let the
-  sidebar follow the page: `--app-cockpit-sidebar-scheme: normal`.
+  sidebar follow the page: `nav-scheme="page"` (or `--app-cockpit-sidebar-scheme: initial`).
 - The sidebar's text is a bit smaller than the page's small text (2026-10-03, `--sidebar-font-size` 13px; labels and
   counts `--sidebar-font-size-tiny` 10px); the popups (menus, group select, search) keep their size.
 - The app icons have no background (transparent). In the sidebar and its popups, all icons (apps, groups,

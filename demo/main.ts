@@ -7,10 +7,12 @@ import {
   navigationSetting,
   pageSettings,
   USER,
-  USER_MENU,
+  userMenu,
 } from '../packages/app-cockpit/demo/footer';
 import { createAppCockpitClass } from '../packages/app-cockpit/src';
 import type { AppCockpit } from '../packages/app-cockpit/src';
+import { mountLoginScreen } from '../packages/app-login/src';
+import type { AppLogin } from '../packages/app-login/src';
 
 // The page: an app cockpit, with every demo as one of its mini-apps. The page's settings (in the cockpit's footer) set
 // `<html lang>` and the color scheme for every demo. Each demo is a light DOM custom element of its project, loaded
@@ -164,7 +166,7 @@ customElements.define(
     },
     // A made-up signed-in user, with their menu (from the cockpit's own demo).
     user: USER,
-    userMenu: USER_MENU,
+    userMenu: userMenu(() => signOut()),
     apps: [
       {
         id: 'data-navigator',
@@ -281,3 +283,101 @@ customElements.define(
     ],
   }),
 );
+
+// Signing out (the user menu's "Sign out") shows the login screen in place of the cockpit; any username and password
+// sign in again (a demo: it is about the look). Signed out is remembered per browser, so a reload stays there.
+const cockpit = document.querySelector<HTMLElement>('app-cockpit')!;
+const loginHost = document.createElement('div');
+let login: AppLogin.Mounted | undefined;
+
+const LOGO =
+  '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2" opacity="0.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2" opacity="0.6"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></svg>';
+
+function remember(signedIn: boolean): void {
+  try {
+    localStorage.setItem('demo-page:signed-in', String(signedIn));
+  } catch {
+    // Not remembered.
+  }
+}
+
+// Signing out: the cockpit fades out (its CSS transition, `data-fading`), then the login screen is shown, which fades
+// in by itself (the animation of `.login-host`, when it is added).
+let signingOut = false;
+
+async function signOut(): Promise<void> {
+  if (signingOut) {
+    return;
+  }
+
+  signingOut = true;
+  remember(false);
+  cockpit.dataset['fading'] = '';
+  await new Promise((resolve) =>
+    setTimeout(resolve, parseFloat(getComputedStyle(cockpit).transitionDuration) * 1000 || 0)
+  );
+  delete cockpit.dataset['fading'];
+  showLogin();
+  signingOut = false;
+}
+
+function showLogin(): void {
+  cockpit.hidden = true;
+  loginHost.className = 'login-host';
+  document.body.append(loginHost);
+  login ??= mountLoginScreen(loginHost, {
+    title: 'Back Office',
+    subtitle: 'Acme Corporate',
+    logo: LOGO,
+    hint: 'A demo: any username and password sign in.',
+    // Made-up identity providers (OIDC or SSO): the host would redirect to them. Here they sign in after a moment.
+    providers: [
+      {
+        id: 'microsoft',
+        label: 'Microsoft',
+        icon:
+          '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="8.5" height="8.5" fill="#f25022"/><rect x="12.5" y="3" width="8.5" height="8.5" fill="#7fba00"/><rect x="3" y="12.5" width="8.5" height="8.5" fill="#00a4ef"/><rect x="12.5" y="12.5" width="8.5" height="8.5" fill="#ffb900"/></svg>',
+      },
+      { id: 'google', label: 'Google' },
+      {
+        id: 'sso',
+        label: 'Company SSO',
+        icon:
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M10.85 12.15 19 4M18 5l3 3M15 8l2 2"/></svg>',
+      },
+    ],
+    onProvider: async () => {
+      await new Promise((resolve) => setTimeout(resolve, 700));
+      signIn();
+    },
+    // The made-up server: both answer after a moment (the account "taken" exists already).
+    onForgotPassword: () => new Promise((resolve) => setTimeout(resolve, 600)),
+    onRegister: async ({ username }) => {
+      await new Promise((resolve) => setTimeout(resolve, 600));
+
+      if (username.toLowerCase() === 'taken') {
+        throw new Error('This username is already taken.');
+      }
+    },
+    onLogin: async () => {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      signIn();
+    },
+  });
+}
+
+function signIn(): void {
+  remember(true);
+  login?.unmount();
+  login = undefined;
+  loginHost.remove();
+  cockpit.hidden = false;
+}
+
+try {
+  if (localStorage.getItem('demo-page:signed-in') === 'false') {
+    showLogin();
+  }
+} catch {
+  // Signed in.
+}

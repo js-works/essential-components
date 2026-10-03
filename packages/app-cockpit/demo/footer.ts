@@ -1,6 +1,6 @@
 import type { AppCockpit } from '../src';
 
-export { accentSetting, MENU, navigationSetting, pageSettings, USER, USER_MENU };
+export { accentSetting, MENU, navigationSetting, pageSettings, USER, userMenu };
 
 // The footer of the demo pages: the page's settings (the color scheme; the language in the kebab menu) as actions with choices, and a made-up
 // menu (its items only log). Icons after Tabler icons, MIT.
@@ -138,7 +138,8 @@ function navigationSetting(selector = 'app-cockpit'): AppCockpit.Action {
     }
   };
   const layout: AppCockpit.Layout = stored('layout') === 'topbar' ? 'topbar' : 'sidebar';
-  const scheme: AppCockpit.NavScheme = stored('nav-scheme') === 'page' ? 'page' : 'dark';
+  // Like the page by default (2026-10-03).
+  const scheme: AppCockpit.NavScheme = stored('nav-scheme') === 'dark' ? 'dark' : 'page';
 
   cockpit()?.setAttribute('layout', layout);
   cockpit()?.setAttribute('nav-scheme', scheme);
@@ -225,7 +226,8 @@ const MENU: AppCockpit.Footer['menu'] = [
 // The signed-in user of the demo pages (made up), and their menu (its items only log).
 const USER: AppCockpit.User = { name: 'Jane Doe', detail: 'jane.doe@acme.example' };
 
-const USER_MENU: AppCockpit.Config['userMenu'] = [
+// `signOut`: what "Sign out" does (the root page shows its login screen; else it only logs).
+const userMenu = (signOut: () => void = log('Sign out')): AppCockpit.Config['userMenu'] => [
   [{
     id: 'profile',
     label: 'Profile',
@@ -245,6 +247,6 @@ const USER_MENU: AppCockpit.Config['userMenu'] = [
     icon: svg(
       '<path d="M14 8V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-2M9 12h12l-3-3M18 15l3-3"/>',
     ),
-    onSelect: log('Sign out'),
+    onSelect: signOut,
   }],
 ];

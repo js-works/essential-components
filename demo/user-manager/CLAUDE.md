@@ -43,6 +43,8 @@ Started 2026-10-03.
   the refusal), `useQuerySource`.
 - `app/`: `UserManagerDemo.tsx` (the element `user-manager-demo`; the wiring), `App.tsx` (routes, top bar, breadcrumb,
   history, the hash), `look.tsx` (taken from the Media Manager, i.e. the Board Manager's look), `user-manager.css`.
+  - The theme (2026-10-04): `modernTheme` of `packages/mantine-themes` merged with the app's own, like the Board Manager's:
+    smaller corners and a bit more contrast (see its `CLAUDE.md`).
   - The accent (2026-10-03): `--user-manager-accent-color` (any CSS color, set by the host page's CSS; the root page
     maps its `--app-accent-color` to it), live in CSS like the Board Manager's (`accentVariables()` in `look.tsx`);
     without it, Mantine's indigo.
