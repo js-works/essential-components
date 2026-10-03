@@ -117,8 +117,16 @@ function accentSetting(): AppCockpit.Action {
   };
 }
 
-// The cockpit's navigation (2026-10-03, one button for two settings): its position (the attribute `layout`: sidebar or
-// topbar) and its colors (`nav-scheme`: always dark, or like the page). Switched live, remembered per browser.
+// The cockpit's navigation (2026-10-03, one button for two settings): which navigation (the attribute `nav`: sidebar,
+// topbar of two lines, topbar of one line, app switcher; three attributes before, 2026-10-04) and its colors
+// (`nav-scheme`: always dark, or like the page). Switched live, remembered per browser.
+const NAVS: { value: AppCockpit.Nav; label: string }[] = [
+  { value: 'sidebar', label: 'Sidebar' },
+  { value: 'topbar', label: 'Topbar' },
+  { value: 'topbar-compact', label: 'Topbar compact' },
+  { value: 'switcher', label: 'App switcher' },
+];
+
 function navigationSetting(selector = 'app-cockpit'): AppCockpit.Action {
   const cockpit = () => document.querySelector<AppCockpit.Element>(selector);
   const stored = (key: string) => {
@@ -137,20 +145,14 @@ function navigationSetting(selector = 'app-cockpit'): AppCockpit.Action {
       // Not remembered.
     }
   };
-  const layout: AppCockpit.Layout = stored('layout') === 'topbar' ? 'topbar' : 'sidebar';
+  const nav = NAVS.find(({ value }) => value === stored('nav'))?.value ?? 'sidebar';
   // Like the page by default (2026-10-03).
   const scheme: AppCockpit.NavScheme = stored('nav-scheme') === 'dark' ? 'dark' : 'page';
 
-  cockpit()?.setAttribute('layout', layout);
+  cockpit()?.setAttribute('nav', nav);
   cockpit()?.setAttribute('nav-scheme', scheme);
 
-  const item = (key: string, attribute: string, value: string, label: string, current: () => string) => ({
-    id: `${key}:${value}`,
-    label,
-    checked: () => current() === value,
-    onSelect: () => set(key, attribute, value),
-  });
-  const currentLayout = () => cockpit()?.layout ?? layout;
+  const currentNav = () => cockpit()?.nav ?? nav;
   const currentScheme = () => cockpit()?.navScheme ?? scheme;
 
   return {
@@ -159,18 +161,24 @@ function navigationSetting(selector = 'app-cockpit'): AppCockpit.Action {
     icon: svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/>'),
     menu: [
       {
-        label: 'Position',
-        items: [
-          item('layout', 'layout', 'sidebar', 'Sidebar', currentLayout),
-          item('layout', 'layout', 'topbar', 'Topbar', currentLayout),
-        ],
+        label: 'Navigation',
+        items: NAVS.map(({ value, label }) => ({
+          id: `nav:${value}`,
+          label,
+          checked: () => currentNav() === value,
+          onSelect: () => set('nav', 'nav', value),
+        })),
       },
       {
         label: 'Colors',
-        items: [
-          item('nav-scheme', 'nav-scheme', 'dark', 'Dark', currentScheme),
-          item('nav-scheme', 'nav-scheme', 'page', 'Like the page', currentScheme),
-        ],
+        items: [{ value: 'dark', label: 'Dark' }, { value: 'page', label: 'Like the page' }].map(
+          ({ value, label }) => ({
+            id: `nav-scheme:${value}`,
+            label,
+            checked: () => currentScheme() === value,
+            onSelect: () => set('nav-scheme', 'nav-scheme', value),
+          }),
+        ),
       },
     ],
   };

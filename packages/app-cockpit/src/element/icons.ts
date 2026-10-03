@@ -18,9 +18,10 @@ export {
 
 // Line icons, 24 × 24, drawn in `currentColor`.
 const line = (className: string, paths: TemplateResult<2>) =>
-  html`<svg class="icon ${className}" viewBox="0 0 24 24" aria-hidden="true">${paths}</svg>`;
+  html`<svg class="icon ${className}" viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true">${paths}</svg>`;
 
-const searchIcon = () => line('', svg`<circle cx="11" cy="11" r="6.5" /><path d="m16 16 4.5 4.5" />`);
+// The search (and app switcher) button: a bolt, "go to an app, fast" (Tabler's `bolt`, MIT; a magnifier before, 2026-10-04).
+const searchIcon = () => line('icon--bolt', svg`<path d="M13 3l0 7l6 0l-8 11l0 -7l-6 0l8 -11" />`);
 const chevronIcon = () => line('icon--chevron', svg`<path d="m9 6 6 6-6 6" />`);
 const panelIcon = () =>
   line(
@@ -37,7 +38,7 @@ const kebabIcon = () =>
 
 // The default logo: four filled squares, two of them lighter.
 const gridIcon = () =>
-  html`<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true">
+  html`<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true">
     <rect x="3" y="3" width="7.5" height="7.5" rx="2" />
     <rect x="13.5" y="3" width="7.5" height="7.5" rx="2" opacity="0.6" />
     <rect x="3" y="13.5" width="7.5" height="7.5" rx="2" opacity="0.6" />

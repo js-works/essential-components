@@ -6,6 +6,7 @@ type Texts = {
   navigation: string;
   group: string;
   search: string;
+  switchApp: string;
   searchPlaceholder: string;
   noResults: string;
   recent: string;
@@ -29,6 +30,7 @@ const EN: Texts = {
   navigation: 'Apps',
   group: 'Group',
   search: 'Search apps',
+  switchApp: 'Switch app',
   searchPlaceholder: 'Search apps by name, description or group…',
   noResults: 'No app matches your search.',
   recent: 'Recent',
@@ -52,6 +54,7 @@ const DE: Texts = {
   navigation: 'Apps',
   group: 'Gruppe',
   search: 'Apps suchen',
+  switchApp: 'App wechseln',
   searchPlaceholder: 'Apps nach Name, Beschreibung oder Gruppe suchen…',
   noResults: 'Keine App passt zur Suche.',
   recent: 'Zuletzt verwendet',

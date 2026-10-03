@@ -80,10 +80,14 @@ let instances = 0;
 //   Its element gets `data-hash-segment` (its id), so tabs inside it know their level.
 class AppCockpitElement extends LitElement implements Spec.Element {
   static override styles = unsafeCSS(STYLES);
-  static override properties = { layout: { reflect: true }, navScheme: { attribute: 'nav-scheme', reflect: true } };
+  static override properties = {
+    nav: { reflect: true },
+    navScheme: { attribute: 'nav-scheme', reflect: true },
+  };
 
-  // The attribute `layout`: the navigation in a sidebar (the default) or in a topbar of two lines.
-  declare layout: Spec.Layout;
+  // The attribute `nav`: `sidebar` (the default), `topbar` (two lines), `topbar-compact` (one line) or `switcher` (one
+  // line, one dropdown with the open app). An unknown value is the sidebar.
+  declare nav: Spec.Nav;
   // The attribute `nav-scheme`: the navigation always dark (the default), or like the page (only CSS: `:host([nav-scheme])`).
   declare navScheme: Spec.NavScheme;
 
@@ -104,6 +108,8 @@ class AppCockpitElement extends LitElement implements Spec.Element {
   #paletteOpen = false;
   // The search was opened with the sidebar expanded: its layer moves along while the sidebar collapses.
   #paletteFromExpanded = false;
+  // The left edge of the switcher's button, where its panel opens (px from the frame's left).
+  #switcherLeft: number | undefined;
   // The search slides out (sidebar layout): it stays shown until its animation ends (Zag would hide it at once).
   #paletteClosing: ReturnType<typeof setTimeout> | undefined;
   #query = '';
@@ -120,7 +126,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
 
   constructor(config: Spec.Config) {
     super();
-    this.layout = 'sidebar';
+    this.nav = 'sidebar';
     this.navScheme = 'dark';
     this.#config = config;
     this.#key = config.storageKey ?? 'app-cockpit';
@@ -299,13 +305,20 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     return this.#config.apps.length > FEW;
   }
 
+  // The search panel: by the config, else with more than `FEW` apps; always with the app switcher (it is its list).
   get #searchable(): boolean {
-    return this.#config.search ?? this.#many;
+    return this.#switcher || (this.#config.search ?? this.#many);
+  }
+
+  // The app switcher (`nav="switcher"`, in the topbar): one dropdown with the open app in the top line; it opens
+  // the search panel, which lists all apps, at the button.
+  get #switcher(): boolean {
+    return this.#topbar && this.nav === 'switcher';
   }
 
   // The topbar: by the attribute, unless too narrow (then the sidebar's rail).
   get #topbar(): boolean {
-    return this.layout === 'topbar' && !this.#narrow;
+    return (this.nav === 'topbar' || this.nav === 'topbar-compact' || this.nav === 'switcher') && !this.#narrow;
   }
 
   // The rail: collapsed by the user, too narrow, or while the search is open (it takes the sidebar's place).
@@ -348,6 +361,15 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     if (this.#paletteOpen) {
       return;
     }
+
+    // The switcher's panel opens at its button (its left edge, from the frame's).
+    this.#switcherLeft = this.#switcher
+      ? Math.max(
+        0,
+        (this.#el('.switcher')?.getBoundingClientRect().left ?? 0)
+          - (this.#el('.frame')?.getBoundingClientRect().left ?? 0),
+      )
+      : undefined;
 
     this.#paletteFromExpanded = !this.#rail && !this.#topbar;
     this.#closed();
@@ -514,12 +536,16 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     const rail = this.#rail;
     const active = this.#app(this.#active);
     const status = active === undefined ? 'ready' : this.#status.get(active.id) ?? 'loading';
-    const style = this.#width === undefined ? {} : { '--app-cockpit-sidebar-width': `${this.#width}px` };
+    const style = {
+      ...(this.#width === undefined ? {} : { '--app-cockpit-sidebar-width': `${this.#width}px` }),
+      ...(this.#switcherLeft === undefined ? {} : { '--switcher-left': `${this.#switcherLeft}px` }),
+    };
 
     return html`
       <div
         class="mount"
         data-layout=${topbar ? 'topbar' : 'sidebar'}
+        data-nav-style=${this.#switcher ? 'switcher' : 'tabs'}
         ?data-palette-from-expanded=${this.#paletteFromExpanded}
         ?data-palette-closing=${this.#paletteClosing !== undefined}
         style=${styleMap(style)}
@@ -866,7 +892,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
 
   // --- Topbar --------------------------------------------------------------------------------------------------------
 
-  // The topbar (`layout="topbar"`): a dark top line with the logo and the title, the groups (more than one), and on
+  // The topbar (`nav="topbar"`): a dark top line with the logo and the title, the groups (more than one), and on
   // the right the search, the footer's actions and menu, and the user; below it a light line with the apps of the
   // chosen group (its subgroups as dropdowns). With one group (or none), its apps are in the top line, and there is no
   // second line. Entries that do not fit go into a "More" menu at the end of their line.
@@ -874,7 +900,10 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     const groups = groupsOf(this.#config.apps);
     const many = groups.length > 1;
     const group = groups.find((candidate) => candidate.name === this.#selectedGroup) ?? groups[0];
-    const top: Entry[] = many
+    // One line (`nav="topbar-compact"`, with several groups): a select for the group in the top line, then its apps as tabs.
+    const switcher = this.#switcher;
+    const oneLine = many && this.nav === 'topbar-compact' && group !== undefined && !switcher;
+    const top: Entry[] = many && !oneLine
       ? groups.map((candidate) => ({ kind: 'group', group: candidate }))
       : group === undefined
       ? []
@@ -884,20 +913,50 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     return html`<header class="topbar">
       <div class="top-line">
         <div class="brand">${this.#brand(texts)}</div>
-        <nav class="line" aria-label=${texts.navigation} @keydown=${this.#onLineKeyDown}>${
-      this.#line('top', top, texts)
-    }</nav>
-        ${this.#searchable ? this.#searchButton(texts, false) : nothing} ${this.#footer(texts, false, true)}
+        ${
+      switcher ? this.#switcherButton(texts) : oneLine ? this.#groupSelect(texts, groups, group.name, true) : nothing
+    }
+        ${
+      switcher
+        ? html`<div class="line"></div>`
+        : html`<nav class="line" aria-label=${texts.navigation} @keydown=${this.#onLineKeyDown}>${
+          this.#line(oneLine ? `top:${group.name}` : 'top', top, texts, !oneLine)
+        }</nav>`
+    }
+        ${this.#searchable && !switcher ? this.#searchButton(texts, false) : nothing} ${
+      this.#footer(texts, false, true)
+    }
         ${user === undefined ? nothing : this.#topUser(texts, user)}
       </div>
       ${
-      many && group !== undefined
+      many && !oneLine && !switcher && group !== undefined
         ? html`<nav class="sub-line line" aria-label=${this.#labelOf(group)} @keydown=${this.#onLineKeyDown}>${
           this.#line(`sub:${group.name}`, this.#entries(group), texts)
         }</nav>`
         : nothing
     }
     </header>`;
+  }
+
+  // The app switcher: the open app (its icon and title) as a dropdown button; it opens the search panel at it.
+  #switcherButton(texts: Texts): TemplateResult {
+    const active = this.#app(this.#active);
+    const label = `${texts.switchApp} (${isMac() ? '⌘K' : 'Ctrl K'})`;
+
+    return html`<button
+      type="button"
+      class="switcher"
+      aria-haspopup="dialog"
+      aria-expanded=${this.#paletteOpen}
+      aria-label=${active === undefined ? label : `${active.title}: ${label}`}
+      data-tip=${label}
+      data-tip-side="bottom"
+      @click=${this.#openPalette}
+    >
+      ${active === undefined ? nothing : appIcon(active)}
+      <span class="switcher-title">${active?.title ?? texts.switchApp}</span>
+      ${selectorIcon()}
+    </button>`;
   }
 
   // The entries of a group: its apps without a subgroup, then its subgroups.
@@ -912,11 +971,12 @@ class AppCockpitElement extends LitElement implements Spec.Element {
 
   // A line of entries; Left and Right (Home, End) move between them. Those that wrap are hidden (the line is one row
   // high) and listed in the "More" menu.
-  #line(key: string, entries: Entry[], texts: Texts): TemplateResult {
+  // `icons`: the tabs with their icons (none in the one line of `nav="topbar-compact"`, 2026-10-04).
+  #line(key: string, entries: Entry[], texts: Texts, icons = true): TemplateResult {
     const hidden = Math.min(this.#overflow.get(key) ?? 0, entries.length);
 
     return html`<ul class="line-list" data-overflow=${key}>${
-      repeat(entries, (entry) => this.#entryKey(entry), (entry) => html`<li>${this.#entry(entry)}</li>`)
+      repeat(entries, (entry) => this.#entryKey(entry), (entry) => html`<li>${this.#entry(entry, icons)}</li>`)
     }</ul>
       ${hidden > 0 ? this.#lineMore(key, entries.slice(entries.length - hidden), texts) : nothing}`;
   }
@@ -958,7 +1018,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     }
   };
 
-  #entry(entry: Entry): TemplateResult {
+  #entry(entry: Entry, icons = true): TemplateResult {
     if (entry.kind === 'app') {
       const { app } = entry;
 
@@ -968,7 +1028,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
         aria-current=${ifDefined(app.id === this.#active ? 'page' : undefined)}
         title=${ifDefined(app.description)}
         @click=${() => this.open(app.id)}
-      >${appIcon(app)}<span class="tab-title">${app.title}</span></button>`;
+      >${icons ? appIcon(app) : nothing}<span class="tab-title">${app.title}</span></button>`;
     }
 
     if (entry.kind === 'group') {
@@ -986,7 +1046,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
         this.#selectedGroup = group.name;
         this.requestUpdate();
       }}
-      >${icon === undefined ? nothing : groupIcon(icon)}<span class="tab-title">${
+      >${icon === undefined || !icons ? nothing : groupIcon(icon)}<span class="tab-title">${
         this.#labelOf(group)
       }</span></button>`;
     }
@@ -1008,7 +1068,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
         aria-current=${ifDefined(current ? 'true' : undefined)}
         ${spread(api.getTriggerProps())}
       >${
-      icon === undefined ? nothing : groupIcon(icon)
+      icon === undefined || !icons ? nothing : groupIcon(icon)
     }<span class="tab-title">${group.name}</span>${chevronIcon()}</button>
       <div class="menu-positioner" ${spread(api.getPositionerProps())}>
         <div class="menu-popup" data-drop ${spread(api.getContentProps())}>
@@ -1218,7 +1278,8 @@ class AppCockpitElement extends LitElement implements Spec.Element {
 
   // --- Group select --------------------------------------------------------------------------------------------------
 
-  #groupSelect(texts: Texts, groups: Group[], value: string): TemplateResult {
+  // `top`: in the top line of the topbar (`nav="topbar-compact"`): a compact button, its popup a plain panel below the line.
+  #groupSelect(texts: Texts, groups: Group[], value: string, top = false): TemplateResult {
     const collection = select.collection({
       items: groups,
       itemToValue: (group: Group) => group.name,
@@ -1229,7 +1290,19 @@ class AppCockpitElement extends LitElement implements Spec.Element {
       getRootNode: () => this.renderRoot as ShadowRoot,
       collection,
       value: [value],
-      positioning: { placement: 'bottom-start', strategy: 'fixed', gutter: 4, sameWidth: true },
+      positioning: top
+        ? {
+          placement: 'bottom-start',
+          strategy: 'fixed',
+          gutter: 0,
+          sameWidth: false,
+          getAnchorElement: (() => {
+            const anchor = this.#anchor('group-select', this.#belowLine(() => this.#el('.group-select--top')));
+
+            return () => anchor;
+          })(),
+        }
+        : { placement: 'bottom-start', strategy: 'fixed', gutter: 4, sameWidth: true },
       onValueChange: ({ value: next }: { value: string[] }) => {
         this.#selectedGroup = next[0] ?? '';
         this.requestUpdate();
@@ -1239,14 +1312,16 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     const icons = groups.some((group) => this.#groupIcon(group.name) !== undefined);
 
     return html`
-      <button class="group-select" aria-label=${texts.group} ${spread(api.getTriggerProps())}>
-        ${icons && current !== undefined ? groupIcon(this.#groupIcon(current.name)) : nothing}
+      <button class=${top ? 'group-select group-select--top' : 'group-select'} aria-label=${texts.group} ${
+      spread(api.getTriggerProps())
+    }>
+        ${icons && current !== undefined && !top ? groupIcon(this.#groupIcon(current.name)) : nothing}
         <span class="group-select-value">${current === undefined ? '' : this.#labelOf(current)}</span>
         ${current === undefined ? nothing : html`<span class="group-count">${current.apps.length}</span>`}
         <span class="group-select-icon">${selectorIcon()}</span>
       </button>
       <div class="select-positioner" ${spread(api.getPositionerProps())}>
-        <div class="select-popup" ${spread(api.getContentProps())}>
+        <div class="select-popup" ?data-drop=${top} ${spread(api.getContentProps())}>
           <div class="select-list">
             ${
       groups.map((group) =>
@@ -1492,10 +1567,24 @@ class AppCockpitElement extends LitElement implements Spec.Element {
       ? [{ label: '', matches: search(apps, this.#query) }]
       : [
         ...(recent.length > 0 ? [{ label: texts.recent, matches: recent.map((app) => ({ app })) }] : []),
-        ...groupsOf(apps).map((group) => ({
-          label: group.name === '' ? texts.other : group.name,
-          matches: group.apps.map((app) => ({ app })),
-        })),
+        ...groupsOf(apps).flatMap((group) => {
+          const label = group.name === '' ? texts.other : group.name;
+
+          if (!this.#switcher) {
+            return [{ label, matches: group.apps.map((app) => ({ app })) }];
+          }
+
+          // The switcher's list: also by subgroup ("Group › Subgroup").
+          const { loose, subgroups } = subgroupsOf(group.apps);
+
+          return [
+            ...(loose.length > 0 ? [{ label, matches: loose.map((app) => ({ app })) }] : []),
+            ...subgroups.map((subgroup) => ({
+              label: `${label} › ${subgroup.name}`,
+              matches: subgroup.apps.map((app) => ({ app })),
+            })),
+          ];
+        }),
       ];
     const flat = sections.flatMap((section) => section.matches);
     const current = flat[Math.min(this.#index, flat.length - 1)];

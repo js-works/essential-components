@@ -81,14 +81,18 @@ export type Config = {
   storageKey?: string;
 };
 
-// Where the navigation is: a sidebar on the left (the default), or a topbar of two lines.
-export type Layout = 'sidebar' | 'topbar';
+// The navigation, in one value (2026-10-04; `layout`, `nav-lines` and `nav-style` before):
+// - `sidebar` (the default): a sidebar on the left;
+// - `topbar`: a topbar of two lines (the groups, and below them the apps of the chosen group);
+// - `topbar-compact`: a topbar of one line (a select for the group, then its apps);
+// - `switcher`: a topbar of one line with one dropdown, the open app: a search panel with all apps.
+export type Nav = 'sidebar' | 'topbar' | 'topbar-compact' | 'switcher';
 
 // The navigation's colors: always dark (the default), or like the page (light on a light page, dark on a dark one).
 export type NavScheme = 'dark' | 'page';
 
 export type Element = HTMLElement & {
-  layout: Layout;
+  nav: Nav;
   navScheme: NavScheme;
   readonly activeApp: MiniApp | undefined;
   open(id: string): void;

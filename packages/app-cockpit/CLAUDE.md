@@ -137,13 +137,21 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
   With few apps (2026-10-03), the rail shows the apps, but each subgroup as one button (its icon, else its initials)
   with the same flyout of its apps (e.g. "Planned" on the root page).
 - Up and Down (Home, End) move between the buttons of the sidebar.
-- With `layout="sidebar"`, the cockpit uses only the left column (2026-10-03): no top bar; the right side is the open app alone. The host's
+- With `nav="sidebar"`, the cockpit uses only the left column (2026-10-03): no top bar; the right side is the open app alone. The host's
   parts: the `logo` slot (replaces the default logo: four filled squares, two of them lighter, in the accent color on no background) and the `sidebar-end` slot (at the bottom of the sidebar, above
   the footer, e.g. global switches; hidden in the rail).
-- `layout` (2026-10-03): an attribute (and property, reflected; `AppCockpit.Layout`), `sidebar` (the default) or
-  `topbar`, switchable live. The topbar: two lines over the open app, with the same data (not a config option, so a
-  host can switch it):
-  - The top line, dark like the sidebar (`--app-cockpit-topbar-height`, 3rem): logo and title (and subtitle), the
+- `nav` (2026-10-04): the navigation, one attribute (and property, reflected; `AppCockpit.Nav`), switchable live (not a
+  config option, so a host can switch it). Four values; an unknown one is the sidebar:
+  - `sidebar` (the default): the sidebar on the left.
+  - `topbar`: two lines over the open app (below).
+  - `topbar-compact`: one line (below, "One line").
+  - `switcher`: one line, one dropdown with the open app (below, "App switcher").
+  - History (2026-10-04): three attributes before, `layout` (`sidebar`, `topbar`), `nav-lines` (`2`, `1`) and `nav-style`
+    (`tabs`, `switcher`): 8 combinations for 4 modes, and some without a meaning (`nav-lines` with the sidebar or the
+    switcher). Put into one, with only the valid modes; a menubar would be a fifth value. The colors stay apart
+    (`nav-scheme`).
+  - The topbar (`nav="topbar"`): two lines over the open app, with the same data:
+  - The top line, dark like the sidebar (`--app-cockpit-topbar-height`, 3.25rem; 3rem before, 2026-10-04: only the first line is higher, the second stays at 2.5rem; the search panel and the dropdowns follow the property): logo and title (and subtitle), the
     groups as entries (with their icons; the one shown below underlined in the accent color, the open app's bright and
     bold; a click shows its apps below, without opening one, like the group select), then on the right the search
     button, the footer's actions and kebab (icon buttons; their menus plain dropdowns below them; no sidebar toggle),
@@ -162,9 +170,40 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
     the top line.
   - No `sidebar-end` slot (like the rail). Below 768px of the cockpit's width: the sidebar's rail, as before.
   - The demos (the package's and the root page): a "Navigation" button in the footer (`navigationSetting()` in
-    `demo/footer.ts`, 2026-10-03; a "Layout" choice before) with two sections: "Position" (Sidebar, Topbar) and
-    "Colors" (Dark, Like the page; see `nav-scheme`; the demos start with "Like the page", 2026-10-03), remembered per
-    browser.
+    `demo/footer.ts`, 2026-10-03) with two sections: "Navigation" (the four values: Sidebar, Topbar, Topbar compact, App
+    switcher; the key `demo-page:nav`) and "Colors" (Dark, Like the page; see `nav-scheme`; the demos
+    start with "Like the page", 2026-10-03), remembered per browser.
+  - "One line" (`nav="topbar-compact"`, 2026-10-04): only with several groups (with one group or none the topbar is one
+    line anyway). The groups become a select (a compact button after the title, with the group's icon, name and count, like the
+    sidebar's group select; its popup a plain panel below the line, like the topbar's menus), then the apps of the
+    chosen group as tabs in the same line (the subgroups as dropdown tabs; what does not fit in "More"). No second line.
+    Choosing a group shows its apps without opening one, as with two lines. Keys in the select: Zag's.
+    No icons at the top level (2026-10-04): not on the select button, the app tabs or the subgroup tabs; the select's
+    popup keeps its group icons (only the top level of the line is without).
+  - The line of the apps is keyed by the group (`top:<group>`): its overflow count belongs to its entries.
+  - "App switcher" (`nav="switcher"`, 2026-10-04), in the topbar only. The top line: the logo and title, one dropdown button with the open app (its icon and title, a selector icon; the
+    tooltip "Switch app (Ctrl K)"), the host's actions and the user. No tabs, no second line, no separate search button
+    (the switcher is it); also with one group or none (it helps with many apps in one group too).
+  - Its panel is the search panel, opened at the button (its left edge, the top touching the line, 26rem, square
+    corners; `--switcher-left` is set when it opens): the search field, "Recent", then all apps by group and subgroup
+    (the sections "Group › Subgroup"; the plain palette has the groups only), up and down, Enter, Escape as there.
+    Ctrl+K opens the same panel. Escape gives the focus back to the button. It is always available with the switcher
+    (also with `search: false`: it is its list).
+  - Why not a menu with an input of its own: the search panel has the search, the ranking, the recent apps and the
+    keys already; one UI for finding and switching apps.
+  - Not built: a menubar (each group a dropdown of its apps, subgroups as labeled sections), proposed 2026-10-04.
+- All icons are 1em wide and high (2026-10-04; fixed rem sizes before): `width="1em" height="1em"` on the cockpit's own
+  SVGs (`icons.ts`), and the CSS gives the same to the SVG markup of the host (the icons of apps, groups, subgroups,
+  actions and menu items: they need no size of their own). The size is the `font-size` of the icon (the rules of
+  `styles.css`: 1.125rem by default, smaller or bigger where it is used, e.g. 0.875rem for the chevrons, 1.25rem in
+  the panel's field and the app tiles, 1.375rem for the default logo). The boxes around the icons (tiles, group icons)
+  keep their sizes. Measured: every icon has the size it had before.
+- The search button's icon (2026-10-04) is a bolt (Tabler's `bolt`, MIT; `TbBolt` in react-icons; copied as paths into
+  `icons.ts`, the cockpit has no React), a magnifier before: the button finds apps and switches to them, fast. The same icon
+  in the sidebar, the rail, the topbar and the panel's field; the tooltip stays "Search apps (Ctrl K)".
+- The search panel's footer (the keys, the count; the switcher's and the sidebar's panel) has no background of its own in a light
+  panel (2026-10-04; `nav-scheme="page"` on a light page: as light as the rest; white was tried) and a darker strip
+  (black at 14%) in a dark one.
 - `nav-scheme` (2026-10-03): an attribute (and property `navScheme`, reflected; `AppCockpit.NavScheme`), `dark` (the
   default) or `page`. Not "light": a light navigation on a dark page makes no sense. `page` follows the page (light on a
   light page, dark on a dark one); it sets `--app-cockpit-sidebar-scheme: initial` (a host's own value still wins): the sidebar's `color-scheme` is
@@ -178,7 +217,8 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
 - A subtle line (`--divider`) below the header (logo, title, search), from edge to edge of the sidebar, also in the
   rail (2026-10-03).
 - The title at the top of the sidebar, next to the logo; an optional `subtitle` (2026-10-03) under it, small and muted
-  (one line each, cut with an ellipsis). Both hidden in the rail. The demos have one (e.g. "Acme Corporation ·
+  (one line each, cut with an ellipsis). The two lines are close together (2026-10-04: line height 1.15, was 1.25 and 1.3; a bit of room for the descenders
+  below each, as the ellipsis needs `overflow: hidden`). Both hidden in the rail. The demos have one (e.g. "Acme Corporation ·
   Headquarters").
 - The sidebar is dark in both color schemes of the page (2026-10-03): it has `color-scheme: dark`, so every
   `light-dark()` color inside it (also the `ui-*` tokens and the slotted parts) takes its dark side; so do the popups

@@ -7,8 +7,8 @@ const STYLES = /* css */ `
 :host {
   --app-cockpit-sidebar-width: 16rem;
   --app-cockpit-rail-width: 4.25rem;
-  /* The topbar's top line (layout="topbar"). */
-  --app-cockpit-topbar-height: 3rem;
+  /* The topbar's top line (nav="topbar"). */
+  --app-cockpit-topbar-height: 3.25rem;
   --app-cockpit-content-padding: 1.25rem 1.5rem;
   /* The sidebar is dark in both color schemes of the page (nav-scheme="page": it follows the page). */
   --app-cockpit-sidebar-scheme: dark;
@@ -100,10 +100,20 @@ button {
   white-space: nowrap;
 }
 
+/* Every icon is 1em wide and high; its size is the font-size (here, or where it is used). */
+.icon,
+.tile svg,
+.group-icon svg,
+.menu-icon svg,
+.footer-icon svg,
+.brand-logo svg {
+  width: 1em;
+  height: 1em;
+}
+
 .icon {
   flex: none;
-  width: 1.125rem;
-  height: 1.125rem;
+  font-size: 1.125rem;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.75;
@@ -185,6 +195,11 @@ button {
   }
 }
 
+/* The default logo: 1.375rem (22px). */
+.brand-logo svg {
+  font-size: 1.375rem;
+}
+
 .brand-logo {
   display: grid;
   flex: none;
@@ -208,19 +223,24 @@ button {
   font-size: 0.75rem;
   font-weight: 500;
   letter-spacing: 0.01em;
-  line-height: 1.3;
+  line-height: 1.15;
   white-space: nowrap;
   text-overflow: ellipsis;
+  /* Room for the descenders (the line is tight; overflow is hidden for the ellipsis), without moving anything. */
+  padding-bottom: 0.15em;
+  margin-bottom: -0.15em;
 }
 
 .brand-title {
   overflow: hidden;
   font-size: 0.9375rem;
-  line-height: 1.25;
+  line-height: 1.15;
   font-weight: 650;
   letter-spacing: -0.01em;
   white-space: nowrap;
   text-overflow: ellipsis;
+  padding-bottom: 0.15em;
+  margin-bottom: -0.15em;
 }
 
 .search-button {
@@ -392,8 +412,7 @@ button {
   }
 
   .icon--chevron {
-    width: 0.875rem;
-    height: 0.875rem;
+    font-size: 0.875rem;
     stroke-width: 2.25;
     transition: rotate 150ms var(--ease);
   }
@@ -429,8 +448,7 @@ button {
   }
 
   .icon--chevron {
-    width: 0.875rem;
-    height: 0.875rem;
+    font-size: 0.875rem;
     color: var(--muted);
     stroke-width: 2.25;
     transition: rotate 150ms var(--ease);
@@ -531,8 +549,7 @@ button {
   color: var(--accent);
 
   svg {
-    width: 1.125rem;
-    height: 1.125rem;
+    font-size: 1.125rem;
   }
 
   .select-item & {
@@ -544,8 +561,7 @@ button {
     height: 1.125rem;
 
     svg {
-      width: 1rem;
-      height: 1rem;
+      font-size: 1rem;
     }
   }
 
@@ -554,8 +570,7 @@ button {
     height: 1rem;
 
     svg {
-      width: 0.9375rem;
-      height: 0.9375rem;
+      font-size: 0.9375rem;
     }
   }
 }
@@ -573,8 +588,7 @@ button {
   color: var(--muted);
 
   .icon {
-    width: 1rem;
-    height: 1rem;
+    font-size: 1rem;
   }
 }
 
@@ -637,8 +651,7 @@ button {
   display: flex;
 
   .icon {
-    width: 1rem;
-    height: 1rem;
+    font-size: 1rem;
     stroke-width: 2.25;
   }
 }
@@ -695,8 +708,7 @@ button {
   .icon--chevron-right {
     margin-left: auto;
     color: var(--muted);
-    width: 1rem;
-    height: 1rem;
+    font-size: 1rem;
   }
 }
 
@@ -795,8 +807,7 @@ button {
   }
 
   .icon {
-    width: 1.125rem;
-    height: 1.125rem;
+    font-size: 1.125rem;
   }
 }
 
@@ -821,8 +832,7 @@ button {
   place-items: center;
 
   svg {
-    width: 1.125rem;
-    height: 1.125rem;
+    font-size: 1.125rem;
   }
 }
 
@@ -903,8 +913,7 @@ button {
   color: var(--muted);
 
   svg {
-    width: 1rem;
-    height: 1rem;
+    font-size: 1rem;
   }
 }
 
@@ -963,6 +972,112 @@ button {
   /* The highlight (hover, arrow keys) from the text color: the hover token is about the panel's color in the light
      scheme (the second line's menus). */
   .menu-item[data-highlighted] {
+    background: color-mix(in srgb, var(--text) 9%, transparent);
+  }
+
+  @starting-style {
+    opacity: 0;
+    scale: 1;
+    translate: 0 -6px;
+  }
+}
+
+/* The group select in the top line (nav="topbar-compact"): a compact button, its popup like the other topbar menus: a plain panel,
+   its top touching the line. */
+.top-line .group-select {
+  flex: none;
+  width: auto;
+  max-width: 15rem;
+  height: 2rem;
+  margin: 0 0.5rem 0 0.25rem;
+  padding: 0 0.375rem 0 0.625rem;
+  border-color: var(--divider);
+  border-radius: 7px;
+  background: transparent;
+
+  &:hover,
+  &[data-state='open'] {
+    border-color: var(--border);
+    background: var(--hover);
+  }
+}
+
+/* The app switcher (nav="switcher"): the open app as a dropdown button in the top line; its panel is the search
+   panel, below the line at the button, a plain panel like the topbar's menus. */
+.top-line .switcher {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 20rem;
+  height: 2rem;
+  margin-left: 0.25rem;
+  padding: 0 0.375rem 0 0.5rem;
+  border: 1px solid var(--divider);
+  border-radius: 7px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: var(--sidebar-font-size);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 120ms, border-color 120ms;
+
+  &:hover,
+  &[aria-expanded='true'] {
+    border-color: var(--border);
+    background: var(--hover);
+  }
+
+  &:focus-visible {
+    outline-offset: -2px;
+  }
+
+  .tile {
+    width: 1.25rem;
+    height: 1.25rem;
+
+    svg {
+      font-size: 1.0625rem;
+    }
+  }
+
+  .icon--selector {
+    flex: none;
+    font-size: 1rem;
+    color: var(--muted);
+  }
+}
+
+.switcher-title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.mount[data-layout='topbar'][data-nav-style='switcher'] .palette {
+  right: auto;
+  left: var(--switcher-left, 0px);
+  width: min(26rem, 100% - var(--switcher-left, 0px));
+  margin-inline: 0;
+  border-radius: 0;
+}
+
+.select-popup[data-drop] {
+  min-width: max(var(--reference-width), 13rem);
+  border: 0;
+  border-top: 1px solid var(--divider);
+  border-radius: 0;
+  background: var(--sidebar);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
+  font-size: var(--sidebar-font-size);
+
+  .select-item {
+    font-size: var(--sidebar-font-size);
+  }
+
+  /* The highlight from the text color (the hover token is about the panel's color in the light scheme). */
+  .select-item[data-highlighted] {
     background: color-mix(in srgb, var(--text) 9%, transparent);
   }
 
@@ -1221,8 +1336,7 @@ button {
   line-height: 1;
 
   svg {
-    width: 1.25rem;
-    height: 1.25rem;
+    font-size: 1.25rem;
   }
 }
 
@@ -1460,8 +1574,7 @@ button {
   color: var(--muted);
 
   .icon {
-    width: 1.25rem;
-    height: 1.25rem;
+    font-size: 1.25rem;
   }
 }
 
@@ -1583,7 +1696,9 @@ button {
   gap: 0.5rem 1rem;
   padding: 0.5rem 1rem;
   border-top: 1px solid var(--divider);
-  background: rgb(0 0 0 / 14%);
+  /* As light as the panel in a light one (nav-scheme="page" on a light page; white was tried), a darker strip in a dark
+     one. */
+  background: light-dark(transparent, rgb(0 0 0 / 14%));
   color: var(--muted);
   font-size: 0.75rem;
 
@@ -1598,7 +1713,7 @@ button {
   margin-left: auto;
 }
 
-/* The topbar (layout="topbar"): a dark top line (logo, title, groups, search, actions, user), and a light line with
+/* The topbar (nav="topbar"): a dark top line (logo, title, groups, search, actions, user), and a light line with
    the apps of the chosen group. Entries that do not fit wrap into a hidden second row (counted, and shown in "More"). */
 
 .mount[data-layout='topbar'] {
@@ -1757,14 +1872,12 @@ button {
     height: 1.25rem;
 
     svg {
-      width: 1.0625rem;
-      height: 1.0625rem;
+      font-size: 1.0625rem;
     }
   }
 
   .icon--chevron {
-    width: 0.875rem;
-    height: 0.875rem;
+    font-size: 0.875rem;
     rotate: 90deg;
     stroke-width: 2.25;
   }
