@@ -53,6 +53,11 @@ const STYLES = /* css */ `
   box-sizing: border-box;
 }
 
+/* Zag hides closed popups with 'hidden'; their own 'display' must not show them. */
+[hidden] {
+  display: none !important;
+}
+
 .mount {
   position: relative;
   height: 100%;
@@ -290,7 +295,7 @@ button {
   }
 
   /* A group of the rail while its flyout is open. */
-  &[data-popup-open] {
+  &[data-state='open'] {
     background: var(--hover);
   }
 
@@ -441,17 +446,6 @@ button {
   text-align: center;
 }
 
-.group-panel {
-  height: var(--collapsible-panel-height);
-  overflow: hidden;
-  transition: height 180ms var(--ease);
-
-  &[data-starting-style],
-  &[data-ending-style] {
-    height: 0;
-  }
-}
-
 /* The host's part at the bottom of the sidebar (the slot 'sidebar-end'), e.g. global switches; hidden in the rail. */
 .sidebar-end ::slotted(*) {
   display: block;
@@ -478,7 +472,7 @@ button {
   transition: border-color 120ms;
 
   &:hover,
-  &[data-popup-open] {
+  &[data-state='open'] {
     border-color: var(--border);
   }
 
@@ -551,7 +545,7 @@ button {
 
 .select-popup {
   color-scheme: var(--app-cockpit-sidebar-scheme);
-  min-width: var(--anchor-width);
+  min-width: var(--reference-width);
   padding: 0.25rem;
   border: 1px solid var(--divider);
   border-radius: 8px;
@@ -562,8 +556,7 @@ button {
   transform-origin: var(--transform-origin);
   transition: opacity 120ms, scale 120ms var(--ease);
 
-  &[data-starting-style],
-  &[data-ending-style] {
+  @starting-style {
     opacity: 0;
     scale: 0.98;
   }
@@ -593,7 +586,7 @@ button {
     background: var(--hover);
   }
 
-  &[data-selected] {
+  &[data-state='checked'] {
     color: var(--accent);
     font-weight: 600;
   }
@@ -651,7 +644,7 @@ button {
   }
 
   &:is(button):hover,
-  &[data-popup-open] {
+  &[data-state='open'] {
     background: var(--hover);
   }
 
@@ -749,7 +742,7 @@ button {
   transition: background-color 120ms, color 120ms;
 
   &:hover,
-  &[data-popup-open] {
+  &[data-state='open'] {
     background: var(--footer-hover);
     color: #fff;
   }
@@ -810,6 +803,13 @@ button {
   outline: none;
 }
 
+/* Zag gives a positioner the z-index of its content. */
+.menu-popup,
+.select-popup,
+.flyout {
+  z-index: 1000;
+}
+
 .menu-popup {
   color-scheme: var(--app-cockpit-sidebar-scheme);
   min-width: 13rem;
@@ -824,8 +824,7 @@ button {
   transform-origin: var(--transform-origin);
   transition: opacity 120ms, scale 120ms var(--ease);
 
-  &[data-starting-style],
-  &[data-ending-style] {
+  @starting-style {
     opacity: 0;
     scale: 0.97;
   }
@@ -886,8 +885,7 @@ button {
     font-size: var(--sidebar-font-size);
   }
 
-  &[data-starting-style],
-  &[data-ending-style] {
+  @starting-style {
     opacity: 0;
     scale: 1;
     translate: -6px 0;
@@ -896,13 +894,12 @@ button {
 
 /* With the sidebar expanded: a sheet on top of the footer, as wide as the sidebar (the line on top, the shadow upwards). */
 .menu-popup[data-sheet] {
-  width: var(--anchor-width);
+  width: var(--reference-width);
   border-top: 1px solid var(--divider);
   border-left: 0;
   box-shadow: 0 -8px 24px rgb(0 0 0 / 18%);
 
-  &[data-starting-style],
-  &[data-ending-style] {
+  @starting-style {
     translate: 0 6px;
   }
 }
@@ -961,8 +958,7 @@ button {
   user-select: none;
   transition: opacity 120ms, translate 150ms var(--ease);
 
-  &[data-starting-style],
-  &[data-ending-style] {
+  @starting-style {
     opacity: 0;
     translate: -6px 0;
   }
@@ -1222,6 +1218,11 @@ button {
 /* Tooltips (the labels of the rail) */
 
 .tooltip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1100;
+  pointer-events: none;
   padding: 0.3125rem 0.5rem;
   border-radius: 6px;
   background: light-dark(#1f2328, #e8eaed);
@@ -1231,16 +1232,21 @@ button {
   box-shadow: var(--shadow);
   transition: opacity 120ms, translate 120ms var(--ease);
 
-  &[data-starting-style],
-  &[data-ending-style] {
+  @starting-style {
     opacity: 0;
     translate: -4px 0;
   }
 
-  &[data-side='top'][data-starting-style],
-  &[data-side='top'][data-ending-style] {
-    translate: 0 4px;
+  &[data-side='top'] {
+    @starting-style {
+      translate: 0 4px;
+    }
   }
+}
+
+/* Not shown until Floating UI has placed it. */
+.tooltip:not([data-open]) {
+  visibility: hidden;
 }
 
 /* The search (command palette) */
@@ -1255,8 +1261,7 @@ button {
   background: light-dark(rgb(0 0 0 / 45%), rgb(0 0 0 / 60%));
   transition: opacity 150ms;
 
-  &[data-starting-style],
-  &[data-ending-style] {
+  @starting-style {
     opacity: 0;
   }
 }
@@ -1281,8 +1286,7 @@ button {
   font-family: var(--app-cockpit-font-family, system-ui, sans-serif);
   transition: opacity 150ms, translate 180ms var(--ease);
 
-  &[data-starting-style],
-  &[data-ending-style] {
+  @starting-style {
     opacity: 0;
     translate: -8px 0;
   }

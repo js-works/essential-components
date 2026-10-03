@@ -36,7 +36,7 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
     demo (so no tab on the root page).
   - `app-cockpit` (`@local/app-cockpit`, `<app-cockpit>`): an admin panel shell for office mini-apps
     (micro-frontends): only a sidebar with the apps (search, recent, groups; from a few apps up to hundreds); the
-    open app fills the rest. React + Base UI in its shadow DOM, styled with the `ui-*` tokens. The root's demo page uses it.
+    open app fills the rest. Lit + Zag.js in its shadow DOM, styled with the `ui-*` tokens. The root's demo page uses it.
   - A package keeps its own tests, demo (`npm run dev` inside it) and `package-lock.json` (unused in the workspace,
     where the root lock file counts; it matters again in a standalone copy).
 - The root is the demo page of all packages:

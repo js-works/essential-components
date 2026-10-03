@@ -1,50 +1,100 @@
-import { createElement } from 'react';
-import { createRoot } from 'react-dom/client';
-import type { Root } from 'react-dom/client';
+import { computePosition, flip, offset, shift } from '@floating-ui/dom';
+import * as dialog from '@zag-js/dialog';
+import * as menu from '@zag-js/menu';
+import * as select from '@zag-js/select';
+import { html, LitElement, nothing, unsafeCSS } from 'lit';
+import type { PropertyValues, TemplateResult } from 'lit';
+import { ifDefined } from 'lit/directives/if-defined.js';
+import { repeat } from 'lit/directives/repeat.js';
+import { styleMap } from 'lit/directives/style-map.js';
+import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import type * as Spec from '../api';
+import { groupsOf, search, subgroupsOf } from '../core/search';
+import type { Group, Match } from '../core/search';
 import { readStored, writeStored } from '../core/storage';
 import { textsFor } from '../core/texts';
-import { Frame } from '../ui/Frame';
-import type { Status } from '../ui/Frame';
-import { STYLES } from '../ui/styles';
+import type { Texts } from '../core/texts';
+import {
+  appIcon,
+  checkIcon,
+  chevronIcon,
+  gridIcon,
+  groupIcon,
+  initialsOf,
+  kebabIcon,
+  panelIcon,
+  searchIcon,
+  selectorIcon,
+} from './icons';
+import { STYLES } from './styles';
+import { spread, ZagMachines } from './zag';
 
 export { AppCockpitElement };
 
-// How many apps the "Recent" list keeps.
-const RECENT = 5;
+type Status = 'loading' | 'ready' | 'failed';
 
-// The cockpit: its own UI (React) in its shadow root, the mini-apps as its light-DOM children, shown through the
-// default slot (their CSS is often global, which would not reach into a shadow root).
+// The sidebar adapts to the number of apps: up to `FEW` every app is listed, the groups are plain headings, no
+// "Recent"; more: "Recent" on top and the groups collapsible (closed by default above `MANY`, except the open app's).
+const FEW = 12;
+const MANY = 30;
+// Narrower than this (the cockpit's own width), the sidebar is always a rail.
+const NARROW = 768;
+// How many apps "Recent" keeps.
+const RECENT = 5;
+// The sidebar's width when resized: between these, in px.
+const MIN_WIDTH = 200;
+const MAX_WIDTH = 420;
+
+const clamp = (value: number) => Math.round(Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, value)));
+const isMac = () => /mac|iphone|ipad/i.test(navigator.platform || navigator.userAgent);
+
+let instances = 0;
+
+// The cockpit, a Lit element. Its own UI in its shadow root (styled by `STYLES`); the mini-apps are its light-DOM
+// children, shown through the default slot (their CSS is often global, which would not reach into a shadow root).
+// The popups (menus, the group select, the search) are Zag.js machines (`ZagMachines`), positioned by Floating UI
+// (inside Zag); the tooltips are one element positioned by Floating UI directly.
 //
 // - The first segment of the URL hash is the id of the open app (`#board-manager/…`; the rest belongs to the app). No
-//   hash, or an unknown first segment at the start: the first app. Opening an app pushes a history entry, so Back and
-//   Forward go through the apps.
-// - An app is created when it is opened the first time (after its `load()`), and then kept: the others get `hidden`,
-//   so each keeps its state. Its element gets `data-hash-segment` (its id), so tabs inside it know their level.
-class AppCockpitElement extends HTMLElement implements Spec.Element {
+//   hash, or an unknown first segment at the start: the first app. Opening an app pushes a history entry.
+// - An app is created when it is opened the first time (after its `load()`), and then kept: the others get `hidden`.
+//   Its element gets `data-hash-segment` (its id), so tabs inside it know their level.
+class AppCockpitElement extends LitElement implements Spec.Element {
+  static override styles = unsafeCSS(STYLES);
+
   readonly #config: Spec.Config;
-  readonly #mount: HTMLDivElement;
+  readonly #id = `cockpit${++instances}`;
+  readonly #zag = new ZagMachines(() => this.requestUpdate());
   readonly #elements = new Map<string, HTMLElement>();
   readonly #status = new Map<string, Status>();
-  readonly #recentKey: string;
-  #recent: string[];
+  readonly #key: string;
+
   #active: string | undefined;
-  #root: Root | undefined;
+  #recent: string[];
+  #collapsed: boolean;
+  #width: number | undefined;
+  #openGroups: Record<string, boolean>;
+  #narrow = false;
+  #resizing = false;
+  #paletteOpen = false;
+  #query = '';
+  #index = 0;
+  // The group of the select (`groupDisplay: 'select'`): the open app's, and the user may look into another one.
+  #selectedGroup: string | undefined;
+  #tip: { text: string; target: Element; side: 'right' | 'top' | 'bottom' } | undefined;
+  #tipTarget: Element | undefined;
+  #tipTimer: ReturnType<typeof setTimeout> | undefined;
+  #resizeObserver: ResizeObserver | undefined;
   #langObserver: MutationObserver | undefined;
 
   constructor(config: Spec.Config) {
     super();
     this.#config = config;
-    this.#recentKey = `${config.storageKey ?? 'app-cockpit'}:recent`;
-    this.#recent = readStored<string[]>(this.#recentKey, []);
-
-    const shadow = this.attachShadow({ mode: 'open' });
-    const style = document.createElement('style');
-
-    style.textContent = STYLES;
-    this.#mount = document.createElement('div');
-    this.#mount.className = 'mount';
-    shadow.append(style, this.#mount);
+    this.#key = config.storageKey ?? 'app-cockpit';
+    this.#recent = readStored<string[]>(`${this.#key}:recent`, []);
+    this.#collapsed = readStored(`${this.#key}:collapsed`, false);
+    this.#width = readStored<number | undefined>(`${this.#key}:width`, undefined);
+    this.#openGroups = readStored(`${this.#key}:groups`, {});
   }
 
   get activeApp(): Spec.MiniApp | undefined {
@@ -64,31 +114,46 @@ class AppCockpitElement extends HTMLElement implements Spec.Element {
     this.#show(id);
   }
 
-  connectedCallback(): void {
-    this.#root ??= createRoot(this.#mount);
-    this.#langObserver = new MutationObserver(() => this.#render());
+  override connectedCallback(): void {
+    super.connectedCallback();
+    this.#langObserver = new MutationObserver(() => this.requestUpdate());
     this.#langObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
     window.addEventListener('hashchange', this.#onHashChange);
-
-    const segment = this.#segment();
-
-    this.#show(this.#app(segment)?.id ?? this.#config.apps[0]?.id);
+    document.addEventListener('keydown', this.#onShortcut);
+    this.#show(this.#app(this.#segment())?.id ?? this.#config.apps[0]?.id);
   }
 
-  disconnectedCallback(): void {
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
     window.removeEventListener('hashchange', this.#onHashChange);
+    document.removeEventListener('keydown', this.#onShortcut);
     this.#langObserver?.disconnect();
-    // Unmounted a bit later, and only if the element stays out of the document: a move (disconnected and connected
-    // again at once) keeps its UI. React must not unmount synchronously while it may be rendering, either.
-    queueMicrotask(() => {
-      if (!this.isConnected) {
-        this.#root?.unmount();
-        this.#root = undefined;
-      }
-    });
+    this.#resizeObserver?.disconnect();
+    this.#zag.stopAll();
   }
 
-  // Back, Forward, or a link: an unknown first segment (e.g. an anchor of the host page) is left alone.
+  protected override firstUpdated(_changed: PropertyValues): void {
+    const frame = this.renderRoot.querySelector('.frame');
+
+    if (frame !== null) {
+      this.#resizeObserver = new ResizeObserver(() => {
+        const narrow = (frame as HTMLElement).offsetWidth < NARROW;
+
+        if (narrow !== this.#narrow) {
+          this.#narrow = narrow;
+          this.requestUpdate();
+        }
+      });
+      this.#resizeObserver.observe(frame);
+    }
+  }
+
+  protected override updated(): void {
+    this.#placeTip();
+  }
+
+  // --- Apps and routing ----------------------------------------------------------------------------------------------
+
   readonly #onHashChange = () => {
     const app = this.#app(this.#segment());
 
@@ -111,13 +176,14 @@ class AppCockpitElement extends HTMLElement implements Spec.Element {
     const app = this.#app(id);
 
     if (app === undefined) {
-      this.#render();
+      this.requestUpdate();
       return;
     }
 
     this.#active = app.id;
+    this.#selectedGroup = app.group ?? '';
     this.#recent = [app.id, ...this.#recent.filter((other) => other !== app.id)].slice(0, RECENT);
-    writeStored(this.#recentKey, this.#recent);
+    writeStored(`${this.#key}:recent`, this.#recent);
 
     for (const [other, element] of this.#elements) {
       element.hidden = other !== app.id;
@@ -127,7 +193,7 @@ class AppCockpitElement extends HTMLElement implements Spec.Element {
       void this.#create(app);
     }
 
-    this.#render();
+    this.requestUpdate();
   }
 
   async #create(app: Spec.MiniApp): Promise<void> {
@@ -136,7 +202,7 @@ class AppCockpitElement extends HTMLElement implements Spec.Element {
     }
 
     this.#status.set(app.id, 'loading');
-    this.#render();
+    this.requestUpdate();
 
     try {
       await app.load?.();
@@ -157,45 +223,981 @@ class AppCockpitElement extends HTMLElement implements Spec.Element {
       this.#status.set(app.id, 'failed');
     }
 
-    this.#render();
+    this.requestUpdate();
   }
 
-  #render(): void {
-    const active = this.#app(this.#active);
+  // --- State helpers -------------------------------------------------------------------------------------------------
 
-    this.#root?.render(createElement(Frame, {
-      title: this.#config.title ?? 'Apps',
-      subtitle: this.#config.subtitle,
-      search: this.#config.search,
-      apps: this.#config.apps,
-      groupDisplay: this.#config.groupDisplay ?? 'sections',
-      footer: this.#config.footer ?? {},
-      user: this.#config.user,
-      userMenu: this.#config.userMenu ?? [],
-      groupIcons: Object.fromEntries(
-        (this.#config.groups ?? []).flatMap((group) => (group.icon === undefined ? [] : [[group.name, group.icon]])),
-      ),
-      // By `group/subgroup`.
-      subgroupIcons: Object.fromEntries(
-        (this.#config.groups ?? []).flatMap((group) =>
-          (group.subgroups ?? []).flatMap((subgroup) =>
-            subgroup.icon === undefined ? [] : [[`${group.name}/${subgroup.name}`, subgroup.icon]]
-          )
+  get #texts(): Texts {
+    return textsFor(document.documentElement.lang);
+  }
+
+  get #many(): boolean {
+    return this.#config.apps.length > FEW;
+  }
+
+  get #searchable(): boolean {
+    return this.#config.search ?? this.#many;
+  }
+
+  // The rail: collapsed by the user, too narrow, or while the search is open (it takes the sidebar's place).
+  get #rail(): boolean {
+    return this.#collapsed || this.#narrow || this.#paletteOpen;
+  }
+
+  get #recentApps(): Spec.MiniApp[] {
+    return this.#recent.flatMap((id) => this.#app(id) ?? []);
+  }
+
+  #groupIcon(name: string): string | undefined {
+    return this.#config.groups?.find((group) => group.name === name)?.icon;
+  }
+
+  #subgroupIcon(group: string, subgroup: string): string | undefined {
+    return this.#config.groups?.find((candidate) => candidate.name === group)?.subgroups?.find((candidate) =>
+      candidate.name === subgroup
+    )?.icon;
+  }
+
+  #labelOf(group: Group): string {
+    return group.name === '' ? this.#texts.other : group.name;
+  }
+
+  #setOpenGroup(key: string, open: boolean): void {
+    this.#openGroups = { ...this.#openGroups, [key]: open };
+    writeStored(`${this.#key}:groups`, this.#openGroups);
+    this.requestUpdate();
+  }
+
+  #toggleCollapsed = () => {
+    this.#collapsed = !this.#collapsed;
+    writeStored(`${this.#key}:collapsed`, this.#collapsed);
+    this.requestUpdate();
+  };
+
+  #openPalette = () => {
+    this.#paletteOpen = true;
+    this.#query = '';
+    this.#index = Math.max(0, this.#recentApps.findIndex((app) => app.id === this.#active));
+    this.requestUpdate();
+  };
+
+  #closePalette = () => {
+    this.#paletteOpen = false;
+    this.requestUpdate();
+  };
+
+  // Ctrl+K (⌘K on a Mac) opens the search, wherever the focus is.
+  readonly #onShortcut = (event: KeyboardEvent) => {
+    if (
+      this.#searchable && (event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === 'k'
+    ) {
+      event.preventDefault();
+      this.#openPalette();
+    }
+  };
+
+  #el(selector: string): HTMLElement | null {
+    return this.renderRoot.querySelector<HTMLElement>(selector);
+  }
+
+  // A rect for Floating UI: from the sidebar's right edge, as high as `element` (a popup to the right touches the
+  // sidebar, level with its button).
+  #besideSidebar(element: () => Element | null): () => DOMRect {
+    return () => {
+      const rect = element()?.getBoundingClientRect() ?? new DOMRect();
+      const right = this.#el('.sidebar')?.getBoundingClientRect().right ?? rect.right;
+
+      return new DOMRect(right, rect.top, 0, rect.height);
+    };
+  }
+
+  // The anchor of a menu that is not at its trigger: one virtual element per menu, kept (Floating UI starts over for a
+  // new one, which renders again, endlessly), whose rect comes from the latest render.
+  readonly #anchorRects = new Map<string, () => DOMRect>();
+  readonly #anchors = new Map<string, { getBoundingClientRect: () => DOMRect; contextElement?: Element }>();
+
+  #anchor(key: string, rect: () => DOMRect) {
+    this.#anchorRects.set(key, rect);
+
+    let anchor = this.#anchors.get(key);
+
+    if (anchor === undefined) {
+      anchor = { getBoundingClientRect: () => this.#anchorRects.get(key)?.() ?? new DOMRect() };
+      this.#anchors.set(key, anchor);
+    }
+
+    anchor.contextElement = this.#el('.sidebar') ?? undefined;
+
+    return anchor;
+  }
+
+  // --- Tooltips ------------------------------------------------------------------------------------------------------
+
+  // One tooltip for every element with `data-tip` (its text; `data-tip-side`: where), after a short delay on hover or
+  // focus. Positioned by Floating UI.
+  readonly #onTipEnter = (event: Event) => {
+    const target = (event.target as Element).closest?.('[data-tip]') ?? null;
+
+    // Moving inside the same element (e.g. onto its icon) changes nothing.
+    if (target === this.#tipTarget) {
+      return;
+    }
+
+    this.#onTipLeave();
+
+    // Not for a button whose popup is open (it would cover it).
+    if (target === null || target.getAttribute('data-state') === 'open') {
+      return;
+    }
+
+    this.#tipTarget = target;
+    this.#tipTimer = setTimeout(() => {
+      this.#tip = {
+        text: target.getAttribute('data-tip') ?? '',
+        target,
+        side: (target.getAttribute('data-tip-side') as 'right' | 'top' | 'bottom' | null) ?? 'right',
+      };
+      this.requestUpdate();
+    }, event.type === 'focusin' ? 0 : 300);
+  };
+
+  readonly #onTipOut = (event: Event) => {
+    const next = (event as PointerEvent | FocusEvent).relatedTarget as Element | null;
+
+    if (this.#tipTarget !== undefined && next !== null && this.#tipTarget.contains(next)) {
+      return;
+    }
+
+    this.#onTipLeave();
+  };
+
+  readonly #onTipLeave = () => {
+    clearTimeout(this.#tipTimer);
+    this.#tipTarget = undefined;
+
+    if (this.#tip !== undefined) {
+      this.#tip = undefined;
+      this.requestUpdate();
+    }
+  };
+
+  #placeTip(): void {
+    const tooltip = this.#el('.tooltip');
+
+    if (this.#tip === undefined || tooltip === null || !this.#tip.target.isConnected) {
+      return;
+    }
+
+    void computePosition(this.#tip.target, tooltip, {
+      placement: this.#tip.side,
+      strategy: 'fixed',
+      middleware: [offset(this.#tip.side === 'right' ? 10 : 8), flip(), shift({ padding: 4 })],
+    }).then(({ x, y }) => {
+      Object.assign(tooltip.style, { left: `${x}px`, top: `${y}px` });
+      tooltip.setAttribute('data-open', '');
+    });
+  }
+
+  // --- Render --------------------------------------------------------------------------------------------------------
+
+  protected override render(): TemplateResult {
+    const texts = this.#texts;
+    const rail = this.#rail;
+    const active = this.#app(this.#active);
+    const status = active === undefined ? 'ready' : this.#status.get(active.id) ?? 'loading';
+    const style = this.#width === undefined ? {} : { '--app-cockpit-sidebar-width': `${this.#width}px` };
+
+    return html`
+      <div
+        class="mount"
+        @pointerover=${this.#onTipEnter}
+        @pointerout=${this.#onTipOut}
+        @focusin=${this.#onTipEnter}
+        @focusout=${this.#onTipOut}
+        @pointerdown=${{ handleEvent: this.#onTipLeave, capture: true }}
+      >
+        <div
+          class="frame"
+          ?data-rail=${rail}
+          ?data-resizing=${this.#resizing}
+          style=${styleMap(style)}
+        >
+          <aside class="sidebar">
+            ${rail ? nothing : this.#resizeHandle(texts)}
+            <div class="brand">
+              <slot name="logo"><span class="brand-logo" aria-hidden="true">${gridIcon()}</span></slot>
+              <span class="brand-text">
+                <span class="brand-title">${this.#config.title ?? 'Apps'}</span>
+                ${
+      this.#config.subtitle === undefined
+        ? nothing
+        : html`<span class="brand-subtitle">${this.#config.subtitle}</span>`
+    }
+              </span>
+              ${this.#searchable && !rail ? this.#searchButton(texts, rail) : nothing}
+            </div>
+            ${this.#searchable && rail ? this.#searchButton(texts, rail) : nothing} ${this.#navigation(texts, rail)}
+            <div class="sidebar-end"><slot name="sidebar-end"></slot></div>
+            ${this.#config.user === undefined ? nothing : this.#userRow(texts, rail, this.#config.user)}
+            ${this.#footer(texts, rail)}
+          </aside>
+          <main class="main">
+            <slot></slot>
+            ${
+      status === 'loading'
+        ? html`<div class="state" role="status"><span class="spinner" aria-hidden="true"></span>${texts.loading}</div>`
+        : status === 'failed'
+        ? html`<div class="state" role="alert">
+          <p>${texts.loadFailed}</p>
+          <button type="button" class="retry-button" @click=${() => {
+          if (active !== undefined) {
+            this.#status.delete(active.id);
+            void this.#create(active);
+          }
+        }}>${texts.retry}</button>
+        </div>`
+        : nothing
+    }
+          </main>
+        </div>
+        ${this.#searchable ? this.#palette(texts) : nothing}
+        ${
+      this.#tip === undefined
+        ? nothing
+        : html`<div class="tooltip" role="tooltip" data-side=${this.#tip.side}>${this.#tip.text}</div>`
+    }
+      </div>
+    `;
+  }
+
+  // The search: an icon button with a tooltip ("Search apps (Ctrl K)"); next to the title, or below the logo in the rail.
+  #searchButton(texts: Texts, rail: boolean): TemplateResult {
+    return html`<button
+      type="button"
+      class="search-button"
+      aria-label=${texts.search}
+      data-tip="${texts.search} (${isMac() ? '⌘K' : 'Ctrl K'})"
+      data-tip-side=${rail ? 'right' : 'bottom'}
+      @click=${this.#openPalette}
+    >${searchIcon()}</button>`;
+  }
+
+  // The handle on the sidebar's right edge: drag it to resize the sidebar; Left and Right (Shift: more) do it from the
+  // keyboard; a double click goes back to the default width.
+  #resizeHandle(texts: Texts): TemplateResult {
+    const current = () => this.#el('.sidebar')?.getBoundingClientRect().width ?? MIN_WIDTH;
+    const set = (width: number | undefined, done: boolean) => {
+      this.#width = width;
+
+      if (done) {
+        writeStored(`${this.#key}:width`, width);
+      }
+
+      this.requestUpdate();
+    };
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.button !== 0) {
+        return;
+      }
+
+      event.preventDefault();
+
+      const handle = event.currentTarget as HTMLElement;
+      const startX = event.clientX;
+      const startWidth = current();
+      let last = startWidth;
+
+      handle.setPointerCapture(event.pointerId);
+      this.#resizing = true;
+
+      const move = (moveEvent: PointerEvent) => {
+        last = clamp(startWidth + moveEvent.clientX - startX);
+        set(last, false);
+      };
+      const up = () => {
+        handle.removeEventListener('pointermove', move);
+        handle.removeEventListener('pointerup', up);
+        handle.removeEventListener('pointercancel', up);
+        this.#resizing = false;
+        set(last, true);
+      };
+
+      handle.addEventListener('pointermove', move);
+      handle.addEventListener('pointerup', up);
+      handle.addEventListener('pointercancel', up);
+    };
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      const step = event.shiftKey ? 48 : 16;
+      const delta = ({ ArrowLeft: -step, ArrowRight: step } as Record<string, number | undefined>)[event.key];
+
+      if (delta !== undefined) {
+        event.preventDefault();
+        set(clamp(current() + delta), true);
+      }
+    };
+
+    return html`<div
+      class="resize-handle"
+      role="separator"
+      aria-orientation="vertical"
+      aria-label=${texts.resize}
+      aria-valuemin=${MIN_WIDTH}
+      aria-valuemax=${MAX_WIDTH}
+      aria-valuenow=${ifDefined(this.#width)}
+      tabindex="0"
+      @pointerdown=${onPointerDown}
+      @keydown=${onKeyDown}
+      @dblclick=${() => set(undefined, true)}
+    ></div>`;
+  }
+
+  // --- Navigation ----------------------------------------------------------------------------------------------------
+
+  // Up and Down move between the buttons of the navigation, Home and End to the first and the last.
+  readonly #onNavKeyDown = (event: KeyboardEvent) => {
+    const nav = event.currentTarget as HTMLElement;
+    const buttons = [...nav.querySelectorAll<HTMLButtonElement>('button')].filter((button) =>
+      button.offsetParent !== null
+    );
+    const index = buttons.indexOf(event.composedPath()[0] as HTMLButtonElement);
+    const next = ({
+      ArrowDown: buttons[index + 1],
+      ArrowUp: buttons[index - 1],
+      Home: buttons[0],
+      End: buttons.at(-1),
+    } as Record<string, HTMLButtonElement | undefined>)[event.key];
+
+    if (index >= 0 && next !== undefined) {
+      event.preventDefault();
+      next.focus();
+    }
+  };
+
+  #item(app: Spec.MiniApp, rail: boolean): TemplateResult {
+    const current = app.id === this.#active;
+
+    return html`<button
+      type="button"
+      class="item"
+      aria-current=${ifDefined(current ? 'page' : undefined)}
+      aria-label=${ifDefined(rail ? app.title : undefined)}
+      title=${ifDefined(rail ? undefined : app.description)}
+      data-tip=${ifDefined(rail ? app.title : undefined)}
+      @click=${() => this.open(app.id)}
+    >${appIcon(app, rail)}<span class="item-title">${app.title}</span></button>`;
+  }
+
+  #section(label: string, items: TemplateResult[]): TemplateResult {
+    return html`<section class="section">
+      ${label === '' ? html`<hr class="section-rule" />` : html`<h2 class="section-label">${label}</h2>`}
+      <ul class="list">${items}</ul>
+    </section>`;
+  }
+
+  // The apps of a group as a tree: the apps without a subgroup, then each subgroup (collapsible, open by default) with
+  // its apps. In the rail: the apps without a subgroup as icons, each subgroup as one button with a flyout.
+  #tree(group: Group, rail: boolean): TemplateResult[] {
+    const { loose, subgroups } = subgroupsOf(group.apps);
+    const looseItems = loose.map((app) => html`<li>${this.#item(app, rail)}</li>`);
+
+    if (rail) {
+      return [
+        ...looseItems,
+        ...subgroups.map((subgroup) =>
+          html`<li>${
+            this.#flyout(
+              `sub:${group.name}/${subgroup.name}`,
+              { name: subgroup.name, apps: subgroup.apps.map(({ subgroup: _subgroup, ...app }) => app) },
+              subgroup.name,
+              this.#subgroupIcon(group.name, subgroup.name),
+            )
+          }</li>`
         ),
+      ];
+    }
+
+    return [
+      ...looseItems,
+      ...subgroups.map((subgroup) => {
+        const key = `${group.name}/${subgroup.name}`;
+        const open = this.#openGroups[key] ?? true;
+        const icon = this.#subgroupIcon(group.name, subgroup.name);
+
+        return html`<li>
+          <div class="subgroup">
+            <button
+              type="button"
+              class="subgroup-trigger"
+              aria-expanded=${open}
+              ?data-panel-open=${open}
+              @click=${() => this.#setOpenGroup(key, !open)}
+            >
+              ${chevronIcon()} ${icon === undefined ? nothing : groupIcon(icon)}
+              <span class="subgroup-name">${subgroup.name}</span>
+              <span class="subgroup-count">${subgroup.apps.length}</span>
+            </button>
+            <div class="group-panel" ?hidden=${!open}>
+              <ul class="list subgroup-list">${subgroup.apps.map((app) => html`<li>${this.#item(app, rail)}</li>`)}</ul>
+            </div>
+          </div>
+        </li>`;
+      }),
+    ];
+  }
+
+  #navigation(texts: Texts, rail: boolean): TemplateResult {
+    const apps = this.#config.apps;
+    const many = this.#many;
+    const groups = groupsOf(apps);
+    const nav = (content: unknown) =>
+      html`<nav class="nav" aria-label=${texts.navigation} @keydown=${this.#onNavKeyDown}>${content}</nav>`;
+
+    // The rail of many apps: with groups, one button per group with a flyout; without, the recent apps and the open
+    // one (the search finds the rest).
+    if (rail && many) {
+      if (groups.length > 1) {
+        return nav(html`<ul class="list">${
+          repeat(
+            groups,
+            (group) => group.name,
+            (group) =>
+              html`<li>${
+                this.#flyout(`group:${group.name}`, group, this.#labelOf(group), this.#groupIcon(group.name))
+              }</li>`,
+          )
+        }</ul>`);
+      }
+
+      const shown = this.#recentApps;
+      const active = this.#app(this.#active);
+
+      if (active !== undefined && !shown.some((app) => app.id === active.id)) {
+        shown.unshift(active);
+      }
+
+      return nav(html`<ul class="list">${shown.map((app) => html`<li>${this.#item(app, rail)}</li>`)}</ul>`);
+    }
+
+    // One group at a time: the select on top, the apps of the chosen group below it.
+    if (this.#config.groupDisplay === 'select' && !rail && groups.length > 1) {
+      const group = groups.find((candidate) => candidate.name === this.#selectedGroup) ?? groups[0];
+
+      return html`${this.#groupSelect(texts, groups, group?.name ?? '')}
+      ${nav(group === undefined ? nothing : html`<ul class="list">${this.#tree(group, rail)}</ul>`)}`;
+    }
+
+    const recent = this.#recentApps;
+
+    return nav(html`
+      ${
+      many && recent.length > 0
+        ? this.#section(texts.recent, recent.map((app) => html`<li>${this.#item(app, rail)}</li>`))
+        : nothing
+    }
+      ${
+      groups.map((group) => {
+        const label = group.name === '' ? (groups.length > 1 && many ? texts.other : '') : group.name;
+        const list = this.#tree(group, rail);
+
+        if (rail || !many || label === '') {
+          return this.#section(rail ? '' : label, list);
+        }
+
+        const open = this.#openGroups[group.name]
+          ?? (apps.length <= MANY || group.name === (this.#app(this.#active)?.group ?? '') || group.name === '');
+        const icon = this.#groupIcon(group.name);
+
+        return html`<div class="group">
+          <button
+            type="button"
+            class="group-trigger"
+            aria-expanded=${open}
+            ?data-panel-open=${open}
+            @click=${() => this.#setOpenGroup(group.name, !open)}
+          >
+            ${chevronIcon()} ${icon === undefined ? nothing : groupIcon(icon)}
+            <span class="group-name">${label}</span>
+            <span class="group-count">${group.apps.length}</span>
+          </button>
+          <div class="group-panel" ?hidden=${!open}><ul class="list">${list}</ul></div>
+        </div>`;
+      })
+    }
+    `);
+  }
+
+  // --- Zag menus -----------------------------------------------------------------------------------------------------
+
+  // A menu (Zag): `key` for its machine, where it opens, and what choosing an item does.
+  #menu(
+    key: string,
+    options: {
+      placement: 'right-start' | 'right-end' | 'top-start';
+      anchor?: () => DOMRect;
+      sameWidth?: boolean;
+      onSelect: (value: string) => void;
+    },
+  ): menu.Api {
+    return this.#zag.use(`menu:${key}`, menu, {
+      id: `${this.#id}-${key.replace(/[^a-z0-9]+/gi, '-')}`,
+      getRootNode: () => this.renderRoot as ShadowRoot,
+      positioning: {
+        placement: options.placement,
+        strategy: 'fixed',
+        gutter: 0,
+        overflowPadding: 0,
+        sameWidth: options.sameWidth ?? false,
+        ...(options.anchor === undefined ? {} : (() => {
+          const anchor = this.#anchor(key, options.anchor);
+
+          return { getAnchorElement: () => anchor };
+        })()),
+      },
+      onSelect: ({ value }: { value: string }) => options.onSelect(value),
+    } as menu.Props);
+  }
+
+  #menuItems(api: menu.Api, sections: readonly (readonly Spec.MenuItem[])[]): TemplateResult[] {
+    return sections.filter((section) => section.length > 0).flatMap((section, index) => [
+      ...(index > 0 ? [html`<div class="menu-separator" ${spread(api.getSeparatorProps())}></div>`] : []),
+      ...section.map((item) =>
+        html`<div class="menu-item" ${spread(api.getItemProps({ value: item.id }))}>
+          <span class="menu-icon" aria-hidden="true">${item.icon === undefined ? nothing : unsafeHTML(item.icon)}</span>
+          <span class="menu-label">${item.label}</span>
+          ${item.shortcut === undefined ? nothing : html`<kbd class="key">${item.shortcut}</kbd>`}
+        </div>`
       ),
-      active,
-      status: active === undefined ? 'ready' : this.#status.get(active.id) ?? 'loading',
-      recent: this.#recent.flatMap((id) => this.#app(id) ?? []),
-      texts: textsFor(document.documentElement.lang),
-      storageKey: this.#config.storageKey ?? 'app-cockpit',
-      portal: this.#mount,
-      onOpen: (id: string) => this.open(id),
-      onRetry: () => {
-        if (active !== undefined) {
-          this.#status.delete(active.id);
-          void this.#create(active);
+    ]);
+  }
+
+  #select(sections: readonly (readonly Spec.MenuItem[])[], value: string): void {
+    for (const section of sections) {
+      section.find((item) => item.id === value)?.onSelect?.();
+    }
+  }
+
+  // A group (or a subgroup) in the rail: its button (its name as the tooltip), and a panel with its apps (the apps
+  // without a subgroup first, then each subgroup with its name as a heading), at the button, touching the sidebar.
+  #flyout(key: string, group: Group, label: string, icon: string | undefined): TemplateResult {
+    const id = key.replace(/[^a-z0-9]+/gi, '-');
+    const api = this.#menu(key, {
+      placement: 'right-start',
+      anchor: this.#besideSidebar(() => this.#el(`[data-flyout="${id}"]`)),
+      onSelect: (value) => this.open(value),
+    });
+    const { loose, subgroups } = subgroupsOf(group.apps);
+    const current = group.apps.some((app) => app.id === this.#active);
+    const entry = (app: Spec.MiniApp) =>
+      html`<div class="flyout-item" ?data-current=${app.id === this.#active} ${
+        spread(api.getItemProps({ value: app.id }))
+      }>${app.title}</div>`;
+
+    return html`
+      <button
+        type="button"
+        class="item"
+        data-flyout=${id}
+        aria-label=${label}
+        aria-current=${ifDefined(current ? 'true' : undefined)}
+        data-tip=${label}
+        ${spread(api.getTriggerProps())}
+      >${
+      icon === undefined ? html`<span class="tile" aria-hidden="true">${initialsOf(label)}</span>` : groupIcon(icon)
+    }</button>
+      <div class="menu-positioner" ${spread(api.getPositionerProps())}>
+        <div class="flyout" ${spread(api.getContentProps())}>
+          <div class="flyout-title">${label}</div>
+          ${loose.map(entry)}
+          ${
+      subgroups.map((subgroup) =>
+        html`<div ${spread(api.getItemGroupProps({ id: `${id}-${subgroup.name}` }))}>
+          <div class="flyout-label" ${spread(api.getItemGroupLabelProps({ htmlFor: `${id}-${subgroup.name}` }))}>
+            ${subgroup.name}
+          </div>
+          ${subgroup.apps.map(entry)}
+        </div>`
+      )
+    }
+        </div>
+      </div>
+    `;
+  }
+
+  // --- Group select --------------------------------------------------------------------------------------------------
+
+  #groupSelect(texts: Texts, groups: Group[], value: string): TemplateResult {
+    const collection = select.collection({
+      items: groups,
+      itemToValue: (group: Group) => group.name,
+      itemToString: (group: Group) => this.#labelOf(group),
+    });
+    const api = this.#zag.use('select:group', select, {
+      id: `${this.#id}-group`,
+      getRootNode: () => this.renderRoot as ShadowRoot,
+      collection,
+      value: [value],
+      positioning: { placement: 'bottom-start', strategy: 'fixed', gutter: 4, sameWidth: true },
+      onValueChange: ({ value: next }: { value: string[] }) => {
+        this.#selectedGroup = next[0] ?? '';
+        this.requestUpdate();
+      },
+    } as select.Props);
+    const current = groups.find((group) => group.name === value);
+    const icons = groups.some((group) => this.#groupIcon(group.name) !== undefined);
+
+    return html`
+      <button class="group-select" aria-label=${texts.group} ${spread(api.getTriggerProps())}>
+        ${icons && current !== undefined ? groupIcon(this.#groupIcon(current.name)) : nothing}
+        <span class="group-select-value">${current === undefined ? '' : this.#labelOf(current)}</span>
+        ${current === undefined ? nothing : html`<span class="group-count">${current.apps.length}</span>`}
+        <span class="group-select-icon">${selectorIcon()}</span>
+      </button>
+      <div class="select-positioner" ${spread(api.getPositionerProps())}>
+        <div class="select-popup" ${spread(api.getContentProps())}>
+          <div class="select-list">
+            ${
+      groups.map((group) =>
+        html`<div class="select-item" ${spread(api.getItemProps({ item: group }))}>
+          <span class="select-indicator" ${spread(api.getItemIndicatorProps({ item: group }))}>${checkIcon()}</span>
+          ${icons ? groupIcon(this.#groupIcon(group.name)) : nothing}
+          <span class="select-item-text">${this.#labelOf(group)}</span>
+          <span class="select-item-count">${group.apps.length}</span>
+        </div>`
+      )
+    }
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // --- User row ------------------------------------------------------------------------------------------------------
+
+  // The signed-in user, above the footer: the avatar, the name and a second line. With a menu (`userMenu`), the row is a
+  // button that opens it to the right of the sidebar, touching it; in the rail only the avatar (the name as the tooltip).
+  #userRow(texts: Texts, rail: boolean, user: Spec.User): TemplateResult {
+    const sections = this.#config.userMenu ?? [];
+    const avatar = user.avatar === undefined
+      ? html`<span class="avatar" aria-hidden="true">${initialsOf(user.name).toUpperCase()}</span>`
+      : html`<img class="avatar" src=${user.avatar} alt="" />`;
+    const content = html`
+      ${avatar}
+      <span class="user-text">
+        <span class="user-name">${user.name}</span>
+        ${user.detail === undefined ? nothing : html`<span class="user-detail">${user.detail}</span>`}
+      </span>
+    `;
+
+    if (sections.length === 0) {
+      return html`<div class="user-row">
+        <div class="user-button" aria-label=${ifDefined(rail ? user.name : undefined)} data-tip=${
+        ifDefined(rail ? user.name : undefined)
+      }>${content}</div>
+      </div>`;
+    }
+
+    const api = this.#menu('user', {
+      placement: 'right-end',
+      anchor: this.#besideSidebar(() => this.#el('.user-button')),
+      onSelect: (value) => this.#select(sections, value),
+    });
+
+    return html`<div class="user-row">
+      <button
+        class="user-button"
+        aria-label="${texts.account}: ${user.name}"
+        data-tip=${ifDefined(rail ? user.name : undefined)}
+        ${spread(api.getTriggerProps())}
+      >
+        ${content}
+        <svg class="icon icon--chevron-right" viewBox="0 0 24 24" aria-hidden="true"><path d="m10 7 5 5-5 5" /></svg>
+      </button>
+      <div class="menu-positioner" ${spread(api.getPositionerProps())}>
+        <div class="menu-popup" data-flush ${spread(api.getContentProps())}>${this.#menuItems(api, sections)}</div>
+      </div>
+    </div>`;
+  }
+
+  // --- Footer --------------------------------------------------------------------------------------------------------
+
+  // The footer of the sidebar: a dark bar of segments: the sidebar's toggle, the host's actions (icon buttons; with
+  // `choices` a menu of options), and a kebab button with the host's menu. Its menus are plain panels: with the sidebar
+  // expanded a sheet on top of the footer, as wide as the sidebar; in the rail to the right, touching the sidebar.
+  #footer(texts: Texts, rail: boolean): TemplateResult {
+    const footer = this.#config.footer ?? {};
+    const actions = footer.actions ?? [];
+    const sections = (footer.menu ?? []).filter((section) => section.length > 0);
+    const side = rail ? 'right' : 'top';
+    const where = (button: string) =>
+      rail
+        ? {
+          placement: 'right-end' as const,
+          anchor: this.#besideSidebar(() => this.#el(button)),
+        }
+        : {
+          placement: 'top-start' as const,
+          anchor: () => this.#el('.footer')?.getBoundingClientRect() ?? new DOMRect(),
+          sameWidth: true,
+        };
+
+    const choiceMenu = (action: Spec.Action, choices: Spec.Choices) => {
+      const button = `[data-action="${action.id}"]`;
+      const api = this.#menu(`choice:${action.id}`, {
+        ...where(button),
+        onSelect: (value) => {
+          choices.onChange(value);
+          this.requestUpdate();
+        },
+      });
+      const current = choices.options.find((option) => option.value === choices.value());
+      const label = current === undefined ? action.label : `${action.label}: ${current.label}`;
+
+      return html`
+        <button
+          class="footer-button"
+          data-action=${action.id}
+          aria-label=${label}
+          data-tip=${label}
+          data-tip-side=${side}
+          ${spread(api.getTriggerProps())}
+        >${this.#actionIcon(action)}</button>
+        <div class="menu-positioner" ${spread(api.getPositionerProps())}>
+          <div class="menu-popup menu-popup--choices" data-flush ?data-sheet=${!rail} ${spread(api.getContentProps())}>
+            <div class="menu-group-label">${action.label}</div>
+            ${
+        choices.options.map((option) => {
+          const checked = option.value === choices.value();
+
+          return html`<div class="menu-item" ?data-checked=${checked} ${
+            spread(api.getItemProps({ value: option.value }))
+          }>
+              <span class="menu-icon menu-check" ?data-checked=${checked}>${checkIcon()}</span>
+              <span class="menu-label">${option.label}</span>
+            </div>`;
+        })
+      }
+          </div>
+        </div>
+      `;
+    };
+
+    const more = sections.length === 0 ? undefined : this.#menu('more', {
+      ...where('.footer-more'),
+      onSelect: (value) => this.#select(sections, value),
+    });
+
+    return html`<div class="footer" role="toolbar" aria-label=${texts.footer} aria-orientation=${
+      rail ? 'vertical' : 'horizontal'
+    }>
+      ${
+      this.#narrow
+        ? nothing
+        : html`<button
+          type="button"
+          class="footer-button footer-toggle"
+          aria-label=${rail ? texts.expand : texts.collapse}
+          aria-expanded=${!rail}
+          data-tip=${rail ? texts.expand : texts.collapse}
+          data-tip-side=${side}
+          @click=${this.#toggleCollapsed}
+        >${panelIcon()}</button>`
+    }
+      <div class="footer-actions">
+        ${
+      actions.map((action) =>
+        action.choices === undefined
+          ? html`<button
+            type="button"
+            class="footer-button"
+            aria-label=${action.label}
+            data-tip=${action.label}
+            data-tip-side=${side}
+            @click=${() => action.onSelect?.()}
+          >${this.#actionIcon(action)}</button>`
+          : choiceMenu(action, action.choices)
+      )
+    }
+      </div>
+      ${
+      more === undefined ? nothing : html`
+        <button
+          class="footer-button footer-more"
+          aria-label=${texts.more}
+          data-tip=${texts.more}
+          data-tip-side=${side}
+          ${spread(more.getTriggerProps())}
+        >${kebabIcon()}</button>
+        <div class="menu-positioner" ${spread(more.getPositionerProps())}>
+          <div class="menu-popup" data-flush ?data-sheet=${!rail} ${spread(more.getContentProps())}>
+            ${this.#menuItems(more, sections)}
+          </div>
+        </div>
+      `
+    }
+    </div>`;
+  }
+
+  #actionIcon(action: Spec.Action): TemplateResult {
+    return html`<span class="footer-icon" aria-hidden="true">${unsafeHTML(action.icon)}</span>${
+      action.badge === true ? html`<span class="footer-badge" aria-hidden="true"></span>` : nothing
+    }`;
+  }
+
+  // --- Search --------------------------------------------------------------------------------------------------------
+
+  // The search for apps: a dark panel as high as the cockpit, right next to the rail (the sidebar collapses while it
+  // is open), over the open app (darkened). Without a query: the recent apps, then all apps by group. Up and Down
+  // choose, Enter opens, Escape closes. The dialog's behavior (focus, Escape, outside clicks) is Zag's.
+  #palette(texts: Texts): TemplateResult {
+    const apps = this.#config.apps;
+    const recent = this.#recentApps;
+    const api = this.#zag.use('dialog:search', dialog, {
+      id: `${this.#id}-search`,
+      getRootNode: () => this.renderRoot as ShadowRoot,
+      open: this.#paletteOpen,
+      onOpenChange: ({ open }: { open: boolean }) => {
+        if (!open) {
+          this.#closePalette();
         }
       },
-    }));
+      initialFocusEl: () => this.#el('.palette-input'),
+    } as dialog.Props);
+    const sections: { label: string; matches: readonly Match[] }[] = this.#query.trim() !== ''
+      ? [{ label: '', matches: search(apps, this.#query) }]
+      : [
+        ...(recent.length > 0 ? [{ label: texts.recent, matches: recent.map((app) => ({ app })) }] : []),
+        ...groupsOf(apps).map((group) => ({
+          label: group.name === '' ? texts.other : group.name,
+          matches: group.apps.map((app) => ({ app })),
+        })),
+      ];
+    const flat = sections.flatMap((section) => section.matches);
+    const current = flat[Math.min(this.#index, flat.length - 1)];
+    const listId = `${this.#id}-results`;
+    const choose = (id: string) => {
+      this.#closePalette();
+      this.open(id);
+    };
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      const step = ({ ArrowDown: 1, ArrowUp: -1, PageDown: 8, PageUp: -8 } as Record<string, number | undefined>)[
+        event.key
+      ];
+
+      if (step !== undefined && flat.length > 0) {
+        event.preventDefault();
+        this.#index = Math.max(0, Math.min(flat.length - 1, this.#index + step));
+        this.requestUpdate();
+        void this.updateComplete.then(() =>
+          this.#el('.palette-option[data-current]')?.scrollIntoView({ block: 'nearest' })
+        );
+      } else if (event.key === 'Enter' && current !== undefined) {
+        event.preventDefault();
+        choose(current.app.id);
+      }
+    };
+
+    let position = -1;
+
+    return html`
+      <div class="backdrop" ${spread(api.getBackdropProps())}></div>
+      <div class="palette-layer" ${spread(api.getPositionerProps())}>
+        <div class="palette" ${spread(api.getContentProps())}>
+          <h2 class="visually-hidden" ${spread(api.getTitleProps())}>${texts.search}</h2>
+          <div class="palette-field">
+            ${searchIcon()}
+            <input
+              class="palette-input"
+              type="text"
+              role="combobox"
+              aria-expanded="true"
+              aria-controls=${listId}
+              aria-activedescendant=${ifDefined(current === undefined ? undefined : `${listId}-${current.app.id}`)}
+              aria-autocomplete="list"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder=${texts.searchPlaceholder}
+              .value=${this.#query}
+              @input=${(event: InputEvent) => {
+      this.#query = (event.target as HTMLInputElement).value;
+      this.#index = 0;
+      this.requestUpdate();
+    }}
+              @keydown=${onKeyDown}
+            />
+            <kbd class="key">Esc</kbd>
+          </div>
+          <div id=${listId} class="palette-list" role="listbox" aria-label=${texts.search}>
+            ${flat.length === 0 ? html`<p class="palette-empty">${texts.noResults}</p>` : nothing}
+            ${
+      sections.map((section) =>
+        section.matches.length === 0
+          ? nothing
+          : html`<div role="group" aria-label=${ifDefined(section.label || undefined)}>
+          ${section.label === '' ? nothing : html`<div class="palette-section">${section.label}</div>`}
+          ${
+            section.matches.map((match) => {
+              position += 1;
+
+              const at = position;
+              const isCurrent = match === current;
+              const { title, group, subgroup } = match.app;
+
+              return html`<div
+              id=${ifDefined(isCurrent ? `${listId}-${match.app.id}` : undefined)}
+              class="palette-option"
+              role="option"
+              aria-selected=${isCurrent}
+              ?data-current=${isCurrent}
+              @mousemove=${() => {
+                if (this.#index !== at) {
+                  this.#index = at;
+                  this.requestUpdate();
+                }
+              }}
+              @click=${() => choose(match.app.id)}
+            >
+              ${appIcon(match.app)}
+              <span class="palette-text">
+                <span class="palette-title">${
+                match.title === undefined
+                  ? title
+                  : html`${title.slice(0, match.title.start)}<mark>${
+                    title.slice(match.title.start, match.title.end)
+                  }</mark>${title.slice(match.title.end)}`
+              }</span>
+                ${
+                match.app.description === undefined
+                  ? nothing
+                  : html`<span class="palette-description">${match.app.description}</span>`
+              }
+              </span>
+              ${
+                group !== undefined && section.label === ''
+                  ? html`<span class="palette-group">${
+                    subgroup === undefined ? group : `${group} › ${subgroup}`
+                  }</span>`
+                  : nothing
+              }
+              ${match.app.id === this.#active ? html`<span class="palette-dot" aria-hidden="true"></span>` : nothing}
+            </div>`;
+            })
+          }
+        </div>`
+      )
+    }
+          </div>
+          <footer class="palette-footer">
+            <span><kbd class="key">↑</kbd><kbd class="key">↓</kbd> ${texts.move}</span>
+            <span><kbd class="key">↵</kbd> ${texts.open}</span>
+            <span><kbd class="key">Esc</kbd> ${texts.close}</span>
+            <span class="palette-count">${texts.apps(this.#query.trim() === '' ? apps.length : flat.length)}</span>
+          </footer>
+        </div>
+      </div>
+    `;
   }
 }

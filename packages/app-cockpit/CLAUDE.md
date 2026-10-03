@@ -15,22 +15,19 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
 - `src/api.ts` holds the draft API types we are discussing. Types only, flat exports; `src/index.ts` re-exports them
   as a namespace: `export type * as AppCockpit from './api'` (`AppCockpit.MiniApp`).
 - Always add the decisions (also small ones) to this file, in the same step as the code.
-- Decided 2026-10-03 for the later rewrite (not now): Lit (web components, templates) and Zag.js (framework-agnostic
-  headless state machines: menu, select, dialog, tooltip, tree view, combobox; with its vanilla adapter, props spread
-  onto Lit's elements) instead of React and Base UI. Before it: freeze the features, write browser tests against the
-  current version.
-- The cockpit may later become (almost) vanilla (no React, no Base UI; `@floating-ui/dom` for positioning popups is
-  fine, to be replaced by the Popover API and CSS anchor positioning once every browser has them; the user's plan,
-  2026-10-03, not now). Every decision is
-  checked for that: is it doable in vanilla with reasonable effort? Say so when a feature would make that much harder.
+- Rewritten 2026-10-03 (the user's GO, without the browser tests proposed first): Lit and Zag.js instead of React and
+  Base UI, with `@floating-ui/dom` (inside Zag, and for the tooltips). Almost vanilla: to be replaced by the Popover API
+  and CSS anchor positioning once every browser has them. Every decision is checked for that: is it doable without a
+  framework with reasonable effort? Say so when a feature would make that much harder.
 
 ## Decided (2026-10-03)
 
 - The cockpit is itself a micro-frontend (the top one, with the shell role): a custom element outside, whatever is
   inside.
-- Inside: React + Base UI (headless), styled with the design language's `ui-*` tokens (`ui.css`), so the cockpit and
-  the packages look like one family, whatever component suite a mini-app uses. Not Mantine (its look), not vanilla or
-  Lit (too much work for non-trivial shell components).
+- Inside: Lit (a `LitElement`) and Zag.js (headless state machines: menu, select, dialog; its vanilla adapter, the
+  props spread onto Lit's elements by the `spread` directive, `src/element/zag.ts`), styled with the design language's
+  `ui-*` tokens (`ui.css`), so the cockpit and the packages look like one family, whatever component suite a mini-app
+  uses. Not Mantine (its look). (Until 2026-10-03: React + Base UI.)
 - Mini-apps stay agnostic: the contract is only a custom element tag, the URL hash, and `<html lang>` /
   `data-scheme`.
 - Kept small: navigation, header, routing, language and color scheme. No auth, permissions or notifications for now.
@@ -38,7 +35,17 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
   active mini-app is a light-DOM child of the cockpit, shown through the default slot (`<main><slot></slot></main>`):
   mini-apps put their CSS globally (e.g. into `document.head`), which would not reach into a shadow root. The cockpit
   replaces that child itself on navigation (`load()`, then the element from `MiniApp.element`). Named slots for the
-  host's parts (`logo`, `sidebar-end`). Base UI's popups portal into the shadow root (`Portal`'s `container`).
+  host's parts (`logo`, `sidebar-end`). The popups are rendered inside the shadow root (Zag's `getRootNode`), positioned `fixed`.
+- Zag in Lit (`src/element/zag.ts`): one machine per key (`ZagMachines.use(key, menu, props)`), made on first use,
+  stopped with the element; a machine's change renders the element again. Unchanged props are kept as the previous
+  objects (functions count as equal), and a machine is notified only when a prop really changed (else it would not see
+  e.g. a controlled `open`, or would reposition and render endlessly). A popup anchored elsewhere than its trigger (the
+  sidebar's edge, the footer bar) gets one virtual anchor per menu, kept (a new one per render loops Floating UI).
+- Tooltips: one element for all, on hover (300 ms) or focus of anything with `data-tip` (`data-tip-side`), positioned
+  by Floating UI; not on a button whose popup is open.
+- Zag gives a positioner the z-index of its content: it is set on the popups (`.menu-popup`, `.flyout`, …). Zag hides
+  closed popups with `hidden` (forced by `[hidden] { display: none !important }`); open animations by
+  `@starting-style` (none on closing).
 - The name: `<app-cockpit>`, package `@local/app-cockpit`, types `AppCockpit.*` (clear rather than charming; e.g. not
   `tidy-cockpit`, `app-shell`).
 - No iframes (overlays could not leave them; language, scheme and routing would need syncing).
@@ -64,14 +71,14 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
   "Try again"), then kept: the others get `hidden`, so each keeps its state. Its element gets `data-hash-segment` (its
   id): `ui.ts` counts it as a level of the hash, so tabs inside it write `#app/tab`, and restore that when it is shown
   again.
-- The sidebar adapts to the number of apps (`FEW` = 12, `MANY` = 30 in `Frame.tsx`):
+- The sidebar adapts to the number of apps (`FEW` = 12, `MANY` = 30 in `AppCockpitElement.ts`):
   - Up to 12: every app listed, the groups as plain headings; no search, no "Recent".
   - More: a search button (2026-10-03: an icon-only button with the tooltip "Search apps (Ctrl K)", in the title row,
-    at its right end, vertically centered on title and subtitle; in the rail below the logo; also Ctrl+K / ⌘K: a command palette, Base UI `Dialog`; ranked: title starts with the
+    at its right end, vertically centered on title and subtitle; in the rail below the logo; also Ctrl+K / ⌘K: a command palette, Zag `dialog`; ranked: title starts with the
     query, a word of the title starts with it, the title contains it, then description or group), "Recent" (the last 5
     opened, per browser), the groups collapsible with a count (closed by default above 30 apps, except the open app's
     group and the apps without a group, "Other").
-- `groupDisplay: 'select'` (2026-10-03; default `'sections'`): one group at a time. A select (Base UI `Select`) at the
+- `groupDisplay: 'select'` (2026-10-03; default `'sections'`): one group at a time. A select (Zag `select`) at the
   top of the list (below the search) switches the group, with each group's count; the list shows only that group's
   apps, without "Recent" (the search has it). The chosen group follows the open app (opening an app from the search
   shows its group). Only with more than one group and not in the rail. The package's 100-app demo uses it.
@@ -97,7 +104,7 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
   `choices` (`{ options: { value, label }[], value(), onChange }`, 2026-10-03) the button opens a menu with the options,
   the current one checked, read from `value()` whenever it renders, so the host keeps the state), on the right a kebab
   button with the host's menu (`footer.menu`: sections of `{ id, label, icon?, shortcut?, onSelect? }`, separated by
-  lines; Base UI `Menu`). With the sidebar expanded, the footer's menus (the kebab's, the choices) open as a sheet
+  lines; Zag `menu`). With the sidebar expanded, the footer's menus (the kebab's, the choices) open as a sheet
   on top of the footer (2026-10-03): as wide as the sidebar, square corners, a line on top, the sidebar's colors, only as
   high as their entries. Without actions or menu, those segments are left out. In the rail, the
   segments are stacked (the toggle at the bottom), and the footer's menus (the kebab's, the choices) open to the right
@@ -111,8 +118,8 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
   `--app-cockpit-sidebar-width`). No handle in the rail.
 - The sidebar collapses to a rail of icons (the toggle in the footer, remembered per browser; always below 768px of
   the cockpit's own width, then without the toggle), with tooltips. The rail of many apps (2026-10-03): with groups, one button per group (its icon, else
-  its initials; the open app's group marked like an open app; its name as the tooltip), each opening a flyout (Base UI
-  `Menu`): a panel at its button that touches the sidebar (no gap, square corners, a line between them, the
+  its initials; the open app's group marked like an open app; its name as the tooltip), each opening a flyout (Zag
+  `menu`): a panel at its button that touches the sidebar (no gap, square corners, a line between them, the
   sidebar's colors and text size), only as high as its content (2026-10-03; was as high as the sidebar), moved up when
   it does not fit, scrolling when it is higher than the window, with the group's name, then its apps by
   subgroup (names as small uppercase headings; the open app marked like in the sidebar; long ones scroll). The group
@@ -152,12 +159,12 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
 
 ## Layout and commands
 
-- `src/api.ts`: the types; `src/element/`: the custom element (shadow root, light-DOM apps, routing); `src/ui/`: the
-  React UI (`Frame`, `Palette`, `AppIcon`, icons) and its CSS (`styles.ts`); `src/core/`: search, texts, storage.
+- `src/api.ts`: the types; `src/element/`: the custom element (`AppCockpitElement.ts`, Lit: shadow root, light-DOM apps,
+  routing, the whole UI), `zag.ts`, `icons.ts`, its CSS (`styles.ts`); `src/core/`: search, texts, storage.
 - `demo/`: the package's demo (`npm run dev`), with 3, 30 or 100 apps (the "Apps" choice in the footer; `?apps=some`, `?apps=many`); the 100 apps with `groupDisplay: 'select'`; in the 30 and 100 apps every app has a group and a
   subgroup (no "Other"); `demo/ui/`: the
   design language (a copy, like in every package).
-- `npm run typecheck`, `npm run build` (library mode; React, React DOM and Base UI stay outside), `npm run format`.
+- `npm run typecheck`, `npm run build` (library mode; Lit, Zag.js and Floating UI stay outside), `npm run format`.
 
 ## Not set up yet
 

@@ -16,20 +16,16 @@
     "format:check": "dprint check"
   },
   "dependencies": {
-    "@base-ui/react": "^1.8.0"
+    "@floating-ui/dom": "^1.8.0",
+    "@zag-js/dialog": "^1.44.0",
+    "@zag-js/menu": "^1.44.0",
+    "@zag-js/select": "^1.44.0",
+    "@zag-js/vanilla": "^1.44.0",
+    "lit": "^3.3.3"
   },
   "devDependencies": {
-    "@types/react": "^19.3.0",
-    "@types/react-dom": "^19.3.0",
-    "@vitejs/plugin-react": "^6.1.1",
     "dprint": "^0.57.4",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.0"
-  },
-  "peerDependencies": {
-    "react": ">=19",
-    "react-dom": ">=19"
   }
 }
