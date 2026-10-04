@@ -62,12 +62,12 @@
   width: max-content;
 
   margin-block-start: calc(var(--nose) + var(--nose-gap));
-  padding: 0.35em 0.55em;
+  padding: 0.35em 0.8em;
   border-radius: 0.45em;
 
   display: flex;
   align-items: center;
-  gap: 0.35em;
+  gap: 0.6em;
 
   background: var(--badge-bg);
   color: #fff;

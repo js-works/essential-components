@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { DataNavigatorComponent as Spec } from '../react/api';
 
-export { createLayout };
+export { createLayout, withoutHidden };
 export type { Layout };
 
 type Leaf<Row> = {
@@ -42,4 +42,24 @@ function createLayout<Row>(columns: readonly (Spec.Column<Row> | Spec.ColumnGrou
   }
 
   return { leaves, groups };
+}
+
+// The columns without the hidden ones (the column toggle menu). A group without a visible column is left out too.
+function withoutHidden<Row>(
+  columns: readonly (Spec.Column<Row> | Spec.ColumnGroup<Row>)[],
+  hidden: ReadonlySet<string>,
+): readonly (Spec.Column<Row> | Spec.ColumnGroup<Row>)[] {
+  if (hidden.size === 0) {
+    return columns;
+  }
+
+  return columns.flatMap((column): (Spec.Column<Row> | Spec.ColumnGroup<Row>)[] => {
+    if (!('columns' in column)) {
+      return hidden.has(column.key) ? [] : [column];
+    }
+
+    const children = column.columns.filter((leaf) => !hidden.has(leaf.key));
+
+    return children.length === 0 ? [] : [{ ...column, columns: children }];
+  });
 }

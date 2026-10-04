@@ -14,6 +14,11 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
   how confident that proposal is (e.g. a percentage).
 - Prefer bullet lists over prose, in answers and in this file, wherever reasonable.
 - English is the language of the project: code, comments, docs and rules. The conversation may be German.
+- VERY IMPORTANT: never introduce a new CSS custom property (`--…`) without the user's explicit permission.
+  - Ask first, with the name and why none of the existing ones does.
+  - The need should be rare: use the existing ones (`--ui-*`, the package's own), plain values, or a local calc.
+  - A new one, once allowed, carries the package's prefix (never a generic name like `--shadow` or `--border`: the
+    mini-apps are light DOM children and inherit them, and they collide with other libraries).
 - Never run `git commit` or `git push`.
   - The user does this personally.
   - This overrides any default attribution or commit guidance.
@@ -21,6 +26,9 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
   - Only the user may explicitly grant an exception for a specific path.
 - Each package has its own `CLAUDE.md` (or, for `overlays`, its conventions: double quotes, `.js` import suffixes, and
   the demo rules in the comment of `OverlaysDemo.ts`). Its rules apply to changes in that package.
+- The root's own demos have one each too: `demo/media-manager/CLAUDE.md`, `demo/board-manager/CLAUDE.md` (loaded when
+  working there). Their details go there, not into this file; add behavior details decided for them there, in the same
+  step as the code.
 
 ## Layout
 
@@ -29,65 +37,81 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
   - `data-navigator` (`@local/data-navigator`): a data table: a custom element, and a React component (`/react`).
   - `file-upload` (`@local/file-upload`): a file upload custom element, with a React wrapper.
   - `overlays` (`@local/overlays`): dialogs and toasts.
+  - `form-validation` (`@local/form-validation`): form validation for React with Zod, a `useForm` hook. Tests only, no
+    demo (so no tab on the root page).
+  - `app-cockpit` (`@local/app-cockpit`, `<app-cockpit>`): an admin panel shell for office mini-apps
+    (micro-frontends): only a sidebar with the apps (search, recent, groups; from a few apps up to hundreds); the
+    open app fills the rest. Lit + Zag.js in its shadow DOM, styled with the `ui-*` tokens. The root's demo page uses it.
+  - `app-login` (`@local/app-login`, 2026-10-03): a generic login screen for apps (React, Mantine): `LoginScreen`, and
+    `mountLoginScreen()` for a host without React. The root page shows it when signed out.
+  - `mantine-themes` (`@local/mantine-themes`, 2026-10-04): a few nicer Mantine themes, to be used easily:
+    `createMantineTheme({ colors, size, variant })` gives the theme and the CSS variables resolver for a
+    `MantineProvider`; named color setups; `modernTheme` (small corners, a bit more contrast), which the root's three
+    apps use (2026-10-04, merged into their own themes); a demo.
   - A package keeps its own tests, demo (`npm run dev` inside it) and `package-lock.json` (unused in the workspace,
     where the root lock file counts; it matters again in a standalone copy).
 - The root is the demo page of all packages:
-  - `index.html`: a header with the title and, top right, the global switches (language `en-US`/`de-DE`, color
-    scheme), which change `<html>` (`lang`, `data-scheme`) for every demo. Below it a split: vertical tabs on the left
-    ("Data navigator", "File upload", "Dialogs + Toasts", "Media Manager"), the chosen demo on the right.
-    - The URL hash has one segment per level of tabs: `#file-upload/react`, `#dialogs-toasts/react-i18n` (the first tab,
-      the data navigator, has none).
-  - `demo/main.ts`: imports the demo element of each package by a relative path
-    (`../packages/file-upload/demo/FileUploadDemo`) and registers it (`data-navigator-demo`, `file-upload-demo`,
-    `overlays-demo`; the root's own `media-manager-demo`). Each demo element is a light DOM custom
-    element of its package (see "Demo element" in the package's `CLAUDE.md`), exported and not registered.
-  - `demo/media-manager/`: the "Media Manager" tab, a demo of the root (not of a package), because it combines three
-    packages: a data navigator lists the attachments, dialogs and toasts of the overlays package, and a file upload
-    (React wrapper) in a drawer adds new ones. The table is compact (`density="compact"`), striped and has a search,
-    sorting (by default by filename, ascending), paging, column filters (Filename: contains; User, Type and Size: one or
-    more; Uploaded: a date range, `dateRangeColumnFilter()`; the types are a fixed list of common ones, `TYPES`; the
-    sizes are small < 100 kB, medium 100 kB – 1 MB, large ≥ 1 MB, `SIZES`), multi-selection with "Delete" for the
-    selected rows (toolbar), and "Delete" in each row. Both ask first, in a critical confirmation dialog of the overlays
-    package (`confirmCritical`: a "Delete" button in the danger style, no confirm on Enter), with the file name or the
-    list of the selected files. Deleting takes a second (`DELETE_TIME`): the dialog is opened in a scope
-    (`dialogs.open()`), so it stays open after "Delete", its button shows a spinner, and it closes when the files are
-    gone (`scope.dispose()`).
-    - Toasts of the overlays package, bottom right (`toasts: { placement: 'bottom-end', size: 'small', stacked: true
-      }` in the provider's config): "3 files deleted" after a delete, "2 files uploaded" after an "Apply" of the upload
-      drawer. For a single file, its name instead: `"report.txt" deleted`, `"report.txt" uploaded`.
-    - "Upload" (the first general action in the toolbar, an upload icon) opens a form drawer
-      (`dialogs.form({ surface: 'drawer' })`, "Upload files", buttons "Apply" and "Cancel") with the file upload
-      (`multiple`, `previews`, `required`, `name="files"`). Each added file is uploaded at once, but only staged on the
-      fake server (not in the table yet).
-      - "Apply" adds the staged files (their ids are the upload's form values, `attempt.data.getAll('files')`) to the
-        list (`commitUploads()`, takes a second, `COMMIT_TIME`: the button shows a spinner), closes the drawer, reloads
-        the table and shows the toast.
-      - The upload is a form control of the drawer's form, so the drawer's native validation blocks "Apply" while a
-        file is unfinished or failed, and while there is no file (`required`), with the upload's own message.
-      - "Cancel" (also Escape, the close button) discards the staged files (`discardUploads()`, the `result`s of the
-        latest `items`); running uploads are aborted when the drawer removes the element.
-    - "Download" (the last action in the toolbar, a menu): "Selected file" (a row action, only while exactly one row
-      is selected), a separator, "Selected files as zip", "Selected files as tar.gz" (rows actions, only while rows are
-      selected). Every entry opens a warning dialog of the overlays package (`dialogs.warn()`): downloading is not
-      available in the demo.
-    - "More information" (an info icon in the action column of every row) opens a drawer of the overlays package
-      (an info dialog on the drawer surface, `dialogs.info({ surface: 'drawer' })`, with only "OK") with made-up
-      details from the fake server (`getDetails()`: description, versions, downloads, tags, storage, checksum, stable
-      per attachment).
-    - The type of a file is its extension in capitals (`PDF`, `XLSX`), not its MIME type: a MIME type can be very long
-      (`application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`).
-    - `attachments.ts`: the fake server, in memory for as long as the page is open (eleven seed files of four users, at
-      least one of every type in `TYPES`; new uploads belong to the current user, "Admin"): the table's source, the
-      upload function (progress by size; at the end the file is staged and its id is the result), commit and discard
-      of staged files, and delete.
-    - Its texts say "file"/"files" everywhere (never "attachment"). The code keeps its names (`Attachment`,
-      `attachments.ts`): a type `File` would clash with the DOM's `File`.
-    - `MediaManagerDemo.tsx`: the demo element (light DOM, React inside, registered as
-      `media-manager-demo`). It uses the i18n adapters of the two packages' demos, so it follows `<html lang>`.
-  - `demo/demo.css`: only what is specific to this page: the frame around the demos (header, tabs) is not selectable
-    (`user-select: none`); inside the demos, selecting stays as their packages have it.
+  - `index.html`: an `<app-cockpit>` (2026-10-03, `packages/app-cockpit`) that fills the window: the demos are its
+    mini-apps, one group at a time (2026-10-03, the cockpit's `groupDisplay: 'select'`): "Essentials" (2026-10-03; "Essential Components" before) with
+    the subgroups "Components" ("Data navigator", "File upload", "Dialogs + Toasts"), "Planned" (with an hourglass
+    icon; its entries without): "Form validation", "Autocomplete", placeholders of `demo/planned/PlannedDemo.ts`
+    (`planned-demo`): what it will be, and that there is no demo yet, in a light gray box with rounded corners,
+    `demo.css`) and "Apps" ("Media Manager", "Board Manager", "User Manager"; the long names, also as their titles: short
+    ones collided with their modules, decided 2026-10-03); and two made-up groups, "Human Resources" and "Finance"
+    (`FAKE` in `demo/main.ts`), only to show a larger navigation: their apps (without icons; their subgroups with icons, 2026-10-03) are
+    `planned-demo` placeholders too. Each group has an icon. In the cockpit's footer the cockpit's navigation (one button, 2026-10-03: which one, one attribute `nav` (2026-10-04): sidebar, topbar of two lines, topbar of one line, or app switcher,
+    and its colors, dark or like the page), the accent color (2026-10-03: one of Mantine's usual colors, violet by default, or "Design language", i.e. `ui.css`'s; it only sets `--app-accent-color` on `<html>`, which `demo/demo.css` maps to the apps' `--board-manager-accent-color`, `--media-manager-accent-color`, `--user-manager-accent-color`, with the design language's accent as the fallback, so the cockpit and the apps have one color; the package demos keep `ui.css`'s) and the page's settings (the language `en-US`/`de-DE` in the kebab menu, 2026-10-03; the color scheme: System, Light (the default), Dark, 2026-10-03; from
+    `packages/app-cockpit/demo/footer.ts`, with a made-up menu), which change `<html>` (`lang`, `data-scheme`) for every
+    demo.
+    - Signing out (2026-10-03; the user menu's "Sign out") shows the login screen (`packages/app-login`) in place of
+      the cockpit (`hidden`), animated (2026-10-04): the cockpit fades out (250 ms), then the login screen fades in (350 ms;
+      `demo/demo.css`, `signOut()` in `demo/main.ts`; none with reduced motion); any username and password sign in again (after 500 ms); with "Forgot password?" and "Create an account" (made-up
+      server: the username "taken" exists already) and made-up providers ("Continue with Microsoft", "Google", "Company SSO"),
+      which sign in after 700 ms. Signed out is remembered per
+      browser (`demo-page:signed-in`). Its accent is the page's (`--app-login-accent-color` in `demo/demo.css`).
+    - The URL hash: the app's id first, then one segment per level of tabs inside it: `#file-upload/react`,
+      `#dialogs-toasts/react-i18n`, `#board-manager/boards/b1`. No hash: the Board Manager (the cockpit's `defaultApp`, 2026-10-03).
+  - `demo/main.ts`: creates the cockpit (`createAppCockpitClass`, title "Back Office", subtitle "Acme Corporate" (2026-10-03; "App Center" without a subtitle before), with the search, a made-up
+    signed-in user) with
+    the demos. Each is loaded when it is opened
+    the first time (`load`: a dynamic `import()` by a relative path, e.g. `../packages/file-upload/demo/FileUploadDemo`)
+    and registered then (`data-navigator-demo`, `file-upload-demo`, `overlays-demo`; the root's own `media-manager-demo`,
+    `board-manager-demo` and `user-manager-demo`). Each demo element is a light DOM custom element of its package (see "Demo element" in
+    the package's `CLAUDE.md`), exported and not registered.
+  - `demo/media-manager/`: the "Media Manager" app, a demo of the root (not of a package): a small file manager
+    (folders and files: a folder tree, a data navigator per folder, dialogs and toasts, a file upload in a drawer), in
+    the Board Manager's look (Mantine). Built in the Board Manager's target structure (domain, `infra/in-memory/`,
+    a service per feature, TanStack Query). Details: `demo/media-manager/CLAUDE.md`.
+  - The root's apps (Media Manager, Board Manager, User Manager) work standalone and embedded (e.g. in the cockpit):
+    no greetings like "Welcome" on their start pages, and no "Home" (2026-10-03): the start page is "Main" (the Board Manager's is "Overview" since 2026-10-04, the user's wish) (German
+    "Hauptseite"): its title, its menu entry. The breadcrumb starts with a house icon and the label "Home" (2026-10-04, the
+    user's wish; the icon only, labeled "Overview", before): a link to the start page; on the start page itself the same, not clickable (the current page); the app icon in the top bar is only an
+    icon, not a link (2026-10-04; a link to the start page before).
+  - `demo/user-manager/`: the "User Manager" app, a demo of the root: users, groups, roles and grants (who has which
+    role where, on a scope tree, inherited downwards; allow only), with a check of access that says why. The Board
+    Manager's look, the Media Manager's architecture. Details: `demo/user-manager/CLAUDE.md`.
+  - `demo/board-manager/`: the "Board Manager" app, a demo of the root (a small app, not a product): boards and
+    committees, their meetings, agendas, minutes and documents, with Mantine, React Router, Zustand and all three
+    packages; also as a `<board-manager>` element for a host page (`npm run build:board-manager`). Details:
+    `demo/board-manager/CLAUDE.md`.
+  - `demo/demo.css`: (2026-10-04: the cockpit's base text size, `--app-cockpit-font-size`, is mapped there to the apps' own text size, `--board-manager-font-size` and the like: one text size for the shell and the apps) only what is specific to this page: the cockpit fills the window (`100dvh`). (Its frame is not
+    selectable, by the cockpit's own CSS; inside the demos, selecting stays as their packages have it.)
   - `demo/ui/`: the design language (`ui.css`, `ui.ts`), the same files as in every package. Read the header of `ui.css`
     before changing it, and copy a change into all copies (`demo/ui/` here, and in each package).
+    - Its `ui-*` tokens are the default look: the packages' default themes follow them, and a change of a token is
+      made in the packages' defaults too. The radius: `--ui-radius-sm: 2px` for controls (inputs, selects, menus);
+      the data navigator's `radius` is `2px`, the file upload's small parts `2px` (half of its `borderRadius`, `4px`).
+      Buttons: `--ui-radius-md: 5px`; the data navigator's `buttonRadius`, the file upload's `buttonBorderRadius`
+      and the overlays' `actionRadius` (dialog buttons) are `5px`. The default theme (the `ui-*` values) is the same in every
+      package that has it, and MUST NOT be changed in just one of them (2026-10-04, the user's rule: the data navigator
+      had `2px` buttons and other values for a while, put back). Larger surfaces are a bit rounder: the file
+      upload's frame `4px`, dialogs `6px` (`--ui-radius-lg`), toasts `5px`. (2026-10-04: the tokens were `--ui-radius` and
+      `--ui-button-radius`; `--ui-popup-padding` is gone, a plain `3px` in the select picker.)
+- `old-demos/<version>/`: frozen, compiled demo pages of older versions (relative base `./`, so they work under any
+  path). Never edit them.
+  - `npm run freeze-demo` builds the current demo into `old-demos/<version of the root package.json>/` (it refuses an
+    existing folder). So: freeze first, then raise the version in the root `package.json`.
+  - The deploy workflow copies `old-demos/` into `dist/`: https://js-works.github.io/essential-components/old-demos/0.0.0/
 - `vite.config.ts`: `resolve.dedupe` makes all demos use one React, even where a package pins its own version (e.g.
   `overlays`, which gets a nested one in its `node_modules`).
 - `tsconfig.json`: `tsc` also checks the imported demo files, so the compiler options are the loosest common set: like
@@ -104,8 +128,18 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
 
 ## Stack
 
-- TypeScript (strict), Vite, npm workspaces. The root has dev dependencies only (`vite`, `typescript`,
-  `@vitejs/plugin-react`, `react`, `react-dom`, their types, `dprint`).
+- TypeScript (strict), Vite, npm workspaces. The root has dev dependencies (`vite`, `typescript`,
+  `@vitejs/plugin-react`, `react`, `react-dom`, their types, `dprint`; for the board manager `@mantine/core`,
+  `@mantine/hooks`, `react-router`) and `zustand`, `react-icons` (the board manager's icons: its Tabler set, `tb`),
+  `@mantine/dates` with `dayjs` (pinned to the versions the workspace has from `overlays`: `9.5.1`, `1.11.23`),
+  `i18next` (the board manager's translations), `zod` (the schemas of `form-validation` in the board manager),
+  `@tanstack/react-query` (the reads and changes of the board manager, the media manager and the user manager).
+  `@mantine/form` was removed (2026-10-02): the board manager's forms use `form-validation`.
+- Browsers (2026-10-03): only the latest Chrome, Edge, Firefox and Safari. Every Vite config (the root's, the board
+  manager's, each package's) builds with `build.target: 'esnext'` (the CSS too: `cssTarget` follows it), so modern CSS
+  stays as it is. The default target let the minifier (Lightning CSS) lower `light-dark()` into variables that follow
+  the page's color scheme, not the element's `color-scheme`: on the published page the cockpit's dark sidebar and menus
+  got light colors (fine in `npm run dev`, which does not minify).
 - `.npmrc` (the root one counts in a workspace; npm ignores those of the packages): `ignore-scripts=true`,
   `min-release-age=7`.
   - The first workspace install (2026-09-26) was run once with `--min-release-age=5`, because `antd@6.6.5` (a dev
@@ -119,6 +153,15 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
 - `npm run dev`: the demo page of all packages. `npm run dev -w @local/file-upload` (etc.): the demo of one package.
 - `npm run build`: typecheck + build the demo page into `dist/`.
 - `npm run build:pages`: the same for GitHub Pages (`vite build --mode pages`, base `/essential-components/`).
+- `npm run build:board-manager`: the `<board-manager>` element as one module into `dist-board-manager/`.
 - `npm run typecheck`
 - `npm run format`: dprint. `npm run format:check`
 - The tests run inside a package (`npm test -w @local/file-upload`, …).
+
+## TODO
+
+- The look of the data navigator (the user does not like it yet; details in its `CLAUDE.md`, "Todo (later)").
+- The overlays' React demo CSS (`packages/overlays/src/demo/react.css`, imported by its `react.tsx`) is global: on
+  this page it reaches every demo, e.g. its error badge of Mantine's `TextInput` (`.mantine-TextInput-error`) appeared
+  in the board manager. The board manager now has its own (`board-manager.css`, for all Mantine inputs, 2026-10-02).
+  Decide how to keep a package's demo CSS inside its demo (a scope class on the demo element, or CSS modules).

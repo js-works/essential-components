@@ -1,0 +1,334 @@
+/* BlockNote's stylesheet (the minutes editor) in a layer of its own: it imports Mantine's component styles again,
+   unlayered, which would otherwise win over the rules below (e.g. the breadcrumb's). Declared after Mantine's layer, so
+   it still wins over that one. */
+@import '@blocknote/mantine/style.css' layer(blocknote);
+
+/* The frame of the board manager. Everything else is Mantine (its variables are set on `.board-manager`). */
+
+.board-manager {
+  color: var(--mantine-color-text);
+  font-family: var(--mantine-font-family);
+  font-size: var(--mantine-font-size-sm);
+}
+
+/* Links are darker than Mantine's primary color (shade 9 instead of 6; 8 until 2026-10-01) in the light scheme; the
+   dark one keeps its own (shade 4). Unlayered, so it wins over Mantine's layered rule; a `c` prop (inline) still wins
+   over this. */
+.board-manager[data-mantine-color-scheme='light'] .mantine-Anchor-root {
+  color: var(--mantine-primary-color-9);
+}
+
+.board-manager__app {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-md);
+}
+
+/* Always one line: the icon and the title keep their size, the breadcrumb takes the rest (its crumbs end with an
+   ellipsis when it is too short). A container: Back and Forward go when it is narrow (below). */
+.board-manager__top-bar {
+  container: board-manager-top-bar / inline-size;
+  /* A container is a containing block for its popups (tooltips, menus), but Floating UI (Mantine's positioning) only
+     knows that from `contain`: without it, they open far off to the side. */
+  contain: layout;
+  /* `contain: layout` makes the bar a stacking context: its popups' z-index counts only inside it. Above the page below
+     it, or the menus open under its content (e.g. the start page's tiles). */
+  position: relative;
+  z-index: 100;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--mantine-spacing-xs) var(--mantine-spacing-lg);
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-sm);
+  background: var(--mantine-color-body);
+  /* The app's frame (icon, title menu, breadcrumb): not selectable, like the demo page's own header. */
+  user-select: none;
+}
+
+.board-manager__title {
+  padding: 4px 6px;
+  border-radius: var(--mantine-radius-sm);
+}
+
+.board-manager__title:hover {
+  background: var(--mantine-color-default-hover);
+}
+
+.board-manager__crumbs {
+  flex: 0 1 auto;
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow: hidden;
+
+  /* Every crumb may shrink to an ellipsis; Home (its icon and text) and the separators keep their size. */
+  & > .mantine-Breadcrumbs-breadcrumb {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  & > .board-manager__home,
+  & > .mantine-Breadcrumbs-separator {
+    flex: none;
+  }
+}
+
+/* Back and Forward (at the end of the top bar) only where there is room for them next to the title and a breadcrumb. */
+@container board-manager-top-bar (width < 40rem) {
+  .board-manager__history {
+    display: none;
+  }
+}
+
+/* The app icon at the start of the top bar: only an icon, not a link (2026-10-04: the first crumb leads home). */
+.board-manager__app-icon {
+  display: inline-flex;
+  border-radius: var(--mantine-radius-sm);
+}
+
+/* The first crumb: a house icon and "Home", a link to the start page (the app icon is no link).
+   On the start page it is the current page (not a link). */
+.board-manager__home {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  border-radius: var(--mantine-radius-sm);
+  color: var(--mantine-color-dimmed);
+  font-size: var(--mantine-font-size-sm);
+
+  &:is(a):hover {
+    background: var(--mantine-color-default-hover);
+    color: var(--mantine-color-text);
+  }
+
+  /* On the start page: the current page, not a link (like the last crumb). */
+  &[aria-current] {
+    color: var(--mantine-color-text);
+    font-weight: 500;
+  }
+}
+
+.board-manager__card {
+  transition: border-color 120ms;
+}
+
+.board-manager__card:hover {
+  border-color: var(--mantine-primary-color-filled);
+}
+
+/* A link that opens in a new tab (`WebsiteLink`): its icon right after the text, on its middle. */
+.board-manager__external-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+}
+
+/* The header line of a tab's panel (an overview: its title and buttons): not selectable, like the toolbars of the
+   tables in the other tabs. */
+.board-manager__panel-header {
+  user-select: none;
+}
+
+/* The message of an invalid field as a badge below it (2026-10-02, taken from the overlays' React demo,
+   `packages/overlays/src/demo/react.css`): in the danger color, with a warning triangle in front and a nose pointing up
+   at the field. Only the focused field shows its badge (at most one on screen); it hangs over the field below, so
+   nothing moves when a message comes or goes. The red frame of an invalid field stays Mantine's.
+   For every Mantine input (the shared classes: `InputWrapper`, `Input`), not only `TextInput`; `:focus-within`, since
+   the focused element of a textarea or a select is no `<input>`. Absolute, not fixed: it stays with its field when a
+   dialog's body scrolls. */
+.board-manager .mantine-InputWrapper-root {
+  position: relative;
+}
+
+/* Mantine reserves room under the input for the message; the badge is out of the flow, so that would only push the
+   next field down. */
+.board-manager .mantine-InputWrapper-root .mantine-Input-wrapper {
+  margin-bottom: 0;
+}
+
+.board-manager .mantine-InputWrapper-error {
+  /* The nose's height, and the room above its tip (in em: proportions of the message's text). */
+  --nose: 0.35em;
+  --nose-gap: 0.12em;
+
+  position: absolute;
+  z-index: 1;
+  top: 100%;
+  inset-inline-start: 0;
+  max-width: 100%;
+  width: max-content;
+  margin-block-start: calc(var(--nose) + var(--nose-gap));
+  padding: 0.35em 0.8em;
+  border-radius: 0.45em;
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  background: var(--mantine-color-error);
+  color: #fff;
+  font-size: var(--mantine-font-size-xs);
+  line-height: 1.35;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
+
+  /* Hidden, not unmounted: the input's `aria-describedby` points here. */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-0.25em);
+
+  /* The warning triangle: a mask in the text's color (the exclamation mark a hole in it, `evenodd`). Decoration only. */
+  &::before {
+    content: '';
+    flex: none;
+    inline-size: 1.05em;
+    block-size: 1.05em;
+    background-color: currentColor;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' fill-rule='evenodd' d='M12 2 1 21h22L12 2Zm1 8h-2v5h2v-5Zm0 7h-2v2h2v-2Z'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+  }
+
+  /* The nose: a zero-height box with only its bottom border painted, a triangle pointing up. */
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    inset-inline-start: 0.9em;
+    border: var(--nose) solid transparent;
+    border-block-start-width: 0;
+    border-block-end-color: var(--mantine-color-error);
+  }
+}
+
+/* Fades in, cuts out: the transition only on the shown state. */
+.board-manager .mantine-InputWrapper-root:focus-within .mantine-InputWrapper-error {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: opacity 140ms ease-out, transform 140ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-manager .mantine-InputWrapper-root:focus-within .mantine-InputWrapper-error {
+    transition: none;
+  }
+}
+
+/* Not while a date input's calendar is open: it would lie half under the calendar. The calendar (`data-dates-dropdown`)
+   is in the field's wrapper (no portal) and mounted only while open. After the rule above, so it wins. */
+.board-manager .mantine-InputWrapper-root:has([data-dates-dropdown]) .mantine-InputWrapper-error {
+  visibility: hidden;
+}
+
+/* The minutes editor (BlockNote, `minutes.tsx`) in the minutes drawer: framed like a Mantine input, room for a few
+   paragraphs. Its side menu (the drag handle and the plus) sits in the editor's own padding.
+   It is the positioned ancestor of BlockNote's menus (portalled into its container): inside a dialog of the overlays
+   package (its content slotted into a shadow root), the dialog cannot be their `offsetParent`, so without one here
+   Floating UI measured from an element further out and, in the `<board-manager>` element, placed them off by the
+   dialog's position. */
+.board-manager__minutes-editor {
+  position: relative;
+  min-height: 12rem;
+  margin-top: 4px;
+  padding-block: var(--mantine-spacing-xs);
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-sm);
+  background: var(--mantine-color-body);
+
+  &:focus-within {
+    border-color: var(--mantine-primary-color-filled);
+  }
+
+  & .bn-container,
+  & .bn-editor {
+    background: transparent;
+  }
+
+  /* The app's size and font (BlockNote's own: 16px, Inter), like the Mantine inputs around it. */
+  & .bn-editor {
+    font-family: var(--mantine-font-family);
+    font-size: var(--mantine-font-size-sm);
+  }
+}
+
+/* The minutes form in the maximized dialog (`data-maximized` on the overlays' dialog element, which then makes its
+   content as high as the body's free room): the scope around the form and the form fill it, and its two fields share
+   the height, two thirds for the minutes, one for "Decision"; each field's own box (the editor, the textarea) takes
+   what its label and description leave. */
+[data-maximized] .board-manager:has(> .board-manager__minutes-form),
+[data-maximized] .board-manager__minutes-form {
+  height: 100%;
+}
+
+[data-maximized] .board-manager__minutes-form > * {
+  display: flex;
+  flex-direction: column;
+}
+
+[data-maximized] .board-manager__minutes-form > :first-child {
+  flex: 2 1 auto;
+
+  & > .board-manager__minutes-editor {
+    flex: 1 1 auto;
+  }
+}
+
+[data-maximized] .board-manager__minutes-form > :last-child {
+  flex: 1 1 auto;
+
+  /* The wrapper of the textarea (Mantine's `.mantine-Textarea-wrapper`). */
+  & > :has(> textarea) {
+    flex: 1 1 auto;
+  }
+
+  /* Mantine's `autosize` sets the textarea's height inline, with `!important`, which no stylesheet beats; a larger
+     min-height does. */
+  & textarea {
+    min-height: 100%;
+  }
+}
+
+/* A mention in the minutes (`minutes.tsx`), in the editor and as a link in the read-only views: in Mantine's accent
+   color, like the filled buttons (`--mantine-primary-color-filled`: shade 6 light, 8 dark). The scheme attribute in the
+   selector outweighs the app's link color above. */
+.board-manager[data-mantine-color-scheme] .board-manager__mention {
+  color: var(--mantine-primary-color-filled);
+}
+
+/* The minutes, read-only (the minutes tab, an item's detail row): like text, without the room of the side menu and in
+   the app's font size. */
+.board-manager__minutes-text {
+  & .bn-container,
+  & .bn-editor {
+    background: transparent;
+  }
+
+  & .bn-editor {
+    padding-inline: 0;
+    font-family: var(--mantine-font-family);
+    font-size: var(--mantine-font-size-sm);
+  }
+}
+
+/* The pages of the PDF preview (`pdf/preview.tsx`): canvases as wide as the dialog, each with a thin shadow, on a gray
+   ground like a viewer, with a line above and below in the color of the app's borders (square corners). */
+.board-manager__pdf-pages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-md);
+  padding: var(--mantine-spacing-md);
+  background: var(--mantine-color-default-hover);
+  border-block: 1px solid var(--mantine-color-default-border);
+
+  &:empty {
+    display: none;
+  }
+}
+
+.board-manager__pdf-page {
+  width: 100%;
+  height: auto;
+  background: white;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.2);
+}

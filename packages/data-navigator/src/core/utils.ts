@@ -7,11 +7,18 @@ export {
   isPlainRowClick,
   isPlainRowDoubleClick,
   isShiftClick,
-  startsDoubleClick,
+  isTextEditingTarget,
+  MAX_OPTIMAL_COLUMN_WIDTH,
+  MIN_COLUMN_WIDTH,
   suppressesTextSelection,
   suppressesWordSelection,
   textFieldKeys,
 };
+
+// The narrowest a column can be made by hand or by "Optimize column widths", and the widest the latter makes one (a
+// column with long texts would else take the whole table), in pixels.
+const MIN_COLUMN_WIDTH = 64;
+const MAX_OPTIMAL_COLUMN_WIDTH = 480;
 
 // Value for a boolean `data-*` attribute: present when true, absent when false.
 function flag(condition: boolean): '' | undefined {
@@ -37,13 +44,15 @@ function formatValue(value: unknown): string {
 // Did this event hit the free space of a cell of the row? Not its text, not anything a custom `render` or
 // `renderDetail` drew, and not a control cell. Rows are `display: contents`, so the cells are the direct children of
 // the row: the target has to be one of them. That also rules out buttons, links and inputs without listing them, and
-// events from portals (an open action menu), which are not children of the row at all.
+// events from portals (an open action menu), which are not children of the row at all. The selection cell is not a
+// row target either: its free space is a click on its checkbox or radio (it handles that itself).
 function isRowTarget(event: MouseEvent<HTMLElement>): boolean {
   const target = event.target;
 
   return target instanceof Element
     && target.parentElement === event.currentTarget
-    && !target.hasAttribute('data-control');
+    && !target.hasAttribute('data-control')
+    && !target.hasAttribute('data-select');
 }
 
 // Is this click a click on the row itself, i.e. one that should select the row?
@@ -62,11 +71,14 @@ function isPlainRowDoubleClick(event: MouseEvent<HTMLElement>): boolean {
 
 const TEXT_EDITING_ELEMENTS = 'textarea, select, input:not([type="checkbox"], [type="radio"]), [contenteditable]';
 
+// Is this inside something where the user selects or edits text themselves?
+function isTextEditingTarget(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest(TEXT_EDITING_ELEMENTS) !== null;
+}
+
 // Is the mouse inside something where the user selects or edits text themselves? Then nothing is suppressed there.
 function isTextEditing(event: MouseEvent<HTMLElement>): boolean {
-  const target = event.target;
-
-  return target instanceof Element && target.closest(TEXT_EDITING_ELEMENTS) !== null;
+  return isTextEditingTarget(event.target);
 }
 
 // Shift + mouse down would select text between the last click and this one. Not wanted, except inside text inputs.

@@ -15,28 +15,33 @@ export {
   Checkbox,
   ChevronButton,
   ClearButton,
-  EmptyIcon,
   FilterSelectField,
   FilterTextField,
+  LoadingBar,
   PageField,
   PagerButton,
   PageSizeField,
   Pill,
+  PrefixedTextField,
   Radio,
   SearchField,
+  Segmented,
+  SelectInput,
   SortButton,
-  Spinner,
+  TextButton,
+  ToggleMenu,
+  WithTip,
 };
-export type { ButtonPlacement, MenuEntry, Option };
+export type { ButtonPlacement, MenuEntry, Option, ToggleEntry };
 
 // The widgets of the data navigator: native elements with the classes of our stylesheet. They know nothing about rows,
 // queries or the state of the table. Selects, menus and tooltips come from Base UI.
 
 type Option = { value: string; label: string };
 
-// Where a button sits. In the toolbar the buttons are filled or outlined, in a row they are link-like: a border or a
-// background of their own looks odd on a hovered or selected row.
-type ButtonPlacement = 'toolbar' | 'row';
+// Where a button sits. The actions of the toolbar are the standard buttons (outlined, or filled for primary and
+// danger), its view controls (`tool`: filter, reload) are ghost buttons, the buttons in a row are link-like and smaller.
+type ButtonPlacement = 'toolbar' | 'tool' | 'row';
 
 // One entry of an open action menu. The row is already bound, so `onClick` takes no argument.
 type MenuEntry =
@@ -100,13 +105,58 @@ function Pill({ children }: { children: ReactNode }): ReactElement {
   return <span className={styles.pill}>{children}</span>;
 }
 
-function Spinner({ label }: { label: string }): ReactElement {
-  return <span role="status" aria-label={label} className={styles.spinner} />;
+// A quiet button that looks like a link: Reset, Clear all, Cancel.
+function TextButton(props: { children: ReactNode; muted?: boolean; onClick: () => void }): ReactElement {
+  const { children, muted = false, onClick } = props;
+
+  return (
+    <button type="button" className={styles.textButton} data-muted={flag(muted)} onClick={onClick}>
+      {children}
+    </button>
+  );
 }
 
-function EmptyIcon(): ReactElement {
-  // A thinner stroke than the small icons (1.25 instead of 2, about 2px at this size): lighter at 40px.
-  return <icons.DatabaseThin size={40} className={styles.emptyIcon} />;
+type SegmentedProps<V extends string> = {
+  value: V;
+  options: readonly { value: V; label: string }[];
+  // The accessible name of the group: a label of its own, or the id of an element that names it.
+  label?: string;
+  labelledBy?: string;
+  small?: boolean;
+  onChange: (value: V) => void;
+};
+
+// A row of connected buttons of which exactly one is chosen (a radio group).
+function Segmented<V extends string>(props: SegmentedProps<V>): ReactElement {
+  const { value, options, label, labelledBy, small = false, onChange } = props;
+
+  return (
+    <div
+      role="radiogroup"
+      className={styles.segmented}
+      data-small={flag(small)}
+      aria-label={label}
+      aria-labelledby={labelledBy}
+    >
+      {options.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          role="radio"
+          className={styles.segment}
+          aria-checked={option.value === value}
+          onClick={() => onChange(option.value)}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// The loading indicator: a thin gray bar with a sliding segment (no spinner).
+function LoadingBar({ label }: { label: string }): ReactElement {
+  return <span role="status" aria-label={label} className={styles.loadingBar} />;
 }
 
 type CheckboxProps = {
@@ -150,7 +200,7 @@ function ChevronButton(props: { label: string; expanded: boolean; onClick: () =>
   const { label, expanded, onClick } = props;
 
   return (
-    <button type="button" className={styles.iconButton} aria-label={label} aria-expanded={expanded} onClick={onClick}>
+    <button type="button" className={styles.detailToggle} aria-label={label} aria-expanded={expanded} onClick={onClick}>
       <span className={styles.chevron} data-expanded={flag(expanded)}>
         <icons.ChevronRight />
       </span>
@@ -182,14 +232,13 @@ function PagerButton({ icon, label, disabled, onClick }: PagerButtonProps): Reac
 }
 
 // A sortable column header. The whole header cell around it handles the click, so it has no onClick of its own.
-// Without a direction the column is not sorted, and its icon only shows on hover or focus (the stylesheet does that),
-// but its space is always reserved, so the header text does not jump.
+// Without a direction the column is not sorted, and its icon is faint (the stylesheet does that).
 function SortButton(
   props: { tip: string; header: ReactNode; direction: Spec.SortDirection | undefined },
 ): ReactElement {
   const { tip, header, direction } = props;
   const icon = direction === undefined
-    ? <icons.ArrowDownUp size={14} className={styles.unsortedIcon} />
+    ? <icons.ArrowsVertical size={14} className={styles.unsortedIcon} />
     : direction === 'asc'
     ? <icons.ArrowUp size={14} />
     : <icons.ArrowDown size={14} />;
@@ -210,6 +259,7 @@ type ActionButtonProps = {
   look: Spec.ActionLook;
   variant: Spec.ActionVariant;
   placement: ButtonPlacement;
+  busy?: boolean;
   onClick: () => void;
 };
 
@@ -236,22 +286,23 @@ function buttonAttributes(look: Spec.ActionLook, variant: Spec.ActionVariant, pl
   } as const;
 }
 
-function ActionButton({ look, variant, placement, onClick }: ActionButtonProps): ReactElement {
+// `busy`: something is running (the Reload button while loading): its icon turns.
+function ActionButton({ look, variant, placement, busy = false, onClick }: ActionButtonProps): ReactElement {
   return (
     <WithTip tip={look.tip} describe={look.label !== undefined}>
-      <button {...buttonAttributes(look, variant, placement)} onClick={onClick}>
+      <button {...buttonAttributes(look, variant, placement)} data-busy={flag(busy)} onClick={onClick}>
         {buttonContent(look, false)}
       </button>
     </WithTip>
   );
 }
 
-type ActionMenuProps = Omit<ActionButtonProps, 'onClick'> & { entries: readonly MenuEntry[] };
+type ActionMenuProps = Omit<ActionButtonProps, 'onClick' | 'busy'> & { entries: readonly MenuEntry[] };
 
 // A button with a flat list of actions (Base UI's Menu): arrow keys, Home, End and typing move between the items,
 // Enter chooses one, Escape and a click outside close it, and the focus goes back to the button. The list opens below
-// the button: in the toolbar (buttons on the left) aligned to its start, in the action column (at the right edge of the
-// rows) aligned to its end, so it does not reach past the table. It is rendered in the layer of the root (so it gets the tokens of the theme). It is not modal. The
+// the button, aligned to its end (the actions of the toolbar and the action column both sit at the right), so it does
+// not reach past the table. It is rendered in the layer of the root (so it gets the tokens of the theme). It is not modal. The
 // tooltip of the button is disabled while the menu is open.
 function ActionMenu({ look, variant, placement, entries }: ActionMenuProps): ReactElement {
   const layer = useContext(LayerContext);
@@ -269,7 +320,7 @@ function ActionMenu({ look, variant, placement, entries }: ActionMenuProps): Rea
         <BaseMenu.Positioner
           className={styles.popupPositioner}
           side="bottom"
-          align={placement === 'row' ? 'end' : 'start'}
+          align="end"
           sideOffset={4}
           positionMethod="fixed"
         >
@@ -297,6 +348,88 @@ function ActionMenu({ look, variant, placement, entries }: ActionMenuProps): Rea
   );
 }
 
+// One entry of a toggle menu: something that is on or off (a column that is shown or hidden).
+type ToggleEntry = { key: string; label: ReactNode; checked: boolean; disabled: boolean };
+
+// One action of a toggle menu, above its entries: a plain item that closes the menu.
+type ToggleAction = { key: string; label: string; icon: ReactNode; disabled: boolean; onSelect: () => void };
+
+type ToggleMenuProps = {
+  icon: ReactNode;
+  // The accessible name and the tooltip of the icon-only button.
+  label: string;
+  // Above the entries, with a separator between them (none without entries).
+  actions?: readonly ToggleAction[];
+  entries: readonly ToggleEntry[];
+  onToggle: (key: string, checked: boolean) => void;
+};
+
+// An icon-only ghost button with a menu of checkbox items (Base UI's Menu.CheckboxItem), e.g. the columns to show. The
+// menu stays open while its items are toggled (Escape or a click outside closes it). Every item shows a checkbox in
+// front, only as a picture of its state (like the options of a multiple select). It opens below the button, aligned
+// to its end. Actions (plain items) come first, then a separator, then the entries.
+function ToggleMenu({ icon, label, actions = [], entries, onToggle }: ToggleMenuProps): ReactElement {
+  const layer = useContext(LayerContext);
+  const [open, setOpen] = useState(false);
+  const look: Spec.ActionLook = { icon, tip: label };
+
+  return (
+    <BaseMenu.Root modal={false} open={open} onOpenChange={setOpen}>
+      <WithTip tip={label} describe={false} disabled={open}>
+        <BaseMenu.Trigger {...buttonAttributes(look, 'secondary', 'tool')}>
+          {buttonContent(look, false)}
+        </BaseMenu.Trigger>
+      </WithTip>
+      <BaseMenu.Portal container={layer}>
+        <BaseMenu.Positioner
+          className={styles.popupPositioner}
+          side="bottom"
+          align="end"
+          sideOffset={4}
+          positionMethod="fixed"
+        >
+          <BaseMenu.Popup className={`${styles.popup} ${styles.menuWithIcons}`}>
+            {actions.map((action) => (
+              <BaseMenu.Item
+                key={action.key}
+                className={styles.menuItem}
+                disabled={action.disabled}
+                onClick={action.onSelect}
+              >
+                <span className={styles.menuIcon}>{action.icon}</span>
+                <span className={styles.menuText}>{action.label}</span>
+              </BaseMenu.Item>
+            ))}
+            {actions.length > 0 && entries.length > 0 && <BaseMenu.Separator className={styles.menuSeparator} />}
+            {entries.map((entry) => (
+              <BaseMenu.CheckboxItem
+                key={entry.key}
+                className={styles.menuItem}
+                checked={entry.checked}
+                disabled={entry.disabled}
+                closeOnClick={false}
+                onCheckedChange={(checked) => onToggle(entry.key, checked)}
+              >
+                <span className={styles.menuIcon}>
+                  <input
+                    type="checkbox"
+                    className={styles.check}
+                    checked={entry.checked}
+                    readOnly
+                    tabIndex={-1}
+                    aria-hidden
+                  />
+                </span>
+                <span className={styles.menuText}>{entry.label}</span>
+              </BaseMenu.CheckboxItem>
+            ))}
+          </BaseMenu.Popup>
+        </BaseMenu.Positioner>
+      </BaseMenu.Portal>
+    </BaseMenu.Root>
+  );
+}
+
 function ClearButton({ label, onClick }: { label: string; onClick: () => void }): ReactElement {
   return (
     <button type="button" className={styles.clearButton} aria-label={label} onClick={onClick}>
@@ -313,11 +446,15 @@ type SearchFieldProps = {
   onChange: (text: string) => void;
   onClear: () => void;
   onKeyDown: KeyboardEventHandler;
+  // Not usable for now (e.g. while the filter view is shown).
+  inert?: boolean;
 };
 
-function SearchField({ value, label, clearLabel, onChange, onClear, onKeyDown }: SearchFieldProps): ReactElement {
+function SearchField(props: SearchFieldProps): ReactElement {
+  const { value, label, clearLabel, onChange, onClear, onKeyDown, inert = false } = props;
+
   return (
-    <div className={styles.searchField}>
+    <div className={styles.searchField} inert={inert}>
       <span className={styles.fieldIcon}>
         <icons.Search />
       </span>
@@ -382,6 +519,32 @@ function PageSizeField({ value, label, options, onChange }: PageSizeFieldProps):
   );
 }
 
+type PrefixedTextFieldProps = FilterTextFieldProps & {
+  prefix: { value: string; label: string; options: readonly Option[]; onChange: (value: string) => void };
+};
+
+// A text field with a small select inside it, at its start, as a chip (e.g. how a text filter matches: contains,
+// starts with, ends with). The select is one of ours (`SelectField`), with its chevron.
+function PrefixedTextField({ prefix, ...field }: PrefixedTextFieldProps): ReactElement {
+  return (
+    <div className={styles.prefixedField}>
+      <div className={styles.prefixSelect}>
+        <SelectField
+          value={[prefix.value]}
+          multiple={false}
+          options={prefix.options}
+          naming={{ 'aria-label': prefix.label }}
+          onChange={(next) => next[0] !== undefined && prefix.onChange(next[0])}
+        />
+        <span className={styles.fieldEnd}>
+          <icons.ChevronDown size={14} />
+        </span>
+      </div>
+      <FilterTextField {...field} />
+    </div>
+  );
+}
+
 type FilterTextFieldProps = {
   value: string;
   placeholder: string;
@@ -389,7 +552,7 @@ type FilterTextFieldProps = {
   clearLabel: string;
   onChange: (text: string) => void;
   onClear: () => void;
-  onKeyDown: KeyboardEventHandler;
+  onKeyDown?: KeyboardEventHandler;
 };
 
 function FilterTextField(props: FilterTextFieldProps): ReactElement {
@@ -423,13 +586,14 @@ type FilterSelectFieldProps = {
 };
 
 // A select of Base UI, for a single and for a multiple select. The value is a list of none, one or several option
-// values, whatever the mode. Both show a clear button while something is selected, in place of their arrow. A single
-// select also has an option for "nothing" (the placeholder, value ''), so it can be cleared from its list as well.
+// values, whatever the mode. Both show a clear button while something is selected, before their arrow (which is always
+// there, and turns while the list is open). A single select also has an option for "nothing" (the placeholder, value
+// ''), so it can be cleared from its list as well.
 function FilterSelectField(props: FilterSelectFieldProps): ReactElement {
   const { value, placeholder, labelledBy, clearLabel, multiple, options, onChange } = props;
 
   return (
-    <div className={styles.field}>
+    <div className={`${styles.field} ${styles.listField}`}>
       <SelectField
         value={value}
         multiple={multiple}
@@ -438,13 +602,36 @@ function FilterSelectField(props: FilterSelectFieldProps): ReactElement {
         naming={{ 'aria-labelledby': labelledBy }}
         onChange={(next) => onChange(next.filter((item) => item !== ''))}
       />
-      {value.length > 0
-        ? <ClearButton label={clearLabel} onClick={() => onChange([])} />
-        : (
-          <span className={styles.fieldEnd}>
-            <icons.ChevronDown size={14} />
-          </span>
-        )}
+      {value.length > 0 && <ClearButton label={clearLabel} onClick={() => onChange([])} />}
+      <span className={styles.fieldEnd}>
+        <icons.ChevronDown size={14} />
+      </span>
+    </div>
+  );
+}
+
+type SelectInputProps = {
+  value: string;
+  options: readonly Option[];
+  labelledBy: string;
+  onChange: (value: string) => void;
+};
+
+// A single select that always has a value (e.g. an editor of a row): the look of the other selects, with its chevron,
+// and no clear button.
+function SelectInput({ value, options, labelledBy, onChange }: SelectInputProps): ReactElement {
+  return (
+    <div className={styles.field}>
+      <SelectField
+        value={[value]}
+        multiple={false}
+        options={options}
+        naming={{ 'aria-labelledby': labelledBy }}
+        onChange={(next) => next[0] !== undefined && onChange(next[0])}
+      />
+      <span className={styles.fieldEnd}>
+        <icons.ChevronDown size={14} />
+      </span>
     </div>
   );
 }

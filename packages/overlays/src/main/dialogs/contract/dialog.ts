@@ -33,6 +33,14 @@ export type DialogType =
  */
 export type DialogSurface = "dialog" | "drawer";
 
+/**
+ * How wide a dialog or a drawer is (see {@link DialogConfig.width}): `"default"` the
+ * surface's own sizing (a centered dialog fits its text, up to 26em; a drawer is 30em),
+ * `"wide"` 48em, `"extraWide"` 64em, `"full"` the whole viewport but a margin (2em on each
+ * side of a dialog, 2em on the open side of a drawer). Never wider than the viewport.
+ */
+export type DialogWidth = "default" | "wide" | "extraWide" | "full";
+
 export type ActionButtonType = "primary" | "secondary" | "danger";
 
 /**
@@ -58,6 +66,19 @@ export interface CloseButtonRender {
 }
 
 /**
+ * Descriptor passed to a custom maximize-button renderer (see
+ * {@link DialogConfig.maximizable}). One button with two states, like the button of a
+ * window: it maximizes the dialog, and restores it while maximized.
+ */
+export interface MaximizeButtonRender {
+  /** Whether the dialog fills the viewport now. */
+  maximized: boolean;
+  /** The button's text for its state, already translated: "Maximize" or "Restore". */
+  label: string;
+  onToggle: () => void;
+}
+
+/**
  * Descriptor passed to a custom note renderer (see {@link FormAttempt.reject}). Plain
  * strings, because the library's own note box is shadow chrome and can only be filled
  * with data — an override replaces the whole box, so it gets the same values.
@@ -80,6 +101,8 @@ export interface NoteRender {
 export interface DialogRenderOverrides<C extends object> {
   actionButton?(button: ActionButtonRender): C;
   closeButton?(close: CloseButtonRender): C;
+  /** Only rendered for a dialog with {@link DialogConfig.maximizable}. */
+  maximizeButton?(button: MaximizeButtonRender): C;
   note?(note: NoteRender): C;
 }
 
@@ -93,6 +116,13 @@ export interface DialogsControllerConfig<C extends object> {
    * make for you. Use {@link domDialogAdapter} for plain DOM nodes.
    */
   adapter: DialogAdapterFactory<C>;
+  /**
+   * Where a dialog is mounted: read each time one opens. Default (and while it returns
+   * nothing): `document.body`. The React provider sets it to its own mount point, so the
+   * dialogs live where the provider is - in a shadow root too, where the content then
+   * gets the styles of that root. A modal `<dialog>` is in the top layer wherever it is.
+   */
+  mountTarget?: () => ParentNode | null | undefined;
   /**
    * Theme tokens for this controller's dialogs; omit for the built-in look. (Toasts have
    * their own {@link ToastTheme}.)
@@ -185,6 +215,30 @@ export interface DialogConfig<C extends object> extends DialogViewConfig<C> {
    */
   surface?: DialogSurface;
   /**
+   * The width of the dialog or drawer (see {@link DialogWidth}). Default `"default"`. With
+   * a named width (and in every drawer), content that needs more room (a `min-width`, a
+   * wide table) still widens it, up to the viewport: it is as wide as its content's
+   * narrowest layout (`min-content`), at least this width. A centered dialog of a named
+   * width is also centered vertically (the default one is anchored near the top).
+   *
+   * Behavioural like `surface`: fixed once the dialog is open.
+   */
+  width?: DialogWidth;
+  /**
+   * Whether the dialog has a Maximize button, before its close button. Default `false`.
+   * Maximized, the dialog or drawer fills the whole viewport (no margin, no rounding; the
+   * header and the buttons stay, the body scrolls), and the button becomes Restore, which
+   * brings back its size. Every dialog starts unmaximized, also the next one of a scope.
+   *
+   * While maximized, the dialog element has the attribute `data-maximized`, and the
+   * element that holds the content is as high as the body's free room. The element is an
+   * ancestor of the content in the light DOM, so a page's CSS can let content fill the
+   * height then (e.g. `[data-maximized] .editor { height: 100%; }`).
+   *
+   * Behavioural like `surface`: fixed once the dialog is open.
+   */
+  maximizable?: boolean;
+  /**
    * Abort this dialog. When the signal aborts, the dialog closes immediately and the
    * call resolves `{ canceled: true, aborted: true }`. Combined with any scope-level
    * signal passed to `open()`.
@@ -245,6 +299,25 @@ export interface FormValidator {
    */
   validate(form: HTMLFormElement): boolean | Promise<boolean>;
 }
+
+/**
+ * The outcome of a form that confirms its dialog itself (see {@link FormConfirm}).
+ *
+ * - `{ ok: true }`: done (e.g. saved) — the dialog closes as confirmed.
+ * - `{ ok: false }`: not valid — the dialog stays open, focus goes to the first invalid field.
+ * - `{ ok: false, error }`: failed (e.g. the save) — the dialog stays open and shows `error`
+ *   as its note.
+ */
+export type FormConfirmResult = { ok: true } | { ok: false; error?: string };
+
+/**
+ * A form's own confirmation: run on the confirm click of a form dialog instead of the
+ * dialog's validation (native constraints, {@link FormValidator}). It validates, does the
+ * work (e.g. saves the parsed data) and says how it went. While a returned promise is
+ * pending, the button shows its spinner. A framework binding registers it from the
+ * dialog's content (React: `<Form confirm={…}>`).
+ */
+export type FormConfirm = () => FormConfirmResult | Promise<FormConfirmResult>;
 
 export interface FormDialogConfig<C extends object> extends DialogConfig<C> {
   validator?: FormValidator;

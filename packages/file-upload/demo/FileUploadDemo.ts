@@ -116,6 +116,13 @@ class FileUploadDemo extends HTMLElement {
             <option value="on" selected>on</option>
           </select>
         </label>
+        <label class="ui-field">Density
+          <select class="ui-select" name="density">
+            <option value="compact">compact</option>
+            <option value="normal" selected>normal</option>
+            <option value="comfortable">comfortable</option>
+          </select>
+        </label>
         <label class="ui-field">Required
           <select class="ui-select" name="required">
             <option value="off">off</option>
@@ -198,6 +205,8 @@ class FileUploadDemo extends HTMLElement {
   }
 }
 
+const DENSITIES = ['compact', 'normal', 'comfortable'] as const;
+
 // The switches set the attributes and properties of both elements.
 function apply(switches: HTMLFormElement, elements: readonly (DefaultUpload | AcmeUpload)[]): void {
   const data = new FormData(switches);
@@ -214,6 +223,7 @@ function apply(switches: HTMLFormElement, elements: readonly (DefaultUpload | Ac
     element.multiple = value('multiple') === 'on';
     element.manualUpload = value('manualUpload') === 'on';
     element.previews = value('previews') === 'on';
+    element.density = DENSITIES.find((density) => density === value('density')) ?? 'normal';
     element.required = value('required') === 'on';
     element.disabled = value('disabled') === 'on';
   }
@@ -230,6 +240,7 @@ class AcmeUpload extends createFileUploadClass({
     accentColor: { light: '#0ca678', dark: '#20c997' },
     surfaceColor: { light: '#e6fcf5', dark: '#0b3b2e' },
     borderRadius: '2px',
+    buttonBorderRadius: '2px',
     fontFamily: 'Georgia, serif',
     fontSize: '0.9375rem',
   },

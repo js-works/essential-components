@@ -1,5 +1,6 @@
 export type {
   Config,
+  Density,
   Element,
   ElementClass,
   FileItem,
@@ -35,6 +36,8 @@ type FileItem = {
   result?: string;
 };
 
+type Density = 'compact' | 'normal' | 'comfortable';
+
 type Element = HTMLElement & {
   upload: Upload | undefined;
   accept: string | undefined;
@@ -44,6 +47,7 @@ type Element = HTMLElement & {
   multiple: boolean;
   manualUpload: boolean;
   previews: boolean;
+  density: Density;
   disabled: boolean;
   name: string | undefined;
   required: boolean;
@@ -76,6 +80,7 @@ type Theme = {
   successColor?: ThemeColor;
   dangerColor?: ThemeColor;
   borderRadius?: string;
+  buttonBorderRadius?: string;
   fontFamily?: string;
   fontSize?: string;
 };

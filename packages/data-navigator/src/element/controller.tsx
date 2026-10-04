@@ -4,6 +4,7 @@ import { createDataNavigatorController, subscribeToSelection } from '../core/con
 import { DataNavigatorView } from '../core/view/DataNavigatorView';
 import type { DataNavigatorComponent as Spec } from '../react/api';
 import type { ContentRenderer } from './content';
+import { editorOf } from './editors';
 import { reactFilterOf } from './filters';
 
 export { bindController, controllerFactoryOf, releaseController, renderController };
@@ -12,8 +13,12 @@ export type { ElementSettings };
 // What the element adds to the controller's options: the settings that do not depend on the row type.
 type ElementSettings = {
   density: DataNavigator.Density;
+  footer: DataNavigator.FooterMode;
   striped: boolean;
   searchable: boolean;
+  reloadable: boolean;
+  selectableGroups: boolean;
+  rowActionLook: DataNavigator.RowActionLook;
   selectionAppearance: DataNavigator.SelectionAppearance;
   pageSize: number;
   pageSizeOptions: readonly number[];
@@ -41,6 +46,8 @@ function controllerFactoryOf<C>(setup: object): DataNavigator.CreateNavigatorCon
       reload: () => core.reload(),
       clearRowSelection: () => core.clearRowSelection(),
       getSelectedRows: () => core.getSelectedRows(),
+      editRow: (row: Row) => core.editRow(row),
+      addRow: (template: Row) => core.addRow(template),
       // The core also reports connecting and disconnecting: a listener only hears about a new selection (the table hands
       // out the same array until the selection changes).
       onSelectionChange: (listener: (rows: readonly Row[]) => void) => {
@@ -114,7 +121,7 @@ function propsOf<Row, C>(
   options: DataNavigator.ControllerOptions<Row, C>,
   content: ContentRenderer,
 ): Spec.Props<Row> {
-  const { renderDetail } = options;
+  const { renderDetail, renderGroup } = options;
 
   const columnOf = (column: DataNavigator.Column<Row, C>): Spec.Column<Row> => {
     const { render } = column;
@@ -124,15 +131,27 @@ function propsOf<Row, C>(
       header: content(column.header),
       width: column.width,
       sortable: column.sortable,
+      resizable: column.resizable,
       align: column.align,
       wrap: column.wrap,
+      hideable: column.hideable,
+      hidden: column.hidden,
       render: render === undefined ? undefined : (row) => content(render(row)),
       filter: filterOf(column.filter, content),
+      edit: editorOf(column.edit, content),
     };
   };
 
   return {
     source: options.source,
+    reorder: options.reorder,
+    saveRow: options.saveRow,
+    createRow: options.createRow,
+    editFields: options.editFields?.flatMap((field) => {
+      const edit = editorOf(field.edit, content);
+
+      return edit === undefined ? [] : [{ key: field.key, label: content(field.label), edit }];
+    }),
     rowKey: options.rowKey,
     columns: options.columns.map((column) =>
       'columns' in column
@@ -143,6 +162,8 @@ function propsOf<Row, C>(
       action,
     ) => (action.type === 'menu' ? menuOf(action, content) : actionOf(action, content))),
     renderDetail: renderDetail === undefined ? undefined : (row) => content(renderDetail(row)),
+    groupBy: options.groupBy,
+    renderGroup: renderGroup === undefined ? undefined : (group) => content(renderGroup(group)),
     defaultSort: options.defaultSort,
     title: content(options.title),
     subtitle: content(options.subtitle),
@@ -186,24 +207,36 @@ function actionOf<Row, C>(action: DataNavigator.Action<Row, C>, content: Content
         type: 'general',
         key: action.key,
         variant: action.variant,
+        contextMenu: action.contextMenu,
         onClick: action.onClick,
         ...lookOf(action, content),
       };
-    case 'row':
+    case 'singleRow':
       return {
-        type: 'row',
+        type: 'singleRow',
         key: action.key,
         variant: action.variant,
+        contextMenu: action.contextMenu,
         onClick: action.onClick,
         show: action.show,
         default: action.default,
         ...lookOf(action, content),
       };
-    case 'rows':
+    case 'multiRow':
       return {
-        type: 'rows',
+        type: 'multiRow',
         key: action.key,
         variant: action.variant,
+        contextMenu: action.contextMenu,
+        onClick: action.onClick,
+        ...lookOf(action, content),
+      };
+    case 'group':
+      return {
+        type: 'group',
+        key: action.key,
+        variant: action.variant,
+        contextMenu: action.contextMenu,
         onClick: action.onClick,
         ...lookOf(action, content),
       };

@@ -3,50 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Component demos</title>
+    <title>Essential components</title>
   </head>
   <body>
-    <main class="ui-page ui-page--compact ui-stack">
-      <header class="ui-page__header">
-        <h1 class="ui-page__title">Component demos</h1>
-        <!-- The global switches belong to the page: they change <html> for every demo on it. -->
-        <form id="page-switches" class="ui-page__actions ui-toolbar">
-          <label class="ui-field">Language
-            <select class="ui-select" name="language">
-              <option value="en-US">English</option>
-              <option value="de-DE">Deutsch</option>
-            </select>
-          </label>
-          <label class="ui-field">Color scheme
-            <select class="ui-select" name="scheme">
-              <option value="system">system</option>
-              <option value="light">light</option>
-              <option value="dark">dark</option>
-            </select>
-          </label>
-        </form>
-      </header>
-      <div class="ui-split">
-        <nav class="ui-tabs ui-tabs--vertical ui-split__side" aria-label="Components">
-          <button class="ui-tabs__tab" type="button">Data navigator</button>
-          <button class="ui-tabs__tab" type="button">File upload</button>
-          <button class="ui-tabs__tab" type="button">Dialogs + Toasts</button>
-          <button class="ui-tabs__tab" type="button">Media Manager</button>
-        </nav>
-        <section class="ui-tabs__panel ui-split__main">
-          <data-navigator-demo></data-navigator-demo>
-        </section>
-        <section class="ui-tabs__panel ui-split__main" hidden>
-          <file-upload-demo></file-upload-demo>
-        </section>
-        <section class="ui-tabs__panel ui-split__main" hidden>
-          <overlays-demo></overlays-demo>
-        </section>
-        <section class="ui-tabs__panel ui-split__main" hidden>
-          <media-manager-demo></media-manager-demo>
-        </section>
-      </div>
-    </main>
+    <!-- The demos are the mini-apps of an app cockpit (packages/app-cockpit), see demo/main.ts. -->
+    <app-cockpit></app-cockpit>
     <script type="module" src="/demo/main.ts"></script>
   </body>
 </html>

@@ -2,6 +2,8 @@ export type { DataNavigator };
 
 declare const builtInFilter: unique symbol;
 
+declare const builtInEditor: unique symbol;
+
 declare const contentType: unique symbol;
 
 declare namespace DataNavigator {
@@ -11,7 +13,11 @@ declare namespace DataNavigator {
 
   type Density = 'compact' | 'normal' | 'comfortable';
 
+  type FooterMode = 'always' | 'auto' | 'never';
+
   type SelectionAppearance = 'neutral' | 'accent';
+
+  type RowActionLook = 'icon' | 'label' | 'iconAndLabel';
 
   type Sort = { key: string; direction: SortDirection };
 
@@ -30,9 +36,39 @@ declare namespace DataNavigator {
   type Result<Row> = {
     rows: readonly Row[];
     total: number;
+    groups?: readonly ResultGroup[];
   };
 
+  type ResultGroup = { key: string; total: number };
+
+  type GroupBy<Row> = (keyof Row & string) | ((row: Row) => string);
+
+  type RowGroup<Row> = { key: string; rows: readonly Row[]; total: number | undefined };
+
   type Source<Row> = (query: Query, signal: AbortSignal) => Promise<Result<Row>>;
+
+  type Move<Row> = { row: Row; group: string | undefined; after: Row | undefined; before: Row | undefined };
+
+  type Reorder<Row> = (move: Move<Row>) => void | Promise<void>;
+
+  type SaveRow<Row> = (row: Row, draft: Row) => void | Row | Promise<void | Row>;
+
+  type CreateRow<Row> = (draft: Row) => Row | Promise<Row>;
+
+  type EditorProps<Row> = {
+    row: Row;
+    draft: Row;
+    columnKey: keyof Row & string;
+    value: unknown;
+    change: (patch: Partial<Row>) => void;
+    labelledBy: string;
+  };
+
+  type TextColumnEditorSettings = { placeholder?: string };
+
+  type SelectColumnEditorSettings = { options: readonly FilterOption[] };
+
+  type DateColumnEditorSettings = { placeholder?: string };
 
   type FilterProps = {
     value: FilterValue | undefined;
@@ -42,11 +78,26 @@ declare namespace DataNavigator {
 
   type FilterOption = string | { value: string; label: string };
 
-  type TextColumnFilterSettings = { placeholder?: string };
+  type TextColumnFilterSettings = { placeholder?: string; matchModes?: boolean };
+
+  type TextFilterMatch = 'contains' | 'startsWith' | 'endsWith';
+
+  type TextFilterValue = { text: string; match: TextFilterMatch };
 
   type SelectColumnFilterSettings = { options: readonly FilterOption[]; multiple?: boolean };
 
+  type AutocompleteOption = { value: string; label: string; content?: () => string | Node };
+
+  type AutocompleteColumnFilterSettings = {
+    load: (query: string, signal: AbortSignal) => Promise<readonly AutocompleteOption[]>;
+    multiple?: boolean;
+    minQueryLength?: number;
+    maxChips?: number;
+  };
+
   type DateRangeFilterValue = { from: string; to: string };
+
+  type NumberRangeFilterValue = { from?: number; to?: number };
 
   type ColumnAlign = 'start' | 'center' | 'end';
 
@@ -64,13 +115,14 @@ declare namespace DataNavigator {
     previousPage: string; // Previous page
     nextPage: string; // Next page
     lastPage: string; // Last page
-    empty: string; // No data
+    empty: string; // No entries
     emptySearch: string; // No results found
     searchPlaceholder: string; // Search
     clearFilter: string; // Clear filter
     filterAll: string; // All
     filterPlaceholder: string; // Filter
     clearSearch: string; // Clear search
+    reload: string; // Reload
     loading: string; // Loading
     selectAll: string; // Select all rows
     deselectAll: string; // Deselect all rows
@@ -85,6 +137,45 @@ declare namespace DataNavigator {
     calendarPrevious: string; // Previous
     calendarNext: string; // Next
     clear: string; // Clear
+    filters: string; // Filters
+    activeFilters: (params: { count: number }) => string; // {count} active
+    resetFilters: string; // Reset
+    applyFilters: string; // Apply filters
+    cancelFilters: string; // Cancel
+    clearAllFilters: string; // Clear all
+    removeFilter: string; // Remove filter
+    emptyFilters: string; // No rows match these filters
+    clearFilters: string; // Clear filters
+    textMatch: string; // Match
+    textContains: string; // contains
+    textStartsWith: string; // starts with
+    textEndsWith: string; // ends with
+    rangeFrom: string; // From
+    rangeTo: string; // To
+    filterYes: string; // Yes
+    filterNo: string; // No
+    typeToSearch: string; // Type to search
+    loadFailed: string; // Could not load
+    removeValue: (params: { label: string }) => string; // Remove {label}
+    clearSelection: string; // Clear selection
+    columns: string; // Columns
+    resetColumnWidths: string; // Reset column widths
+    optimizeColumnWidths: string; // Optimize column widths
+    moveRow: string; // Move row
+    emptyGroup: string; // (Blank)
+    movedTo: (params: { position: number }) => string; // Moved to position {position}
+    expandGroup: string; // Show group
+    collapseGroup: string; // Hide group
+    selectGroup: string; // Select group
+    deselectGroup: string; // Deselect group
+    groupCount: (params: { count: number }) => string; // {count}
+    groupPartial: (params: { shown: number; total: number }) => string; // {shown} of {total}
+    confirmEdit: string; // OK
+    confirmNew: string; // Add
+    cancelEdit: string; // Cancel
+    saveFailed: string; // The row could not be saved
+    editRow: string; // Edit row
+    newRow: string; // New row
   };
 
   type ThemeValue = string | { light: string; dark: string };
@@ -93,24 +184,21 @@ declare namespace DataNavigator {
     colorText?: ThemeValue;
     colorTextDimmed?: ThemeValue;
     colorSurface?: ThemeValue;
+    colorSurfaceStrong?: ThemeValue;
     colorBorder?: ThemeValue;
-    colorHeader?: ThemeValue;
-    colorHeaderHover?: ThemeValue;
     colorHover?: ThemeValue;
-    colorHoverBorder?: ThemeValue;
     colorHoverAccent?: ThemeValue;
-    colorStripe?: ThemeValue;
-    colorStripeHover?: ThemeValue;
     colorSelected?: ThemeValue;
     colorSelectedBorder?: ThemeValue;
-    colorSelectedNeutral?: ThemeValue;
     colorPrimary?: ThemeValue;
     colorPrimaryHover?: ThemeValue;
     colorOnPrimary?: ThemeValue;
     colorDanger?: ThemeValue;
     colorFocus?: ThemeValue;
     radius?: string;
+    buttonRadius?: string;
     shadow?: string;
+    shadowSm?: string;
     fontFamily?: string;
     fontSize?: string;
     fontSizeSm?: string;
@@ -139,7 +227,7 @@ declare namespace DataNavigator {
 
   type SetupConfig<C = Node> = {
     theme?: Theme;
-    i18n?: I18nAdapter;
+    i18n?: { type: 'factory'; getAdapter: (element: HTMLElement) => I18nAdapter };
     content?: ContentAdapter<C>;
   };
 
@@ -149,15 +237,29 @@ declare namespace DataNavigator {
 
   type ColumnFilter<C> = BuiltInColumnFilter | ((props: FilterProps) => string | C);
 
+  type BuiltInColumnEditor = { readonly [builtInEditor]: true };
+
+  type ColumnEditor<Row, C> = BuiltInColumnEditor | ((props: EditorProps<Row>) => string | C);
+
+  type EditField<Row, C> = {
+    key: keyof Row & string;
+    label: TextContent<C>;
+    edit: ColumnEditor<Row, C>;
+  };
+
   type Column<Row, C> = {
     key: keyof Row & string;
     header: TextContent<C>;
-    width?: number;
+    width?: number | string;
     sortable?: boolean;
+    resizable?: boolean;
     align?: ColumnAlign;
     render?: (row: Row) => string | C;
     filter?: ColumnFilter<C>;
+    edit?: ColumnEditor<Row, C>;
     wrap?: boolean;
+    hideable?: boolean;
+    hidden?: boolean;
   };
 
   type ColumnGroup<Row, C> = {
@@ -173,26 +275,37 @@ declare namespace DataNavigator {
     type: 'general';
     key: string;
     variant?: ActionVariant;
+    contextMenu?: boolean;
     onClick: () => void;
   } & ActionLook<C>;
 
   type RowAction<Row, C> = {
-    type: 'row';
+    type: 'singleRow';
     key: string;
     variant?: ActionVariant;
+    contextMenu?: boolean;
     onClick: (row: Row) => void;
     show?: 'column' | 'toolbar' | 'both';
     default?: boolean;
   } & ActionLook<C>;
 
   type RowsAction<Row, C> = {
-    type: 'rows';
+    type: 'multiRow';
     key: string;
     variant?: ActionVariant;
+    contextMenu?: boolean;
     onClick: (rows: readonly Row[]) => void;
   } & ActionLook<C>;
 
-  type Action<Row, C> = GeneralAction<C> | RowAction<Row, C> | RowsAction<Row, C>;
+  type GroupAction<Row, C> = {
+    type: 'group';
+    key: string;
+    variant?: ActionVariant;
+    contextMenu?: boolean;
+    onClick: (group: RowGroup<Row>) => void;
+  } & ActionLook<C>;
+
+  type Action<Row, C> = GeneralAction<C> | RowAction<Row, C> | RowsAction<Row, C> | GroupAction<Row, C>;
 
   type ActionMenu<Row, C> = {
     type: 'menu';
@@ -203,10 +316,16 @@ declare namespace DataNavigator {
 
   type ControllerOptions<Row, C> = {
     source: Source<Row>;
+    reorder?: Reorder<Row>;
+    saveRow?: SaveRow<Row>;
+    createRow?: CreateRow<Row>;
+    editFields?: readonly EditField<Row, C>[];
     rowKey: keyof Row & string;
     columns: readonly (Column<Row, C> | ColumnGroup<Row, C>)[];
     actions?: readonly (Action<Row, C> | ActionMenu<Row, C>)[];
     renderDetail?: (row: Row) => string | C;
+    groupBy?: GroupBy<Row>;
+    renderGroup?: (group: RowGroup<Row>) => string | C;
     defaultSort?: { key: keyof Row & string; direction: SortDirection };
     title?: TextContent<C>;
     subtitle?: TextContent<C>;
@@ -218,6 +337,8 @@ declare namespace DataNavigator {
     reload: () => void;
     clearRowSelection: () => void;
     getSelectedRows: () => readonly Row[];
+    editRow(row: Row): void;
+    addRow(template: Row): void;
     onSelectionChange: (listener: (rows: readonly Row[]) => void) => () => void;
   };
 
@@ -226,8 +347,12 @@ declare namespace DataNavigator {
   type Element<C> = HTMLElement & {
     controller: NavigatorController<unknown, C> | undefined;
     density: Density;
+    footer: FooterMode;
     striped: boolean;
     searchable: boolean;
+    reloadable: boolean;
+    selectableGroups: boolean;
+    rowActionLook: RowActionLook;
     selectionAppearance: SelectionAppearance;
     pageSize: number;
     pageSizeOptions: readonly number[];

@@ -15,6 +15,11 @@ The main goal is a very nice, yet simple, API, designed together with the user.
 - English is the language of the project: code, comments, docs, specs and rules. Never German there.
   - Exception: translated texts, like the German texts of the demo's language switch.
   - The conversation may be German.
+- VERY IMPORTANT: never introduce a new CSS custom property (`--…`) without the user's explicit permission.
+  - Ask first, with the name and why none of the existing ones does.
+  - The need should be rare: use the existing ones (`--ui-*`, the package's own), plain values, or a local calc.
+  - A new one, once allowed, carries the package's prefix (never a generic name like `--shadow` or `--border`: the
+    mini-apps are light DOM children and inherit them, and they collide with other libraries).
 - Never run `git commit` or `git push`.
   - The user does this personally.
   - This overrides any default attribution or commit guidance.
@@ -82,7 +87,7 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - `FileUploadDemo.ts`: the whole demo as a light DOM custom element (see "Demo element" below), with two tabs:
     "Custom element" and "React". The custom element tab, plain HTML and TypeScript: the switches of the component
     (the behavior of the fake server, accept, max. file size, max. files, parallel uploads, multiple, manual upload,
-    previews, required, disabled), below them two elements side by side (default look with a `<label for>` of the
+    previews, density, required, disabled), below them two elements side by side (default look with a `<label for>` of the
     page, and `acme-upload` with its own theme, styles, a `::part()` rule, a `prompt` slot and its own label), each in
     a `<form>` (`name="attachments"`) with a line with the state of its list and a submit that shows what the form
     sends. The fake server (`upload.ts`) answers with an id. `format.ts`: the state line and the sent values.
@@ -193,7 +198,10 @@ The main goal is a very nice, yet simple, API, designed together with the user.
       - Colors: `accentColor`, `accentTextColor` (marks on the accent or a status color, e.g. in the preview badges),
         `textColor` (default: inherited from the page), `mutedColor`, `borderColor` (the text buttons: a darker mix of
         it with `mutedColor`), `surfaceColor` (hover, thumbnail and progress track), `successColor`, `dangerColor`.
-      - `borderRadius` (buttons, thumbnails and the preview dialog use half of it).
+      - `borderRadius` (default `4px`; thumbnails, the tooltip and the preview dialog use half of it: `2px`, the
+        `--ui-radius-sm` of the design language of the demos, see the root `CLAUDE.md`).
+      - `buttonBorderRadius` (default `5px`, the `--ui-radius-md` of the design language): all buttons (text and
+        icon buttons), except the preview (a thumbnail) and the close button of the preview dialog (in its corner).
       - `fontFamily` (default: inherited from the page) and `fontSize`: the base size (default `0.875rem`). All sizes
         and spacings inside are relative to it (`em`), so it scales the whole element. Names and the prompt use it,
         the small texts 6/7 of it. Names have the normal weight (400), the status text a medium one (500).
@@ -238,7 +246,7 @@ The main goal is a very nice, yet simple, API, designed together with the user.
       So the generated tag name never causes a hydration mismatch. A failed registration (e.g. a taken `tagName`) is
       thrown during rendering, so an error boundary gets it.
       - The placeholder: an empty `div` with the same `className`, `style` and `id`, `aria-busy="true"`, and the
-        `min-height` of the empty element (the drop line only, computed from the theme's `fontSize`).
+        `min-height` of the empty element (the drop line only, computed from the theme's `fontSize` and the `density` prop).
     - Localization: `i18n` is a discriminated union on `type` (only inside `i18n`, so the top level of the config stays
       flat). Without `i18n`: the English defaults. Another `type` makes `createFileUploadComponent` throw a `TypeError`
       (for plain JavaScript and cast configs).
@@ -270,6 +278,16 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     - `manual-upload` (`manualUpload`): files wait as `ready` (default: upload right away). Replaces `autoUpload`.
     - `previews`: thumbnails of images (default: off).
     - `disabled`.
+  - `density` (decided): `'compact' | 'normal' | 'comfortable'` (type `FileUpload.Density`), an
+    attribute reflected to the property, and the React prop `density`. Default `normal`, like the data navigator.
+    - Only the vertical padding changes (the rows of the list and the drop line). Text and controls keep their size
+      (the theme's `fontSize` scales those).
+    - `compact` is the look so far. `normal` and `comfortable` add room.
+    - The vertical padding (`DENSITY_PADDING` in `styles.ts`): rows 0.286em, 0.571em, 1.143em (the data navigator's
+      4px, 8px, 16px at 14px), the drop line 0.571em, 0.857em, 1.429em.
+    - A missing or unknown value is `normal`. The element puts the value on `root` as `data-density`. A change only
+      sets that attribute: the list is not rendered again, and there is no `change` event.
+    - The React placeholder takes the height of the empty element in its density (a browser test checks both).
   - A plain `change` event (like `<input>`, bubbling): it only says that the list changed (see `change` below). The app
     reads the list from the read-only property `items` (`readonly FileItem[]`, not `files`, to avoid confusion with
     `input.files`). The `change` event of the inner `<input>` stays inside the shadow DOM.
@@ -362,7 +380,9 @@ These are the first proposals behind `src/api.ts` and the element. Each one can 
     - The buttons are right-aligned, so remove (always the last one) lines up in every row.
     - Retry starts the upload again with a new signal and progress 0.
   - Text buttons ("Browse", "Clear", "Upload all", decided): all in the same neutral style (border, no fill, the
-    `surfaceColor` on hover), none in the accent color. They look as harmless as possible, because they will rarely
+    `surfaceColor` on hover), none in the accent color. Their text has the size of the prompt next to them (`1em`;
+    it was `0.857em` until 2026-09-29, too small). The empty element's height follows (the React placeholder:
+    content 1.806em, see `createFileUploadComponent.tsx`). They look as harmless as possible, because they will rarely
     match the buttons of the app's component library exactly, and the element is a form field, not the page's main
     action. "Upload all" keeps its icon and its place at the end. An app that wants a prominent button styles it with
     `::part()`.
@@ -432,8 +452,7 @@ These are the first proposals behind `src/api.ts` and the element. Each one can 
 ## Open
 
 - A large layout (a big drop area above the list), later and only on request: `layout: 'compact' | 'large'` (default
-  `'compact'`, so adding it is not breaking). `layout` is the structure; spacing variants would be a separate `density`
-  like in `data-navigator` (`'compact' | 'normal' | 'comfortable'`).
+  `'compact'`, so adding it is not breaking). `layout` is the structure; the spacing is `density` (decided, see above).
 - Everything above under "Requirements" is a proposal.
 
 ## TODO

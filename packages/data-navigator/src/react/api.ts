@@ -10,7 +10,11 @@ declare namespace DataNavigatorComponent {
 
   type Density = DataNavigator.Density;
 
+  type FooterMode = DataNavigator.FooterMode;
+
   type SelectionAppearance = DataNavigator.SelectionAppearance;
+
+  type RowActionLook = DataNavigator.RowActionLook;
 
   type Sort = DataNavigator.Sort;
 
@@ -20,7 +24,29 @@ declare namespace DataNavigatorComponent {
 
   type Result<Row> = DataNavigator.Result<Row>;
 
+  type ResultGroup = DataNavigator.ResultGroup;
+
+  type GroupBy<Row> = DataNavigator.GroupBy<Row>;
+
+  type RowGroup<Row> = DataNavigator.RowGroup<Row>;
+
   type Source<Row> = DataNavigator.Source<Row>;
+
+  type Move<Row> = DataNavigator.Move<Row>;
+
+  type Reorder<Row> = DataNavigator.Reorder<Row>;
+
+  type SaveRow<Row> = DataNavigator.SaveRow<Row>;
+
+  type CreateRow<Row> = DataNavigator.CreateRow<Row>;
+
+  type EditorProps<Row> = DataNavigator.EditorProps<Row>;
+
+  type TextColumnEditorSettings = DataNavigator.TextColumnEditorSettings;
+
+  type SelectColumnEditorSettings = DataNavigator.SelectColumnEditorSettings;
+
+  type DateColumnEditorSettings = DataNavigator.DateColumnEditorSettings;
 
   type FilterProps = DataNavigator.FilterProps;
 
@@ -28,9 +54,24 @@ declare namespace DataNavigatorComponent {
 
   type TextColumnFilterSettings = DataNavigator.TextColumnFilterSettings;
 
+  type TextFilterMatch = DataNavigator.TextFilterMatch;
+
+  type TextFilterValue = DataNavigator.TextFilterValue;
+
   type SelectColumnFilterSettings = DataNavigator.SelectColumnFilterSettings;
 
+  type AutocompleteOption = { value: string; label: string; content?: () => ReactNode };
+
+  type AutocompleteColumnFilterSettings = {
+    load: (query: string, signal: AbortSignal) => Promise<readonly AutocompleteOption[]>;
+    multiple?: boolean;
+    minQueryLength?: number;
+    maxChips?: number;
+  };
+
   type DateRangeFilterValue = DataNavigator.DateRangeFilterValue;
+
+  type NumberRangeFilterValue = DataNavigator.NumberRangeFilterValue;
 
   type ColumnAlign = DataNavigator.ColumnAlign;
 
@@ -48,15 +89,27 @@ declare namespace DataNavigatorComponent {
 
   type ColumnFilter = (props: FilterProps) => ReactNode;
 
+  type ColumnEditor<Row> = (props: EditorProps<Row>) => ReactNode;
+
+  type EditField<Row> = {
+    key: keyof Row & string;
+    label: ReactNode;
+    edit: ColumnEditor<Row>;
+  };
+
   type Column<Row> = {
     key: keyof Row & string;
     header: ReactNode;
-    width?: number;
+    width?: number | string;
     sortable?: boolean;
+    resizable?: boolean;
     align?: ColumnAlign;
     render?: (row: Row) => ReactNode;
     filter?: ColumnFilter;
+    edit?: ColumnEditor<Row>;
     wrap?: boolean;
+    hideable?: boolean;
+    hidden?: boolean;
   };
 
   type ColumnGroup<Row> = {
@@ -72,26 +125,37 @@ declare namespace DataNavigatorComponent {
     type: 'general';
     key: string;
     variant?: ActionVariant;
+    contextMenu?: boolean;
     onClick: () => void;
   } & ActionLook;
 
   type RowAction<Row> = {
-    type: 'row';
+    type: 'singleRow';
     key: string;
     variant?: ActionVariant;
+    contextMenu?: boolean;
     onClick: (row: Row) => void;
     show?: 'column' | 'toolbar' | 'both';
     default?: boolean;
   } & ActionLook;
 
   type RowsAction<Row> = {
-    type: 'rows';
+    type: 'multiRow';
     key: string;
     variant?: ActionVariant;
+    contextMenu?: boolean;
     onClick: (rows: readonly Row[]) => void;
   } & ActionLook;
 
-  type Action<Row> = GeneralAction | RowAction<Row> | RowsAction<Row>;
+  type GroupAction<Row> = {
+    type: 'group';
+    key: string;
+    variant?: ActionVariant;
+    contextMenu?: boolean;
+    onClick: (group: RowGroup<Row>) => void;
+  } & ActionLook;
+
+  type Action<Row> = GeneralAction | RowAction<Row> | RowsAction<Row> | GroupAction<Row>;
 
   type ActionMenu<Row> = {
     type: 'menu';
@@ -102,25 +166,35 @@ declare namespace DataNavigatorComponent {
 
   type Props<Row> = {
     source: Source<Row>;
+    reorder?: Reorder<Row>;
+    saveRow?: SaveRow<Row>;
+    createRow?: CreateRow<Row>;
+    editFields?: readonly EditField<Row>[];
     rowKey: keyof Row & string;
     columns: readonly (Column<Row> | ColumnGroup<Row>)[];
     title?: ReactNode;
     subtitle?: ReactNode;
     selectionAppearance?: SelectionAppearance;
     density?: Density;
+    footer?: FooterMode;
     striped?: boolean;
     renderDetail?: (row: Row) => ReactNode;
+    groupBy?: GroupBy<Row>;
+    renderGroup?: (group: RowGroup<Row>) => ReactNode;
     empty?: ReactNode;
     actions?: readonly (Action<Row> | ActionMenu<Row>)[];
     pageSize?: number;
     pageSizeOptions?: readonly number[];
     defaultSort?: Sort;
     searchable?: boolean;
+    reloadable?: boolean;
+    selectableGroups?: boolean;
+    rowActionLook?: RowActionLook;
     controller?: Controller<Row>;
   };
 
   type Config = {
-    i18n?: I18nAdapter;
+    i18n?: NonNullable<DataNavigator.SetupConfig['i18n']> | { type: 'hook'; useAdapter: () => I18nAdapter };
     theme?: Theme;
   };
 
@@ -130,5 +204,7 @@ declare namespace DataNavigatorComponent {
     reload: () => void;
     clearRowSelection: () => void;
     getSelectedRows: () => readonly Row[];
+    editRow: (row: Row) => void;
+    addRow: (template: Row) => void;
   };
 }

@@ -11,7 +11,12 @@
 
 import { registerFirstFreeTag } from "../../internal/custom-element.js";
 import { deepActiveElement, h, parseSvg } from "../../internal/dom.js";
-import { closeIconSvg, noteIconSvg } from "./icons.js";
+import {
+  closeIconSvg,
+  maximizeIconSvg,
+  noteIconSvg,
+  restoreIconSvg,
+} from "./icons.js";
 import {
   CLOSE_ANIMATION_FALLBACK_MS,
   DIALOG_GROW_ANIM_MS,
@@ -184,6 +189,13 @@ class Dialog extends DialogElementBase {
 
   #closeEl: HTMLElement | null = null;
   #closeSlotted = false;
+  // The Maximize/Restore button (see DialogConfig.maximizable): null while the dialog has
+  // none, a <slot> for an override, else the default button, kept across its two states so
+  // it keeps the focus when clicked.
+  #maximizeEl: HTMLElement | null = null;
+  #maximizeSlotted = false;
+  // The two header buttons, after the titles: Maximize/Restore, then close.
+  #headerButtonsEl!: HTMLElement;
   #actionsSlotted = false;
 
   #buttonEls: HTMLElement[] = [];
@@ -198,7 +210,11 @@ class Dialog extends DialogElementBase {
   // and from any framework's template. Matches the toast element, which already emits
   // its own dismiss event. The mount layer routes them back to the current spec's props.
   #emit(
-    type: "dialog-close" | "dialog-cancel" | "dialog-note-dismiss",
+    type:
+      | "dialog-close"
+      | "dialog-cancel"
+      | "dialog-note-dismiss"
+      | "dialog-toggle-maximize",
   ): void {
     this.dispatchEvent(
       new CustomEvent(type, { bubbles: true, composed: true }),
@@ -398,6 +414,7 @@ class Dialog extends DialogElementBase {
   // the same backdrop) carries on into the first real dialog.
   #showSpinner(): void {
     this.#spinnerOnly = true;
+    this.removeAttribute("data-maximized");
     this.#dialog.classList.add("spinner-dialog");
     this.#dialog.setAttribute("aria-label", "Loading");
     this.#dialog.removeAttribute("aria-labelledby");
@@ -479,6 +496,9 @@ class Dialog extends DialogElementBase {
     this.#defaultButtonIndex = props.defaultButtonIndex;
     this.#hasForm = props.hasForm;
     this.setAttribute("data-surface", props.surface);
+    this.setAttribute("data-width", props.width);
+    // Only a maximizable dialog can be maximized (the styles key on this alone).
+    this.toggleAttribute("data-maximized", props.maximizable && props.maximized);
     this.#isDrawer = props.surface === "drawer";
     this.#buttonViews = props.buttons;
 
@@ -506,9 +526,12 @@ class Dialog extends DialogElementBase {
       }
       return;
     }
+    // Into the root the dialog is mounted in: its shadow root (a head style would not reach
+    // the content there), or the document's head.
     if (!this.#styleEl) {
       this.#styleEl = document.createElement("style");
-      document.head.append(this.#styleEl);
+      const root = this.getRootNode();
+      (root instanceof ShadowRoot ? root : document.head).append(this.#styleEl);
     }
     this.#styleEl.textContent = `.${this.scopeClass} { ${cssText} }`;
   }
@@ -530,11 +553,13 @@ class Dialog extends DialogElementBase {
       h("slot", { name: "subtitle" }),
     );
 
+    this.#headerButtonsEl = h("div", { class: "header-buttons" });
     this.#headerEl = h(
       "div",
       { class: "header" },
       this.#iconEl,
       h("div", { class: "titles" }, this.#titleEl, this.#subtitleEl),
+      this.#headerButtonsEl,
     );
 
     // Each body slot gets its own shadow-side part, so an empty one can be taken out of
@@ -594,6 +619,7 @@ class Dialog extends DialogElementBase {
     if (!this.#contentEl) {
       this.#buildChrome();
     }
+    this.#syncMaximizeButton(props);
     this.#syncCloseButton(props);
     this.#syncActionButtons(props);
     this.#syncNoteChrome(props);
@@ -624,10 +650,50 @@ class Dialog extends DialogElementBase {
     if (this.#closeEl) {
       this.#closeEl.replaceWith(next);
     } else {
-      this.#headerEl.append(next);
+      this.#headerButtonsEl.append(next);
     }
     this.#closeEl = next;
     this.#closeSlotted = slotted;
+  }
+
+  // Same split as the close button: an override is framework content in the `maximize`
+  // slot, the default one is shadow chrome. The default one stays the same node across
+  // its two states (only its icon and label change), so it keeps the focus when clicked.
+  #syncMaximizeButton(props: DialogProps<any>): void {
+    if (!props.maximizable) {
+      this.#maximizeEl?.remove();
+      this.#maximizeEl = null;
+      return;
+    }
+    const slotted = props.render?.maximizeButton != null;
+    if (!this.#maximizeEl || slotted !== this.#maximizeSlotted) {
+      const next: HTMLElement = slotted
+        ? h("slot", { name: "maximize" })
+        : h("button", {
+            class: "close-button maximize-button",
+            type: "button",
+            onclick: () => this.#emit("dialog-toggle-maximize"),
+          });
+      if (this.#maximizeEl) {
+        this.#maximizeEl.replaceWith(next);
+      } else {
+        this.#headerButtonsEl.prepend(next);
+      }
+      this.#maximizeEl = next;
+      this.#maximizeSlotted = slotted;
+    }
+    if (!slotted) {
+      const button = this.#maximizeEl;
+      const state = props.maximized ? "restore" : "maximize";
+      button.setAttribute("aria-label", props.maximizeLabel);
+      button.setAttribute("title", props.maximizeLabel);
+      if (button.dataset.state !== state) {
+        button.dataset.state = state;
+        button.replaceChildren(
+          parseSvg(props.maximized ? restoreIconSvg : maximizeIconSvg),
+        );
+      }
+    }
   }
 
   // Default buttons are built here, in the shadow root, where the library's own styling
@@ -1039,13 +1105,14 @@ export function mountDialog(
   id: string,
   adapterFactory: DialogAdapterFactory<any>,
   requestRender: () => void,
+  target: ParentNode,
 ): DialogMount {
   const container = document.createElement("div");
   container.id = id;
   // The host is `display: contents` and the <dialog> lives in the top layer, so the
   // container must not introduce a box of its own either.
   container.style.display = "contents";
-  document.body.append(container);
+  target.append(container);
 
   const tag = dialogElementTag();
   const adapter: DialogAdapter<any> = adapterFactory({
@@ -1071,6 +1138,9 @@ export function mountDialog(
   // real dialog are wired by construction — there is no second place to forget.
   container.addEventListener("dialog-close", () => latest?.props.onClose());
   container.addEventListener("dialog-cancel", () => latest?.props.onCancel());
+  container.addEventListener("dialog-toggle-maximize", () =>
+    latest?.props.onToggleMaximize(),
+  );
   container.addEventListener("dialog-note-dismiss", () =>
     latest?.props.onNoteDismiss(),
   );
@@ -1109,6 +1179,8 @@ export function mountDialog(
     },
 
     getForm: () => dialogElement(container, tag)?.getForm() ?? null,
+
+    getConfirm: () => adapter.getConfirm?.(),
 
     focusFirstInvalid: () => dialogElement(container, tag)?.focusFirstInvalid(),
   };

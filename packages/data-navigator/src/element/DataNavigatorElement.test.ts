@@ -1,7 +1,14 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { DataNavigator } from '../api';
-import { dateRangeColumnFilter, selectColumnFilter, textColumnFilter } from './filters';
+import { textColumnEditor } from './editors';
+import {
+  booleanColumnFilter,
+  dateRangeColumnFilter,
+  numberRangeColumnFilter,
+  selectColumnFilter,
+  textColumnFilter,
+} from './filters';
 import { setupDataNavigator } from './setupDataNavigator';
 
 type Person = { id: number; name: string; city: string };
@@ -200,7 +207,9 @@ describe('content', () => {
         return () => listeners.delete(listener);
       },
     };
-    const [ElementClass, createController] = setupDataNavigator({ i18n });
+    const [ElementClass, createController] = setupDataNavigator({
+      i18n: { type: 'factory', getAdapter: () => i18n },
+    });
     const element = create(ElementClass);
 
     element.controller = createController({
@@ -217,6 +226,40 @@ describe('content', () => {
 
     expect(screen.getByText('Personen')).toBeTruthy();
     expect(screen.getByRole('columnheader', { name: 'Vorname' })).toBeTruthy();
+  });
+
+  it('asks the i18n factory once per element, with the element, on its first connect', async () => {
+    const i18n: DataNavigator.I18nAdapter = {
+      currentLocale: () => 'de-DE',
+      resolveText: (_namespace, key, _params, defaultValue) => (key === 'pageSize' ? 'Seitengröße' : defaultValue),
+    };
+    const getAdapter = vi.fn((_element: HTMLElement) => i18n);
+    const [ElementClass, createController] = setupDataNavigator({ i18n: { type: 'factory', getAdapter } });
+    const element = create(ElementClass);
+
+    expect(getAdapter).not.toHaveBeenCalled();
+
+    element.controller = createController({
+      source: createSource(),
+      rowKey: 'id',
+      columns: [{ key: 'name', header: 'Name' }],
+    });
+    await mount(element);
+    await waitFor(() => expect(screen.getByText('Seitengröße')).toBeTruthy());
+
+    await act(async () => {
+      element.remove();
+      document.body.append(element);
+    });
+
+    expect(getAdapter).toHaveBeenCalledTimes(1);
+    expect(getAdapter).toHaveBeenCalledWith(element);
+  });
+
+  it('throws a TypeError for an unknown i18n type (e.g. an adapter given directly)', () => {
+    const i18n = { currentLocale: () => 'en-US', resolveText: () => '' };
+
+    expect(() => setupDataNavigator({ i18n: i18n as unknown as DataNavigator.SetupConfig['i18n'] })).toThrow(TypeError);
   });
 
   it('renders action icons and tips, and a tip may be a function', async () => {
@@ -277,9 +320,13 @@ describe('column filters', () => {
     await mount(element);
 
     await waitFor(() => expect(screen.getByText('Person 01')).toBeTruthy());
-    expect(screen.getByPlaceholderText('Find a name')).toBeTruthy();
+    // The filters are in the popup of the filter button.
+    fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
+    expect(await screen.findByPlaceholderText('Find a name')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Only 1' })).toBeTruthy();
     expect(typeof dateRangeColumnFilter()).toBe('object');
+    expect(typeof numberRangeColumnFilter()).toBe('object');
+    expect(typeof booleanColumnFilter()).toBe('object');
   });
 });
 
@@ -294,19 +341,31 @@ describe('attributes', () => {
     await mount(element);
 
     expect(element.density).toBe('compact');
+    expect(element.footer).toBe('always');
     expect(element.hasAttribute('striped')).toBe(true);
     expect(element.searchable).toBe(false);
-    expect(element.selectionAppearance).toBe('neutral');
+    expect(element.reloadable).toBe(false);
+    expect(element.selectionAppearance).toBe('accent');
     expect(element.pageSize).toBe(25);
     await waitFor(() => expect(element.querySelector('[data-density="compact"]')).not.toBeNull());
 
     await act(async () => {
       element.density = 'comfortable';
       element.searchable = true;
+      element.reloadable = true;
     });
     expect(element.getAttribute('density')).toBe('comfortable');
     expect(element.querySelector('[data-density="comfortable"]')).not.toBeNull();
     expect(screen.getByPlaceholderText('Search')).toBeTruthy();
+    expect(element.hasAttribute('reloadable')).toBe(true);
+    expect(screen.getByRole('button', { name: 'Reload' })).toBeTruthy();
+    expect(screen.getByText('Page Size')).toBeTruthy();
+
+    await act(async () => {
+      element.footer = 'never';
+    });
+    expect(element.getAttribute('footer')).toBe('never');
+    expect(screen.queryByText('Page Size')).toBeNull();
   });
 
   it('starts with the page size of its attribute', async () => {
@@ -332,7 +391,7 @@ describe('controller', () => {
       source,
       rowKey: 'id',
       columns: [{ key: 'name', header: 'Name' }],
-      actions: [{ type: 'rows', key: 'remove', label: 'Remove', onClick: () => {} }],
+      actions: [{ type: 'multiRow', key: 'remove', label: 'Remove', onClick: () => {} }],
     });
     const listener = vi.fn();
     const element = create(ElementClass);
@@ -366,7 +425,7 @@ describe('controller', () => {
       source: createSource(),
       rowKey: 'id',
       columns: [{ key: 'name', header: 'Name' }],
-      actions: [{ type: 'rows', key: 'remove', label: 'Remove', onClick: () => {} }],
+      actions: [{ type: 'multiRow', key: 'remove', label: 'Remove', onClick: () => {} }],
     });
     const listener = vi.fn();
     const element = create(ElementClass);
@@ -451,5 +510,139 @@ describe('controller', () => {
 
     expect(within(container).getByText('Person 01')).toBeTruthy();
     expect(source.mock.calls.length).toBe(calls);
+  });
+
+  it('groups the rows when the controller has groupBy, with its renderGroup as content', async () => {
+    const [ElementClass, createController] = setupDataNavigator();
+    const element = create(ElementClass);
+
+    element.controller = createController({
+      source: createSource(),
+      rowKey: 'id',
+      columns: [{ key: 'name', header: 'Name' }],
+      groupBy: (person) => (person.id <= 5 ? 'First' : 'Rest'),
+      renderGroup: (group) => `${group.key} (${group.rows.length})`,
+    });
+    await mount(element);
+
+    await waitFor(() => expect(screen.getByText('First (5)')).toBeTruthy());
+    expect(screen.getByText('Rest (20)')).toBeTruthy();
+  });
+
+  it('runs a group action with its group, and moves a row into another group', async () => {
+    const [ElementClass, createController] = setupDataNavigator();
+    const onClick = vi.fn();
+    const reorder = vi.fn();
+    const element = create(ElementClass);
+
+    element.controller = createController({
+      source: createSource(),
+      reorder,
+      rowKey: 'id',
+      columns: [{ key: 'name', header: 'Name' }],
+      groupBy: (person) => (person.id <= 5 ? 'First' : 'Rest'),
+      actions: [{ type: 'group', key: 'rename', label: () => 'Rename', onClick }],
+    });
+    await mount(element);
+    await waitFor(() => expect(screen.getByText('Person 01')).toBeTruthy());
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Rename' })[1]!);
+    expect(onClick).toHaveBeenCalledWith(expect.objectContaining({ key: 'Rest', total: undefined }));
+
+    // Down from the last row of "First": past the header of "Rest", to its start.
+    fireEvent.keyDown(screen.getAllByRole('button', { name: 'Move row' })[4]!, { key: 'ArrowDown', altKey: true });
+
+    await waitFor(() =>
+      expect(reorder).toHaveBeenCalledWith({ row: people[4], group: 'Rest', after: people[3], before: people[5] })
+    );
+  });
+
+  it('moves rows with the handles when the controller has reorder', async () => {
+    const [ElementClass, createController] = setupDataNavigator();
+    const reorder = vi.fn();
+    const element = create(ElementClass);
+
+    element.controller = createController({
+      source: createSource(),
+      reorder,
+      rowKey: 'id',
+      columns: [{ key: 'name', header: 'Name' }],
+    });
+    await mount(element);
+    await waitFor(() => expect(screen.getByText('Person 01')).toBeTruthy());
+
+    fireEvent.keyDown(screen.getAllByRole('button', { name: 'Move row' })[0]!, { key: 'ArrowDown', altKey: true });
+
+    await waitFor(() => expect(reorder).toHaveBeenCalledWith({ row: people[0], after: people[1], before: people[2] }));
+  });
+
+  it('edits a row with the controller: a built-in editor, and one of its own (made once, a DOM input)', async () => {
+    const [ElementClass, createController] = setupDataNavigator();
+    const saveRow = vi.fn();
+    const element = create(ElementClass);
+    const cityEditor = vi.fn((props: DataNavigator.EditorProps<Person>) => {
+      const input = document.createElement('input');
+
+      input.value = props.draft.city;
+      input.setAttribute('aria-label', 'City');
+      input.addEventListener('input', () => props.change({ city: input.value }));
+
+      return input;
+    });
+    const controller = createController({
+      source: createSource(),
+      saveRow,
+      rowKey: 'id',
+      columns: [
+        { key: 'name', header: 'Name', edit: textColumnEditor() },
+        { key: 'city', header: 'City', edit: cityEditor },
+      ],
+    });
+
+    element.controller = controller;
+    await mount(element);
+    await waitFor(() => expect(screen.getByText('Person 01')).toBeTruthy());
+
+    act(() => controller.editRow(people[0]!));
+
+    const name = screen.getByRole<HTMLInputElement>('textbox', { name: 'Name' });
+    const city = screen.getByRole<HTMLInputElement>('textbox', { name: 'City' });
+
+    fireEvent.change(name, { target: { value: 'Ada' } });
+    fireEvent.input(city, { target: { value: 'Oslo' } });
+    // Made once: typing does not make a new input.
+    expect(cityEditor).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('textbox', { name: 'City' })).toBe(city);
+
+    fireEvent.keyDown(name, { key: 'Enter' });
+
+    await waitFor(() => expect(saveRow).toHaveBeenCalledWith(people[0], { id: 1, name: 'Ada', city: 'Oslo' }));
+    await waitFor(() => expect(screen.getByText('Oslo')).toBeTruthy());
+  });
+
+  it('adds a new row with the controller, with the extra fields of editFields', async () => {
+    const [ElementClass, createController] = setupDataNavigator();
+    const createRow = vi.fn(async (draft: Person) => ({ ...draft, id: 100 }));
+    const element = create(ElementClass);
+    const controller = createController({
+      source: createSource(),
+      createRow,
+      rowKey: 'id',
+      columns: [{ key: 'name', header: 'Name', edit: textColumnEditor() }],
+      editFields: [{ key: 'city', label: () => 'Town', edit: textColumnEditor() }],
+    });
+
+    element.controller = controller;
+    await mount(element);
+    await waitFor(() => expect(screen.getByText('Person 01')).toBeTruthy());
+
+    act(() => controller.addRow({ id: 0, name: '', city: '' }));
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Name' }), { target: { value: 'Grace' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Town' }), { target: { value: 'Lisbon' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+
+    await waitFor(() => expect(createRow).toHaveBeenCalledWith({ id: 0, name: 'Grace', city: 'Lisbon' }));
+    await waitFor(() => expect(screen.getByText('Grace')).toBeTruthy());
   });
 });

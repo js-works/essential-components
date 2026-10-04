@@ -1,7 +1,7 @@
-import { selectColumnFilter, setupDataNavigator, textColumnFilter } from '../src';
+import { autocompleteColumnFilter, selectColumnFilter, setupDataNavigator, textColumnFilter } from '../src';
 import type { DataNavigator } from '../src';
 import { defaultTheme } from '../src/themes';
-import { countries, fetchUsers, roles } from './data';
+import { countries, fetchUsers, roles, suggestEmails } from './data';
 import type { User } from './data';
 import { i18n } from './i18n';
 import './element-demo.css';
@@ -11,7 +11,7 @@ export { mountElementDemo };
 // The custom element tab: the same data as the React tab, in plain TypeScript with DOM nodes as content (the default
 // content adapter). Everything that depends on the row type is in the controller; the element only has the settings.
 
-// Once per app: the element class and its controller factory, bound to the theme and the i18n adapter.
+// Once per app: the element class and its controller factory, bound to the theme and the i18n factory.
 const [DataNavigatorBase, createNavigatorController] = setupDataNavigator({ theme: defaultTheme, i18n });
 
 class DemoDataNavigator extends DataNavigatorBase {}
@@ -34,6 +34,18 @@ function roleBadge(role: User['role']): Node {
   badge.textContent = role;
 
   return badge;
+}
+
+// An option of the email filter: the email, with the user's name below it.
+function suggestion(email: string, name: string): Node {
+  const node = document.createElement('span');
+  const small = document.createElement('small');
+
+  node.className = 'element-demo__suggestion';
+  small.textContent = name;
+  node.append(email, small);
+
+  return node;
 }
 
 const german = () => document.documentElement.lang.startsWith('de');
@@ -59,7 +71,21 @@ function createController(onRemove: (users: readonly User[]) => void) {
         sortable: true,
         filter: textColumnFilter(),
       },
-      { key: 'email', header: 'Email', width: 2 },
+      // The column toggle menu of the toolbar can hide it. Its filter is an autocomplete, with DOM nodes as options.
+      {
+        key: 'email',
+        header: 'Email',
+        width: 2,
+        hideable: true,
+        filter: autocompleteColumnFilter({
+          multiple: true,
+          load: async (query, signal) =>
+            (await suggestEmails(query, signal)).map(({ name, ...option }) => ({
+              ...option,
+              content: () => suggestion(option.label, name),
+            })),
+        }),
+      },
       {
         key: 'country',
         header: () => (german() ? 'Land' : 'Country'),
@@ -75,7 +101,7 @@ function createController(onRemove: (users: readonly User[]) => void) {
     ],
     actions: [
       {
-        type: 'rows',
+        type: 'multiRow',
         key: 'remove',
         label: () => (german() ? 'Entfernen' : 'Remove'),
         variant: 'danger',
@@ -104,8 +130,9 @@ function mountElementDemo(container: HTMLElement): () => void {
         </label>
         <label class="ui-field"><input class="ui-checkbox" type="checkbox" data-striped checked> Striped</label>
         <label class="ui-field"><input class="ui-checkbox" type="checkbox" data-searchable checked> Searchable</label>
+        <label class="ui-field"><input class="ui-checkbox" type="checkbox" data-reloadable checked> Reloadable</label>
       </div>
-      <${TAG} class="element-demo__table" striped searchable page-size="10"></${TAG}>
+      <${TAG} class="element-demo__table" striped searchable reloadable page-size="10"></${TAG}>
       <div class="ui-toolbar">
         <button class="ui-button" type="button" data-reload>Reload</button>
         <button class="ui-button" type="button" data-clear>Clear selection</button>
@@ -118,9 +145,10 @@ function mountElementDemo(container: HTMLElement): () => void {
   const density = container.querySelector<HTMLSelectElement>('[data-density]');
   const striped = container.querySelector<HTMLInputElement>('[data-striped]');
   const searchable = container.querySelector<HTMLInputElement>('[data-searchable]');
+  const reloadable = container.querySelector<HTMLInputElement>('[data-reloadable]');
   const selected = container.querySelector('[data-selected]');
 
-  if (!table || !density || !striped || !searchable || !selected) {
+  if (!table || !density || !striped || !searchable || !reloadable || !selected) {
     return () => {};
   }
 
@@ -147,6 +175,9 @@ function mountElementDemo(container: HTMLElement): () => void {
   });
   searchable.addEventListener('change', () => {
     table.searchable = searchable.checked;
+  });
+  reloadable.addEventListener('change', () => {
+    table.reloadable = reloadable.checked;
   });
 
   return () => {

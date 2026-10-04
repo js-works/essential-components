@@ -38,4 +38,13 @@ const Info = icon(['M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0', 'M12 9h.01', 'M11 12h
 
 const Upload = icon(['M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2', 'M7 9l5 -5l5 5', 'M12 4l0 12']);
 
-const icons = { add: <Plus />, edit: <Pencil />, remove: <Trash />, info: <Info />, upload: <Upload /> } as const;
+const Check = icon(['M5 12l5 5l10 -10']);
+
+const icons = {
+  add: <Plus />,
+  edit: <Pencil />,
+  remove: <Trash />,
+  info: <Info />,
+  upload: <Upload />,
+  done: <Check />,
+} as const;

@@ -10,6 +10,8 @@ export default defineConfig({
   root: 'src/demo',
   base: process.env.BASE_PATH ?? '/',
   build: {
+    // Only the latest Chrome, Edge, Firefox and Safari: modern CSS (e.g. `light-dark()`) stays as it is.
+    target: 'esnext',
     // Deliberately not `dist/` — that belongs to the library build, which wipes it.
     // Being outside `root` is why emptyOutDir has to be spelled out.
     outDir: '../../dist-demo',

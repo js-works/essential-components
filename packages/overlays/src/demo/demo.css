@@ -35,7 +35,7 @@
   padding: 0.75rem 1rem;
   overflow: auto;
   border: 1px solid var(--ui-color-divider);
-  border-radius: var(--ui-radius);
+  border-radius: var(--ui-radius-sm);
   background: var(--ui-color-field);
   font-size: 0.82rem;
   white-space: pre-wrap;
@@ -46,7 +46,7 @@
 .overlays-list {
   margin: 0;
   padding-inline-start: 1.25rem;
-  font-size: var(--ui-font-size-small);
+  font-size: var(--ui-font-size-sm);
   user-select: text;
 }
 

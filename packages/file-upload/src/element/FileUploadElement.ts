@@ -44,6 +44,7 @@ const PROPERTIES = [
   'multiple',
   'manualUpload',
   'previews',
+  'density',
   'disabled',
   'name',
   'required',
@@ -63,6 +64,7 @@ class FileUploadElement extends HTMLElement implements Spec.Element {
     'multiple',
     'manual-upload',
     'previews',
+    'density',
     'disabled',
     'name',
     'required',
@@ -269,6 +271,17 @@ class FileUploadElement extends HTMLElement implements Spec.Element {
     this.toggleAttribute('previews', value);
   }
 
+  // Missing or unknown: `normal`.
+  get density(): Spec.Density {
+    const value = this.getAttribute('density');
+
+    return value === 'compact' || value === 'comfortable' ? value : 'normal';
+  }
+
+  set density(value: Spec.Density) {
+    this.setAttribute('density', value);
+  }
+
   get disabled(): boolean {
     return this.hasAttribute('disabled');
   }
@@ -338,8 +351,13 @@ class FileUploadElement extends HTMLElement implements Spec.Element {
     this.#renderForm();
   }
 
-  attributeChangedCallback(): void {
-    this.#optionsChanged();
+  attributeChangedCallback(name: string): void {
+    // Only the look: the list is not rendered again.
+    if (name === 'density') {
+      this.#root.dataset['density'] = this.density;
+    } else {
+      this.#optionsChanged();
+    }
   }
 
   // The language may have changed while the element was not on the page.

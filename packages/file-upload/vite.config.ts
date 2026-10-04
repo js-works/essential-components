@@ -7,6 +7,8 @@ import { defineConfig } from 'vitest/config';
 const config = defineConfig({
   plugins: [react()],
   build: {
+    // Only the latest Chrome, Edge, Firefox and Safari: modern CSS (e.g. `light-dark()`) stays as it is.
+    target: 'esnext',
     lib: {
       entry: {
         index: 'src/index.ts',

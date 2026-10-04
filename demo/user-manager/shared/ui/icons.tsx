@@ -1,0 +1,51 @@
+import { IoMdHome } from 'react-icons/io';
+import {
+  TbArrowLeft,
+  TbArrowRight,
+  TbCheck,
+  TbChevronDown,
+  TbCopy,
+  TbKey,
+  TbLock,
+  TbPencil,
+  TbPlus,
+  TbShieldCheck,
+  TbShieldLock,
+  TbTrash,
+  TbUser,
+  TbUserCheck,
+  TbUserMinus,
+  TbUserOff,
+  TbUserPlus,
+  TbUsers,
+  TbUsersGroup,
+  TbX,
+} from 'react-icons/tb';
+
+export { appIcons };
+
+// The icons of the app: the Tabler icons of react-icons, in the current text color.
+const appIcons = {
+  app: <TbShieldLock size={22} aria-hidden />,
+  home: <IoMdHome size={18} aria-hidden />,
+  chevronDown: <TbChevronDown size={16} aria-hidden />,
+  users: <TbUsers size={18} aria-hidden />,
+  user: <TbUser size={16} aria-hidden />,
+  groups: <TbUsersGroup size={18} aria-hidden />,
+  roles: <TbKey size={18} aria-hidden />,
+  access: <TbLock size={18} aria-hidden />,
+  check: <TbShieldCheck size={18} aria-hidden />,
+  add: <TbPlus size={16} aria-hidden />,
+  addUser: <TbUserPlus size={16} aria-hidden />,
+  removeUser: <TbUserMinus size={16} aria-hidden />,
+  enable: <TbUserCheck size={16} aria-hidden />,
+  disable: <TbUserOff size={16} aria-hidden />,
+  edit: <TbPencil size={16} aria-hidden />,
+  remove: <TbTrash size={16} aria-hidden />,
+  copy: <TbCopy size={16} aria-hidden />,
+  open: <TbArrowRight size={16} aria-hidden />,
+  back: <TbArrowLeft size={18} aria-hidden />,
+  forward: <TbArrowRight size={18} aria-hidden />,
+  allowed: <TbCheck size={18} aria-hidden />,
+  denied: <TbX size={18} aria-hidden />,
+};

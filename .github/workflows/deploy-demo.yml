@@ -34,6 +34,8 @@ jobs:
       - run: npx vitest run --project jsdom --project server
         working-directory: packages/file-upload
       - run: npm run build:pages
+      # The frozen demos of older versions (`npm run freeze-demo`), served at …/old-demos/<version>/.
+      - run: cp -r old-demos dist/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -124,6 +124,7 @@ export const domDialogAdapter: DialogAdapterFactory<DomDialogContent> = ({
         wrapper.replaceChildren(...toNodes(value));
       }
 
+      renderMaximizeButton(host, props);
       renderCloseButton(host, props);
       renderActionButtons(host, props);
     },
@@ -170,6 +171,32 @@ function renderCloseButton(
   const wrapper = document.createElement("span");
   wrapper.setAttribute("slot", "close");
   wrapper.append(...toNodes(render({ onClose: props.onClose })));
+  host.append(wrapper);
+}
+
+// Same split for the maximize button, and only for a maximizable dialog.
+function renderMaximizeButton(
+  host: HTMLElement,
+  props: DialogProps<DomDialogContent>,
+): void {
+  for (const stale of host.querySelectorAll(':scope > [slot="maximize"]')) {
+    stale.remove();
+  }
+  const render = props.render?.maximizeButton;
+  if (!render || !props.maximizable) {
+    return;
+  }
+  const wrapper = document.createElement("span");
+  wrapper.setAttribute("slot", "maximize");
+  wrapper.append(
+    ...toNodes(
+      render({
+        maximized: props.maximized,
+        label: props.maximizeLabel,
+        onToggle: props.onToggleMaximize,
+      }),
+    ),
+  );
   host.append(wrapper);
 }
 

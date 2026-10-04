@@ -49,6 +49,8 @@ import type {
   DialogsControllerConfig,
   DialogType,
   FormAttempt,
+  FormConfirm,
+  FormConfirmResult,
   FormDialogConfig,
   FormDialogResult,
   DialogHandle,
@@ -69,11 +71,11 @@ function combineSignals(
 
 // Duck-typed rather than `instanceof Promise`: a validator may hand back a thenable from
 // another realm or from a promise library, and both must take the async path.
-function isPromiseLike(value: unknown): value is PromiseLike<boolean> {
+function isPromiseLike<T>(value: T | PromiseLike<T>): value is PromiseLike<T> {
   return (
     typeof value === "object" &&
     value !== null &&
-    typeof (value as PromiseLike<boolean>).then === "function"
+    typeof (value as PromiseLike<T>).then === "function"
   );
 }
 
@@ -256,7 +258,12 @@ function createDialogScope<C extends object>(
   let currentRefresh: (() => void) | null = null;
 
   const ensureHandle = (): DialogMount =>
-    (handle ??= mountDialog(dialogId, adapterFactory, () => currentRefresh?.()));
+    (handle ??= mountDialog(
+      dialogId,
+      adapterFactory,
+      () => currentRefresh?.(),
+      config.mountTarget?.() ?? document.body,
+    ));
 
   const noop = (): void => {};
 
@@ -290,6 +297,11 @@ function createDialogScope<C extends object>(
         props: {
           dialogType: "info",
           surface: "dialog",
+          width: "default",
+          maximizable: false,
+          maximized: false,
+          maximizeLabel: "",
+          onToggleMaximize: noop,
           themeVars,
           styles: null,
           hasForm: false,
@@ -475,6 +487,15 @@ function createDialogScope<C extends object>(
 
       if (spec.allowsForm && button.validate) {
         form = handle?.getForm() ?? null;
+
+        // A form that confirms the dialog itself (see FormConfirm): it validates and does
+        // the work, so the dialog's own validation is skipped and its outcome decides.
+        const confirm = button.id === symbolConfirm ? handle?.getConfirm() : undefined;
+        if (confirm) {
+          runConfirm(confirm);
+          return;
+        }
+
         form?.requestSubmit();
 
         // Skipped entirely when the caller turned native validation off: the form carries
@@ -536,6 +557,40 @@ function createDialogScope<C extends object>(
       }
 
       proceed();
+
+      // Like an async validator (see above): the spinner keeps running while it works, a
+      // late outcome after the dialog was settled is dropped, and a rejection is invalid
+      // (the dialog stays open) and rethrown. Only the outcome differs: `ok` confirms,
+      // an `error` becomes the note, anything else points at the first invalid field.
+      function runConfirm(run: FormConfirm): void {
+        const outcome = (result: FormConfirmResult): void => {
+          if (cleanupSignal?.aborted) {
+            return;
+          }
+          if (result.ok) {
+            proceed();
+            return;
+          }
+          stopSpinner();
+          if (result.error !== undefined) {
+            raiseNote({ message: result.error });
+          } else {
+            handle?.focusFirstInvalid();
+          }
+        };
+
+        const result = run();
+        if (isPromiseLike(result)) {
+          Promise.resolve(result).then(outcome, (error: unknown) => {
+            stopSpinner();
+            queueMicrotask(() => {
+              throw error;
+            });
+          });
+          return;
+        }
+        outcome(result);
+      }
     };
 
     // Busy state lives here, not in the element: it is view state like any other, so it
@@ -624,6 +679,16 @@ function createDialogScope<C extends object>(
       rerender();
     };
 
+    // Maximized (see DialogConfig.maximizable): view state of this dialog like the note,
+    // so the element and a maximize-button override render the same. A new dialog of the
+    // scope starts unmaximized, since this lives per dialog.
+    let maximized = false;
+
+    const toggleMaximize = (): void => {
+      maximized = !maximized;
+      rerender();
+    };
+
     // The built-in icons are fresh nodes per call, so resolving on every render would
     // hand the adapter a different value each time and defeat its identity check. Cache
     // against the config field the resolution actually depends on.
@@ -666,6 +731,11 @@ function createDialogScope<C extends object>(
       props: {
         dialogType: spec.dialogType,
         surface: spec.config.surface ?? "dialog",
+        width: spec.config.width ?? "default",
+        maximizable: spec.config.maximizable ?? false,
+        maximized,
+        maximizeLabel: getText(maximized ? "labelRestore" : "labelMaximize"),
+        onToggleMaximize: toggleMaximize,
         themeVars,
         styles: getStyles(spec),
         hasForm: spec.allowsForm,

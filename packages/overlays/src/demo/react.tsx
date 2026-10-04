@@ -41,6 +41,7 @@ import { createRoot } from "react-dom/client";
 import {
   Button,
   CloseButton,
+  DEFAULT_THEME,
   Group,
   MantineProvider,
   MantineThemeProvider,
@@ -61,6 +62,7 @@ import "./react.css";
 
 import { OverlaysProvider, useDialogs } from "../main/bindings/react/index.js";
 import type { OverlaysConfig } from "../main/bindings/react/index.js";
+import { createDialogTheme } from "../main/index.js";
 import type { ActionButtonType } from "../main/index.js";
 
 function today(): string {
@@ -349,6 +351,15 @@ const MANTINE_BUTTON: Record<
 const OVERLAYS_CONFIG: OverlaysConfig = {
   dialogs: {
     icons: true,
+    // The dialog's own text (title, message) in Mantine's body size and font, like the
+    // inputs in its content. The values, not Mantine's variables: the dialog is not inside
+    // the element that carries them.
+    theme: createDialogTheme({
+      fontSize: DEFAULT_THEME.fontSizes.sm,
+      fontFamily: DEFAULT_THEME.fontFamily,
+      // The spinner placeholder (a scope waiting for its first dialog) in Mantine's primary color.
+      spinner: DEFAULT_THEME.colors[DEFAULT_THEME.primaryColor]![6]!,
+    }),
     // Installed once here rather than wrapped around every `content`: forgetting one
     // dialog would put its popups behind the backdrop, and nothing would say so. Skipped
     // for dialogs with no form, which have nothing that opens a popup.

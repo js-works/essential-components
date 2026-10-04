@@ -1,9 +1,80 @@
-/* What is specific to this page. The page itself is styled by the design language in `ui/ui.css`. */
+/* What is specific to this page. The page itself is styled by the design language in `ui/ui.css`, the frame around
+   the demos by the app cockpit. */
 
-/* The frame around the demos (title, global switches, the tabs of the demos) cannot be selected, so a click or a drag
-   there never selects text. Inside the demos, selecting stays as their projects have it. */
-.ui-page__header,
-.ui-split__side {
-  -webkit-user-select: none;
-  user-select: none;
+/* The cockpit fills the window; each demo scrolls inside it. */
+app-cockpit {
+  height: 100dvh;
+
+  /* Signed out (the login screen instead): the element's own `display` (its :host rule) would win over `hidden`. */
+  &[hidden] {
+    display: none;
+  }
+
+  /* Signing out: it fades out first (`data-fading`, set by `demo/main.ts`), then the login screen fades in. */
+  transition: opacity 250ms ease;
+
+  &[data-fading] {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+/* The login screen (packages/app-login), signed out: its accent is the page's, like the cockpit's and the apps'. */
+.login-host {
+  --app-login-accent-color: var(--app-accent-color, var(--ui-color-accent));
+  animation: login-fade-in 350ms ease-out;
+}
+
+@keyframes login-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  app-cockpit {
+    transition: none;
+  }
+
+  .login-host {
+    animation: none;
+  }
+}
+
+/* The note of a planned component ("Planned: there is no demo yet."): in a light gray box with rounded corners. */
+.planned-demo__note {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--ui-color-divider);
+  border-radius: 6px;
+  background: var(--ui-color-subtle);
+}
+
+/* The cockpit's base text size (`--app-cockpit-font-size`, 14px by default) mapped to the apps' own text size (their
+   `--…-font-size` is Mantine's normal text, `sm`, and every other Mantine size follows it): the shell and the apps have
+   one text size. Set `--app-cockpit-font-size` on `app-cockpit` to change both (2026-10-04). */
+board-manager-demo {
+  --board-manager-font-size: var(--app-cockpit-font-size);
+}
+
+media-manager-demo {
+  --media-manager-font-size: var(--app-cockpit-font-size);
+}
+
+user-manager-demo {
+  --user-manager-font-size: var(--app-cockpit-font-size);
+}
+
+/* The page's accent (`--app-accent-color`, the cockpit's "Accent color" menu; else the design language's), mapped to
+   the apps' own tokens: the cockpit and the apps in one color. */
+board-manager-demo {
+  --board-manager-accent-color: var(--app-accent-color, var(--ui-color-accent));
+}
+
+media-manager-demo {
+  --media-manager-accent-color: var(--app-accent-color, var(--ui-color-accent));
+}
+
+user-manager-demo {
+  --user-manager-accent-color: var(--app-accent-color, var(--ui-color-accent));
 }

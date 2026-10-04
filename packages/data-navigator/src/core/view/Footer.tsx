@@ -2,13 +2,12 @@ import { useEffect, useState } from 'react';
 import type { ReactElement } from 'react';
 import type { DataNavigatorComponent as Spec } from '../../react/api';
 import * as classes from './DataNavigator.module.css';
-import { PageField, PagerButton, PageSizeField, Pill } from './widgets';
+import { PageField, PagerButton, PageSizeField } from './widgets';
 
 export { Footer };
 
 type FooterProps = {
   texts: Spec.Texts;
-  selectedCount: number;
   total: number;
   page: number;
   pageCount: number;
@@ -18,10 +17,10 @@ type FooterProps = {
   onPageSize: (pageSize: number) => void;
 };
 
-// The navigation bar below the table: the selection pill and the item range on the left, the page size and the pager
+// The navigation bar below the table: the item range on the left, the page size and the pager
 // on the right.
 function Footer(props: FooterProps): ReactElement {
-  const { texts, selectedCount, total, page, pageCount, pageSize, pageSizeOptions, onPage, onPageSize } = props;
+  const { texts, total, page, pageCount, pageSize, pageSizeOptions, onPage, onPageSize } = props;
   const { footer, footerSide, footerGroup, pager } = classes;
   // The typed page number is a draft: it is applied on Enter and when the input loses its focus.
   const [draft, setDraft] = useState(String(page));
@@ -44,7 +43,6 @@ function Footer(props: FooterProps): ReactElement {
   return (
     <div className={footer}>
       <div className={footerSide}>
-        {selectedCount > 0 && <Pill>{texts.selectedCount({ count: selectedCount })}</Pill>}
         {total > 0 && <span>{texts.itemRange({ from, to, total })}</span>}
       </div>
       <div className={footerSide}>

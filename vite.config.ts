@@ -7,11 +7,18 @@ import { defineConfig } from 'vite';
 //
 // `vite build --mode pages` builds for GitHub Pages (js-works.github.io/essential-components), which serves the site
 // under a subpath.
+//
+// Only the latest Chrome, Edge, Firefox and Safari are supported: `esnext` (also for the CSS, `cssTarget` follows
+// `target`), so modern CSS stays as it is. Else the minifier lowers `light-dark()` into variables that follow the
+// page's color scheme, not the `color-scheme` of the element (the cockpit's dark sidebar got light colors).
 const config = defineConfig(({ mode }) => ({
   plugins: [react()],
   base: mode === 'pages' ? '/essential-components/' : '/',
   resolve: {
     dedupe: ['react', 'react-dom'],
+  },
+  build: {
+    target: 'esnext',
   },
 }));
 

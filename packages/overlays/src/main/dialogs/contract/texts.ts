@@ -24,6 +24,11 @@ export const defaultDialogTexts = {
   titleDecideCritical: "Please decide",
   titleForm: "Form",
   titleFormCritical: "Form",
+
+  // The two states of the maximize button (see DialogConfig.maximizable): its aria-label
+  // and tooltip.
+  labelMaximize: "Maximize",
+  labelRestore: "Restore",
 } as const;
 
 export type DialogTexts = Record<keyof typeof defaultDialogTexts, string>;

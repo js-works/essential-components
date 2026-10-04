@@ -1,0 +1,14 @@
+/* What is specific to this demo page. */
+html,
+body {
+  height: 100%;
+}
+
+/* After signing in: the user and a button to sign out again. */
+.signed-in {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 1rem;
+  min-height: 100dvh;
+}

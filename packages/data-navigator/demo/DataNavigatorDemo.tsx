@@ -1,20 +1,33 @@
 import { StrictMode } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
 import { App } from './App';
 import { mountElementDemo } from './ElementDemo';
+import { GroupedReorderDemo } from './GroupedReorderDemo';
+import { GroupingDemo } from './GroupingDemo';
+import { ReorderDemo } from './ReorderDemo';
 import { setupUi } from './ui/ui';
 
 export { DataNavigatorDemo };
+
+// The further examples of the React component, one tab each (after the two main tabs): the tab's text and the
+// example. A new example is one more entry.
+const EXAMPLES: readonly { readonly tab: string; readonly Example: ComponentType }[] = [
+  { tab: 'Row reordering', Example: ReorderDemo },
+  { tab: 'Row grouping', Example: GroupingDemo },
+  { tab: 'Grouped reordering', Example: GroupedReorderDemo },
+];
 
 // The whole demo of the data navigator, as a light DOM custom element without attributes, so a page can show it alone
 // (index.html) or together with the demos of other components. It is exported and not registered: the page registers
 // it under a tag name of its choice. The global switches (language, color scheme) belong to the page, not to the demo:
 // the demo's I18nAdapter follows `<html lang>`.
-// Two tabs: the React component (`@local/data-navigator/react`) and the custom element (`@local/data-navigator`).
+// Tabs: the React component (`@local/data-navigator/react`), the custom element (`@local/data-navigator`), and the
+// further examples of the React component (`EXAMPLES`), each in a React root of its own.
 class DataNavigatorDemo extends HTMLElement {
   #rendered = false;
-  #root: Root | undefined;
+  #roots: Root[] = [];
   #cleanupElementDemo: (() => void) | undefined;
   #cleanupUi: (() => void) | undefined;
 
@@ -26,9 +39,11 @@ class DataNavigatorDemo extends HTMLElement {
           <nav class="ui-tabs" aria-label="Variants">
             <button class="ui-tabs__tab" type="button">React component</button>
             <button class="ui-tabs__tab" type="button">Custom element</button>
+            ${EXAMPLES.map(({ tab }) => `<button class="ui-tabs__tab" type="button">${tab}</button>`).join('')}
           </nav>
           <section class="ui-tabs__panel" data-react-demo></section>
           <section class="ui-tabs__panel" data-element-demo hidden></section>
+          ${EXAMPLES.map(() => '<section class="ui-tabs__panel" data-example-demo hidden></section>').join('')}
         </div>
       `;
     }
@@ -37,17 +52,20 @@ class DataNavigatorDemo extends HTMLElement {
     const elementPanel = this.querySelector<HTMLElement>('[data-element-demo]');
 
     if (reactPanel !== null) {
-      this.#root = createRoot(reactPanel);
-      this.#root.render(
-        <StrictMode>
-          <App />
-        </StrictMode>,
-      );
+      this.#mount(reactPanel, <App />);
     }
 
     if (elementPanel !== null) {
       this.#cleanupElementDemo = mountElementDemo(elementPanel);
     }
+
+    this.querySelectorAll<HTMLElement>('[data-example-demo]').forEach((panel, index) => {
+      const example = EXAMPLES[index];
+
+      if (example !== undefined) {
+        this.#mount(panel, <example.Example />);
+      }
+    });
 
     this.#cleanupUi = setupUi(this);
   }
@@ -55,9 +73,16 @@ class DataNavigatorDemo extends HTMLElement {
   disconnectedCallback(): void {
     this.#cleanupUi?.();
     this.#cleanupElementDemo?.();
-    this.#root?.unmount();
+    this.#roots.forEach((root) => root.unmount());
     this.#cleanupUi = undefined;
     this.#cleanupElementDemo = undefined;
-    this.#root = undefined;
+    this.#roots = [];
+  }
+
+  #mount(panel: HTMLElement, content: ReactNode): void {
+    const root = createRoot(panel);
+
+    root.render(<StrictMode>{content}</StrictMode>);
+    this.#roots.push(root);
   }
 }

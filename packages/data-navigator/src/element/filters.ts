@@ -1,8 +1,17 @@
 import type { DataNavigator } from '../api';
 import * as reactFilters from '../core/view/ColumnFilters';
 import type { DataNavigatorComponent } from '../react/api';
+import { contentRendererOf, nodeContent } from './content';
 
-export { dateRangeColumnFilter, reactFilterOf, selectColumnFilter, textColumnFilter };
+export {
+  autocompleteColumnFilter,
+  booleanColumnFilter,
+  dateRangeColumnFilter,
+  numberRangeColumnFilter,
+  reactFilterOf,
+  selectColumnFilter,
+  textColumnFilter,
+};
 
 // The built-in filters of the element: opaque values for the app, and each one stands for a filter of the React
 // component, which renders it.
@@ -31,6 +40,32 @@ function selectColumnFilter(settings: DataNavigator.SelectColumnFilterSettings):
   return builtIn(reactFilters.selectColumnFilter(settings));
 }
 
+// The `content` of an option (a string or a DOM node) is rendered like the default content adapter does, whatever the
+// adapter of the setup: so it works with every setup.
+const renderNode = contentRendererOf(nodeContent as DataNavigator.ContentAdapter<unknown>);
+
+function autocompleteColumnFilter(
+  settings: DataNavigator.AutocompleteColumnFilterSettings,
+): DataNavigator.BuiltInColumnFilter {
+  const { load, ...rest } = settings;
+
+  return builtIn(reactFilters.autocompleteColumnFilter({
+    ...rest,
+    load: async (query, signal) =>
+      (await load(query, signal)).map(({ content, ...option }) =>
+        content === undefined ? option : { ...option, content: () => renderNode(content) }
+      ),
+  }));
+}
+
 function dateRangeColumnFilter(): DataNavigator.BuiltInColumnFilter {
   return builtIn(reactFilters.dateRangeColumnFilter());
+}
+
+function numberRangeColumnFilter(): DataNavigator.BuiltInColumnFilter {
+  return builtIn(reactFilters.numberRangeColumnFilter());
+}
+
+function booleanColumnFilter(): DataNavigator.BuiltInColumnFilter {
+  return builtIn(reactFilters.booleanColumnFilter());
 }

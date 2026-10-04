@@ -134,6 +134,15 @@ type ToastAdapterFactory<C> = (context: {
 
 interface ToastsControllerOptions<C> {
   adapter: ToastAdapterFactory<C>;
+  /**
+   * Where the toast stack is mounted: read once, when the first toast is shown (so it
+   * may point at an element that does not exist yet when the controller is created).
+   * Default (and while it returns nothing): `document.body`. The React provider sets it
+   * to its own mount point, so the stack lives where the provider is - in a shadow root
+   * too. The stack is `position: fixed`: an ancestor with `transform`, `filter` or
+   * `contain` makes it position against that ancestor instead of the viewport.
+   */
+  mountTarget?: () => ParentNode | null | undefined;
   theme?: Partial<ToastTheme>;
   size?: ToastSize;
   getText?: ToastTextResolver;

@@ -233,3 +233,23 @@ describe('form association', () => {
     });
   });
 });
+
+// The layout needs a real browser too. The React wrapper's placeholder has these heights (see createFileUploadComponent).
+describe('density', () => {
+  it.each(
+    [
+      ['compact', 2.948],
+      ['normal', 3.52],
+      ['comfortable', 4.664],
+    ] as const,
+  )('gives the empty element (%s) the height of the placeholder', async (density, em) => {
+    const element = document.createElement(TAG) as Spec.Element;
+
+    element.style.fontSize = '14px';
+    element.density = density;
+    document.body.append(element);
+    await flush();
+
+    expect(element.getBoundingClientRect().height).toBeCloseTo(em * 14 + 4, 0);
+  });
+});

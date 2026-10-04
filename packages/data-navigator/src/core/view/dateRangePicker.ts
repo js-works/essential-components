@@ -3,7 +3,7 @@
 import type { Datepicker } from 'vanillajs-datepicker';
 import type { DatepickerOptions } from 'vanillajs-datepicker/Datepicker';
 
-export { createRangePicker };
+export { createDatePicker, createRangePicker };
 export type { CalendarLabels, PickedRange, RangeSelection };
 
 // A date range with two inline calendars of vanillajs-datepicker (bundled into our build, MIT), side by side, that act
@@ -107,6 +107,102 @@ function monthOf(date: Date, offset = 0): Date {
 // Unique ids for the month titles, which name the calendars.
 let nextId = 1;
 
+// Named for assistive technology: a calendar by its month title, the buttons by our texts. The elements stay while the
+// picker lives (their contents change), so this is done once.
+function nameCalendar(container: HTMLElement, labels: CalendarLabels): void {
+  const title = container.querySelector('.view-switch');
+
+  if (title !== null) {
+    title.id = `datnav-calendar-${nextId++}`;
+    container.setAttribute('role', 'group');
+    container.setAttribute('aria-labelledby', title.id);
+  }
+
+  container.querySelector('.prev-button')?.setAttribute('aria-label', labels.previous);
+  container.querySelector('.next-button')?.setAttribute('aria-label', labels.next);
+}
+
+// The date of the day an event happened on, if any.
+function dayOf(event: Event): number | undefined {
+  const cell = event.target instanceof Element ? event.target.closest('.datepicker-cell.day') : null;
+
+  return cell instanceof HTMLElement && !cell.classList.contains('disabled') ? Number(cell.dataset['date']) : undefined;
+}
+
+// One inline calendar for a single date (the date editor), in the given container; returns its cleanup. It opens at
+// the month of the date (else of today), with the date selected. A click on a day, or Enter on the keyboard position
+// (in the days view), picks it: `onPick` gets it (ISO). The month title leads to the months, the years and the decades.
+function createDatePicker(
+  container: HTMLElement,
+  locale: string,
+  labels: CalendarLabels,
+  initial: string | undefined,
+  onPick: (date: string) => void,
+): () => void {
+  let destroyed = false;
+  let cleanup = () => {};
+
+  void loadDatepicker().then((Datepicker) => {
+    if (destroyed) {
+      return;
+    }
+
+    const date = initial === undefined ? undefined : Datepicker.parseDate(initial, ISO);
+    const picker = new Datepicker(container, {
+      format: ISO,
+      language: languageOf(Datepicker, locale),
+      weekStart: weekStartOf(locale),
+      maxView: 3,
+      todayHighlight: true,
+      prevArrow: '‹',
+      nextArrow: '›',
+      defaultViewDate: monthOf(date === undefined ? new Date() : new Date(date)),
+    });
+
+    if (date !== undefined) {
+      picker.setDate(date);
+    }
+
+    nameCalendar(container, labels);
+
+    const pick = (time: number) => onPick(Datepicker.formatDate(time, ISO));
+    const onClick = (event: MouseEvent) => {
+      const day = dayOf(event);
+
+      if (day !== undefined) {
+        pick(day);
+      }
+    };
+    const onKeydown = (event: KeyboardEvent) => {
+      const focused: unknown = picker.getFocusedDate();
+
+      if (
+        !event.defaultPrevented && event.key === 'Enter' && container.querySelector('.days') !== null
+        && focused instanceof Date
+      ) {
+        event.preventDefault();
+        pick(focused.getTime());
+      }
+    };
+
+    container.addEventListener('click', onClick);
+    container.addEventListener('keydown', onKeydown);
+
+    cleanup = () => {
+      container.removeEventListener('click', onClick);
+      container.removeEventListener('keydown', onKeydown);
+      container.removeAttribute('role');
+      container.removeAttribute('aria-labelledby');
+      picker.destroy();
+    };
+  });
+
+  return () => {
+    destroyed = true;
+    cleanup();
+  };
+}
+
 // Creates the two calendars in the given containers and returns their cleanup. `onSelect` gets what is picked after
 // every pick, `onPick` the range when its end is picked.
 function createRangePicker(
@@ -161,20 +257,7 @@ function createRangePicker(
       Reflect.set(picker, 'rangeSideIndex', index);
     });
 
-    // Named for assistive technology: each calendar by its month title, the buttons by our texts. The elements stay
-    // while the picker lives (their contents change), so this is done once.
-    containers.forEach((container) => {
-      const title = container.querySelector('.view-switch');
-
-      if (title !== null) {
-        title.id = `datnav-calendar-${nextId++}`;
-        container.setAttribute('role', 'group');
-        container.setAttribute('aria-labelledby', title.id);
-      }
-
-      container.querySelector('.prev-button')?.setAttribute('aria-label', labels.previous);
-      container.querySelector('.next-button')?.setAttribute('aria-label', labels.next);
-    });
+    containers.forEach((container) => nameCalendar(container, labels));
 
     // The left calendar always shows the month before the right one: when one of them moves (its button, the keyboard,
     // or a month or year chosen in its title view), the other one follows. The inner buttons are hidden (CSS).
@@ -225,15 +308,6 @@ function createRangePicker(
       if (from !== undefined && to !== undefined) {
         onPick({ from, to });
       }
-    };
-
-    // The date of the day an event happened on, if any.
-    const dayOf = (event: Event): number | undefined => {
-      const cell = event.target instanceof Element ? event.target.closest('.datepicker-cell.day') : null;
-
-      return cell instanceof HTMLElement && !cell.classList.contains('disabled')
-        ? Number(cell.dataset['date'])
-        : undefined;
     };
 
     // A click on a day of either calendar.

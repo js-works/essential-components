@@ -5,7 +5,7 @@
 // -------------------------------------------------------------------
 
 import type { DialogSpec } from "./adapter.js";
-import type { ActionButtonType, ButtonRole } from "./dialog.js";
+import type { ActionButtonType, ButtonRole, FormConfirm } from "./dialog.js";
 
 export interface DialogButtonView {
   role: ButtonRole;
@@ -37,6 +37,8 @@ export interface DialogMount {
   close(): Promise<void>;
   /** The form element rendered inside the dialog, if any. */
   getForm(): HTMLFormElement | null;
+  /** The confirmation the content registered with the adapter, if any. */
+  getConfirm(): FormConfirm | undefined;
   /**
    * Move focus to the form's first `aria-invalid="true"` control, falling back to
    * `[autofocus]`. Called when a validator turns a confirm click down; a no-op when the

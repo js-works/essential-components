@@ -684,6 +684,26 @@ describe('file upload element', () => {
       expect(element.hasAttribute('multiple')).toBe(false);
     });
 
+    it('has the density normal by default, reflects it and puts it on root, without a change event', () => {
+      const { element, root } = mount();
+      const onChange = vi.fn();
+
+      element.addEventListener('change', onChange);
+
+      expect(element.density).toBe('normal');
+      expect(root.dataset['density']).toBeUndefined();
+
+      element.density = 'compact';
+      expect(element.getAttribute('density')).toBe('compact');
+      expect(root.dataset['density']).toBe('compact');
+
+      element.setAttribute('density', 'huge');
+      expect(element.density).toBe('normal');
+      expect(root.dataset['density']).toBe('normal');
+
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
     it('reads the attributes, with the defaults for missing or invalid values', () => {
       const { element } = mount();
 
@@ -1129,6 +1149,7 @@ describe('file upload element', () => {
         theme: {
           accentColor: { light: '#0ca678', dark: '#63e6be' },
           borderRadius: '3px',
+          buttonBorderRadius: '11px',
           fontFamily: 'Georgia, serif',
           fontSize: '17px',
         },
@@ -1144,6 +1165,7 @@ describe('file upload element', () => {
       expect(cssOf(plain)).not.toContain('#0ca678');
       expect(cssOf(themed)).toContain('light-dark(#0ca678, #63e6be)');
       expect(cssOf(themed)).toContain('3px');
+      expect(cssOf(themed)).toMatch(/button \{[^}]*border-radius: 11px;/);
       expect(cssOf(themed)).toContain('Georgia, serif');
       expect(cssOf(themed)).toContain('17px');
       expect(cssOf(themed)).toContain('border-style: dashed');

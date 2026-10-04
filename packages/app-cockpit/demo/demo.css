@@ -1,0 +1,9 @@
+/* What is specific to this demo page: the cockpit fills the window. */
+html,
+body {
+  height: 100%;
+}
+
+app-cockpit {
+  height: 100dvh;
+}

@@ -122,15 +122,19 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
  * facade that never goes stale. Two reasons, both about matching React's lifecycle to an
  * imperative core that touches the document the moment it is created:
  *
- * - `createToastController` appends its stack to `<body>` right away, so building one in
- *   a render that React then throws away (StrictMode double-invokes every state
- *   initializer, exactly to surface this) would leak a container. Deferring to the first
- *   *call* means a discarded render pays nothing — it never runs an event handler.
+ * - `createToastController` registers its document listeners right away, so building one
+ *   in a render that React then throws away (StrictMode double-invokes every state
+ *   initializer, exactly to surface this) would leak them. Deferring to the first *call*
+ *   means a discarded render pays nothing — it never runs an event handler. (The stack
+ *   itself goes into the provider's mount point with the first toast.)
  * - StrictMode also runs mount effects twice, setup → cleanup → setup. A cleanup that
  *   destroyed a controller nothing recreates would leave toasts dead in development;
  *   clearing the holder instead makes the next call build a fresh one.
  */
-function createToastHolder(store: PortalStore): {
+function createToastHolder(
+  store: PortalStore,
+  mountTarget: () => ParentNode | null,
+): {
   facade: ToastsController<ReactToastContent>;
   configure: (
     options: Omit<ToastsControllerOptions<ReactToastContent>, "adapter">,
@@ -142,6 +146,7 @@ function createToastHolder(store: PortalStore): {
 
   const get = (): ToastsController<ReactToastContent> =>
     (live ??= createToastController<ReactToastContent>({
+      mountTarget,
       ...options,
       adapter: createToastAdapter(store),
     }));
@@ -171,7 +176,7 @@ function createToastHolder(store: PortalStore): {
       const changed = !sameToastConfig(options, next);
       options = next;
       if (changed) {
-        live?.configure(next);
+        live?.configure({ mountTarget, ...next });
       }
     },
     teardown: () => {
@@ -194,7 +199,12 @@ export function OverlaysProvider({
   // so it is safe to build here; the toast side is deferred, see createToastHolder.
   const [instance] = useState(() => {
     const store = createPortalStore();
-    const holder = createToastHolder(store);
+    // The provider's own mount point (rendered after the children): dialogs and toasts
+    // live there, so they are where the provider is - inside a shadow root too, with the
+    // styles of that root. A caller's `mountTarget` in the config still wins.
+    const mountPoint: { current: HTMLElement | null } = { current: null };
+    const mountTarget = (): ParentNode | null => mountPoint.current;
+    const holder = createToastHolder(store, mountTarget);
     // The object the dialogs controller reads from, kept and rewritten rather than
     // replaced: every field is read at the point of use (a theme when a scope opens, the
     // texts and icon policy per dialog), so refreshing it is all it takes for the *next*
@@ -205,10 +215,13 @@ export function OverlaysProvider({
     const dialogAdapter = createDialogAdapter(store);
     const liveDialogConfig: DialogsControllerConfig<ReactContent> = {
       adapter: dialogAdapter.factory,
+      mountTarget,
     };
     const dialogs = createDialogsController<ReactContent>(liveDialogConfig);
     return {
       store,
+      mountPoint,
+      mountTarget,
       liveDialogConfig,
       refreshDialogs: dialogAdapter.refresh,
       configureToasts: holder.configure,
@@ -236,7 +249,7 @@ export function OverlaysProvider({
     for (const key of Object.keys(target)) {
       if (key !== "adapter") delete target[key];
     }
-    Object.assign(target, config?.dialogs);
+    Object.assign(target, { mountTarget: instance.mountTarget }, config?.dialogs);
 
     instance.configureToasts(config?.toasts ?? {});
   });
@@ -249,8 +262,9 @@ export function OverlaysProvider({
     instance.refreshDialogs();
   }, [instance, refreshKey]);
 
-  // Both features put DOM in the document, outside this tree — a provider that goes away
-  // has to take it with it, and settle anything its callers are still waiting on.
+  // Both features put DOM into the mount point, outside React's own rendering — a provider
+  // that goes away has to take it with it, and settle anything its callers are still
+  // waiting on.
   useEffect(() => instance.teardown, [instance]);
 
   const entries = usePortalEntries(instance.store);
@@ -259,6 +273,14 @@ export function OverlaysProvider({
     OverlaysContext.Provider,
     { value: instance.value },
     children,
+    // No box of its own: the dialogs are in the top layer, the toast stack is fixed.
+    createElement("div", {
+      ref: (element: HTMLDivElement | null) => {
+        instance.mountPoint.current = element;
+      },
+      "data-overlays": "",
+      style: { display: "contents" },
+    }),
     createElement(
       Fragment,
       null,

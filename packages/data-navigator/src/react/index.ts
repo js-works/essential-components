@@ -1,12 +1,26 @@
 import { useDataNavigatorController, useDataNavigatorSelection } from '../core/controllerHooks';
-import { dateRangeColumnFilter, selectColumnFilter, textColumnFilter } from '../core/view/ColumnFilters';
+import { dateColumnEditor, selectColumnEditor, textColumnEditor } from '../core/view/ColumnEditors';
+import {
+  autocompleteColumnFilter,
+  booleanColumnFilter,
+  dateRangeColumnFilter,
+  numberRangeColumnFilter,
+  selectColumnFilter,
+  textColumnFilter,
+} from '../core/view/ColumnFilters';
 import type { DataNavigatorComponent } from './api';
 import { createDataNavigatorComponent } from './createDataNavigatorComponent';
 
 export {
+  autocompleteColumnFilter,
+  booleanColumnFilter,
   createDataNavigatorComponent,
+  dateColumnEditor,
   dateRangeColumnFilter,
+  numberRangeColumnFilter,
+  selectColumnEditor,
   selectColumnFilter,
+  textColumnEditor,
   textColumnFilter,
   useDataNavigatorController,
   useDataNavigatorSelection,
