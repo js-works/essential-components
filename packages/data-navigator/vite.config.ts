@@ -64,6 +64,12 @@ const config = defineConfig(({ mode }) => ({
       },
     },
   test: {
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/**/*.test.{ts,tsx}', 'src/**/*.d.ts', 'src/**/index.ts'],
+      reporter: ['text', 'html'],
+    },
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
     css: { include: [/\.module\.css$/, /\.css\?raw$/], modules: { classNameStrategy: 'non-scoped' } },

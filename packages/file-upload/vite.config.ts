@@ -21,6 +21,12 @@ const config = defineConfig({
     },
   },
   test: {
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/**/*.test.{ts,tsx}', 'src/**/*.d.ts', 'src/**/index.ts'],
+      reporter: ['text', 'html'],
+    },
     projects: [
       {
         extends: true,
