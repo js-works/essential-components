@@ -185,6 +185,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
         }
 
         this.#measure();
+        this.#placeNotch();
       });
       this.#resizeObserver.observe(frame);
     }
@@ -193,6 +194,28 @@ class AppCockpitElement extends LitElement implements Spec.Element {
   protected override updated(): void {
     this.#placeTip();
     this.#measure();
+    this.#placeNotch();
+  }
+
+  // Two lines: the triangle (the second line's `::before`) points at the middle of the active group's text: its x, from
+  // the left edge of the topbar, goes into `--notch-x` (see the CSS).
+  #placeNotch(): void {
+    const topbar = this.#el('.topbar');
+    const tab = this.#el('.top-line .tab[aria-pressed="true"]');
+
+    if (topbar === null) {
+      return;
+    }
+
+    if (tab === null || !topbar.hasAttribute('data-two-lines')) {
+      topbar.style.removeProperty('--notch-x');
+      return;
+    }
+
+    // The middle of the tab's text (the tab has an icon before it: its own middle would be left of the text's).
+    const box = (tab.querySelector('.tab-title') ?? tab).getBoundingClientRect();
+
+    topbar.style.setProperty('--notch-x', `${box.left + box.width / 2 - topbar.getBoundingClientRect().left}px`);
   }
 
   // The lines of the topbar wrap their entries into a hidden second row: those are counted, and shown in a "More" menu.
@@ -910,7 +933,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
       : this.#entries(group);
     const user = this.#config.user;
 
-    return html`<header class="topbar">
+    return html`<header class="topbar" ?data-two-lines=${many && !oneLine && !switcher && group !== undefined}>
       <div class="top-line">
         <div class="brand">${this.#brand(texts)}</div>
         ${

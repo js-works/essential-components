@@ -43,7 +43,7 @@ discussed. The rules of the root's `CLAUDE.md` apply.
 
 ## Behavior
 
-- A card (26rem) on a subtle background (Mantine's `gray.0`, `dark.8`), at least the window's height: the logo with the
+- A card (30rem; 24rem, 26rem, then 28rem before) on a subtle background (Mantine's `gray.0`, `dark.8`), at least the window's height: the logo with the
   title and the subtitle (small, the app's name as a line on top), the heading "Sign in" (large: the view leads), the
   username (focused), the password (Mantine's `PasswordInput`, with its eye), the button (full width), below a line the
   footer. The card hangs from the top (`clamp(1.5rem, 14vh, 7rem)`), not in the middle (2026-10-04): the views differ
@@ -74,6 +74,8 @@ discussed. The rules of the root's `CLAUDE.md` apply.
   fields, disabled button); a rejected promise shows its message (else "The sign in failed. Please try again.") under
   the buttons. New texts: `continueWith` (`{provider}` is replaced), `or`, `providerFailed` (English and German, each
   replaceable).
+- `user-select: none` on the screen (2026-10-04), like the cockpit's frame; the inputs keep `text` (Safari: a field with `none`
+  cannot be typed into).
 - Small screens (2026-10-04, `login.css`):
   - The card's frame (border, radius, shadow, padding) is our CSS, not Paper's props, so it can be taken away.
   - Narrow (up to 30rem, a phone): the card is the whole page, edge to edge: full width (one grid column, `minmax(0, 1fr)`:

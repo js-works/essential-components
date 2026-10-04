@@ -52,8 +52,13 @@ const STYLES = /* css */ `
      page's scheme. ("normal" would be light, also on a dark page.) */
   --app-cockpit-sidebar-scheme: initial;
 
+  /* A line between the top line and the second one: a background, not a border, so that the triangle of the active group
+     (nav="topbar") can cover it. */
   .top-line {
-    border-bottom: 1px solid var(--divider);
+    background-image: linear-gradient(var(--divider), var(--divider));
+    background-position: bottom;
+    background-repeat: no-repeat;
+    background-size: 100% 1px;
   }
 }
 
@@ -1894,6 +1899,35 @@ button {
   &[aria-pressed='true']::after,
   &[aria-current='page']::after {
     background: var(--accent);
+  }
+}
+
+/* Two lines (nav="topbar"): the active group is not underlined but marked by a triangle in the second line's color, in
+   the middle of its tab, pointing up into the top line: as if a triangle was cut out of the bar (2026-10-04).
+   The triangle belongs to the second line (a pseudo-element of it, reaching up over the top line): its color is the
+   second line's, in the page's scheme (the top line may be dark: a color there would be the dark one). Its place:
+   --notch-x, set by the element (the middle of the active tab, from the left edge of the topbar). */
+.topbar[data-two-lines] {
+  .top-line .tab[aria-pressed='true']::after {
+    background: transparent;
+  }
+
+  .sub-line {
+    position: relative;
+
+    &::before {
+      position: absolute;
+      top: -0.5rem;
+      left: var(--notch-x, -3rem);
+      z-index: 1;
+      width: 1rem;
+      height: 0.5rem;
+      translate: -50% 0;
+      background: var(--background);
+      clip-path: polygon(50% 0, 0 100%, 100% 100%);
+      content: '';
+      pointer-events: none;
+    }
   }
 }
 

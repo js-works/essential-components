@@ -165,6 +165,14 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
     square corners, the sidebar's colors and text size, their top at the bottom of their line (no gap, a line between
     them; `data-drop`), the shadow downwards. Those of the second line follow the page's scheme, like the line (dark ones were tried, 2026-10-03, and dropped). Their highlight (hover, arrow keys) is
     the text color at 9% (the hover token was about the light panel's own color: invisible).
+  - The active group of the top line is marked by a triangle, not an underline (2026-10-04): 1rem wide, 0.5rem high (1.5rem, then 1.25rem before),
+    in the second line's color, pointing up into the top line at the middle of its text (not the tab's: the icon is before the text; the tab's middle
+    without a text), as if a triangle was cut out of
+    the bar (white on a light page, dark on a dark one). It is a `::before` of the second line, reaching up over the top
+    line (a pseudo-element of the tab would have the top line's own, dark scheme: the triangle was black on a light
+    page); its x is `--notch-x` on the topbar, set by the element from the active tab (`#placeNotch()`, after every render
+    and resize). The line between the two lines is a background (not a border) in `nav-scheme="page"`, so the triangle
+    covers it. Only with two lines and several groups; the other modes keep the underline.
   - Left and Right (Home, End) move between the entries of a line.
   - The search: a panel below the top line, centered (36rem), only as high as its content; the backdrop darkens below
     the top line.

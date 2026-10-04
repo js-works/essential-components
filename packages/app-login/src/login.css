@@ -15,8 +15,21 @@
 }
 
 /* The card's frame is ours (not Paper's props), so the small screens below can take it away. */
+/* The screen's texts are not selectable (like the cockpit's frame); the inputs are (in Safari, a field with none cannot be
+   typed into at all). */
+.app-login__screen {
+  -webkit-user-select: none;
+  user-select: none;
+
+  input,
+  textarea {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+}
+
 .app-login__card {
-  width: min(26rem, calc(100vw - 2 * var(--mantine-spacing-md)));
+  width: min(30rem, calc(100vw - 2 * var(--mantine-spacing-md)));
   box-sizing: border-box;
   padding: var(--mantine-spacing-xl);
   border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
