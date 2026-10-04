@@ -152,6 +152,7 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
 
 ## TODO
 
+- The look of the data navigator (the user does not like it yet; details in its `CLAUDE.md`, "Todo (later)").
 - The overlays' React demo CSS (`packages/overlays/src/demo/react.css`, imported by its `react.tsx`) is global: on
   this page it reaches every demo, e.g. its error badge of Mantine's `TextInput` (`.mantine-TextInput-error`) appeared
   in the board manager. The board manager now has its own (`board-manager.css`, for all Mantine inputs, 2026-10-02).

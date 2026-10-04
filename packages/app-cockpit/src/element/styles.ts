@@ -60,6 +60,12 @@ const STYLES = /* css */ `
     background-repeat: no-repeat;
     background-size: 100% 1px;
   }
+
+  /* The triangle of the active group (nav="topbar"): in a light navigation the accent (white on the light gray of the bar
+     hardly shows; gray was tried and dropped), on a dark page the second line's color as always. */
+  .topbar[data-two-lines] .sub-line::before {
+    background: light-dark(var(--accent), var(--background));
+  }
 }
 
 /* The cockpit's own parts have a font of their own, so a mini-app's global CSS (e.g. a font on body) does not change
@@ -233,7 +239,7 @@ button {
   text-overflow: ellipsis;
   /* Room for the descenders (the line is tight; overflow is hidden for the ellipsis), without moving anything. */
   padding-bottom: 0.15em;
-  margin-bottom: -0.15em;
+  margin: -1px 0 -0.15em;
 }
 
 .brand-title {
@@ -1917,11 +1923,11 @@ button {
 
     &::before {
       position: absolute;
-      top: -0.5rem;
+      top: -0.4375rem;
       left: var(--notch-x, -3rem);
       z-index: 1;
-      width: 1rem;
-      height: 0.5rem;
+      width: 0.875rem;
+      height: 0.4375rem;
       translate: -50% 0;
       background: var(--background);
       clip-path: polygon(50% 0, 0 100%, 100% 100%);

@@ -1884,6 +1884,19 @@ The main goal is a very nice, yet simple, API, designed together with the user.
 
 ## Todo (later)
 
+- The look of the data navigator (2026-10-04): the user does not like it yet. What exactly is not decided: ask first.
+  Suspects, from what the demo shows in the root's cockpit:
+  - Corners that do not match: the buttons are 5px (`buttonRadius`), the rest of the root page has 1 to 2px now (the
+    modern look of `packages/mantine-themes`).
+  - Too many lines: the full grid (vertical lines between all columns, and the row lines); horizontal lines only?
+  - The header row: the gray, the bold labels, the sort arrows on every column.
+  - The toolbar: an icon-only refresh, a bordered search field, outlined "Filters", "Add user", "Export": different
+    weights, tight together.
+  - Density and contrast: the row height (about 41px), the striped rows, light text and borders (a step stronger
+    elsewhere now).
+  - Proposed (60%): align the default theme with the modern look (small corners also on the buttons, one step stronger
+    borders, horizontal lines only); the theme only, not the API.
+
 - From the design spec of 2026-09-28 (filter popup, pills, selection bar), not done yet:
   - Look at it in a real browser (only written, not run: no Node.js was available to that session).
   - "Show only the selected rows": a click on the selection pill toggles it (the pill then solid, and the footer says

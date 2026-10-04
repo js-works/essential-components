@@ -165,10 +165,11 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
     square corners, the sidebar's colors and text size, their top at the bottom of their line (no gap, a line between
     them; `data-drop`), the shadow downwards. Those of the second line follow the page's scheme, like the line (dark ones were tried, 2026-10-03, and dropped). Their highlight (hover, arrow keys) is
     the text color at 9% (the hover token was about the light panel's own color: invisible).
-  - The active group of the top line is marked by a triangle, not an underline (2026-10-04): 1rem wide, 0.5rem high (1.5rem, then 1.25rem before),
+  - The active group of the top line is marked by a triangle, not an underline (2026-10-04): 0.875rem wide, 0.4375rem high (1.5rem, 1.25rem, then 1rem before),
     in the second line's color, pointing up into the top line at the middle of its text (not the tab's: the icon is before the text; the tab's middle
     without a text), as if a triangle was cut out of
-    the bar (white on a light page, dark on a dark one). It is a `::before` of the second line, reaching up over the top
+    the bar (white on a light page, dark on a dark one; with `nav-scheme="page"` on a light page the accent: white hardly shows on
+    the light gray bar, gray was tried and dropped). It is a `::before` of the second line, reaching up over the top
     line (a pseudo-element of the tab would have the top line's own, dark scheme: the triangle was black on a light
     page); its x is `--notch-x` on the topbar, set by the element from the active tab (`#placeNotch()`, after every render
     and resize). The line between the two lines is a background (not a border) in `nav-scheme="page"`, so the triangle
@@ -225,7 +226,7 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
 - A subtle line (`--divider`) below the header (logo, title, search), from edge to edge of the sidebar, also in the
   rail (2026-10-03).
 - The title at the top of the sidebar, next to the logo; an optional `subtitle` (2026-10-03) under it, small and muted
-  (one line each, cut with an ellipsis). The two lines are close together (2026-10-04: line height 1.15, was 1.25 and 1.3; a bit of room for the descenders
+  (one line each, cut with an ellipsis). The two lines are close together (2026-10-04: line height 1.15, was 1.25 and 1.3, and the subtitle 1px closer; a bit of room for the descenders
   below each, as the ellipsis needs `overflow: hidden`). Both hidden in the rail. The demos have one (e.g. "Acme Corporation ·
   Headquarters").
 - The sidebar is dark in both color schemes of the page (2026-10-03): it has `color-scheme: dark`, so every
