@@ -24,6 +24,8 @@ type Texts = {
   open: string;
   move: string;
   close: string;
+  closeSheet: string;
+  searchShort: string;
 };
 
 const EN: Texts = {
@@ -48,6 +50,8 @@ const EN: Texts = {
   open: 'open',
   move: 'move',
   close: 'close',
+  closeSheet: 'Close',
+  searchShort: 'Search',
 };
 
 const DE: Texts = {
@@ -72,6 +76,8 @@ const DE: Texts = {
   open: 'öffnen',
   move: 'wählen',
   close: 'schließen',
+  closeSheet: 'Schließen',
+  searchShort: 'Suchen',
 };
 
 function textsFor(lang: string): Texts {

@@ -5,8 +5,10 @@ import type { MiniApp } from '../api';
 
 export {
   appIcon,
+  appsIcon,
   checkIcon,
   chevronIcon,
+  closeIcon,
   gridIcon,
   groupIcon,
   initialsOf,
@@ -30,6 +32,13 @@ const panelIcon = () =>
   );
 const selectorIcon = () => line('icon--selector', svg`<path d="m8 9 4-4 4 4" /><path d="m16 15-4 4-4-4" />`);
 const checkIcon = () => line('icon--check', svg`<path d="m5 12 5 5L20 7" />`);
+const closeIcon = () => line('icon--close', svg`<path d="M18 6 6 18" /><path d="m6 6 12 12" />`);
+// The bottom bar's "Apps" (the whole navigation): four rounded squares (Tabler's `layout-grid`, MIT).
+const appsIcon = () =>
+  line(
+    'icon--apps',
+    svg`<rect x="4" y="4" width="6" height="6" rx="1" /><rect x="14" y="4" width="6" height="6" rx="1" /><rect x="4" y="14" width="6" height="6" rx="1" /><rect x="14" y="14" width="6" height="6" rx="1" />`,
+  );
 const kebabIcon = () =>
   line(
     'icon--kebab',

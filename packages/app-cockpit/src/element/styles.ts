@@ -11,7 +11,7 @@ const STYLES = /* css */ `
   --app-cockpit-font-size: 14px;
   --app-cockpit-sidebar-width: 256px;
   --app-cockpit-rail-width: 68px;
-  /* The topbar's top line (nav="topbar"). */
+  /* The topbar's top line (nav="top"). */
   --app-cockpit-topbar-height: 52px;
   --app-cockpit-content-padding: 20px 24px;
   /* The sidebar is dark in both color schemes of the page (nav-scheme="page": it follows the page). */
@@ -59,7 +59,7 @@ const STYLES = /* css */ `
   --app-cockpit-sidebar-scheme: initial;
 
   /* A line between the top line and the second one: a background, not a border, so that the triangle of the active group
-     (nav="topbar") can cover it. */
+     (nav="top") can cover it. */
   .top-line {
     background-image: linear-gradient(var(--app-cockpit-divider), var(--app-cockpit-divider));
     background-position: bottom;
@@ -67,7 +67,7 @@ const STYLES = /* css */ `
     background-size: 100% 1px;
   }
 
-  /* The triangle of the active group (nav="topbar"): in a light navigation the accent (white on the light gray of the bar
+  /* The triangle of the active group (nav="top"): in a light navigation the accent (white on the light gray of the bar
      hardly shows; gray was tried and dropped), on a dark page the second line's color as always. */
   .topbar[data-two-lines] .sub-line::before {
     background: light-dark(var(--app-cockpit-accent), var(--app-cockpit-background));
@@ -1003,7 +1003,7 @@ button {
   }
 }
 
-/* The group select in the top line (nav="topbar-compact"): a compact button, its popup like the other topbar menus: a plain panel,
+/* The group select in the top line (nav="top-compact"): a compact button, its popup like the other topbar menus: a plain panel,
    its top touching the line. */
 .top-line .group-select {
   flex: none;
@@ -1023,7 +1023,7 @@ button {
   }
 }
 
-/* The app switcher (nav="switcher"): the open app as a dropdown button in the top line; its panel is the search
+/* The app switcher (nav="top-switcher"): the open app as a dropdown button in the top line; its panel is the search
    panel, below the line at the button, a plain panel like the topbar's menus. */
 .top-line .switcher {
   display: flex;
@@ -1734,7 +1734,7 @@ button {
   margin-left: auto;
 }
 
-/* The topbar (nav="topbar"): a dark top line (logo, title, groups, search, actions, user), and a light line with
+/* The topbar (nav="top"): a dark top line (logo, title, groups, search, actions, user), and a light line with
    the apps of the chosen group. Entries that do not fit wrap into a hidden second row (counted, and shown in "More"). */
 
 .mount[data-layout='topbar'] {
@@ -1777,6 +1777,156 @@ button {
   flex: none;
   -webkit-user-select: none;
   user-select: none;
+}
+
+/* The bottom bar (nav="bottom", or "auto" when narrow; 2026-10-06): the open app over the whole height, a bar below it
+   in the sidebar's colors (Apps, the three apps used last, the search), above the device's home indicator. */
+.mount[data-layout='bottom'] {
+  .frame {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .main {
+    flex: 1;
+  }
+
+  /* The search over the whole cockpit, sliding up. */
+  .backdrop {
+    left: 0;
+  }
+
+  .palette {
+    top: auto;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-left: 0;
+    box-shadow: none;
+
+    @starting-style {
+      opacity: 0;
+      translate: 0 24px;
+    }
+  }
+}
+
+.bottombar {
+  display: flex;
+  flex: none;
+  align-items: stretch;
+  padding: 0 4px env(safe-area-inset-bottom);
+  border-top: 1px solid var(--app-cockpit-divider);
+  background: var(--app-cockpit-sidebar);
+  color: var(--app-cockpit-text);
+  color-scheme: var(--app-cockpit-sidebar-scheme, inherit);
+  font-family: var(--app-cockpit-font-family, system-ui, sans-serif);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* An entry: its icon above a short label, all equally wide. */
+.bottom-item {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  height: 56px;
+  padding: 4px 2px;
+  border: 0;
+  background: transparent;
+  color: var(--app-cockpit-muted);
+  cursor: pointer;
+  transition: color 120ms;
+
+  .icon,
+  .tile svg {
+    font-size: calc(var(--app-cockpit-font-size) * 20 / 14);
+  }
+
+  .tile {
+    width: auto;
+    height: auto;
+    color: inherit;
+  }
+
+  &:hover {
+    color: var(--app-cockpit-text);
+  }
+
+  &:focus-visible {
+    outline-offset: -2px;
+  }
+
+  /* The open app, and "Apps" while its sheet is open. */
+  &[aria-current='page'],
+  &[aria-expanded='true'] {
+    color: var(--app-cockpit-accent);
+  }
+}
+
+.bottom-label {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: calc(var(--app-cockpit-font-size) * 11 / 14);
+  font-weight: 500;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* The sheet of "Apps": the whole sidebar in a panel from the bottom, over most of the height, rounded at the top. */
+.sheet-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 1000;
+  background: light-dark(rgb(0 0 0 / 45%), rgb(0 0 0 / 60%));
+  transition: opacity 150ms;
+
+  @starting-style {
+    opacity: 0;
+  }
+}
+
+.sheet-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1001;
+  display: flex;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+.sheet {
+  display: flex;
+  width: 100%;
+  height: min(85%, 720px);
+  overflow: hidden;
+  border-radius: 12px 12px 0 0;
+  box-shadow: 0 -8px 32px rgb(0 0 0 / 28%);
+  pointer-events: auto;
+  transition: translate 240ms var(--app-cockpit-ease);
+
+  @starting-style {
+    translate: 0 100%;
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  .sidebar {
+    flex: 1;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    border-right: 0;
+  }
+}
+
+/* Its close button, in place of the search (the bottom bar has it). */
+.sheet-close {
+  margin-left: auto;
 }
 
 .top-line {
@@ -1918,7 +2068,7 @@ button {
   }
 }
 
-/* Two lines (nav="topbar"): the active group is not underlined but marked by a triangle in the second line's color, in
+/* Two lines (nav="top"): the active group is not underlined but marked by a triangle in the second line's color, in
    the middle of its tab, pointing up into the top line: as if a triangle was cut out of the bar (2026-10-04).
    The triangle belongs to the second line (a pseudo-element of it, reaching up over the top line): its color is the
    second line's, in the page's scheme (the top line may be dark: a color there would be the dark one). Its place:

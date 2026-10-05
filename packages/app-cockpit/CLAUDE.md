@@ -146,20 +146,37 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
   With few apps (2026-10-03), the rail shows the apps, but each subgroup as one button (its icon, else its initials)
   with the same flyout of its apps (e.g. "Planned" on the root page).
 - Up and Down (Home, End) move between the buttons of the sidebar.
-- With `nav="sidebar"`, the cockpit uses only the left column (2026-10-03): no top bar; the right side is the open app alone. The host's
+- With `nav="side"`, the cockpit uses only the left column (2026-10-03): no top bar; the right side is the open app alone. The host's
   parts: the `logo` slot (replaces the default logo: four filled squares, two of them lighter, in the accent color on no background) and the `sidebar-end` slot (at the bottom of the sidebar, above
   the footer, e.g. global switches; hidden in the rail).
 - `nav` (2026-10-04): the navigation, one attribute (and property, reflected; `AppCockpit.Nav`), switchable live (not a
-  config option, so a host can switch it). Four values; an unknown one is the sidebar:
-  - `sidebar` (the default): the sidebar on the left.
-  - `topbar`: two lines over the open app (below).
-  - `topbar-compact`: one line (below, "One line").
-  - `switcher`: one line, one dropdown with the open app (below, "App switcher").
+  config option, so a host can switch it). Named by where the navigation is and a variant (2026-10-06, the user's
+  wish: systematic names; `sidebar`, `topbar`, `topbar-compact`, `switcher` before); an unknown value is the sidebar:
+  - `side` (the default): the sidebar on the left.
+  - `top`: two lines over the open app (below).
+  - `top-compact`: one line (below, "One line").
+  - `top-switcher`: one line, one dropdown with the open app (below, "App switcher").
+  - `bottom` (2026-10-06): a bar at the bottom, for phones (below, "Bottom bar").
+  - `auto` (2026-10-06): by the cockpit's width: the sidebar (its rail only when the user collapses it), below 768px
+    (`NARROW`) the bottom bar. The root page's default (its "Navigation" menu: "Automatic"), not the element's.
+  - The bottom bar (2026-10-06; built with what the cockpit has, without asking about details, the user's wish: the
+    cockpit becomes configurable later, then its entries too): the open app over the whole height (no top line: the
+    apps have their own), a bar below it in the sidebar's colors, above the device's home indicator
+    (`env(safe-area-inset-bottom)`). Its entries, all equally wide, an icon above a short label:
+    - "Apps" (`texts.navigation`, four squares): a sheet from the bottom (85% of the height, at most 720px, rounded at
+      the top) with the whole sidebar: the brand with a close button in place of the search, the group select, the
+      navigation, the host's `sidebar-end`, the user row (its menu above it, as wide as it) and the footer (its menus as
+      in the sidebar). A modal Zag dialog (`dialog:sheet`): focus inside (on the open app), Escape and a click outside
+      close it; choosing an app closes it; the open app below is `inert` meanwhile. Marked while open.
+    - The three apps used last ("Recent"), in the order of the config, so they do not move with every switch; the open
+      one in the accent. Their icon (else the first letters) and title (with an ellipsis).
+    - "Search" (`texts.searchShort`), when the search is on: the search panel over the whole cockpit, sliding up.
+    - Not taken (proposed before): "Recent" and "More" as menus, pinned apps, a top line with the app's title.
   - History (2026-10-04): three attributes before, `layout` (`sidebar`, `topbar`), `nav-lines` (`2`, `1`) and `nav-style`
     (`tabs`, `switcher`): 8 combinations for 4 modes, and some without a meaning (`nav-lines` with the sidebar or the
     switcher). Put into one, with only the valid modes; a menubar would be a fifth value. The colors stay apart
     (`nav-scheme`).
-  - The topbar (`nav="topbar"`): two lines over the open app, with the same data:
+  - The topbar (`nav="top"`): two lines over the open app, with the same data:
   - The top line, dark like the sidebar (`--app-cockpit-topbar-height`, 3.25rem; 3rem before, 2026-10-04: only the first line is higher, the second stays at 2.5rem; the search panel and the dropdowns follow the property): logo and title (and subtitle), the
     groups as entries (with their icons; the one shown below underlined in the accent color, the open app's bright and
     bold; a click shows its apps below, without opening one, like the group select), then on the right the search
@@ -192,7 +209,7 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
     switcher; the key `demo-page:nav`), "Colors" (Dark, Like the page; see `nav-scheme`; the demos
     start with "Like the page", 2026-10-03) and "Density" (Compact, Normal, Comfortable; see `density`; Normal by
     default, 2026-10-05), remembered per browser.
-  - "One line" (`nav="topbar-compact"`, 2026-10-04): only with several groups (with one group or none the topbar is one
+  - "One line" (`nav="top-compact"`, 2026-10-04): only with several groups (with one group or none the topbar is one
     line anyway). The groups become a select (a compact button after the title, with the group's icon, name and count, like the
     sidebar's group select; its popup a plain panel below the line, like the topbar's menus), then the apps of the
     chosen group as tabs in the same line (the subgroups as dropdown tabs; what does not fit in "More"). No second line.
@@ -200,7 +217,7 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
     No icons at the top level (2026-10-04): not on the select button, the app tabs or the subgroup tabs; the select's
     popup keeps its group icons (only the top level of the line is without).
   - The line of the apps is keyed by the group (`top:<group>`): its overflow count belongs to its entries.
-  - "App switcher" (`nav="switcher"`, 2026-10-04), in the topbar only. The top line: the logo and title, one dropdown button with the open app (its icon and title, a selector icon; the
+  - "App switcher" (`nav="top-switcher"`, 2026-10-04), in the topbar only. The top line: the logo and title, one dropdown button with the open app (its icon and title, a selector icon; the
     tooltip "Switch app (Ctrl K)"), the host's actions and the user. No tabs, no second line, no separate search button
     (the switcher is it); also with one group or none (it helps with many apps in one group too).
   - Its panel is the search panel, opened at the button (its left edge, the top touching the line, 26rem, square

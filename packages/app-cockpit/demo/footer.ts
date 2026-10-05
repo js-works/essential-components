@@ -117,15 +117,18 @@ function accentSetting(): AppCockpit.Action {
   };
 }
 
-// The cockpit's navigation (2026-10-03, one button for two settings): which navigation (the attribute `nav`: sidebar,
-// topbar of two lines, topbar of one line, app switcher; three attributes before, 2026-10-04) and its colors
-// (`nav-scheme`: always dark, or like the page), and its density (`density`: compact, normal, comfortable; 2026-10-05).
-// Switched live, remembered per browser.
+// The cockpit's navigation (2026-10-03, one button for two settings): which navigation (the attribute `nav`: `side`,
+// `top` (two lines), `top-compact` (one line), `top-switcher`; three attributes before, 2026-10-04; `sidebar`,
+// `topbar`, `topbar-compact`, `switcher` until 2026-10-06) and its colors (`nav-scheme`: always dark, or like the
+// page), and its density (`density`: compact, normal, comfortable; 2026-10-05). Switched live, remembered per browser
+// (a value stored under an old name is the default).
 const NAVS: { value: AppCockpit.Nav; label: string }[] = [
-  { value: 'sidebar', label: 'Sidebar' },
-  { value: 'topbar', label: 'Topbar' },
-  { value: 'topbar-compact', label: 'Topbar compact' },
-  { value: 'switcher', label: 'App switcher' },
+  { value: 'auto', label: 'Automatic' },
+  { value: 'side', label: 'Sidebar' },
+  { value: 'top', label: 'Topbar' },
+  { value: 'top-compact', label: 'Topbar compact' },
+  { value: 'top-switcher', label: 'App switcher' },
+  { value: 'bottom', label: 'Bottom bar' },
 ];
 
 const DENSITIES: { value: AppCockpit.Density; label: string }[] = [
@@ -152,7 +155,8 @@ function navigationSetting(selector = 'app-cockpit'): AppCockpit.Action {
       // Not remembered.
     }
   };
-  const nav = NAVS.find(({ value }) => value === stored('nav'))?.value ?? 'sidebar';
+  // Automatic by default (2026-10-06): the sidebar, the bottom bar in a narrow window.
+  const nav = NAVS.find(({ value }) => value === stored('nav'))?.value ?? 'auto';
   // Like the page by default (2026-10-03).
   const scheme: AppCockpit.NavScheme = stored('nav-scheme') === 'dark' ? 'dark' : 'page';
   const density = DENSITIES.find(({ value }) => value === stored('density'))?.value ?? 'normal';

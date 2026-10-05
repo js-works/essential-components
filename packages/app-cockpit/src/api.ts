@@ -81,12 +81,16 @@ export type Config = {
   storageKey?: string;
 };
 
-// The navigation, in one value (2026-10-04; `layout`, `nav-lines` and `nav-style` before):
-// - `sidebar` (the default): a sidebar on the left;
-// - `topbar`: a topbar of two lines (the groups, and below them the apps of the chosen group);
-// - `topbar-compact`: a topbar of one line (a select for the group, then its apps);
-// - `switcher`: a topbar of one line with one dropdown, the open app: a search panel with all apps.
-export type Nav = 'sidebar' | 'topbar' | 'topbar-compact' | 'switcher';
+// The navigation, in one value (2026-10-04; `layout`, `nav-lines` and `nav-style` before), named by where it is and a
+// variant (2026-10-06; `sidebar`, `topbar`, `topbar-compact`, `switcher` before):
+// - `side` (the default): a sidebar on the left;
+// - `top`: a topbar of two lines (the groups, and below them the apps of the chosen group);
+// - `top-compact`: a topbar of one line (a select for the group, then its apps);
+// - `top-switcher`: a topbar of one line with one dropdown, the open app: a search panel with all apps;
+// - `bottom` (2026-10-06): a bar at the bottom (phones): "Apps" (a sheet with the whole sidebar), the three apps used
+//   last, the search;
+// - `auto` (2026-10-06): by the cockpit's width: the sidebar, below 768px the bottom bar.
+export type Nav = 'auto' | 'side' | 'top' | 'top-compact' | 'top-switcher' | 'bottom';
 
 // The navigation's colors: always dark (the default), or like the page (light on a light page, dark on a dark one).
 export type NavScheme = 'dark' | 'page';

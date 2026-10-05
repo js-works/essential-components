@@ -16,8 +16,10 @@ import { textsFor } from '../core/texts';
 import type { Texts } from '../core/texts';
 import {
   appIcon,
+  appsIcon,
   checkIcon,
   chevronIcon,
+  closeIcon,
   gridIcon,
   groupIcon,
   initialsOf,
@@ -86,8 +88,9 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     density: { reflect: true },
   };
 
-  // The attribute `nav`: `sidebar` (the default), `topbar` (two lines), `topbar-compact` (one line) or `switcher` (one
-  // line, one dropdown with the open app). An unknown value is the sidebar.
+  // The attribute `nav`: `side` (the default), `top` (two lines), `top-compact` (one line), `top-switcher` (one line,
+  // one dropdown with the open app), `bottom` (a bar at the bottom) or `auto` (the sidebar, the bottom bar when
+  // narrow). An unknown value is the sidebar.
   declare nav: Spec.Nav;
   // The attribute `nav-scheme`: the navigation always dark (the default), or like the page (only CSS: `:host([nav-scheme])`).
   declare navScheme: Spec.NavScheme;
@@ -110,6 +113,8 @@ class AppCockpitElement extends LitElement implements Spec.Element {
   #narrow = false;
   #resizing = false;
   #paletteOpen = false;
+  // The bottom bar's sheet with the whole navigation (the sidebar), open.
+  #sheetOpen = false;
   // The search was opened with the sidebar expanded: its layer moves along while the sidebar collapses.
   #paletteFromExpanded = false;
   // The left edge of the switcher's button, where its panel opens (px from the frame's left).
@@ -130,7 +135,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
 
   constructor(config: Spec.Config) {
     super();
-    this.nav = 'sidebar';
+    this.nav = 'side';
     this.navScheme = 'dark';
     this.density = 'normal';
     this.#config = config;
@@ -282,6 +287,8 @@ class AppCockpitElement extends LitElement implements Spec.Element {
 
     this.#active = app.id;
     this.#selectedGroup = app.group ?? '';
+    // An app chosen in the bottom bar's sheet closes it.
+    this.#sheetOpen = false;
     this.#recent = [app.id, ...this.#recent.filter((other) => other !== app.id)].slice(0, RECENT);
     writeStored(`${this.#key}:recent`, this.#recent);
 
@@ -341,20 +348,25 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     return this.#switcher || (this.#config.search ?? this.#many);
   }
 
-  // The app switcher (`nav="switcher"`, in the topbar): one dropdown with the open app in the top line; it opens
-  // the search panel, which lists all apps, at the button.
+  // The app switcher (`nav="top-switcher"`): one dropdown with the open app in the top line; it opens the search
+  // panel, which lists all apps, at the button.
   get #switcher(): boolean {
-    return this.#topbar && this.nav === 'switcher';
+    return this.#topbar && this.nav === 'top-switcher';
   }
 
   // The topbar: by the attribute, unless too narrow (then the sidebar's rail).
   get #topbar(): boolean {
-    return (this.nav === 'topbar' || this.nav === 'topbar-compact' || this.nav === 'switcher') && !this.#narrow;
+    return (this.nav === 'top' || this.nav === 'top-compact' || this.nav === 'top-switcher') && !this.#narrow;
+  }
+
+  // The bottom bar (2026-10-06): `nav="bottom"`, or `nav="auto"` in a narrow cockpit (the sidebar else).
+  get #bottom(): boolean {
+    return this.nav === 'bottom' || (this.nav === 'auto' && this.#narrow);
   }
 
   // The rail: collapsed by the user, too narrow, or while the search is open (it takes the sidebar's place).
   get #rail(): boolean {
-    return !this.#topbar && (this.#collapsed || this.#narrow || this.#paletteOpen);
+    return !this.#topbar && !this.#bottom && (this.#collapsed || this.#narrow || this.#paletteOpen);
   }
 
   get #recentApps(): Spec.MiniApp[] {
@@ -402,8 +414,9 @@ class AppCockpitElement extends LitElement implements Spec.Element {
       )
       : undefined;
 
-    this.#paletteFromExpanded = !this.#rail && !this.#topbar;
+    this.#paletteFromExpanded = !this.#rail && !this.#topbar && !this.#bottom;
     this.#closed();
+    this.#sheetOpen = false;
     this.#paletteOpen = true;
     this.#query = '';
     this.#index = Math.max(0, this.#recentApps.findIndex((app) => app.id === this.#active));
@@ -414,7 +427,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     this.#paletteOpen = false;
 
     // A fallback, in case its animation does not end (e.g. not running in a hidden tab).
-    if (!this.#topbar) {
+    if (!this.#topbar && !this.#bottom) {
       clearTimeout(this.#paletteClosing);
       this.#paletteClosing = setTimeout(this.#closed, 600);
     }
@@ -564,6 +577,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
   protected override render(): TemplateResult {
     const texts = this.#texts;
     const topbar = this.#topbar;
+    const bottom = this.#bottom;
     const rail = this.#rail;
     const active = this.#app(this.#active);
     const status = active === undefined ? 'ready' : this.#status.get(active.id) ?? 'loading';
@@ -575,7 +589,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     return html`
       <div
         class="mount"
-        data-layout=${topbar ? 'topbar' : 'sidebar'}
+        data-layout=${topbar ? 'topbar' : bottom ? 'bottom' : 'sidebar'}
         data-nav-style=${this.#switcher ? 'switcher' : 'tabs'}
         ?data-palette-from-expanded=${this.#paletteFromExpanded}
         ?data-palette-closing=${this.#paletteClosing !== undefined}
@@ -591,8 +605,8 @@ class AppCockpitElement extends LitElement implements Spec.Element {
           ?data-rail=${rail}
           ?data-resizing=${this.#resizing}
         >
-          ${topbar ? this.#topbarParts(texts) : this.#sidebar(texts, rail)}
-          <main class="main">
+          ${topbar ? this.#topbarParts(texts) : bottom ? nothing : this.#sidebar(texts, rail)}
+          <main class="main" ?inert=${bottom && this.#sheetOpen}>
             <slot></slot>
             ${
       status === 'loading'
@@ -610,7 +624,9 @@ class AppCockpitElement extends LitElement implements Spec.Element {
         : nothing
     }
           </main>
+          ${bottom ? this.#bottomBar(texts) : nothing}
         </div>
+        ${bottom ? this.#sheet(texts) : nothing}
         ${this.#searchable ? this.#palette(texts) : nothing}
         ${
       this.#tip === undefined
@@ -621,18 +637,104 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     `;
   }
 
-  #sidebar(texts: Texts, rail: boolean): TemplateResult {
+  // `sheet`: in the bottom bar's sheet (the whole sidebar, without its resize handle and toggle; a close button in
+  // place of the search, which the bottom bar has).
+  #sidebar(texts: Texts, rail: boolean, sheet = false): TemplateResult {
     return html`<aside class="sidebar">
-            ${rail ? nothing : this.#resizeHandle(texts)}
+            ${rail || sheet ? nothing : this.#resizeHandle(texts)}
             <div class="brand">
-              ${this.#brand(texts, rail)}
-              ${this.#searchable && !rail ? this.#searchButton(texts, rail) : nothing}
+              ${this.#brand(texts, sheet ? undefined : rail)}
+              ${
+      sheet
+        ? html`<button
+              type="button"
+              class="search-button sheet-close"
+              aria-label=${texts.closeSheet}
+              @click=${this.#closeSheet}
+            >${closeIcon()}</button>`
+        : this.#searchable && !rail
+        ? this.#searchButton(texts, rail)
+        : nothing
+    }
             </div>
             ${this.#searchable && rail ? this.#searchButton(texts, rail) : nothing} ${this.#navigation(texts, rail)}
             <div class="sidebar-end"><slot name="sidebar-end"></slot></div>
             ${this.#config.user === undefined ? nothing : this.#userRow(texts, rail, this.#config.user)}
             ${this.#footer(texts, rail)}
           </aside>`;
+  }
+
+  // --- Bottom bar ----------------------------------------------------------------------------------------------------
+
+  readonly #openSheet = () => {
+    this.#sheetOpen = true;
+    this.requestUpdate();
+  };
+
+  readonly #closeSheet = () => {
+    this.#sheetOpen = false;
+    this.requestUpdate();
+  };
+
+  // The bottom bar (`nav="bottom"`, or `auto` in a narrow cockpit; 2026-10-06): the open app takes the whole height,
+  // with a bar below it: "Apps" (a sheet with the whole sidebar: the navigation, the user, the footer), the three apps
+  // used last (in the order of the config, so they do not move with every switch; the open one marked), and the search.
+  #bottomBar(texts: Texts): TemplateResult {
+    const order = (app: Spec.MiniApp) => this.#config.apps.indexOf(app);
+    const apps = this.#recentApps.slice(0, 3).sort((a, b) => order(a) - order(b));
+
+    return html`<nav class="bottombar" aria-label=${texts.navigation}>
+      <button
+        type="button"
+        class="bottom-item"
+        aria-haspopup="dialog"
+        aria-expanded=${this.#sheetOpen}
+        @click=${this.#openSheet}
+      >${appsIcon()}<span class="bottom-label">${texts.navigation}</span></button>
+      ${
+      repeat(apps, (app) => app.id, (app) =>
+        html`<button
+          type="button"
+          class="bottom-item"
+          aria-current=${ifDefined(app.id === this.#active ? 'page' : undefined)}
+          @click=${() => this.open(app.id)}
+        >${appIcon(app, true)}<span class="bottom-label">${app.title}</span></button>`)
+    }
+      ${
+      this.#searchable
+        ? html`<button type="button" class="bottom-item" @click=${this.#openPalette}>
+          ${searchIcon()}<span class="bottom-label">${texts.searchShort}</span>
+        </button>`
+        : nothing
+    }
+    </nav>`;
+  }
+
+  // The sheet of the bottom bar: the whole sidebar (navigation, user, footer) in a panel from the bottom, a modal dialog
+  // (Zag: focus inside, Escape and a click outside close it). Choosing an app closes it.
+  #sheet(texts: Texts): TemplateResult {
+    const open = this.#sheetOpen;
+    const api = this.#zag.use('dialog:sheet', dialog, {
+      id: `${this.#id}-sheet`,
+      getRootNode: () => this.renderRoot as ShadowRoot,
+      open,
+      onOpenChange: ({ open: next }: { open: boolean }) => {
+        if (!next) {
+          this.#closeSheet();
+        }
+      },
+      initialFocusEl: () => this.#el('.sheet .item[aria-current]') ?? this.#el('.sheet .sheet-close'),
+    } as dialog.Props);
+
+    return html`
+      <div class="sheet-backdrop" ${spread({ ...api.getBackdropProps(), hidden: !open })}></div>
+      <div class="sheet-layer" ?hidden=${!open} ${spread(api.getPositionerProps())}>
+        <div class="sheet" ${spread({ ...api.getContentProps(), hidden: !open })}>
+          <h2 class="visually-hidden" ${spread(api.getTitleProps())}>${texts.navigation}</h2>
+          ${open ? this.#sidebar(texts, false, true) : nothing}
+        </div>
+      </div>
+    `;
   }
 
   // The logo (the slot `logo`), the title and the subtitle.
@@ -923,7 +1025,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
 
   // --- Topbar --------------------------------------------------------------------------------------------------------
 
-  // The topbar (`nav="topbar"`): a dark top line with the logo and the title, the groups (more than one), and on
+  // The topbar (`nav="top"`): a dark top line with the logo and the title, the groups (more than one), and on
   // the right the search, the footer's actions and menu, and the user; below it a light line with the apps of the
   // chosen group (its subgroups as dropdowns). With one group (or none), its apps are in the top line, and there is no
   // second line. Entries that do not fit go into a "More" menu at the end of their line.
@@ -931,9 +1033,9 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     const groups = groupsOf(this.#config.apps);
     const many = groups.length > 1;
     const group = groups.find((candidate) => candidate.name === this.#selectedGroup) ?? groups[0];
-    // One line (`nav="topbar-compact"`, with several groups): a select for the group in the top line, then its apps as tabs.
+    // One line (`nav="top-compact"`, with several groups): a select for the group in the top line, then its apps as tabs.
     const switcher = this.#switcher;
-    const oneLine = many && this.nav === 'topbar-compact' && group !== undefined && !switcher;
+    const oneLine = many && this.nav === 'top-compact' && group !== undefined && !switcher;
     const top: Entry[] = many && !oneLine
       ? groups.map((candidate) => ({ kind: 'group', group: candidate }))
       : group === undefined
@@ -1002,7 +1104,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
 
   // A line of entries; Left and Right (Home, End) move between them. Those that wrap are hidden (the line is one row
   // high) and listed in the "More" menu.
-  // `icons`: the tabs with their icons (none in the one line of `nav="topbar-compact"`, 2026-10-04).
+  // `icons`: the tabs with their icons (none in the one line of `nav="top-compact"`, 2026-10-04).
   #line(key: string, entries: Entry[], texts: Texts, icons = true): TemplateResult {
     const hidden = Math.min(this.#overflow.get(key) ?? 0, entries.length);
 
@@ -1309,7 +1411,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
 
   // --- Group select --------------------------------------------------------------------------------------------------
 
-  // `top`: in the top line of the topbar (`nav="topbar-compact"`): a compact button, its popup a plain panel below the line.
+  // `top`: in the top line of the topbar (`nav="top-compact"`): a compact button, its popup a plain panel below the line.
   #groupSelect(texts: Texts, groups: Group[], value: string, top = false): TemplateResult {
     const collection = select.collection({
       items: groups,
@@ -1396,8 +1498,10 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     }
 
     const api = this.#menu('user', {
-      placement: 'right-end',
-      anchor: this.#besideSidebar(() => this.#el('.user-button')),
+      // In the bottom bar's sheet (the sidebar as wide as the screen): above the user row, as wide as it.
+      ...(this.#bottom
+        ? { placement: 'top-start' as const, sameWidth: true }
+        : { placement: 'right-end' as const, anchor: this.#besideSidebar(() => this.#el('.user-button')) }),
       onSelect: (value) => this.#select(sections, value),
     });
 
