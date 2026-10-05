@@ -27,6 +27,7 @@ import {
 import { useStore } from 'zustand';
 import { i18n as navigatorI18n } from '../../../packages/data-navigator/demo/i18n';
 import { autocompleteColumnFilter, createDataNavigatorComponent } from '../../../packages/data-navigator/src/react';
+import type { DataNavigatorComponent } from '../../../packages/data-navigator/src/react';
 import { mantineTheme } from '../../../packages/data-navigator/src/themes';
 import { db, suggestOrganizations, suggestPeople } from '../infra/in-memory';
 import type { Db } from '../infra/in-memory';
@@ -39,6 +40,7 @@ export {
   formatTime,
   Navigator,
   organizationFilter,
+  PAGE_SIZE_OPTIONS,
   PageHeader,
   personFilter,
   Scope,
@@ -52,7 +54,20 @@ export {
 // the scope of Mantine (its variables and its color scheme, which follows the page's switch).
 
 // One data navigator component for every table. It follows `<html lang>` through the i18n adapter of its demo.
-const Navigator = createDataNavigatorComponent({ i18n: navigatorI18n, theme: mantineTheme });
+const DataNavigator = createDataNavigatorComponent({ i18n: navigatorI18n, theme: mantineTheme });
+
+// Every table in a `board-manager__table`, which has no box of its own (`display: contents`): the hook of the layout
+// that lets the table of a page fill the height below the top bar (`board-manager.css`).
+function Navigator<Row>(props: DataNavigatorComponent.Props<Row>): ReactElement {
+  return (
+    <div className="board-manager__table">
+      <DataNavigator {...props} />
+    </div>
+  );
+}
+
+// The page sizes of the paged tables (not the agenda and the sections, which show one page).
+const PAGE_SIZE_OPTIONS: readonly number[] = [10, 25, 50];
 
 // The filters of every column of an organization or a person (by name, the value is the name): autocompletes, all
 // options when the list opens (`minQueryLength: 0`), each with a second line (dimmed): the city of an organization,

@@ -50,6 +50,13 @@ app-cockpit {
   background: var(--ui-color-subtle);
 }
 
+/* The Board Manager fills the cockpit's content area (2026-10-05): its top bar stays, its page scrolls below it, and the
+   table of a page takes the rest of the height (`board-manager.css`). */
+board-manager-demo {
+  display: block;
+  height: 100%;
+}
+
 /* The cockpit's base text size (`--app-cockpit-font-size`, 14px by default) mapped to the apps' own text size (their
    `--…-font-size` is Mantine's normal text, `sm`, and every other Mantine size follows it): the shell and the apps have
    one text size. Set `--app-cockpit-font-size` on `app-cockpit` to change both (2026-10-04). */

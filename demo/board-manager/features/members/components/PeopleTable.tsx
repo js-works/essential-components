@@ -20,7 +20,14 @@ import { PersonForm } from '../../../shared/forms';
 import { confirmAndRun } from '../../../shared/lib/flows';
 import type { Dialogs } from '../../../shared/lib/flows';
 import { translate, useTranslate } from '../../../shared/lib/i18n';
-import { appIcons, Navigator, organizationFilter, personFilter, useDb } from '../../../shared/shared';
+import {
+  appIcons,
+  Navigator,
+  organizationFilter,
+  PAGE_SIZE_OPTIONS,
+  personFilter,
+  useDb,
+} from '../../../shared/shared';
 
 export { deletePeopleFlow, editPerson, memberPath, PeopleTable };
 
@@ -193,7 +200,7 @@ function PeopleTable(
       columns={columns}
       actions={actions}
       pageSize={10}
-      pageSizeOptions={[10, 25, 50]}
+      pageSizeOptions={PAGE_SIZE_OPTIONS}
       defaultSort={{ key: 'name', direction: 'asc' }}
     />
   );

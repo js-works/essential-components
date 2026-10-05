@@ -1,6 +1,6 @@
 {
   "name": "essential-components",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "description": "The essential components (data navigator, file upload, overlays) as workspace packages, and one demo page for all of them.",
   "type": "module",

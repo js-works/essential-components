@@ -119,12 +119,19 @@ function accentSetting(): AppCockpit.Action {
 
 // The cockpit's navigation (2026-10-03, one button for two settings): which navigation (the attribute `nav`: sidebar,
 // topbar of two lines, topbar of one line, app switcher; three attributes before, 2026-10-04) and its colors
-// (`nav-scheme`: always dark, or like the page). Switched live, remembered per browser.
+// (`nav-scheme`: always dark, or like the page), and its density (`density`: compact, normal, comfortable; 2026-10-05).
+// Switched live, remembered per browser.
 const NAVS: { value: AppCockpit.Nav; label: string }[] = [
   { value: 'sidebar', label: 'Sidebar' },
   { value: 'topbar', label: 'Topbar' },
   { value: 'topbar-compact', label: 'Topbar compact' },
   { value: 'switcher', label: 'App switcher' },
+];
+
+const DENSITIES: { value: AppCockpit.Density; label: string }[] = [
+  { value: 'compact', label: 'Compact' },
+  { value: 'normal', label: 'Normal' },
+  { value: 'comfortable', label: 'Comfortable' },
 ];
 
 function navigationSetting(selector = 'app-cockpit'): AppCockpit.Action {
@@ -148,12 +155,15 @@ function navigationSetting(selector = 'app-cockpit'): AppCockpit.Action {
   const nav = NAVS.find(({ value }) => value === stored('nav'))?.value ?? 'sidebar';
   // Like the page by default (2026-10-03).
   const scheme: AppCockpit.NavScheme = stored('nav-scheme') === 'dark' ? 'dark' : 'page';
+  const density = DENSITIES.find(({ value }) => value === stored('density'))?.value ?? 'normal';
 
   cockpit()?.setAttribute('nav', nav);
   cockpit()?.setAttribute('nav-scheme', scheme);
+  cockpit()?.setAttribute('density', density);
 
   const currentNav = () => cockpit()?.nav ?? nav;
   const currentScheme = () => cockpit()?.navScheme ?? scheme;
+  const currentDensity = () => cockpit()?.density ?? density;
 
   return {
     id: 'navigation',
@@ -179,6 +189,15 @@ function navigationSetting(selector = 'app-cockpit'): AppCockpit.Action {
             onSelect: () => set('nav-scheme', 'nav-scheme', value),
           }),
         ),
+      },
+      {
+        label: 'Density',
+        items: DENSITIES.map(({ value, label }) => ({
+          id: `density:${value}`,
+          label,
+          checked: () => currentDensity() === value,
+          onSelect: () => set('density', 'density', value),
+        })),
       },
     ],
   };

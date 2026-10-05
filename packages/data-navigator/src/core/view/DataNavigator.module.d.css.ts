@@ -8,6 +8,16 @@ export {
   button,
   buttonIcon,
   buttonLabel,
+  card,
+  cardActions,
+  cardBar,
+  cardDetail,
+  cardGroup,
+  cardLabel,
+  cards,
+  cardSelect,
+  cardsEmpty,
+  cardValue,
   cell,
   cellText,
   check,
@@ -66,7 +76,6 @@ export {
   filterViewColumns,
   filterViewNose,
   footer,
-  footerGroup,
   footerSide,
   groupCell,
   groupCount,
@@ -87,16 +96,23 @@ export {
   listField,
   liveRegion,
   loadingBar,
+  menuGroup,
+  menuGroupLabel,
   menuIcon,
   menuItem,
   menuSeparator,
   menuText,
   menuWithIcons,
   overlay,
-  pageInput,
+  pageButton,
   pager,
   pagerButton,
-  pageSizeField,
+  pagerCompact,
+  pagerGap,
+  pagerNumbers,
+  pageSizeButton,
+  pageSizeItem,
+  pendingSpinner,
   pill,
   pillIcon,
   popup,
@@ -147,6 +163,16 @@ declare const blocker: string;
 declare const button: string;
 declare const buttonIcon: string;
 declare const buttonLabel: string;
+declare const card: string;
+declare const cardActions: string;
+declare const cardBar: string;
+declare const cardDetail: string;
+declare const cardGroup: string;
+declare const cardLabel: string;
+declare const cards: string;
+declare const cardsEmpty: string;
+declare const cardSelect: string;
+declare const cardValue: string;
 declare const cell: string;
 declare const cellText: string;
 declare const check: string;
@@ -205,7 +231,6 @@ declare const filterPillValue: string;
 declare const filterPills: string;
 declare const filterRange: string;
 declare const footer: string;
-declare const footerGroup: string;
 declare const footerSide: string;
 declare const groupCell: string;
 declare const groupCount: string;
@@ -225,16 +250,23 @@ declare const input: string;
 declare const layer: string;
 declare const listField: string;
 declare const liveRegion: string;
+declare const menuGroup: string;
+declare const menuGroupLabel: string;
 declare const menuIcon: string;
 declare const menuItem: string;
 declare const menuSeparator: string;
 declare const menuText: string;
 declare const menuWithIcons: string;
 declare const overlay: string;
-declare const pageInput: string;
-declare const pageSizeField: string;
+declare const pageButton: string;
+declare const pageSizeButton: string;
+declare const pendingSpinner: string;
+declare const pageSizeItem: string;
 declare const pager: string;
 declare const pagerButton: string;
+declare const pagerCompact: string;
+declare const pagerGap: string;
+declare const pagerNumbers: string;
 declare const pill: string;
 declare const pillIcon: string;
 declare const popup: string;

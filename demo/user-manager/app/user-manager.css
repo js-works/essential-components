@@ -76,20 +76,15 @@
 }
 
 /* The first crumb: a house icon and "Home", a link to the start page (the app icon is no link).
-   On the start page it is the current page (not a link). */
+   On the start page it is the current page (not a link). As a link, icon and text take the link color (the accent, like
+   the other crumbs; 2026-10-05: a dimmed gray of its own was here, which only counted in the dark scheme). A plain link
+   like them, underlined on hover (2026-10-05, the user's wish; a padding and a gray hover ground, like a ghost button,
+   before). */
 .user-manager__home {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 4px;
-  border-radius: var(--mantine-radius-sm);
-  color: var(--mantine-color-dimmed);
   font-size: var(--mantine-font-size-sm);
-
-  &:is(a):hover {
-    background: var(--mantine-color-default-hover);
-    color: var(--mantine-color-text);
-  }
 
   /* On the start page: the current page, not a link (like the last crumb). */
   &[aria-current] {

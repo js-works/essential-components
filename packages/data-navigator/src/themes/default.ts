@@ -10,6 +10,7 @@ const defaultTheme: Required<DataNavigator.Theme> = {
   colorSurface: { light: '#fff', dark: '#111' },
   colorSurfaceStrong: { light: '#eee', dark: '#262626' },
   colorBorder: { light: '#c6c6c6', dark: '#474747' },
+  colorDivider: { light: '#e0e0e0', dark: '#363636' },
   colorHover: { light: '#f9f9f9', dark: '#1a1a1a' },
   colorHoverAccent: { light: '#cfe6fc', dark: '#173d6b' },
   colorSelected: { light: '#e2f1ff', dark: '#0f2b4d' },

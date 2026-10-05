@@ -27,7 +27,7 @@ import { MeetingForm } from '../../../shared/forms';
 import { confirmAndRun } from '../../../shared/lib/flows';
 import type { Dialogs } from '../../../shared/lib/flows';
 import { translate, useTranslate } from '../../../shared/lib/i18n';
-import { appIcons, formatDateTime, Navigator, useDb } from '../../../shared/shared';
+import { appIcons, formatDateTime, Navigator, PAGE_SIZE_OPTIONS, useDb } from '../../../shared/shared';
 
 export { deleteMeetingsFlow, editMeeting, MeetingsTable, MinutesBadge, StatusBadge };
 
@@ -308,7 +308,7 @@ function MeetingsTable(
       columns={columns}
       actions={actions}
       pageSize={10}
-      pageSizeOptions={[10, 25, 50]}
+      pageSizeOptions={PAGE_SIZE_OPTIONS}
       defaultSort={{ key: 'start', direction: 'desc' }}
     />
   );

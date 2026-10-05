@@ -10,7 +10,7 @@ import { boardIdsOf, fetchMemberships, getOrganization, getPerson } from '../../
 import type { MembershipRow } from '../../../infra/in-memory';
 import { useTranslate } from '../../../shared/lib/i18n';
 import type { Translate } from '../../../shared/lib/i18n';
-import { appIcons, formatDate, Navigator, PageHeader, useDb } from '../../../shared/shared';
+import { appIcons, formatDate, Navigator, PAGE_SIZE_OPTIONS, PageHeader, useDb } from '../../../shared/shared';
 import { NotFound } from '../../../shared/ui/NotFound';
 import { MeetingsTable } from '../../meetings/components/MeetingsTable';
 import { deletePeopleFlow, editPerson } from '../components/PeopleTable';
@@ -184,7 +184,7 @@ function MembershipsTable({ personId }: { personId: string }): ReactElement {
       columns={columns}
       actions={actions}
       pageSize={10}
-      pageSizeOptions={[10, 25, 50]}
+      pageSizeOptions={PAGE_SIZE_OPTIONS}
       footer="auto"
     />
   );

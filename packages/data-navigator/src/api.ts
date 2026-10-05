@@ -107,14 +107,14 @@ declare namespace DataNavigator {
 
   type Texts = {
     selectedCount: (params: { count: number }) => string; // {count} selected
-    itemRange: (params: { from: number; to: number; total: number }) => string; // Items {from}-{to} / {total}
+    itemRange: (params: { from: number; to: number; total: number }) => string; // {from}-{to} of {total}
+    itemSingle: (params: { item: number; total: number }) => string; // {item} of {total}
     pageSize: string; // Page Size
-    page: string; // Page
-    pageOf: (params: { pages: number }) => string; // of {pages}
-    firstPage: string; // First page
+    perPage: (params: { count: number }) => string; // {count} items per page
+    pageOf: (params: { page: number; pages: number }) => string; // {page} of {pages}
+    goToPage: (params: { page: number }) => string; // Page {page}
     previousPage: string; // Previous page
     nextPage: string; // Next page
-    lastPage: string; // Last page
     empty: string; // No entries
     emptySearch: string; // No results found
     searchPlaceholder: string; // Search
@@ -161,6 +161,10 @@ declare namespace DataNavigator {
     columns: string; // Columns
     resetColumnWidths: string; // Reset column widths
     optimizeColumnWidths: string; // Optimize column widths
+    layout: string; // Layout
+    layoutAuto: string; // Automatic
+    layoutTable: string; // Table
+    layoutCards: string; // Cards
     moveRow: string; // Move row
     emptyGroup: string; // (Blank)
     movedTo: (params: { position: number }) => string; // Moved to position {position}
@@ -186,6 +190,7 @@ declare namespace DataNavigator {
     colorSurface?: ThemeValue;
     colorSurfaceStrong?: ThemeValue;
     colorBorder?: ThemeValue;
+    colorDivider?: ThemeValue;
     colorHover?: ThemeValue;
     colorHoverAccent?: ThemeValue;
     colorSelected?: ThemeValue;

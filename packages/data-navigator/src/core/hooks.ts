@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 
-export { useDelayedFlag, useElementHeight, useScrollbarWidth, useScrollEdges, useStickyOffsets };
+export { useDelayedFlag, useElementHeight, useNarrowerThan, useScrollbarWidth, useScrollEdges, useStickyOffsets };
 
 function useDelayedFlag(active: boolean, delay: number): boolean {
   const [elapsed, setElapsed] = useState(false);
@@ -39,6 +39,32 @@ function useElementHeight<T extends HTMLElement>(): readonly [(element: T | null
   }, [element]);
 
   return [setElement, height, element];
+}
+
+// Is the element narrower than `limit` (in pixels)? Measured before the first paint and kept up to date. `false` while
+// it has no width (not laid out yet, or a test environment without layout).
+function useNarrowerThan(element: HTMLElement | null, limit: number): boolean {
+  const [narrow, setNarrow] = useState(false);
+
+  useLayoutEffect(() => {
+    if (element === null) {
+      return;
+    }
+
+    const update = () => {
+      const width = element.getBoundingClientRect().width;
+
+      setNarrow(width > 0 && width < limit);
+    };
+    const observer = new ResizeObserver(update);
+
+    update();
+    observer.observe(element);
+
+    return () => observer.disconnect();
+  }, [element, limit]);
+
+  return narrow;
 }
 
 // The width of the vertical scrollbar of an element (the space it reserves, also with `scrollbar-gutter: stable`),

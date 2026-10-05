@@ -23,7 +23,7 @@ import { countryName } from '../../../shared/lib/countries';
 import { confirmAndRun } from '../../../shared/lib/flows';
 import type { Dialogs } from '../../../shared/lib/flows';
 import { translate, useTranslate } from '../../../shared/lib/i18n';
-import { appIcons, Navigator, organizationFilter, useDb } from '../../../shared/shared';
+import { appIcons, Navigator, organizationFilter, PAGE_SIZE_OPTIONS, useDb } from '../../../shared/shared';
 
 export { deleteOrganizationsFlow, editOrganization, OrganizationsPage, WebsiteLink };
 
@@ -238,7 +238,7 @@ function OrganizationsPage(): ReactElement {
       columns={columns}
       actions={actions}
       pageSize={10}
-      pageSizeOptions={[10, 25, 50]}
+      pageSizeOptions={PAGE_SIZE_OPTIONS}
       defaultSort={{ key: 'name', direction: 'asc' }}
     />
   );

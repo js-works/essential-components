@@ -43,7 +43,16 @@ import { confirmAndRun } from '../../../shared/lib/flows';
 import type { Dialogs } from '../../../shared/lib/flows';
 import { translate, useTranslate } from '../../../shared/lib/i18n';
 import type { Translate } from '../../../shared/lib/i18n';
-import { appIcons, formatDateTime, formatSize, formatTime, Navigator, PageHeader, useDb } from '../../../shared/shared';
+import {
+  appIcons,
+  formatDateTime,
+  formatSize,
+  formatTime,
+  Navigator,
+  PAGE_SIZE_OPTIONS,
+  PageHeader,
+  useDb,
+} from '../../../shared/shared';
 import { NotFound } from '../../../shared/ui/NotFound';
 import { deleteMeetingsFlow, editMeeting, MinutesBadge, StatusBadge } from '../components/MeetingsTable';
 import { MinutesText } from '../components/minutes';
@@ -1034,7 +1043,7 @@ function DocumentsTable({ meeting }: { meeting: Meeting }): ReactElement {
       columns={columns}
       actions={actions}
       pageSize={10}
-      pageSizeOptions={[10, 25, 50]}
+      pageSizeOptions={PAGE_SIZE_OPTIONS}
       defaultSort={{ key: 'uploaded', direction: 'asc' }}
     />
   );

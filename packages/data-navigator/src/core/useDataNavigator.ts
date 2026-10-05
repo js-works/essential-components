@@ -129,6 +129,9 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(props.pageSize ?? DEFAULT_PAGE_SIZE);
   const [result, setResult] = useState<Spec.Result<Row>>(EMPTY_RESULT);
+  // The page and the page size of the rows shown (of the last finished load): the footer shows them, not the requested
+  // ones, so it changes together with the rows (2026-10-05).
+  const [shown, setShown] = useState(() => ({ page: 1, pageSize: props.pageSize ?? DEFAULT_PAGE_SIZE }));
   const [loading, setLoading] = useState(true);
   const [loaded, setLoaded] = useState(false);
   const [selected, setSelected] = useState<Selection<Row>>(() => new Map());
@@ -158,6 +161,7 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
       (next) => {
         if (current) {
           setResult(next);
+          setShown({ page, pageSize });
           // A new load brings the order of the source (moved rows included, once saved).
           setMoved(undefined);
           // And other rows: a row in edit mode leaves it, its draft is dropped.
@@ -182,6 +186,7 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
   }, [page, pageSize, sort, search, filters, reloads]);
 
   const pageCount = Math.max(1, Math.ceil(result.total / pageSize));
+  const shownPageCount = Math.max(1, Math.ceil(result.total / shown.pageSize));
 
   useEffect(() => {
     if (loaded && page > pageCount) {
@@ -434,7 +439,12 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     }
   };
 
+  // The same size changes nothing (it would clear the selection and go back to page 1).
   const changePageSize = (next: number) => {
+    if (next === pageSize) {
+      return;
+    }
+
     resetView();
     setPageSize(next);
     setPage(1);
@@ -995,7 +1005,14 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     // The footer (`footer`): always with rows; `auto` only when there is something to page or to choose (more than one
     // page, or more rows than the smallest page size); `never` not. From the last load, so a new load does not flicker.
     footerShown: rows.length > 0 && (footerMode === 'always'
-      || (footerMode === 'auto' && (pageCount > 1 || result.total > Math.min(...pageSizeOptions)))),
+      || (footerMode === 'auto' && (shownPageCount > 1 || result.total > Math.min(...pageSizeOptions)))),
+    // What the footer shows: the page, the page size and the number of pages of the rows shown (the last finished
+    // load); and what is being loaded instead (a page clicked, a page size chosen), for its indicators.
+    shownPage: shown.page,
+    shownPageSize: shown.pageSize,
+    shownPageCount,
+    pendingPage: loading && page !== shown.page && pageSize === shown.pageSize ? page : undefined,
+    pendingPageSize: loading && pageSize !== shown.pageSize ? pageSize : undefined,
     // The Reload button of the toolbar: the same as the controller's reload().
     reload: props.reloadable === true ? () => latestRef.current.reload() : undefined,
     // A checkbox in every group header that selects the group's rows (opt-in, like in other grids): only with multi
@@ -1118,7 +1135,6 @@ function useDataNavigator<Row>(props: Spec.Props<Row>) {
     moveLine,
     announcement,
     actionColumn: firstLeafColumn + layout.leaves.length,
-    dividerAfter: (column: 'handle' | 'selection' | 'details') => (lastMetaColumn === column ? 'end' : undefined),
     // The `data-meta` of a meta cell: which outer edges of the meta columns it has (`first`, `last`, both, or none).
     metaEdges: (column: 'handle' | 'selection' | 'details') =>
       [column === firstMetaColumn ? 'first' : '', column === lastMetaColumn ? 'last' : ''].filter(Boolean).join(' '),

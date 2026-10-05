@@ -393,7 +393,8 @@ const dialogStyles = css`
     display: flex;
     flex-direction: row-reverse;
     gap: 0.4em;
-    padding: 0.6em 1.5em;
+    /* A little more room above and below the buttons (2026-10-06, the user's wish; 0.6em before). */
+    padding: 0.8em 1.5em;
   }
 
   .action-button {

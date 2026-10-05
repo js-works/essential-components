@@ -153,9 +153,15 @@ async function chooseIn(trigger: HTMLElement, option: string): Promise<void> {
   fireEvent.click(item, { detail: 1 });
 }
 
-// Chooses a page size in the footer.
+// The page size button of the footer ("10 items per page").
+function pageSizeButton(): HTMLElement | null {
+  return screen.queryByRole('button', { name: / per page$/ });
+}
+
+// Chooses a page size in the footer: its menu, then the size.
 async function choosePageSize(size: number): Promise<void> {
-  await chooseIn(screen.getByRole('combobox', { name: 'Page Size' }), String(size));
+  fireEvent.click(pageSizeButton()!);
+  fireEvent.click(await screen.findByRole('menuitemradio', { name: String(size) }));
 }
 
 // Opens the filter view (in place of the rows) with the filter button of the toolbar.
@@ -220,8 +226,8 @@ describe('DataNavigator', () => {
     renderNav();
 
     expect(await screen.findByText('Person 01')).toBeTruthy();
-    expect(screen.getByText('Items 1-10 / 60')).toBeTruthy();
-    expect(screen.getByText('of 6')).toBeTruthy();
+    expect(screen.getByText('1-10 of 60')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Page 6' })).toBeTruthy();
   });
 
   it('asks the source for the first page with the default sort', async () => {
@@ -277,14 +283,14 @@ describe('DataNavigator', () => {
     renderNav();
     await loaded();
 
-    const pager = ['First page', 'Previous page', 'Next page', 'Last page'];
+    const pager = ['Previous page', 'Next page'];
 
     for (const name of pager) {
       expect(screen.getByRole('button', { name }).classList.contains('pagerButton')).toBe(true);
     }
 
-    // on the first page, first and previous are disabled
-    expect((screen.getByRole('button', { name: 'First page' }) as HTMLButtonElement).disabled).toBe(true);
+    // on the first page, previous is disabled
+    expect((screen.getByRole('button', { name: 'Previous page' }) as HTMLButtonElement).disabled).toBe(true);
 
     // jsdom does not compute this: read the rule of the stylesheet
     const rules = [...document.styleSheets]
@@ -305,17 +311,115 @@ describe('DataNavigator', () => {
     await loaded();
 
     expect(source).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2 }), expect.any(AbortSignal));
-    expect(screen.getByText('Items 11-20 / 60')).toBeTruthy();
+    expect(screen.getByText('11-20 of 60')).toBeTruthy();
 
-    click('Last page');
+    click('Page 6');
     await loaded();
 
-    expect(screen.getByText('Items 51-60 / 60')).toBeTruthy();
+    expect(screen.getByText('51-60 of 60')).toBeTruthy();
 
-    click('First page');
+    click('Page 1');
     await loaded();
 
-    expect(screen.getByText('Items 1-10 / 60')).toBeTruthy();
+    expect(screen.getByText('1-10 of 60')).toBeTruthy();
+  });
+
+  it('shows the page numbers, the current one marked, and "1 of 6" for a narrow footer', async () => {
+    renderNav();
+    await loaded();
+
+    // six pages: all of them, no gap
+    for (let page = 1; page <= 6; page++) {
+      expect(screen.getByRole('button', { name: `Page ${page}` }).classList.contains('pageButton')).toBe(true);
+    }
+
+    expect(screen.getByRole('button', { name: 'Page 1' }).getAttribute('aria-current')).toBe('page');
+    expect(screen.getByRole('button', { name: 'Page 2' }).getAttribute('aria-current')).toBeNull();
+    expect(screen.getByText('1 of 6').classList.contains('pagerCompact')).toBe(true);
+
+    click('Page 3');
+    await loaded();
+
+    expect(screen.getByRole('button', { name: 'Page 3' }).getAttribute('aria-current')).toBe('page');
+    expect(screen.getByText('3 of 6')).toBeTruthy();
+  });
+
+  it('shows the page size as a ghost button "10 items per page", with a menu like the other menus', async () => {
+    renderNav({ pageSizeOptions: [10, 25] });
+    await loaded();
+
+    const trigger = screen.getByRole('button', { name: '10 items per page' });
+
+    expect(trigger.getAttribute('data-placement')).toBe('tool');
+
+    fireEvent.click(trigger);
+
+    // the menu is named by its button, its group of sizes "Page Size"
+    const menu = await screen.findByRole('menu', { name: '10 items per page' });
+    const [ten, twentyFive] = within(within(menu).getByRole('group', { name: 'Page Size' })).getAllByRole(
+      'menuitemradio',
+    );
+
+    expect(menu.getAttribute('aria-orientation')).not.toBe('horizontal');
+    expect(ten!.getAttribute('aria-checked')).toBe('true');
+    expect(twentyFive!.getAttribute('aria-checked')).toBe('false');
+    expect(ten!.classList.contains('menuItem')).toBe(true);
+
+    fireEvent.click(twentyFive!);
+    await loaded();
+
+    expect(screen.getByRole('button', { name: / per page$/ }).textContent).toBe('25 items per page');
+  });
+
+  it('leaves pages out with gaps when there are more than seven', async () => {
+    const { container } = renderNav({ source: async () => ({ rows: people.slice(0, 10), total: 270 }) });
+
+    await loaded();
+
+    // 27 pages: 1 2 3 4 5 … 27
+    const slots = [...container.querySelectorAll('.pagerNumbers > *')].map((slot) => slot.textContent);
+
+    expect(slots).toEqual(['1', '2', '3', '4', '5', '…', '27']);
+    expect(container.querySelector('.pagerGap')?.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('keeps its width while paging: every slot as wide as the largest page number needs', async () => {
+    // 270 pages: three digits
+    const { container } = renderNav({ source: async () => ({ rows: people.slice(0, 10), total: 2700 }) });
+
+    await loaded();
+
+    const slots = [...container.querySelectorAll<HTMLElement>('.pagerNumbers > *')];
+    const gap = container.querySelector<HTMLElement>('.pagerGap')!;
+
+    expect(slots.map((slot) => slot.style.minWidth || slot.style.width)).toEqual(
+      slots.map(() => 'max(calc(0.65 * var(--datnav-control-height)), calc(3ch + var(--datnav-spacing-xs) / 2))'),
+    );
+    expect(gap.style.width).toBe(slots[0]!.style.minWidth);
+
+    // small round buttons
+    expect(baseStylesheet.slice(baseStylesheet.indexOf('\n.pageButton {'))).toMatch(
+      /^[^}]*min-width: calc\(0\.65 \* var\(--datnav-control-height\)\);/,
+    );
+  });
+
+  it('puts the page size at the very end of the footer, after the pager and a divider', async () => {
+    renderNav();
+    await loaded();
+
+    const next = screen.getByRole('button', { name: 'Next page' });
+    const pageSize = screen.getByRole('button', { name: / per page$/ });
+
+    expect(next.compareDocumentPosition(pageSize) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(pageSize.previousElementSibling?.classList.contains('toolbarDivider')).toBe(true);
+    expect(pageSize.previousElementSibling?.previousElementSibling?.classList.contains('pager')).toBe(true);
+  });
+
+  it('shows the numbers only in a wide footer: a container query', () => {
+    expect(baseStylesheet).toMatch(/container: datnav-footer \/ inline-size;/);
+    expect(baseStylesheet).toMatch(
+      /@container datnav-footer \(width < 28rem\) \{\s*\.pagerNumbers \{\s*display: none;[^@]*\.pagerCompact \{\s*display: inline;/,
+    );
   });
 
   it('goes back to the first page when the page size changes', async () => {
@@ -332,26 +436,102 @@ describe('DataNavigator', () => {
       expect.objectContaining({ page: 1, pageSize: 25 }),
       expect.any(AbortSignal),
     );
-    expect(screen.getByText('Items 1-25 / 60')).toBeTruthy();
+    expect(screen.getByText('1-25 of 60')).toBeTruthy();
+  });
+
+  // A source whose load of `slow` (a page, or a page size) waits until `finish` is called.
+  const slowSource = (slow: (query: Spec.Query) => boolean) => {
+    let finish = () => {};
+    const source = vi.fn(async (query: Spec.Query): Promise<Spec.Result<Person>> => {
+      if (slow(query)) {
+        await new Promise<void>((resolve) => {
+          finish = resolve;
+        });
+      }
+
+      return { rows: people.slice((query.page - 1) * query.pageSize, query.page * query.pageSize), total: 60 };
+    });
+
+    return { source, finish: () => finish() };
+  };
+
+  it('keeps the footer at the rows shown while the next page loads, with a ring around the clicked page', async () => {
+    const { source, finish } = slowSource((query) => query.page === 2);
+
+    renderNav({ source });
+    await loaded();
+    click('Next page');
+
+    // still the first page, until its rows are there
+    expect(screen.getByText('1-10 of 60')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Page 1' }).getAttribute('aria-current')).toBe('page');
+
+    // the ring, after the delay of the loading bar
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Page 2' }).hasAttribute('data-pending')).toBe(true));
+
+    await act(async () => finish());
+    await loaded();
+
+    expect(screen.getByText('11-20 of 60')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Page 2' }).getAttribute('aria-current')).toBe('page');
+    expect(screen.getByRole('button', { name: 'Page 2' }).hasAttribute('data-pending')).toBe(false);
+  });
+
+  it('keeps the page size shown while a new one loads, with a spinner in place of its chevron at once', async () => {
+    const { source, finish } = slowSource((query) => query.pageSize === 25);
+
+    renderNav({ source, pageSizeOptions: [10, 25] });
+    await loaded();
+    await choosePageSize(25);
+
+    // at once, without the delay of the loading bar
+    const trigger = screen.getByRole('button', { name: '10 items per page' });
+
+    expect(trigger.querySelector('.pendingSpinner')).not.toBeNull();
+    expect(trigger.querySelector('svg')).toBeNull();
+
+    await act(async () => finish());
+    await loaded();
+
+    expect(screen.getByRole('button', { name: '25 items per page' }).querySelector('.pendingSpinner')).toBeNull();
+    expect(screen.getByText('1-25 of 60')).toBeTruthy();
+  });
+
+  it('changes nothing when the current page size is chosen: the page, the selection and the menu stay', async () => {
+    const { source } = renderNav({ selection: 'multi', pageSizeOptions: [10, 25] });
+
+    await loaded();
+    click('Next page');
+    await loaded();
+    fireEvent.click(screen.getAllByRole('checkbox', { name: 'Select row' })[0]!);
+
+    const calls = source.mock.calls.length;
+
+    await choosePageSize(10);
+
+    expect(source.mock.calls.length).toBe(calls);
+    expect(screen.getByText('11-20 of 60')).toBeTruthy();
+    expect(screen.getByText('1 selected')).toBeTruthy();
+    expect(screen.getByRole('menuitemradio', { name: '10' })).toBeTruthy();
   });
 
   it('does not show the footer when there is no result, and shows it again with rows', async () => {
     renderNav({ searchable: true });
     await loaded();
 
-    expect(screen.getByText('Page Size')).toBeTruthy();
+    expect(screen.getByRole('button', { name: / per page$/ })).toBeTruthy();
 
     fireEvent.change(screen.getByRole('textbox', { name: 'Search' }), { target: { value: 'zzz' } });
     fireEvent.keyDown(screen.getByRole('textbox', { name: 'Search' }), { key: 'Enter' });
 
     expect(await screen.findByText('No results found')).toBeTruthy();
-    expect(screen.queryByText('Page Size')).toBeNull();
+    expect(pageSizeButton()).toBeNull();
     expect(screen.queryByRole('button', { name: 'Next page' })).toBeNull();
-    expect(screen.queryByText('Items 1-10 / 60')).toBeNull();
+    expect(screen.queryByText('1-10 of 60')).toBeNull();
 
     fireEvent.keyDown(screen.getByRole('textbox', { name: 'Search' }), { key: 'Escape' });
 
-    expect(await screen.findByText('Page Size')).toBeTruthy();
+    expect(await screen.findByRole('button', { name: / per page$/ })).toBeTruthy();
   });
 
   describe('footer', () => {
@@ -361,16 +541,34 @@ describe('DataNavigator', () => {
       total: count,
     });
 
+    it('shows a range of one item without the dash: "1 of 1", also on a last page with one row', async () => {
+      // the item range: the first side of the footer (the narrow pager's "1 of 1" is a page, not an item)
+      const range = (container: HTMLElement) => container.querySelector('.footerSide')?.textContent;
+      const { container, unmount } = renderNav({ source: sourceOf(1) });
+
+      await loaded();
+      expect(range(container)).toBe('1 of 1');
+      unmount();
+
+      // 21 rows, 10 per page: the third page has one
+      const second = renderNav({ source: sourceOf(21) });
+
+      await loaded();
+      click('Page 3');
+      await loaded();
+      expect(range(second.container)).toBe('21 of 21');
+    });
+
     it('is always there by default (with rows), and never with footer="never"', async () => {
       const { unmount } = renderNav({ source: sourceOf(4) });
 
       await loaded();
-      expect(screen.getByText('Items 1-4 / 4')).toBeTruthy();
+      expect(screen.getByText('1-4 of 4')).toBeTruthy();
       unmount();
 
       renderNav({ footer: 'never' });
       await loaded();
-      expect(screen.queryByText('Page Size')).toBeNull();
+      expect(pageSizeButton()).toBeNull();
       expect(screen.queryByRole('button', { name: 'Next page' })).toBeNull();
     });
 
@@ -380,20 +578,20 @@ describe('DataNavigator', () => {
 
       await loaded();
       expect(screen.getByText('Person 04')).toBeTruthy();
-      expect(screen.queryByText('Page Size')).toBeNull();
+      expect(pageSizeButton()).toBeNull();
       unmount();
 
       // 12 rows on a page of 25, but a page size of 10 to choose: the footer is there.
       renderNav({ footer: 'auto', source: sourceOf(12), pageSize: 25 });
       await loaded();
-      expect(screen.getByText('Items 1-12 / 12')).toBeTruthy();
+      expect(screen.getByText('1-12 of 12')).toBeTruthy();
     });
 
     it('is there with footer="auto" when there is more than one page', async () => {
       renderNav({ footer: 'auto', pageSizeOptions: [10] });
       await loaded();
 
-      expect(screen.getByText('Items 1-10 / 60')).toBeTruthy();
+      expect(screen.getByText('1-10 of 60')).toBeTruthy();
     });
   });
 
@@ -401,12 +599,12 @@ describe('DataNavigator', () => {
     renderNav();
 
     // first load: no row yet, so no footer
-    expect(screen.queryByText('Page Size')).toBeNull();
+    expect(pageSizeButton()).toBeNull();
     expect(screen.queryByRole('button', { name: 'Next page' })).toBeNull();
 
     await loaded();
 
-    expect(screen.getByText('Page Size')).toBeTruthy();
+    expect(screen.getByRole('button', { name: / per page$/ })).toBeTruthy();
   });
 
   it('keeps the footer while the rows of a page are replaced by a new load', async () => {
@@ -419,7 +617,7 @@ describe('DataNavigator', () => {
 
     click('Next page');
 
-    expect(screen.getByText('Page Size')).toBeTruthy();
+    expect(screen.getByRole('button', { name: / per page$/ })).toBeTruthy();
     expect(screen.getByText('Person 01')).toBeTruthy();
   });
 
@@ -437,27 +635,23 @@ describe('DataNavigator', () => {
 
     // only the selection column is left besides the two data columns: one max-content, no action column
     expect(template).toBe('max-content minmax(0, 1fr) minmax(0, 1fr)');
-    expect(container.querySelector('[data-divider="start"]')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Show all details' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();
-    // the dividers live in the body, so without a data row there is none at all
-    expect(container.querySelectorAll('[data-divider="end"]')).toHaveLength(0);
   });
 
   it('shows the action column and the details toggle column as soon as data rows are shown', async () => {
-    const { container } = renderNav({
+    renderNav({
       selection: 'multi',
       renderDetail: () => <span>detail</span>,
       actions: [{ type: 'singleRow', key: 'edit', label: 'Edit', onClick: vi.fn() }],
     });
 
     // first load: no row yet
-    expect(container.querySelector('[data-divider="start"]')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Show all details' })).toBeNull();
 
     await loaded();
 
-    expect(container.querySelectorAll('[data-divider="start"]')).toHaveLength(10);
     expect(screen.getByRole('button', { name: 'Show all details' })).toBeTruthy();
     expect(screen.getAllByRole('button', { name: 'Edit' })).toHaveLength(10);
   });
@@ -466,7 +660,7 @@ describe('DataNavigator', () => {
     renderNav({ source: async () => ({ rows: [], total: 0 }) });
 
     expect(await screen.findByText('No entries')).toBeTruthy();
-    expect(screen.queryByText('Page Size')).toBeNull();
+    expect(pageSizeButton()).toBeNull();
   });
 
   it('shows an empty text when there are no rows', async () => {
@@ -486,7 +680,13 @@ describe('DataNavigator', () => {
   it('ends the empty state without a line below it (unlike the rows)', () => {
     // from the stylesheet itself: jsdom's CSSOM serializes `border-bottom: none` as `medium`
     expect(baseStylesheet.slice(baseStylesheet.indexOf('\n.emptyCell {'))).toMatch(/^[^}]*border-bottom: none;/);
-    expect(declarationsOf('.cell')).toMatch(/border-bottom: 1px solid var\(--datnav-color-border\)/);
+    expect(declarationsOf('.cell')).toMatch(/border-bottom: 1px solid var\(--datnav-color-divider\)/);
+  });
+
+  it('draws the lines between the rows and the line under the header in the same light color', () => {
+    expect(declarationsOf('.cell')).toMatch(/border-bottom: 1px solid var\(--datnav-color-divider\)/);
+    // the header takes the cell's line (it composes `.cell`), no color of its own
+    expect(baseStylesheet.slice(baseStylesheet.indexOf('\n.header {'))).not.toMatch(/^[^}]*border-bottom-color/);
   });
 
   it('replaces the default text with custom empty content', async () => {
@@ -1264,7 +1464,7 @@ describe('DataNavigator', () => {
       click('Apply filters');
 
       expect(await screen.findByText('No rows match these filters')).toBeTruthy();
-      expect(screen.queryByText('Page Size')).toBeNull();
+      expect(pageSizeButton()).toBeNull();
 
       // the button of the empty state (the × after the filter button is named the same)
       const empty = document.querySelector<HTMLElement>('.emptyCell')!;
@@ -1427,7 +1627,7 @@ describe('DataNavigator', () => {
         expect.any(AbortSignal),
       );
 
-      expect(screen.getByText('Items 1-9 / 9')).toBeTruthy();
+      expect(screen.getByText('1-9 of 9')).toBeTruthy();
     });
 
     it('searches at once on Enter, and trims the text', async () => {
@@ -3300,15 +3500,11 @@ describe('DataNavigator', () => {
       expect(header.querySelectorAll('.groupHeader')).toHaveLength(2);
       expect(header.querySelectorAll('.headerFiller')).toHaveLength(1);
 
-      // ... and none of them has a vertical line: not between groups, not above an ungrouped column, and not
-      // beside the meta or the action columns
-      expect(header.querySelectorAll('[data-separator], [data-divider]')).toHaveLength(0);
-
-      // the dividers of the meta and action columns still run through the data rows below it
-      expect(container.querySelectorAll('[role="cell"][data-divider]').length).toBeGreaterThan(0);
+      // ... and none of them has a vertical line: not between groups, not above an ungrouped column
+      expect(header.querySelectorAll('[data-separator]')).toHaveLength(0);
     });
 
-    it('draws vertical dividers after the meta columns and before the action column', async () => {
+    it('draws a divider only before the action column, in the rows, not after the meta columns', async () => {
       const { container } = renderNav({
         selection: 'multi',
         renderDetail: () => <span>detail</span>,
@@ -3317,21 +3513,14 @@ describe('DataNavigator', () => {
 
       await loaded();
 
-      // the divider sits on the last meta column (selection, then details): column 2 here
-      const endCell = container.querySelector<HTMLElement>('[role="cell"][data-divider="end"]');
-
-      expect(endCell?.closest('[role="columnheader"]')).toBeNull();
-      expect(container.querySelectorAll('[data-divider="end"]')).toHaveLength(10);
+      // one per data row (no header cell), none after the meta columns
       expect(container.querySelectorAll('[data-divider="start"]')).toHaveLength(10);
-    });
+      expect(container.querySelectorAll('[data-divider="end"]')).toHaveLength(0);
+      expect(container.querySelector('[role="columnheader"][data-divider]')).toBeNull();
 
-    it('puts the divider after the selection column when there is no details column', async () => {
-      const { container } = renderNav({ selection: 'multi' });
-
-      await loaded();
-
-      expect(container.querySelectorAll('[data-divider="end"]')).toHaveLength(10);
-      expect(container.querySelectorAll('[data-divider="start"]')).toHaveLength(0);
+      // the detail row continues it
+      click('Show all details');
+      expect(container.querySelectorAll('[data-divider="start"]')).toHaveLength(20);
     });
 
     it('marks only data rows for the hover highlight, not detail rows', async () => {
@@ -3374,7 +3563,7 @@ describe('DataNavigator', () => {
       expect(scroller?.contains(screen.getByText('Person 01'))).toBe(true);
       expect(scroller?.contains(screen.getByRole('columnheader', { name: 'City' }))).toBe(true);
       expect(scroller?.contains(screen.getByText('Users'))).toBe(false);
-      expect(scroller?.contains(screen.getByText('Items 1-10 / 60'))).toBe(false);
+      expect(scroller?.contains(screen.getByText('1-10 of 60'))).toBe(false);
     });
 
     it('puts all header cells, also of column groups, into one sticky header row', async () => {
@@ -3741,14 +3930,14 @@ describe('DataNavigator', () => {
 
     it('uses the translations of the adapter and falls back to English for missing ones', async () => {
       const German = createDataNavigatorComponent({
-        i18n: shared(adapterOf({ pageSize: 'Seitengröße', pageOf: 'von {pages}' })),
+        i18n: shared(adapterOf({ perPage: '{count} pro Seite', pageOf: '{page} von {pages}' })),
       });
 
       render(<German source={createSource()} rowKey="id" columns={columns} pageSize={10} />);
 
-      expect(await screen.findByText('Seitengröße')).toBeTruthy();
-      expect(screen.getByText('von 6')).toBeTruthy();
-      expect(screen.getByText('Items 1-10 / 60')).toBeTruthy();
+      expect(await screen.findByRole('button', { name: / pro Seite$/ })).toBeTruthy();
+      expect(screen.getByText('1 von 6')).toBeTruthy();
+      expect(screen.getByText('1-10 of 60')).toBeTruthy();
     });
 
     it('asks the adapter with the namespace, the key, the raw params and the English text filled in', async () => {
@@ -3765,7 +3954,7 @@ describe('DataNavigator', () => {
         'datanav',
         'itemRange',
         { from: 1, to: 10, total: 60 },
-        'Items 1-10 / 60',
+        '1-10 of 60',
       );
     });
 
@@ -3788,7 +3977,7 @@ describe('DataNavigator', () => {
 
       render(<German source={many} rowKey="id" columns={columns} pageSize={10} />);
 
-      expect(await screen.findByText('Items 1-10 / 12.345')).toBeTruthy();
+      expect(await screen.findByText('1-10 of 12.345')).toBeTruthy();
     });
 
     it('refreshes its texts when the adapter reports a change of the language', async () => {
@@ -3798,7 +3987,7 @@ describe('DataNavigator', () => {
         i18n: shared({
           currentLocale: () => language,
           resolveText: (_, key, __, defaultValue) =>
-            language === 'de' && key === 'pageSize' ? 'Seitengröße' : defaultValue,
+            language === 'de' && key === 'perPage' ? '10 pro Seite' : defaultValue,
           onChange: (listener) => {
             notify = listener;
 
@@ -3809,23 +3998,23 @@ describe('DataNavigator', () => {
 
       render(<Switching source={createSource()} rowKey="id" columns={columns} pageSize={10} />);
 
-      expect(await screen.findByText('Page Size')).toBeTruthy();
+      expect(await screen.findByRole('button', { name: / per page$/ })).toBeTruthy();
 
       language = 'de';
       act(() => notify());
 
-      expect(await screen.findByText('Seitengröße')).toBeTruthy();
+      expect(await screen.findByRole('button', { name: / pro Seite$/ })).toBeTruthy();
     });
 
     it('asks an i18n factory once per instance, with its root element, and renders its texts', async () => {
-      const getAdapter = vi.fn((_element: HTMLElement) => adapterOf({ pageSize: 'Seitengröße' }));
+      const getAdapter = vi.fn((_element: HTMLElement) => adapterOf({ perPage: '{count} pro Seite' }));
       const German = createDataNavigatorComponent({ i18n: { type: 'factory', getAdapter } });
 
       render(<German source={createSource()} rowKey="id" columns={columns} pageSize={10} />);
 
-      expect(await screen.findByText('Seitengröße')).toBeTruthy();
+      expect(await screen.findByRole('button', { name: / pro Seite$/ })).toBeTruthy();
       expect(getAdapter).toHaveBeenCalledTimes(1);
-      expect(getAdapter.mock.calls[0]?.[0].contains(screen.getByText('Seitengröße'))).toBe(true);
+      expect(getAdapter.mock.calls[0]?.[0].contains(screen.getByRole('button', { name: / pro Seite$/ }))).toBe(true);
     });
 
     it('calls an i18n hook in each instance, so each one follows its nearest provider', async () => {
@@ -3837,14 +4026,14 @@ describe('DataNavigator', () => {
       render(
         <>
           <Localized source={createSource()} rowKey="id" columns={columns} pageSize={10} />
-          <Language value={{ pageSize: 'Seitengröße' }}>
+          <Language value={{ perPage: '{count} pro Seite' }}>
             <Localized source={createSource()} rowKey="id" columns={columns} pageSize={10} />
           </Language>
         </>,
       );
 
-      expect(await screen.findByText('Seitengröße')).toBeTruthy();
-      expect(screen.getByText('Page Size')).toBeTruthy();
+      expect(await screen.findByRole('button', { name: / pro Seite$/ })).toBeTruthy();
+      expect(screen.getByRole('button', { name: / per page$/ })).toBeTruthy();
     });
 
     it('throws a TypeError for an unknown i18n type (e.g. an adapter given directly)', () => {
@@ -3864,6 +4053,7 @@ describe('theming', () => {
     'colorSurface',
     'colorSurfaceStrong',
     'colorBorder',
+    'colorDivider',
     'colorHover',
     'colorHoverAccent',
     'colorSelected',
@@ -4037,17 +4227,17 @@ describe('native widgets', () => {
     expect(screen.queryByRole('menu')).toBeNull();
   });
 
-  it('opens the list of a select inside the root, so it gets the tokens of the theme', async () => {
+  it('opens the page size menu inside the root, so it gets the tokens of the theme', async () => {
     render(<Nav source={createSource()} rowKey="id" columns={columns} pageSizeOptions={[10, 25]} />);
     await loaded();
 
-    fireEvent.click(screen.getByRole('combobox', { name: 'Page Size' }));
+    fireEvent.click(screen.getByRole('button', { name: / per page$/ }));
 
-    const list = await screen.findByRole('listbox');
+    const menu = await screen.findByRole('menu', { name: / per page$/ });
 
     // inside the root, which carries the theme as its custom properties
-    expect(list.closest('.root')?.getAttribute('style')).toMatch(/--datnav-color-surface/);
-    expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual(['10', '25']);
+    expect(menu.closest('.root')?.getAttribute('style')).toMatch(/--datnav-color-surface/);
+    expect(screen.getAllByRole('menuitemradio').map((option) => option.textContent)).toEqual(['10', '25']);
   });
 
   it('gives a single select filter "All" as its first option, which removes the filter', async () => {
@@ -4433,7 +4623,7 @@ describe('selection controls', () => {
 
   it('makes the selection checkboxes and radios gray with the neutral appearance, and only those', () => {
     expect(baseStylesheet).toMatch(
-      /:where\(\[data-selection-appearance='neutral'\]\) :is\(\.dataRow > \.cell > \.check, \.groupRow > \.cell > \.check, \.headerTall > \.check\) \{\s*color: var\(--datnav-color-text-dimmed\);/,
+      /:where\(\[data-selection-appearance='neutral'\]\) :is\(\.dataRow > \.cell > \.check, \.groupRow > \.cell > \.check, \.headerTall > \.check, \.cardSelect > \.check, \.cardGroup > \.check\) \{\s*color: var\(--datnav-color-text-dimmed\);/,
     );
     expect(baseStylesheet).toMatch(/\n\.check \{[^}]*color: var\(--datnav-color-primary\);/);
   });
@@ -4514,22 +4704,44 @@ describe('text selection', () => {
   });
 });
 
-describe('vertical dividers', () => {
-  it('hides the dividers of selected and hovered rows, by color only', () => {
+describe('the line at the bottom of the rows', () => {
+  it('lays it over the bottom edge of the rows area, in the row lines\' color', () => {
+    const line = baseStylesheet.slice(baseStylesheet.indexOf('\n.scrollArea::after {'));
+
+    expect(line).toMatch(/^[^}]*bottom: 0;[^}]*height: 1px;[^}]*background-color: var\(--datnav-color-divider\);/);
+  });
+
+  it('adds nothing to scroll: no border of the scroller, no negative margin of the table', () => {
+    const scroller = baseStylesheet.slice(baseStylesheet.indexOf('\n.scroller {'));
+
+    expect(scroller).not.toMatch(/^[^}]*border-bottom/);
+    expect(baseStylesheet).not.toContain('margin-bottom: -1px');
+  });
+
+  it('leaves it out below the empty state and below cards', () => {
     expect(baseStylesheet).toMatch(
-      /\.cell\[data-selected\]\[data-divider='end'\] \{\s*border-right-color: transparent;/,
+      /\.scrollArea:has\(\.emptyCell\)::after,\s*:where\(\[data-cards\]\) \.scrollArea::after \{\s*display: none;/,
     );
+  });
+});
+
+describe('vertical dividers', () => {
+  it('draws the one before the action column in the light divider color, none after the meta columns', () => {
+    expect(baseStylesheet).not.toContain('data-divider=\'end\'');
     expect(baseStylesheet).toMatch(
-      /\.cell\[data-selected\]\[data-divider='start'\] \{\s*border-left-color: transparent;/,
+      /&\[data-divider='start'\] \{\s*border-inline-start: 1px solid var\(--datnav-color-divider\);/,
+    );
+  });
+
+  it('hides it on selected and hovered rows, by color only', () => {
+    expect(baseStylesheet).toMatch(
+      /\.cell\[data-selected\]\[data-divider='start'\] \{\s*border-inline-start-color: transparent;/,
     );
 
     const hover = baseStylesheet.slice(baseStylesheet.lastIndexOf('\n@media (hover: hover)'));
 
     expect(hover).toMatch(
-      /\.detailRow:hover > \.cell\[data-divider='end'\],[^{]*\{\s*border-right-color: transparent;/,
-    );
-    expect(hover).toMatch(
-      /\.detailRow:hover > \.cell\[data-divider='start'\],[^{]*\{\s*border-left-color: transparent;/,
+      /\.detailRow:hover > \.cell\[data-divider='start'\],[^{]*\{\s*border-inline-start-color: transparent;/,
     );
   });
 });
@@ -4632,7 +4844,7 @@ describe('controller', () => {
 
     render(<Controlled source={source} />);
     await loaded();
-    click('Last page');
+    click('Page 6');
     await loaded();
 
     total = 25;
@@ -4641,7 +4853,7 @@ describe('controller', () => {
     await waitFor(() => expect(source.mock.lastCall?.[0].page).toBe(3));
     await loaded();
 
-    expect(screen.getByText('Items 21-25 / 25')).toBeTruthy();
+    expect(screen.getByText('21-25 of 25')).toBeTruthy();
   });
 
   it('clears the selection from outside, and reports the selected rows as they change', async () => {
@@ -5387,7 +5599,7 @@ describe('row editing', () => {
       expect(createRow).toHaveBeenCalledWith({ id: 0, name: 'Newcomer', city: 'Vienna' });
       // The created row stays at the top of the page until the next load, and counts.
       expect(rowOf('99').nextElementSibling).toBe(rowOf('1'));
-      expect(screen.getByText(/\/ 61$/)).toBeTruthy();
+      expect(screen.getByText(/ of 61$/)).toBeTruthy();
     });
 
     it('goes away on "Cancel"', async () => {
@@ -5448,5 +5660,113 @@ describe('row editing', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Edit' })[0]!);
 
     expect(screen.queryByRole('textbox', { name: 'Name' })).toBeNull();
+  });
+});
+
+describe('cards in a narrow table', () => {
+  // jsdom has no layout: every element gets the width the test wants.
+  const withWidth = (width: number) =>
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(
+      { width, height: 0, x: 0, y: 0, top: 0, left: 0, right: width, bottom: 0, toJSON: () => ({}) } as DOMRect,
+    );
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('shows the rows as cards below 576px: a label and the content per column, no column headers', async () => {
+    withWidth(400);
+    const { container } = renderNav({ selection: 'multi' });
+
+    await loaded();
+
+    expect(screen.getByRole('list')).toBeTruthy();
+    expect(screen.queryByRole('table')).toBeNull();
+    expect(screen.queryByRole('columnheader', { name: 'Name' })).toBeNull();
+    expect(container.querySelector('[data-cards]')).not.toBeNull();
+
+    const cards = screen.getAllByRole('listitem');
+    const first = cards[0]!;
+
+    expect(cards).toHaveLength(10);
+    expect([...first.querySelectorAll('.cardLabel')].map((label) => label.textContent)).toEqual(['Name', 'City']);
+    expect(first.querySelector('.cardValue')?.textContent).toBe('Person 01');
+    expect(first.getAttribute('data-row-key')).toBe('1');
+  });
+
+  it('selects a card like a row: its checkbox, and a click on its free space', async () => {
+    withWidth(400);
+    renderNav({ selection: 'multi' });
+    await loaded();
+
+    const [first, second] = screen.getAllByRole('listitem');
+
+    fireEvent.click(within(first!).getByRole('checkbox', { name: 'Select row' }));
+    expect(first!.hasAttribute('data-selected')).toBe(true);
+    expect(screen.getByText('1 selected')).toBeTruthy();
+
+    // a plain click on the free space of the other card (its value, not the text) selects only that one
+    fireEvent.click(second!.querySelector('.cardValue')!);
+    expect(first!.hasAttribute('data-selected')).toBe(false);
+    expect(second!.hasAttribute('data-selected')).toBe(true);
+  });
+
+  it('shows the row actions in the bar of a card', async () => {
+    withWidth(400);
+    const onClick = vi.fn();
+
+    renderNav({ actions: [{ type: 'singleRow', key: 'edit', label: 'Edit', onClick }] });
+    await loaded();
+
+    const first = screen.getAllByRole('listitem')[0]!;
+
+    fireEvent.click(within(first).getByRole('button', { name: 'Edit' }));
+    expect(onClick).toHaveBeenCalledWith(people[0]);
+  });
+
+  it('stays a table from 576px on', async () => {
+    withWidth(576);
+    renderNav();
+    await loaded();
+
+    expect(screen.getByRole('table')).toBeTruthy();
+    expect(screen.queryByRole('list')).toBeNull();
+  });
+
+  it('chooses the layout in the column menu: automatic (the default), always the table, always cards', async () => {
+    withWidth(900);
+    renderNav();
+    await loaded();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Columns' }));
+
+    const automatic = await screen.findByRole('menuitemradio', { name: 'Automatic' });
+
+    expect(automatic.getAttribute('aria-checked')).toBe('true');
+    expect(screen.getByRole('group', { name: 'Layout' })).toBeTruthy();
+
+    // cards in a wide table; the column widths do not apply to them
+    fireEvent.click(screen.getByRole('menuitemradio', { name: 'Cards' }));
+
+    expect(await screen.findByRole('list')).toBeTruthy();
+    expect(screen.queryByRole('table')).toBeNull();
+    expect(screen.getByRole('menuitem', { name: 'Optimize column widths' }).getAttribute('aria-disabled')).toBe('true');
+
+    fireEvent.click(screen.getByRole('menuitemradio', { name: 'Table' }));
+
+    expect(await screen.findByRole('table')).toBeTruthy();
+  });
+
+  it('keeps the table in a narrow one when "Table" is chosen', async () => {
+    withWidth(400);
+    renderNav();
+    await loaded();
+
+    expect(screen.getByRole('list')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Columns' }));
+    fireEvent.click(await screen.findByRole('menuitemradio', { name: 'Table' }));
+
+    expect(await screen.findByRole('table')).toBeTruthy();
   });
 });

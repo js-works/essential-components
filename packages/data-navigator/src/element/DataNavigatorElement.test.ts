@@ -231,7 +231,7 @@ describe('content', () => {
   it('asks the i18n factory once per element, with the element, on its first connect', async () => {
     const i18n: DataNavigator.I18nAdapter = {
       currentLocale: () => 'de-DE',
-      resolveText: (_namespace, key, _params, defaultValue) => (key === 'pageSize' ? 'Seitengröße' : defaultValue),
+      resolveText: (_namespace, key, _params, defaultValue) => (key === 'perPage' ? '10 pro Seite' : defaultValue),
     };
     const getAdapter = vi.fn((_element: HTMLElement) => i18n);
     const [ElementClass, createController] = setupDataNavigator({ i18n: { type: 'factory', getAdapter } });
@@ -245,7 +245,7 @@ describe('content', () => {
       columns: [{ key: 'name', header: 'Name' }],
     });
     await mount(element);
-    await waitFor(() => expect(screen.getByText('Seitengröße')).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('button', { name: '10 pro Seite' })).toBeTruthy());
 
     await act(async () => {
       element.remove();
@@ -359,13 +359,13 @@ describe('attributes', () => {
     expect(screen.getByPlaceholderText('Search')).toBeTruthy();
     expect(element.hasAttribute('reloadable')).toBe(true);
     expect(screen.getByRole('button', { name: 'Reload' })).toBeTruthy();
-    expect(screen.getByText('Page Size')).toBeTruthy();
+    expect(screen.getByRole('button', { name: / per page$/ })).toBeTruthy();
 
     await act(async () => {
       element.footer = 'never';
     });
     expect(element.getAttribute('footer')).toBe('never');
-    expect(screen.queryByText('Page Size')).toBeNull();
+    expect(screen.queryByRole('button', { name: / per page$/ })).toBeNull();
   });
 
   it('starts with the page size of its attribute', async () => {

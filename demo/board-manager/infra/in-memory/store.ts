@@ -29,7 +29,9 @@ type Db = {
   documents: readonly MeetingDocument[];
 };
 
-const LOADING_TIME = 300;
+// The simulated time of the fake server (500ms since 2026-10-06, the user's wish; 1s for a day, to see the loading
+// indicators; 300ms before).
+const LOADING_TIME = 500;
 
 // Saving takes a while, so the buttons of the dialogs show their spinner.
 const SAVE_TIME = 700;

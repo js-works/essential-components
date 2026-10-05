@@ -12,12 +12,27 @@ the root's `CLAUDE.md` apply.
 - Made to be embedded (later e.g. in XWiki, with content around it): no side navigation, a top bar with the app icon,
   the title "Board Manager" (a menu of the modules: Overview, Boards, Meetings, Members, Organizations) and a breadcrumb
   that starts with a house icon and the label "Home" (2026-10-04, the user's wish: a link to the start page; the icon
-  only, labeled "Overview", before). On the start page it is the only crumb, not a link (the current page). The app icon is only an icon, not a link
+  only, labeled "Overview", before). As a link, icon and text are in the link color (the accent, in both schemes; a
+  dimmed gray of its own counted in the dark scheme until 2026-10-05; the same in the Media and the User Manager), a
+  plain link like the other crumbs and the links in the tables: underlined on hover (2026-10-05, the user's wish; a
+  padding and a gray hover ground, like a ghost button, before). On
+  the start page it is the only crumb, not a link (the current page). The app icon is only an icon, not a link
   (2026-10-04; a link to the start page before). The top bar is above the page below it (2026-10-03,
   `position: relative; z-index: 100`; the same in the Media Manager and the User Manager): its `contain: layout` makes
   it a stacking context, so its menus opened under the start page's tiles. The start page is "Overview" (2026-10-04,
   the user's wish; "Main" before), its title and its menu entry; not "Home" (2026-10-03): the app works standalone and
   embedded, where "Home" means the host's.
+  - The top bar stays at the top (2026-10-05, the user's wish: scrolling it away was distracting). The app fills the
+    height of its element where that has one (the root page: `board-manager-demo { height: 100% }` in `demo/demo.css`,
+    the cockpit's content area): the top bar stays, `.board-manager__main` scrolls below it. On a host page without a
+    height (the `<board-manager>` element) the app is as high as its content, and the top bar is `position: sticky`.
+  - The table of a page fills the rest of the height (2026-10-05, same wish: the column headers should stay): every
+    element from the page down to the table is a flex column taking the rest (`.board-manager__main
+    :has(.board-manager__table)`), and the table shrinks into it, so its rows scroll and its toolbar, column headers and
+    footer stay (the data navigator's "fixed header and footer"). `Navigator` (`shared.tsx`) wraps every table in a
+    `board-manager__table` without a box of its own (`display: contents`), the layout's hook. Not sticky to the page:
+    the data navigator's headers stick only inside its own scroll area, and making them stick to the page would break
+    its horizontal scrolling. Pages without a table scroll as a whole. Not in drawers (they set their table's height).
   - The top bar is not selectable (`user-select: none`, 2026-10-01), its menu included (no portal).
   - The header line of an overview tab ("Overview" and its buttons) is not selectable either
     (`.board-manager__panel-header`, 2026-10-01), like the toolbars of the tables.
@@ -35,6 +50,9 @@ the root's `CLAUDE.md` apply.
   `/boards/:boardId/meetings/:meetingId` and `/meetings/:meetingId` (tabs Overview, Agenda, Minutes, Documents),
   `/members`, `/members/:personId` (tabs Overview, Boards, Meetings), `/organizations`, `/organizations/:organizationId` (tabs Overview, People).
   - The route is mirrored in the hash after the tab's segment (`#board-manager/boards/b1`), only while the tab is shown.
+- The fake server answers after `LOADING_TIME` (`infra/in-memory/store.ts`): 500ms since 2026-10-06 (the user's wish;
+  1s for a day, to see the data navigator's loading indicators; 300ms before), for every read, the suggestions and the
+  saves that wait for it.
 - `infra/in-memory/`: the fake server, a Zustand store in memory (`store.ts`, `seed.ts`, one file per entity), seeded (stable) with dates relative to today: 6 boards, 28
   people, 8 organizations, about 50 meetings with agendas, minutes of the held ones, documents. The entity types it
   stores (`Board`, `Meeting`, …, `ROLES`, `MEETING_STATUSES`) are in `domain/`, one file per entity.
@@ -42,6 +60,9 @@ the root's `CLAUDE.md` apply.
 - The column menu of the data navigator (its columns with `hideable`) only in the tables with a column hidden by
   default (2026-10-01): Boards, Meetings, Members (and an organization's People), Organizations, a board's members.
   Not in the agenda and the documents (no hidden column there).
+- The page sizes of the paged tables are one constant, `PAGE_SIZE_OPTIONS` (`shared.tsx`, 2026-10-05): `10, 25, 50`,
+  the first page size 10. (2 and 5 were there for a few hours, to see the pager with many pages.) Not the agenda (50)
+  and the sections drawer (100), which show one page.
 - The column of an entity's name is headed by the entity: "Board", "Meeting", "Organization", "Document", "Person"
   (2026-10-02; the people tables said "Name" before).
 - Every column of an organization or a person is filtered by an autocomplete (2026-10-02, the data navigator's
@@ -215,7 +236,7 @@ the root's `CLAUDE.md` apply.
     an invalid color, Mantine's indigo and red. Read once, on connect (`getComputedStyle`; there is no event for a
     changed custom property). The accent also live, for the demo element too: see below.
   - The theme is `modernTheme` of `packages/mantine-themes` merged with the app's own (2026-10-04): smaller corners
-    (`1 2 5 6 8px`, the default radius 2px) and a bit more contrast (the borders, the dimmed text and the placeholders one
+    (`2 3 6 8 10px` since 2026-10-06, the default radius 3px; `1 2 5 6 8px` before) and a bit more contrast (the borders, the dimmed text and the placeholders one
     step stronger, which this look had partly itself before); the toasts and the dialogs take the radii too. The app's
     own settings win (the Board Manager: the colors, the font and the size by custom properties, the button weight 400). A `var()` in them is resolved by the browser (custom properties are computed with it).
     `colors.ts` (no dependency; `chroma-js` was rejected after its supply chain attack): the browser parses the color

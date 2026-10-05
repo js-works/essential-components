@@ -14,7 +14,7 @@ import type { BoardRow } from '../../../infra/in-memory';
 import { BoardForm } from '../../../shared/forms';
 import { useTranslate } from '../../../shared/lib/i18n';
 import type { Translate } from '../../../shared/lib/i18n';
-import { appIcons, formatDateTime, Navigator, personFilter } from '../../../shared/shared';
+import { appIcons, formatDateTime, Navigator, PAGE_SIZE_OPTIONS, personFilter } from '../../../shared/shared';
 import { deleteBoardsFlow, editBoard } from '../components/boardFlows';
 
 export { BoardsPage };
@@ -128,7 +128,7 @@ function BoardsPage(): ReactElement {
       columns={columns}
       actions={actions}
       pageSize={10}
-      pageSizeOptions={[10, 25, 50]}
+      pageSizeOptions={PAGE_SIZE_OPTIONS}
       defaultSort={{ key: 'name', direction: 'asc' }}
     />
   );

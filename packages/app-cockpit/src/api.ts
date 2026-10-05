@@ -91,9 +91,14 @@ export type Nav = 'sidebar' | 'topbar' | 'topbar-compact' | 'switcher';
 // The navigation's colors: always dark (the default), or like the page (light on a light page, dark on a dark one).
 export type NavScheme = 'dark' | 'page';
 
+// The density of the sidebar (its rows and the gaps between its sections and groups) and of the popups' rows; the
+// same values as the data navigator's `density`. The topbar's lines and the font sizes stay.
+export type Density = 'compact' | 'normal' | 'comfortable';
+
 export type Element = HTMLElement & {
   nav: Nav;
   navScheme: NavScheme;
+  density: Density;
   readonly activeApp: MiniApp | undefined;
   open(id: string): void;
 };

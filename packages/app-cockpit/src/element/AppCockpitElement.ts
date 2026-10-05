@@ -83,6 +83,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
   static override properties = {
     nav: { reflect: true },
     navScheme: { attribute: 'nav-scheme', reflect: true },
+    density: { reflect: true },
   };
 
   // The attribute `nav`: `sidebar` (the default), `topbar` (two lines), `topbar-compact` (one line) or `switcher` (one
@@ -90,6 +91,9 @@ class AppCockpitElement extends LitElement implements Spec.Element {
   declare nav: Spec.Nav;
   // The attribute `nav-scheme`: the navigation always dark (the default), or like the page (only CSS: `:host([nav-scheme])`).
   declare navScheme: Spec.NavScheme;
+  // The attribute `density`: the sidebar's rows and gaps, `compact`, `normal` (the default) or `comfortable` (only CSS:
+  // `:host([density])`).
+  declare density: Spec.Density;
 
   readonly #config: Spec.Config;
   readonly #id = `cockpit${++instances}`;
@@ -128,6 +132,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     super();
     this.nav = 'sidebar';
     this.navScheme = 'dark';
+    this.density = 'normal';
     this.#config = config;
     this.#key = config.storageKey ?? 'app-cockpit';
     this.#recent = readStored<string[]>(`${this.#key}:recent`, []);
@@ -215,7 +220,10 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     // The middle of the tab's text (the tab has an icon before it: its own middle would be left of the text's).
     const box = (tab.querySelector('.tab-title') ?? tab).getBoundingClientRect();
 
-    topbar.style.setProperty('--app-cockpit-notch-x', `${box.left + box.width / 2 - topbar.getBoundingClientRect().left}px`);
+    topbar.style.setProperty(
+      '--app-cockpit-notch-x',
+      `${box.left + box.width / 2 - topbar.getBoundingClientRect().left}px`,
+    );
   }
 
   // The lines of the topbar wrap their entries into a hidden second row: those are counted, and shown in a "More" menu.

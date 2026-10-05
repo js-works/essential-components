@@ -11,6 +11,8 @@ const antdTheme: Required<DataNavigator.Theme> = {
   colorSurface: 'var(--ant-color-bg-container)',
   colorSurfaceStrong: 'var(--ant-color-fill-secondary)',
   colorBorder: 'var(--ant-color-border)',
+  // The lines between the rows: antd's own table lines.
+  colorDivider: 'var(--ant-color-border-secondary)',
   colorHover: 'var(--ant-color-fill-alter)',
   colorHoverAccent: 'var(--ant-color-primary-bg-hover)',
   colorSelected: 'var(--ant-control-item-bg-active)',

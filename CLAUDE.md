@@ -53,12 +53,15 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
 - The root is the demo page of all packages:
   - `index.html`: an `<app-cockpit>` (2026-10-03, `packages/app-cockpit`) that fills the window: the demos are its
     mini-apps, one group at a time (2026-10-03, the cockpit's `groupDisplay: 'select'`): "Essentials" (2026-10-03; "Essential Components" before) with
-    the subgroups "Components" ("Data navigator", "File upload", "Dialogs + Toasts"), "Planned" (with an hourglass
-    icon; its entries without): "Form validation", "Autocomplete", placeholders of `demo/planned/PlannedDemo.ts`
+    the subgroups "Components" ("Data navigator", "File upload", "Dialogs + Toasts"), "Planned": "Form validation", "Autocomplete", placeholders of `demo/planned/PlannedDemo.ts`
     (`planned-demo`): what it will be, and that there is no demo yet, in a light gray box with rounded corners,
     `demo.css`) and "Apps" ("Media Manager", "Board Manager", "User Manager"; the long names, also as their titles: short
-    ones collided with their modules, decided 2026-10-03); and two made-up groups, "Human Resources" and "Finance"
-    (`FAKE` in `demo/main.ts`), only to show a larger navigation: their apps (without icons; their subgroups with icons, 2026-10-03) are
+    ones collided with their modules, decided 2026-10-03). In every group, every app (a leaf) has an icon and the
+    subgroups (the nodes) have none (2026-10-05, the user's wish; before, the made-up groups had it the other way round,
+    and "Planned" an hourglass; for a moment the same day: only the subgroups with icons). The apps of "Essentials"
+    keep the icons of their own top bars; the groups have theirs in the group select. And two made-up groups, "Human
+    Resources" and "Finance" (`FAKE` in `demo/main.ts`, a title, a description and an icon per app), only to show a
+    larger navigation: their apps are
     `planned-demo` placeholders too. Each group has an icon. In the cockpit's footer the cockpit's navigation (one button, 2026-10-03: which one, one attribute `nav` (2026-10-04): sidebar, topbar of two lines, topbar of one line, or app switcher,
     and its colors, dark or like the page), the accent color (2026-10-03: one of Mantine's usual colors, violet by default, or "Design language", i.e. `ui.css`'s; it only sets `--app-accent-color` on `<html>`, which `demo/demo.css` maps to the apps' `--board-manager-accent-color`, `--media-manager-accent-color`, `--user-manager-accent-color`, with the design language's accent as the fallback, so the cockpit and the apps have one color; the package demos keep `ui.css`'s) and the page's settings (the language `en-US`/`de-DE` in the kebab menu, 2026-10-03; the color scheme: System, Light (the default), Dark, 2026-10-03; from
     `packages/app-cockpit/demo/footer.ts`, with a made-up menu), which change `<html>` (`lang`, `data-scheme`) for every
@@ -161,6 +164,21 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
 ## TODO
 
 - The look of the data navigator (the user does not like it yet; details in its `CLAUDE.md`, "Todo (later)").
+- Rename the data navigator (2026-10-06, the user's idea; not now): with `@local/…` packages a generic name is fine.
+  Proposed: data table (`@local/data-table`, `DataTable`, `<data-table>`): it is semantically a table
+  (`role="table"`), like shadcn/ui's "Data Table", TanStack Table, Mantine DataTable. Not data grid: that means a
+  spreadsheet (cell-by-cell keyboard navigation, editing in cells, the ARIA `grid` role). The rename touches the package
+  and its folder, the React component and factory (`DataNavigator`, `createDataNavigatorComponent`), the hooks
+  (`useDataNavigatorController`, …), the type namespaces, the element, the CSS custom properties (`--datnav-*`), the i18n
+  namespace (`'datanav'`: breaking for every app's translations), the demos, the root's apps and all docs. In one step,
+  before a customer copies the package.
+- Maybe rename the file upload to file uploader (2026-10-06, the user's idea; not decided): `@local/file-uploader`,
+  `<file-uploader>`, stressing that the component does the uploading (queue, the app's `upload` per file, progress,
+  cancel, retry, statuses, results), not only the choosing. "File dropzone" was weighed and dropped: a dropzone
+  elsewhere only hands over files (Mantine's `Dropzone`, react-dropzone), so half of the component would be missed.
+  Keeping "file upload" is fine too (the common name for this scope: Ant Design's `Upload`, FilePond). If done: the
+  package and folder, the element (`createFileUploadClass`), the React wrapper, the CSS custom properties, the i18n
+  namespace, the demos, the Board Manager and the Media Manager (their upload drawers) and the docs.
 - The overlays' React demo CSS (`packages/overlays/src/demo/react.css`, imported by its `react.tsx`) is global: on
   this page it reaches every demo, e.g. its error badge of Mantine's `TextInput` (`.mantine-TextInput-error`) appeared
   in the board manager. The board manager now has its own (`board-manager.css`, for all Mantine inputs, 2026-10-02).

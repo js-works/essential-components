@@ -31,6 +31,7 @@ import {
   formatDateTime,
   Navigator,
   organizationFilter,
+  PAGE_SIZE_OPTIONS,
   PageHeader,
   personFilter,
   useDb,
@@ -289,7 +290,7 @@ function MembersTable({ boardId }: { boardId: string }): ReactElement {
       columns={columns}
       actions={actions}
       pageSize={10}
-      pageSizeOptions={[10, 25, 50]}
+      pageSizeOptions={PAGE_SIZE_OPTIONS}
     />
   );
 }

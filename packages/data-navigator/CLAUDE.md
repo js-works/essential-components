@@ -68,8 +68,8 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - The builds list the licenses of everything bundled in: `dist/third-party-licenses-react.md` (the React entry) and
     `dist/third-party-licenses.md` (the custom element, with Preact and Base UI).
 - Customization: a small set of general design values, the `DataNavigator.Theme` (see Configuration), not one per part.
-  - The values (26), with their internal custom properties (`colorTextDimmed` → `--datnav-color-text-dimmed`):
-    - Colors: `colorText`, `colorTextDimmed`, `colorSurface`, `colorSurfaceStrong`, `colorBorder`, `colorHover`,
+  - The values (27), with their internal custom properties (`colorTextDimmed` → `--datnav-color-text-dimmed`):
+    - Colors: `colorText`, `colorTextDimmed`, `colorSurface`, `colorSurfaceStrong`, `colorBorder`, `colorDivider`, `colorHover`,
       `colorHoverAccent`, `colorSelected`, `colorSelectedBorder`, `colorPrimary`, `colorPrimaryHover`, `colorOnPrimary`,
       `colorDanger`, `colorFocus`.
     - Shape and type: `radius`, `buttonRadius` (buttons with a shape: text and icon buttons, the clear buttons of the
@@ -80,6 +80,14 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     hover and press of buttons, menu items and sortable headers, the neutral selection, the hover of striped rows, the
     separators of menus), and the line `colorBorder` (also the lines of a hovered row). Removed: `colorHeader`,
     `colorHeaderHover`, `colorHoverBorder`, `colorStripe`, `colorStripeHover`, `colorSelectedNeutral`.
+  - `colorDivider` (2026-10-05, the user's wish: lighter lines between the rows; the user allowed the new property
+    `--datnav-color-divider`): the line below every row (`.cell`; data, detail, group, edit form and empty rows), the
+    header's line (since the same day), the line at the bottom of the rows and the one before the action column. The
+    frame of a hovered or selected row, the dragged row, the inputs, buttons and popups keep `colorBorder`. Like the design language's `--ui-color-divider` next to `--ui-color-border`. Default `#e0e0e0`, dark
+    `#363636` (pure grays, like the rest of the default theme; `#dee2e6` of `ui.css` is bluish); soft `#ececec`, dark
+    `#2e2e2e`; Mantine `gray-3`, dark `dark-4` (lighter than `default-border`, which `modernTheme` makes `gray-5`); antd
+    `--ant-color-border-secondary` (antd's own table lines). Why not `colorSurfaceStrong`: in Mantine (`gray-1`) the
+    lines almost vanished; why not a lighter `colorBorder`: the inputs would lose their contrast.
   - `colorSurfaceStrong` (added 2026-09-30, since 2026-10-04 also what the removed header, stripe-hover and neutral
     values were): default `#eee`, dark `#262626` (`#ededed`/`#3a3a3a` before), soft `#f0f0f0` (dark `#262626`), Mantine `gray-1`
     (`#f1f3f5`, dark `dark-5`; Mantine's light grays are all slightly bluish, and it has no neutral light gray), antd
@@ -597,7 +605,7 @@ The main goal is a very nice, yet simple, API, designed together with the user.
 - Global CSS (any stylesheet that is not a CSS module) always uses BEM.
   - Format: `dn-block__element--modifier`, lowercase, words separated by hyphens, prefix `dn-`.
   - Inside CSS modules, plain local class names are fine. BEM is not needed there.
-- Custom properties: only the 31 internal `--datnav-*` ones, set from the theme. No other custom properties of our
+- Custom properties: only the internal `--datnav-*` ones (one per theme value), set from the theme. No other custom properties of our
   own, and none for passing other runtime values to the stylesheet either: set the real property inline instead.
 - No `!important`. Never remove focus outlines. Every button and input has a `:focus-visible` outline in
   `--datnav-color-focus`.
@@ -626,18 +634,20 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     CSS: rows are `display: contents` and expanded detail rows break `:nth-child`.
 - Density: `density?: 'compact' | 'normal' | 'comfortable'` (default `'normal'`, which is the standard look).
   - Only the vertical padding of the header cells and data cells changes. The horizontal padding stays.
-  - The values map onto the spacing values: `calc(var(--datnav-spacing-xs) / 2)`, `--datnav-spacing-xs`,
-    `--datnav-spacing-md`.
+  - The values map onto the spacing values: `calc(var(--datnav-spacing-xs) / 3)` (2026-10-05, the user's wish: a tiny
+    bit less; `/ 2` before), `--datnav-spacing-xs`, `--datnav-spacing-md`.
   - In `compact`, the column headers get a little more vertical padding than the data cells (3/4 of `spacingXs`
-    instead of half of it), so a header (often a click target) does not look squeezed.
+    instead of a third of it), so a header (often a click target) does not look squeezed.
   - The root element carries `data-density`, and the stylesheet does the rest (with `:where()`, so more specific cell
     classes like the group header keep their own padding).
-  - Toolbar and footer change in `compact` only, both flatter, with a font between `fontSizeSm` and `fontSize` and
-    controls of 0.875 × `controlHeight`:
-    - Toolbar: `spacingXs` above, below and between its lines (instead of `spacingSm`; the sides stay), the title at
-      1.1 × `fontSize` (instead of 1.25 ×), smaller action and menu buttons and search field.
-    - Footer: less room around it (`spacingSm` above instead of `spacingMd`, `spacingXs` below), smaller pager buttons,
-      page size select and page field.
+  - Toolbar and footer change in `compact` only, both flatter, with controls of 0.875 × `controlHeight`; their text
+    has the table's size (`fontSize`; 2026-10-05, the user's wish: one size; a size between `fontSizeSm` and
+    `fontSize` before, 13px next to the rows' 14px):
+    - Toolbar: `spacingXs` above, below and between its lines (instead of `spacingSm`; the sides stay), smaller action
+      and menu buttons and search field. The title and the subtitle keep their sizes in every density (2026-10-05, the
+      user's wish: density changes spacing only; the title was 1.1 × `fontSize` in compact).
+    - Footer: less room around it (`spacingSm` above instead of `spacingMd`, `spacingXs` below). (The pager is small
+      in every density since 2026-10-05, the page size a ghost button of the toolbar's size.)
     - The heights are set on those controls directly (the stylesheet only reads the theme's custom properties and never
       sets one).
 - Animations (decided 2026-09-28): short and subtle, and none at all with the system's reduced motion setting
@@ -787,14 +797,25 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   the start of the first one and at the end of the last one. Every meta cell (data, detail, header and group rows)
   carries `data-meta` with its outer edges (`first`, `last`, both, or empty), so they all align.
 - Separators: horizontal lines between rows and under the header, no vertical lines between data columns.
-  - Two exceptions: a vertical line after the meta columns (selection, details toggle) and one before the action
-    column. They run through all data rows and the detail rows.
-  - Selected rows and hovered rows (with their detail rows) show no vertical dividers: only the color goes
-    (`transparent`), never the width, so nothing shifts. The user finds it a bit unusual, but interesting, and keeps
-    it.
-  - The header has no vertical lines at all. The two dividers start at the first data row, and the header band (group
-    header row and column header row) is left clean. So with no data row shown there is no vertical line
-    anywhere.
+  - All horizontal lines of the table are `colorDivider` (2026-10-05): the lines between the rows, the line under the
+    header (the user's wish, the same day: `colorBorder` looked heavy at a display scaling of 125%, where every 1px line
+    falls between device pixels and is smeared over a second one; it was `colorBorder`, stronger than the row lines)
+    and the line at the bottom of the rows.
+  - One vertical line: before the action column (`data-divider="start"` on its cells, `border-inline-start` in
+    `colorDivider`), through the data rows and the detail rows; not in the header and not on group rows. A selected or
+    hovered row (with its detail row) shows none: only its color goes (`transparent`), never its width, so nothing
+    shifts.
+  - None after the meta columns (selection, details toggle, handle). History (2026-10-05, the user's wishes): both lines
+    (after the meta columns, `end`, and before the action column, in `colorBorder`) were removed in the first step of
+    the look's rework; the one before the action column came back a few hours later, lighter: it sets the actions apart
+    from the data, while the one after the meta columns was not missed.
+  - A line at the bottom of the rows area (2026-10-05, the user's wish; like the line under the header, but in
+    `colorDivider`), also where the rows scroll (a table of a limited height), so they never end open. A 1px line laid
+    over the bottom edge of the rows area (`.scrollArea::after`, `z-index: 2`, above the fixed cells): where the rows
+    do not scroll it covers the last row's own line exactly, never a double line. It adds nothing to scroll. (First,
+    the same day: the scroller's bottom border with `margin-bottom: -1px` of the table; the cut-off line was content
+    to scroll, so every table had a scrollbar for 1px.) None below the empty state and below cards. It spans the
+    scrollbar's reserved space too (a few pixels wider than the row lines).
   - No outer border.
 - Search: `searchable?: boolean` (default `false`) shows a search box. There is no initial search text (no
   `defaultSearch`), and there will be no initial filters either (no `defaultFilters`): the initial state of the search
@@ -834,9 +855,51 @@ The main goal is a very nice, yet simple, API, designed together with the user.
 - Toolbar and footer: plain, with no background and no lines of their own.
   - Both have a padding of `--datnav-spacing-sm` on all sides. The footer has a little more room on top
     (`--datnav-spacing-md`), between the table and the footer.
-  - The pager buttons (first, previous, next, last) are text-only icon buttons. A disabled one has a transparent
+  - The pager buttons (previous, next) are text-only icon buttons. A disabled one has a transparent
     background (no gray box): it is only faded (`opacity: 0.4`, in the normal text color), with the `not-allowed`
     cursor.
+- Cards in a narrow table (2026-10-05, the user's wish; a first step, details TBD, see "Todo (later)"): below a
+  width of the data navigator of 576px (`CARDS_BELOW` in the view, 36rem at a 16px root; fixed, no prop yet) its rows
+  are cards instead of a table. The width is the root's (`useNarrowerThan` in `hooks.ts`, a `ResizeObserver`, measured
+  before the first paint), not the window's: a table in a drawer or a narrow column gets cards too. Without a width (not
+  laid out, jsdom) it is a table.
+  - The view renders a list instead of the grid (`renderCard`, `renderCardGroup`; the root carries `data-cards`), with
+    the same hook, actions, handlers and texts. Chosen over a CSS-only change of the grid (a container query): every
+    cell would need a hidden copy of its header as its label, and the roles of the grid would not match what is shown.
+  - The list (`role="list"`, the trigger of the context menu like the grid) has as many columns of cards as fit, each
+    card at least 20rem wide (`repeat(auto-fill, minmax(min(100%, 20rem), 1fr))`, 2026-10-05, the user's wish): one in a
+    narrow table, two or more with "Cards" chosen in a wide one. The cards fill a line from left to right; the cards of
+    a line are equally high; group headers and the empty state span all columns. Each card has its own two columns,
+    the labels (as wide as its widest) and the values. (First the same day: one column, with the labels of all cards
+    lined up by a subgrid of the list; that cannot work with several columns of cards. At most two columns with lined-up
+    labels was weighed: four tracks and a fixed switch point, more rigid.)
+  - A card (`role="listitem"`, `data-row-key`, `data-selected`): a bar on top (only when there is something for it):
+    the selection checkbox or radio (its free space a click on it, like the selection cell), the details toggle (only
+    for a row with details) and the row actions at the end (`rowActionLook`); then one line per shown column, its
+    header as the label (dimmed) and its content as in a cell (`render`, else the value; the text wraps); the row
+    details at the end, below a line. The selection is told by the checkbox (no `aria-selected` on a list item).
+  - Framed (`--datnav-color-divider`, `calc(2 * --datnav-radius)`), on the surface color; hovered and selected like a
+    row (`--datnav-color-surface-strong`, with the accent appearance `--datnav-color-hover-accent` and
+    `--datnav-color-selected`), the frame then in the line color of the selection (`--datnav-color-border`,
+    `--datnav-color-selected-border`). The pointer cursor where a click selects. The checkbox like a row's: on a
+    hovered card the border of an unchecked one takes its own color (the primary color, with the neutral appearance the
+    gray; 2026-10-05, the user's wish), a selected one is checked anyway; with the neutral appearance the cards'
+    checkboxes are gray, like the rows' (`.cardSelect > .check`, `.cardGroup > .check`).
+  - The same row click, Ctrl/Cmd and Shift click, double click (default action) and context menu as a grid row: the
+    bar, the labels and the values are the direct children of the card, so their free space is the row's
+    (`isRowTarget`), their content is not.
+  - Group headers (`groupBy`) are lines between the cards: the group checkbox (`selectableGroups`), the toggle (the
+    same as the grid's, `groupToggle`) and the group actions.
+  - The empty state is a line of the list. The toolbar, the selection bar, the pills, the filter view and the footer
+    stay as they are (the footer's own narrow pager comes below 28rem).
+  - The edited row is its edit form, in the place of its card (no folding animation); a new row's form comes first.
+  - The layout can be chosen in the column menu (2026-10-05): a group "Layout" (`Texts.layout`) at its top, radio
+    items "Automatic" (the default: cards below the breakpoint), "Table" (always; a narrow table scrolls sideways) and
+    "Cards" (always), with a check at the chosen one; the menu stays open. Not kept after a remount (like the hidden
+    columns). While the rows are cards, "Optimize column widths" and "Reset column widths" are disabled. (Weighed: one
+    checkbox "Show as cards", which could not tell automatic from always a table; an icon button of its own in the bar,
+    one more button.) The menu widget: `choice` of `ToggleMenu` (Base UI's `Menu.RadioGroup` in a `Menu.Group` with
+    its label; `.menuGroup` has no box, so the items line up with the others).
 - Fixed header and footer: the toolbar, the column headers and the footer stay fixed.
   - When the data navigator gets less height than it needs, the rows area shows a vertical scrollbar and only the
     rows scroll.
@@ -858,10 +921,13 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - The widgets in `widgets.tsx` are leaves: they take what they need in neutral terms and never know about rows,
     queries, selection or loading. Everything else belongs in the view.
 - Icons: our own inline SVGs (`view/icons.tsx`, the paths of the Tabler icons), drawn in the current text color and
-  `aria-hidden`. The pager buttons: `chevron-left-pipe` (first), `chevron-left`, `chevron-right`, `chevron-right-pipe`
-  (last). The filled Material arrows were tried and dropped: they did not match the line style of the other icons.
+  `aria-hidden`. The pager buttons: `chevron-left`, `chevron-right` (`chevron-left-pipe` and `chevron-right-pipe` for
+  first and last until 2026-10-05, gone with the page numbers). The filled Material arrows were tried and dropped: they did not match the line style of the other icons.
   - The filter button's icon is `VscFilter` (react-icons, the Codicons of VS Code, filled, 16×16; Tabler's `filter` until
     2026-10-04, the user's wish). Codicons are CC BY 4.0 (attribution required, unlike the MIT Tabler and Bootstrap icons).
+  - The filled icons (`filledIcon` in `icons.tsx`: the sort arrows, the calendar, the filter, the column menu) have
+    `overflow="visible"` (2026-10-05): their shapes reach the very edge of their grid, and at a fractional position (a
+    display scaling of 125%) the SVG's box cut their outer line (the date range filter's calendar looked clipped).
   - The sort icons are the filled Bootstrap arrows (MIT, 16×16): one arrow with a head at both ends
     (since 2026-09-29; it was `BsArrowDownUp`, two arrows side by side; our own path: the heads of `BsArrowUp` and
     `BsArrowDown` on one line, since Bootstrap's `BsArrowsVertical` has smaller heads) for a sortable column that is
@@ -903,7 +969,8 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     `data-placement="tool"`), named and tipped `Texts.columns`
     ("Columns"), at the very end of the bar, after a divider. Hidden in the selection bar, like the other view
     controls. Usable while loading (it only changes the view).
-  - The menu (`ToggleMenu` in `widgets.tsx`, Base UI's `Menu` with `Menu.CheckboxItem`): first its actions (plain items,
+  - The menu (`ToggleMenu` in `widgets.tsx`, Base UI's `Menu` with `Menu.CheckboxItem`): first the layout (radio items,
+    since 2026-10-05, see "Cards in a narrow table") and a separator, then its actions (plain items,
     "Optimize column widths" (our own `fitWidth`: a double arrow between two bars) and "Reset column widths" (`arrow-back-up`, disabled until a column was resized), each with an icon in the checkboxes' place; they close the menu), then a separator (only when
     there are checkboxes too), then one item per hideable column,
     in the order of the columns, its header as the text and a checkbox in front (only a picture of the state, gray,
@@ -1105,11 +1172,87 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     trade-off against `paging={false}`, a list without paging, which was proposed as the other option).
   - The demo has a "Footer" selector (always, auto, never).
 - The default footer (navigation bar) looks like this:
-  - `Items 1-50 / 245        Page Size [50 v]   << < Page [1] of 5 > >>`
+  - `1-50 of 1350        ‹ 1 … 17 (18) 19 … 27 › │ 50 items per page ⌄`
+  - The item range is only the numbers (`Texts.itemRange`, `{from}-{to} of {total}`, German `{from}-{to} von {total}`;
+    "of" since 2026-10-06, the user's wish, a slash before; 2026-10-05: "Items" once, on the right; it was
+    `Items {from}-{to} / {total}`, German `Einträge …`). A range of one item has a text of its own
+    (`Texts.itemSingle`, `{item} of {total}`; 2026-10-05, the user's wish): "1 of 1", "21 of 21" on a last page with
+    one row, not "1-1 of 1" (one text with an ICU `select` was weighed: the default texts and the demo's adapter only
+    replace `{name}` placeholders). In a narrow footer the item range ("11-20 of 57") and the pager ("2 of 6", the pages)
+    read alike; accepted for now.
+  - Between the pager and the page size the toolbar's divider (`.toolbarDivider`, 1px, `--datnav-color-border`;
+    2026-10-05, the user's wish), also with the narrow pager. Lower than in the toolbar (0.4 × the control height,
+    half of it there) and without its side margin; the right side of the footer is `spacingXs` apart (`spacingMd`
+    before), so the line sits close to the pager and the page size (the user's wish, the same day).
   - Left: item range and total. (The selection pill that was here moved into the selection bar, 2026-09-28.)
-  - Right: page size dropdown, first/previous buttons, page number input, "of N", next/last buttons.
-    - The page size dropdown is an outlined select, like the other selects (a ghost select was tried on 2026-09-29
-      and dropped).
+  - Right: the pager (previous, the page numbers, next), then the page size at the very end (2026-10-05, the user's
+    wish, like Ant Design's pager; before the pager until then): nothing on the right moves while paging. The user
+    liked that about the old pager ("Page [18] of 27": always the same width); with the page size before the numbered
+    pager, it jumped whenever the pager changed its width. The pager now changes its width only with fewer than seven
+    pages (a filter, a search) or a new page size, the user's own action.
+    - The page size (2026-10-05, the user's wish: a select drawn by us never matches the selects of the app's UI
+      library, so it should not look like a form field): one ghost button, "10 items per page" (`Texts.perPage`) and a
+      chevron (turned while the list is open), like the view controls of the toolbar (`.button[data-placement='tool']`,
+      `.pageSizeButton`, tabular figures); its text is its name. "Items" (German "Einträge") since 2026-10-05, the
+      user's wish ("10 per page" for a few hours; shorter, a matter of taste); the item range on the left has only
+      its numbers since.
+    - Its menu (2026-10-05, the user's wish): in the look of the other menus (the context menu, the layout choice of
+      the column menu): the sizes one below the other, a check at the current one (`PageSizeField` in `widgets.tsx`,
+      Base UI's `Menu`, a `RadioGroup` of `RadioItem`s in `.menuWithIcons`, `.menuItem`, `.pageSizeItem` for the
+      tabular figures; the group named `Texts.pageSize`, "Page Size", the menu by its button). Above the button, aligned
+      to its end (the footer is at the bottom; the button is at its end); another size closes it.
+    - Choosing the current size changes nothing and keeps the menu open (`closeOnClick` only on the other sizes; the
+      user's wish, it closed it for a moment). Base UI reports it as a change, and the change of the page size cleared
+      the selection and went back to page 1 (2026-10-05): checked in `PageSizeField` and in `changePageSize` (the same
+      size returns at once). The current size has the normal cursor.
+    - History: an outlined select with the label "Page Size" before it (`SelectField`); a ghost select was tried on
+      2026-09-29 and dropped (with the old pager); 2026-10-05: proposed and not taken, the select only without its
+      border; then the ghost button with the list of a single select (a check at the chosen size), the same day; then
+      a menu with the sizes in one row, round like the page numbers in a capsule (the current one filled, then in the
+      context menu's gray and bold), dropped the same day for the look of the other menus (the user: "go back to the
+      style in the context menu"). (Weighed: the sizes directly in the footer as a segmented row, too wide.)
+  - The page numbers (2026-10-05, the user's wish, to make the footer nicer; before: first, previous, "Page [18] of
+    27" with a page number field, next, last, chosen for its narrowness; the soft design spec of 2026-09-28 had asked
+    for numbers too):
+    - Always seven slots once there are more than seven pages (`pagerSlots` in `core/pager.ts`, with its unit test), so
+      the pager keeps its width while paging: `[1] 2 3 4 5 … 27` near the start (the current page up to 4),
+      `1 … 17 [18] 19 … 27` in the middle, `1 … 23 24 25 26 [27]` near the end; up to seven pages all of them. The first
+      and the last page are always there, so there are no first and last buttons.
+    - Small and close together (2026-10-05, the user's wish: a denser pager): the numbers, the gaps, previous and next
+      are 0.65 × `controlHeight` in every density, the numbers with a side padding of a quarter of `spacingXs`, a
+      quarter of `spacingXs` and 1px apart (the 1px since the same day, the user's wish). (Steps the same day: the full control height, 0.875 × in compact, half of
+      `spacingXs` apart; then 0.75 ×, the row buttons' size, with half of `spacingXs` as the side padding; then 0.65 ×.)
+      Every slot (number and gap) gets the width the largest page number needs, set inline by `Footer`
+      (`max(0.65 × controlHeight, <digits>ch + spacingXs / 2)`, `min-width` of a number, `width` of a gap): when the
+      digits do not fit, the slots widen all alike, so the pager keeps its width while paging.
+    - A number is a ghost button like the pager buttons (`.pageButton`, composes `.iconButton`), with tabular figures; named `Texts.goToPage` ("Page 18"). The current page has
+      `aria-current="page"` and is filled like a primary button (`--datnav-color-primary`, text
+      `--datnav-color-on-primary`; the light accent tint of the selected rows with the number in the primary color
+      before, the same day), the number bold; it keeps that look on hover and does nothing when clicked.
+    - Fully round (`border-radius: 999px`, 2026-10-05, the user's wish: a higher radius; `--datnav-button-radius`
+      before): the numbers are circles (pills for longer numbers), and previous and next too, so the pager is one row
+      of circles. The one round control of the table besides the pills. (Proposed, not taken: twice the button
+      radius.)
+    - A gap is a dimmed `…` (`.pagerGap`, `aria-hidden`), not clickable, as wide as a page number (2026-10-05; three
+      quarters of it before, so the pager grew by the difference when a second gap came, past page 4). So the pager
+      keeps its width while paging (see the slot width above). (A field to jump to a
+      page, e.g. behind the gap, may come later.)
+    - A narrow footer (below 28rem; a container query on the footer, `datnav-footer`, e.g. in a drawer): previous,
+      "18 of 27" (`Texts.pageOf`, `.pagerCompact`), next, so it never wraps.
+    - Texts: `pageOf` is `{page} of {pages}` now (it was `of {pages}`, after "Page" and the field); `goToPage` is new;
+      `page`, `firstPage` and `lastPage` are gone.
+  - While a page or a page size loads (2026-10-05, the user's wish: the footer jumped ahead of the rows): the footer
+    shows the rows shown, not the requested state: the item range, the current page, the page numbers and the page size
+    of the last finished load (`shownPage`, `shownPageSize`, `shownPageCount` of the hook, set when a load succeeds), so
+    it changes together with the rows. A failed or replaced load leaves it as it is.
+    - What is loading gets a small indicator: the clicked page number after the delay of the loading bar (200ms,
+      `spinnerVisible`, so a fast load shows none), the page size at once (2026-10-05, the user's wish: with the delay,
+      the chevron first turned back as the menu closed, then the spinner came). The clicked page number (also the target of previous and next, when it is shown) a thin ring
+      in the primary color turning around its circle, open at the top (`data-pending` on `.pageButton`, its `::after`);
+      the page size button a small turning spinner in place of its chevron (`.pendingSpinner`, as large as the
+      chevron). They stand still with reduced motion. (`pendingPage`, `pendingPageSize` of the hook; a new page size
+      also goes back to page 1, which shows no ring.)
+    - The footer is blocked while loading anyway (`inert`), so nothing else can be clicked meanwhile.
   - All texts are localizable.
 
 - Filtering: a filter view and filter pills (decided 2026-09-28, after a design spec from a chat about the look; it
@@ -1412,9 +1555,9 @@ The main goal is a very nice, yet simple, API, designed together with the user.
       package must work without a DOM).
     - Styled by our stylesheet with the theme's values (`.dateRange`, the library's class names as `:global`), not
       by the library's own stylesheet, so it follows the theme and the color scheme.
-  - Text inputs and selects outside the filter view (the search box, the page number, the page size) have a side padding of
+  - Text inputs outside the filter view (the search box) have a side padding of
     `0.75 * --datnav-spacing-sm`.
-  - Every select (the single and the multiple select filter, the page size) is one widget, `SelectField`, on Base
+  - Every select (the single and the multiple select filter) is one widget, `SelectField`, on Base
     UI's `Select`. The trigger looks like our text inputs (same classes), with our chevron; in the select filters
     (`FilterSelectField`) the clear button comes before it while something is chosen, and the chevron turns while the
     list is open (only a picture: the whole field is the trigger, a second click on it closes the list). It shows the chosen labels (comma separated) or the placeholder, dimmed
@@ -1433,11 +1576,8 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - It is not modal (`modal={false}`): the page stays scrollable and usable while a list is open.
   - A single select closes when an option is chosen. A multiple select stays open while options are chosen (Escape
     or a click outside closes it).
-  - Selects (the single select filter, the page size, the button of a multiple select) have 1px more padding on
-    every side than the text inputs.
-  - The page size select and the page number field of the footer are 2px lower than the other controls
-    (`--datnav-control-height - 2px`), with no vertical padding. The page number field has the same side padding as
-    the start of the page size select (`0.75 * --datnav-spacing-sm + 1px`), and 2px extra room on each side.
+  - Selects (the single select filter, the button of a multiple select) have 1px more padding on every side than the
+    text inputs. (The page size is no select field since 2026-10-05, see the footer.)
   - Every applied change of the filters goes back to page 1 and clears the selection. A newer change replaces a
     running load, and the response of the outdated load is ignored (as for the search). Equal filters (as JSON
     values) start no load.
@@ -1459,6 +1599,7 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - The heading: the optional title and the subtitle below it.
     - Props `title` and `subtitle`, both optional and of type `ReactNode`.
     - The title is bold and `1.25 * --datnav-font-size`. The subtitle is smaller (`--datnav-font-size-sm`) and dimmed.
+      Both in every density alike (since 2026-10-05).
     - There is little gap between title and subtitle: both use a tight line height (1.3). No extra margin.
     - Without title and subtitle, the heading is not rendered.
   - The bar, one line of a fixed height (`--datnav-control-height`), left to right:
@@ -1686,7 +1827,7 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     a row lands among the rows hidden by them is unclear. Also on a page with a single row (with `groupBy`: unless
     there is another group, e.g. an empty one, where the row could go).
   - The handle column: the first column (before the selection and the details toggle), `max-content`, a control cell
-    (clicking it never selects), with a vertical divider when it is the last meta column. It is there whenever
+    (clicking it never selects). It is there whenever
     `reorder` is given, also while its handles are hidden. Its header cell is empty; detail rows get an empty cell.
   - The handle: an icon button (Tabler's `grip-vertical`), dimmed, the text color on hover, `cursor: grab`, named
     `Texts.moveRow` ("Move row"), no tooltip. Its hover background is the gray of the row buttons
@@ -1922,7 +2063,7 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - The detail cell spans only the data columns, not the meta columns (selection, details toggle) and not the action
     column.
   - Under the meta columns and under the action column, the detail row has empty cells (`role="presentation"`), so the
-    horizontal lines and the vertical dividers continue through the detail row.
+    horizontal lines continue through the detail row, and the vertical line before the action column.
   - There is never a line between a data row and its detail row: the two are one block. The detail row has no top
     border in any state, and the data row above it gives up its bottom line. The bottom border of the detail row
     closes the block.
@@ -1996,6 +2137,24 @@ The main goal is a very nice, yet simple, API, designed together with the user.
 
 ## Todo (later)
 
+- Cards in a narrow table (2026-10-05, the first step is done, see "Cards in a narrow table"). TBD:
+  - Sorting: there are no column headers; e.g. a sort menu in the toolbar (the sortable columns, ascending or
+    descending).
+  - Select all: there is no header checkbox; e.g. in the selection bar or a line above the cards.
+  - Reordering (`reorder`): no drag handles on cards yet (their rows cannot be moved in card mode).
+  - The edit form in a card: it takes the card's place for now, without the folding animation, in the layout of the
+    grid's form.
+  - The breakpoint: fixed at 576px. A prop (`cardsBelow`), `'auto'` (cards when the columns do not fit at their
+    minimum widths), or none.
+  - Column groups: the labels are the leaf headers only; the group's header could prefix them or head a block.
+  - Which columns a card shows: all shown ones now; a column option for "not in cards", or a title line (the first
+    column bold, without a label).
+  - Keyboard: no focus on cards, like the rows of the grid (only their controls).
+  - A prop for the starting layout (`layout?: 'auto' | 'table' | 'cards'`, like `hidden` of a column), and keeping the
+    chosen one (with the hidden columns and the widths).
+  - The custom element: it renders the same view, so it gets cards and the layout choice too; its demo.
+  - Look at it in a real browser (only the tests ran).
+
 - The look of the data navigator (2026-10-04): the user does not like it yet. What exactly is not decided: ask first.
   Suspects, from what the demo shows in the root's cockpit:
   - Corners that do not match: the buttons are 5px (`buttonRadius`), the rest of the root page has 1 to 2px now (the
@@ -2009,16 +2168,21 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - Tried 2026-10-04 (the user said go): the default theme's `buttonRadius` 5px → 2px, `colorBorder` one step stronger and
     a lighter `colorHoverAccent`: reverted the same day, the user's rule: the default theme (the `ui-*` values) is the same
     in every package and must never be changed in just one (see the root `CLAUDE.md`). A change of the look needs all
-    packages (and the tokens of `ui.css`) together. Not done: the vertical dividers are no theme (the last leading column
-    gets `end`, the actions column `start`, `data-divider` in `DataNavigatorView.tsx`; a CSS change for all themes), and the
-    pills (filter pills, count badge, selection pill) stay round by design. Open: which of the suspects was it, really?
+    packages (and the tokens of `ui.css`) together. Not done then: the pills (filter pills, count badge, selection pill)
+    stay round by design. Open: which of the suspects was it, really?
+  - 2026-10-05: improved step by step, seen in the Board Manager's tables on the root page (a "Table Lab" of the root,
+    the meetings table alone, was made and removed the same day: the Board Manager shows the same): step 1, the
+    vertical dividers beside the meta and the action columns are gone (see "Separators"; the one before the action column
+    came back, lighter, later the same day); step 2, lighter lines between
+    the rows (`colorDivider`); step 3, page numbers in the footer instead of the page field, round,
+    the current one filled; step 4, the page size as a ghost button "10 per page" (see the footer).
 
 - From the design spec of 2026-09-28 (filter popup, pills, selection bar), not done yet:
   - Look at it in a real browser (only written, not run: no Node.js was available to that session).
   - "Show only the selected rows": a click on the selection pill toggles it (the pill then solid, and the footer says
     "N selected shown" with "Show all" instead of the pager). Needs a change of the footer, which was out of scope.
-  - The footer of the spec: "Rows" with the page size, "21–30 of 37", page numbers (the current one in a light accent
-    tint) instead of the page field. Out of scope for now.
+  - The footer of the spec: "Rows" with the page size, "21–30 of 37". (Its page numbers, the current one in a light
+    accent tint, came 2026-10-05: see the footer.)
   - The grid as one container with a hairline border and a 12px radius, and a slightly stronger line under the
     header. Out of scope for now (the table body was to stay as it is).
   - A date range with one open side (`Created ≥ Aug 1, 2026`): the calendars always pick both ends.
@@ -2040,7 +2204,7 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   decision, the source is a plain function, and nearly every remote source can change).
 - Toolbar on narrow screens: the bar does not wrap yet. When space runs out, the search box should go on its own
   full-width line below the buttons.
-- A hover color for danger (`--datnav-color-danger-hover`, a 28th token), so a filled danger button reacts on hover.
+- A hover color for danger (`--datnav-color-danger-hover`, one more token), so a filled danger button reacts on hover.
 
 - Look at the demo in a real browser and polish the styling (group headers, spacing, dark mode, the native widgets,
   the popovers, both themes).
@@ -2048,6 +2212,21 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - Check that the antd variables really reach the table through the `cssVar.key` class.
 
 - Combobox and autocomplete (Base UI), when a filter needs one. Select and multiple select are unified already.
+
+- Consider replacing Base UI with Zag.js (2026-10-05, the user's idea): the app cockpit uses Zag.js (with Lit), so all
+  packages would have one headless library. Not now: only with a concrete reason, and then step by step.
+  - For it: one library for all packages (the same concepts, keyboard and focus behavior, one dependency to keep up to
+    date in the customers' copies); Zag's state machines are framework-independent (Base UI is React only), which fits
+    the custom element better (today React on Preact plus Base UI) and a framework-free core (see below); probably a
+    smaller bundle (Base UI costs about 69 kB gzip; Zag's machines come one by one; not measured).
+  - Against it: a large rewrite of finely tuned widgets (the single and multiple selects, the menus with their radio
+    items, the page size menu, the context menu with submenus, the tooltips, the date popover, the autocomplete with
+    chips: the layer, the positioning, Escape, closing on a choice or not), on which many tests depend; more markup of
+    our own (Zag's React adapter gives props to spread, no ready components); Base UI is stable (1.x) and blocks
+    nothing; the choice of Base UI (over React Aria, Headless UI, …; see Theming) did not weigh Zag, so a switch
+    revisits it on purpose.
+  - If done: one kind of widget per step (tooltips, menus, selects, the context menu, the autocomplete), each with its
+    tests; until the last step both libraries are bundled.
 
 - `src/api.ts`, `src/react/api.ts`: add the final comments to all types, and group the `Props` properties with blank
   lines again.

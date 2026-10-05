@@ -5,8 +5,7 @@ export { MODERN_DANGER, modernOverride, modernVariables };
 
 // The `modern` variant (the part of it that does not depend on the colors), also for an app that has its own theme and
 // merges this into it (`modernTheme` in `index.ts`):
-// - smaller corners: `1 2 5 6 8px` (the `--ui-radius-*` scale: 2px small, 5px medium, 6px large) instead of Mantine's
-//   `2 4 8 16 32px` (the default radius `sm`: 2px instead of 4px);
+// - smaller corners: `2 3 6 8 10px` instead of Mantine's `2 4 8 16 32px` (the default radius `sm`: 3px instead of 4px);
 // - the system's UI font for text and headings (a font is not shipped), headings 600, buttons 500, badges not uppercase;
 // - the labels of the inputs a bit smaller: 13px (of the base text size), weight 600 as in Mantine;
 // - a bit more contrast (`modernVariables`): the borders of the inputs and the lines, the secondary text and the
@@ -20,7 +19,7 @@ const MODERN_DANGER = '#c92a2a';
 const MODERN_FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 
 const modernOverride: MantineThemeOverride = {
-  radius: { xs: '1px', sm: '2px', md: '5px', lg: '6px', xl: '8px' },
+  radius: { xs: '2px', sm: '3px', md: '6px', lg: '8px', xl: '10px' },
   defaultRadius: 'sm',
   fontFamily: MODERN_FONT,
   headings: { fontFamily: MODERN_FONT, fontWeight: '600' },

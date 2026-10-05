@@ -13,7 +13,9 @@
 - English is the language of the project: code, comments, docs. The conversation may be German.
 - VERY IMPORTANT: never introduce a new CSS custom property (`--…`) without the user's explicit permission.
   - Ask first, with the name and why none of the existing ones does.
-  - The need should be rare: use the existing ones (`--ui-*`, the package's own), plain values, or a local calc.
+  - The need should be rare: use the existing ones (Mantine's, the package's own), plain values, or a local calc.
+  - This package knows nothing of the root's design language (`ui.css`, its `--ui-*` tokens): it depends only on
+    Mantine.
   - A new one, once allowed, carries the package's prefix (never a generic name like `--shadow` or `--border`: the
     mini-apps are light DOM children and inherit them, and they collide with other libraries).
 - Never run `git commit` or `git push`.
@@ -37,7 +39,7 @@
     `danger`, the names the root's apps use. Not given: Mantine's indigo, green, orange, red. An unknown name or an
     invalid color throws (a typo should not pass silently).
   - `size`: `default` or `compact` (Mantine's `scale` 0.9: every size, also the text).
-  - `variant`: `default` (Mantine's own look) or `modern` (small corners `1 2 5 6 8px`, the system's UI font
+  - `variant`: `default` (Mantine's own look) or `modern` (small corners `2 3 6 8 10px`, the system's UI font
     for text and headings, headings 600, buttons 500, badges not uppercase, the inputs' borders one step stronger:
     `gray.5`, `dark.3`).
   - `accentProperty` (e.g. `--app-accent-color`): the accent live from this custom property (any CSS color, set by the
@@ -47,9 +49,9 @@
 - `modernTheme` (2026-10-04): the ready-made modern theme, `createMantineTheme({ variant: 'modern' })` (a `ThemeBundle`: the theme and its CSS variables resolver; called `Kit` until 2026-10-04), and
   `combineCssVariables(...resolvers)` to combine CSS variables resolvers (the later ones win). The modern parts are in
   `src/modern.ts` (`modernOverride`, `modernVariables`: one source for `createMantineTheme()` and the apps):
-  - smaller corners (2026-10-04, the user's wish: a bit rounder than `0 1 2 3 4px`): `1 2 5 6 8px`, the scale of the
-    `--ui-radius-*` tokens (`sm` 2px, `md` 5px, `lg` 6px) instead of Mantine's `2 4 8 16 32px` (the default radius `sm`: 2px
-    instead of 4px, so buttons and inputs follow it together);
+  - smaller corners: `2 3 6 8 10px` (2026-10-06, the user's wish: a tiny bit rounder; `1 2 5 6 8px` from 2026-10-04,
+    first `0 1 2 3 4px`), instead of Mantine's `2 4 8 16 32px` (the default radius `sm`: 3px instead of 4px, so
+    buttons and inputs follow it together); the package's own values, not tied to any other scale;
   - a bit more contrast, each one step stronger than Mantine's: the borders (`gray.5`, dark `dark.3`), the secondary text
     (`gray.7`, dark `dark.1`) and the placeholders (`gray.6`, dark `dark.2`);
   - the borders of the inputs (2026-10-04): Mantine's inputs ignore `--mantine-color-default-border` (their CSS sets

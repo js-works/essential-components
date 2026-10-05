@@ -28,51 +28,117 @@ const planned = async () => {
   define('planned-demo', (await import('./planned/PlannedDemo')).PlannedDemo);
 };
 
-// Tabler icons (MIT), drawn in `currentColor`. The apps' icons are the ones in their own top bars (Media Manager:
-// `TbFolders`, Board Manager: `TbPresentation`, User Manager: `TbShieldLock`).
+// Tabler icons (MIT), drawn in `currentColor`. Every app (a leaf) has an icon, the subgroups (the nodes) have none
+// (2026-10-05, the user's wish; for a moment the other way round, the same day); the groups have theirs in the group
+// select. The apps of "Essentials" have the icons of their own top bars (Media Manager: `TbFolders`, Board Manager:
+// `TbPresentation`, User Manager: `TbShieldLock`).
 const icon = (paths: string) =>
   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
-
-// The hourglass of the subgroup "Planned".
-const HOURGLASS = icon(
-  '<path d="M6.5 7h11"/><path d="M6.5 17h11"/><path d="M6 20v-2a6 6 0 1 1 12 0v2a1 1 0 0 1 -1 1h-10a1 1 0 0 1 -1 -1"/><path d="M6 4v2a6 6 0 1 0 12 0v-2a1 1 0 0 0 -1 -1h-10a1 1 0 0 0 -1 1"/>',
-);
 
 const MAIN = 'Essentials';
 
 // The made-up groups: only to show a larger navigation (the group select). Their apps are placeholders
-// (`planned-demo`), without icons.
-const FAKE: Record<string, Record<string, [string, string][]>> = {
+// (`planned-demo`): a title, a description and an icon each.
+const FAKE: Record<string, Record<string, [string, string, string][]>> = {
   'Human Resources': {
-    Employees: [['Directory', 'Everyone in the company, with their teams'], [
-      'Onboarding',
-      'Checklists for new colleagues',
-    ], ['Org chart', 'Who reports to whom']],
-    Absences: [['Vacation', 'Requests and approvals'], ['Sick leave', 'Reports and certificates'], [
-      'Team calendar',
-      'Who is away when',
-    ]],
-    Payroll: [['Salaries', 'Monthly payroll runs'], ['Expenses', 'Travel and other expenses']],
+    Employees: [
+      [
+        'Directory',
+        'Everyone in the company, with their teams',
+        '<path d="M20 6v12a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2z"/><path d="M10 16h6"/><path d="M11 11a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M4 8h3"/><path d="M4 12h3"/><path d="M4 16h3"/>',
+      ],
+      [
+        'Onboarding',
+        'Checklists for new colleagues',
+        '<path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"/><path d="M16 19h6"/><path d="M19 16v6"/><path d="M6 21v-2a4 4 0 0 1 4 -4h4"/>',
+      ],
+      [
+        'Org chart',
+        'Who reports to whom',
+        '<path d="M10 5a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M3 19a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 19a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M6.5 17.5l5.5 -4.5l5.5 4.5"/><path d="M12 7l0 6"/>',
+      ],
+    ],
+    Absences: [
+      [
+        'Vacation',
+        'Requests and approvals',
+        '<path d="M8 12a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/><path d="M3 12h1m8 -9v1m8 8h1m-9 8v1m-6.4 -15.4l.7 .7m12.1 -.7l-.7 .7m0 11.4l.7 .7m-12.1 -.7l-.7 .7"/>',
+      ],
+      [
+        'Sick leave',
+        'Reports and certificates',
+        '<path d="M8 8v-2a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v2"/><path d="M4 10a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z"/><path d="M10 14h4"/><path d="M12 12v4"/>',
+      ],
+      [
+        'Team calendar',
+        'Who is away when',
+        '<path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M4 11h16"/>',
+      ],
+    ],
+    Payroll: [
+      [
+        'Salaries',
+        'Monthly payroll runs',
+        '<path d="M7 11a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2z"/><path d="M12 14a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 9v-2a2 2 0 0 0 -2 -2h-10a2 2 0 0 0 -2 2v6a2 2 0 0 0 2 2h2"/>',
+      ],
+      [
+        'Expenses',
+        'Travel and other expenses',
+        '<path d="M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16l-3 -2l-2 2l-2 -2l-2 2l-2 -2l-3 2m4 -14h6m-6 4h6m-2 4h2"/>',
+      ],
+    ],
   },
   Finance: {
-    Accounting: [['Invoices', 'Incoming and outgoing invoices'], ['Ledger', 'The general ledger'], [
-      'Payments',
-      'Transfers and their status',
-    ]],
-    Planning: [['Budgets', 'Budgets per department'], ['Forecasts', 'The expected figures of the year']],
-    Reporting: [['Reports', 'Monthly and yearly reports'], ['Dashboards', 'The key figures at a glance']],
+    Accounting: [
+      [
+        'Invoices',
+        'Incoming and outgoing invoices',
+        '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"/><path d="M9 7l1 0"/><path d="M9 13l6 0"/><path d="M13 17l2 0"/>',
+      ],
+      [
+        'Ledger',
+        'The general ledger',
+        '<path d="M3 19a9 9 0 0 1 9 0a9 9 0 0 1 9 0"/><path d="M3 6a9 9 0 0 1 9 0a9 9 0 0 1 9 0"/><path d="M3 6l0 13"/><path d="M12 6l0 13"/><path d="M21 6l0 13"/>',
+      ],
+      [
+        'Payments',
+        'Transfers and their status',
+        '<path d="M3 8a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z"/><path d="M3 10l18 0"/><path d="M7 15l.01 0"/><path d="M11 15l2 0"/>',
+      ],
+    ],
+    Planning: [
+      [
+        'Budgets',
+        'Budgets per department',
+        '<path d="M10 3.2a9 9 0 1 0 10.8 10.8a1 1 0 0 0 -1 -1h-6.8a2 2 0 0 1 -2 -2v-7a.9 .9 0 0 0 -1 -.8"/><path d="M15 3.5a9 9 0 0 1 5.5 5.5h-4.5a1 1 0 0 1 -1 -1v-4.5"/>',
+      ],
+      ['Forecasts', 'The expected figures of the year', '<path d="M3 17l6 -6l4 4l8 -8"/><path d="M14 7l7 0l0 7"/>'],
+    ],
+    Reporting: [
+      [
+        'Reports',
+        'Monthly and yearly reports',
+        '<path d="M3 13a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"/><path d="M15 9a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"/><path d="M9 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"/><path d="M4 20h14"/>',
+      ],
+      [
+        'Dashboards',
+        'The key figures at a glance',
+        '<path d="M4 4h6v8h-6z"/><path d="M4 16h6v4h-6z"/><path d="M14 12h6v8h-6z"/><path d="M14 4h6v4h-6z"/>',
+      ],
+    ],
   },
 };
 
 const fakeApps = (): AppCockpit.MiniApp[] =>
   Object.entries(FAKE).flatMap(([group, subgroups]) =>
     Object.entries(subgroups).flatMap(([subgroup, apps]) =>
-      apps.map(([title, description]) => ({
+      apps.map(([title, description, paths]) => ({
         id: `${group}-${title}`.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
         title,
         description,
         group,
         subgroup,
+        icon: icon(paths),
         element: 'planned-demo',
         attributes: { description, note: 'A made-up app, only to show a larger navigation.' },
         load: planned,
@@ -87,8 +153,8 @@ customElements.define(
     subtitle: 'Acme Corporate',
     // The search (Ctrl K), although there are only a few apps.
     search: true,
-    // One group at a time (a select on top of the list): the real one, and two made-up ones. The subgroup "Planned" has
-    // an icon (an hourglass); its entries have none.
+    // One group at a time (a select on top of the list): the real one, and two made-up ones. Every app has an icon, the
+    // subgroups have none.
     groupDisplay: 'select',
     groups: [
       {
@@ -96,59 +162,18 @@ customElements.define(
         icon: icon(
           '<path d="M3 12l3 3l3 -3l-3 -3z"/><path d="M15 12l3 3l3 -3l-3 -3z"/><path d="M9 6l3 3l3 -3l-3 -3z"/><path d="M9 18l3 3l3 -3l-3 -3z"/>',
         ),
-        subgroups: [{ name: 'Planned', icon: HOURGLASS }],
       },
       {
         name: 'Human Resources',
         icon: icon(
           '<path d="M5 7a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0 -3 -3.85"/>',
         ),
-        subgroups: [
-          {
-            name: 'Employees',
-            icon: icon(
-              '<path d="M3 7a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v10a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z"/><path d="M7 10a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M15 8l2 0"/><path d="M15 12l2 0"/><path d="M7 16l10 0"/>',
-            ),
-          },
-          {
-            name: 'Absences',
-            icon: icon(
-              '<path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M4 11h16"/><path d="M10 16l4 -2"/>',
-            ),
-          },
-          {
-            name: 'Payroll',
-            icon: icon(
-              '<path d="M7 9m0 2a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2z"/><path d="M14 14m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 9v-2a2 2 0 0 0 -2 -2h-10a2 2 0 0 0 -2 2v6a2 2 0 0 0 2 2h2"/>',
-            ),
-          },
-        ],
       },
       {
         name: 'Finance',
         icon: icon(
           '<path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/><path d="M14.8 9a2 2 0 0 0 -1.8 -1h-2a2 2 0 1 0 0 4h2a2 2 0 1 1 0 4h-2a2 2 0 0 1 -1.8 -1"/><path d="M12 7v10"/>',
         ),
-        subgroups: [
-          {
-            name: 'Accounting',
-            icon: icon(
-              '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"/><path d="M9 7l1 0"/><path d="M9 13l6 0"/><path d="M13 17l2 0"/>',
-            ),
-          },
-          {
-            name: 'Planning',
-            icon: icon(
-              '<path d="M10 3.2a9 9 0 1 0 10.8 10.8a1 1 0 0 0 -1 -1h-6.8a2 2 0 0 1 -2 -2v-7a.9 .9 0 0 0 -1 -.8"/><path d="M15 3.5a9 9 0 0 1 5.5 5.5h-4.5a1 1 0 0 1 -1 -1v-4.5"/>',
-            ),
-          },
-          {
-            name: 'Reporting',
-            icon: icon(
-              '<path d="M3 13a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"/><path d="M15 9a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"/><path d="M9 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"/><path d="M4 20h14"/>',
-            ),
-          },
-        ],
       },
     ],
     // Opened when the page starts without a hash.
@@ -215,6 +240,9 @@ customElements.define(
         description: 'Validated forms with Zod, a useForm hook for React',
         group: MAIN,
         subgroup: 'Planned',
+        icon: icon(
+          '<path d="M9.615 20h-2.615a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v8"/><path d="M14 19l2 2l4 -4"/><path d="M9 8h4"/><path d="M9 12h2"/>',
+        ),
         element: 'planned-demo',
         attributes: {
           description:
@@ -229,6 +257,9 @@ customElements.define(
         description: 'A text input that suggests as you type',
         group: MAIN,
         subgroup: 'Planned',
+        icon: icon(
+          '<path d="M20 11v-2a2 2 0 0 0 -2 -2h-12a2 2 0 0 0 -2 2v5a2 2 0 0 0 2 2h5"/><path d="M15 18a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M20.2 20.2l1.8 1.8"/>',
+        ),
         element: 'planned-demo',
         attributes: {
           description:

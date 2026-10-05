@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
 import type { ReactElement } from 'react';
 import type { DataNavigatorComponent as Spec } from '../../react/api';
+import { pagerSlots } from '../pager';
 import * as classes from './DataNavigator.module.css';
-import { PageField, PagerButton, PageSizeField } from './widgets';
+import { PageButton, PagerButton, PageSizeField } from './widgets';
 
 export { Footer };
 
@@ -12,84 +12,87 @@ type FooterProps = {
   page: number;
   pageCount: number;
   pageSize: number;
+  // What is being loaded: a page clicked, a page size chosen (each with a small indicator); the rest of the footer shows
+  // the rows shown until they are there.
+  pendingPage?: number | undefined;
+  pendingPageSize?: number | undefined;
   pageSizeOptions: readonly number[];
   onPage: (page: number) => void;
   onPageSize: (pageSize: number) => void;
 };
 
-// The navigation bar below the table: the item range on the left, the page size and the pager
-// on the right.
+// The navigation bar below the table: the item range on the left, the pager and the page size ("10 items per page") on the
+// right. The pager: previous, the page numbers (seven slots, with gaps), next; in a narrow footer "18 of 27" in place of
+// the numbers (a container query). The page size at the very end (2026-10-05; before the pager until then): it does not
+// move while paging, and the pager keeps its width then (its gaps are as wide as its numbers).
 function Footer(props: FooterProps): ReactElement {
-  const { texts, total, page, pageCount, pageSize, pageSizeOptions, onPage, onPageSize } = props;
-  const { footer, footerSide, footerGroup, pager } = classes;
-  // The typed page number is a draft: it is applied on Enter and when the input loses its focus.
-  const [draft, setDraft] = useState(String(page));
-
-  useEffect(() => setDraft(String(page)), [page]);
-
-  const commit = () => {
-    const value = Math.trunc(Number(draft));
-
-    if (Number.isFinite(value) && value >= 1) {
-      onPage(Math.min(value, pageCount));
-    } else {
-      setDraft(String(page));
-    }
-  };
+  const { texts, total, page, pageCount, pageSize, pendingPage, pendingPageSize, pageSizeOptions, onPage, onPageSize } =
+    props;
+  const { footer, footerSide, pager, pagerNumbers, pagerGap, pagerCompact } = classes;
 
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const to = Math.min(page * pageSize, total);
+  // Every slot as wide as the largest page number needs (its digits, `ch` of the tabular figures, and the button's side
+  // padding), at least a round button: so the pager keeps its width while paging, also with three digits and more.
+  const slotWidth = `max(calc(0.65 * var(--datnav-control-height)), calc(${
+    String(pageCount).length
+  }ch + var(--datnav-spacing-xs) / 2))`;
 
   return (
     <div className={footer}>
       <div className={footerSide}>
-        {total > 0 && <span>{texts.itemRange({ from, to, total })}</span>}
+        {/* A range of one item without the dash: "1 / 1", not "1-1 / 1". */}
+        {total > 0 && (
+          <span>{from === to ? texts.itemSingle({ item: from, total }) : texts.itemRange({ from, to, total })}</span>
+        )}
       </div>
       <div className={footerSide}>
-        <div className={footerGroup}>
-          <span>{texts.pageSize}</span>
-          <PageSizeField
-            value={String(pageSize)}
-            label={texts.pageSize}
-            options={pageSizeOptions.map((option) => ({ value: String(option), label: String(option) }))}
-            onChange={(value) => onPageSize(Number(value))}
-          />
-        </div>
         <div className={pager}>
-          <PagerButton
-            icon="first"
-            label={texts.firstPage}
-            disabled={page <= 1}
-            onClick={() => onPage(1)}
-          />
           <PagerButton
             icon="previous"
             label={texts.previousPage}
             disabled={page <= 1}
             onClick={() => onPage(page - 1)}
           />
-          <span>{texts.page}</span>
-          <PageField
-            value={draft}
-            label={texts.page}
-            onChange={setDraft}
-            onBlur={commit}
-            onEnter={commit}
-          />
-          <span>{texts.pageOf({ pages: pageCount })}</span>
+          <span className={pagerNumbers}>
+            {pagerSlots(page, pageCount).map((slot, index) =>
+              slot === 'gap'
+                ? (
+                  <span key={`gap-${index}`} className={pagerGap} style={{ width: slotWidth }} aria-hidden="true">
+                    …
+                  </span>
+                )
+                : (
+                  <PageButton
+                    key={slot}
+                    page={slot}
+                    width={slotWidth}
+                    label={texts.goToPage({ page: slot })}
+                    current={slot === page}
+                    pending={slot === pendingPage}
+                    onClick={() => onPage(slot)}
+                  />
+                )
+            )}
+          </span>
+          <span className={pagerCompact}>{texts.pageOf({ page, pages: pageCount })}</span>
           <PagerButton
             icon="next"
             label={texts.nextPage}
             disabled={page >= pageCount}
             onClick={() => onPage(page + 1)}
           />
-          <PagerButton
-            icon="last"
-            label={texts.lastPage}
-            disabled={page >= pageCount}
-            onClick={() => onPage(pageCount)}
-          />
         </div>
+        {/* The toolbar's divider (2026-10-05): the pager, then the page size. */}
+        <span className={classes.toolbarDivider} />
+        <PageSizeField
+          value={String(pageSize)}
+          label={texts.pageSize}
+          text={texts.perPage({ count: pageSize })}
+          pending={pendingPageSize !== undefined}
+          options={pageSizeOptions.map((option) => ({ value: String(option), label: String(option) }))}
+          onChange={(value) => onPageSize(Number(value))}
+        />
       </div>
     </div>
   );

@@ -78,6 +78,29 @@
   min-height: calc(6 * var(--datnav-spacing-md));
 }
 
+/* A line at the bottom of the rows area (2026-10-05, the user's wish): like the line under the header, in the color of
+   the row lines; also where the rows scroll (a table with a limited height), so they never end open. Laid over the
+   bottom edge of the area (`::after`, above the rows and their fixed cells): where the rows do not scroll it covers the
+   last row's own line exactly, so there is never a double line, and it adds nothing to scroll (a border of the scroller
+   with a negative margin of the table, the same day, made every table scroll by 1px). Not below the empty state (it
+   has no line) and not below cards (they have frames). */
+.scrollArea::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  height: 1px;
+  background-color: var(--datnav-color-divider);
+  content: '';
+  pointer-events: none;
+}
+
+.scrollArea:has(.emptyCell)::after,
+:where([data-cards]) .scrollArea::after {
+  display: none;
+}
+
 .scroller {
   flex: 1 1 auto;
   min-height: 0;
@@ -145,12 +168,12 @@
   gap: var(--datnav-spacing-sm);
   padding: var(--datnav-spacing-sm);
 
-  /* Compact: a flatter toolbar, like the footer. Less room, a font between the small and the normal size, a smaller
-     title (below) and smaller controls (after the rules of the controls). */
+  /* Compact: a flatter toolbar, like the footer. Less room and smaller controls (after the rules of the controls). The
+     text size of the table, and the title's own (2026-10-05, the user's wish: density changes spacing only; a size
+     between the small and the normal one, and a smaller title, before). */
   :where([data-density='compact']) & {
     gap: var(--datnav-spacing-xs);
     padding-block: var(--datnav-spacing-xs);
-    font-size: calc((var(--datnav-font-size-sm) + var(--datnav-font-size)) / 2);
   }
 }
 
@@ -173,14 +196,11 @@
   min-width: 0;
 }
 
+/* The same size in every density (2026-10-05, the user's wish: density changes spacing only; 1.1 × in compact before). */
 .title {
   font-size: calc(1.25 * var(--datnav-font-size));
   font-weight: var(--datnav-font-weight-bold);
   line-height: 1.3;
-
-  :where([data-density='compact']) & {
-    font-size: calc(1.1 * var(--datnav-font-size));
-  }
 }
 
 .subtitle {
@@ -873,13 +893,13 @@
   padding: var(--datnav-spacing-sm);
   /* A little more room between the table and the footer. */
   padding-top: var(--datnav-spacing-md);
+  /* For the narrow pager (see `.pagerCompact`). */
+  container: datnav-footer / inline-size;
 
-  /* Compact: a flatter footer. Less room around it, the small font, and smaller controls (see below, after the rules
-     of the controls). */
+  /* Compact: a flatter footer, less room around it. The text size of the table (2026-10-05, the user's wish; a size
+     between the small and the normal one before). */
   :where([data-density='compact']) & {
     padding: var(--datnav-spacing-sm) var(--datnav-spacing-sm) var(--datnav-spacing-xs);
-    /* Between the small and the normal size. */
-    font-size: calc((var(--datnav-font-size-sm) + var(--datnav-font-size)) / 2);
   }
 }
 
@@ -890,15 +910,17 @@
   gap: var(--datnav-spacing-sm);
 }
 
-/* The right side (page size and pager) is spaced a little wider than the left one (pill and item range). */
+/* The right side: the pager, the divider and the page size, close to the divider (2026-10-05, the user's wish; `md`
+   apart before). */
 .footerSide + .footerSide {
-  gap: var(--datnav-spacing-md);
+  gap: var(--datnav-spacing-xs);
 }
 
-.footerGroup {
-  display: flex;
-  align-items: center;
-  gap: var(--datnav-spacing-xs);
+/* The divider of the footer: the toolbar's, without its side margin (the gap of the side is enough) and a little lower
+   (2026-10-05, the user's wish: 0.4 × the control height; half of it in the toolbar). */
+.footer .toolbarDivider {
+  height: calc(0.4 * var(--datnav-control-height));
+  margin-inline: 0;
 }
 
 /* The buttons of the pager and of the action column sit close together and never wrap. */
@@ -1157,9 +1179,13 @@
   }
 }
 
+/* Fully round, like the page numbers (2026-10-05): the pager is one row of circles. Small (2026-10-05, the user's wish:
+   a denser pager): 0.65 × the control height in every density, like the page numbers (the full control height first,
+   0.875 × in compact; then 0.75 ×, the row buttons' size). */
 .pagerButton {
-  width: var(--datnav-control-height);
-  height: var(--datnav-control-height);
+  width: calc(0.65 * var(--datnav-control-height));
+  height: calc(0.65 * var(--datnav-control-height));
+  border-radius: 999px;
 }
 
 /* A disabled pager button has no background of its own (no gray box): it is only faded, and the cursor says that it
@@ -1168,6 +1194,101 @@
   background-color: transparent;
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* The page numbers between previous and next (2026-10-05; a page number field before): ghost buttons like the pager
+   buttons, at least square, as wide as a longer number needs; the figures all equally wide, so the pager keeps its width
+   while paging. */
+.pagerNumbers {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--datnav-spacing-xs) / 4 + 1px);
+}
+
+/* The pager's buttons close together (a quarter of xs and 1px, 2026-10-05, the user's wish: the quarter alone was a bit
+   tight; the action column keeps its half). */
+.pager {
+  gap: calc(var(--datnav-spacing-xs) / 4 + 1px);
+}
+
+/* As small as the pager buttons. A number with more digits than fit (three and more) widens every slot alike: the view
+   sets the width that the largest page number needs inline (`min-width`), so the pager keeps its width while paging. */
+.pageButton {
+  composes: iconButton;
+  width: auto;
+  min-width: calc(0.65 * var(--datnav-control-height));
+  height: calc(0.65 * var(--datnav-control-height));
+  padding-inline: calc(var(--datnav-spacing-xs) / 4);
+  /* Fully round (2026-10-05): a circle for a short number, a pill for a longer one. */
+  position: relative;
+  border-radius: 999px;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+
+  /* Its page is being loaded (2026-10-05; after the delay of the loading bar): a thin ring in the primary color turns
+     around it, open at the top (it stands still with reduced motion). */
+  &[data-pending]::after {
+    /* A circle (also around a wider slot), centered: as high as the button and 2px more on each side. */
+    position: absolute;
+    top: -2px;
+    bottom: -2px;
+    left: 50%;
+    aspect-ratio: 1;
+    translate: -50% 0;
+    border: 1.5px solid var(--datnav-color-primary);
+    border-top-color: transparent;
+    border-radius: 999px;
+    animation: spin 800ms linear infinite;
+    content: '';
+    pointer-events: none;
+  }
+
+  /* The current page: filled like a primary button (2026-10-05; the light accent tint of the selected rows before), the
+     number bold. It does nothing when clicked, so it has no pointer and keeps its look on hover. */
+  &[aria-current='page'] {
+    background-color: var(--datnav-color-primary);
+    color: var(--datnav-color-on-primary);
+    font-weight: var(--datnav-font-weight-bold);
+    cursor: default;
+  }
+
+  @media (hover: hover) {
+    &[aria-current='page']:hover:not(:disabled) {
+      background-color: var(--datnav-color-primary);
+    }
+  }
+
+  &[aria-current='page']:active:not(:disabled) {
+    background-color: var(--datnav-color-primary);
+  }
+}
+
+/* The pages left out: a dimmed `…`, not clickable. */
+/* As wide as a page number (2026-10-05; narrower before): one gap or two, the pager keeps its width while paging. */
+.pagerGap {
+  flex: none;
+  width: calc(0.65 * var(--datnav-control-height));
+  color: var(--datnav-color-text-dimmed);
+  text-align: center;
+}
+
+/* "18 of 27": in place of the page numbers in a narrow footer (below). */
+.pagerCompact {
+  display: none;
+  padding-inline: var(--datnav-spacing-xs);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* A narrow footer (a drawer, a phone): the pager is previous, "18 of 27", next, so it never wraps. */
+@container datnav-footer (width < 28rem) {
+  .pagerNumbers {
+    display: none;
+  }
+
+  .pagerCompact {
+    display: inline;
+  }
 }
 
 .button,
@@ -1252,14 +1373,13 @@
 
 /* selectionAppearance="neutral": the selection checkboxes and radios of the rows (and the select-all checkbox) are
    gray too, like the selected rows. Other checkboxes (for example in a custom filter) keep the primary color. */
-:where([data-selection-appearance='neutral']) :is(.dataRow > .cell > .check, .groupRow > .cell > .check, .headerTall > .check) {
+:where([data-selection-appearance='neutral']) :is(.dataRow > .cell > .check, .groupRow > .cell > .check, .headerTall > .check, .cardSelect > .check, .cardGroup > .check) {
   color: var(--datnav-color-text-dimmed);
 }
 
 /* Text inputs and selects. A field is an input with a clear button or an arrow at its end. */
 .field,
-.searchField,
-.pageSizeField {
+.searchField {
   position: relative;
   display: flex;
   align-items: center;
@@ -1270,9 +1390,6 @@
   width: 16rem;
 }
 
-.pageSizeField {
-  width: 5em;
-}
 
 .input {
   box-sizing: border-box;
@@ -1300,8 +1417,7 @@
 
 /* Room for the clear button or the arrow at the end, and for the icon at the start of the search box. */
 .field .input,
-.searchField .input,
-.pageSizeField .input {
+.searchField .input {
   padding-inline-end: calc(var(--datnav-spacing-xs) + 1.25rem);
 }
 
@@ -1322,16 +1438,40 @@
 }
 
 /* Selects get 1px more padding on every side than the text inputs. */
-.field .select,
-.pageSizeField .select {
+.field .select {
   padding: 1px calc(var(--datnav-spacing-xs) + 1.25rem + 1px) 1px calc(0.75 * var(--datnav-spacing-sm) + 1px);
 }
 
-/* The page size select and the page number field of the footer are a little lower, with no vertical padding. */
-.pageSizeField .select,
-.pageInput {
-  height: calc(var(--datnav-control-height) - 2px);
-  padding-block: 0;
+/* The page size of the footer: a ghost button ("10 per page" and a chevron; `.button[data-placement='tool']`), with
+   the figures of the pager. The chevron turns while the list is open. */
+.pageSizeButton {
+  font-variant-numeric: tabular-nums;
+
+  & > svg {
+    transition: transform 150ms ease;
+  }
+
+  &[data-popup-open] > svg {
+    transform: rotate(180deg);
+  }
+}
+
+/* The spinner of the page size while a new one is loaded (2026-10-05; after the delay of the loading bar), in place of
+   its chevron and as large: a thin turning ring, open at the top, in the primary color. */
+.pendingSpinner {
+  flex: none;
+  box-sizing: border-box;
+  width: calc(0.4 * var(--datnav-control-height));
+  height: calc(0.4 * var(--datnav-control-height));
+  border: 1.5px solid var(--datnav-color-primary);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 800ms linear infinite;
+}
+
+/* A size in its menu (the look of the other menus, `.menuItem`): the figures of the pager. */
+.pageSizeItem {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Compact: the bar and the search box of the toolbar and the controls of the footer are 0.875 × controlHeight (the
@@ -1351,31 +1491,10 @@
   }
 }
 
-:where([data-density='compact']) .footer {
-  & .pagerButton {
-    width: calc(0.875 * var(--datnav-control-height));
-    height: calc(0.875 * var(--datnav-control-height));
-  }
-
-  & .pageSizeField .select,
-  & .pageInput {
-    height: calc(0.875 * var(--datnav-control-height) - 2px);
-  }
-}
-
 .selectText {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.pageInput {
-  width: 4em;
-  /* A little more room before and after it than between the pager buttons. */
-  margin-inline: calc(var(--datnav-spacing-xs) / 4);
-  /* The same side padding as the start of the page size select. */
-  padding-inline: calc(0.75 * var(--datnav-spacing-sm) + 1px);
-  text-align: center;
 }
 
 .fieldIcon,
@@ -1487,6 +1606,20 @@
 }
 
 /* Lighter than the frame of the menu: the lighter line color of the theme. */
+/* A group of a menu (a choice of radio items, under its label): no box of its own, so its items line up with the
+   others (the grid of `.menuWithIcons`). */
+.menuGroup {
+  display: contents;
+}
+
+/* The label of a group: small and dimmed, like a heading of the menu. */
+.menuGroupLabel {
+  padding: calc(var(--datnav-spacing-xs) / 2) var(--datnav-spacing-xs);
+  color: var(--datnav-color-text-dimmed);
+  font-size: var(--datnav-font-size-sm);
+  user-select: none;
+}
+
 .menuSeparator {
   height: 1px;
   margin: calc(var(--datnav-spacing-xs) / 2) 0;
@@ -1524,13 +1657,16 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   column-gap: var(--datnav-spacing-xs);
 
-  & > .menuItem {
+  & > .menuItem,
+  & > .menuGroup > .menuItem,
+  & > .menuGroup > .menuGroup > .menuItem {
     display: grid;
     grid-column: 1 / -1;
     grid-template-columns: subgrid;
   }
 
-  & > .menuSeparator {
+  & > .menuSeparator,
+  & > .menuGroup > .menuGroupLabel {
     grid-column: 1 / -1;
   }
 
@@ -2008,7 +2144,9 @@
   align-items: center;
   min-width: 0;
   padding: var(--datnav-spacing-xs) var(--datnav-spacing-sm);
-  border-bottom: 1px solid var(--datnav-color-border);
+  /* The line between two rows: the lighter divider (2026-10-05); the header's line and the frame of a hovered or
+     selected row keep the stronger border color. */
+  border-bottom: 1px solid var(--datnav-color-divider);
   /* Long words are hyphenated at syllable boundaries (by the language of the page, its `lang` attribute), and only a
      word that does not fit on a line at all (an email address) is broken at any place. */
   hyphens: auto;
@@ -2028,8 +2166,9 @@
 
   /* Density: only the vertical padding changes. The rules use :where(), so they do not win over the padding of
      more specific cell classes (like the group header). */
+  /* Compact: a third of xs (2026-10-05, the user's wish: a tiny bit less; half of it before). */
   :where([data-density='compact']) & {
-    padding-block: calc(var(--datnav-spacing-xs) / 2);
+    padding-block: calc(var(--datnav-spacing-xs) / 3);
   }
 
   :where([data-density='comfortable']) & {
@@ -2046,12 +2185,10 @@
     text-align: end;
   }
 
-  &[data-divider='end'] {
-    border-right: 1px solid var(--datnav-color-border);
-  }
-
+  /* The line before the action column (2026-10-05, back after a few hours without it; only this one, not the one after
+     the meta columns): through the data and the detail rows, in the light color of the row lines. Not in the header. */
   &[data-divider='start'] {
-    border-left: 1px solid var(--datnav-color-border);
+    border-inline-start: 1px solid var(--datnav-color-divider);
   }
 
   /* The outer sides of a row: a transparent line of 1px (2026-10-04, the user's wish), on the first and the last cell. On
@@ -2093,13 +2230,9 @@
   border-bottom-color: var(--datnav-color-selected-border);
 }
 
-/* A selected row shows no vertical dividers: they lose their color (never their width, so nothing shifts). */
-.cell[data-selected][data-divider='end'] {
-  border-right-color: transparent;
-}
-
+/* A selected row shows no divider before the action column: it loses its color (never its width, so nothing shifts). */
 .cell[data-selected][data-divider='start'] {
-  border-left-color: transparent;
+  border-inline-start-color: transparent;
 }
 
 /* The outer sides of a selected row take the color of its lines on top and at the bottom (the row is framed). */
@@ -2132,6 +2265,8 @@
 .header {
   composes: cell;
   align-items: flex-end;
+  /* The line under the header: the light color of the row lines (`.cell`; 2026-10-05, the user's wish: one gray for all
+     horizontal lines, the border color looked heavy at a display scaling of 125%; the border color before). */
   font-weight: var(--datnav-font-weight-bold);
   background-color: var(--datnav-color-surface);
   /* Muted: the sorted column stands out in the full text color (below). */
@@ -2534,25 +2669,19 @@
 
   /* The border of an unchecked checkbox of a hovered row is the one of a selected checkbox, the checkbox's own color
      (`currentColor`: the primary color, or the gray of the neutral appearance), in both appearances (2026-10-04, the
-     user's wish). A selected one has it anyway. */
+     user's wish). A selected one has it anyway. The same on a hovered card (2026-10-05). */
   .dataRow:hover .check:not(:checked):not(:indeterminate),
-  .dataRow:has(+ .detailRow:hover) .check:not(:checked):not(:indeterminate) {
+  .dataRow:has(+ .detailRow:hover) .check:not(:checked):not(:indeterminate),
+  .card:hover .check:not(:checked):not(:indeterminate) {
     border-color: currentColor;
   }
 
-  /* A hovered row shows no vertical dividers either (only their color goes). */
-  .dataRow:hover > .cell[data-divider='end'],
-  .dataRow:hover + .detailRow > .cell[data-divider='end'],
-  .detailRow:hover > .cell[data-divider='end'],
-  .dataRow:has(+ .detailRow:hover) > .cell[data-divider='end'] {
-    border-right-color: transparent;
-  }
-
+  /* A hovered row (with its detail row) shows no divider before the action column either (only its color goes). */
   .dataRow:hover > .cell[data-divider='start'],
   .dataRow:hover + .detailRow > .cell[data-divider='start'],
   .detailRow:hover > .cell[data-divider='start'],
   .dataRow:has(+ .detailRow:hover) > .cell[data-divider='start'] {
-    border-left-color: transparent;
+    border-inline-start-color: transparent;
   }
 
   /* The first row needs no top line: the line of the header is right above it. A line of its own could not overlap the
@@ -2940,6 +3069,147 @@
     opacity: 0;
     transform: translateY(-4px);
   }
+}
+
+/* Cards (2026-10-05): a narrow data navigator shows its rows as cards instead of a table (see `renderCard` in the
+   view). The list has as many columns of cards as fit (2026-10-05), each card at least 20rem wide: one in a narrow
+   table, more with "Cards" chosen in a wide one. The cards fill a line from left to right, and the cards of a line are
+   equally high. (One column with the labels of all cards lined up, by a subgrid, came first, the same day.) */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  gap: var(--datnav-spacing-sm);
+  padding: var(--datnav-spacing-xs) var(--datnav-spacing-sm) var(--datnav-spacing-sm);
+}
+
+/* A card: a framed block in the line color of the rows, a little rounder than the controls; hover and selection like a
+   row (the same colors, and the frame in the selection's line color). Two columns of its own: the labels (as wide as its
+   widest) and the values. */
+.card {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-content: start;
+  align-items: baseline;
+  gap: var(--datnav-spacing-xs) var(--datnav-spacing-md);
+  padding: var(--datnav-spacing-sm) var(--datnav-spacing-md);
+  border: 1px solid var(--datnav-color-divider);
+  border-radius: calc(2 * var(--datnav-radius));
+  background-color: var(--datnav-color-surface);
+  transition: background-color 120ms ease, border-color 120ms ease;
+
+  :where([data-selection='single'], [data-selection='multi']) & {
+    cursor: pointer;
+  }
+
+  /* Its content keeps the normal cursor (like the cells of a row); links keep theirs. */
+  & > * > *,
+  & > .cardValue * {
+    cursor: auto;
+  }
+
+  & a:any-link {
+    cursor: pointer;
+  }
+
+  &[data-selected] {
+    border-color: var(--datnav-color-border);
+    background-color: var(--datnav-color-surface-strong);
+  }
+
+  :where([data-selection-appearance='accent']) &[data-selected] {
+    border-color: var(--datnav-color-selected-border);
+    background-color: var(--datnav-color-selected);
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      border-color: var(--datnav-color-border);
+      background-color: var(--datnav-color-surface-strong);
+    }
+
+    :where([data-selection-appearance='accent']) &:hover {
+      border-color: var(--datnav-color-selected-border);
+      background-color: var(--datnav-color-hover-accent);
+    }
+  }
+
+  /* Faded while another row is edited (like the rows of the grid). */
+  &[data-blocked] {
+    opacity: 0.15;
+  }
+}
+
+/* The bar on top of a card: the selection and the details toggle at the start, the row actions at the end. */
+.cardBar {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: var(--datnav-spacing-xs);
+  min-height: calc(0.75 * var(--datnav-control-height));
+}
+
+/* The selection of a card: its free space is a click on its checkbox or radio (like the selection cell). */
+.cardSelect {
+  display: inline-flex;
+  align-items: center;
+  padding: calc(var(--datnav-spacing-xs) / 2);
+  margin: calc(var(--datnav-spacing-xs) / -2);
+}
+
+.cardActions {
+  composes: rowActions;
+  margin-inline-start: auto;
+}
+
+.cardLabel {
+  grid-column: 1;
+  color: var(--datnav-color-text-dimmed);
+  user-select: none;
+}
+
+/* The value: like a cell's content, but its text wraps (a card has the room below, not beside it). */
+.cardValue {
+  grid-column: 2;
+  min-width: 0;
+  overflow-wrap: break-word;
+  hyphens: auto;
+
+  & > .cellText {
+    overflow: visible;
+    white-space: normal;
+  }
+}
+
+.cardDetail {
+  grid-column: 1 / -1;
+  padding-top: var(--datnav-spacing-xs);
+  border-top: 1px solid var(--datnav-color-divider);
+  overflow-wrap: break-word;
+}
+
+/* A group header between the cards: its checkbox, the toggle and its actions on one line, set apart by room above. */
+.cardGroup {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: var(--datnav-spacing-xs);
+  padding-top: var(--datnav-spacing-sm);
+  font-weight: var(--datnav-font-weight-bold);
+  user-select: none;
+
+  &:first-child {
+    padding-top: 0;
+  }
+}
+
+.cardsEmpty {
+  display: flex;
+  grid-column: 1 / -1;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--datnav-spacing-xs);
+  padding: calc(2 * var(--datnav-spacing-md));
+  user-select: none;
 }
 
 /* Reduced motion (a setting of the system): no animations and no transitions (the loading bar stands still). Last in

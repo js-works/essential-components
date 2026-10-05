@@ -90,6 +90,10 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
   top of the list (below the search) switches the group, with each group's count; the list shows only that group's
   apps, without "Recent" (the search has it). The chosen group follows the open app (opening an app from the search
   shows its group). Only with more than one group and not in the rail. The package's 100-app demo uses it.
+  - Its ground in the sidebar: in a light sidebar a light gray a step darker than the sidebar (`#e3e6ea` on `#f4f5f7`; `#e9ebee` for a moment, a little too light;
+    2026-10-05, the user's wish; white, the field color, before), in a dark one the field color as before. No line at
+    rest (transparent, so nothing moves), the border color on hover and while its popup is open (the same day, the
+    user's wish; the divider color at rest before).
 - Group icons (2026-10-03, `groups[].icon`, SVG markup like an app's icon, white like it): in the group select
   (the chosen group and every option; once any group has one, every row keeps the space, so the names stay aligned)
   and in the collapsible group headings. Subgroup icons (`groups[].subgroups[].icon`): in the tree's subgroup nodes,
@@ -184,9 +188,10 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
     the top line.
   - No `sidebar-end` slot (like the rail). Below 768px of the cockpit's width: the sidebar's rail, as before.
   - The demos (the package's and the root page): a "Navigation" button in the footer (`navigationSetting()` in
-    `demo/footer.ts`, 2026-10-03) with two sections: "Navigation" (the four values: Sidebar, Topbar, Topbar compact, App
-    switcher; the key `demo-page:nav`) and "Colors" (Dark, Like the page; see `nav-scheme`; the demos
-    start with "Like the page", 2026-10-03), remembered per browser.
+    `demo/footer.ts`, 2026-10-03) with three sections: "Navigation" (the four values: Sidebar, Topbar, Topbar compact, App
+    switcher; the key `demo-page:nav`), "Colors" (Dark, Like the page; see `nav-scheme`; the demos
+    start with "Like the page", 2026-10-03) and "Density" (Compact, Normal, Comfortable; see `density`; Normal by
+    default, 2026-10-05), remembered per browser.
   - "One line" (`nav="topbar-compact"`, 2026-10-04): only with several groups (with one group or none the topbar is one
     line anyway). The groups become a select (a compact button after the title, with the group's icon, name and count, like the
     sidebar's group select; its popup a plain panel below the line, like the topbar's menus), then the apps of the
@@ -226,6 +231,14 @@ the left, the chosen mini-app on the right. The root's demo page is its first us
   With a light navigation: the footer a light gray bar (its light side; dark in the dark navigation as before), the
   avatar's initials in the accent, and in the topbar a line between the top line and the second one. The demos: the
   section "Colors" of the footer's "Navigation" button (Dark, Like the page).
+- `density` (2026-10-05): an attribute (and property `density`, reflected; `AppCockpit.Density`), `compact`, `normal`
+  (the default) or `comfortable`: the same names as the data navigator's `density`. CSS only (`:host([density=…])`, at
+  the end of `styles.ts`), and subtle: mostly the sidebar's vertical rhythm.
+  - `compact`: the app entries 32px (36px), the subgroup headers 30px (32px), the group headers 26px (28px), the gaps
+    between sections and groups 8px (12px); the rows of the popups (menus, the group select's list, the rail's flyouts)
+    30px (32px).
+  - `comfortable`: 40px, 34px, 30px, 16px; the popups' rows 34px.
+  - Unchanged: the font sizes, the topbar's lines (heights and text), the brand, the user row, the footer, the widths.
 - `search` (2026-10-03): the search button and Ctrl+K also with few apps (`true`), or never (`false`); without it, only
   with more than 12 apps. The root page uses `true`.
 - A subtle line (`--app-cockpit-divider`) below the header (logo, title, search), from edge to edge of the sidebar, also in the

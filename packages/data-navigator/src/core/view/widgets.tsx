@@ -18,7 +18,7 @@ export {
   FilterSelectField,
   FilterTextField,
   LoadingBar,
-  PageField,
+  PageButton,
   PagerButton,
   PageSizeField,
   Pill,
@@ -56,10 +56,8 @@ type MenuEntry =
   };
 
 const pagerIcons = {
-  first: icons.ChevronLeftPipe,
   previous: icons.ChevronLeft,
   next: icons.ChevronRight,
-  last: icons.ChevronRightPipe,
 } as const;
 
 // The tooltip of a trigger (Base UI's Tooltip): shown on hover (after the delay of the provider at the root) and on
@@ -231,6 +229,34 @@ function PagerButton({ icon, label, disabled, onClick }: PagerButtonProps): Reac
   );
 }
 
+// A page number of the pager. The current page is marked (`aria-current`, a light accent tint) and does nothing.
+// `width`: its least width (the one every slot of the pager gets, see `Footer`). `pending`: its page is being loaded (a
+// turning ring around it, `data-pending`).
+function PageButton(
+  { page, label, current, pending = false, width, onClick }: {
+    page: number;
+    label: string;
+    current: boolean;
+    pending?: boolean;
+    width: string;
+    onClick: () => void;
+  },
+): ReactElement {
+  return (
+    <button
+      type="button"
+      className={styles.pageButton}
+      data-pending={flag(pending)}
+      style={{ minWidth: width }}
+      aria-label={label}
+      aria-current={current ? 'page' : undefined}
+      onClick={current ? undefined : onClick}
+    >
+      {page}
+    </button>
+  );
+}
+
 // A sortable column header. The whole header cell around it handles the click, so it has no onClick of its own.
 // Without a direction the column is not sorted, and its icon is faint (the stylesheet does that).
 function SortButton(
@@ -354,10 +380,20 @@ type ToggleEntry = { key: string; label: ReactNode; checked: boolean; disabled: 
 // One action of a toggle menu, above its entries: a plain item that closes the menu.
 type ToggleAction = { key: string; label: string; icon: ReactNode; disabled: boolean; onSelect: () => void };
 
+// One choice of a toggle menu, at its top: a labeled group of radio items (e.g. the layout of the table).
+type ToggleChoice = {
+  label: string;
+  value: string;
+  options: readonly Option[];
+  onChange: (value: string) => void;
+};
+
 type ToggleMenuProps = {
   icon: ReactNode;
   // The accessible name and the tooltip of the icon-only button.
   label: string;
+  // At the top, with a separator after it.
+  choice?: ToggleChoice;
   // Above the entries, with a separator between them (none without entries).
   actions?: readonly ToggleAction[];
   entries: readonly ToggleEntry[];
@@ -365,10 +401,11 @@ type ToggleMenuProps = {
 };
 
 // An icon-only ghost button with a menu of checkbox items (Base UI's Menu.CheckboxItem), e.g. the columns to show. The
-// menu stays open while its items are toggled (Escape or a click outside closes it). Every item shows a checkbox in
-// front, only as a picture of its state (like the options of a multiple select). It opens below the button, aligned
-// to its end. Actions (plain items) come first, then a separator, then the entries.
-function ToggleMenu({ icon, label, actions = [], entries, onToggle }: ToggleMenuProps): ReactElement {
+// menu stays open while its items are toggled or chosen (Escape or a click outside closes it). Every item shows a
+// checkbox in front, only as a picture of its state (like the options of a multiple select). It opens below the button,
+// aligned to its end. A choice (radio items with a check at the chosen one, under its label) comes first, then the
+// actions (plain items), then the entries, with separators between them.
+function ToggleMenu({ icon, label, choice, actions = [], entries, onToggle }: ToggleMenuProps): ReactElement {
   const layer = useContext(LayerContext);
   const [open, setOpen] = useState(false);
   const look: Spec.ActionLook = { icon, tip: label };
@@ -389,6 +426,37 @@ function ToggleMenu({ icon, label, actions = [], entries, onToggle }: ToggleMenu
           positionMethod="fixed"
         >
           <BaseMenu.Popup className={`${styles.popup} ${styles.menuWithIcons}`}>
+            {choice !== undefined && (
+              <>
+                <BaseMenu.Group className={styles.menuGroup}>
+                  <BaseMenu.GroupLabel className={styles.menuGroupLabel}>{choice.label}</BaseMenu.GroupLabel>
+                  <BaseMenu.RadioGroup
+                    className={styles.menuGroup}
+                    value={choice.value}
+                    onValueChange={(value: string) => choice.onChange(value)}
+                  >
+                    {choice.options.map((option) => (
+                      <BaseMenu.RadioItem
+                        key={option.value}
+                        value={option.value}
+                        className={styles.menuItem}
+                        closeOnClick={false}
+                      >
+                        <span className={styles.menuIcon}>
+                          <span className={styles.selectCheck}>
+                            <BaseMenu.RadioItemIndicator>
+                              <icons.Check size={14} />
+                            </BaseMenu.RadioItemIndicator>
+                          </span>
+                        </span>
+                        <span className={styles.menuText}>{option.label}</span>
+                      </BaseMenu.RadioItem>
+                    ))}
+                  </BaseMenu.RadioGroup>
+                </BaseMenu.Group>
+                {(actions.length > 0 || entries.length > 0) && <BaseMenu.Separator className={styles.menuSeparator} />}
+              </>
+            )}
             {actions.map((action) => (
               <BaseMenu.Item
                 key={action.key}
@@ -472,50 +540,76 @@ function SearchField(props: SearchFieldProps): ReactElement {
   );
 }
 
-type PageFieldProps = {
-  value: string;
-  label: string;
-  onChange: (text: string) => void;
-  onBlur: () => void;
-  onEnter: () => void;
-};
-
-function PageField({ value, label, onChange, onBlur, onEnter }: PageFieldProps): ReactElement {
-  return (
-    <input
-      type="text"
-      inputMode="numeric"
-      className={`${styles.input} ${styles.pageInput}`}
-      aria-label={label}
-      value={value}
-      onChange={(event) => onChange(event.currentTarget.value)}
-      onBlur={onBlur}
-      onKeyDown={(event) => event.key === 'Enter' && onEnter()}
-    />
-  );
-}
-
 type PageSizeFieldProps = {
   value: string;
+  // The name of the group of sizes ("Page Size"), and the text of the button ("10 items per page"), its name and the menu's.
   label: string;
+  text: string;
+  // A new page size is being loaded: a small turning spinner in place of the chevron.
+  pending?: boolean;
   options: readonly Option[];
   onChange: (value: string) => void;
 };
 
-function PageSizeField({ value, label, options, onChange }: PageSizeFieldProps): ReactElement {
+// The page size of the footer (2026-10-05; an outlined select with a label before it until then): a ghost button with
+// the size as text and a chevron, like the view controls of the toolbar, so it does not look like a form field (which
+// never matched the selects of the app's UI library). It opens a menu in the look of the other menus (the context menu,
+// the column menu's layout): the sizes one below the other, a check at the current one (Base UI's `Menu` with radio
+// items). Above the button (the footer is at the bottom), aligned to its end; another size closes it, the current one
+// changes nothing and keeps it open.
+function PageSizeField({ value, label, text, pending = false, options, onChange }: PageSizeFieldProps): ReactElement {
+  const layer = useContext(LayerContext);
+
   return (
-    <div className={styles.pageSizeField}>
-      <SelectField
-        value={[value]}
-        multiple={false}
-        options={options}
-        naming={{ 'aria-label': label }}
-        onChange={(next) => next[0] !== undefined && onChange(next[0])}
-      />
-      <span className={styles.fieldEnd}>
-        <icons.ChevronDown size={14} />
-      </span>
-    </div>
+    <BaseMenu.Root modal={false}>
+      <BaseMenu.Trigger
+        className={`${styles.button} ${styles.pageSizeButton}`}
+        data-placement="tool"
+        data-pending={flag(pending)}
+      >
+        <span>{text}</span>
+        {pending ? <span className={styles.pendingSpinner} aria-hidden="true" /> : <icons.ChevronDown size={14} />}
+      </BaseMenu.Trigger>
+      <BaseMenu.Portal container={layer}>
+        <BaseMenu.Positioner
+          className={styles.popupPositioner}
+          side="top"
+          align="end"
+          sideOffset={4}
+          positionMethod="fixed"
+        >
+          {/* The menu is named by its button (Base UI), the group of sizes by `label`. */}
+          <BaseMenu.Popup className={`${styles.popup} ${styles.menuWithIcons}`}>
+            <BaseMenu.RadioGroup
+              aria-label={label}
+              className={styles.menuGroup}
+              value={value}
+              // Base UI reports a click on the current size as a change too: that one changes nothing.
+              onValueChange={(next: string) => next !== value && onChange(next)}
+            >
+              {options.map((option) => (
+                <BaseMenu.RadioItem
+                  key={option.value}
+                  value={option.value}
+                  className={`${styles.menuItem} ${styles.pageSizeItem}`}
+                  // The current size changes nothing: the menu stays open.
+                  closeOnClick={option.value !== value}
+                >
+                  <span className={styles.menuIcon}>
+                    <span className={styles.selectCheck}>
+                      <BaseMenu.RadioItemIndicator>
+                        <icons.Check size={14} />
+                      </BaseMenu.RadioItemIndicator>
+                    </span>
+                  </span>
+                  <span className={styles.menuText}>{option.label}</span>
+                </BaseMenu.RadioItem>
+              ))}
+            </BaseMenu.RadioGroup>
+          </BaseMenu.Popup>
+        </BaseMenu.Positioner>
+      </BaseMenu.Portal>
+    </BaseMenu.Root>
   );
 }
 

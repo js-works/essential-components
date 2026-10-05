@@ -11,6 +11,7 @@ const softTheme: Required<DataNavigator.Theme> = {
   colorSurface: { light: '#fff', dark: '#161616' },
   colorSurfaceStrong: { light: '#f0f0f0', dark: '#262626' },
   colorBorder: { light: '#dcdcdc', dark: '#383838' },
+  colorDivider: { light: '#ececec', dark: '#2e2e2e' },
   colorHover: { light: '#f7f7f7', dark: '#1d1d1d' },
   colorHoverAccent: { light: '#dcebfd', dark: '#1d3a61' },
   colorSelected: { light: '#eaf2fd', dark: '#14294a' },

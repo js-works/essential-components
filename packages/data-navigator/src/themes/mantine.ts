@@ -10,6 +10,8 @@ const mantineTheme: Required<DataNavigator.Theme> = {
   colorSurface: 'var(--mantine-color-body)',
   colorSurfaceStrong: { light: 'var(--mantine-color-gray-1)', dark: 'var(--mantine-color-dark-5)' },
   colorBorder: 'var(--mantine-color-default-border)',
+  // The lines between the rows: lighter than the border (which a theme may make stronger, e.g. `modernTheme`).
+  colorDivider: { light: 'var(--mantine-color-gray-3)', dark: 'var(--mantine-color-dark-4)' },
   colorHover: 'var(--mantine-color-default-hover)',
   // The next lighter value than `light-hover` (2026-10-04, the user's wish): the one of the selected rows.
   colorHoverAccent: 'var(--mantine-primary-color-light)',

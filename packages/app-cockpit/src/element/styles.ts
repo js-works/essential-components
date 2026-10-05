@@ -537,9 +537,13 @@ button {
   width: 100%;
   height: 40px;
   padding: 0 8px 0 12px;
-  border: 1px solid var(--app-cockpit-divider);
+  /* No line at rest, only on hover and while open (2026-10-05, the user's wish; the divider color at rest before): its
+     ground sets it apart. Transparent, not none, so nothing moves. */
+  border: 1px solid transparent;
   border-radius: var(--app-cockpit-button-radius);
-  background: var(--app-cockpit-field);
+  /* In a light sidebar a light gray, a step darker than the sidebar (2026-10-05, the user's wish; white before); in a
+     dark one the field color as before. */
+  background: light-dark(#e3e6ea, var(--app-cockpit-field));
   font-size: var(--app-cockpit-sidebar-font-size);
   font-weight: 600;
   text-align: left;
@@ -2023,6 +2027,73 @@ button {
 .menu-item[data-current] {
   color: var(--app-cockpit-accent);
   font-weight: 600;
+}
+
+/* The density (the attribute 'density'; 'normal' is the rules above): the rows of the sidebar and the gaps between its
+   sections and groups, a bit closer or a bit wider; the rows of the popups (menus, the group select's list, the
+   flyouts) one step with them. The font sizes, the topbar's lines, the brand, the user row and the footer stay. */
+:host([density='compact']) {
+  .item {
+    min-height: 32px;
+    padding-block: 2px;
+  }
+
+  .group-trigger {
+    height: 26px;
+  }
+
+  .subgroup-trigger {
+    min-height: 30px;
+  }
+
+  .section + .section,
+  .section + .group,
+  .group + .section,
+  .group + .group {
+    margin-top: 8px;
+  }
+
+  .section-rule {
+    margin-bottom: 8px;
+  }
+
+  .menu-item,
+  .select-item,
+  .flyout-item {
+    min-height: 30px;
+  }
+}
+
+:host([density='comfortable']) {
+  .item {
+    min-height: 40px;
+    padding-block: 6px;
+  }
+
+  .group-trigger {
+    height: 30px;
+  }
+
+  .subgroup-trigger {
+    min-height: 34px;
+  }
+
+  .section + .section,
+  .section + .group,
+  .group + .section,
+  .group + .group {
+    margin-top: 16px;
+  }
+
+  .section-rule {
+    margin-bottom: 16px;
+  }
+
+  .menu-item,
+  .select-item,
+  .flyout-item {
+    min-height: 34px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -17,7 +17,9 @@ type RowContextMenuProps<Row> = {
   prepare: (target: ContextTarget) => boolean;
   invoke: (action: Spec.Action<Row>) => void;
   className: string;
-  style: CSSProperties;
+  style?: CSSProperties;
+  // The role of the trigger: the grid (`table`), or the list of cards in a narrow table (`list`).
+  role?: 'table' | 'list';
   children: ReactNode;
 };
 
@@ -73,7 +75,7 @@ function popupClassOf<Row>(list: readonly ContextMenuItem<Row>[]): string {
 // menu key, Shift+F10): the table element is its trigger. See contextMenuItems for its entries. It is rendered in the layer of the root (so it
 // gets the tokens of the theme).
 function RowContextMenu<Row>(props: RowContextMenuProps<Row>): ReactElement {
-  const { items, available, prepare, invoke, className, style, children } = props;
+  const { items, available, prepare, invoke, className, style, role = 'table', children } = props;
   const layer = useContext(LayerContext);
   const tableRef = useRef<HTMLDivElement>(null);
   // The latest ones: Base UI keeps the open handler of the first render, and our listener lives across renders.
@@ -168,7 +170,7 @@ function RowContextMenu<Row>(props: RowContextMenuProps<Row>): ReactElement {
 
   return (
     <BaseContextMenu.Root onOpenChange={onOpenChange}>
-      <BaseContextMenu.Trigger ref={tableRef} render={<div role="table" className={className} style={style} />}>
+      <BaseContextMenu.Trigger ref={tableRef} render={<div role={role} className={className} style={style} />}>
         {children}
       </BaseContextMenu.Trigger>
       <BaseContextMenu.Portal container={layer}>

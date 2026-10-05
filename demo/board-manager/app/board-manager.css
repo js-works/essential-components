@@ -18,10 +18,48 @@
   color: var(--mantine-primary-color-9);
 }
 
+/* The app fills the height of its element where that has one (2026-10-05; the root page's cockpit gives it its content
+   area): the top bar stays, the page below it scrolls (`.board-manager__main`). On a host page without a height (the
+   `<board-manager>` element, e.g. in XWiki) the app is as high as its content and the page scrolls: the top bar is
+   sticky there (below). */
+.board-manager:has(> .board-manager__app),
+.board-manager__app {
+  height: 100%;
+}
+
 .board-manager__app {
   display: flex;
   flex-direction: column;
   gap: var(--mantine-spacing-md);
+}
+
+.board-manager__main {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* A page with a table: every element from the page down to the table is a flex column that takes the rest of the height,
+   and the table shrinks into it (`min-height: 0`), so its rows scroll and its toolbar, column headers and footer stay
+   (the data navigator's "fixed header and footer"). A short table keeps its own height. Pages without a table scroll
+   as a whole. `.board-manager__table` is around every table (`Navigator` in `shared.tsx`) and has no box of its own:
+   its child is the data navigator. Not in a drawer (outside `.board-manager__main`), which sets its table's height
+   itself. */
+.board-manager__main :has(.board-manager__table) {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.board-manager__table {
+  display: contents;
+}
+
+.board-manager__main .board-manager__table > * {
+  min-height: 0;
 }
 
 /* Always one line: the icon and the title keep their size, the breadcrumb takes the rest (its crumbs end with an
@@ -32,9 +70,12 @@
      knows that from `contain`: without it, they open far off to the side. */
   contain: layout;
   /* `contain: layout` makes the bar a stacking context: its popups' z-index counts only inside it. Above the page below
-     it, or the menus open under its content (e.g. the start page's tiles). */
-  position: relative;
+     it, or the menus open under its content (e.g. the start page's tiles). Sticky: on a host page that scrolls (the app
+     without a height of its own, see `.board-manager__app`) it stays at the top; in the cockpit it stays anyway. */
+  position: sticky;
+  top: 0;
   z-index: 100;
+  flex: none;
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
@@ -90,20 +131,15 @@
 }
 
 /* The first crumb: a house icon and "Home", a link to the start page (the app icon is no link).
-   On the start page it is the current page (not a link). */
+   On the start page it is the current page (not a link). As a link, icon and text take the link color (the accent, like
+   the other crumbs; 2026-10-05: a dimmed gray of its own was here, which only counted in the dark scheme). A plain link
+   like them, underlined on hover (2026-10-05, the user's wish; a padding and a gray hover ground, like a ghost button,
+   before). */
 .board-manager__home {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 4px;
-  border-radius: var(--mantine-radius-sm);
-  color: var(--mantine-color-dimmed);
   font-size: var(--mantine-font-size-sm);
-
-  &:is(a):hover {
-    background: var(--mantine-color-default-hover);
-    color: var(--mantine-color-text);
-  }
 
   /* On the start page: the current page, not a link (like the last crumb). */
   &[aria-current] {

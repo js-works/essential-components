@@ -10,8 +10,6 @@ const paths = {
   arrowBackUp: ['M9 14l-4 -4l4 -4', 'M5 10h11a4 4 0 1 1 0 8h-1'],
   chevronRight: ['M9 6l6 6l-6 6'],
   chevronLeft: ['M15 6l-6 6l6 6'],
-  chevronLeftPipe: ['M7 6v12', 'M18 6l-6 6l6 6'],
-  chevronRightPipe: ['M6 6l6 6l-6 6', 'M17 5v13'],
   chevronDown: ['M6 9l6 6l6 -6'],
   search: ['M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0', 'M21 21l-6 -6'],
   close: ['M18 6l-12 12', 'M6 6l12 12'],
@@ -110,6 +108,9 @@ function filledIcon(paths: readonly string[], grid: number, fillRule: 'evenodd' 
         height={size}
         viewBox={`0 0 ${grid} ${grid}`}
         fill="currentColor"
+        // Their shapes reach the very edge of the grid (the Bootstrap icons): at a fractional position (a display
+        // scaling of 125%) the box would cut their outer line (2026-10-05, the date range's calendar).
+        overflow="visible"
         aria-hidden
         focusable="false"
       >
@@ -124,8 +125,6 @@ const icons = {
   ArrowUp: filledIcon(filledPaths.arrowUp, 16, 'evenodd'),
   ArrowDown: filledIcon(filledPaths.arrowDown, 16, 'evenodd'),
   ChevronLeft: icon('chevronLeft'),
-  ChevronLeftPipe: icon('chevronLeftPipe'),
-  ChevronRightPipe: icon('chevronRightPipe'),
   ChevronRight: icon('chevronRight'),
   ChevronDown: icon('chevronDown'),
   Search: icon('search'),
