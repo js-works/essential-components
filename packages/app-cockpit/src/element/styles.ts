@@ -596,6 +596,13 @@ button {
   }
 }
 
+/* In the sidebar: a bit wider than the apps below it (the negative margins take back part of the sidebar's padding and
+   gap), round corners. */
+.sidebar > .group-select {
+  width: auto;
+  margin: -7px -7px 0;
+}
+
 .group-select-value {
   flex: 1;
   min-width: 0;
@@ -957,6 +964,11 @@ button {
     font-size: var(--app-cockpit-sidebar-font-size);
   }
 
+  /* The highlight from the text color: the hover token is about the panel's color. */
+  .menu-item[data-highlighted] {
+    background: color-mix(in srgb, var(--app-cockpit-text) 9%, transparent);
+  }
+
   @starting-style {
     opacity: 0;
     scale: 1;
@@ -970,6 +982,10 @@ button {
   border-top: 1px solid var(--app-cockpit-divider);
   border-left: 0;
   box-shadow: 0 -8px 24px rgb(0 0 0 / 18%);
+
+  .menu-item[data-highlighted] {
+    background: color-mix(in srgb, var(--app-cockpit-text) 9%, transparent);
+  }
 
   @starting-style {
     translate: 0 6px;
@@ -1187,14 +1203,24 @@ button {
 .flyout-item {
   display: flex;
   align-items: center;
+  gap: 8px;
   min-height: 32px;
   padding: 0 8px;
   border-radius: 6px;
   cursor: pointer;
   outline: none;
 
+  .tile {
+    width: 20px;
+    height: 20px;
+
+    svg {
+      font-size: calc(var(--app-cockpit-font-size) * 17 / 14);
+    }
+  }
+
   &[data-highlighted] {
-    background: var(--app-cockpit-hover);
+    background: color-mix(in srgb, var(--app-cockpit-text) 9%, transparent);
   }
 
   &[data-current] {
@@ -1213,6 +1239,7 @@ button {
 /* The icons of the sidebar and of its popups (apps, groups, subgroups): white strokes, in place of the accent color
    (the search palette keeps the accent). */
 .sidebar,
+.flyout,
 .select-popup {
   .tile,
   .group-icon {
@@ -1500,7 +1527,7 @@ button {
   }
 }
 
-/* Opened with the sidebar expanded: the sidebar collapses while the search slides in (both at once). The search's
+/* Opened with the sidebar expanded: the sidebar collapses first, then the search slides in. The search's
    layer and the backdrop start at the sidebar's edge and move along with it (the frame's transition). */
 .mount[data-layout='sidebar'][data-palette-from-expanded] {
   .palette-layer,
@@ -1516,6 +1543,12 @@ button {
     @starting-style {
       opacity: 0;
     }
+  }
+
+  /* First the sidebar collapses, then the search slides in (hidden until then). */
+  .palette {
+    animation-delay: 320ms;
+    animation-fill-mode: backwards;
   }
 }
 
@@ -1596,6 +1629,11 @@ button {
 
   .icon {
     font-size: calc(var(--app-cockpit-font-size) * 20 / 14);
+  }
+
+  /* The close button: the highlight from the text color (the hover token is about the panel's color). */
+  .search-button:hover {
+    background: color-mix(in srgb, var(--app-cockpit-text) 9%, transparent);
   }
 }
 

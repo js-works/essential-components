@@ -29,7 +29,7 @@ const PROPERTY_DEFAULTS = {
 
 const PROPERTIES = Object.keys(PROPERTY_DEFAULTS) as readonly (keyof typeof PROPERTY_DEFAULTS)[];
 
-const SLOTS = ['label', 'icon', 'prompt', 'limits'] as const;
+const SLOTS = ['label', 'error', 'icon', 'prompt', 'limits'] as const;
 
 // A generated tag name: the first free one of `internal-file-upload-1`, `-2`, ...
 const TAG_PREFIX = 'internal-file-upload-';
@@ -72,7 +72,8 @@ function createFileUploadComponent(config: ReactSpec.Config = {}): (props: React
     });
 
   function FileUpload(props: ReactSpec.Props): ReactNode {
-    const { ref, onChange, lang, id, className, style, maxParallel, label, icon, prompt, limits, ...rest } = props;
+    const { ref, onChange, lang, id, className, style, maxParallel, label, error, icon, prompt, limits, ...rest } =
+      props;
     const adapter = useI18nAdapter();
     const [registered, setRegistered] = useState<Registration>();
     const [failure, setFailure] = useState<{ error: unknown }>();
@@ -155,7 +156,7 @@ function createFileUploadComponent(config: ReactSpec.Config = {}): (props: React
       );
     }
 
-    const slots = { label, icon, prompt, limits };
+    const slots = { label, error, icon, prompt, limits };
     const attributes = Object.fromEntries(
       Object.entries(rest).filter(([key]) => key.startsWith('aria-') || key.startsWith('data-')),
     );

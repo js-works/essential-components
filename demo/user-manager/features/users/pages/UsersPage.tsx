@@ -85,7 +85,7 @@ function UsersPage(): ReactElement {
       header: 'Status',
       width: 1.4,
       sortable: true,
-      render: (row) => <Badge variant="light" color={row.active ? 'success' : 'gray'}>{row.status}</Badge>,
+      render: (row) => <Badge variant="light" color={row.active ? undefined : 'gray'}>{row.status}</Badge>,
       filter: selectColumnFilter({
         options: [{ value: 'Active', label: 'Active' }, { value: 'Disabled', label: 'Disabled' }],
         multiple: true,

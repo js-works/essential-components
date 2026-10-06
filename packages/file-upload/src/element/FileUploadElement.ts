@@ -49,6 +49,7 @@ const PROPERTIES = [
   'name',
   'required',
   'label',
+  'error',
 ] as const satisfies readonly (keyof Spec.Element)[];
 
 // The base class of every class that `createFileUploadClass` creates. It is not exported: each app class gets its
@@ -69,6 +70,7 @@ class FileUploadElement extends HTMLElement implements Spec.Element {
     'name',
     'required',
     'label',
+    'error',
   ] as const;
 
   #upload: Spec.Upload | undefined;
@@ -105,6 +107,12 @@ class FileUploadElement extends HTMLElement implements Spec.Element {
   readonly #label: HTMLElement;
   readonly #labelText: Text;
   readonly #labelSlot: HTMLSlotElement;
+  readonly #error: HTMLElement;
+  readonly #errorText: Text;
+  readonly #errorSlot: HTMLSlotElement;
+  // Set by the `invalid` event (a submit, `reportValidity()`), until the element is valid again: then its own message
+  // is shown, in place of the browser's bubble.
+  #showInvalid = false;
   // Disabled by an ancestor `<fieldset>`.
   #formDisabled = false;
   #customValidity = '';
@@ -129,6 +137,9 @@ class FileUploadElement extends HTMLElement implements Spec.Element {
     this.#labelText = document.createTextNode('');
     this.#labelSlot = create('slot', { name: 'label' }, [this.#labelText]);
     this.#label = create('div', { class: 'label', part: 'label', hidden: '' }, [this.#labelSlot]);
+    this.#errorText = document.createTextNode('');
+    this.#errorSlot = create('slot', { name: 'error' }, [this.#errorText]);
+    this.#error = create('div', { class: 'error', part: 'error', role: 'alert', hidden: '' }, [this.#errorSlot]);
     this.#input = create('input', { type: 'file', hidden: '' });
     this.#browse = create('button', { type: 'button', class: 'text-button browse', part: 'browse-button' });
     this.#prompt = create('span');
@@ -163,7 +174,7 @@ class FileUploadElement extends HTMLElement implements Spec.Element {
     ]);
     this.#dialog = create('dialog', { class: 'preview-dialog' }, [this.#dialogImage, this.#dialogClose]);
 
-    shadow.append(this.#label, this.#root, this.#tooltip, this.#dialog);
+    shadow.append(this.#label, this.#root, this.#error, this.#tooltip, this.#dialog);
 
     this.#store = new FileUploadStore(this.#storeOptions());
     this.#store.subscribe(() => {
@@ -188,6 +199,7 @@ class FileUploadElement extends HTMLElement implements Spec.Element {
     this.#input.addEventListener('input', (event) => event.stopPropagation());
     this.#limitsSlot.addEventListener('slotchange', () => this.#renderLimits());
     this.#listenToLabels();
+    this.#listenToErrors();
     this.#listenToDrops();
     this.#listenToDialog();
     shadow.addEventListener('keydown', (event) => {
@@ -312,6 +324,14 @@ class FileUploadElement extends HTMLElement implements Spec.Element {
 
   set label(value: string | undefined) {
     this.#setAttribute('label', value);
+  }
+
+  get error(): string | undefined {
+    return this.getAttribute('error') ?? undefined;
+  }
+
+  set error(value: string | undefined) {
+    this.#setAttribute('error', value);
   }
 
   get items(): readonly Spec.FileItem[] {
@@ -482,6 +502,7 @@ class FileUploadElement extends HTMLElement implements Spec.Element {
 
     this.#renderLimits();
     this.#renderLabel();
+    this.#renderError();
     this.#store.setOptions(this.#storeOptions());
     this.#render(true);
     this.#renderForm();
@@ -520,6 +541,8 @@ class FileUploadElement extends HTMLElement implements Spec.Element {
 
     if (invalidity === undefined && custom === '') {
       this.#internals.setValidity({});
+      this.#showInvalid = false;
+      this.#renderError();
 
       return;
     }
@@ -533,6 +556,7 @@ class FileUploadElement extends HTMLElement implements Spec.Element {
 
     // The anchor: `reportValidity()` focuses it and shows the message there.
     this.#internals.setValidity(flags, message, this.#browse);
+    this.#renderError();
   }
 
   // The texts outside the rows.
@@ -600,6 +624,41 @@ class FileUploadElement extends HTMLElement implements Spec.Element {
     this.#labelText.data = this.label ?? '';
     this.#label.hidden = slotted.length === 0 && text === '';
     this.#internals.ariaLabel = text === '' ? null : text;
+  }
+
+  // The error text: the app's (the `error` slot, else the `error` attribute), else our own message after an `invalid`
+  // event. Display only: it does not make the element invalid. The browser's bubble is suppressed (the event is
+  // cancelled), so the message is shown here, below the frame, which gets the danger color. Focus is not moved (the
+  // text is always visible), like any control whose app handles `invalid` itself.
+  #listenToErrors(): void {
+    this.addEventListener('invalid', (event) => {
+      event.preventDefault();
+      this.#showInvalid = true;
+      this.#renderError();
+    });
+    this.#errorSlot.addEventListener('slotchange', () => this.#renderError());
+    new MutationObserver(() => this.#renderError()).observe(this, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+  }
+
+  #renderError(): void {
+    const slotted = this.#errorSlot.assignedNodes();
+    const appText = (slotted.length > 0 ? slotted.map((node) => node.textContent ?? '').join('') : this.error ?? '')
+      .trim();
+    const text = appText !== '' ? appText : this.#showInvalid ? this.validationMessage : '';
+
+    this.#errorText.data = this.error ?? '';
+    this.#error.hidden = text === '';
+    this.#internals.ariaInvalid = text === '' ? null : 'true';
+    this.#root.toggleAttribute('data-invalid', text !== '');
+
+    // Our own message goes into the text node (the default content of the slot), when the app has none.
+    if (appText === '' && text !== '') {
+      this.#errorText.data = text;
+    }
   }
 
   // The hints are the default content of the `limits` slot. The area is hidden when there is nothing to show.

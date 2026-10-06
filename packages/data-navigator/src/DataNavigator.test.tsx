@@ -4075,6 +4075,7 @@ describe('theming', () => {
     'spacingSm',
     'spacingMd',
     'controlHeight',
+    'buttonHeight',
   ];
 
   // `colorTextDimmed` → `--datnav-color-text-dimmed`

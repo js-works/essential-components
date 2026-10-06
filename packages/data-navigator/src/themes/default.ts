@@ -33,4 +33,5 @@ const defaultTheme: Required<DataNavigator.Theme> = {
   spacingSm: '12px',
   spacingMd: '16px',
   controlHeight: '32px',
+  buttonHeight: '36px',
 };

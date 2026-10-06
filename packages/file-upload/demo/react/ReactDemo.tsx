@@ -27,12 +27,13 @@ const Upload = createFileUploadComponent({
 const upload = createUpload('works');
 
 // One column: its own language, one component in a form. A submit shows what the form sends (the ids of the uploaded
-// files); while the component is invalid, the browser blocks it and shows the message.
+// files); while the component is invalid, the browser blocks it and the component shows the message itself.
 function Column(
   { title, initialLocale, label, prompt }: { title: string; initialLocale: string; label: ReactNode; prompt?: string },
 ) {
   const [locale, setLocale] = useState(initialLocale);
   const [required, setRequired] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [items, setItems] = useState<readonly FileUpload.FileItem[]>([]);
   const [sent, setSent] = useState('');
 
@@ -58,6 +59,17 @@ function Column(
             <option value="on">on</option>
           </select>
         </label>
+        <label className="ui-field">
+          Error (set by the app)
+          <select
+            className="ui-select"
+            value={failed ? 'on' : 'off'}
+            onChange={(event) => setFailed(event.target.value === 'on')}
+          >
+            <option value="off">off</option>
+            <option value="on">on</option>
+          </select>
+        </label>
       </div>
       <Locale value={locale}>
         <form
@@ -73,6 +85,13 @@ function Column(
             multiple
             previews
             required={required}
+            error={failed
+              ? (
+                <>
+                  Please check your <b>attachments</b>.
+                </>
+              )
+              : undefined}
             label={label}
             prompt={prompt}
             onChange={setItems}

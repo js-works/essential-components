@@ -46,7 +46,7 @@ function UserPage(): ReactElement {
         }
         subtitle={`${user.title} · ${user.department}`}
         badges={
-          <Badge variant="light" color={user.active ? 'success' : 'gray'}>{user.active ? 'Active' : 'Disabled'}</Badge>
+          <Badge variant="light" color={user.active ? undefined : 'gray'}>{user.active ? 'Active' : 'Disabled'}</Badge>
         }
         actions={
           <>

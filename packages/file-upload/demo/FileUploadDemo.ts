@@ -129,6 +129,12 @@ class FileUploadDemo extends HTMLElement {
             <option value="on">on</option>
           </select>
         </label>
+        <label class="ui-field">Error (set by the app)
+          <select class="ui-select" name="error">
+            <option value="off">off</option>
+            <option value="on">on</option>
+          </select>
+        </label>
         <label class="ui-field">Disabled
           <select class="ui-select" name="disabled">
             <option value="off">off</option>
@@ -185,7 +191,8 @@ class FileUploadDemo extends HTMLElement {
     }
 
     // Each element sits in a form. A submit shows what the form sends: the ids of the uploaded files. While the element
-    // is invalid (unfinished or failed uploads, `required`), the browser blocks the submit and shows the message.
+    // is invalid (unfinished or failed uploads, `required`), the browser blocks the submit and the element shows its
+    // message itself (no browser bubble).
     for (const form of this.querySelectorAll<HTMLFormElement>('.upload-form')) {
       const output = form.querySelector('output');
 
@@ -225,6 +232,7 @@ function apply(switches: HTMLFormElement, elements: readonly (DefaultUpload | Ac
     element.previews = value('previews') === 'on';
     element.density = DENSITIES.find((density) => density === value('density')) ?? 'normal';
     element.required = value('required') === 'on';
+    element.error = value('error') === 'on' ? 'Please check your attachments.' : undefined;
     element.disabled = value('disabled') === 'on';
   }
 }

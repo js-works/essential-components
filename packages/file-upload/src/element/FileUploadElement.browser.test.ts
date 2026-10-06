@@ -169,6 +169,36 @@ describe('form association', () => {
       expect(element.validationMessage).toBe('Please add a file.');
     });
 
+    it('shows its own message on an invalid submit, instead of the browser bubble, until it is valid again', async () => {
+      const { form, shadow, choose, pending } = mount({ required: true });
+      const errorOf = () => shadow.querySelector<HTMLElement>('[part="error"]')!;
+
+      expect(errorOf().hidden).toBe(true);
+
+      form.requestSubmit();
+
+      expect(errorOf().hidden).toBe(false);
+      expect(errorOf().textContent).toBe('Please add a file.');
+
+      choose(file('a.txt'));
+
+      expect(errorOf().textContent).toBe('Wait until all uploads are finished.');
+
+      pending[0]!.resolve('id');
+      await flush();
+
+      expect(errorOf().hidden).toBe(true);
+      expect(shadow.querySelector('.root')!.hasAttribute('data-invalid')).toBe(false);
+    });
+
+    it('is display only with the error attribute: the element stays valid', () => {
+      const { element } = mount();
+
+      element.error = 'Add at least one file';
+
+      expect(element.validity.valid).toBe(true);
+    });
+
     it('blocks the submit of its form', () => {
       const { form } = mount({ required: true });
       const submit = vi.fn((event: Event) => event.preventDefault());

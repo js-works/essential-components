@@ -450,6 +450,50 @@ describe('file upload element', () => {
     });
   });
 
+  describe('error', () => {
+    const errorOf = (shadow: ShadowRoot) => shadow.querySelector<HTMLElement>('[part="error"]')!;
+
+    it('shows no error by default', () => {
+      const { shadow, root } = mount();
+
+      expect(errorOf(shadow).hidden).toBe(true);
+      expect(root.hasAttribute('data-invalid')).toBe(false);
+    });
+
+    it('shows the error attribute, reflected from the property, and marks the frame and the element invalid', () => {
+      const { element, shadow, root } = mount({ error: 'Add at least one file' });
+
+      expect(element.getAttribute('error')).toBe('Add at least one file');
+      expect(errorOf(shadow).hidden).toBe(false);
+      expect(errorOf(shadow).textContent).toBe('Add at least one file');
+      expect(errorOf(shadow).getAttribute('role')).toBe('alert');
+      expect(root.hasAttribute('data-invalid')).toBe(true);
+
+      element.error = undefined;
+
+      expect(errorOf(shadow).hidden).toBe(true);
+      expect(root.hasAttribute('data-invalid')).toBe(false);
+    });
+
+    it('shows the content of the error slot instead', () => {
+      const { shadow, root } = mount({ error: 'Plain' }, '<span slot="error">Add a <b>file</b></span>');
+      const slot = shadow.querySelector<HTMLSlotElement>('slot[name="error"]')!;
+
+      expect(errorOf(shadow).hidden).toBe(false);
+      expect(slot.assignedNodes().map((node) => node.textContent)).toEqual(['Add a file']);
+      expect(root.hasAttribute('data-invalid')).toBe(true);
+    });
+
+    it('cancels the invalid event, so the browser shows no bubble', () => {
+      const { element } = mount({ required: true });
+      const event = new Event('invalid', { cancelable: true });
+
+      element.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(true);
+    });
+  });
+
   describe('clear', () => {
     it('is shown from one file, and empties the list', async () => {
       const { ui, element, choose, pending } = mount({ multiple: true });

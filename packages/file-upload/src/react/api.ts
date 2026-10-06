@@ -30,6 +30,7 @@ type Props = AriaAttributes & {
   icon?: ReactNode;
   limits?: ReactNode;
   label?: ReactNode;
+  error?: ReactNode;
   onChange?: (items: readonly Spec.FileItem[]) => void;
   ref?: Ref<Spec.Element>;
 };

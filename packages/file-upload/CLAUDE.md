@@ -172,8 +172,8 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - Shadow DOM (open). Styling from outside with `::part()` (plus the `theme` and `styles` config, see below), and
     `<slot>`s where the app can put its own content.
   - Slots (each with default content, replaced only when the app fills it): `icon` (the icon of the drop area),
-    `prompt` (the text of the drop area, before the "Browse" button), `limits` (the hints in the drop area) and `label`
-    (our own label, default: the `label` attribute). The rows of the list are not slots.
+    `prompt` (the text of the drop area, before the "Browse" button), `limits` (the hints in the drop area), `label`
+    (our own label, default: the `label` attribute) and `error` (the error text, default: the `error` attribute). The rows of the list are not slots.
   - Configuration: simple values are attributes (kebab-case, e.g. `max-files`) reflected to properties (camelCase,
     e.g. `maxFiles`). Functions (`upload`) are properties only.
   - We never register the element. The app gets its class from the factory `createFileUploadClass(config?)` and
@@ -205,7 +205,7 @@ The main goal is a very nice, yet simple, API, designed together with the user.
       - `fontFamily` (default: inherited from the page) and `fontSize`: the base size (default `0.875rem`). All sizes
         and spacings inside are relative to it (`em`), so it scales the whole element. Names and the prompt use it,
         the small texts 6/7 of it. Names have the normal weight (400), the status text a medium one (500).
-    - Parts: `label`, `root`, `drop-area`, `browse-button`, `limits`, `upload-all-button`, `clear-button`, `list`, `row` (plus
+    - Parts: `label`, `error`, `root`, `drop-area`, `browse-button`, `limits`, `upload-all-button`, `clear-button`, `list`, `row` (plus
       `row-<status>`, e.g. `row-error`), `thumbnail`, `name`, `size`, `progress`, `status`, `actions`, `action-button`, `tooltip`.
   - Properties set before the element is defined (e.g. by a framework) are taken over when it is upgraded.
   - Tests: Vitest + jsdom with `@testing-library/dom`, queries inside the shadow DOM via `within(el.shadowRoot)`. Small
@@ -438,8 +438,16 @@ These are the first proposals behind `src/api.ts` and the element. Each one can 
       element (part `label`) only when set. Its text names the group (the slot's content is watched). A click on it
       focuses "Browse". For apps without their own fields; apps with a design system label the element themselves.
     - The React wrapper's `label` prop is a `ReactNode`, rendered into the `label` slot.
-    - Description and error: not now (the browser shows the validation message; an app with its own fields shows its
-      own error). Later with the same pattern (attribute, slot, part), without breaking anything.
+    - Error (decided 2026-10-06, the user's wish; display only): the `error` attribute (reflected to `error`) or the
+      `error` slot, shown below the frame (part `error`, `role="alert"`, the danger color; the frame gets the danger color
+      too, `data-invalid` on `root`) and `aria-invalid` on the element. It does not make the element invalid (like
+      Mantine's `error`): the app owns that text (from Zod, the server). The React wrapper's `error` prop is a
+      `ReactNode`, rendered into the slot.
+    - The element's own validity is shown the same way, in place of the browser's bubble: on the `invalid` event (a form
+      submit, `reportValidity()`) it cancels the event (no native bubble) and shows its `validationMessage` as the
+      error, until it is valid again. The app's `error` wins over it. The focus is not moved (the text is always
+      visible), like any control whose app handles `invalid` itself.
+    - Description: not now. Later with the same pattern (attribute, slot, part), without breaking anything.
   - Tooltips show on hover after 500ms (leaving before shows none) and at once on keyboard focus (`:focus-visible`,
     so not after a click or when the focus comes back from the preview dialog), and hide on blur, on leaving and on
     Escape.
@@ -471,7 +479,7 @@ These are the first proposals behind `src/api.ts` and the element. Each one can 
     - a file is `ready`, `queued` or `uploading` (its value is not known yet),
     - `required` (new boolean attribute, default `false`) is set and no file is `done`.
     - Flags: `badInput` for failed and unfinished files, `valueMissing` for `required` (`customError` stays for
-      `setCustomValidity`, whose message wins). `reportValidity()` shows the message at "Browse".
+      `setCustomValidity`, whose message wins). `reportValidity()` shows the message in the error area (part `error`, see Label), not in a browser bubble.
     - Rejected files do not make it invalid. One message (a new text), the first failing check in this order wins:
       `validationFailed` ("Retry or remove the files that failed."), `validationPending` ("Wait until all uploads are
       finished."), `validationRequired` ("Please add a file.").

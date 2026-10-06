@@ -36,4 +36,5 @@ const mantineTheme: Required<DataNavigator.Theme> = {
   spacingSm: 'var(--mantine-spacing-sm)',
   spacingMd: 'var(--mantine-spacing-md)',
   controlHeight: 'calc(2.25rem * var(--mantine-scale))',
+  buttonHeight: 'calc(2.5rem * var(--mantine-scale))',
 };

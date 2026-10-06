@@ -52,6 +52,7 @@ type Element = HTMLElement & {
   name: string | undefined;
   required: boolean;
   label: string | undefined;
+  error: string | undefined;
   readonly items: readonly FileItem[];
   readonly form: HTMLFormElement | null;
   readonly labels: NodeList;

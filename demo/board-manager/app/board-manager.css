@@ -3,6 +3,20 @@
    it still wins over that one. */
 @import '@blocknote/mantine/style.css' layer(blocknote);
 
+/* The selected day of a date picker's calendar. BlockNote's copy of Mantine's `UnstyledButton` rule (`background:
+   transparent`, in the `blocknote` layer above Mantine's) wins over the one for `[data-selected]` in Mantine's layer, so
+   the clicked day kept a transparent background. Unlayered, so it wins over both. */
+.board-manager :is(.mantine-DatePicker-day, .mantine-DateTimePicker-day, .mantine-Calendar-day)[data-selected] {
+  background-color: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
+
+  @media (hover: hover) {
+    &:hover:not([data-disabled], [data-static]) {
+      background-color: var(--mantine-primary-color-filled-hover);
+    }
+  }
+}
+
 /* The frame of the board manager. Everything else is Mantine (its variables are set on `.board-manager`). */
 
 .board-manager {
@@ -170,8 +184,8 @@
 }
 
 /* The message of an invalid field as a badge below it (2026-10-02, taken from the overlays' React demo,
-   `packages/overlays/src/demo/react.css`): in the danger color, with a warning triangle in front and a nose pointing up
-   at the field. Only the focused field shows its badge (at most one on screen); it hangs over the field below, so
+   `packages/overlays/src/demo/react.css`): white (the body color) with a border and text in the danger color, and a shadow (2026-10-06, to try; filled before), with an arrow pointing up in front (no nose since 2026-10-06, the user's wish).
+   Only the focused field shows its badge (at most one on screen); it hangs over the field below, so
    nothing moves when a message comes or goes. The red frame of an invalid field stays Mantine's.
    For every Mantine input (the shared classes: `InputWrapper`, `Input`), not only `TextInput`; `:focus-within`, since
    the focused element of a textarea or a select is no `<input>`. Absolute, not fixed: it stays with its field when a
@@ -186,55 +200,60 @@
   margin-bottom: 0;
 }
 
-.board-manager .mantine-InputWrapper-error {
-  /* The nose's height, and the room above its tip (in em: proportions of the message's text). */
-  --nose: 0.35em;
-  --nose-gap: 0.12em;
-
+.board-manager .mantine-InputWrapper-error,
+.board-manager .board-manager__upload::part(error) {
   position: absolute;
   z-index: 1;
   top: 100%;
   inset-inline-start: 0;
   max-width: 100%;
   width: max-content;
-  margin-block-start: calc(var(--nose) + var(--nose-gap));
-  padding: 0.35em 0.8em;
-  border-radius: 0.45em;
-  display: flex;
-  align-items: center;
-  gap: 0.6em;
-  background: var(--mantine-color-error);
-  color: #fff;
-  font-size: var(--mantine-font-size-xs);
+  margin-block-start: 0.2em;
+  padding: 0.35em 0.65em;
+  border-radius: 0.25em;
+  border: 1px solid color-mix(in srgb, var(--mantine-color-error) 35%, var(--mantine-color-body));
+  background: var(--mantine-color-body);
+  color: var(--mantine-color-error);
+  font-size: calc(var(--mantine-font-size-xs) + 1px);
+  font-weight: 500;
   line-height: 1.35;
   box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
+}
 
-  /* Hidden, not unmounted: the input's `aria-describedby` points here. */
+/* The arrow pointing up at the field: a mask in the text's color (Tabler's `arrow-up`, stroked). Decoration only.
+   Inline, not a flex row: the upload's part has the `hidden` attribute while it is empty, which a `display` there would
+   override. Not nested (`&` is an `:is()`, which cannot hold `::part()`). */
+.board-manager .mantine-InputWrapper-error::before,
+.board-manager .board-manager__upload::part(error)::before {
+  content: '';
+  display: inline-block;
+  inline-size: 1.05em;
+  block-size: 1.05em;
+  margin-inline-end: 0.5em;
+  vertical-align: -0.2em;
+  background-color: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 5v14M18 11l-6-6-6 6'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+/* Hidden, not unmounted: the input's `aria-describedby` points here. */
+.board-manager .mantine-InputWrapper-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
   opacity: 0;
   visibility: hidden;
   transform: translateY(-0.25em);
 
-  /* The warning triangle: a mask in the text's color (the exclamation mark a hole in it, `evenodd`). Decoration only. */
   &::before {
-    content: '';
-    flex: none;
-    inline-size: 1.05em;
-    block-size: 1.05em;
-    background-color: currentColor;
-    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' fill-rule='evenodd' d='M12 2 1 21h22L12 2Zm1 8h-2v5h2v-5Zm0 7h-2v2h2v-2Z'/%3E%3C/svg%3E")
-      center / contain no-repeat;
+    margin-inline-end: 0;
   }
+}
 
-  /* The nose: a zero-height box with only its bottom border painted, a triangle pointing up. */
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: 100%;
-    inset-inline-start: 0.9em;
-    border: var(--nose) solid transparent;
-    border-block-start-width: 0;
-    border-block-end-color: var(--mantine-color-error);
-  }
+/* The file upload (`DocumentUpload`, in the upload drawer): its error is a part of its shadow DOM, below its frame, with
+   the same badge; always shown (it is `hidden` without a message). The host is the positioned ancestor. */
+.board-manager .board-manager__upload {
+  position: relative;
 }
 
 /* Fades in, cuts out: the transition only on the shown state. */

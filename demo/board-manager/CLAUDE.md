@@ -128,7 +128,7 @@ the root's `CLAUDE.md` apply.
 - Mantine is scoped: its layered CSS, its variables and color scheme on `.board-manager` (the app, and the content of
   each dialog through `wrapContent`), following the CSS `color-scheme` (see the element); its popups without portal.
 - The components' themes follow Mantine as closely as possible (their values are Mantine's variables): the data
-  navigator's `mantineTheme`, the file upload's `MANTINE_UPLOAD_THEME` (`MeetingPage.tsx`, kept in the app: a theme in
+  navigator's `mantineTheme`, the file upload's `MANTINE_UPLOAD_THEME` (`shared/ui/DocumentUpload.tsx`, kept in the app: a theme in
   the package would need its own test and demo). More contrast comes from the app's Mantine theme instead
   (`cssVariablesResolver`, 2026-09-30): `dimmed` `gray.7` (dark `dark.1`) and `placeholder` `gray.6` (dark `dark.2`),
   one step darker than Mantine's (lighter in dark mode); the text and the lines stay Mantine's.
@@ -172,14 +172,18 @@ the root's `CLAUDE.md` apply.
   - A field only some dialogs show (the board of a new meeting on the meetings page, the person of a new member) gets
     a second schema (`meetingWithBoardSchema`, `memberWithPersonSchema`), so it is required only there.
   - `MinutesForm` too (nothing to validate): its editor is a field like the others (`MinutesEditor`, see Meetings).
-    The upload drawer keeps the native validation (the file upload is no Mantine input and reports its own message).
+    The upload drawer is a form too (2026-10-06, the user's wish; `UploadForm`): the file upload is one field, `files`, with
+    a `binding` (its value: the state of each file that was not rejected, none when there is no file) and the schema's
+    messages `errors.uploadFailed` and `errors.uploadPending`; the upload shows them itself (its `error` prop, display
+    only), on "Apply", not while a file is uploading. "Apply" saves the ids of the done files; cancelling discards the
+    uploaded ones. No native validation, no browser bubble.
   - A failed save shows the fake server's message (`errorMessage` in `useForm.tsx`: its errors are meant for the
     user), else form-validation's generic one.
   - The labels are translated (`labels: '<form>'`, keys like `person.email`) by the app's i18next (see "Languages"). The adapter is given as a hook (in a dialog the form has no
     `<form>` of its own for a factory). The messages come from the library's catalogs in the same language
     ("Please fill out this field." instead of the former "Required"); the schemas' own messages are keys of `errors` (see "Languages").
 - The message of an invalid input is a badge below it (`board-manager.css`, 2026-10-02, taken from the overlays' React
-  demo): the danger color, a warning triangle (a CSS mask) and a nose pointing up at the field; shown only while the
+  demo): white with a border and text in the danger color, and a shadow (2026-10-06, to try; filled with it before), an arrow pointing up (a CSS mask; a warning triangle until 2026-10-06, the user's wish), no nose (removed 2026-10-06, the user's wish; it pointed up at the field); shown only while the
   field has the focus (`:focus-within`), hanging over the field below, so nothing moves. For every Mantine input (the
   shared classes `.mantine-InputWrapper-error`, `.mantine-Input-wrapper`); before, only `TextInput` had it, through the
   overlays demo's global CSS. Hidden while a date input's calendar is open (`:has([data-dates-dropdown])`; it lay half under it;

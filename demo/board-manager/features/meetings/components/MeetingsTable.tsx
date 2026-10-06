@@ -75,16 +75,15 @@ async function deleteMeetingsFlow(
   return done;
 }
 
-const STATUS_COLORS: Readonly<Record<MeetingStatus, string>> = {
-  Planned: 'accent',
-  Held: 'success',
-  Cancelled: 'gray',
-};
-
 function StatusBadge({ status }: { status: MeetingStatus }): ReactElement {
   const t = useTranslate();
 
-  return <Badge size="sm" variant="light" color={STATUS_COLORS[status]}>{t(`statuses.${status}`)}</Badge>;
+  // The accent, gray for a cancelled meeting (2026-10-06, the user's wish: no green and yellow badges).
+  return (
+    <Badge size="sm" variant="light" color={status === 'Cancelled' ? 'gray' : undefined}>
+      {t(`statuses.${status}`)}
+    </Badge>
+  );
 }
 
 // Only a held meeting has minutes: a draft until they are approved.
@@ -98,8 +97,8 @@ function MinutesBadge(
   }
 
   return meeting.minutesApproved
-    ? <Badge size="sm" variant="outline" color="success">{t('meetings.minutesApproved')}</Badge>
-    : <Badge size="sm" variant="outline" color="warning">{t('meetings.minutesDraft')}</Badge>;
+    ? <Badge size="sm" variant="filled">{t('meetings.minutesApprovedBadge')}</Badge>
+    : <Badge size="sm" variant="outline">{t('meetings.minutesDraftBadge')}</Badge>;
 }
 
 // The meetings of one board (`boardId`, on the board's page), of the boards of one person (`personId`, on the member's
@@ -174,11 +173,11 @@ function MeetingsTable(
     {
       key: 'minutesApproved',
       header: t('meetings.columns.minutes'),
-      width: 1.7,
+      width: 1.3,
       hideable: true,
       render: (row) => <MinutesBadge meeting={row} />,
     },
-    { key: 'items', header: t('meetings.columns.items'), width: 0.8, sortable: true, hideable: true, align: 'end' },
+    { key: 'items', header: t('meetings.columns.items'), width: 1.1, sortable: true, hideable: true, align: 'end' },
     {
       key: 'documents',
       header: t('meetings.columns.documents'),

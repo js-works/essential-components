@@ -212,6 +212,7 @@ declare namespace DataNavigator {
     spacingSm?: string;
     spacingMd?: string;
     controlHeight?: string;
+    buttonHeight?: string;
   };
 
   type I18nAdapter = {

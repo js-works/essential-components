@@ -3,6 +3,8 @@ import { DateTimePicker } from "@mantine/dates";
 import { useRef } from "react";
 import type { FocusEvent, ReactElement } from "react";
 import { z } from "zod";
+import type { FileUpload } from "../../../packages/file-upload/src";
+import { binding } from "../../../packages/form-validation/src";
 import { normalizeWebsite, ROLES } from "../domain";
 import type {
   AgendaItem,
@@ -20,6 +22,7 @@ import { countryOptions } from "./lib/countries";
 import { useTranslate } from "./lib/i18n";
 import { useForm } from "./lib/useForm";
 import { AsyncSelect } from "./ui/AsyncSelect";
+import { DocumentUpload } from "./ui/DocumentUpload";
 
 export {
   AgendaItemForm,
@@ -30,6 +33,7 @@ export {
   MinutesForm,
   OrganizationForm,
   PersonForm,
+  UploadForm,
 };
 
 // The contents of the form dialogs (`dialogs.form`), validated by form-validation (`useForm`, a Zod schema per form),
@@ -48,6 +52,65 @@ export {
 // person of a new member) gets a second schema, so it is required only there.
 
 type Save<S extends z.ZodType> = (values: z.output<S>) => Promise<void>;
+
+// The upload drawer: the file upload is one field, `files`. Its value is the state of every file that was not
+// rejected (the upload reports it with each change; no files is no value, so "required"). A failed or unfinished
+// upload is an error of the field (`errors.uploadFailed`, `errors.uploadPending`), shown by the upload itself (its
+// `error` prop), on "Apply" (not while uploading: a running upload is no error), and then it follows the uploads.
+// "Apply" saves the ids of the done files; `onChange` gives the caller the items, to discard the uploaded files when the drawer is cancelled.
+const uploadSchema = z.object({
+  files: z
+    .array(z.object({ status: z.string(), result: z.string().optional() }))
+    .min(1)
+    .refine(
+      (files) =>
+        !files.some(
+          (file) => file.status === "error" || file.status === "aborted",
+        ),
+      "errors.uploadFailed",
+    )
+    .refine(
+      (files) => files.every((file) => file.status === "done"),
+      "errors.uploadPending",
+    ),
+});
+
+const uploadFiles = binding({
+  fromComponent: (items: readonly FileUpload.FileItem[]) => {
+    const files = items
+      .filter((item) => item.status !== "rejected")
+      .map(({ status, result }) => ({ status, result }));
+
+    return files.length === 0 ? undefined : files;
+  },
+});
+
+function UploadForm({
+  upload,
+  save,
+  onChange,
+}: {
+  upload: FileUpload.Upload;
+  save: Save<typeof uploadSchema>;
+  onChange?: (items: readonly FileUpload.FileItem[]) => void;
+}): ReactElement {
+  const { DialogForm, field } = useForm(uploadSchema, {
+    labels: "upload",
+    submit: save,
+  });
+
+  return (
+    <DialogForm>
+      <DocumentUpload
+        className="board-manager__upload"
+        multiple
+        previews
+        upload={upload}
+        {...field.files(uploadFiles, { onChange })}
+      />
+    </DialogForm>
+  );
+}
 
 const boardSchema = z.object({
   name: z.string().trim().min(1),

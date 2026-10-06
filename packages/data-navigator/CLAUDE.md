@@ -68,13 +68,13 @@ The main goal is a very nice, yet simple, API, designed together with the user.
   - The builds list the licenses of everything bundled in: `dist/third-party-licenses-react.md` (the React entry) and
     `dist/third-party-licenses.md` (the custom element, with Preact and Base UI).
 - Customization: a small set of general design values, the `DataNavigator.Theme` (see Configuration), not one per part.
-  - The values (27), with their internal custom properties (`colorTextDimmed` → `--datnav-color-text-dimmed`):
+  - The values (28), with their internal custom properties (`colorTextDimmed` → `--datnav-color-text-dimmed`):
     - Colors: `colorText`, `colorTextDimmed`, `colorSurface`, `colorSurfaceStrong`, `colorBorder`, `colorDivider`, `colorHover`,
       `colorHoverAccent`, `colorSelected`, `colorSelectedBorder`, `colorPrimary`, `colorPrimaryHover`, `colorOnPrimary`,
       `colorDanger`, `colorFocus`.
     - Shape and type: `radius`, `buttonRadius` (buttons with a shape: text and icon buttons, the clear buttons of the
       fields and the date picker's Clear), `shadow` (menus and tooltips), `shadowSm` (the filter panel), `fontFamily`, `fontSize`, `fontSizeSm`, `fontWeightBold`.
-    - Spacing and size: `spacingXs`, `spacingSm`, `spacingMd`, `controlHeight`.
+    - Spacing and size: `spacingXs`, `spacingSm`, `spacingMd`, `controlHeight`, `buttonHeight` (2026-10-06, the user's wish: the actions of the toolbar, a bit taller than the other controls: 36px in the default theme, `controlHeight` + 4px).
   - The grays are three steps (2026-10-04, the user's wish: far too many tokens; 20 colors became 14): `colorSurface`,
     `colorHover` (the row hover, the stripes), `colorSurfaceStrong` (everything stronger: the group header band, the
     hover and press of buttons, menu items and sortable headers, the neutral selection, the hover of striped rows, the

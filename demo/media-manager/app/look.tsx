@@ -50,6 +50,14 @@ const TEXT_SIZE = 'var(--media-manager-font-size, calc(0.875rem * var(--media-ma
 const ACCENT_TOKEN = '--media-manager-accent-color';
 const ACCENT_MIX = [10, 22, 40, 58, 75, 88, 100, 88, 76, 62] as const;
 
+// The accent's filled color for the dialogs (shade 6, 8 dark), live: they are outside the app's element, where the steps
+// above are not set, but the token itself is (on `<html>`); without it, the theme's own shade.
+function filledAccent(accent: MantineColorsTuple): string {
+  return `light-dark(var(${ACCENT_TOKEN}, ${accent[6]}), color-mix(in oklab, var(${ACCENT_TOKEN}, ${accent[6]}) ${
+    ACCENT_MIX[8]
+  }%, black))`;
+}
+
 function accentVariables(accent: MantineColorsTuple): ReturnType<CSSVariablesResolver> {
   const step = (index: number) => `${ACCENT_TOKEN}-${index}`;
 
@@ -196,7 +204,10 @@ function createLook(
         actionRadius: radius.sm,
         fontSize: fontSize(FONT_SIZES.sm),
         fontFamily: FONT_FAMILY,
-        spinner: `light-dark(${accent[6]}, ${accent[8]})`,
+        spinner: filledAccent(accent),
+        // The icons of the dialogs (confirm, info: the accent; warn, error: the danger color), not the overlays' blue.
+        primaryBackground: filledAccent(accent),
+        dangerBackground: `light-dark(${danger[6]}, ${danger[8]})`,
       }),
       wrapContent: (content) => <Scope>{content}</Scope>,
       render: {

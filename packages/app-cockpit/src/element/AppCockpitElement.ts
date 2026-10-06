@@ -399,7 +399,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     this.requestUpdate();
   };
 
-  // With the sidebar expanded, it collapses to the rail while the search slides in (both at once).
+  // With the sidebar expanded, it collapses to the rail first, then the search slides in.
   #openPalette = () => {
     if (this.#paletteOpen) {
       return;
@@ -1376,7 +1376,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     const entry = (app: Spec.MiniApp) =>
       html`<div class="flyout-item" ?data-current=${app.id === this.#active} ${
         spread(api.getItemProps({ value: app.id }))
-      }>${app.title}</div>`;
+      }>${appIcon(app)}${app.title}</div>`;
 
     return html`
       <button
@@ -1785,7 +1785,12 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     }}
               @keydown=${onKeyDown}
             />
-            <kbd class="key">Esc</kbd>
+            <button
+              type="button"
+              class="search-button"
+              aria-label=${texts.closeSheet}
+              @click=${this.#closePalette}
+            >${closeIcon()}</button>
           </div>
           <div id=${listId} class="palette-list" role="listbox" aria-label=${texts.search}>
             ${flat.length === 0 ? html`<p class="palette-empty">${texts.noResults}</p>` : nothing}

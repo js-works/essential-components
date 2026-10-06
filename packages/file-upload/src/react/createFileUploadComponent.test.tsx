@@ -143,6 +143,7 @@ describe('createFileUploadComponent', () => {
           Invoices <i>(PDF)</i>
         </>
       ),
+      error: 'Add a file',
       id: 'files',
       className: 'upload',
       style: { margin: '1px' },
@@ -156,6 +157,7 @@ describe('createFileUploadComponent', () => {
     expect(element.querySelector('[slot="prompt"]')?.textContent).toBe('Drop invoices');
     expect(element.querySelector('[slot="label"]')?.textContent).toBe('Invoices (PDF)');
     expect(element.hasAttribute('label')).toBe(false);
+    expect(element.querySelector('[slot="error"]')?.textContent).toBe('Add a file');
     expect(element.querySelector('[slot="icon"]')).toBeNull();
     expect(element.id).toBe('files');
     expect(element.className).toBe('upload');

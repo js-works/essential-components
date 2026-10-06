@@ -24,6 +24,7 @@ const en = {
     description: 'Description',
   },
   document: { name: 'Name' },
+  upload: { files: 'Files' },
   member: { personId: 'Person', role: 'Role' },
   minutes: { minutes: 'Minutes', decision: 'Decision' },
 
@@ -72,6 +73,8 @@ const en = {
   // The messages of the schemas and of the fake server (an `AppError` has the key and its values).
   errors: {
     organizationNameTaken: 'There is already an organization with this name',
+    uploadPending: 'Wait until all uploads are finished.',
+    uploadFailed: 'Retry or remove the files that failed.',
     urlInvalid: 'Not a valid URL',
     nameRequired: 'The name is required.',
     organizationExists: 'There is already an organization "{{name}}".',
@@ -198,6 +201,8 @@ const en = {
     },
     minutesApproved: 'Minutes approved',
     minutesDraft: 'Minutes draft',
+    minutesApprovedBadge: 'Approved',
+    minutesDraftBadge: 'Draft',
     new: 'New meeting',
     created: 'Meeting created',
     editTitle: 'Edit meeting',
@@ -274,8 +279,8 @@ const en = {
       planned: 'The minutes are recorded per agenda item ("Minutes" in the agenda), during or after the meeting.',
       title: 'Minutes of the {{title}}',
       members: 'Members: {{names}}',
-      approved: 'Approved.',
-      draft: 'Draft: not approved yet.',
+      approved: 'Approved',
+      draft: 'Draft: not approved yet',
       none: '(No minutes.)',
       deleted: '(deleted)',
     },

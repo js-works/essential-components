@@ -215,7 +215,7 @@
   display: flex;
   align-items: center;
   gap: calc(var(--datnav-spacing-xs) / 4);
-  height: var(--datnav-control-height);
+  height: max(var(--datnav-control-height), var(--datnav-button-height));
   min-width: 0;
   /* The text size of the table (it was larger, 8/7 of it, until 2026-09-30: too big next to the rows). */
   font-size: var(--datnav-font-size);
@@ -998,7 +998,11 @@
     }
   }
 
-  /* The actions of the toolbar: the standard buttons. Primary and danger are filled. */
+  /* The actions of the toolbar: the standard buttons, `buttonHeight` tall. Primary and danger are filled. */
+  &[data-placement='toolbar'] {
+    height: var(--datnav-button-height);
+  }
+
   &[data-placement='toolbar'][data-variant='primary'] {
     border-color: var(--datnav-color-primary);
     background-color: var(--datnav-color-primary);

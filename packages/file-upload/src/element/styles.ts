@@ -88,6 +88,15 @@ function createCss(theme: ResolvedTheme): string {
   font-weight: 500;
 }
 
+/* The error text below the frame (only when there is one): the app's, or our own message of an invalid element. The
+   frame turns to the danger color with it. */
+.error {
+  margin-block-start: 0.5em;
+  color: ${color(theme.dangerColor)};
+  font-size: 0.857em;
+  font-weight: 500;
+}
+
 .root {
   display: grid;
   /* The list grows with its files, up to the space the element leaves it (see \`:host\`). */
@@ -99,6 +108,10 @@ function createCss(theme: ResolvedTheme): string {
   container: file-upload / inline-size;
   border: 1px solid ${border};
   border-radius: ${radius};
+
+  &[data-invalid] {
+    border-color: ${color(theme.dangerColor)};
+  }
 
   &[inert] {
     opacity: 0.6;

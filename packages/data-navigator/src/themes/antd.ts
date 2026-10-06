@@ -34,4 +34,5 @@ const antdTheme: Required<DataNavigator.Theme> = {
   spacingSm: 'var(--ant-padding-sm)',
   spacingMd: 'var(--ant-padding)',
   controlHeight: 'var(--ant-control-height)',
+  buttonHeight: 'calc(var(--ant-control-height) + 4px)',
 };

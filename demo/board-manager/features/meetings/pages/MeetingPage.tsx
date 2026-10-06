@@ -1,4 +1,4 @@
-import { Box, Button, Group, Menu, Paper, SimpleGrid, Stack, Tabs, Text, TextInput, Title } from '@mantine/core';
+import { Badge, Box, Button, Group, Menu, Paper, SimpleGrid, Stack, Tabs, Text, TextInput, Title } from '@mantine/core';
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
@@ -9,9 +9,7 @@ import {
   useDataNavigatorController,
 } from '../../../../../packages/data-navigator/src/react';
 import type { DataNavigatorComponent } from '../../../../../packages/data-navigator/src/react';
-import { createDemoI18n } from '../../../../../packages/file-upload/demo/i18n';
 import type { FileUpload } from '../../../../../packages/file-upload/src';
-import { createFileUploadComponent } from '../../../../../packages/file-upload/src/react';
 import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react';
 import type { AgendaItem, AgendaSection, Meeting, MeetingDocument, Person } from '../../../domain';
 import { agendaNumbers, agendaOf } from '../../../domain';
@@ -38,7 +36,7 @@ import {
   withSectionDraft,
 } from '../../../infra/in-memory';
 import type { AgendaRow, Db, SectionDraft } from '../../../infra/in-memory';
-import { AgendaItemForm, DocumentForm, MinutesForm } from '../../../shared/forms';
+import { AgendaItemForm, DocumentForm, MinutesForm, UploadForm } from '../../../shared/forms';
 import { confirmAndRun } from '../../../shared/lib/flows';
 import type { Dialogs } from '../../../shared/lib/flows';
 import { translate, useTranslate } from '../../../shared/lib/i18n';
@@ -59,31 +57,6 @@ import { MinutesText } from '../components/minutes';
 import { downloadMeetingPdf, previewMeetingPdf, printMeetingPdf } from '../pdf';
 
 export { MeetingPage };
-
-const uploadI18n = createDemoI18n();
-
-// The file upload in Mantine's look: its theme values are Mantine's variables (inherited into its shadow DOM from the
-// scope), so it follows Mantine's color scheme and the contrast of the app's theme, like the data navigator's
-// `mantineTheme`.
-const MANTINE_UPLOAD_THEME: FileUpload.Theme = {
-  accentColor: 'var(--mantine-primary-color-filled)',
-  accentTextColor: 'var(--mantine-primary-color-contrast)',
-  textColor: 'var(--mantine-color-text)',
-  mutedColor: 'var(--mantine-color-dimmed)',
-  borderColor: 'var(--mantine-color-default-border)',
-  surfaceColor: 'var(--mantine-color-default-hover)',
-  successColor: 'var(--mantine-color-green-text)',
-  dangerColor: 'var(--mantine-color-error)',
-  borderRadius: 'var(--mantine-radius-default)',
-  buttonBorderRadius: 'var(--mantine-radius-default)',
-  fontFamily: 'var(--mantine-font-family)',
-  fontSize: 'var(--mantine-font-size-sm)',
-};
-
-const DocumentUpload = createFileUploadComponent({
-  i18n: { type: 'factory', getAdapter: () => uploadI18n },
-  theme: MANTINE_UPLOAD_THEME,
-});
 
 // The members of a board, as people (the presenters of its agenda items).
 function membersOf(state: Pick<Db, 'memberships' | 'people'>, boardId: string): Person[] {
@@ -813,9 +786,11 @@ function MinutesView({ meeting, agendaItems, agendaSections, boardName }: {
           <Title order={3} size="h4">{t('meetings.minutesView.title', { title: meeting.title })}</Title>
           <Text size="sm" c="dimmed">{boardName} · {formatDateTime(meeting.start)} · {meeting.location}</Text>
           <Text size="sm" c="dimmed">{t('meetings.minutesView.members', { names: attendees.join(', ') })}</Text>
-          <Text size="sm" c={meeting.minutesApproved ? 'success' : 'warning'}>
-            {meeting.minutesApproved ? t('meetings.minutesView.approved') : t('meetings.minutesView.draft')}
-          </Text>
+          <Group>
+            <Badge size="sm" variant={meeting.minutesApproved ? 'filled' : 'outline'}>
+              {meeting.minutesApproved ? t('meetings.minutesView.approved') : t('meetings.minutesView.draft')}
+            </Badge>
+          </Group>
         </Stack>
         <Stack gap="md">
           {agenda.map((entry, index) => {
@@ -904,31 +879,27 @@ function DocumentsTable({ meeting }: { meeting: Meeting }): ReactElement {
     const upload = async () => {
       let items: readonly FileUpload.FileItem[] = [];
       let committed: readonly MeetingDocument[] = [];
-      const drawer = dialogs.form({
+      const { canceled } = await dialogs.form({
         surface: 'drawer',
         title: t('meetings.documents.uploadTitle'),
         subtitle: meeting.title,
         content: (
-          <DocumentUpload
-            name="files"
-            multiple
-            previews
-            required
+          <UploadForm
             upload={uploadDocument(meeting.id)}
             onChange={(next) => {
               items = next;
+            }}
+            save={async ({ files }) => {
+              committed = await commitDocuments(
+                files.flatMap((file) => file.result === undefined ? [] : [file.result]),
+              );
             }}
           />
         ),
         buttons: { confirm: t('meetings.sections.apply') },
       });
 
-      for await (const attempt of drawer) {
-        committed = await commitDocuments(attempt.data.strings('files'));
-        attempt.accept();
-      }
-
-      if ((await drawer).canceled) {
+      if (canceled) {
         discardDocuments(items.flatMap((item) => (item.result === undefined ? [] : [item.result])));
         return;
       }
