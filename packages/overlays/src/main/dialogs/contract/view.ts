@@ -8,7 +8,11 @@ import type { DialogSpec } from "./adapter.js";
 import type { ActionButtonType, ButtonRole, FormConfirm } from "./dialog.js";
 
 export interface DialogButtonView {
-  role: ButtonRole;
+  role: ButtonRole | "action";
+  /** The id of one of the dialog's own actions (`role: "action"`). */
+  action?: string;
+  /** Stands separate, on the other side of the footer (danger and link actions). */
+  separate: boolean;
   type: ActionButtonType;
   /** Busy state, owned by the controller so an adapter can build a render descriptor. */
   loading: boolean;
@@ -19,6 +23,8 @@ export interface DialogButtonView {
 export interface ResolvedNote {
   title?: string;
   message: string;
+  /** See NoteRender.tone. */
+  tone: "error" | "question";
 }
 
 export interface DialogMount {
@@ -39,6 +45,8 @@ export interface DialogMount {
   getForm(): HTMLFormElement | null;
   /** The confirmation the content registered with the adapter, if any. */
   getConfirm(): FormConfirm | undefined;
+  /** Whether the content says it has changes (see DialogAdapter.isDirty). */
+  isDirty(): boolean;
   /**
    * Move focus to the form's first `aria-invalid="true"` control, falling back to
    * `[autofocus]`. Called when a validator turns a confirm click down; a no-op when the

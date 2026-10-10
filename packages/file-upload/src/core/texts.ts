@@ -4,7 +4,7 @@ export { createLocalizer };
 export type { Localizer };
 
 // The namespace of our texts in an `I18nAdapter`.
-const NAMESPACE = 'fileupload';
+const NAMESPACE = 'fileUpload';
 
 const FALLBACK_LOCALE = 'en-US';
 

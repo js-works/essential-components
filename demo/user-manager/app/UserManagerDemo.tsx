@@ -21,7 +21,7 @@ export { UserManagerDemo };
 
 // A user manager: users, groups, roles (sets of permissions) and who has which role where (grants on scopes, inherited
 // downwards), with a check of access that says why. Mantine, React Router, TanStack Query, and two packages: data
-// navigators for the lists, the dialogs and toasts of the overlays package. Built like the Media Manager: the domain
+// tables for the lists, the dialogs and toasts of the overlays package. Built like the File Center: the domain
 // (with the rules of access), the repositories' in-memory implementation, a service, the app that wires them.
 
 const LOOK = createLook();

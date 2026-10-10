@@ -35,7 +35,7 @@ function scopeChildren(scopes: readonly Scope[], id: string): Scope[] {
   return scopes.filter((scope) => scope.parentId === id);
 }
 
-// "Media Manager › Marketing › Logos" (without the root, unless it is the scope itself).
+// "File Center › Marketing › Logos" (without the root, unless it is the scope itself).
 function scopeLabel(scopes: readonly Scope[], id: string): string {
   const path = pathOf(scopes, id);
 

@@ -51,12 +51,12 @@ files are moved to match them.
 
 ## Data access
 
-- Domain first: the domain defines its entities and how they can be queried, without knowing any UI (no data navigator
+- Domain first: the domain defines its entities and how they can be queried, without knowing any UI (no data table
   types). The UI adapts to the domain: a table maps the grid's state to the domain's criteria, and offers only the sorts
   and filters the domain supports.
 - The chain: UI → service (feature) → repository (interface in `domain/`) → implementation (`infra/in-memory/` today,
   `infra/http/` later). `app/` chooses the implementations and hands the services to the UI (a React context).
-- A data navigator's `source` is a role, not a layer: the table passes a service call in, with a small mapping.
+- A data table's `source` is a role, not a layer: the table passes a service call in, with a small mapping.
 
 ### Example: `Product`
 
@@ -119,7 +119,7 @@ interface ProductRepository {
 
 ## Open questions
 
-- Phase 2 of the data access, one topic at a time: how TanStack Query is used (query keys, the data navigator's
+- Phase 2 of the data access, one topic at a time: how TanStack Query is used (query keys, the data table's
   reload), repositories with domain criteria, row types in the features, services and wiring in `app/`.
 
 ## Not there yet
@@ -128,7 +128,7 @@ interface ProductRepository {
   - `infra/in-memory/` (phase 1 of the split, 2026-10-03: `db.ts` split into store, seed, query engine, lookups and
     one file per entity; the pure agenda rules and `normalizeWebsite()` moved to `domain/`): the UI still imports it
     directly (through its temporary `index.ts`), reads the store (`db`, `useDb`), and its fetch functions use the data
-    navigator's types and return the row types. No repositories and services yet.
+    table's types and return the row types. No repositories and services yet.
   - `shared/forms.tsx`: the forms of every feature (each belongs to its feature).
   - `shared/shared.tsx`: a catch-all; partly not shared (`useDb`, the person and organization filters know the domain).
   - No feature has an `index.ts` yet; features import each other's files directly.

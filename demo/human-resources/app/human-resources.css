@@ -1,0 +1,543 @@
+/* The frame of human resources, like the Board Manager's (taken from the Time Tracker's). Everything else is Mantine
+   (its variables are set on `.human-resources`), except the org chart, the pipeline board and the checklist's tasks
+   (below). */
+
+.human-resources {
+  color: var(--mantine-color-text);
+  font-family: var(--mantine-font-family);
+  font-size: var(--mantine-font-size-sm);
+}
+
+/* Links are darker than Mantine's primary color in the light scheme (shade 9), like in the Board Manager. */
+.human-resources[data-mantine-color-scheme='light'] .mantine-Anchor-root {
+  color: var(--mantine-primary-color-9);
+}
+
+/* The app fills the height of its element where that has one (the root page's cockpit gives it its content area): the
+   app header stays, the page below it scrolls (`.human-resources__main`). Without a height, the app is as high as its
+   content and the app header is sticky. Like the Board Manager. */
+.human-resources:has(> .human-resources__app),
+.human-resources__app {
+  height: 100%;
+}
+
+.human-resources__app {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-md);
+}
+
+.human-resources__main {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  /* No bounce at its ends (Firefox's elastic overscroll), and the page does not scroll on (2026-10-08, the user's
+     wish; the same for every scroll area of the apps and the components). */
+  overscroll-behavior: none;
+}
+
+/* A page with a table: every element from the page down to the table is a flex column that takes the rest of the
+   height, and the table fills it, so its rows scroll and its toolbar, column headers and footer stay (the data
+   table's "fixed header and footer"). `.human-resources__table` is around every table (`DataTable`) and has no
+   box of its own. Not in a dialog (outside `.human-resources__main`). Like the Board Manager. */
+.human-resources__main :has(.human-resources__table) {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.human-resources__table {
+  display: contents;
+}
+
+.human-resources__main .human-resources__table > * {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Two lines (2026-10-08, a trial): the icon, the title, the modules as tabs, the user, Back and Forward; below them the
+   breadcrumb (its crumbs end with an ellipsis when it is too short). A container: the tabs become a menu, and Back
+   and Forward go, when it is narrow. */
+.human-resources__app-header {
+  container: human-resources-app-header / inline-size;
+  /* A container is a containing block for its popups (tooltips, menus), but Floating UI (Mantine's positioning) only
+     knows that from `contain`: without it, they open far off to the side. */
+  contain: layout;
+  /* `contain: layout` makes the bar a stacking context: its popups' z-index counts only inside it. Above the page below
+     it. Sticky: on a host page that scrolls it stays at the top. */
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  flex: none;
+  background: var(--mantine-color-body);
+  user-select: none;
+}
+
+.human-resources__app-header-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--mantine-spacing-xs) var(--mantine-spacing-lg);
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+}
+
+.human-resources__title {
+  padding: 4px 6px 4px 2px;
+  white-space: nowrap;
+}
+
+/* The modules as tabs: the current one (also on its records' pages) in the accent's light ground. */
+.human-resources__modules {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 2px;
+  min-width: 0;
+}
+
+.human-resources__module {
+  padding: 5px 10px;
+  border-radius: var(--mantine-radius-sm);
+  color: var(--mantine-color-dimmed);
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:hover {
+    background: var(--mantine-color-default-hover);
+    color: var(--mantine-color-text);
+  }
+
+  &[aria-current] {
+    background: var(--mantine-primary-color-light);
+    color: var(--mantine-primary-color-light-color);
+  }
+}
+
+/* The tabs as a menu: only while the app header is narrow (below). */
+.human-resources__module-menu {
+  display: none;
+  padding: 4px 8px;
+  border-radius: var(--mantine-radius-sm);
+  white-space: nowrap;
+
+  &:hover {
+    background: var(--mantine-color-default-hover);
+  }
+}
+
+/* The breadcrumb's line, below the tabs. No frame around the app header (2026-10-08, the user's wish; one with rounded
+   corners around both lines before): only a line between the two, in the gray of the tiles' borders (Mantine's
+   `Paper`: gray-3, dark-4 in the dark scheme, below). */
+.human-resources__crumbs {
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  padding: 6px var(--mantine-spacing-sm);
+  border-top: 1px solid var(--mantine-color-gray-3);
+
+  .human-resources[data-mantine-color-scheme='dark'] & {
+    border-top-color: var(--mantine-color-dark-4);
+  }
+
+  & > .mantine-Breadcrumbs-breadcrumb {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    /* Room inside the clip (2026-10-09, the user's find): with `overflow: hidden` and Mantine's `line-height: 1`, the
+       last pixel of the text (descenders, the hover underline) was cut off. Taken back outside, so the line keeps its
+       height. */
+    padding-block: 2px;
+    margin-block: -2px;
+  }
+
+  & > .human-resources__home,
+  & > .mantine-Breadcrumbs-separator {
+    flex: none;
+  }
+}
+
+/* The app icon at the start of the app header: only an icon, not a link (the first crumb leads home). */
+.human-resources__app-icon {
+  display: inline-flex;
+  border-radius: var(--mantine-radius-sm);
+}
+
+/* The first crumb: a house icon and "Home", a link to the start page; on the start page the current page. */
+.human-resources__home {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--mantine-font-size-sm);
+
+  &[aria-current] {
+    color: var(--mantine-color-text);
+    font-weight: 500;
+  }
+}
+
+/* The user menu at the end of the app header: the avatar and the title. */
+.human-resources__user {
+  padding: 2px 6px 2px 2px;
+  border-radius: var(--mantine-radius-xl);
+
+  &:hover {
+    background: var(--mantine-color-default-hover);
+  }
+}
+
+/* The tabs' room: the user menu is next to them, and the German labels are longer. */
+@container human-resources-app-header (width < 64rem) {
+  .human-resources__modules {
+    display: none;
+  }
+
+  .human-resources__module-menu {
+    display: block;
+  }
+}
+
+@container human-resources-app-header (width < 40rem) {
+  .human-resources__history,
+  .human-resources__user-title {
+    display: none;
+  }
+}
+
+/* The header line of a page and the tabs: not selectable, like the toolbars of the tables. */
+.human-resources__page-header,
+.human-resources__tabs {
+  user-select: none;
+}
+
+/* A card of the overview that is a link: its border in the accent on hover. */
+.human-resources__card {
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 120ms;
+
+  &[data-link]:hover {
+    border-color: var(--mantine-primary-color-filled);
+  }
+}
+
+/* The name of the page a card opens, at its top right: in the accent while the card is hovered. */
+.human-resources__card-target {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 2px;
+  color: var(--mantine-color-dimmed);
+  white-space: nowrap;
+  transition: color 120ms;
+
+  .human-resources__card[data-link]:hover & {
+    color: var(--mantine-primary-color-filled);
+  }
+}
+
+.human-resources__figures {
+  font-variant-numeric: tabular-nums;
+}
+
+/* A candidate's rating: five stars, the given ones in the accent. */
+.human-resources__rating {
+  display: inline-flex;
+  gap: 1px;
+  color: var(--mantine-color-default-border);
+  line-height: 1;
+
+  & > [data-on] {
+    color: var(--mantine-primary-color-filled);
+  }
+}
+
+/* The org chart: the departments from the top down, a card each, joined by lines (nested lists: a line up from each
+   card to the bar over its siblings, a line down from a card with departments below it). It scrolls sideways. */
+.human-resources__org-scroll {
+  overflow: auto;
+  overscroll-behavior-x: none;
+  padding: var(--mantine-spacing-xs) 0 var(--mantine-spacing-md);
+}
+
+.human-resources__org {
+  display: flex;
+  justify-content: center;
+  min-width: max-content;
+  margin: 0;
+  padding: 0;
+
+  & ul {
+    display: flex;
+    justify-content: center;
+    margin: 0;
+    padding: 20px 0 0;
+    position: relative;
+  }
+
+  /* The line down from a card to the bar over the departments below it. */
+  & ul::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    height: 20px;
+    border-left: 1px solid var(--mantine-color-default-border);
+  }
+
+  & li {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 6px 0;
+    list-style: none;
+  }
+
+  /* The bar over the siblings (each draws its half on either side) and the line up to the card (the left border of
+     the right half). */
+  & li::before,
+  & li::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 50%;
+    width: 50%;
+    height: 20px;
+    border-top: 1px solid var(--mantine-color-default-border);
+  }
+
+  & li::after {
+    right: auto;
+    left: 50%;
+    border-left: 1px solid var(--mantine-color-default-border);
+  }
+
+  /* No bar beyond the first and the last sibling: the last one's line up is the right border of its left half. */
+  & li:first-child::before,
+  & li:last-child::after {
+    border: none;
+  }
+
+  & li:last-child::before {
+    border-right: 1px solid var(--mantine-color-default-border);
+    border-top-right-radius: var(--mantine-radius-sm);
+  }
+
+  & li:first-child::after {
+    border-top-left-radius: var(--mantine-radius-sm);
+  }
+
+  /* A single one, and the top: no bar (the single one hangs on the line down of the card above it). */
+  & li:only-child,
+  & > li {
+    padding-top: 0;
+  }
+
+  & li:only-child::before,
+  & li:only-child::after,
+  & > li::before,
+  & > li::after {
+    display: none;
+  }
+}
+
+.human-resources__org-card {
+  width: 13rem;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  border: 1px solid var(--mantine-color-default-border);
+  border-top: 3px solid var(--mantine-primary-color-filled);
+  border-radius: var(--mantine-radius-sm);
+  background: var(--mantine-color-body);
+  text-align: start;
+}
+
+/* The pipeline board: a column per stage, side by side (scrolling sideways when narrow); a column the dragged card is
+   over in the accent. The rejected candidates' column dimmed. */
+.human-resources__board {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(12.5rem, 1fr));
+  gap: var(--mantine-spacing-sm);
+  overflow-x: auto;
+  /* Sideways only: no bounce, and no back or forward swipe of the browser; the page still scrolls up and down. */
+  overscroll-behavior-x: none;
+  padding-bottom: var(--mantine-spacing-xs);
+}
+
+.human-resources__board-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-xs);
+  min-height: 12rem;
+  padding: var(--mantine-spacing-xs);
+  border: 1px dashed transparent;
+  border-radius: var(--mantine-radius-sm);
+  background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
+  transition: border-color 120ms, background-color 120ms;
+
+  &[data-over] {
+    border-color: var(--mantine-primary-color-filled);
+    background: var(--mantine-primary-color-light);
+  }
+
+  &[data-stage='rejected'] .human-resources__candidate {
+    opacity: 0.7;
+  }
+}
+
+.human-resources__board-head {
+  padding: 2px 4px;
+  user-select: none;
+}
+
+.human-resources__candidate {
+  padding: var(--mantine-spacing-xs);
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-sm);
+  background: var(--mantine-color-body);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
+  cursor: grab;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  &[data-hired] {
+    border-left: 3px solid var(--mantine-primary-color-filled);
+    cursor: default;
+  }
+}
+
+/* A task of a checklist: a done one struck through and dimmed; its remove button only on hover or focus. */
+.human-resources__task {
+  padding: 4px 6px;
+  border-radius: var(--mantine-radius-sm);
+
+  &:hover {
+    background: var(--mantine-color-default-hover);
+  }
+
+  &[data-done] .mantine-Checkbox-label {
+    color: var(--mantine-color-dimmed);
+    text-decoration: line-through;
+  }
+
+  & .human-resources__task-remove {
+    opacity: 0;
+  }
+
+  &:hover .human-resources__task-remove,
+  & .human-resources__task-remove:focus-visible {
+    opacity: 1;
+  }
+}
+
+/* The message of an invalid field: a popover below it (`FieldError`, like the Time Tracker's). The look is the Board
+   Manager's badge: the body color with a border and text in the danger color, a shadow, an arrow pointing at the field
+   in front (down when the popover is above it). Only the focused field shows it (at most one on screen). The red
+   frame of an invalid field stays Mantine's. For every Mantine input (the shared classes: `InputWrapper`, `Input`). */
+
+/* Mantine reserves room under the input for the message; the popover is out of the flow, so that would only push the
+   next field down. */
+.human-resources .mantine-InputWrapper-root .mantine-Input-wrapper {
+  margin-bottom: 0;
+}
+
+/* Mantine's error element only holds the popover (and keeps its id for the input's `aria-describedby`): no box, and
+   the message's plain text (for a place without a field, see `FieldError`) hidden. */
+.human-resources .mantine-InputWrapper-error {
+  position: absolute;
+  inline-size: 0;
+  block-size: 0;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+
+  & .human-resources__field-error-text {
+    display: none;
+  }
+}
+
+/* The popover: placed by `FieldError` (`top`, `left`, inline); the browser's own look of a popover undone. No
+   `display` here: a closed popover is hidden by it. */
+.human-resources__field-error {
+  inset: auto;
+  max-inline-size: min(24rem, calc(100vw - 16px));
+  margin: 0;
+  overflow: visible;
+}
+
+.human-resources__field-error,
+.human-resources .human-resources__upload::part(error) {
+  padding: 0.35em 0.65em;
+  border-radius: 0.25em;
+  /* White on the error color (2026-10-10, the user's wish; the error color on the body's, with a light red border,
+     before). */
+  border: 1px solid var(--mantine-color-error);
+  background: var(--mantine-color-error);
+  color: var(--mantine-color-white);
+  font-family: var(--mantine-font-family);
+  font-size: calc(var(--mantine-font-size-xs) + 1px);
+  font-weight: 500;
+  line-height: 1.35;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
+}
+
+/* The arrow pointing at the field: a mask in the text's color (Tabler's `arrow-up`, stroked), turned when the popover
+   is above the field. Decoration only. Not nested (`&` is an `:is()`, which cannot hold `::part()`). */
+.human-resources__field-error::before,
+.human-resources .human-resources__upload::part(error)::before {
+  content: '';
+  display: inline-block;
+  inline-size: 1.05em;
+  block-size: 1.05em;
+  margin-inline-end: 0.5em;
+  vertical-align: -0.2em;
+  background-color: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 5v14M18 11l-6-6-6 6'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+.human-resources__field-error[data-side='top']::before {
+  rotate: 180deg;
+}
+
+/* Fades in (from a little closer to the field), cuts out. */
+.human-resources__field-error:popover-open {
+  opacity: 1;
+  translate: 0 0;
+  transition: opacity 140ms ease-out, translate 140ms ease-out;
+
+  @starting-style {
+    opacity: 0;
+    translate: 0 -0.25em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .human-resources__field-error:popover-open {
+    transition: none;
+  }
+}
+
+/* The file upload (`DocumentUpload`, the documents of an employee): its error is a part of its shadow DOM, which
+   cannot be a popover; the same look, as a badge below its frame (the host is its positioned ancestor), always shown
+   (the part is `hidden` without a message). */
+.human-resources .human-resources__upload {
+  position: relative;
+}
+
+.human-resources .human-resources__upload::part(error) {
+  position: absolute;
+  z-index: 10;
+  top: 100%;
+  inset-inline-start: 0;
+  max-width: 100%;
+  width: max-content;
+  margin-block-start: 0.2em;
+}

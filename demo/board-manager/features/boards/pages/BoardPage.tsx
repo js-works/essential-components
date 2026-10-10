@@ -6,9 +6,9 @@ import { useShallow } from 'zustand/react/shallow';
 import {
   dateRangeColumnFilter,
   selectColumnFilter,
-  useDataNavigatorController,
-} from '../../../../../packages/data-navigator/src/react';
-import type { DataNavigatorComponent } from '../../../../../packages/data-navigator/src/react';
+  useDataTableController,
+} from '../../../../../packages/data-table/src/react';
+import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
 import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react';
 import { ROLES } from '../../../domain';
 import {
@@ -27,9 +27,9 @@ import { useTranslate } from '../../../shared/lib/i18n';
 import type { Translate } from '../../../shared/lib/i18n';
 import {
   appIcons,
+  DataTable,
   formatDate,
   formatDateTime,
-  Navigator,
   organizationFilter,
   PAGE_SIZE_OPTIONS,
   PageHeader,
@@ -151,7 +151,7 @@ function BoardOverview({ boardId }: { boardId: string }): ReactElement | null {
 }
 
 // The columns, with their headers in the current language.
-const columnsOf = (t: Translate): readonly DataNavigatorComponent.Column<MemberRow>[] => [
+const columnsOf = (t: Translate): readonly DataTableComponent.Column<MemberRow>[] => [
   { key: 'name', header: t('boards.columns.person'), width: 2.5, sortable: true, filter: personFilter },
   {
     key: 'role',
@@ -188,12 +188,12 @@ const columnsOf = (t: Translate): readonly DataNavigatorComponent.Column<MemberR
 function MembersTable({ boardId }: { boardId: string }): ReactElement {
   const t = useTranslate();
   const columns = useMemo(() => columnsOf(t), [t]);
-  const nav = useDataNavigatorController<MemberRow>();
+  const nav = useDataTableController<MemberRow>();
   const dialogs = useDialogs();
   const toasts = useToast();
   const source = useMemo(() => fetchBoardMembers(boardId), [boardId]);
 
-  const actions = useMemo<readonly DataNavigatorComponent.Action<MemberRow>[]>(() => {
+  const actions = useMemo<readonly DataTableComponent.Action<MemberRow>[]>(() => {
     const add = async () => {
       const state = db.getState();
       const members = new Set(
@@ -258,7 +258,14 @@ function MembersTable({ boardId }: { boardId: string }): ReactElement {
     };
 
     return [
-      { type: 'general', key: 'add', label: t('boards.addMember'), icon: appIcons.add, onClick: () => void add() },
+      {
+        type: 'general',
+        key: 'add',
+        label: t('boards.addMember'),
+        icon: appIcons.add,
+        variant: 'primary',
+        onClick: () => void add(),
+      },
       {
         type: 'singleRow',
         key: 'edit',
@@ -279,7 +286,7 @@ function MembersTable({ boardId }: { boardId: string }): ReactElement {
   }, [t, nav, dialogs, toasts, boardId]);
 
   return (
-    <Navigator
+    <DataTable
       controller={nav}
       title={t('modules.members')}
       density="compact"
@@ -289,7 +296,6 @@ function MembersTable({ boardId }: { boardId: string }): ReactElement {
       rowKey="id"
       columns={columns}
       actions={actions}
-      pageSize={10}
       pageSizeOptions={PAGE_SIZE_OPTIONS}
     />
   );

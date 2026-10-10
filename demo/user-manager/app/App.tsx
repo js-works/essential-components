@@ -1,7 +1,7 @@
 import { ActionIcon, Anchor, Breadcrumbs, Group, Menu, Text, ThemeIcon, Tooltip, UnstyledButton } from '@mantine/core';
 import { useEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
-import { createMemoryRouter, Link, Outlet, useLocation, useNavigate, useNavigationType } from 'react-router';
+import { createMemoryRouter, Link, NavLink, Outlet, useLocation, useNavigate, useNavigationType } from 'react-router';
 import type { RouteObject } from 'react-router';
 import type { AccessData } from '../domain';
 import { AccessPage, CheckAccessPage } from '../features/access';
@@ -11,11 +11,12 @@ import { useAccessData } from '../features/iam';
 import { PermissionsPage, RolePage, RolesPage } from '../features/roles';
 import { UserPage, UsersPage } from '../features/users';
 import { appIcons } from '../shared/ui/icons';
+import { mirrorInHash, pathFromHash } from './hashHistory';
 
 export { createAppRouter };
 
-// The app: a top bar (the app icon, the title with the menu of the modules, the breadcrumb, Back and Forward), then the
-// page of the route. Like the Board Manager.
+// The app: an app header (the app icon, the title, the modules as tabs, Back and Forward; the breadcrumb below them), then
+// the page of the route. Like the Board Manager.
 
 const MODULES = [
   { path: '/users', label: 'Users', icon: appIcons.users },
@@ -70,13 +71,13 @@ function crumbsOf(data: AccessData | undefined, path: string): { to: string; lab
 }
 
 function pageName(data: AccessData, path: string): string {
-  return path === '/' ? 'Main' : crumbsOf(data, path).at(-1)?.label ?? path;
+  return path === '/' ? 'Overview' : crumbsOf(data, path).at(-1)?.label ?? path;
 }
 
 function Layout(): ReactElement {
   return (
     <div className="user-manager__app">
-      <TopBar />
+      <AppHeader />
       <main className="user-manager__main">
         <Outlet />
       </main>
@@ -84,8 +85,10 @@ function Layout(): ReactElement {
   );
 }
 
-// The app icon is only an icon, not a link (the first crumb, "Home", leads to the start page).
-function TopBar(): ReactElement {
+// Two lines (2026-10-08, the Human Resources' trial, rolled out): the app icon, the title, the modules as tabs (a menu
+// when the bar is narrow), Back and Forward; below them the breadcrumb. The app icon is only an icon, not a link (the
+// first crumb, "Home", leads to the start page).
+function AppHeader(): ReactElement {
   const appIcon = (
     <ThemeIcon variant="filled" size="lg" radius="sm" aria-hidden>
       {appIcons.app}
@@ -93,36 +96,62 @@ function TopBar(): ReactElement {
   );
 
   return (
-    <header className="user-manager__top-bar">
-      <Group gap="xs" wrap="nowrap" flex="none">
-        <span className="user-manager__app-icon">{appIcon}</span>
-        <Menu position="bottom-start" shadow="md" width={200}>
-          <Menu.Target>
-            <UnstyledButton className="user-manager__title" aria-label="User Manager: modules">
-              <Group gap={4} wrap="nowrap">
-                <Text fw={700} size="md">User Manager</Text>
-                {appIcons.chevronDown}
-              </Group>
-            </UnstyledButton>
-          </Menu.Target>
-          <Menu.Dropdown>
-            <Menu.Item component={Link} to="/" leftSection={appIcons.home}>Main</Menu.Item>
-            <Menu.Divider />
-            {MODULES.map((module) => (
-              <Menu.Item key={module.path} component={Link} to={module.path} leftSection={module.icon}>
-                {module.label}
-              </Menu.Item>
-            ))}
-          </Menu.Dropdown>
-        </Menu>
-      </Group>
+    <header className="user-manager__app-header">
+      <div className="user-manager__app-header-row">
+        <Group gap="xs" wrap="nowrap" flex="none">
+          <span className="user-manager__app-icon">{appIcon}</span>
+          <Text fw={700} size="md" className="user-manager__title">User Manager</Text>
+        </Group>
+        <ModuleTabs />
+        <ModuleMenu />
+        <HistoryButtons />
+      </div>
       <Crumbs />
-      <HistoryButtons />
     </header>
   );
 }
 
-// Main (a neutral icon, and the text as the link), then the module and the user, group or role; the last crumb is the
+// The start page and the modules, as tabs: the one of the current page is marked (also on its records' pages).
+function ModuleTabs(): ReactElement {
+  return (
+    <nav className="user-manager__modules" aria-label="User Manager: modules">
+      <NavLink to="/" end className="user-manager__module">Overview</NavLink>
+      {MODULES.map((module) => (
+        <NavLink key={module.path} to={module.path} className="user-manager__module">{module.label}</NavLink>
+      ))}
+    </nav>
+  );
+}
+
+// The tabs as a menu, while the app header is too narrow for them (CSS): the current module and a chevron.
+function ModuleMenu(): ReactElement {
+  const { pathname } = useLocation();
+  const current = MODULES.find((module) => pathname === module.path || pathname.startsWith(`${module.path}/`));
+
+  return (
+    <Menu position="bottom-start" shadow="md" width={200}>
+      <Menu.Target>
+        <UnstyledButton className="user-manager__module-menu" aria-label="User Manager: modules">
+          <Group gap={4} wrap="nowrap">
+            <Text size="sm" fw={500}>{current?.label ?? 'Overview'}</Text>
+            {appIcons.chevronDown}
+          </Group>
+        </UnstyledButton>
+      </Menu.Target>
+      <Menu.Dropdown>
+        <Menu.Item component={Link} to="/" leftSection={appIcons.home}>Overview</Menu.Item>
+        <Menu.Divider />
+        {MODULES.map((module) => (
+          <Menu.Item key={module.path} component={Link} to={module.path} leftSection={module.icon}>
+            {module.label}
+          </Menu.Item>
+        ))}
+      </Menu.Dropdown>
+    </Menu>
+  );
+}
+
+// "Home" (a house icon, and the text as the link: the start page, "Overview"), then the module and the user, group or role; the last crumb is the
 // current page (not a link).
 function Crumbs(): ReactElement | null {
   const { pathname } = useLocation();
@@ -156,7 +185,7 @@ function Crumbs(): ReactElement | null {
   );
 }
 
-// Back and Forward through the app's own history (the routes live in memory; the hash only mirrors them), with
+// Back and Forward through the app's own history (the routes live in memory; the browser's history follows it), with
 // tooltips that say where they go ("Back to Users").
 function HistoryButtons(): ReactElement {
   const navigate = useNavigate();
@@ -237,58 +266,19 @@ function useHistoryPosition(): { back: string | undefined; forward: string | und
 }
 
 // The routes live in memory and are mirrored in the URL hash after a prefix: `#user-manager/users/u3`, so a
-// reload (or a shared link) opens the same page. A hash with another start is left alone. The route is written only
-// while the element is shown (not inside `[hidden]`), and again when it is shown (a cockpit's app or a tab panel).
-function pathFromHash(prefix: string): string | undefined {
-  const { hash } = location;
-
-  return hash === prefix ? '/' : hash.startsWith(`${prefix}/`) ? hash.slice(prefix.length) : undefined;
-}
-
+// reload (or a shared link) opens the same page; the browser's Back and Forward step through them (`hashHistory.ts`).
 function createAppRouter(
   element: HTMLElement,
   hashPrefix: string,
 ): { router: ReturnType<typeof createMemoryRouter>; dispose: () => void } {
   const prefix = `#${hashPrefix}`;
   const router = createMemoryRouter(routes, { initialEntries: [pathFromHash(prefix) ?? '/'] });
-
-  const writeHash = () => {
-    if (element.closest('[hidden]') !== null) {
-      return;
-    }
-
-    const path = router.state.location.pathname;
-    const hash = path === '/' ? prefix : `${prefix}${path}`;
-
-    if (location.hash !== hash) {
-      history.replaceState(null, '', `${location.pathname}${location.search}${hash}`);
-    }
-  };
-
-  const readHash = () => {
-    const path = pathFromHash(prefix);
-
-    if (path !== undefined && path !== router.state.location.pathname) {
-      void router.navigate(path);
-    }
-  };
-
-  const unsubscribe = router.subscribe(writeHash);
-  const observer = new MutationObserver(writeHash);
-  const shown = element.closest('.ui-tabs__panel, [data-hash-segment]');
-
-  if (shown !== null) {
-    observer.observe(shown, { attributes: true, attributeFilter: ['hidden'] });
-  }
-
-  window.addEventListener('hashchange', readHash);
+  const stopMirror = mirrorInHash(router, element, prefix);
 
   return {
     router,
     dispose: () => {
-      unsubscribe();
-      observer.disconnect();
-      window.removeEventListener('hashchange', readHash);
+      stopMirror();
       router.dispose();
     },
   };

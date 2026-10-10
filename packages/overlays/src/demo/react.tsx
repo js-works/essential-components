@@ -208,10 +208,12 @@ const useDialogForm = () => use(FormContext)!;
 // One line per field. Everything else - label, asterisk, error message, input type,
 // aria-invalid, aria-describedby, the red border - comes from the model by way of
 // enhanceGetInputProps, or from Mantine.
+// The wrapper is the scope of react.css (a BEM block): without it, its rules reached every
+// Mantine field of the page the demo is shown in.
 function Fields() {
   const form = useDialogForm();
   return (
-    <>
+    <div className="overlays-react-demo-fields">
       <TextInput {...form.getInputProps("username")} />
       <TextInput {...form.getInputProps("fullName")} />
       <TextInput {...form.getInputProps("email")} />
@@ -219,7 +221,7 @@ function Fields() {
           in the top layer because of wrapContent below - not because of anything here. */}
       <Select {...form.getInputProps("gender")} />
       <DateInput {...form.getInputProps("born")} />
-    </>
+    </div>
   );
 }
 
@@ -330,7 +332,7 @@ function DialogPopups({ children }: { children: ReactNode }) {
   );
 }
 
-// The library's three button roles, mapped onto Mantine's.
+// The library's four button looks, mapped onto Mantine's.
 const MANTINE_BUTTON: Record<
   ActionButtonType,
   { variant?: string; color?: string }
@@ -338,6 +340,7 @@ const MANTINE_BUTTON: Record<
   primary: {},
   secondary: { variant: "default" },
   danger: { color: "red" },
+  link: { variant: "subtle" },
 };
 
 // Every dialog this app opens is built from Mantine components. A render override is

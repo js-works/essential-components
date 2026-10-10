@@ -115,9 +115,13 @@ function actionButtons(props: DialogProps<TemplateResult>): unknown {
   }
   return props.buttons.map(
     (button, index) => html`
-      <span slot="action" data-action-index=${index}>
+      <span
+        slot=${button.separate ? "action-separate" : "action"}
+        data-action-index=${index}
+      >
         ${render({
           role: button.role,
+          action: button.action,
           text: button.text,
           variant: button.type,
           loading: button.loading,

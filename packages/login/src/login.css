@@ -1,0 +1,171 @@
+/* The login screen: it fills its element (at least the window's height), the card on a subtle background. Mantine's
+   variables (set by the MantineProvider above it). The card (with the hint below it, `.login__column`) a bit above
+   the middle (2026-10-08, the user's wish, like the overlays' dialogs): three rows, the free space split 40/60 above and
+   below it (2fr, 3fr), at least some room above and below. The cost: the card moves by 40% of a change of its height
+   (another view, an error). It hung from the top before (`clamp(1.5rem, 14vh, 7rem)`, 2026-10-04), so it never moved. */
+
+.login__screen {
+  display: grid;
+  grid-template-rows: minmax(var(--mantine-spacing-xl), 2fr) auto minmax(var(--mantine-spacing-md), 3fr);
+  justify-items: center;
+  box-sizing: border-box;
+  min-height: 100dvh;
+  padding: env(safe-area-inset-top) max(var(--mantine-spacing-md), env(safe-area-inset-right))
+    env(safe-area-inset-bottom) max(var(--mantine-spacing-md), env(safe-area-inset-left));
+  background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
+}
+
+.login__column {
+  display: grid;
+  grid-row: 2;
+  justify-items: center;
+  gap: var(--mantine-spacing-md);
+}
+
+/* The card's frame is ours (not Paper's props), so the small screens below can take it away. */
+/* The screen's texts are not selectable (like the cockpit's frame); the inputs are (in Safari, a field with none cannot be
+   typed into at all). */
+.login__screen {
+  -webkit-user-select: none;
+  user-select: none;
+
+  input,
+  textarea {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+}
+
+.login__card {
+  width: min(30rem, calc(100vw - 2 * var(--mantine-spacing-md)));
+  box-sizing: border-box;
+  padding: var(--mantine-spacing-xl);
+  border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+  border-radius: var(--mantine-radius-md);
+  box-shadow: var(--mantine-shadow-sm);
+}
+
+.login__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+}
+
+.login__logo {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  color: var(--mantine-primary-color-filled);
+
+  svg {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+}
+
+/* The app's name is the small line on top; the view's heading leads. */
+.login__title {
+  font-size: var(--mantine-font-size-md);
+  line-height: 1.2;
+}
+
+.login__heading {
+  font-size: var(--mantine-font-size-xl);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+/* Below a line: the way to the other views, centered, the same place and style in every view. */
+.login__footer {
+  text-align: center;
+}
+
+/* "Forgot password?": under the password input, at its right end. */
+.login__forgot {
+  display: block;
+  margin: var(--mantine-spacing-xs) 0 0 auto;
+}
+
+.login__provider-icon {
+  display: grid;
+  place-items: center;
+
+  svg {
+    width: 1.125rem;
+    height: 1.125rem;
+  }
+}
+
+.login__hint {
+  text-align: center;
+}
+
+/* Small screens (2026-10-04).
+   - Short (a phone in landscape, a small laptop window): less room above and inside the card, so the form is more
+     of it in view; it scrolls if it still does not fit.
+   - Narrow (a phone): the card is the whole page, edge to edge, without its frame: the page's background, no border,
+     no shadow, no rounded corners.
+   - Touch (a phone, a tablet): bigger targets (inputs and buttons 44px, the link buttons with room above and below),
+     and the inputs' text 16px: iOS zooms into a focused input with a smaller one. */
+
+@media (max-height: 40rem) {
+  .login__screen {
+    grid-template-rows: minmax(var(--mantine-spacing-md), 2fr) auto minmax(var(--mantine-spacing-md), 3fr);
+  }
+
+  .login__card {
+    padding: var(--mantine-spacing-lg);
+  }
+}
+
+@media (max-width: 30rem) {
+  /* Here the card hangs from the top, edge to edge (not a bit above the middle: a card without a frame would look lost
+     there). One column as wide as the screen: with `place-content: center` the column was as wide as its content, so
+     the card was narrower than the screen, and a different width in each view. */
+  .login__screen {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    align-content: start;
+    justify-items: stretch;
+    padding-top: 0;
+    padding-inline: 0;
+    background: var(--mantine-color-body);
+  }
+
+  .login__column {
+    grid-row: auto;
+    justify-items: stretch;
+    gap: 0;
+  }
+
+  .login__card {
+    width: 100%;
+    padding: var(--mantine-spacing-xl) max(var(--mantine-spacing-lg), env(safe-area-inset-left)) var(--mantine-spacing-lg);
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .login__hint {
+    padding: 0 var(--mantine-spacing-lg) var(--mantine-spacing-md);
+  }
+}
+
+@media (max-width: 30rem), (pointer: coarse) {
+  .login__card {
+    .mantine-Input-input {
+      min-height: 2.75rem;
+      font-size: 1rem;
+    }
+
+    .mantine-Button-root {
+      height: 2.75rem;
+    }
+
+    button.mantine-Anchor-root {
+      padding-block: 0.5rem;
+    }
+  }
+}

@@ -1,4 +1,4 @@
-import type { DataNavigatorComponent } from '../../../../packages/data-navigator/src/react';
+import type { DataTableComponent } from '../../../../packages/data-table/src/react';
 import type { Person } from '../../domain';
 import { getBoard, organizationOf } from './lookups';
 import { oneOf, runQuery } from './query';
@@ -31,7 +31,7 @@ async function suggestPeople(
 }
 
 // All people, or those of one organization (`organizationId`).
-function fetchPeople(organizationId?: string): DataNavigatorComponent.Source<PersonRow> {
+function fetchPeople(organizationId?: string): DataTableComponent.Source<PersonRow> {
   return async (query, signal) => {
     await wait(LOADING_TIME, signal);
 

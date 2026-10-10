@@ -41,7 +41,32 @@ export type DialogSurface = "dialog" | "drawer";
  */
 export type DialogWidth = "default" | "wide" | "extraWide" | "full";
 
-export type ActionButtonType = "primary" | "secondary" | "danger";
+/** A button's look. `"link"` only for an action (see {@link DialogAction.variant}). */
+export type ActionButtonType = "primary" | "secondary" | "danger" | "link";
+
+/**
+ * A button of its own, beside the built-in ones (see {@link DialogConfig.actions}). Like
+ * them it ends the dialog: the result's `action` is its id.
+ */
+export interface DialogAction {
+  text: string;
+  /**
+   * Default `"secondary"`: with the built-in buttons. `"danger"` (e.g. "Delete" in an edit
+   * form) and `"link"` (a text-only button, e.g. "Not now") stand separate, on the other
+   * side of the footer.
+   */
+  variant?: "secondary" | "danger" | "link";
+  /**
+   * Form dialogs only. Default `true`: it submits like the confirm button (native
+   * validation, the {@link FormValidator}). `false` skips that; the result carries the
+   * form's data either way. A form that confirms itself (`<Form confirm>`) is not run for
+   * an action: the caller handles it from the result.
+   */
+  validate?: boolean;
+}
+
+/** The buttons of its own a dialog adds, by id: the text, or a {@link DialogAction}. */
+export type DialogActions<A extends string> = { [K in A]: string | DialogAction };
 
 /**
  * Which button this is, semantically. Also the key a caller overrides its label under
@@ -53,7 +78,10 @@ export type ButtonRole = "ok" | "confirm" | "decline" | "cancel";
 
 /** Descriptor passed to a custom action-button renderer. */
 export interface ActionButtonRender {
-  role: ButtonRole;
+  /** A built-in button's role, or `"action"` for one of {@link DialogConfig.actions}. */
+  role: ButtonRole | "action";
+  /** The id of an action (`role: "action"`). */
+  action?: string;
   text: string;
   variant: ActionButtonType;
   loading: boolean;
@@ -86,6 +114,12 @@ export interface MaximizeButtonRender {
 export interface NoteRender {
   title?: string;
   message: string;
+  /**
+   * `"error"`: a {@link FormAttempt.reject}. `"question"`: a question of
+   * {@link FormAttempt.ask}, while the buttons are its answers (with `critical`
+   * an `"error"` too).
+   */
+  tone: "error" | "question";
 }
 
 /**
@@ -202,7 +236,21 @@ export interface DialogViewConfig<C extends object> {
  * A dialog's view plus the wiring that is fixed for its lifetime. Everything added here
  * (rather than to {@link DialogViewConfig}) is settable only when the dialog opens.
  */
-export interface DialogConfig<C extends object> extends DialogViewConfig<C> {
+export interface DialogConfig<C extends object, A extends string = never>
+  extends DialogViewConfig<C> {
+  /**
+   * Buttons of its own, beside the built-in ones (whose labels `buttons` changes), by id:
+   *
+   *   actions: { draft: "Save draft", delete: { text: "Delete", variant: "danger" } }
+   *
+   * Each ends the dialog like the built-in ones, and its id is the result's `action`
+   * (typed: `"confirm" | "draft" | "delete"`). In the order given, after the primary
+   * button; `"danger"` and `"link"` ones separate, on the other side of the footer. Enter
+   * never triggers one.
+   *
+   * Behavioural like `surface`: fixed once the dialog is open.
+   */
+  actions?: DialogActions<A>;
   /**
    * Where the dialog is shown. Default `"dialog"`, the centered box. `"drawer"` is a
    * full-height panel sliding in from the inline-end edge, for content too wide or too
@@ -319,7 +367,8 @@ export type FormConfirmResult = { ok: true } | { ok: false; error?: string };
  */
 export type FormConfirm = () => FormConfirmResult | Promise<FormConfirmResult>;
 
-export interface FormDialogConfig<C extends object> extends DialogConfig<C> {
+export interface FormDialogConfig<C extends object, A extends string = never>
+  extends DialogConfig<C, A> {
   validator?: FormValidator;
   /**
    * Whether the browser validates the form itself. Default `true`: constraint attributes
@@ -341,23 +390,54 @@ export interface FormDialogConfig<C extends object> extends DialogConfig<C> {
    * click and reflected on the form element, and is fixed once the dialog is open.
    */
   nativeValidation?: boolean;
+  /**
+   * Whether Cancel, Escape and the close button only *ask* to close. Default `false`: they
+   * close the dialog at once. With `true`, while the handle is iterated (`for await`), each
+   * of them is handed to the loop as a {@link FormCloseAttempt} instead, and the caller
+   * decides: `accept()` closes the dialog as canceled, `reject()` keeps it open with
+   * everything typed. The case it exists for is unsaved changes ("Discard your changes?").
+   *
+   * Only the caller knows whether something would be lost. Without `guardClose` (or without
+   * a loop) the dialog asks by itself only when its content says it has changes (React:
+   * `<Form dirty>`); with it the loop decides. An abort (`abort()`, a signal, a disposed
+   * scope) never asks.
+   *
+   * Behavioural, so it is not part of {@link DialogViewConfig}: fixed once the dialog is
+   * open. Typed: with `guardClose: true` the loop gets `FormAttempt | FormCloseAttempt`.
+   */
+  guardClose?: boolean;
 }
 
 // Not exported: the ten methods exist so DialogScope and DialogsController can
 // share them. Code that wants to accept either writes the union of those two.
+//
+// `A` is the ids of the dialog's own actions (see DialogConfig.actions), inferred from
+// its keys; without `actions` it is `never`, and the results are as without them.
 interface DialogMethods<C extends object> {
-  info(config: DialogConfig<C>): DialogHandle<MessageDialogResult, C>;
-  success(config: DialogConfig<C>): DialogHandle<MessageDialogResult, C>;
-  warn(config: DialogConfig<C>): DialogHandle<MessageDialogResult, C>;
-  error(config: DialogConfig<C>): DialogHandle<MessageDialogResult, C>;
-  confirm(config: DialogConfig<C>): DialogHandle<ConfirmDialogResult, C>;
-  confirmCritical(
-    config: DialogConfig<C>,
-  ): DialogHandle<ConfirmDialogResult, C>;
-  decide(config: DialogConfig<C>): DialogHandle<DecideDialogResult, C>;
-  decideCritical(
-    config: DialogConfig<C>,
-  ): DialogHandle<DecideDialogResult, C>;
+  info<A extends string = never>(
+    config: DialogConfig<C, A>,
+  ): DialogHandle<MessageDialogResult<A>, C>;
+  success<A extends string = never>(
+    config: DialogConfig<C, A>,
+  ): DialogHandle<MessageDialogResult<A>, C>;
+  warn<A extends string = never>(
+    config: DialogConfig<C, A>,
+  ): DialogHandle<MessageDialogResult<A>, C>;
+  error<A extends string = never>(
+    config: DialogConfig<C, A>,
+  ): DialogHandle<MessageDialogResult<A>, C>;
+  confirm<A extends string = never>(
+    config: DialogConfig<C, A>,
+  ): DialogHandle<ConfirmDialogResult<A>, C>;
+  confirmCritical<A extends string = never>(
+    config: DialogConfig<C, A>,
+  ): DialogHandle<ConfirmDialogResult<A>, C>;
+  decide<A extends string = never>(
+    config: DialogConfig<C, A>,
+  ): DialogHandle<DecideDialogResult<A>, C>;
+  decideCritical<A extends string = never>(
+    config: DialogConfig<C, A>,
+  ): DialogHandle<DecideDialogResult<A>, C>;
   /**
    * A form dialog. One method covers both submission styles, because
    * {@link FormDialogHandle} is awaitable *and* async-iterable:
@@ -375,11 +455,37 @@ interface DialogMethods<C extends object> {
    *
    * Awaiting without iterating auto-accepts the first valid submit, so the short form
    * needs no separate method.
+   *
+   * With {@link FormDialogConfig.guardClose}, the loop also gets the requests to close:
+   *
+   * ```ts
+   * const form = dialogs.form({ title: "Edit customer", content, guardClose: true });
+   * for await (const attempt of form) {
+   *   if (attempt.kind === "close") {
+   *     const discard = !changed || (await attempt.ask("Discard your changes?", { confirm: "Discard", critical: true }));
+   *     discard ? attempt.accept() : attempt.reject();
+   *   } else {
+   *     (await save(attempt.data)) ? attempt.accept() : attempt.reject("Name taken");
+   *   }
+   * }
+   * ```
    */
-  form(config: FormDialogConfig<C>): FormDialogHandle<C>;
+  form<A extends string = never, G extends boolean = false>(
+    config: FormDialogConfig<C, A> & { guardClose?: G },
+  ): FormDialogHandle<C, A, FormAttemptOf<G, A>>;
   /** {@link DialogMethods.form} with destructive styling and no Enter-to-confirm. */
-  formCritical(config: FormDialogConfig<C>): FormDialogHandle<C>;
+  formCritical<A extends string = never, G extends boolean = false>(
+    config: FormDialogConfig<C, A> & { guardClose?: G },
+  ): FormDialogHandle<C, A, FormAttemptOf<G, A>>;
 }
+
+/**
+ * What a form dialog's loop gets: submits only, or with `guardClose: true` (or a `boolean`
+ * that may be true) the requests to close too. Not distributed, so `boolean` gives the union.
+ */
+export type FormAttemptOf<G extends boolean, A extends string = never> = [G] extends [false]
+  ? FormAttempt<A>
+  : FormAttempt<A> | FormCloseAttempt;
 
 export interface DialogsController<C extends object> extends DialogMethods<C> {
   /**
@@ -441,20 +547,29 @@ export interface Aborted {
  * No {@link Dismissed}: these have no cancel button, and dismissing a message *is*
  * acknowledging it — so Escape and the close button resolve as `ok` like the button does.
  * The only way here without an answer is an abort.
+ *
+ * `A` in each: the ids of the dialog's own actions (see {@link DialogConfig.actions}).
  */
-export type MessageDialogResult = Answered<"ok"> | Aborted;
-export type ConfirmDialogResult = Answered<"confirm"> | Dismissed | Aborted;
-export type DecideDialogResult =
-  | Answered<"confirm" | "decline">
+export type MessageDialogResult<A extends string = never> = Answered<"ok" | A> | Aborted;
+export type ConfirmDialogResult<A extends string = never> =
+  | Answered<"confirm" | A>
   | Dismissed
   | Aborted;
-export type FormDialogResult =
-  | Answered<"confirm", FormDialogData>
+export type DecideDialogResult<A extends string = never> =
+  | Answered<"confirm" | "decline" | A>
+  | Dismissed
+  | Aborted;
+export type FormDialogResult<A extends string = never> =
+  | Answered<"confirm" | A, FormDialogData>
   | Dismissed
   | Aborted;
 
 /** One submission of a form dialog while iterating for retry (see {@link DialogMethods.form}). */
-export interface FormAttempt {
+export interface FormAttempt<A extends string = never> {
+  /** Tells it apart from a {@link FormCloseAttempt} in a loop with `guardClose`. */
+  readonly kind: "submit";
+  /** The button that submitted: the confirm button, or one of the dialog's own actions. */
+  readonly action: "confirm" | A;
   readonly data: FormDialogData;
   /**
    * Accept the submission: resolve the dialog and close it. Pass data to resolve with
@@ -466,6 +581,89 @@ export interface FormAttempt {
    * and an optional heading. A reject is always styled as an error.
    */
   reject(message: string, title?: string): void;
+  /** Ask a question in place of the dialog's content before deciding (see {@link FormAskOptions}). */
+  ask(message: string, options?: FormAskOptions): Promise<boolean>;
+  /** Ask with more than two answers (see {@link FormAskChoicesOptions}): resolves the id of the chosen one. */
+  ask<K extends string>(message: string, options: FormAskChoicesOptions<K>): Promise<K>;
+  /**
+   * Ask "Discard your changes?" in place of the content, with the dialog's own texts
+   * (translated): `askDiscard()` is `ask()` with the library's discard question, its
+   * Discard (critical) and Keep editing buttons and the title "Unsaved changes".
+   * Resolves `true` for Discard. Escape answers Discard here (a second Escape leaves the
+   * form, the usual intent), and a line below the question says so ("Press Esc to discard them.", only
+   * with a keyboard); the close button and Enter answer Keep editing.
+   */
+  askDiscard(): Promise<boolean>;
+}
+
+/**
+ * A question asked in the form dialog itself (`attempt.ask()`): for a moment the dialog
+ * shrinks to the message and two buttons in place of its content ("Discard your changes?",
+ * "Overwrite the existing file?"). No second dialog on top. Resolves `true` for the
+ * confirm button, `false` for the other one, Escape or the close button; `false` too
+ * when the dialog goes away meanwhile. The form is hidden, not removed, so nothing typed
+ * is lost.
+ */
+export interface FormAskOptions {
+  /** The confirming button's text. Default: the dialog's "OK". */
+  confirm?: string;
+  /** The other button's text. Default: the dialog's "Cancel". */
+  cancel?: string;
+  /** A critical question (e.g. "Discard"): the confirming button in the danger style. Default `false`. */
+  critical?: boolean;
+  /**
+   * The header shows this title (and a question icon) instead of the dialog's own while
+   * the question is asked. Without it only the icon is replaced.
+   */
+  title?: string;
+}
+
+/**
+ * A question with any number of answers (`attempt.ask(message, { choices })`), e.g. Save,
+ * Discard and Keep editing. The buttons are in the order of the keys, the first one in
+ * the primary style; the last one is the safe answer: it has the focus, and Escape and
+ * the close button answer it. Resolves the id of the chosen one.
+ *
+ * ```ts
+ * const answer = await attempt.ask("Save your changes?", {
+ *   choices: { save: "Save", discard: { text: "Discard", critical: true }, keep: "Keep editing" },
+ * }); // "save" | "discard" | "keep"
+ * ```
+ */
+export interface FormAskChoicesOptions<K extends string> {
+  /** The answers by id: the button's text, or `critical` for the danger style. At least two. */
+  choices: Record<K, string | { text: string; critical?: boolean }>;
+  /** The header title in place of the dialog's own (see {@link FormAskOptions.title}). */
+  title?: string;
+}
+
+/**
+ * A request to close a form dialog (Cancel, Escape or the close button), handed to the loop
+ * with {@link FormDialogConfig.guardClose}. Until it is answered, further requests to close
+ * are dropped; a submit still works.
+ */
+export interface FormCloseAttempt {
+  readonly kind: "close";
+  /** Close the dialog: it resolves `{ canceled: true, aborted: false }`. */
+  accept(): void;
+  /** Keep it open, with everything typed. Shows nothing. */
+  reject(): void;
+  /**
+   * Ask in place of the dialog's content before deciding, e.g.
+   * `(await attempt.ask("Discard your changes?", { confirm: "Discard", critical: true })) ? attempt.accept() : attempt.reject()`.
+   */
+  ask(message: string, options?: FormAskOptions): Promise<boolean>;
+  /** Ask with more than two answers (see {@link FormAskChoicesOptions}): resolves the id of the chosen one. */
+  ask<K extends string>(message: string, options: FormAskChoicesOptions<K>): Promise<K>;
+  /**
+   * Ask "Discard your changes?" in place of the content, with the dialog's own texts
+   * (translated): `askDiscard()` is `ask()` with the library's discard question, its
+   * Discard (critical) and Keep editing buttons and the title "Unsaved changes".
+   * Resolves `true` for Discard. Escape answers Discard here (a second Escape leaves the
+   * form, the usual intent), and a line below the question says so ("Press Esc to discard them.", only
+   * with a keyboard); the close button and Enter answer Keep editing.
+   */
+  askDiscard(): Promise<boolean>;
 }
 
 /**
@@ -502,11 +700,11 @@ export interface DialogHandle<R, C extends object> extends PromiseLike<R> {
  * submit attempts. `for await` it to intercept each submit and accept/reject (retry with
  * a note); await it for the final result once the loop ends.
  */
-export type FormDialogHandle<C extends object> = DialogHandle<
-  FormDialogResult,
-  C
-> &
-  AsyncIterable<FormAttempt>;
+export type FormDialogHandle<
+  C extends object,
+  A extends string = never,
+  T extends FormAttempt<string> | FormCloseAttempt = FormAttempt<A>,
+> = DialogHandle<FormDialogResult<A>, C> & AsyncIterable<T>;
 
 // -------------------------------------------------------------------
 // # Not part of the reviewed surface

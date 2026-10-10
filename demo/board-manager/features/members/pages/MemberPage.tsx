@@ -2,15 +2,15 @@ import { Anchor, Button, Group, SimpleGrid, Stack, Tabs, Text } from '@mantine/c
 import { Fragment, useMemo, useState } from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { useDataNavigatorController } from '../../../../../packages/data-navigator/src/react';
-import type { DataNavigatorComponent } from '../../../../../packages/data-navigator/src/react';
+import { useDataTableController } from '../../../../../packages/data-table/src/react';
+import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
 import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react';
 import type { Person } from '../../../domain';
 import { boardIdsOf, fetchMemberships, getOrganization, getPerson } from '../../../infra/in-memory';
 import type { MembershipRow } from '../../../infra/in-memory';
 import { useTranslate } from '../../../shared/lib/i18n';
 import type { Translate } from '../../../shared/lib/i18n';
-import { appIcons, formatDate, Navigator, PAGE_SIZE_OPTIONS, PageHeader, useDb } from '../../../shared/shared';
+import { appIcons, DataTable, formatDate, PAGE_SIZE_OPTIONS, PageHeader, useDb } from '../../../shared/shared';
 import { NotFound } from '../../../shared/ui/NotFound';
 import { MeetingsTable } from '../../meetings/components/MeetingsTable';
 import { deletePeopleFlow, editPerson } from '../components/PeopleTable';
@@ -128,7 +128,7 @@ function MemberOverview({ person }: { person: Person }): ReactElement {
   );
 }
 
-const membershipColumnsOf = (t: Translate): readonly DataNavigatorComponent.Column<MembershipRow>[] => [
+const membershipColumnsOf = (t: Translate): readonly DataTableComponent.Column<MembershipRow>[] => [
   {
     key: 'board',
     header: t('members.columns.board'),
@@ -157,10 +157,10 @@ const membershipColumnsOf = (t: Translate): readonly DataNavigatorComponent.Colu
 function MembershipsTable({ personId }: { personId: string }): ReactElement {
   const t = useTranslate();
   const columns = useMemo(() => membershipColumnsOf(t), [t]);
-  const nav = useDataNavigatorController<MembershipRow>();
+  const nav = useDataTableController<MembershipRow>();
   const navigate = useNavigate();
   const source = useMemo(() => fetchMemberships(personId), [personId]);
-  const actions = useMemo<readonly DataNavigatorComponent.Action<MembershipRow>[]>(() => [
+  const actions = useMemo<readonly DataTableComponent.Action<MembershipRow>[]>(() => [
     {
       type: 'singleRow',
       key: 'open',
@@ -173,7 +173,7 @@ function MembershipsTable({ personId }: { personId: string }): ReactElement {
   ], [t, navigate]);
 
   return (
-    <Navigator
+    <DataTable
       controller={nav}
       title={t('modules.boards')}
       subtitle={t('members.boardsSubtitle')}
@@ -183,7 +183,6 @@ function MembershipsTable({ personId }: { personId: string }): ReactElement {
       rowKey="id"
       columns={columns}
       actions={actions}
-      pageSize={10}
       pageSizeOptions={PAGE_SIZE_OPTIONS}
       footer="auto"
     />

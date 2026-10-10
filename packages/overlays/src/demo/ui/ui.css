@@ -2,8 +2,8 @@
   ui.css: a small, general-purpose design language, plain CSS without dependencies.
 
   Currently it styles the demo pages of components (the page around the component under test, never the component
-  itself). It is copied into each project that needs it, there is no package. Its behavior (tabs) is in `ui.ts`, next to
-  this file.
+  itself). The master is `packages/ui-theme` (`@local/ui-theme`; no package depends on it): it is copied into each
+  project that needs it. Its behavior (tabs) is in `ui.ts`, next to this file.
 
   Principles
   - Calm: neutral grays, one accent color (focus, links, the selected tab). Controls look as harmless as possible.

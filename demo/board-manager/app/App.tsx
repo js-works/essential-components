@@ -6,6 +6,7 @@ import {
   createMemoryRouter,
   Link,
   matchRoutes,
+  NavLink,
   Outlet,
   useLocation,
   useMatches,
@@ -27,10 +28,11 @@ import { i18n, useTranslate } from '../shared/lib/i18n';
 import type { Translate } from '../shared/lib/i18n';
 import { appIcons, useDb } from '../shared/shared';
 import { NotFound } from '../shared/ui/NotFound';
+import { mirrorInHash, pathFromHash } from './hashHistory';
 
 export { createAppRouter };
 
-// The app: a top bar (the app icon, the title with the menu of the modules, the breadcrumb) and the page of the route.
+// The app: an app header (the app icon, the title, the modules as tabs; the breadcrumb below them) and the page of the route.
 // No side navigation: the app is embedded in a page with content around it (later e.g. XWiki), where there is little
 // horizontal space.
 
@@ -138,7 +140,7 @@ const routes: RouteObject[] = [
 function Layout(): ReactElement {
   return (
     <div className="board-manager__app">
-      <TopBar />
+      <AppHeader />
       <main className="board-manager__main">
         <Outlet />
       </main>
@@ -146,8 +148,10 @@ function Layout(): ReactElement {
   );
 }
 
-// The app icon is only an icon, not a link (the first crumb, "Home", leads to the start page).
-function TopBar(): ReactElement {
+// Two lines (2026-10-08, the Human Resources' trial, rolled out): the app icon, the title, the modules as tabs (a menu
+// when the bar is narrow), Back and Forward; below them the breadcrumb. The app icon is only an icon, not a link (the
+// first crumb, "Home", leads to the start page).
+function AppHeader(): ReactElement {
   const t = useTranslate();
   const appIcon = (
     <ThemeIcon variant="filled" size="lg" radius="sm" aria-hidden>
@@ -156,41 +160,72 @@ function TopBar(): ReactElement {
   );
 
   return (
-    <header className="board-manager__top-bar">
-      <Group gap="xs" wrap="nowrap" flex="none">
-        <span className="board-manager__app-icon">{appIcon}</span>
-        <Menu position="bottom-start" shadow="md" width={200}>
-          <Menu.Target>
-            <UnstyledButton
-              className="board-manager__title"
-              aria-label={t('shell.modulesMenu', { app: t('shell.appName') })}
-            >
-              <Group gap={4} wrap="nowrap">
-                <Text fw={700} size="md">{t('shell.appName')}</Text>
-                {appIcons.chevronDown}
-              </Group>
-            </UnstyledButton>
-          </Menu.Target>
-          <Menu.Dropdown>
-            <Menu.Item component={Link} to="/" leftSection={appIcons.home}>{t('shell.overview')}</Menu.Item>
-            <Menu.Divider />
-            {MODULES.map((module) => (
-              <Menu.Item key={module.path} component={Link} to={module.path} leftSection={module.icon}>
-                {t(module.label)}
-              </Menu.Item>
-            ))}
-          </Menu.Dropdown>
-        </Menu>
-      </Group>
+    <header className="board-manager__app-header">
+      <div className="board-manager__app-header-row">
+        <Group gap="xs" wrap="nowrap" flex="none">
+          <span className="board-manager__app-icon">{appIcon}</span>
+          <Text fw={700} size="md" className="board-manager__title">{t('shell.appName')}</Text>
+        </Group>
+        <ModuleTabs />
+        <ModuleMenu />
+        <HistoryButtons />
+      </div>
       <Crumbs />
-      <HistoryButtons />
     </header>
   );
 }
 
-// Back and Forward through the app's own history, like the browser's buttons: the routes live in memory (the hash
-// only mirrors them, with `replaceState`), so the browser's buttons do not step through the app's pages. Their tooltips
-// say where they go ("Back to Boards").
+// The start page and the modules, as tabs: the one of the current page is marked (also on its records' pages).
+function ModuleTabs(): ReactElement {
+  const t = useTranslate();
+
+  return (
+    <nav className="board-manager__modules" aria-label={t('shell.modulesMenu', { app: t('shell.appName') })}>
+      <NavLink to="/" end className="board-manager__module">{t('shell.overview')}</NavLink>
+      {MODULES.map((module) => (
+        <NavLink key={module.path} to={module.path} className="board-manager__module">
+          {t(module.label)}
+        </NavLink>
+      ))}
+    </nav>
+  );
+}
+
+// The tabs as a menu, while the app header is too narrow for them (CSS): the current module and a chevron.
+function ModuleMenu(): ReactElement {
+  const t = useTranslate();
+  const { pathname } = useLocation();
+  const current = MODULES.find((module) => pathname === module.path || pathname.startsWith(`${module.path}/`));
+
+  return (
+    <Menu position="bottom-start" shadow="md" width={200}>
+      <Menu.Target>
+        <UnstyledButton
+          className="board-manager__module-menu"
+          aria-label={t('shell.modulesMenu', { app: t('shell.appName') })}
+        >
+          <Group gap={4} wrap="nowrap">
+            <Text size="sm" fw={500}>{current === undefined ? t('shell.overview') : t(current.label)}</Text>
+            {appIcons.chevronDown}
+          </Group>
+        </UnstyledButton>
+      </Menu.Target>
+      <Menu.Dropdown>
+        <Menu.Item component={Link} to="/" leftSection={appIcons.home}>{t('shell.overview')}</Menu.Item>
+        <Menu.Divider />
+        {MODULES.map((module) => (
+          <Menu.Item key={module.path} component={Link} to={module.path} leftSection={module.icon}>
+            {t(module.label)}
+          </Menu.Item>
+        ))}
+      </Menu.Dropdown>
+    </Menu>
+  );
+}
+
+// Back and Forward through the app's own history, like the browser's buttons: the routes live in memory, and the
+// browser's history follows them while they are mirrored in the hash (`hashHistory.ts`). Their tooltips say where they
+// go ("Back to Boards").
 function HistoryButtons(): ReactElement {
   const t = useTranslate();
   const navigate = useNavigate();
@@ -333,15 +368,8 @@ function Crumbs(): ReactElement | null {
 }
 
 // The routes live in memory, and can be mirrored in the URL hash after a prefix: `#board-manager/boards/b1/meetings/m12`.
-// So a reload (or a shared link) opens the same page. A hash with another start is left alone (the page's other tabs,
-// `ui.ts`, or a host page's anchors). The route is written only while the element is shown (not inside `[hidden]`), and
-// again when the demo page's tab is chosen.
-function pathFromHash(prefix: string): string | undefined {
-  const { hash } = location;
-
-  return hash === prefix ? '/' : hash.startsWith(`${prefix}/`) ? hash.slice(prefix.length) : undefined;
-}
-
+// So a reload (or a shared link) opens the same page, and the browser's Back and Forward step through them
+// (`hashHistory.ts`). A hash with another start is left alone (the page's other tabs, `ui.ts`, or a host page's anchors).
 // Without an element and a prefix (the `<board-manager>` element without `hash`), only the memory router.
 function createAppRouter(
   element?: HTMLElement,
@@ -355,46 +383,12 @@ function createAppRouter(
 
   const prefix = `#${hashPrefix}`;
   const router = createMemoryRouter(routes, { initialEntries: [pathFromHash(prefix) ?? '/'] });
-
-  const writeHash = () => {
-    if (element.closest('[hidden]') !== null) {
-      return;
-    }
-
-    const path = router.state.location.pathname;
-    const hash = path === '/' ? prefix : `${prefix}${path}`;
-
-    if (location.hash !== hash) {
-      history.replaceState(null, '', `${location.pathname}${location.search}${hash}`);
-    }
-  };
-
-  const readHash = () => {
-    const path = pathFromHash(prefix);
-
-    if (path !== undefined && path !== router.state.location.pathname) {
-      void router.navigate(path);
-    }
-  };
-
-  const unsubscribe = router.subscribe(writeHash);
-  // The tab's panel, or the cockpit's mini-app (`data-hash-segment`), is shown (`hidden` removed) when it is chosen:
-  // then the tabs or the cockpit have just written `#board-manager`.
-  const observer = new MutationObserver(writeHash);
-  const panel = element.closest('.ui-tabs__panel, [data-hash-segment]');
-
-  if (panel !== null) {
-    observer.observe(panel, { attributes: true, attributeFilter: ['hidden'] });
-  }
-
-  window.addEventListener('hashchange', readHash);
+  const stopMirror = mirrorInHash(router, element, prefix);
 
   return {
     router,
     dispose: () => {
-      unsubscribe();
-      observer.disconnect();
-      window.removeEventListener('hashchange', readHash);
+      stopMirror();
       router.dispose();
     },
   };

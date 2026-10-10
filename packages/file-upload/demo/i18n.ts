@@ -72,7 +72,7 @@ function resolveText(
   params: Readonly<Record<string, unknown>> | null,
   defaultValue: string,
 ): string {
-  const text = namespace === 'fileupload' ? TRANSLATIONS[locale.split('-')[0] ?? '']?.[key] : undefined;
+  const text = namespace === 'fileUpload' ? TRANSLATIONS[locale.split('-')[0] ?? '']?.[key] : undefined;
 
   if (text === undefined) {
     return defaultValue;

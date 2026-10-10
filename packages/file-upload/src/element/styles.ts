@@ -5,7 +5,7 @@ export { createStyleSheet, DEFAULT_THEME, DENSITY_PADDING };
 type ResolvedTheme = Required<Spec.Theme>;
 
 // The vertical padding (in em) of the rows of the list and of the drop line, per density. Only these change. The rows
-// match the data navigator's (4px, 8px, 16px at 14px).
+// match the data table's (4px, 8px, 16px at 14px).
 const DENSITY_PADDING = {
   compact: { row: 0.286, drop: 0.571 },
   normal: { row: 0.571, drop: 0.857 },
@@ -215,6 +215,8 @@ button {
   column-gap: 0.857em;
   min-height: 0;
   overflow: auto;
+  /* No bounce at its ends (Firefox's elastic overscroll), and the page does not scroll on (2026-10-08). */
+  overscroll-behavior: none;
   margin: 0;
   padding: 0;
   border-bottom: 1px solid ${border};

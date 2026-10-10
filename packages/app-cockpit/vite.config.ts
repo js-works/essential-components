@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 
-// `vite` serves the demo (index.html), `vite build` builds the library (src/index.ts). Its dependencies (Lit, Zag.js,
-// Floating UI) stay outside the build.
+// `vite` serves the demo (index.html), `vite build` builds the library (src/index.ts). Its dependencies (Lit, Floating
+// UI) stay outside the build.
 export default defineConfig({
   build: {
     // Only the latest Chrome, Edge, Firefox and Safari: modern CSS (e.g. `light-dark()`) stays as it is.
@@ -11,7 +11,7 @@ export default defineConfig({
       formats: ['es'],
     },
     rolldownOptions: {
-      external: [/^lit($|\/)/, /^@zag-js\//, /^@floating-ui\//],
+      external: [/^lit($|\/)/, /^@floating-ui\//],
     },
   },
 });

@@ -104,6 +104,20 @@ function validate(store: Store): void {
 
 const isValid = (s: Store) => s.errors.size === 0 && !s.rootError;
 
+/** Whether two values of a field are the same: empty ones (undefined, null, '') alike, dates by time, the rest by JSON. */
+function sameValue(a: unknown, b: unknown): boolean {
+  const empty = (v: unknown) => v === undefined || v === null || v === '';
+  if (empty(a) && empty(b)) return true;
+  if (a instanceof Date && b instanceof Date) return a.getTime() === b.getTime();
+  if (typeof a === 'object' && a !== null && typeof b === 'object' && b !== null) {
+    return JSON.stringify(a) === JSON.stringify(b);
+  }
+  return Object.is(a, b);
+}
+
+/** Whether a value differs from the initial one (a value changed and changed back does not count). */
+const isChanged = (s: Store) => s.fields.some((f) => !sameValue(s.values[f.path], s.initial[f.path]));
+
 /** The error the user currently sees ("user-invalid"). */
 function displayed(s: Store, path: string): ErrorData | undefined {
   return s.serverErrors.get(path) ?? (s.shown.has(path) ? s.errors.get(path) : undefined);
@@ -193,6 +207,8 @@ function defineUseForm<const P extends PropNames = { label: 'label'; error: 'err
     storeRef.current ??= createStore(schema, options.initial);
     const store = storeRef.current;
     store.idBase = idBase;
+    // Stable, and reads the values of the moment (typing does not always render again).
+    const [isDirty] = useState(() => () => isChanged(storeRef.current!));
     const optionsRef = useRef(options);
     optionsRef.current = options;
 
@@ -316,6 +332,7 @@ function defineUseForm<const P extends PropNames = { label: 'label'; error: 'err
         store.submitting = false;
         forceRender();
       }
+      if (store.serverErrors.size > 0) focusFirstInvalid();
       if (store.serverFormError) {
         return { ok: false, error: t.message(store.serverFormError, locale, adapter, pending) };
       }
@@ -434,6 +451,7 @@ function defineUseForm<const P extends PropNames = { label: 'label'; error: 'err
       formError: formErr ? t.message(formErr, locale, adapter, pending) : undefined,
       reset,
       requestSubmit,
+      isDirty,
     };
   };
 }

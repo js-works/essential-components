@@ -1,8 +1,5 @@
 import { computePosition, flip, offset, shift } from '@floating-ui/dom';
-import * as dialog from '@zag-js/dialog';
-import * as menu from '@zag-js/menu';
-import * as select from '@zag-js/select';
-import { html, LitElement, nothing, unsafeCSS } from 'lit';
+import { html, LitElement, nothing } from 'lit';
 import type { PropertyValues, TemplateResult } from 'lit';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { repeat } from 'lit/directives/repeat.js';
@@ -14,41 +11,48 @@ import type { Group, Match } from '../core/search';
 import { readStored, writeStored } from '../core/storage';
 import { textsFor } from '../core/texts';
 import type { Texts } from '../core/texts';
+import { defineAppTaskbar } from './createAppTaskbarClass';
 import {
-  appIcon,
-  appsIcon,
   checkIcon,
   chevronIcon,
   closeIcon,
   gridIcon,
   groupIcon,
+  initialsIcon,
   initialsOf,
+  itemIcon,
   kebabIcon,
+  menuIcon,
   panelIcon,
   searchIcon,
   selectorIcon,
 } from './icons';
-import { STYLES } from './styles';
-import { spread, ZagMachines } from './zag';
+import { Menu } from './menu';
+import type { MenuOptions } from './menu';
+import { layoutStyles, styles } from './styles';
 
 export { AppCockpitElement };
 
 type Status = 'loading' | 'ready' | 'failed';
 
-// An entry of a line of the topbar: an app, a group (the top line, with more than one group), or a subgroup (a
-// dropdown of its apps).
+// An entry of the topbar's line: an item, a group (with more than one group, or with pinned items: a two-pane menu), or
+// a subgroup (a dropdown of its items).
 type Entry =
-  | { kind: 'app'; app: Spec.MiniApp }
+  | { kind: 'item'; item: Spec.NavItem }
   | { kind: 'group'; group: Group }
   | { kind: 'subgroup'; parent: string; group: Group };
 
-// The sidebar adapts to the number of apps: up to `FEW` every app is listed, the groups are plain headings, no
-// "Recent"; more: "Recent" on top and the groups collapsible (closed by default above `MANY`, except the open app's).
-const FEW = 12;
+// A pane of a two-pane menu of the topbar: a subgroup (`key` its name), or a
+// group's items without a subgroup (`key` '', no heading).
+type Pane = { key: string; heading?: string; icon?: string | undefined; items: readonly Spec.NavItem[] };
+
+// The sidebar adapts to the number of items: up to `FEW` every item is listed, the groups are plain headings, no
+// "Recent"; more: "Recent" on top and the groups collapsible (closed by default above `MANY`, except the open item's).
+const FEW = 8;
 const MANY = 30;
 // Narrower than this (the cockpit's own width), the sidebar is always a rail.
 const NARROW = 768;
-// How many apps "Recent" keeps.
+// How many items "Recent" keeps.
 const RECENT = 5;
 // The sidebar's width when resized: between these, in px.
 const MIN_WIDTH = 200;
@@ -65,6 +69,9 @@ const sectionsOf = (sections: readonly Spec.MenuSection[]) =>
     )
     .filter((section) => section.items.length > 0);
 
+// Whether any of the items has an icon (a menu of them then has an icon slot).
+const hasIcons = (items: readonly Spec.NavItem[]) => items.some((item) => item.icon !== undefined);
+
 const clamp = (value: number) => Math.round(Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, value)));
 const isMac = () => /mac|iphone|ipad/i.test(navigator.platform || navigator.userAgent);
 
@@ -72,24 +79,25 @@ let instances = 0;
 
 // The cockpit, a Lit element. Its own UI in its shadow root (styled by `STYLES`); the mini-apps are its light-DOM
 // children, shown through the default slot (their CSS is often global, which would not reach into a shadow root).
-// The popups (menus, the group select, the search) are Zag.js machines (`ZagMachines`), positioned by Floating UI
-// (inside Zag); the tooltips are one element positioned by Floating UI directly.
+// The menus and the group select are `Menu`s (`menu.ts`), positioned by Floating UI; the search and the bottom bar's
+// sheet are modal `<dialog>`s; the tooltips are one element positioned by Floating UI.
 //
-// - The first segment of the URL hash is the id of the open app (`#board-manager/…`; the rest belongs to the app). No
-//   hash, or an unknown first segment at the start: `defaultApp`, else the first app. Opening an app pushes a history
+// - The first segment of the URL hash is the id of the open item (`#board-manager/…`; the rest belongs to the item). No
+//   hash, or an unknown first segment at the start: `defaultItem`, else the first item. Opening an item pushes a history
 //   entry.
-// - An app is created when it is opened the first time (after its `load()`), and then kept: the others get `hidden`.
+// - An item is created when it is opened the first time (after its `load()`), and then kept: the others get `hidden`.
 //   Its element gets `data-hash-segment` (its id), so tabs inside it know their level.
 class AppCockpitElement extends LitElement implements Spec.Element {
-  static override styles = unsafeCSS(STYLES);
   static override properties = {
     nav: { reflect: true },
     navScheme: { attribute: 'nav-scheme', reflect: true },
     density: { reflect: true },
+    startPage: { attribute: 'start-page', type: Boolean, reflect: true },
+    theme: { attribute: false },
   };
 
-  // The attribute `nav`: `side` (the default), `top` (two lines), `top-compact` (one line), `top-switcher` (one line,
-  // one dropdown with the open app), `bottom` (a bar at the bottom) or `auto` (the sidebar, the bottom bar when
+  // The attribute `nav`: `side` (the default), `top` (one line, two-pane menus), `top-switcher` (one line,
+  // one dropdown with the open item), `bottom` (a bar at the bottom) or `auto` (the sidebar, the bottom bar when
   // narrow). An unknown value is the sidebar.
   declare nav: Spec.Nav;
   // The attribute `nav-scheme`: the navigation always dark (the default), or like the page (only CSS: `:host([nav-scheme])`).
@@ -97,15 +105,30 @@ class AppCockpitElement extends LitElement implements Spec.Element {
   // The attribute `density`: the sidebar's rows and gaps, `compact`, `normal` (the default) or `comfortable` (only CSS:
   // `:host([density])`).
   declare density: Spec.Density;
+  // The attribute `start-page` (2026-10-08): a start page while no item is open; its first value the config's
+  // `startPage`, switchable live. Switched off on the start page: `defaultItem`, else the first item, opens.
+  declare startPage: boolean;
+  // The theme (2026-10-10): its first value the config's `theme`, switchable live (a new object). The stylesheet is
+  // built from it (`styles()`, `#themeSheet`); the values only known at run time (the resized sidebar, the switcher's
+  // panel) are in a second one (`layoutStyles()`, `#layoutSheet`). No custom properties.
+  declare theme: Spec.Theme;
+  readonly #themeSheet = new CSSStyleSheet();
+  readonly #layoutSheet = new CSSStyleSheet();
+  #layoutText = '';
 
   readonly #config: Spec.Config;
   readonly #id = `cockpit${++instances}`;
-  readonly #zag = new ZagMachines(() => this.requestUpdate());
+  // The menus, by key (`#menu`).
+  readonly #menuByKey = new Map<string, Menu>();
   readonly #elements = new Map<string, HTMLElement>();
   readonly #status = new Map<string, Status>();
   readonly #key: string;
 
   #active: string | undefined;
+  // The open items (created, or being loaded), the one used last first: closing the open one shows the next.
+  #used: string[] = [];
+  // The same, in the order they were opened: the taskbar's entries.
+  #opened: string[] = [];
   #recent: string[];
   #collapsed: boolean;
   #width: number | undefined;
@@ -119,11 +142,13 @@ class AppCockpitElement extends LitElement implements Spec.Element {
   #paletteFromExpanded = false;
   // The left edge of the switcher's button, where its panel opens (px from the frame's left).
   #switcherLeft: number | undefined;
-  // The search slides out (sidebar layout): it stays shown until its animation ends (Zag would hide it at once).
+  // The search slides out (sidebar layout): its dialog stays open until the animation ends.
   #paletteClosing: ReturnType<typeof setTimeout> | undefined;
   #query = '';
   #index = 0;
-  // The group of the select (`groupDisplay: 'select'`): the open app's, and the user may look into another one.
+  // The start page's filter (`startPage`).
+  #startPageQuery = '';
+  // The group of the select (`groupDisplay: 'select'`): the open item's, and the user may look into another one.
   #selectedGroup: string | undefined;
   #tip: { text: string; target: Element; side: 'right' | 'top' | 'bottom' } | undefined;
   #tipTarget: Element | undefined;
@@ -132,27 +157,38 @@ class AppCockpitElement extends LitElement implements Spec.Element {
   #langObserver: MutationObserver | undefined;
   // How many entries of each line of the topbar do not fit (they go into its "More" menu), by the line's key.
   readonly #overflow = new Map<string, number>();
+  // The group of the top line whose two-pane menu is open (`nav="top"`), by its key (`#entryKey`).
+  #panelOpen: string | undefined;
+  // The two-pane menu: the subgroup shown in its right pane (`#paneKey`); undefined: the open item's, else the first.
+  #paneShown: string | undefined;
+  #paneTimer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(config: Spec.Config) {
     super();
     this.nav = 'side';
     this.navScheme = 'dark';
     this.density = 'normal';
+    this.startPage = config.startPage === true;
+    this.theme = config.theme ?? {};
     this.#config = config;
     this.#key = config.storageKey ?? 'app-cockpit';
     this.#recent = readStored<string[]>(`${this.#key}:recent`, []);
     this.#collapsed = readStored(`${this.#key}:collapsed`, false);
     this.#width = readStored<number | undefined>(`${this.#key}:width`, undefined);
     this.#openGroups = readStored(`${this.#key}:groups`, {});
+
+    if (config.taskbar === true) {
+      defineAppTaskbar();
+    }
   }
 
-  get activeApp(): Spec.MiniApp | undefined {
-    return this.#app(this.#active);
+  get activeItem(): Spec.NavItem | undefined {
+    return this.#itemOf(this.#active);
   }
 
-  // Opens an app (from the navigation, the search, or the host's code).
+  // Opens an item (from the navigation, the search, or the host's code).
   open(id: string): void {
-    if (this.#app(id) === undefined) {
+    if (this.#itemOf(id) === undefined) {
       return;
     }
 
@@ -163,13 +199,53 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     this.#show(id);
   }
 
+  // Closes an open item: its element is removed (its state is lost). The open one: the one used before it is shown. The
+  // last open item stays (the cockpit always shows one), except with a start page (`startPage`): then that is shown.
+  close(id: string): void {
+    if (!this.#used.includes(id) || (this.#used.length < 2 && !this.startPage)) {
+      return;
+    }
+
+    this.#used = this.#used.filter((other) => other !== id);
+    this.#opened = this.#opened.filter((other) => other !== id);
+    this.#elements.get(id)?.remove();
+    this.#elements.delete(id);
+    this.#status.delete(id);
+
+    if (this.#active === id && this.#used[0] !== undefined) {
+      this.open(this.#used[0]);
+    } else if (this.#active === id) {
+      this.#openStartPage();
+    } else {
+      this.requestUpdate();
+    }
+  }
+
+  // The start page (`startPage`): no item open; the hash goes (a history entry, like opening an item). Its filter gets the
+  // focus.
+  #openStartPage(): void {
+    if (!this.startPage) {
+      return;
+    }
+
+    if (location.hash !== '') {
+      history.pushState(null, '', `${location.pathname}${location.search}`);
+    }
+
+    this.#show(undefined);
+    void this.updateComplete.then(() => this.#el('.start-page-search-input')?.focus());
+  }
+
   override connectedCallback(): void {
     super.connectedCallback();
     this.#langObserver = new MutationObserver(() => this.requestUpdate());
     this.#langObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
     window.addEventListener('hashchange', this.#onHashChange);
     document.addEventListener('keydown', this.#onShortcut);
-    this.#show(this.#app(this.#segment())?.id ?? this.#defaultApp);
+    document.addEventListener('pointerdown', this.#onPointerDownOutside, true);
+    window.addEventListener('resize', this.#fitDialogs);
+    window.addEventListener('scroll', this.#fitDialogs, { capture: true, passive: true });
+    this.#show(this.#itemOf(this.#segment())?.id ?? this.#defaultItem);
   }
 
   override disconnectedCallback(): void {
@@ -177,9 +253,12 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     this.#closed();
     window.removeEventListener('hashchange', this.#onHashChange);
     document.removeEventListener('keydown', this.#onShortcut);
+    document.removeEventListener('pointerdown', this.#onPointerDownOutside, true);
+    window.removeEventListener('resize', this.#fitDialogs);
+    window.removeEventListener('scroll', this.#fitDialogs, { capture: true });
     this.#langObserver?.disconnect();
     this.#resizeObserver?.disconnect();
-    this.#zag.stopAll();
+    this.#closeMenus();
   }
 
   protected override firstUpdated(_changed: PropertyValues): void {
@@ -195,40 +274,62 @@ class AppCockpitElement extends LitElement implements Spec.Element {
         }
 
         this.#measure();
-        this.#placeNotch();
+        this.#fitDialogs();
       });
       this.#resizeObserver.observe(frame);
     }
   }
 
-  protected override updated(): void {
-    this.#placeTip();
-    this.#measure();
-    this.#placeNotch();
+  // The theme's stylesheet, then the layout's (see `theme`).
+  protected override createRenderRoot(): HTMLElement | DocumentFragment {
+    const root = super.createRenderRoot();
+
+    if (root instanceof ShadowRoot) {
+      root.adoptedStyleSheets = [this.#themeSheet, this.#layoutSheet];
+    }
+
+    return root;
   }
 
-  // Two lines: the triangle (the second line's `::before`) points at the middle of the active group's text: its x, from
-  // the left edge of the topbar, goes into `--app-cockpit-notch-x` (see the CSS).
-  #placeNotch(): void {
-    const topbar = this.#el('.topbar');
-    const tab = this.#el('.top-line .tab[aria-pressed="true"]');
-
-    if (topbar === null) {
-      return;
+  // The start page switched off while it is shown (after the start: `connectedCallback` chose already): an item opens.
+  protected override willUpdate(changed: PropertyValues<this>): void {
+    if (changed.has('theme')) {
+      this.#themeSheet.replaceSync(styles(this.theme));
     }
 
-    if (tab === null || !topbar.hasAttribute('data-two-lines')) {
-      topbar.style.removeProperty('--app-cockpit-notch-x');
-      return;
+    const layout = layoutStyles(this.#width, this.#switcherLeft);
+
+    if (layout !== this.#layoutText) {
+      this.#layoutText = layout;
+      this.#layoutSheet.replaceSync(layout);
     }
 
-    // The middle of the tab's text (the tab has an icon before it: its own middle would be left of the text's).
-    const box = (tab.querySelector('.tab-title') ?? tab).getBoundingClientRect();
+    if (changed.has('startPage') && !this.startPage && this.hasUpdated && this.#active === undefined) {
+      const id = this.#defaultItem;
 
-    topbar.style.setProperty(
-      '--app-cockpit-notch-x',
-      `${box.left + box.width / 2 - topbar.getBoundingClientRect().left}px`,
+      if (id !== undefined) {
+        this.open(id);
+      }
+    }
+  }
+
+  protected override updated(): void {
+    this.#syncDialog(
+      '.sheet-dialog',
+      this.#bottom && this.#sheetOpen,
+      () => this.#el('.sheet .item[aria-current]') ?? this.#el('.sheet-close'),
     );
+    this.#syncDialog(
+      '.palette-dialog',
+      this.#paletteOpen || this.#paletteClosing !== undefined,
+      () => this.#el('.palette-input'),
+    );
+    this.#placeTip();
+    this.#measure();
+
+    for (const menu of this.#menuByKey.values()) {
+      menu.rendered();
+    }
   }
 
   // The lines of the topbar wrap their entries into a hidden second row: those are counted, and shown in a "More" menu.
@@ -252,15 +353,76 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     }
   }
 
+  // --- Dialogs -------------------------------------------------------------------------------------------------------
+
+  // The search and the bottom bar's sheet are modal `<dialog>`s (2026-10-08; Zag.js before): the browser keeps the focus
+  // inside, makes the rest of the page inert and gives the focus back when it closes. A modal dialog lies in the top
+  // layer, placed against the window: it is set to the cockpit's rectangle (`#fitDialogs`), so its parts lie in the
+  // cockpit as before. Escape, and a pointer down outside its panel, close it (`#dialogEvents`).
+  #syncDialog(selector: string, open: boolean, focus: () => HTMLElement | null): void {
+    const dialog = this.renderRoot.querySelector<HTMLDialogElement>(selector);
+
+    if (dialog === null || dialog.open === open) {
+      return;
+    }
+
+    if (open) {
+      dialog.showModal();
+      this.#fitDialogs();
+      focus()?.focus();
+    } else {
+      dialog.close();
+    }
+  }
+
+  // The open dialogs are as big as the cockpit, where it is (again on a resize or a scroll).
+  readonly #fitDialogs = () => {
+    const rect = this.#el('.mount')?.getBoundingClientRect();
+
+    if (rect === undefined) {
+      return;
+    }
+
+    for (const dialog of this.renderRoot.querySelectorAll<HTMLDialogElement>('dialog[open]')) {
+      Object.assign(dialog.style, {
+        left: `${rect.left}px`,
+        top: `${rect.top}px`,
+        width: `${rect.width}px`,
+        height: `${rect.height}px`,
+      });
+    }
+  };
+
+  // The events of a dialog: `close` runs on Escape (the browser's `cancel`, prevented: the cockpit closes it itself,
+  // e.g. after an animation), a pointer down outside `panel`, and when the browser has closed it anyway.
+  #dialogEvents(panel: string, isOpen: () => boolean, close: () => void) {
+    return {
+      cancel: (event: Event) => {
+        event.preventDefault();
+        close();
+      },
+      close: () => {
+        if (isOpen()) {
+          close();
+        }
+      },
+      pointerdown: (event: PointerEvent) => {
+        if ((event.target as Element).closest(panel) === null) {
+          close();
+        }
+      },
+    };
+  }
+
   // --- Apps and routing ----------------------------------------------------------------------------------------------
 
   readonly #onHashChange = () => {
-    const app = this.#app(this.#segment());
+    const item = this.#itemOf(this.#segment());
 
-    if (app !== undefined) {
-      this.#show(app.id);
+    if (item !== undefined) {
+      this.#show(item.id);
     } else if (location.hash === '') {
-      this.#show(this.#defaultApp);
+      this.#show(this.#defaultItem);
     }
   };
 
@@ -268,66 +430,91 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     return decodeURIComponent(location.hash.slice(1).split('/')[0] ?? '');
   }
 
-  // The app opened without a hash: the config's `defaultApp`, else the first app.
-  get #defaultApp(): string | undefined {
-    return this.#app(this.#config.defaultApp)?.id ?? this.#config.apps[0]?.id;
+  // The item opened without a hash: the config's `defaultItem`, else the first item; with a start page (`startPage`), that.
+  get #defaultItem(): string | undefined {
+    return this.#itemOf(this.#config.defaultItem)?.id
+      ?? (this.startPage ? undefined : this.#shownItems[0]?.id);
   }
 
-  #app(id: string | undefined): Spec.MiniApp | undefined {
-    return id === undefined ? undefined : this.#config.apps.find((app) => app.id === id);
+  #itemOf(id: string | undefined): Spec.NavItem | undefined {
+    return id === undefined ? undefined : this.#config.items.find((item) => item.id === id);
   }
 
+  // Shows an item; none (an unknown id), with a start page (`startPage`): that.
   #show(id: string | undefined): void {
-    const app = this.#app(id);
+    const item = this.#itemOf(id);
 
-    if (app === undefined) {
+    if (item === undefined) {
+      if (this.startPage) {
+        this.#active = undefined;
+        this.#sheetOpen = false;
+        this.#panelOpen = undefined;
+
+        for (const element of this.#elements.values()) {
+          element.hidden = true;
+        }
+      }
+
       this.requestUpdate();
       return;
     }
 
-    this.#active = app.id;
-    this.#selectedGroup = app.group ?? '';
-    // An app chosen in the bottom bar's sheet closes it.
+    this.#active = item.id;
+    this.#selectedGroup = item.group ?? '';
+    // The start page is whole again next time.
+    this.#startPageQuery = '';
+    // An item chosen in the bottom bar's sheet closes it, one chosen in a two-pane menu that.
     this.#sheetOpen = false;
-    this.#recent = [app.id, ...this.#recent.filter((other) => other !== app.id)].slice(0, RECENT);
+    this.#panelOpen = undefined;
+    this.#recent = [item.id, ...this.#recent.filter((other) => other !== item.id)].slice(0, RECENT);
     writeStored(`${this.#key}:recent`, this.#recent);
+    this.#used = [item.id, ...this.#used.filter((other) => other !== item.id)];
 
-    for (const [other, element] of this.#elements) {
-      element.hidden = other !== app.id;
+    if (!this.#opened.includes(item.id)) {
+      this.#opened = [...this.#opened, item.id];
     }
 
-    if (!this.#elements.has(app.id)) {
-      void this.#create(app);
+    for (const [other, element] of this.#elements) {
+      element.hidden = other !== item.id;
+    }
+
+    if (!this.#elements.has(item.id)) {
+      void this.#create(item);
     }
 
     this.requestUpdate();
   }
 
-  async #create(app: Spec.MiniApp): Promise<void> {
-    if (this.#status.get(app.id) === 'loading') {
+  async #create(item: Spec.NavItem): Promise<void> {
+    if (this.#status.get(item.id) === 'loading') {
       return;
     }
 
-    this.#status.set(app.id, 'loading');
+    this.#status.set(item.id, 'loading');
     this.requestUpdate();
 
     try {
-      await app.load?.();
+      await item.load?.();
 
-      const element = document.createElement(app.element);
+      // Closed meanwhile (the taskbar), or created by a second load after a close and a new open.
+      if (this.#status.get(item.id) !== 'loading' || this.#elements.has(item.id)) {
+        return;
+      }
 
-      for (const [name, value] of Object.entries(app.attributes ?? {})) {
+      const element = document.createElement(item.element);
+
+      for (const [name, value] of Object.entries(item.attributes ?? {})) {
         element.setAttribute(name, value);
       }
 
-      element.setAttribute('data-hash-segment', app.id);
-      element.hidden = this.#active !== app.id;
-      this.#elements.set(app.id, element);
+      element.setAttribute('data-hash-segment', item.id);
+      element.hidden = this.#active !== item.id;
+      this.#elements.set(item.id, element);
       this.append(element);
-      this.#status.set(app.id, 'ready');
+      this.#status.set(item.id, 'ready');
     } catch (error) {
-      console.error(`app-cockpit: the app "${app.id}" could not be loaded.`, error);
-      this.#status.set(app.id, 'failed');
+      console.error(`app-cockpit: the item "${item.id}" could not be loaded.`, error);
+      this.#status.set(item.id, 'failed');
     }
 
     this.requestUpdate();
@@ -340,23 +527,61 @@ class AppCockpitElement extends LitElement implements Spec.Element {
   }
 
   get #many(): boolean {
-    return this.#config.apps.length > FEW;
+    return this.#shownItems.length > FEW;
   }
 
-  // The search panel: by the config, else with more than `FEW` apps; always with the app switcher (it is its list).
+  // The items of the navigation, the search and the start page: all but the hidden ones (`placement`).
+  get #shownItems(): readonly Spec.NavItem[] {
+    return this.#config.items.filter((item) => item.placement !== 'hidden');
+  }
+
+  // The pinned items (`placement: 'pinned'`): entries of their own, first.
+  get #pinnedItems(): readonly Spec.NavItem[] {
+    return this.#config.items.filter((item) => item.placement === 'pinned');
+  }
+
+  // The items neither hidden nor pinned themselves (the start page's folders).
+  get #unpinnedItems(): readonly Spec.NavItem[] {
+    return this.#config.items.filter((item) => item.placement === undefined);
+  }
+
+  // The items in the groups of the topbar and the rail: neither hidden nor pinned, nor in a pinned folder.
+  get #groupedItems(): readonly Spec.NavItem[] {
+    return this.#unpinnedItems.filter((item) =>
+      item.subgroup === undefined || this.#subgroupOf(item.group ?? '', item.subgroup)?.placement !== 'pinned'
+    );
+  }
+
+  // The pinned folders (`groups[].subgroups[].placement`, 2026-10-08), with their items (not the pinned ones), in the
+  // order of the items: in the topbar and the rail after the pinned items, each one entry.
+  get #pinnedFolders(): Array<{ parent: string; group: Group }> {
+    return groupsOf(this.#unpinnedItems).flatMap((group) =>
+      subgroupsOf(group.items).subgroups
+        .filter((subgroup) => this.#subgroupOf(group.name, subgroup.name)?.placement === 'pinned')
+        .map((subgroup) => ({ parent: group.name, group: subgroup }))
+    );
+  }
+
+  // The search panel: by the config, else with more than `FEW` items; always with the item switcher (it is its list).
   get #searchable(): boolean {
     return this.#switcher || (this.#config.search ?? this.#many);
   }
 
-  // The app switcher (`nav="top-switcher"`): one dropdown with the open app in the top line; it opens the search
-  // panel, which lists all apps, at the button.
+  // The item switcher (`nav="top-switcher"`): one dropdown with the open item in the top line; it opens the search
+  // panel, which lists all items, at the button.
   get #switcher(): boolean {
     return this.#topbar && this.nav === 'top-switcher';
   }
 
   // The topbar: by the attribute, unless too narrow (then the sidebar's rail).
   get #topbar(): boolean {
-    return (this.nav === 'top' || this.nav === 'top-compact' || this.nav === 'top-switcher') && !this.#narrow;
+    return (this.nav === 'top' || this.nav === 'top-switcher') && !this.#narrow;
+  }
+
+  // The topbar (`nav="top"`; `top-compact` until 2026-10-08, when the topbar of two lines was removed): one line, the
+  // groups as entries, each a two-pane menu (a group select and the chosen group's items before, 2026-10-08).
+  get #menus(): boolean {
+    return this.#topbar && this.nav === 'top';
   }
 
   // The bottom bar (2026-10-06): `nav="bottom"`, or `nav="auto"` in a narrow cockpit (the sidebar else).
@@ -369,18 +594,19 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     return !this.#topbar && !this.#bottom && (this.#collapsed || this.#narrow || this.#paletteOpen);
   }
 
-  get #recentApps(): Spec.MiniApp[] {
-    return this.#recent.flatMap((id) => this.#app(id) ?? []);
+  get #recentItems(): Spec.NavItem[] {
+    return this.#recent.flatMap((id) => this.#itemOf(id) ?? []).filter((item) => item.placement !== 'hidden');
   }
 
-  #groupIcon(name: string): string | undefined {
-    return this.#config.groups?.find((group) => group.name === name)?.icon;
+  // A subgroup's extra data in the config's `groups` (its icon, its placement).
+  #subgroupOf(group: string, subgroup: string): Spec.Subgroup | undefined {
+    return this.#config.groups?.find((candidate) => candidate.name === group)?.subgroups?.find((candidate) =>
+      candidate.name === subgroup
+    );
   }
 
   #subgroupIcon(group: string, subgroup: string): string | undefined {
-    return this.#config.groups?.find((candidate) => candidate.name === group)?.subgroups?.find((candidate) =>
-      candidate.name === subgroup
-    )?.icon;
+    return this.#subgroupOf(group, subgroup)?.icon;
   }
 
   #labelOf(group: Group): string {
@@ -416,10 +642,12 @@ class AppCockpitElement extends LitElement implements Spec.Element {
 
     this.#paletteFromExpanded = !this.#rail && !this.#topbar && !this.#bottom;
     this.#closed();
+    this.#closeMenus();
     this.#sheetOpen = false;
+    this.#panelOpen = undefined;
     this.#paletteOpen = true;
     this.#query = '';
-    this.#index = Math.max(0, this.#recentApps.findIndex((app) => app.id === this.#active));
+    this.#index = Math.max(0, this.#recentItems.findIndex((item) => item.id === this.#active));
     this.requestUpdate();
   };
 
@@ -444,8 +672,15 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     }
   };
 
-  // Ctrl+K (⌘K on a Mac) opens the search, wherever the focus is.
+  // Ctrl+K (⌘K on a Mac) opens the search, wherever the focus is. Escape closes an open two-pane menu, wherever the focus
+  // is (inside the cockpit, it goes back to its entry).
   readonly #onShortcut = (event: KeyboardEvent) => {
+    if (event.key === 'Escape' && this.#panelOpen !== undefined) {
+      event.preventDefault();
+      this.#closePanel(this.matches(':focus-within'));
+      return;
+    }
+
     if (
       this.#searchable && (event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === 'k'
     ) {
@@ -458,52 +693,22 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     return this.renderRoot.querySelector<HTMLElement>(selector);
   }
 
-  // A rect for Floating UI: from the sidebar's right edge, as high as `element` (a popup to the right touches the
-  // sidebar, level with its button).
-  #besideSidebar(element: () => Element | null): () => DOMRect {
-    return () => {
-      const rect = element()?.getBoundingClientRect() ?? new DOMRect();
-      const right = this.#el('.sidebar')?.getBoundingClientRect().right ?? rect.right;
+  // A menu's anchor: from the sidebar's right edge, as high as its trigger (a popup to the right touches the sidebar,
+  // level with its button).
+  readonly #besideSidebar = (trigger: Element): DOMRect => {
+    const rect = trigger.getBoundingClientRect();
+    const right = this.#el('.sidebar')?.getBoundingClientRect().right ?? rect.right;
 
-      return new DOMRect(right, rect.top, 0, rect.height);
-    };
-  }
+    return new DOMRect(right, rect.top, 0, rect.height);
+  };
 
-  // A rect for Floating UI: as wide as `element`, at the bottom of its line of the topbar (a dropdown touches the line).
-  #belowLine(element: () => Element | null): () => DOMRect {
-    return () => {
-      const target = element();
-      const rect = target?.getBoundingClientRect() ?? new DOMRect();
-      const bottom = target?.closest('.top-line, .sub-line')?.getBoundingClientRect().bottom ?? rect.bottom;
+  // A menu's anchor: as wide as its trigger, at the bottom of its line of the topbar (a dropdown touches the line).
+  readonly #belowLine = (trigger: Element): DOMRect => {
+    const rect = trigger.getBoundingClientRect();
+    const bottom = trigger.closest('.top-line')?.getBoundingClientRect().bottom ?? rect.bottom;
 
-      return new DOMRect(rect.left, bottom, rect.width, 0);
-    };
-  }
-
-  // The trigger of a dropdown of the topbar, by its key.
-  #dropTrigger(key: string): () => Element | null {
-    return () => this.#el(`[data-drop="${key.replace(/[^a-z0-9]+/gi, '-')}"]`);
-  }
-
-  // The anchor of a menu that is not at its trigger: one virtual element per menu, kept (Floating UI starts over for a
-  // new one, which renders again, endlessly), whose rect comes from the latest render.
-  readonly #anchorRects = new Map<string, () => DOMRect>();
-  readonly #anchors = new Map<string, { getBoundingClientRect: () => DOMRect; contextElement?: Element }>();
-
-  #anchor(key: string, rect: () => DOMRect) {
-    this.#anchorRects.set(key, rect);
-
-    let anchor = this.#anchors.get(key);
-
-    if (anchor === undefined) {
-      anchor = { getBoundingClientRect: () => this.#anchorRects.get(key)?.() ?? new DOMRect() };
-      this.#anchors.set(key, anchor);
-    }
-
-    anchor.contextElement = this.#el('.sidebar') ?? undefined;
-
-    return anchor;
-  }
+    return new DOMRect(rect.left, bottom, rect.width, 0);
+  };
 
   // --- Tooltips ------------------------------------------------------------------------------------------------------
 
@@ -519,7 +724,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
 
     this.#onTipLeave();
 
-    // Not for a button whose popup is open (it would cover it).
+    // Not for a button whose menu is open (it would cover it).
     if (target === null || target.getAttribute('data-state') === 'open') {
       return;
     }
@@ -562,6 +767,11 @@ class AppCockpitElement extends LitElement implements Spec.Element {
       return;
     }
 
+    // A popover, in the top layer: also above an open dialog (the sheet's footer has tooltips).
+    if (!tooltip.matches(':popover-open')) {
+      tooltip.showPopover();
+    }
+
     void computePosition(this.#tip.target, tooltip, {
       placement: this.#tip.side,
       strategy: 'fixed',
@@ -579,13 +789,8 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     const topbar = this.#topbar;
     const bottom = this.#bottom;
     const rail = this.#rail;
-    const active = this.#app(this.#active);
+    const active = this.#itemOf(this.#active);
     const status = active === undefined ? 'ready' : this.#status.get(active.id) ?? 'loading';
-    const style = {
-      ...(this.#width === undefined ? {} : { '--app-cockpit-sidebar-width': `${this.#width}px` }),
-      ...(this.#switcherLeft === undefined ? {} : { '--app-cockpit-switcher-left': `${this.#switcherLeft}px` }),
-    };
-
     return html`
       <div
         class="mount"
@@ -593,7 +798,6 @@ class AppCockpitElement extends LitElement implements Spec.Element {
         data-nav-style=${this.#switcher ? 'switcher' : 'tabs'}
         ?data-palette-from-expanded=${this.#paletteFromExpanded}
         ?data-palette-closing=${this.#paletteClosing !== undefined}
-        style=${styleMap(style)}
         @pointerover=${this.#onTipEnter}
         @pointerout=${this.#onTipOut}
         @focusin=${this.#onTipEnter}
@@ -606,8 +810,9 @@ class AppCockpitElement extends LitElement implements Spec.Element {
           ?data-resizing=${this.#resizing}
         >
           ${topbar ? this.#topbarParts(texts) : bottom ? nothing : this.#sidebar(texts, rail)}
-          <main class="main" ?inert=${bottom && this.#sheetOpen}>
+          <main class="main">
             <slot></slot>
+            ${active === undefined && this.startPage ? this.#startPageView(texts) : nothing}
             ${
       status === 'loading'
         ? html`<div class="state" role="status"><span class="spinner" aria-hidden="true"></span>${texts.loading}</div>`
@@ -624,6 +829,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
         : nothing
     }
           </main>
+          ${this.#config.taskbar === true && !bottom ? this.#taskbar() : nothing}
           ${bottom ? this.#bottomBar(texts) : nothing}
         </div>
         ${bottom ? this.#sheet(texts) : nothing}
@@ -631,10 +837,50 @@ class AppCockpitElement extends LitElement implements Spec.Element {
         ${
       this.#tip === undefined
         ? nothing
-        : html`<div class="tooltip" role="tooltip" data-side=${this.#tip.side}>${this.#tip.text}</div>`
+        : html`<div class="tooltip" role="tooltip" popover="manual" data-side=${this.#tip.side}>${this.#tip.text}</div>`
     }
       </div>
     `;
+  }
+
+  // The taskbar below the open item (`taskbar: true`, 2026-10-07): the open items in the order they were opened; the
+  // last one cannot be closed, except with a start page (`startPage`). None open: no taskbar.
+  #taskbar(): TemplateResult | typeof nothing {
+    if (this.#opened.length === 0) {
+      return nothing;
+    }
+
+    const closable = this.#opened.length > 1 || this.startPage;
+    const tasks: Spec.Task[] = this.#opened.flatMap((id) => {
+      const item = this.#itemOf(id);
+
+      return item === undefined
+        ? []
+        : [{ id: item.id, title: item.title, ...(item.icon === undefined ? {} : { icon: item.icon }), closable }];
+    });
+
+    return html`<app-taskbar
+      class="taskbar"
+      .tasks=${tasks}
+      .active=${this.#active}
+      .theme=${this.theme}
+      @task-select=${(event: CustomEvent<Spec.TaskEventDetail>) => this.open(event.detail.id)}
+      @task-close=${(event: CustomEvent<Spec.TaskEventDetail>) => this.close(event.detail.id)}
+      @task-move=${(event: CustomEvent<Spec.TaskMoveEventDetail>) =>
+      this.#moveTask(event.detail.id, event.detail.index)}
+    ></app-taskbar>`;
+  }
+
+  // A task dragged (or moved by the keys) to another place of the taskbar.
+  #moveTask(id: string, index: number): void {
+    if (!this.#opened.includes(id)) {
+      return;
+    }
+
+    const others = this.#opened.filter((other) => other !== id);
+
+    this.#opened = [...others.slice(0, index), id, ...others.slice(index)];
+    this.requestUpdate();
   }
 
   // `sheet`: in the bottom bar's sheet (the whole sidebar, without its resize handle and toggle; a close button in
@@ -664,6 +910,133 @@ class AppCockpitElement extends LitElement implements Spec.Element {
           </aside>`;
   }
 
+  // --- Start page (`startPage`, 2026-10-08) -------------------------------------------------------------------------------
+
+  // While no item is open: the title and the subtitle, the filter (2026-10-08, the user's wish; a field that opened the
+  // search panel before), and every item as a card (its icon, title and description; the dot of an open one, with the
+  // taskbar), the pinned ones first, then by folder (`#folders`). In the page's scheme. No greeting.
+  // The filter hides the cards that do not match (the search panel's matching, `search()`; their order stays), and the
+  // folders without one; Enter opens the first card, Escape clears it, Down goes to the first card.
+  #startPageView(texts: Texts): TemplateResult {
+    const query = this.#startPageQuery;
+    const matching = new Set(search(this.#shownItems, query).map(({ item }) => item.id));
+    const sections = [
+      // The pinned items (`placement`) first, without a heading.
+      ...(this.#pinnedItems.length > 0 ? [{ label: undefined, icon: undefined, items: this.#pinnedItems }] : []),
+      ...this.#folders(texts),
+    ]
+      .map((section) => ({ ...section, items: section.items.filter((item) => matching.has(item.id)) }))
+      .filter((section) => section.items.length > 0);
+    const setQuery = (value: string) => {
+      this.#startPageQuery = value;
+      this.requestUpdate();
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      const first = sections[0]?.items[0];
+
+      if (event.key === 'Enter' && first !== undefined) {
+        event.preventDefault();
+        this.open(first.id);
+      } else if (event.key === 'Escape' && query !== '') {
+        event.preventDefault();
+        event.stopPropagation();
+        setQuery('');
+      } else if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        this.#el('.start-page-card')?.focus();
+      }
+    };
+
+    return html`<section class="start-page" aria-label=${texts.startPage}>
+      <div class="start-page-inner">
+        <header class="start-page-header">
+          <h1 class="start-page-title">${this.#config.title ?? texts.navigation}</h1>
+          ${
+      this.#config.subtitle === undefined ? nothing : html`<p class="start-page-subtitle">${this.#config.subtitle}</p>`
+    }
+          ${
+      this.#searchable
+        ? html`<div class="start-page-search">
+            ${searchIcon()}
+            <input
+              type="search"
+              class="start-page-search-input"
+              placeholder=${texts.searchPlaceholder}
+              aria-label=${texts.search}
+              autocomplete="off"
+              spellcheck="false"
+              .value=${query}
+              @input=${(event: InputEvent) => setQuery((event.target as HTMLInputElement).value)}
+              @keydown=${onKeyDown}
+            />
+            ${
+          query === ''
+            ? nothing
+            : html`<button
+                type="button"
+                class="start-page-search-clear"
+                aria-label=${texts.clearSearch}
+                data-tip=${texts.clearSearch}
+                data-tip-side="bottom"
+                @click=${() => {
+              setQuery('');
+              this.#el('.start-page-search-input')?.focus();
+            }}
+              >${closeIcon()}</button>`
+        }
+          </div>`
+        : nothing
+    }
+        </header>
+        ${sections.length === 0 ? html`<p class="start-page-empty" role="status">${texts.noResults}</p>` : nothing}
+        ${
+      sections.map(({ label, icon, items }) =>
+        html`<section class="start-page-section">
+            ${
+          label === undefined
+            ? nothing
+            : html`<h2 class="start-page-heading">${groupIcon(icon)}<span>${label}</span></h2>`
+        }
+            <ul class="start-page-grid">${
+          items.map((item) =>
+            html`<li><button type="button" class="start-page-card" @click=${() => this.open(item.id)}>
+                ${itemIcon(item, 'framed')}
+                <span class="start-page-card-text">
+                  <span class="start-page-card-title">${item.title}${
+              this.#config.taskbar === true && this.#opened.includes(item.id)
+                ? html`<span class="running-dot" aria-hidden="true"></span>`
+                : nothing
+            }</span>
+                  ${
+              item.description === undefined
+                ? nothing
+                : html`<span class="start-page-card-description">${item.description}</span>`
+            }
+                </span>
+              </button></li>`
+          )
+        }</ul>
+          </section>`
+      )
+    }
+      </div>
+    </section>`;
+  }
+
+  // The folders of the start page, in the order of the groups: a group's items without a subgroup as one folder
+  // ("General"), then its subgroups (their names and icons); the pinned and hidden items left out.
+  #folders(texts: Texts): Array<{ label: string; icon: string | undefined; items: readonly Spec.NavItem[] }> {
+    return groupsOf(this.#unpinnedItems).flatMap((group) => {
+      const { loose, subgroups } = subgroupsOf(group.items);
+
+      return [...(loose.length > 0 ? [{ name: '', items: loose }] : []), ...subgroups].map((folder) => ({
+        label: folder.name === '' ? texts.general : folder.name,
+        icon: folder.name === '' ? undefined : this.#subgroupIcon(group.name, folder.name),
+        items: folder.items,
+      }));
+    });
+  }
+
   // --- Bottom bar ----------------------------------------------------------------------------------------------------
 
   readonly #openSheet = () => {
@@ -676,12 +1049,12 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     this.requestUpdate();
   };
 
-  // The bottom bar (`nav="bottom"`, or `auto` in a narrow cockpit; 2026-10-06): the open app takes the whole height,
-  // with a bar below it: "Apps" (a sheet with the whole sidebar: the navigation, the user, the footer), the three apps
+  // The bottom bar (`nav="bottom"`, or `auto` in a narrow cockpit; 2026-10-06): the open item takes the whole height,
+  // with a bar below it: "Apps" (a sheet with the whole sidebar: the navigation, the user, the footer), the three items
   // used last (in the order of the config, so they do not move with every switch; the open one marked), and the search.
   #bottomBar(texts: Texts): TemplateResult {
-    const order = (app: Spec.MiniApp) => this.#config.apps.indexOf(app);
-    const apps = this.#recentApps.slice(0, 3).sort((a, b) => order(a) - order(b));
+    const order = (item: Spec.NavItem) => this.#config.items.indexOf(item);
+    const items = this.#recentItems.slice(0, 3).sort((a, b) => order(a) - order(b));
 
     return html`<nav class="bottombar" aria-label=${texts.navigation}>
       <button
@@ -690,15 +1063,15 @@ class AppCockpitElement extends LitElement implements Spec.Element {
         aria-haspopup="dialog"
         aria-expanded=${this.#sheetOpen}
         @click=${this.#openSheet}
-      >${appsIcon()}<span class="bottom-label">${texts.navigation}</span></button>
+      >${menuIcon()}<span class="bottom-label">${texts.navigation}</span></button>
       ${
-      repeat(apps, (app) => app.id, (app) =>
+      repeat(items, (item) => item.id, (item) =>
         html`<button
           type="button"
           class="bottom-item"
-          aria-current=${ifDefined(app.id === this.#active ? 'page' : undefined)}
-          @click=${() => this.open(app.id)}
-        >${appIcon(app, true)}<span class="bottom-label">${app.title}</span></button>`)
+          aria-current=${ifDefined(item.id === this.#active ? 'page' : undefined)}
+          @click=${() => this.open(item.id)}
+        >${itemIcon(item, true)}<span class="bottom-label">${item.title}</span></button>`)
     }
       ${
       this.#searchable
@@ -711,41 +1084,42 @@ class AppCockpitElement extends LitElement implements Spec.Element {
   }
 
   // The sheet of the bottom bar: the whole sidebar (navigation, user, footer) in a panel from the bottom, a modal dialog
-  // (Zag: focus inside, Escape and a click outside close it). Choosing an app closes it.
+  // (`#syncDialog`: focus inside, on the open item; Escape and a pointer down outside close it). Choosing an item
+  // closes it.
   #sheet(texts: Texts): TemplateResult {
     const open = this.#sheetOpen;
-    const api = this.#zag.use('dialog:sheet', dialog, {
-      id: `${this.#id}-sheet`,
-      getRootNode: () => this.renderRoot as ShadowRoot,
-      open,
-      onOpenChange: ({ open: next }: { open: boolean }) => {
-        if (!next) {
-          this.#closeSheet();
-        }
-      },
-      initialFocusEl: () => this.#el('.sheet .item[aria-current]') ?? this.#el('.sheet .sheet-close'),
-    } as dialog.Props);
+    const events = this.#dialogEvents('.sheet', () => this.#sheetOpen, this.#closeSheet);
 
-    return html`
-      <div class="sheet-backdrop" ${spread({ ...api.getBackdropProps(), hidden: !open })}></div>
-      <div class="sheet-layer" ?hidden=${!open} ${spread(api.getPositionerProps())}>
-        <div class="sheet" ${spread({ ...api.getContentProps(), hidden: !open })}>
-          <h2 class="visually-hidden" ${spread(api.getTitleProps())}>${texts.navigation}</h2>
+    return html`<dialog
+      class="dialog sheet-dialog"
+      aria-labelledby=${`${this.#id}-sheet-title`}
+      @cancel=${events.cancel}
+      @close=${events.close}
+      @pointerdown=${events.pointerdown}
+    >
+      <div class="sheet-backdrop"></div>
+      <div class="sheet-layer">
+        <div class="sheet">
+          <h2 class="visually-hidden" id=${`${this.#id}-sheet-title`}>${texts.navigation}</h2>
           ${open ? this.#sidebar(texts, false, true) : nothing}
         </div>
       </div>
-    `;
+    </dialog>`;
   }
 
   // The logo (the slot `logo`), the title and the subtitle.
-  // In the sidebar (not when it is always a rail, below 768px), the logo is a button that toggles the sidebar, like the
-  // footer's toggle.
+  // With a start page (`startPage`), the logo is a button that opens it, in every layout (2026-10-08, the user's wish: the
+  // title for a few hours before; only a pointer, no tooltip). Else, in the sidebar (not when it is always a rail, below
+  // 768px), the logo is a button that toggles the sidebar, like the footer's toggle.
   #brand(texts: Texts, rail?: boolean): TemplateResult {
     const logo = html`<slot name="logo"><span class="brand-logo" aria-hidden="true">${gridIcon()}</span></slot>`;
     const label = rail ? texts.expand : texts.collapse;
 
     return html`${
-      rail === undefined || this.#narrow
+      this.startPage
+        ? html`<button type="button" class="brand-start-page" aria-label=${texts.startPage} @click=${() =>
+          this.#openStartPage()}>${logo}</button>`
+        : rail === undefined || this.#narrow
         ? logo
         : html`<button
           type="button"
@@ -758,14 +1132,14 @@ class AppCockpitElement extends LitElement implements Spec.Element {
         >${logo}</button>`
     }
       <span class="brand-text">
-        <span class="brand-title">${this.#config.title ?? 'Apps'}</span>
+        <span class="brand-title">${this.#config.title ?? texts.navigation}</span>
         ${
       this.#config.subtitle === undefined ? nothing : html`<span class="brand-subtitle">${this.#config.subtitle}</span>`
     }
       </span>`;
   }
 
-  // The search: an icon button with a tooltip ("Search apps (Ctrl K)"); next to the title, or below the logo in the rail.
+  // The search: an icon button with a tooltip ("Search items (Ctrl K)"); next to the title, or below the logo in the rail.
   #searchButton(texts: Texts, rail: boolean): TemplateResult {
     return html`<button
       type="button"
@@ -870,18 +1244,30 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     }
   };
 
-  #item(app: Spec.MiniApp, rail: boolean): TemplateResult {
-    const current = app.id === this.#active;
-
+  #item(item: Spec.NavItem, rail: boolean): TemplateResult {
+    const current = item.id === this.#active;
     return html`<button
       type="button"
       class="item"
       aria-current=${ifDefined(current ? 'page' : undefined)}
-      aria-label=${ifDefined(rail ? app.title : undefined)}
-      title=${ifDefined(rail ? undefined : app.description)}
-      data-tip=${ifDefined(rail ? app.title : undefined)}
-      @click=${() => this.open(app.id)}
-    >${appIcon(app, rail)}<span class="item-title">${app.title}</span></button>`;
+      aria-label=${ifDefined(rail ? item.title : undefined)}
+      title=${ifDefined(rail ? undefined : item.description)}
+      data-tip=${ifDefined(rail ? item.title : undefined)}
+      @click=${() => this.open(item.id)}
+    >${this.#iconAndTitle(item, rail, html`<span class="item-title">${item.title}</span>`)}</button>`;
+  }
+
+  // An item's icon and title. With the taskbar, an open item (one of its tasks) gets a dot, like the open one in the
+  // search panel: right after its title (the end of the row is kept for badges); in the rail (`rail`: no titles, the framed
+  // initials without an icon) on the corner of its icon. `framed`: the framed initials without an icon (the flyouts).
+  #iconAndTitle(item: Spec.NavItem, rail: boolean, title: unknown, framed = false): TemplateResult {
+    const dot = this.#config.taskbar === true && this.#opened.includes(item.id)
+      ? html`<span class="running-dot" aria-hidden="true"></span>`
+      : nothing;
+
+    return rail
+      ? html`${itemIcon(item, 'framed', dot)}${title}`
+      : html`${itemIcon(item, framed ? 'framed' : false)}${title}${dot}`;
   }
 
   #section(label: string, items: TemplateResult[]): TemplateResult {
@@ -891,11 +1277,11 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     </section>`;
   }
 
-  // The apps of a group as a tree: the apps without a subgroup, then each subgroup (collapsible, open by default) with
-  // its apps. In the rail: the apps without a subgroup as icons, each subgroup as one button with a flyout.
+  // The items of a group as a tree: the items without a subgroup, then each subgroup (collapsible, open by default) with
+  // its items. In the rail: the items without a subgroup as icons, each subgroup as one button with a flyout.
   #tree(group: Group, rail: boolean): TemplateResult[] {
-    const { loose, subgroups } = subgroupsOf(group.apps);
-    const looseItems = loose.map((app) => html`<li>${this.#item(app, rail)}</li>`);
+    const { loose, subgroups } = subgroupsOf(group.items);
+    const looseItems = loose.map((item) => html`<li>${this.#item(item, rail)}</li>`);
 
     if (rail) {
       return [
@@ -904,7 +1290,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
           html`<li>${
             this.#flyout(
               `sub:${group.name}/${subgroup.name}`,
-              { name: subgroup.name, apps: subgroup.apps.map(({ subgroup: _subgroup, ...app }) => app) },
+              { name: subgroup.name, items: subgroup.items.map(({ subgroup: _subgroup, ...item }) => item) },
               subgroup.name,
               this.#subgroupIcon(group.name, subgroup.name),
             )
@@ -931,10 +1317,12 @@ class AppCockpitElement extends LitElement implements Spec.Element {
             >
               ${chevronIcon()} ${icon === undefined ? nothing : groupIcon(icon)}
               <span class="subgroup-name">${subgroup.name}</span>
-              <span class="subgroup-count">${subgroup.apps.length}</span>
+              <span class="subgroup-count">${subgroup.items.length}</span>
             </button>
             <div class="group-panel" ?hidden=${!open}>
-              <ul class="list subgroup-list">${subgroup.apps.map((app) => html`<li>${this.#item(app, rail)}</li>`)}</ul>
+              <ul class="list subgroup-list">${
+          subgroup.items.map((item) => html`<li>${this.#item(item, rail)}</li>`)
+        }</ul>
             </div>
           </div>
         </li>`;
@@ -942,40 +1330,58 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     ];
   }
 
+  // The expanded sidebar (and the bottom bar's sheet) ignores pinning (2026-10-08, the user's wish: it shows every item
+  // in its group anyway); the rail has the pinned items (`placement`) first, as icons, not in their subgroup's flyout,
+  // then the pinned folders, each its flyout button.
   #navigation(texts: Texts, rail: boolean): TemplateResult {
-    const apps = this.#config.apps;
+    const items = this.#shownItems;
     const many = this.#many;
-    const groups = groupsOf(apps);
+    const groups = groupsOf(rail ? this.#groupedItems : items);
+    const pinned = rail
+      ? [
+        ...this.#pinnedItems.map((item) => html`<li>${this.#item(item, rail)}</li>`),
+        ...this.#pinnedFolders.map(({ parent, group }) =>
+          html`<li>${
+            this.#flyout(
+              `sub:${parent}/${group.name}`,
+              { name: group.name, items: group.items.map(({ subgroup: _subgroup, ...item }) => item) },
+              group.name,
+              this.#subgroupIcon(parent, group.name),
+            )
+          }</li>`
+        ),
+      ]
+      : [];
     const nav = (content: unknown) =>
-      html`<nav class="nav" aria-label=${texts.navigation} @keydown=${this.#onNavKeyDown}>${content}</nav>`;
+      html`<nav class="nav" aria-label=${texts.navigation} @keydown=${this.#onNavKeyDown}>${
+        pinned.length > 0 ? this.#section('', pinned) : nothing
+      }${content}</nav>`;
 
-    // The rail of many apps: with groups, one button per group with a flyout; without, the recent apps and the open
-    // one (the search finds the rest).
+    // The rail of many items (2026-10-07): the structure of the sidebar without the headings (a group has no icon): the
+    // items as icons, each subgroup as one button with a flyout, a rule between the groups. Above `MANY` items it
+    // would be too long: the recent items and the open one (the search finds the rest).
     if (rail && many) {
-      if (groups.length > 1) {
-        return nav(html`<ul class="list">${
-          repeat(
-            groups,
-            (group) => group.name,
-            (group) =>
-              html`<li>${
-                this.#flyout(`group:${group.name}`, group, this.#labelOf(group), this.#groupIcon(group.name))
-              }</li>`,
-          )
-        }</ul>`);
+      if (items.length <= MANY) {
+        return nav(
+          html`<ul class="list">${
+            groups.map((group, index) =>
+              html`${index === 0 ? nothing : html`<li><hr class="section-rule" /></li>`}${this.#tree(group, rail)}`
+            )
+          }</ul>`,
+        );
       }
 
-      const shown = this.#recentApps;
-      const active = this.#app(this.#active);
+      const shown = this.#recentItems.filter((item) => item.placement !== 'pinned');
+      const active = this.#itemOf(this.#active);
 
-      if (active !== undefined && !shown.some((app) => app.id === active.id)) {
+      if (active !== undefined && !shown.some((item) => item.id === active.id)) {
         shown.unshift(active);
       }
 
-      return nav(html`<ul class="list">${shown.map((app) => html`<li>${this.#item(app, rail)}</li>`)}</ul>`);
+      return nav(html`<ul class="list">${shown.map((item) => html`<li>${this.#item(item, rail)}</li>`)}</ul>`);
     }
 
-    // One group at a time: the select on top, the apps of the chosen group below it.
+    // One group at a time: the select on top, the items of the chosen group below it.
     if (this.#config.groupDisplay === 'select' && !rail && groups.length > 1) {
       const group = groups.find((candidate) => candidate.name === this.#selectedGroup) ?? groups[0];
 
@@ -983,12 +1389,12 @@ class AppCockpitElement extends LitElement implements Spec.Element {
       ${nav(group === undefined ? nothing : html`<ul class="list">${this.#tree(group, rail)}</ul>`)}`;
     }
 
-    const recent = this.#recentApps;
+    const recent = this.#config.recent === false ? [] : this.#recentItems;
 
     return nav(html`
       ${
       many && recent.length > 0
-        ? this.#section(texts.recent, recent.map((app) => html`<li>${this.#item(app, rail)}</li>`))
+        ? this.#section(texts.recent, recent.map((item) => html`<li>${this.#item(item, rail)}</li>`))
         : nothing
     }
       ${
@@ -996,14 +1402,12 @@ class AppCockpitElement extends LitElement implements Spec.Element {
         const label = group.name === '' ? (groups.length > 1 && many ? texts.other : '') : group.name;
         const list = this.#tree(group, rail);
 
-        if (rail || !many || label === '') {
+        if (rail || !many || label === '' || this.#config.collapsibleGroups === false) {
           return this.#section(rail ? '' : label, list);
         }
 
         const open = this.#openGroups[group.name]
-          ?? (apps.length <= MANY || group.name === (this.#app(this.#active)?.group ?? '') || group.name === '');
-        const icon = this.#groupIcon(group.name);
-
+          ?? (items.length <= MANY || group.name === (this.#itemOf(this.#active)?.group ?? '') || group.name === '');
         return html`<div class="group">
           <button
             type="button"
@@ -1012,9 +1416,9 @@ class AppCockpitElement extends LitElement implements Spec.Element {
             ?data-panel-open=${open}
             @click=${() => this.#setOpenGroup(group.name, !open)}
           >
-            ${chevronIcon()} ${icon === undefined ? nothing : groupIcon(icon)}
+            ${chevronIcon()}
             <span class="group-name">${label}</span>
-            <span class="group-count">${group.apps.length}</span>
+            <span class="group-count">${group.items.length}</span>
           </button>
           <div class="group-panel" ?hidden=${!open}><ul class="list">${list}</ul></div>
         </div>`;
@@ -1025,35 +1429,41 @@ class AppCockpitElement extends LitElement implements Spec.Element {
 
   // --- Topbar --------------------------------------------------------------------------------------------------------
 
-  // The topbar (`nav="top"`): a dark top line with the logo and the title, the groups (more than one), and on
-  // the right the search, the footer's actions and menu, and the user; below it a light line with the apps of the
-  // chosen group (its subgroups as dropdowns). With one group (or none), its apps are in the top line, and there is no
-  // second line. Entries that do not fit go into a "More" menu at the end of their line.
+  // The topbar (`nav="top"`, one line; 2026-10-08: two lines, the groups and below them the chosen group's items, until
+  // then, and this one was `top-compact`): a dark line with the logo and the title, the pinned items (`placement`) as
+  // tabs, the groups as entries, each opening a two-pane menu, and on the right the search, the footer's actions and
+  // menu, and the user. With one group and no pinned items, its items (and subgroup dropdowns) are the entries.
+  // Entries that do not fit go into a "More" menu at the end of the line. `top-switcher`: one dropdown in place of them.
   #topbarParts(texts: Texts): TemplateResult {
-    const groups = groupsOf(this.#config.apps);
-    const many = groups.length > 1;
-    const group = groups.find((candidate) => candidate.name === this.#selectedGroup) ?? groups[0];
-    // One line (`nav="top-compact"`, with several groups): a select for the group in the top line, then its apps as tabs.
+    const groups = groupsOf(this.#groupedItems);
+    // The pinned items, then the pinned folders (each a dropdown of its items).
+    const pinned: Entry[] = [
+      ...this.#pinnedItems.map((item) => ({ kind: 'item' as const, item })),
+      ...this.#pinnedFolders.map(({ parent, group }) => ({ kind: 'subgroup' as const, parent, group })),
+    ];
+    const many = groups.length > 1 || (pinned.length > 0 && groups.length > 0);
+    const group = groups[0];
     const switcher = this.#switcher;
-    const oneLine = many && this.nav === 'top-compact' && group !== undefined && !switcher;
-    const top: Entry[] = many && !oneLine
-      ? groups.map((candidate) => ({ kind: 'group', group: candidate }))
-      : group === undefined
-      ? []
-      : this.#entries(group);
+    const panes = this.#menus && many;
+    const top: Entry[] = [
+      ...pinned,
+      ...(many
+        ? groups.map((candidate) => ({ kind: 'group' as const, group: candidate }))
+        : group === undefined
+        ? []
+        : this.#entries(group)),
+    ];
     const user = this.#config.user;
 
-    return html`<header class="topbar" ?data-two-lines=${many && !oneLine && !switcher && group !== undefined}>
+    return html`<header class="topbar" ?data-panes=${panes}>
       <div class="top-line">
         <div class="brand">${this.#brand(texts)}</div>
-        ${
-      switcher ? this.#switcherButton(texts) : oneLine ? this.#groupSelect(texts, groups, group.name, true) : nothing
-    }
+        ${switcher ? this.#switcherButton(texts) : nothing}
         ${
       switcher
         ? html`<div class="line"></div>`
         : html`<nav class="line" aria-label=${texts.navigation} @keydown=${this.#onLineKeyDown}>${
-          this.#line(oneLine ? `top:${group.name}` : 'top', top, texts, !oneLine)
+          this.#line('top', top, texts)
         }</nav>`
     }
         ${this.#searchable && !switcher ? this.#searchButton(texts, false) : nothing} ${
@@ -1061,20 +1471,270 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     }
         ${user === undefined ? nothing : this.#topUser(texts, user)}
       </div>
-      ${
-      many && !oneLine && !switcher && group !== undefined
-        ? html`<nav class="sub-line line" aria-label=${this.#labelOf(group)} @keydown=${this.#onLineKeyDown}>${
-          this.#line(`sub:${group.name}`, this.#entries(group), texts)
-        }</nav>`
-        : nothing
-    }
+      ${panes ? this.#panePanel(top, texts) : nothing}
     </header>`;
   }
 
-  // The app switcher: the open app (its icon and title) as a dropdown button; it opens the search panel at it.
+  // --- Two-pane menus (`nav="top"`, 2026-10-08) ---------------------------------------------------------------------
+
+  // The disclosure pattern of site navigation (WAI): the groups in the top line are buttons (`aria-expanded`) that open
+  // the group's menu. A click opens and closes; while one is open, hovering another group switches to it; Down opens it
+  // and goes into it. Escape, a click outside, the focus leaving the topbar and choosing an item close it.
+  #panelEntry(group: Group): TemplateResult {
+    const key = this.#entryKey({ kind: 'group', group });
+    const open = this.#panelOpen === key;
+    const current = group.items.some((item) => item.id === this.#active);
+
+    return html`<button
+      type="button"
+      class="tab tab--menu"
+      data-panel-entry=${key}
+      aria-expanded=${open}
+      aria-controls=${`${this.#id}-panel`}
+      aria-current=${ifDefined(current ? 'true' : undefined)}
+      @click=${() => this.#togglePanel(key)}
+      @pointerenter=${(event: PointerEvent) => {
+      // Switching while one is open (the mouse only: a touch is a click).
+      if (event.pointerType === 'mouse' && this.#panelOpen !== undefined && this.#panelOpen !== key) {
+        this.#togglePanel(key);
+      }
+    }}
+      @keydown=${(event: KeyboardEvent) => {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        this.#togglePanel(key, true);
+        // Its shown subgroup (the first in the document), else (one column) its first item.
+        void this.updateComplete.then(() =>
+          this.#el('[data-panel] .pane-tab[aria-selected="true"], [data-panel] .panel-item')?.focus()
+        );
+      }
+    }}
+    ><span class="tab-title">${this.#labelOf(group)}</span>${chevronIcon()}</button>`;
+  }
+
+  #togglePanel(key: string, open = this.#panelOpen !== key): void {
+    this.#panelOpen = open ? key : undefined;
+    this.#paneShown = undefined;
+    clearTimeout(this.#paneTimer);
+    this.requestUpdate();
+  }
+
+  // Closes the open two-pane menu; `focus`: back to its entry (Escape).
+  #closePanel(focus = false): void {
+    const key = this.#panelOpen;
+
+    if (key === undefined) {
+      return;
+    }
+
+    this.#panelOpen = undefined;
+    this.requestUpdate();
+
+    if (focus) {
+      this.#el(`[data-panel-entry="${CSS.escape(key)}"]`)?.focus();
+    }
+  }
+
+  // A pointer down outside the panel and its entries closes it (also on the topbar's other buttons).
+  readonly #onPointerDownOutside = (event: PointerEvent) => {
+    if (this.#panelOpen === undefined) {
+      return;
+    }
+
+    const path = event.composedPath();
+    const inside = path.some((target) =>
+      target instanceof Element && (target.hasAttribute('data-panel') || target.hasAttribute('data-panel-entry'))
+    );
+
+    if (!inside) {
+      this.#closePanel();
+    }
+  };
+
+  // The open entry of the top line (a group or a subgroup), if any.
+  #openGroup(entries: Entry[]): Group | undefined {
+    const entry = entries.find((candidate) =>
+      candidate.kind === 'group' && this.#entryKey(candidate) === this.#panelOpen
+    );
+
+    return entry?.kind === 'group' ? entry.group : undefined;
+  }
+
+  // The panes of a group's menu: its items without a subgroup (no heading, `key` ''), then one per subgroup (its name
+  // and icon).
+  #panes(group: Group): Pane[] {
+    const { loose, subgroups } = subgroupsOf(group.items);
+
+    return [
+      ...(loose.length > 0 ? [{ key: '', items: loose }] : []),
+      ...subgroups.map((subgroup) => ({
+        key: subgroup.name,
+        heading: subgroup.name,
+        icon: this.#subgroupIcon(group.name, subgroup.name),
+        items: subgroup.items,
+      })),
+    ];
+  }
+
+  // The focus has left the topbar (not to nowhere: a click on a panel's free space): the panel closes.
+  readonly #onPanelFocusOut = (event: FocusEvent) => {
+    const next = event.relatedTarget as Node | null;
+    const topbar = this.#el('.topbar');
+
+    if (next !== null && topbar !== null && !topbar.contains(next)) {
+      this.#closePanel();
+    }
+  };
+
+  // An item of a panel: its icon, its title (the dot of an open one, with the taskbar) and its description.
+  #panelItem(item: Spec.NavItem): TemplateResult {
+    return html`<li><button
+      type="button"
+      class="panel-item"
+      aria-current=${ifDefined(item.id === this.#active ? 'page' : undefined)}
+      @click=${() => this.open(item.id)}
+    >${itemIcon(item)}<span class="panel-text"><span class="panel-title">${item.title}${
+      this.#config.taskbar === true && this.#opened.includes(item.id)
+        ? html`<span class="running-dot" aria-hidden="true"></span>`
+        : nothing
+    }</span>${
+      item.description === undefined ? nothing : html`<span class="panel-description">${item.description}</span>`
+    }</span></button></li>`;
+  }
+
+  #panelHeading(column: Pane): TemplateResult | typeof nothing {
+    return column.heading === undefined
+      ? nothing
+      : html`<h3 class="panel-heading">${groupIcon(column.icon)}<span>${column.heading}</span></h3>`;
+  }
+
+  // The menu of the open group, below its entry: on the left its subgroups (its items without a subgroup first, as
+  // "General"), on the right the items of the shown one, with their descriptions. The left pane is a vertical tablist,
+  // the right one its tabpanel; all right panes lie in one grid cell (the hidden ones invisible), so the menu keeps its
+  // height while switching. A group of one column (e.g. one subgroup): only the right pane, with its heading.
+  #panePanel(entries: Entry[], texts: Texts): TemplateResult {
+    const group = this.#openGroup(entries);
+    const id = `${this.#id}-panel`;
+
+    if (group === undefined) {
+      return html`<div class="pane-menu" id=${id} data-panel hidden></div>`;
+    }
+
+    const columns = this.#panes(group);
+    const activeColumn = columns.find((column) => column.items.some((item) => item.id === this.#active));
+    const shown = columns.find((column) => column.key === this.#paneShown) ?? activeColumn ?? columns[0];
+    const single = columns.length === 1;
+    // Below its entry: the entry's left edge, from the topbar's (the menu's containing block).
+    const left =
+      (this.#el(`[data-panel-entry="${CSS.escape(this.#panelOpen ?? '')}"]`)?.getBoundingClientRect().left ?? 0)
+      - (this.#el('.topbar')?.getBoundingClientRect().left ?? 0);
+
+    return html`<div
+      class="pane-menu"
+      id=${id}
+      data-panel
+      role="group"
+      aria-label=${this.#labelOf(group)}
+      ?data-single=${single}
+      style=${styleMap({ left: `${left}px` })}
+      @keydown=${this.#onPaneKeyDown}
+      @focusout=${this.#onPanelFocusOut}
+    >
+      ${
+      single
+        ? nothing
+        : html`<div class="pane-tabs" role="tablist" aria-orientation="vertical">${
+          columns.map((column) => {
+            const selected = column === shown;
+            const current = column === activeColumn;
+
+            return html`<button
+              type="button"
+              class="pane-tab"
+              role="tab"
+              id=${`${id}-tab-${column.key.replace(/[^a-z0-9]+/gi, '-')}`}
+              aria-selected=${selected}
+              aria-controls=${`${id}-pane`}
+              tabindex=${selected ? 0 : -1}
+              ?data-current=${current}
+              @click=${() => this.#showPane(column.key)}
+              @focus=${() => this.#showPane(column.key)}
+              @pointerenter=${(event: PointerEvent) => {
+              // After a moment: a mouse on its way to the right pane does not switch.
+              if (event.pointerType === 'mouse') {
+                clearTimeout(this.#paneTimer);
+                this.#paneTimer = setTimeout(() => this.#showPane(column.key), 120);
+              }
+            }}
+              @pointerleave=${() => clearTimeout(this.#paneTimer)}
+            >${groupIcon(column.icon)}<span class="pane-tab-title">${
+              column.heading ?? texts.general
+            }</span>${chevronIcon()}</button>`;
+          })
+        }</div>`
+    }
+      <div class="pane-stack">${
+      columns.map((column) =>
+        html`<div
+            class="pane"
+            id=${ifDefined(column === shown ? `${id}-pane` : undefined)}
+            role=${ifDefined(single ? undefined : 'tabpanel')}
+            aria-labelledby=${ifDefined(single ? undefined : `${id}-tab-${column.key.replace(/[^a-z0-9]+/gi, '-')}`)}
+            ?data-shown=${column === shown}
+            ?inert=${column !== shown}
+          >
+            ${single ? this.#panelHeading(column) : nothing}
+            <ul class="panel-list">${column.items.map((item) => this.#panelItem(item))}</ul>
+          </div>`
+      )
+    }</div>
+    </div>`;
+  }
+
+  #showPane(key: string): void {
+    clearTimeout(this.#paneTimer);
+
+    if (this.#paneShown !== key) {
+      this.#paneShown = key;
+      this.requestUpdate();
+    }
+  }
+
+  // Up and Down (Home, End) in a pane (on the left they also show the subgroup); Right from the left pane to the first
+  // item on the right, Left back to the shown subgroup. Escape: `#onShortcut`.
+  readonly #onPaneKeyDown = (event: KeyboardEvent) => {
+    const target = event.composedPath()[0] as Element;
+    const tabs = [...this.renderRoot.querySelectorAll<HTMLButtonElement>('.pane-tab')];
+    const items = [...this.renderRoot.querySelectorAll<HTMLButtonElement>('.pane[data-shown] .panel-item')];
+    const inTabs = target.classList.contains('pane-tab');
+    const buttons = inTabs ? tabs : items;
+    const index = buttons.indexOf(target as HTMLButtonElement);
+
+    if (index < 0) {
+      return;
+    }
+
+    const selectedTab = tabs.find((tab) => tab.getAttribute('aria-selected') === 'true');
+    const next = ({
+      ArrowDown: buttons[index + 1],
+      ArrowUp: buttons[index - 1],
+      Home: buttons[0],
+      End: buttons.at(-1),
+      ArrowRight: inTabs ? items[0] : undefined,
+      ArrowLeft: inTabs ? undefined : selectedTab,
+    } as Record<string, HTMLButtonElement | undefined>)[event.key];
+
+    if (next !== undefined) {
+      event.preventDefault();
+      // A tab shows its pane when focused (`@focus`); the right pane's items exist already.
+      next.focus();
+    }
+  };
+
+  // The item switcher: the open item (its icon and title) as a dropdown button; it opens the search panel at it.
   #switcherButton(texts: Texts): TemplateResult {
-    const active = this.#app(this.#active);
-    const label = `${texts.switchApp} (${isMac() ? '⌘K' : 'Ctrl K'})`;
+    const active = this.#itemOf(this.#active);
+    const label = `${texts.switchItem} (${isMac() ? '⌘K' : 'Ctrl K'})`;
 
     return html`<button
       type="button"
@@ -1086,37 +1746,36 @@ class AppCockpitElement extends LitElement implements Spec.Element {
       data-tip-side="bottom"
       @click=${this.#openPalette}
     >
-      ${active === undefined ? nothing : appIcon(active)}
-      <span class="switcher-title">${active?.title ?? texts.switchApp}</span>
+      ${active === undefined ? nothing : itemIcon(active)}
+      <span class="switcher-title">${active?.title ?? texts.switchItem}</span>
       ${selectorIcon()}
     </button>`;
   }
 
-  // The entries of a group: its apps without a subgroup, then its subgroups.
+  // The entries of a group: its items without a subgroup, then its subgroups.
   #entries(group: Group): Entry[] {
-    const { loose, subgroups } = subgroupsOf(group.apps);
+    const { loose, subgroups } = subgroupsOf(group.items);
 
     return [
-      ...loose.map((app) => ({ kind: 'app' as const, app })),
+      ...loose.map((item) => ({ kind: 'item' as const, item })),
       ...subgroups.map((subgroup) => ({ kind: 'subgroup' as const, parent: group.name, group: subgroup })),
     ];
   }
 
   // A line of entries; Left and Right (Home, End) move between them. Those that wrap are hidden (the line is one row
   // high) and listed in the "More" menu.
-  // `icons`: the tabs with their icons (none in the one line of `nav="top-compact"`, 2026-10-04).
-  #line(key: string, entries: Entry[], texts: Texts, icons = true): TemplateResult {
+  #line(key: string, entries: Entry[], texts: Texts): TemplateResult {
     const hidden = Math.min(this.#overflow.get(key) ?? 0, entries.length);
 
     return html`<ul class="line-list" data-overflow=${key}>${
-      repeat(entries, (entry) => this.#entryKey(entry), (entry) => html`<li>${this.#entry(entry, icons)}</li>`)
+      repeat(entries, (entry) => this.#entryKey(entry), (entry) => html`<li>${this.#entry(entry)}</li>`)
     }</ul>
       ${hidden > 0 ? this.#lineMore(key, entries.slice(entries.length - hidden), texts) : nothing}`;
   }
 
   #entryKey(entry: Entry): string {
-    return entry.kind === 'app'
-      ? `app:${entry.app.id}`
+    return entry.kind === 'item'
+      ? `item:${entry.item.id}`
       : entry.kind === 'group'
       ? `group:${entry.group.name}`
       : `sub:${entry.parent}/${entry.group.name}`;
@@ -1151,111 +1810,113 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     }
   };
 
-  #entry(entry: Entry, icons = true): TemplateResult {
-    if (entry.kind === 'app') {
-      const { app } = entry;
+  #entry(entry: Entry): TemplateResult {
+    if (entry.kind === 'item') {
+      const { item } = entry;
 
       return html`<button
         type="button"
         class="tab"
-        aria-current=${ifDefined(app.id === this.#active ? 'page' : undefined)}
-        title=${ifDefined(app.description)}
-        @click=${() => this.open(app.id)}
-      >${icons ? appIcon(app) : nothing}<span class="tab-title">${app.title}</span></button>`;
+        aria-current=${ifDefined(item.id === this.#active ? 'page' : undefined)}
+        title=${ifDefined(item.description)}
+        @click=${() => this.open(item.id)}
+      >${itemIcon(item)}<span class="tab-title">${item.title}</span></button>`;
     }
 
     if (entry.kind === 'group') {
-      const { group } = entry;
-      const shown = group.name === (this.#selectedGroup ?? '');
-      const current = group.apps.some((app) => app.id === this.#active);
-      const icon = this.#groupIcon(group.name);
-
-      return html`<button
-        type="button"
-        class="tab"
-        aria-pressed=${shown}
-        aria-current=${ifDefined(current ? 'true' : undefined)}
-        @click=${() => {
-        this.#selectedGroup = group.name;
-        this.requestUpdate();
-      }}
-      >${icon === undefined || !icons ? nothing : groupIcon(icon)}<span class="tab-title">${
-        this.#labelOf(group)
-      }</span></button>`;
+      return this.#panelEntry(entry.group);
     }
 
-    // A subgroup: a dropdown of its apps.
+    // A subgroup: a dropdown of its items.
     const { parent, group } = entry;
-    const key = `tab:${parent}/${group.name}`;
-    const api = this.#menu(key, {
+    const menu = this.#menu(`tab:${parent}/${group.name}`, {
       placement: 'bottom-start',
-      anchor: this.#belowLine(this.#dropTrigger(key)),
-      onSelect: (value) => this.open(value.slice('app:'.length)),
+      anchor: this.#belowLine,
+      onSelect: (id) => this.open(id),
     });
-    const icon = this.#subgroupIcon(parent, group.name);
-    const current = group.apps.some((app) => app.id === this.#active);
+    const current = group.items.some((item) => item.id === this.#active);
 
+    // No icon: a dropdown in the line is text only, like the groups (2026-10-08).
     return html`<button
+        type="button"
         class="tab tab--menu"
-        data-drop=${key.replace(/[^a-z0-9]+/gi, '-')}
         aria-current=${ifDefined(current ? 'true' : undefined)}
-        ${spread(api.getTriggerProps())}
-      >${
-      icon === undefined || !icons ? nothing : groupIcon(icon)
-    }<span class="tab-title">${group.name}</span>${chevronIcon()}</button>
-      <div class="menu-positioner" ${spread(api.getPositionerProps())}>
-        <div class="menu-popup" data-drop ${spread(api.getContentProps())}>
-          ${group.apps.map((app) => this.#appMenuItem(api, app))}
-        </div>
-      </div>`;
+        id=${menu.triggerId}
+        aria-haspopup="menu"
+        aria-expanded=${menu.open}
+        aria-controls=${menu.popupId}
+        data-state=${menu.open ? 'open' : 'closed'}
+        @click=${menu.toggle}
+        @keydown=${menu.onTriggerKeyDown}
+      ><span class="tab-title">${group.name}</span>${chevronIcon()}</button>
+      ${
+      this.#menuPopup(
+        menu,
+        { class: 'menu-popup', drop: true },
+        group.items.map((item) => this.#itemMenuEntry(menu, item, hasIcons(group.items))),
+      )
+    }`;
   }
 
-  #appMenuItem(api: menu.Api, app: Spec.MiniApp): TemplateResult {
-    return html`<div class="menu-item" ?data-current=${app.id === this.#active} ${
-      spread(api.getItemProps({ value: `app:${app.id}` }))
-    }><span class="menu-label">${app.title}</span></div>`;
+  // An item of a dropdown of the line; `icons`: the menu has an icon slot (some of its items have an icon), so the
+  // titles stay aligned.
+  #itemMenuEntry(menu: Menu, item: Spec.NavItem, icons: boolean): TemplateResult {
+    return html`<div
+      class="menu-item"
+      role="menuitem"
+      id=${menu.itemId(item.id)}
+      data-value=${item.id}
+      ?data-highlighted=${menu.highlighted === item.id}
+      ?data-current=${item.id === this.#active}
+    >${
+      icons
+        ? html`<span class="menu-icon menu-icon--item" aria-hidden="true">${
+          item.icon === undefined ? nothing : unsafeHTML(item.icon)
+        }</span>`
+        : nothing
+    }<span class="menu-label">${item.title}</span></div>`;
   }
 
-  // The "More" menu of a line: its hidden entries (a group chooses it, a subgroup lists its apps under its name).
+  // The "More" menu of the line: its hidden entries (a group or a subgroup lists its items under its name).
   #lineMore(key: string, entries: Entry[], texts: Texts): TemplateResult {
-    const api = this.#menu(`more:${key}`, {
+    const menu = this.#menu(`more:${key}`, {
       placement: 'bottom-end',
-      anchor: this.#belowLine(this.#dropTrigger(`more:${key}`)),
-      onSelect: (value) => {
-        const [kind, ...rest] = value.split(':');
-        const id = rest.join(':');
-
-        if (kind === 'group') {
-          this.#selectedGroup = id;
-          this.requestUpdate();
-        } else {
-          this.open(id);
-        }
-      },
+      anchor: this.#belowLine,
+      onSelect: (id) => this.open(id),
     });
     const current = entries.some((entry) =>
-      entry.kind === 'app' ? entry.app.id === this.#active : entry.group.apps.some((app) => app.id === this.#active)
+      entry.kind === 'item'
+        ? entry.item.id === this.#active
+        : entry.group.items.some((item) => item.id === this.#active)
     );
+    const icons = hasIcons(entries.flatMap((entry) => entry.kind === 'item' ? [entry.item] : entry.group.items));
 
-    return html`<button class="tab tab--more" data-drop=${`more:${key}`.replace(/[^a-z0-9]+/gi, '-')} aria-current=${
-      ifDefined(current ? 'true' : undefined)
-    } ${spread(api.getTriggerProps())}><span class="tab-title">${texts.more}</span>${chevronIcon()}</button>
-      <div class="menu-positioner" ${spread(api.getPositionerProps())}>
-        <div class="menu-popup" data-drop ${spread(api.getContentProps())}>
-          ${
-      entries.map((entry) =>
-        entry.kind === 'app'
-          ? this.#appMenuItem(api, entry.app)
-          : entry.kind === 'group'
-          ? html`<div class="menu-item" ?data-current=${entry.group.name === this.#selectedGroup} ${
-            spread(api.getItemProps({ value: `group:${entry.group.name}` }))
-          }><span class="menu-label">${this.#labelOf(entry.group)}</span></div>`
-          : html`<div class="menu-group-label">${entry.group.name}</div>
-            ${entry.group.apps.map((app) => this.#appMenuItem(api, app))}`
+    return html`<button
+        type="button"
+        class="tab tab--more"
+        aria-current=${ifDefined(current ? 'true' : undefined)}
+        id=${menu.triggerId}
+        aria-haspopup="menu"
+        aria-expanded=${menu.open}
+        aria-controls=${menu.popupId}
+        data-state=${menu.open ? 'open' : 'closed'}
+        @click=${menu.toggle}
+        @keydown=${menu.onTriggerKeyDown}
+      ><span class="tab-title">${texts.more}</span>${chevronIcon()}</button>
+      ${
+      this.#menuPopup(
+        menu,
+        { class: 'menu-popup', drop: true },
+        entries.map((entry) =>
+          entry.kind === 'item'
+            ? this.#itemMenuEntry(menu, entry.item, icons)
+            : html`<div class="menu-group-label">${
+              entry.kind === 'group' ? this.#labelOf(entry.group) : entry.group.name
+            }</div>
+              ${entry.group.items.map((item) => this.#itemMenuEntry(menu, item, icons))}`
+        ),
       )
-    }
-        </div>
-      </div>`;
+    }`;
   }
 
   // The user in the top line: the avatar (the name as the tooltip); with `userMenu` a button that opens it below,
@@ -1270,81 +1931,124 @@ class AppCockpitElement extends LitElement implements Spec.Element {
       return html`<div class="top-user" aria-label=${user.name} data-tip=${user.name} data-tip-side="bottom">${avatar}</div>`;
     }
 
-    const api = this.#menu('user', {
+    const menu = this.#menu('user', {
       placement: 'bottom-end',
-      anchor: this.#belowLine(() => this.#el('.top-user')),
+      anchor: this.#belowLine,
       onSelect: (value) => this.#select(sections, value),
     });
 
     return html`<button
+        type="button"
         class="top-user"
         aria-label="${texts.account}: ${user.name}"
         data-tip=${user.name}
         data-tip-side="bottom"
-        ${spread(api.getTriggerProps())}
+        id=${menu.triggerId}
+        aria-haspopup="menu"
+        aria-expanded=${menu.open}
+        aria-controls=${menu.popupId}
+        data-state=${menu.open ? 'open' : 'closed'}
+        @click=${menu.toggle}
+        @keydown=${menu.onTriggerKeyDown}
       >${avatar}</button>
-      <div class="menu-positioner" ${spread(api.getPositionerProps())}>
-        <div class="menu-popup" data-drop ${spread(api.getContentProps())}>
-          <div class="menu-user">
+      ${
+      this.#menuPopup(
+        menu,
+        { class: 'menu-popup', drop: true },
+        html`<div class="menu-user">
             <span class="user-name">${user.name}</span>
             ${user.detail === undefined ? nothing : html`<span class="user-detail">${user.detail}</span>`}
           </div>
-          <div class="menu-separator"></div>
-          ${this.#menuItems(api, sections)}
-        </div>
-      </div>`;
+          <div class="menu-separator" role="separator"></div>
+          ${this.#menuItems(menu, sections)}`,
+      )
+    }`;
   }
 
-  // --- Zag menus -----------------------------------------------------------------------------------------------------
+  // --- Menus ---------------------------------------------------------------------------------------------------------
 
-  // A menu (Zag): `key` for its machine, where it opens, and what choosing an item does.
-  #menu(
-    key: string,
-    options: {
-      placement: 'right-start' | 'right-end' | 'top-start' | 'bottom-start' | 'bottom-end';
-      anchor?: () => DOMRect;
-      sameWidth?: boolean;
-      onSelect: (value: string) => void;
-    },
-  ): menu.Api {
-    return this.#zag.use(`menu:${key}`, menu, {
-      id: `${this.#id}-${key.replace(/[^a-z0-9]+/gi, '-')}`,
-      getRootNode: () => this.renderRoot as ShadowRoot,
-      positioning: {
-        placement: options.placement,
-        strategy: 'fixed',
-        gutter: 0,
-        overflowPadding: 0,
-        sameWidth: options.sameWidth ?? false,
-        ...(options.anchor === undefined ? {} : (() => {
-          const anchor = this.#anchor(key, options.anchor);
+  // The menu `key` (made on first use and kept: its state), with this render's options: where it opens, and what
+  // choosing an item does. The templates render its trigger, `#menuPopup` and its items with its ids (`menu.ts`).
+  #menu(key: string, options: MenuOptions): Menu {
+    let menu = this.#menuByKey.get(key);
 
-          return { getAnchorElement: () => anchor };
-        })()),
-      },
-      onSelect: ({ value }: { value: string }) => options.onSelect(value),
-    } as menu.Props);
+    if (menu === undefined) {
+      menu = new Menu(this, `${this.#id}-${key.replace(/[^a-z0-9]+/gi, '-')}`, options);
+      this.#menuByKey.set(key, menu);
+    }
+
+    menu.options = options;
+
+    return menu;
+  }
+
+  #closeMenus(): void {
+    for (const menu of this.#menuByKey.values()) {
+      menu.close();
+    }
+  }
+
+  // The popup of a menu: its positioner (placed by the menu, hidden while closed) and the panel with the items
+  // (`content`). `drop`, `flush`, `sheet`: its look (`styles.ts`). A list to choose from (the group select): `listbox`.
+  #menuPopup(
+    menu: Menu,
+    panel: { class: string; listbox?: boolean; drop?: boolean; flush?: boolean; sheet?: boolean },
+    content: unknown,
+  ): TemplateResult {
+    return html`<div
+      class=${panel.listbox === true ? 'select-positioner' : 'menu-positioner'}
+      id=${menu.positionerId}
+      ?hidden=${!menu.open}
+    >
+      <div
+        class=${panel.class}
+        id=${menu.popupId}
+        role=${panel.listbox === true ? 'listbox' : 'menu'}
+        tabindex="-1"
+        aria-labelledby=${menu.triggerId}
+        aria-activedescendant=${ifDefined(menu.highlighted === undefined ? undefined : menu.itemId(menu.highlighted))}
+        ?data-drop=${panel.drop === true}
+        ?data-flush=${panel.flush === true}
+        ?data-sheet=${panel.sheet === true}
+        @keydown=${menu.onPopupKeyDown}
+        @pointermove=${menu.onPopupPointerMove}
+        @pointerleave=${menu.onPopupPointerLeave}
+        @click=${menu.onPopupClick}
+      >${content}</div>
+    </div>`;
   }
 
   // The sections of a menu, separated by lines, each with its label. An item with `checked` is a radio option (a check
   // in place of its icon, on the checked one).
-  #menuItems(api: menu.Api, sections: readonly Spec.MenuSection[]): TemplateResult[] {
+  #menuItems(menu: Menu, sections: readonly Spec.MenuSection[]): TemplateResult[] {
     return sectionsOf(sections).flatMap((section, index) => [
-      ...(index > 0 ? [html`<div class="menu-separator" ${spread(api.getSeparatorProps())}></div>`] : []),
+      ...(index > 0 ? [html`<div class="menu-separator" role="separator"></div>`] : []),
       ...(section.label === undefined ? [] : [html`<div class="menu-group-label">${section.label}</div>`]),
       ...section.items.map((item) => {
         if (item.checked !== undefined) {
           const checked = item.checked();
 
-          return html`<div class="menu-item" ?data-checked=${checked} ${
-            spread(api.getOptionItemProps({ type: 'radio', value: item.id, checked, onCheckedChange: () => {} }))
-          }>
+          return html`<div
+            class="menu-item"
+            role="menuitemradio"
+            aria-checked=${checked}
+            id=${menu.itemId(item.id)}
+            data-value=${item.id}
+            ?data-highlighted=${menu.highlighted === item.id}
+            ?data-checked=${checked}
+          >
             <span class="menu-icon menu-check" ?data-checked=${checked}>${checkIcon()}</span>
             <span class="menu-label">${item.label}</span>
           </div>`;
         }
 
-        return html`<div class="menu-item" ${spread(api.getItemProps({ value: item.id }))}>
+        return html`<div
+          class="menu-item"
+          role="menuitem"
+          id=${menu.itemId(item.id)}
+          data-value=${item.id}
+          ?data-highlighted=${menu.highlighted === item.id}
+        >
           <span class="menu-icon" aria-hidden="true">${item.icon === undefined ? nothing : unsafeHTML(item.icon)}</span>
           <span class="menu-label">${item.label}</span>
           ${item.shortcut === undefined ? nothing : html`<kbd class="key">${item.shortcut}</kbd>`}
@@ -1362,113 +2066,124 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     this.requestUpdate();
   }
 
-  // A group (or a subgroup) in the rail: its button (its name as the tooltip), and a panel with its apps (the apps
+  // A group (or a subgroup) in the rail: its button (its name as the tooltip), and a panel with its items (the items
   // without a subgroup first, then each subgroup with its name as a heading), at the button, touching the sidebar.
   #flyout(key: string, group: Group, label: string, icon: string | undefined): TemplateResult {
-    const id = key.replace(/[^a-z0-9]+/gi, '-');
-    const api = this.#menu(key, {
+    const menu = this.#menu(key, {
       placement: 'right-start',
-      anchor: this.#besideSidebar(() => this.#el(`[data-flyout="${id}"]`)),
-      onSelect: (value) => this.open(value),
+      anchor: this.#besideSidebar,
+      onSelect: (id) => this.open(id),
     });
-    const { loose, subgroups } = subgroupsOf(group.apps);
-    const current = group.apps.some((app) => app.id === this.#active);
-    const entry = (app: Spec.MiniApp) =>
-      html`<div class="flyout-item" ?data-current=${app.id === this.#active} ${
-        spread(api.getItemProps({ value: app.id }))
-      }>${appIcon(app)}${app.title}</div>`;
+    const { loose, subgroups } = subgroupsOf(group.items);
+    const current = group.items.some((item) => item.id === this.#active);
+    // Icons only on the items (2026-10-07), not on the headings: an item without one gets its framed initials.
+    const entry = (item: Spec.NavItem) =>
+      html`<div
+        class="flyout-item"
+        role="menuitem"
+        id=${menu.itemId(item.id)}
+        data-value=${item.id}
+        ?data-highlighted=${menu.highlighted === item.id}
+        ?data-current=${item.id === this.#active}
+      >${this.#iconAndTitle(item, false, item.title, true)}</div>`;
 
     return html`
       <button
         type="button"
         class="item"
-        data-flyout=${id}
         aria-label=${label}
         aria-current=${ifDefined(current ? 'true' : undefined)}
         data-tip=${label}
-        ${spread(api.getTriggerProps())}
+        id=${menu.triggerId}
+        aria-haspopup="menu"
+        aria-expanded=${menu.open}
+        aria-controls=${menu.popupId}
+        data-state=${menu.open ? 'open' : 'closed'}
+        @click=${menu.toggle}
+        @keydown=${menu.onTriggerKeyDown}
       >${
-      icon === undefined ? html`<span class="tile" aria-hidden="true">${initialsOf(label)}</span>` : groupIcon(icon)
+      icon === undefined ? html`<span class="tile" aria-hidden="true">${initialsIcon(label)}</span>` : groupIcon(icon)
     }</button>
-      <div class="menu-positioner" ${spread(api.getPositionerProps())}>
-        <div class="flyout" ${spread(api.getContentProps())}>
-          <div class="flyout-title">${label}</div>
+      ${
+      this.#menuPopup(
+        menu,
+        { class: 'flyout' },
+        html`<div class="flyout-title">${label}</div>
           ${loose.map(entry)}
           ${
-      subgroups.map((subgroup) =>
-        html`<div ${spread(api.getItemGroupProps({ id: `${id}-${subgroup.name}` }))}>
-          <div class="flyout-label" ${spread(api.getItemGroupLabelProps({ htmlFor: `${id}-${subgroup.name}` }))}>
-            ${subgroup.name}
-          </div>
-          ${subgroup.apps.map(entry)}
-        </div>`
+          subgroups.map((subgroup, index) => {
+            const labelId = `${menu.popupId}-group-${index}`;
+
+            return html`<div role="group" aria-labelledby=${labelId}>
+              <div class="flyout-label" id=${labelId}>${subgroup.name}</div>
+              ${subgroup.items.map(entry)}
+            </div>`;
+          })
+        }`,
       )
     }
-        </div>
-      </div>
     `;
   }
 
   // --- Group select --------------------------------------------------------------------------------------------------
 
-  // `top`: in the top line of the topbar (`nav="top-compact"`): a compact button, its popup a plain panel below the line.
-  #groupSelect(texts: Texts, groups: Group[], value: string, top = false): TemplateResult {
-    const collection = select.collection({
-      items: groups,
-      itemToValue: (group: Group) => group.name,
-      itemToString: (group: Group) => this.#labelOf(group),
-    });
-    const api = this.#zag.use('select:group', select, {
-      id: `${this.#id}-group`,
-      getRootNode: () => this.renderRoot as ShadowRoot,
-      collection,
-      value: [value],
-      positioning: top
-        ? {
-          placement: 'bottom-start',
-          strategy: 'fixed',
-          gutter: 0,
-          sameWidth: false,
-          getAnchorElement: (() => {
-            const anchor = this.#anchor('group-select', this.#belowLine(() => this.#el('.group-select--top')));
-
-            return () => anchor;
-          })(),
-        }
-        : { placement: 'bottom-start', strategy: 'fixed', gutter: 4, sameWidth: true },
-      onValueChange: ({ value: next }: { value: string[] }) => {
-        this.#selectedGroup = next[0] ?? '';
+  // A `Menu` as a list to choose from (`listbox`): it opens at the chosen group.
+  // (Until 2026-10-08 also in the top line of the one-line topbar, `nav="top-compact"` then, which has the groups as
+  // entries with two-pane menus since.)
+  #groupSelect(texts: Texts, groups: Group[], value: string): TemplateResult {
+    const menu = this.#menu('group-select', {
+      placement: 'bottom-start',
+      gutter: 4,
+      sameWidth: true,
+      selected: () => value,
+      onSelect: (next) => {
+        this.#selectedGroup = next;
         this.requestUpdate();
       },
-    } as select.Props);
+    });
     const current = groups.find((group) => group.name === value);
-    const icons = groups.some((group) => this.#groupIcon(group.name) !== undefined);
 
     return html`
-      <button class=${top ? 'group-select group-select--top' : 'group-select'} aria-label=${texts.group} ${
-      spread(api.getTriggerProps())
-    }>
-        ${icons && current !== undefined && !top ? groupIcon(this.#groupIcon(current.name)) : nothing}
+      <button
+        type="button"
+        class="group-select"
+        aria-label=${texts.group}
+        id=${menu.triggerId}
+        aria-haspopup="listbox"
+        aria-expanded=${menu.open}
+        aria-controls=${menu.popupId}
+        data-state=${menu.open ? 'open' : 'closed'}
+        @click=${menu.toggle}
+        @keydown=${menu.onTriggerKeyDown}
+      >
         <span class="group-select-value">${current === undefined ? '' : this.#labelOf(current)}</span>
-        ${current === undefined ? nothing : html`<span class="group-count">${current.apps.length}</span>`}
+        ${current === undefined ? nothing : html`<span class="group-count">${current.items.length}</span>`}
         <span class="group-select-icon">${selectorIcon()}</span>
       </button>
-      <div class="select-positioner" ${spread(api.getPositionerProps())}>
-        <div class="select-popup" ?data-drop=${top} ${spread(api.getContentProps())}>
-          <div class="select-list">
-            ${
-      groups.map((group) =>
-        html`<div class="select-item" ${spread(api.getItemProps({ item: group }))}>
-          <span class="select-indicator" ${spread(api.getItemIndicatorProps({ item: group }))}>${checkIcon()}</span>
-          ${icons ? groupIcon(this.#groupIcon(group.name)) : nothing}
-          <span class="select-item-text">${this.#labelOf(group)}</span>
-          <span class="select-item-count">${group.apps.length}</span>
-        </div>`
+      ${
+      this.#menuPopup(
+        menu,
+        { class: 'select-popup', listbox: true },
+        html`<div class="select-list">${
+          groups.map((group) => {
+            const selected = group.name === value;
+
+            return html`<div
+              class="select-item"
+              role="option"
+              aria-selected=${selected}
+              id=${menu.itemId(group.name)}
+              data-value=${group.name}
+              ?data-highlighted=${menu.highlighted === group.name}
+            >
+              <span class="select-indicator" ?hidden=${!selected}>${checkIcon()}</span>
+              <span class="select-item-text">${this.#labelOf(group)}</span>
+              <span class="select-item-count">${group.items.length}</span>
+            </div>`;
+          })
+        }</div>`,
       )
     }
-          </div>
-        </div>
-      </div>
     `;
   }
 
@@ -1497,27 +2212,32 @@ class AppCockpitElement extends LitElement implements Spec.Element {
       </div>`;
     }
 
-    const api = this.#menu('user', {
+    const menu = this.#menu('user', {
       // In the bottom bar's sheet (the sidebar as wide as the screen): above the user row, as wide as it.
       ...(this.#bottom
         ? { placement: 'top-start' as const, sameWidth: true }
-        : { placement: 'right-end' as const, anchor: this.#besideSidebar(() => this.#el('.user-button')) }),
+        : { placement: 'right-end' as const, anchor: this.#besideSidebar }),
       onSelect: (value) => this.#select(sections, value),
     });
 
     return html`<div class="user-row">
       <button
+        type="button"
         class="user-button"
         aria-label="${texts.account}: ${user.name}"
         data-tip=${ifDefined(rail ? user.name : undefined)}
-        ${spread(api.getTriggerProps())}
+        id=${menu.triggerId}
+        aria-haspopup="menu"
+        aria-expanded=${menu.open}
+        aria-controls=${menu.popupId}
+        data-state=${menu.open ? 'open' : 'closed'}
+        @click=${menu.toggle}
+        @keydown=${menu.onTriggerKeyDown}
       >
         ${content}
         <svg class="icon icon--chevron-right" viewBox="0 0 24 24" aria-hidden="true"><path d="m10 7 5 5-5 5" /></svg>
       </button>
-      <div class="menu-positioner" ${spread(api.getPositionerProps())}>
-        <div class="menu-popup" data-flush ${spread(api.getContentProps())}>${this.#menuItems(api, sections)}</div>
-      </div>
+      ${this.#menuPopup(menu, { class: 'menu-popup', flush: true }, this.#menuItems(menu, sections))}
     </div>`;
   }
 
@@ -1532,48 +2252,50 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     const actions = footer.actions ?? [];
     const sections = footer.menu ?? [];
     const side = topbar ? 'bottom' : rail ? 'right' : 'top';
-    const where = (button: string) =>
-      topbar
-        ? { placement: 'bottom-end' as const, anchor: this.#belowLine(() => this.#el(`.top-actions ${button}`)) }
-        : rail
-        ? {
-          placement: 'right-end' as const,
-          anchor: this.#besideSidebar(() => this.#el(button)),
-        }
-        : {
-          placement: 'top-start' as const,
-          anchor: () => this.#el('.footer')?.getBoundingClientRect() ?? new DOMRect(),
-          sameWidth: true,
-        };
+    // Where its menus open: below the top line; to the right of the rail; on top of the footer, as wide as it.
+    const where: Pick<MenuOptions, 'placement' | 'anchor' | 'sameWidth'> = topbar
+      ? { placement: 'bottom-end', anchor: this.#belowLine }
+      : rail
+      ? { placement: 'right-end', anchor: this.#besideSidebar }
+      : {
+        placement: 'top-start',
+        anchor: (trigger) => trigger.closest('.footer')?.getBoundingClientRect() ?? new DOMRect(),
+        sameWidth: true,
+      };
+    const look = { drop: topbar, flush: !topbar, sheet: !rail && !topbar };
+
+    // A button of the footer that opens `menu`.
+    const menuButton = (menu: Menu, label: string, icon: unknown, more = false) =>
+      html`<button
+        type="button"
+        class=${more ? 'footer-button footer-more' : 'footer-button'}
+        aria-label=${label}
+        data-tip=${label}
+        data-tip-side=${side}
+        id=${menu.triggerId}
+        aria-haspopup="menu"
+        aria-expanded=${menu.open}
+        aria-controls=${menu.popupId}
+        data-state=${menu.open ? 'open' : 'closed'}
+        @click=${menu.toggle}
+        @keydown=${menu.onTriggerKeyDown}
+      >${icon}</button>`;
 
     // An action with a menu of sections: like the kebab's menu, at this button.
     const sectionMenu = (action: Spec.Action, sections: readonly Spec.MenuSection[]) => {
-      const api = this.#menu(`action:${action.id}`, {
-        ...where(`[data-action="${action.id}"]`),
+      const menu = this.#menu(`action:${action.id}`, {
+        ...where,
         onSelect: (value) => this.#select(sections, value),
       });
 
-      return html`
-        <button
-          class="footer-button"
-          data-action=${action.id}
-          aria-label=${action.label}
-          data-tip=${action.label}
-          data-tip-side=${side}
-          ${spread(api.getTriggerProps())}
-        >${this.#actionIcon(action)}</button>
-        <div class="menu-positioner" ${spread(api.getPositionerProps())}>
-          <div class="menu-popup menu-popup--choices" ?data-flush=${!topbar} ?data-sheet=${
-        !rail && !topbar
-      } ?data-drop=${topbar} ${spread(api.getContentProps())}>${this.#menuItems(api, sections)}</div>
-        </div>
-      `;
+      return html`${menuButton(menu, action.label, this.#actionIcon(action))}${
+        this.#menuPopup(menu, { class: 'menu-popup menu-popup--choices', ...look }, this.#menuItems(menu, sections))
+      }`;
     };
 
     const choiceMenu = (action: Spec.Action, choices: Spec.Choices) => {
-      const button = `[data-action="${action.id}"]`;
-      const api = this.#menu(`choice:${action.id}`, {
-        ...where(button),
+      const menu = this.#menu(`choice:${action.id}`, {
+        ...where,
         onSelect: (value) => {
           choices.onChange(value);
           this.requestUpdate();
@@ -1582,39 +2304,35 @@ class AppCockpitElement extends LitElement implements Spec.Element {
       const current = choices.options.find((option) => option.value === choices.value());
       const label = current === undefined ? action.label : `${action.label}: ${current.label}`;
 
-      return html`
-        <button
-          class="footer-button"
-          data-action=${action.id}
-          aria-label=${label}
-          data-tip=${label}
-          data-tip-side=${side}
-          ${spread(api.getTriggerProps())}
-        >${this.#actionIcon(action)}</button>
-        <div class="menu-positioner" ${spread(api.getPositionerProps())}>
-          <div class="menu-popup menu-popup--choices" ?data-flush=${!topbar} ?data-sheet=${
-        !rail && !topbar
-      } ?data-drop=${topbar} ${spread(api.getContentProps())}>
-            <div class="menu-group-label">${action.label}</div>
+      return html`${menuButton(menu, label, this.#actionIcon(action))}${
+        this.#menuPopup(
+          menu,
+          { class: 'menu-popup menu-popup--choices', ...look },
+          html`<div class="menu-group-label">${action.label}</div>
             ${
-        choices.options.map((option) => {
-          const checked = option.value === choices.value();
+            choices.options.map((option) => {
+              const checked = option.value === choices.value();
 
-          return html`<div class="menu-item" ?data-checked=${checked} ${
-            spread(api.getItemProps({ value: option.value }))
-          }>
-              <span class="menu-icon menu-check" ?data-checked=${checked}>${checkIcon()}</span>
-              <span class="menu-label">${option.label}</span>
-            </div>`;
-        })
-      }
-          </div>
-        </div>
-      `;
+              return html`<div
+                class="menu-item"
+                role="menuitemradio"
+                aria-checked=${checked}
+                id=${menu.itemId(option.value)}
+                data-value=${option.value}
+                ?data-highlighted=${menu.highlighted === option.value}
+                ?data-checked=${checked}
+              >
+                <span class="menu-icon menu-check" ?data-checked=${checked}>${checkIcon()}</span>
+                <span class="menu-label">${option.label}</span>
+              </div>`;
+            })
+          }`,
+        )
+      }`;
     };
 
     const more = sectionsOf(sections).length === 0 ? undefined : this.#menu('more', {
-      ...where('.footer-more'),
+      ...where,
       onSelect: (value) => this.#select(sections, value),
     });
 
@@ -1653,22 +2371,11 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     }
       </div>
       ${
-      more === undefined ? nothing : html`
-        <button
-          class="footer-button footer-more"
-          aria-label=${texts.more}
-          data-tip=${texts.more}
-          data-tip-side=${side}
-          ${spread(more.getTriggerProps())}
-        >${kebabIcon()}</button>
-        <div class="menu-positioner" ${spread(more.getPositionerProps())}>
-          <div class="menu-popup" ?data-flush=${!topbar} ?data-sheet=${!rail && !topbar} ?data-drop=${topbar} ${
-        spread(more.getContentProps())
-      }>
-            ${this.#menuItems(more, sections)}
-          </div>
-        </div>
-      `
+      more === undefined
+        ? nothing
+        : html`${menuButton(more, texts.more, kebabIcon(), true)}${
+          this.#menuPopup(more, { class: 'menu-popup', ...look }, this.#menuItems(more, sections))
+        }`
     }
     </div>`;
   }
@@ -1681,42 +2388,34 @@ class AppCockpitElement extends LitElement implements Spec.Element {
 
   // --- Search --------------------------------------------------------------------------------------------------------
 
-  // The search for apps: a dark panel as high as the cockpit, right next to the rail (the sidebar collapses while it
-  // is open), over the open app (darkened). Without a query: the recent apps, then all apps by group. Up and Down
-  // choose, Enter opens, Escape closes. The dialog's behavior (focus, Escape, outside clicks) is Zag's.
+  // The search for items: a dark panel as high as the cockpit, right next to the rail (the sidebar collapses while it
+  // is open), over the open item (darkened). Without a query: the recent items, then all items by group. Up and Down
+  // choose, Enter opens, Escape closes. A modal dialog (`#syncDialog`: focus inside, on the field; Escape and a pointer
+  // down outside close it).
   #palette(texts: Texts): TemplateResult {
-    const apps = this.#config.apps;
-    const recent = this.#recentApps;
-    const api = this.#zag.use('dialog:search', dialog, {
-      id: `${this.#id}-search`,
-      getRootNode: () => this.renderRoot as ShadowRoot,
-      open: this.#paletteOpen,
-      onOpenChange: ({ open }: { open: boolean }) => {
-        if (!open) {
-          this.#closePalette();
-        }
-      },
-      initialFocusEl: () => this.#el('.palette-input'),
-    } as dialog.Props);
+    // The pinned items too, in their groups; not the hidden ones.
+    const items = this.#shownItems;
+    const recent = this.#config.recent === false ? [] : this.#recentItems;
+    const events = this.#dialogEvents('.palette', () => this.#paletteOpen, this.#closePalette);
     const sections: { label: string; matches: readonly Match[] }[] = this.#query.trim() !== ''
-      ? [{ label: '', matches: search(apps, this.#query) }]
+      ? [{ label: '', matches: search(items, this.#query) }]
       : [
-        ...(recent.length > 0 ? [{ label: texts.recent, matches: recent.map((app) => ({ app })) }] : []),
-        ...groupsOf(apps).flatMap((group) => {
+        ...(recent.length > 0 ? [{ label: texts.recent, matches: recent.map((item) => ({ item })) }] : []),
+        ...groupsOf(items).flatMap((group) => {
           const label = group.name === '' ? texts.other : group.name;
 
           if (!this.#switcher) {
-            return [{ label, matches: group.apps.map((app) => ({ app })) }];
+            return [{ label, matches: group.items.map((item) => ({ item })) }];
           }
 
           // The switcher's list: also by subgroup ("Group › Subgroup").
-          const { loose, subgroups } = subgroupsOf(group.apps);
+          const { loose, subgroups } = subgroupsOf(group.items);
 
           return [
-            ...(loose.length > 0 ? [{ label, matches: loose.map((app) => ({ app })) }] : []),
+            ...(loose.length > 0 ? [{ label, matches: loose.map((item) => ({ item })) }] : []),
             ...subgroups.map((subgroup) => ({
               label: `${label} › ${subgroup.name}`,
-              matches: subgroup.apps.map((app) => ({ app })),
+              matches: subgroup.items.map((item) => ({ item })),
             })),
           ];
         }),
@@ -1743,17 +2442,21 @@ class AppCockpitElement extends LitElement implements Spec.Element {
         );
       } else if (event.key === 'Enter' && current !== undefined) {
         event.preventDefault();
-        choose(current.app.id);
+        choose(current.item.id);
       }
     };
 
     let position = -1;
-    // Open, or sliding out.
-    const shown = this.#paletteOpen || this.#paletteClosing !== undefined;
 
-    return html`
-      <div class="backdrop" ${spread({ ...api.getBackdropProps(), hidden: !shown })}></div>
-      <div class="palette-layer" ?hidden=${!shown} ${spread(api.getPositionerProps())}>
+    return html`<dialog
+      class="dialog palette-dialog"
+      aria-labelledby=${`${this.#id}-search-title`}
+      @cancel=${events.cancel}
+      @close=${events.close}
+      @pointerdown=${events.pointerdown}
+    >
+      <div class="backdrop"></div>
+      <div class="palette-layer">
         <div
           class="palette"
           @animationend=${(event: AnimationEvent) => {
@@ -1761,9 +2464,8 @@ class AppCockpitElement extends LitElement implements Spec.Element {
         this.#closed();
       }
     }}
-          ${spread({ ...api.getContentProps(), hidden: !shown })}
         >
-          <h2 class="visually-hidden" ${spread(api.getTitleProps())}>${texts.search}</h2>
+          <h2 class="visually-hidden" id=${`${this.#id}-search-title`}>${texts.search}</h2>
           <div class="palette-field">
             ${searchIcon()}
             <input
@@ -1772,7 +2474,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
               role="combobox"
               aria-expanded="true"
               aria-controls=${listId}
-              aria-activedescendant=${ifDefined(current === undefined ? undefined : `${listId}-${current.app.id}`)}
+              aria-activedescendant=${ifDefined(current === undefined ? undefined : `${listId}-${current.item.id}`)}
               aria-autocomplete="list"
               autocomplete="off"
               spellcheck="false"
@@ -1806,10 +2508,10 @@ class AppCockpitElement extends LitElement implements Spec.Element {
 
               const at = position;
               const isCurrent = match === current;
-              const { title, group, subgroup } = match.app;
+              const { title, group, subgroup } = match.item;
 
               return html`<div
-              id=${ifDefined(isCurrent ? `${listId}-${match.app.id}` : undefined)}
+              id=${ifDefined(isCurrent ? `${listId}-${match.item.id}` : undefined)}
               class="palette-option"
               role="option"
               aria-selected=${isCurrent}
@@ -1820,9 +2522,9 @@ class AppCockpitElement extends LitElement implements Spec.Element {
                   this.requestUpdate();
                 }
               }}
-              @click=${() => choose(match.app.id)}
+              @click=${() => choose(match.item.id)}
             >
-              ${appIcon(match.app)}
+              ${itemIcon(match.item)}
               <span class="palette-text">
                 <span class="palette-title">${
                 match.title === undefined
@@ -1832,9 +2534,9 @@ class AppCockpitElement extends LitElement implements Spec.Element {
                   }</mark>${title.slice(match.title.end)}`
               }</span>
                 ${
-                match.app.description === undefined
+                match.item.description === undefined
                   ? nothing
-                  : html`<span class="palette-description">${match.app.description}</span>`
+                  : html`<span class="palette-description">${match.item.description}</span>`
               }
               </span>
               ${
@@ -1844,7 +2546,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
                   }</span>`
                   : nothing
               }
-              ${match.app.id === this.#active ? html`<span class="palette-dot" aria-hidden="true"></span>` : nothing}
+              ${match.item.id === this.#active ? html`<span class="palette-dot" aria-hidden="true"></span>` : nothing}
             </div>`;
             })
           }
@@ -1856,10 +2558,10 @@ class AppCockpitElement extends LitElement implements Spec.Element {
             <span><kbd class="key">↑</kbd><kbd class="key">↓</kbd> ${texts.move}</span>
             <span><kbd class="key">↵</kbd> ${texts.open}</span>
             <span><kbd class="key">Esc</kbd> ${texts.close}</span>
-            <span class="palette-count">${texts.apps(this.#query.trim() === '' ? apps.length : flat.length)}</span>
+            <span class="palette-count">${texts.items(this.#query.trim() === '' ? items.length : flat.length)}</span>
           </footer>
         </div>
       </div>
-    `;
+    </dialog>`;
   }
 }

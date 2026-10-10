@@ -11,8 +11,8 @@ import {
 } from '../packages/app-cockpit/demo/footer';
 import { createAppCockpitClass } from '../packages/app-cockpit/src';
 import type { AppCockpit } from '../packages/app-cockpit/src';
-import { mountLoginScreen } from '../packages/app-login/src';
-import type { AppLogin } from '../packages/app-login/src';
+import { mountLoginScreen } from '../packages/login/src';
+import type { Login } from '../packages/login/src';
 
 // The page: an app cockpit, with every demo as one of its mini-apps. The page's settings (in the cockpit's footer) set
 // `<html lang>` and the color scheme for every demo. Each demo is a light DOM custom element of its project, loaded
@@ -28,123 +28,45 @@ const planned = async () => {
   define('planned-demo', (await import('./planned/PlannedDemo')).PlannedDemo);
 };
 
-// Tabler icons (MIT), drawn in `currentColor`. Every app (a leaf) has an icon, the subgroups (the nodes) have none
-// (2026-10-05, the user's wish; for a moment the other way round, the same day); the groups have theirs in the group
-// select. The apps of "Essentials" have the icons of their own top bars (Media Manager: `TbFolders`, Board Manager:
-// `TbPresentation`, User Manager: `TbShieldLock`).
-const icon = (paths: string) =>
-  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
+// Prototypes to try out, in a section of the kebab menu (2026-10-09, the user's wish), before "Reset demo": a check
+// item each, remembered per browser. "Filter drawer": the data table's filters in a drawer at the right edge
+// instead of the filter view, for every table (the attribute `data-data-table-filter-drawer` on `<html>`, which every
+// table follows live; a page flag of the prototype, not an API, see the todo in `packages/data-table/CLAUDE.md`).
+const FILTER_DRAWER = 'data-data-table-filter-drawer';
+const FILTER_DRAWER_KEY = 'demo-page:filter-drawer';
 
-const MAIN = 'Essentials';
+try {
+  document.documentElement.toggleAttribute(FILTER_DRAWER, localStorage.getItem(FILTER_DRAWER_KEY) === 'on');
+} catch {
+  // Not remembered: off.
+}
 
-// The made-up groups: only to show a larger navigation (the group select). Their apps are placeholders
-// (`planned-demo`): a title, a description and an icon each.
-const FAKE: Record<string, Record<string, [string, string, string][]>> = {
-  'Human Resources': {
-    Employees: [
-      [
-        'Directory',
-        'Everyone in the company, with their teams',
-        '<path d="M20 6v12a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2z"/><path d="M10 16h6"/><path d="M11 11a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M4 8h3"/><path d="M4 12h3"/><path d="M4 16h3"/>',
-      ],
-      [
-        'Onboarding',
-        'Checklists for new colleagues',
-        '<path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"/><path d="M16 19h6"/><path d="M19 16v6"/><path d="M6 21v-2a4 4 0 0 1 4 -4h4"/>',
-      ],
-      [
-        'Org chart',
-        'Who reports to whom',
-        '<path d="M10 5a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M3 19a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 19a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M6.5 17.5l5.5 -4.5l5.5 4.5"/><path d="M12 7l0 6"/>',
-      ],
-    ],
-    Absences: [
-      [
-        'Vacation',
-        'Requests and approvals',
-        '<path d="M8 12a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/><path d="M3 12h1m8 -9v1m8 8h1m-9 8v1m-6.4 -15.4l.7 .7m12.1 -.7l-.7 .7m0 11.4l.7 .7m-12.1 -.7l-.7 .7"/>',
-      ],
-      [
-        'Sick leave',
-        'Reports and certificates',
-        '<path d="M8 8v-2a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v2"/><path d="M4 10a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z"/><path d="M10 14h4"/><path d="M12 12v4"/>',
-      ],
-      [
-        'Team calendar',
-        'Who is away when',
-        '<path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M4 11h16"/>',
-      ],
-    ],
-    Payroll: [
-      [
-        'Salaries',
-        'Monthly payroll runs',
-        '<path d="M7 11a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2z"/><path d="M12 14a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 9v-2a2 2 0 0 0 -2 -2h-10a2 2 0 0 0 -2 2v6a2 2 0 0 0 2 2h2"/>',
-      ],
-      [
-        'Expenses',
-        'Travel and other expenses',
-        '<path d="M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16l-3 -2l-2 2l-2 -2l-2 2l-2 -2l-3 2m4 -14h6m-6 4h6m-2 4h2"/>',
-      ],
-    ],
-  },
-  Finance: {
-    Accounting: [
-      [
-        'Invoices',
-        'Incoming and outgoing invoices',
-        '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"/><path d="M9 7l1 0"/><path d="M9 13l6 0"/><path d="M13 17l2 0"/>',
-      ],
-      [
-        'Ledger',
-        'The general ledger',
-        '<path d="M3 19a9 9 0 0 1 9 0a9 9 0 0 1 9 0"/><path d="M3 6a9 9 0 0 1 9 0a9 9 0 0 1 9 0"/><path d="M3 6l0 13"/><path d="M12 6l0 13"/><path d="M21 6l0 13"/>',
-      ],
-      [
-        'Payments',
-        'Transfers and their status',
-        '<path d="M3 8a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z"/><path d="M3 10l18 0"/><path d="M7 15l.01 0"/><path d="M11 15l2 0"/>',
-      ],
-    ],
-    Planning: [
-      [
-        'Budgets',
-        'Budgets per department',
-        '<path d="M10 3.2a9 9 0 1 0 10.8 10.8a1 1 0 0 0 -1 -1h-6.8a2 2 0 0 1 -2 -2v-7a.9 .9 0 0 0 -1 -.8"/><path d="M15 3.5a9 9 0 0 1 5.5 5.5h-4.5a1 1 0 0 1 -1 -1v-4.5"/>',
-      ],
-      ['Forecasts', 'The expected figures of the year', '<path d="M3 17l6 -6l4 4l8 -8"/><path d="M14 7l7 0l0 7"/>'],
-    ],
-    Reporting: [
-      [
-        'Reports',
-        'Monthly and yearly reports',
-        '<path d="M3 13a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"/><path d="M15 9a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"/><path d="M9 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"/><path d="M4 20h14"/>',
-      ],
-      [
-        'Dashboards',
-        'The key figures at a glance',
-        '<path d="M4 4h6v8h-6z"/><path d="M4 16h6v4h-6z"/><path d="M14 12h6v8h-6z"/><path d="M14 4h6v4h-6z"/>',
-      ],
-    ],
-  },
+const prototypesSection: AppCockpit.MenuSection = {
+  label: 'Prototypes',
+  items: [{
+    id: 'filter-drawer',
+    label: 'Filter drawer',
+    checked: () => document.documentElement.hasAttribute(FILTER_DRAWER),
+    onSelect: () => {
+      const on = document.documentElement.toggleAttribute(FILTER_DRAWER);
+
+      try {
+        localStorage.setItem(FILTER_DRAWER_KEY, on ? 'on' : 'off');
+      } catch {
+        // Not remembered.
+      }
+    },
+  }],
 };
 
-const fakeApps = (): AppCockpit.MiniApp[] =>
-  Object.entries(FAKE).flatMap(([group, subgroups]) =>
-    Object.entries(subgroups).flatMap(([subgroup, apps]) =>
-      apps.map(([title, description, paths]) => ({
-        id: `${group}-${title}`.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-        title,
-        description,
-        group,
-        subgroup,
-        icon: icon(paths),
-        element: 'planned-demo',
-        attributes: { description, note: 'A made-up app, only to show a larger navigation.' },
-        load: planned,
-      }))
-    )
-  );
+// The made-up kebab menu of the cockpit's demo, with the prototypes before its last section ("Reset demo").
+const menu: AppCockpit.Footer['menu'] = MENU === undefined
+  ? [prototypesSection]
+  : [...MENU.slice(0, -1), prototypesSection, ...MENU.slice(-1)];
+
+// Tabler icons (MIT), drawn in `currentColor`. The folders and the five real apps have icons, the demos of the components (Internals) none (2026-10-07).
+const icon = (paths: string) =>
+  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
 
 customElements.define(
   'app-cockpit',
@@ -153,141 +75,107 @@ customElements.define(
     subtitle: 'Acme Corporate',
     // The search (Ctrl K), although there are only a few apps.
     search: true,
-    // One group at a time (a select on top of the list): the real one, and two made-up ones. Every app has an icon, the
-    // subgroups have none.
-    groupDisplay: 'select',
-    groups: [
-      {
-        name: MAIN,
-        icon: icon(
-          '<path d="M3 12l3 3l3 -3l-3 -3z"/><path d="M15 12l3 3l3 -3l-3 -3z"/><path d="M9 6l3 3l3 -3l-3 -3z"/><path d="M9 18l3 3l3 -3l-3 -3z"/>',
-        ),
-      },
-      {
-        name: 'Human Resources',
-        icon: icon(
-          '<path d="M5 7a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0 -3 -3.85"/>',
-        ),
-      },
-      {
-        name: 'Finance',
-        icon: icon(
-          '<path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/><path d="M14.8 9a2 2 0 0 0 -1.8 -1h-2a2 2 0 1 0 0 4h2a2 2 0 1 1 0 4h-2a2 2 0 0 1 -1.8 -1"/><path d="M12 7v10"/>',
-        ),
-      },
-    ],
-    // Opened when the page starts without a hash.
-    defaultApp: 'board-manager',
+    // The apps of "Apps" pinned (`placement`, 2026-10-08, the user's wishes; "Administration" too for a few hours):
+    // entries of their own, first (the topbar's line, the rail, the start page); in the expanded sidebar and the search
+    // still in their folder.
+    // No "Recent" section. Two groups (sections): "Main" with the folders "Apps" (Human Resources, Time Tracker, Board
+    // Manager) and "Administration" (File Center, User Manager; 2026-10-08, the user's wish: one folder "Applications"
+    // before), "Internals" with the folders
+    // (subgroups, their apps indented along a guide line). The folders "Components" and "Planned" and the five real apps have icons, the folders "Apps" and "Administration" none (2026-10-09, the user's wish).
+    recent: false,
+    collapsibleGroups: false,
+    // The open apps below the open one (2026-10-07): switch between them, close them.
+    taskbar: true,
+    groups: [{
+      name: 'Main',
+      subgroups: [{
+        name: 'Apps',
+      }, {
+        name: 'Administration',
+        // Pinned (2026-10-08, the user's wish): an entry of its own in the topbar (a dropdown) and the rail.
+        placement: 'pinned',
+      }],
+    }, {
+      name: 'Internals',
+      subgroups: [
+        {
+          name: 'Components',
+          icon: icon(
+            '<path d="M3 12l3 3l3 -3l-3 -3z"/><path d="M15 12l3 3l3 -3l-3 -3z"/><path d="M9 6l3 3l3 -3l-3 -3z"/><path d="M9 18l3 3l3 -3l-3 -3z"/>',
+          ),
+        },
+        {
+          name: 'Planned',
+          icon: icon(
+            '<path d="M6.5 7h11"/><path d="M6.5 17h11"/><path d="M6 20v-2a6 6 0 1 1 12 0v2a1 1 0 0 1 -1 1h-10a1 1 0 0 1 -1 -1z"/><path d="M6 4v2a6 6 0 1 0 12 0v-2a1 1 0 0 0 -1 -1h-10a1 1 0 0 0 -1 1z"/>',
+          ),
+        },
+      ],
+    }],
+    // Opened without a hash (2026-10-08, the user's wish; the start page for a few hours that day, Human Resources
+    // before, the Board Manager before that).
+    defaultItem: 'human-resources',
+    // The start page (2026-10-08, the user's wish): shown when every app is closed, and by the logo. Not
+    // `startPage: true` here: the footer's "Navigation" menu sets the attribute `start-page` (on by default), and a
+    // stored "Off" must win over the config (an absent boolean attribute would not).
     storageKey: 'essential-components',
+    // The base text size of the cockpit, the same as the apps' (`demo/demo.css`).
+    theme: { fontSize: '14px' },
     // The cockpit's navigation (position and colors), the accent color, the page's color scheme, and a made-up menu
     // with the page's language, from the cockpit's own demo.
     footer: {
       actions: [
-        navigationSetting(),
-        accentSetting(),
+        // The navigation dark by default (2026-10-08, the user's wish; like the page before), the topbar of two lines
+        // by default (2026-10-08, the user's wish; automatic before).
+        // The start page on by default, switchable (2026-10-08, the user's wish).
+        navigationSetting('app-cockpit', { scheme: 'dark', nav: 'top', startPage: true }),
+        accentSetting('indigo'),
         ...pageSettings({ schemes: ['system', 'light', 'dark'], scheme: 'light' }),
       ],
-      menu: MENU,
+      menu,
     },
     // A made-up signed-in user, with their menu (from the cockpit's own demo).
     user: USER,
     userMenu: userMenu(() => signOut()),
-    apps: [
+    items: [
       {
-        id: 'data-navigator',
-        title: 'Data navigator',
-        description: 'A data table: search, filters, sorting, paging',
-        group: MAIN,
-        subgroup: 'Components',
-        icon: icon('<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 4v16"/>'),
-        element: 'data-navigator-demo',
+        id: 'human-resources',
+        title: 'Human Resources',
+        description: 'Employees, departments, recruiting, onboarding and offboarding',
+        group: 'Main',
+        subgroup: 'Apps',
+        placement: 'pinned',
+        icon: icon(
+          '<path d="M10 13a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"/><path d="M8 21v-1a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v1"/><path d="M15 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"/><path d="M17 10h2a2 2 0 0 1 2 2v1"/><path d="M5 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"/><path d="M3 13v-1a2 2 0 0 1 2 -2h2"/>',
+        ),
+        element: 'human-resources-demo',
         load: async () => {
           define(
-            'data-navigator-demo',
-            (await import('../packages/data-navigator/demo/DataNavigatorDemo')).DataNavigatorDemo,
+            'human-resources-demo',
+            (await import('./human-resources/app/HumanResourcesDemo')).HumanResourcesDemo,
           );
         },
       },
       {
-        id: 'file-upload',
-        title: 'File upload',
-        description: 'Drop or choose files, with progress and validation',
-        group: MAIN,
-        subgroup: 'Components',
-        icon: icon('<path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/><path d="m7 9 5-5 5 5M12 4v12"/>'),
-        element: 'file-upload-demo',
-        load: async () => {
-          define('file-upload-demo', (await import('../packages/file-upload/demo/FileUploadDemo')).FileUploadDemo);
-        },
-      },
-      {
-        id: 'dialogs-toasts',
-        title: 'Dialogs + Toasts',
-        description: 'Confirmations, prompts, forms in dialogs, and toasts',
-        group: MAIN,
-        subgroup: 'Components',
-        icon: icon(
-          '<path d="M8 9h8M8 13h6"/><path d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3h-5l-5 3v-3H6a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3z"/>',
-        ),
-        element: 'overlays-demo',
-        load: async () => {
-          define('overlays-demo', (await import('../packages/overlays/src/demo/OverlaysDemo')).OverlaysDemo);
-        },
-      },
-      {
-        id: 'form-validation',
-        title: 'Form validation',
-        description: 'Validated forms with Zod, a useForm hook for React',
-        group: MAIN,
-        subgroup: 'Planned',
-        icon: icon(
-          '<path d="M9.615 20h-2.615a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v8"/><path d="M14 19l2 2l4 -4"/><path d="M9 8h4"/><path d="M9 12h2"/>',
-        ),
-        element: 'planned-demo',
-        attributes: {
-          description:
-            'Form validation for React with Zod: a useForm hook, the messages on the inputs, in any language.',
-          note: 'Planned: the package exists (with tests, used by the Board Manager), its demo does not yet.',
-        },
-        load: planned,
-      },
-      {
-        id: 'autocomplete',
-        title: 'Autocomplete',
-        description: 'A text input that suggests as you type',
-        group: MAIN,
-        subgroup: 'Planned',
-        icon: icon(
-          '<path d="M20 11v-2a2 2 0 0 0 -2 -2h-12a2 2 0 0 0 -2 2v5a2 2 0 0 0 2 2h5"/><path d="M15 18a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M20.2 20.2l1.8 1.8"/>',
-        ),
-        element: 'planned-demo',
-        attributes: {
-          description:
-            'A text input that suggests as you type: local or loaded options, keyboard friendly, accessible.',
-          note: 'Planned: there is no package and no demo yet.',
-        },
-        load: planned,
-      },
-      {
-        id: 'media-manager',
-        title: 'Media Manager',
-        description: 'Folders and files, like a file manager',
-        group: MAIN,
+        id: 'time-tracker',
+        title: 'Time Tracker',
+        description: 'The clock, timesheets, leave, sick calls and the team calendar',
+        group: 'Main',
         subgroup: 'Apps',
-        icon: icon(
-          '<path d="M9 3h3l2 2h5a2 2 0 0 1 2 2v7a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2"/><path d="M17 16v2a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2h2"/>',
-        ),
-        element: 'media-manager-demo',
+        placement: 'pinned',
+        icon: icon('<path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/><path d="M12 7v5l3 3"/>'),
+        element: 'time-tracker-demo',
         load: async () => {
-          define('media-manager-demo', (await import('./media-manager/app/MediaManagerDemo')).MediaManagerDemo);
+          define('time-tracker-demo', (await import('./time-tracker/app/TimeTrackerDemo')).TimeTrackerDemo);
         },
       },
       {
         id: 'board-manager',
         title: 'Board Manager',
         description: 'Boards, meetings, agendas, minutes and documents',
-        group: MAIN,
+        group: 'Main',
         subgroup: 'Apps',
+        placement: 'pinned',
         icon: icon(
           '<path d="M3 4l18 0"/><path d="M4 4v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-10"/><path d="M12 16l0 4"/><path d="M9 20l6 0"/><path d="M8 12l3 -3l2 2l3 -3"/>',
         ),
@@ -297,11 +185,25 @@ customElements.define(
         },
       },
       {
+        id: 'file-center',
+        title: 'File Center',
+        description: 'Storages, folders and files, like a file manager',
+        group: 'Main',
+        subgroup: 'Administration',
+        icon: icon(
+          '<path d="M9 3h3l2 2h5a2 2 0 0 1 2 2v7a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2"/><path d="M17 16v2a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2h2"/>',
+        ),
+        element: 'file-center-demo',
+        load: async () => {
+          define('file-center-demo', (await import('./file-center/app/FileCenterDemo')).FileCenterDemo);
+        },
+      },
+      {
         id: 'user-manager',
         title: 'User Manager',
         description: 'Users, groups, roles, and who may do what where',
-        group: MAIN,
-        subgroup: 'Apps',
+        group: 'Main',
+        subgroup: 'Administration',
         icon: icon(
           '<path d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3"/><path d="M11 11a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M12 12l0 2.5"/>',
         ),
@@ -310,7 +212,70 @@ customElements.define(
           define('user-manager-demo', (await import('./user-manager/app/UserManagerDemo')).UserManagerDemo);
         },
       },
-      ...fakeApps(),
+      {
+        id: 'data-table',
+        title: 'Data table',
+        description: 'A data table: search, filters, sorting, paging',
+        group: 'Internals',
+        subgroup: 'Components',
+        element: 'data-table-demo',
+        load: async () => {
+          define(
+            'data-table-demo',
+            (await import('../packages/data-table/demo/DataTableDemo')).DataTableDemo,
+          );
+        },
+      },
+      {
+        id: 'file-upload',
+        title: 'File upload',
+        description: 'Drop or choose files, with progress and validation',
+        group: 'Internals',
+        subgroup: 'Components',
+        element: 'file-upload-demo',
+        load: async () => {
+          define('file-upload-demo', (await import('../packages/file-upload/demo/FileUploadDemo')).FileUploadDemo);
+        },
+      },
+      {
+        id: 'dialogs-toasts',
+        title: 'Dialogs + Toasts',
+        description: 'Confirmations, prompts, forms in dialogs, and toasts',
+        group: 'Internals',
+        subgroup: 'Components',
+        element: 'overlays-demo',
+        load: async () => {
+          define('overlays-demo', (await import('../packages/overlays/src/demo/OverlaysDemo')).OverlaysDemo);
+        },
+      },
+      {
+        id: 'form-validation',
+        title: 'Form validation',
+        description: 'Validated forms with Zod, a useForm hook for React',
+        group: 'Internals',
+        subgroup: 'Components',
+        element: 'form-validation-demo',
+        load: async () => {
+          define(
+            'form-validation-demo',
+            (await import('../packages/form-validation/demo/FormValidationDemo')).FormValidationDemo,
+          );
+        },
+      },
+      {
+        id: 'autocomplete',
+        title: 'Autocomplete',
+        description: 'A text input that suggests as you type',
+        group: 'Internals',
+        subgroup: 'Planned',
+        element: 'planned-demo',
+        attributes: {
+          description:
+            'A text input that suggests as you type: local or loaded options, keyboard friendly, accessible.',
+          note: 'Planned: there is no package and no demo yet.',
+        },
+        load: planned,
+      },
     ],
   }),
 );
@@ -319,7 +284,7 @@ customElements.define(
 // sign in again (a demo: it is about the look). Signed out is remembered per browser, so a reload stays there.
 const cockpit = document.querySelector<HTMLElement>('app-cockpit')!;
 const loginHost = document.createElement('div');
-let login: AppLogin.Mounted | undefined;
+let login: Login.Mounted | undefined;
 
 const LOGO =
   '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2" opacity="0.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2" opacity="0.6"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></svg>';
@@ -358,7 +323,7 @@ function showLogin(): void {
   document.body.append(loginHost);
   login ??= mountLoginScreen(loginHost, {
     title: 'Back Office',
-    subtitle: 'Acme Corporate',
+    subtitle: 'Welcome to Acme Corporate',
     logo: LOGO,
     hint: 'A demo: any username and password sign in.',
     // Made-up identity providers (OIDC or SSO): the host would redirect to them. Here they sign in after a moment.
@@ -394,7 +359,21 @@ function showLogin(): void {
       await new Promise((resolve) => setTimeout(resolve, 500));
       signIn();
     },
-  });
+  }, { theme: { primaryColor: loginAccent() } });
+}
+
+// The login's accent: the page's (the footer's "Accent color", remembered per browser; indigo by default), as one of
+// Mantine's colors (the menu's colors are Mantine's, shade 6); the design language's: Mantine's blue, the closest.
+function loginAccent(): string {
+  let accent = 'indigo';
+
+  try {
+    accent = localStorage.getItem('demo-page:accent') ?? accent;
+  } catch {
+    // The default.
+  }
+
+  return accent === 'design' ? 'blue' : accent;
 }
 
 function signIn(): void {

@@ -1,11 +1,13 @@
-import { Anchor, Card, Group, Paper, SimpleGrid, Stack, Text, ThemeIcon, Title } from '@mantine/core';
-import { useMemo } from 'react';
+import { Anchor, Badge, Card, Group, Paper, SimpleGrid, Stack, Tabs, Text, ThemeIcon, Title } from '@mantine/core';
+import { useMemo, useState } from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import { Link } from 'react-router';
 import type { Meeting } from '../../../domain';
 import { getBoard, localDateTime } from '../../../infra/in-memory';
-import { useTranslate } from '../../../shared/lib/i18n';
+import { useLanguage, useTranslate } from '../../../shared/lib/i18n';
 import { appIcons, formatDateTime, useDb } from '../../../shared/shared';
+import { HomeAttention } from '../components/HomeAttention';
+import { HomeCharts } from '../components/HomeCharts';
 
 export { HomePage };
 
@@ -13,6 +15,7 @@ export { HomePage };
 // grids follow the width of the app, not of the window (container queries): the app may be embedded in a narrow place.
 function HomePage(): ReactElement {
   const t = useTranslate();
+  const [tab, setTab] = useState<string | null>('overview');
   const boards = useDb((state) => state.boards);
   const meetings = useDb((state) => state.meetings);
   const people = useDb((state) => state.people);
@@ -62,18 +65,33 @@ function HomePage(): ReactElement {
           text={t('home.organizations', { count: organizations.length })}
         />
       </SimpleGrid>
-      <SimpleGrid type="container" cols={{ base: 1, '48rem': 2 }} spacing="md">
-        <MeetingList
-          title={t('home.nextMeetings')}
-          meetings={upcoming.slice(0, 6)}
-          empty={t('home.noPlannedMeetings')}
-        />
-        <MeetingList
-          title={t('home.minutesToApprove')}
-          meetings={awaiting.slice(0, 6)}
-          empty={t('home.allMinutesApproved')}
-        />
-      </SimpleGrid>
+      <Tabs value={tab} onChange={setTab} keepMounted={false}>
+        <Tabs.List>
+          <Tabs.Tab value="overview">{t('home.tabUpNext')}</Tabs.Tab>
+          <Tabs.Tab value="charts">{t('home.tabInsights')}</Tabs.Tab>
+          <Tabs.Tab value="attention">{t('home.tabAttention')}</Tabs.Tab>
+        </Tabs.List>
+        <Tabs.Panel value="overview" pt="md">
+          <SimpleGrid type="container" cols={{ base: 1, '48rem': 2 }} spacing="md">
+            <MeetingList
+              title={t('home.nextMeetings')}
+              meetings={upcoming.slice(0, 6)}
+              empty={t('home.noPlannedMeetings')}
+            />
+            <MeetingList
+              title={t('home.minutesToApprove')}
+              meetings={awaiting.slice(0, 6)}
+              empty={t('home.allMinutesApproved')}
+            />
+          </SimpleGrid>
+        </Tabs.Panel>
+        <Tabs.Panel value="charts" pt="md">
+          <HomeCharts />
+        </Tabs.Panel>
+        <Tabs.Panel value="attention" pt="md">
+          <HomeAttention />
+        </Tabs.Panel>
+      </Tabs>
     </Stack>
   );
 }
@@ -98,22 +116,41 @@ function MeetingList(
   { title, meetings, empty }: { title: string; meetings: readonly Meeting[]; empty: string },
 ): ReactElement {
   const boards = useDb((state) => state.boards);
+  const language = useLanguage();
+  const month = new Intl.DateTimeFormat(language, { month: 'short' });
+  const relative = new Intl.RelativeTimeFormat(language, { numeric: 'auto' });
+  const today = new Date().setHours(0, 0, 0, 0);
 
   return (
     <Paper withBorder p="md" radius="sm">
       <Stack gap="sm">
-        <Text fw={600}>{title}</Text>
+        <Group justify="space-between">
+          <Text fw={600}>{title}</Text>
+          {meetings.length > 0 && <Badge variant="light" color="gray">{meetings.length}</Badge>}
+        </Group>
         {meetings.length === 0 && <Text size="sm" c="dimmed">{empty}</Text>}
-        {meetings.map((meeting) => (
-          <Stack key={meeting.id} gap={0}>
-            <Anchor component={Link} to={`/boards/${meeting.boardId}/meetings/${meeting.id}`} size="sm">
-              {meeting.title}
-            </Anchor>
-            <Text size="xs" c="dimmed">
-              {getBoard({ boards }, meeting.boardId)?.name} · {formatDateTime(meeting.start)}
-            </Text>
-          </Stack>
-        ))}
+        {meetings.map((meeting) => {
+          const date = new Date(meeting.start);
+          const days = Math.round((new Date(date).setHours(0, 0, 0, 0) - today) / 86_400_000);
+
+          return (
+            <Group key={meeting.id} gap="sm" wrap="nowrap">
+              <div className="board-manager-home-date">
+                <span className="board-manager-home-date__month">{month.format(date)}</span>
+                <span className="board-manager-home-date__day">{date.getDate()}</span>
+              </div>
+              <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
+                <Anchor component={Link} to={`/boards/${meeting.boardId}/meetings/${meeting.id}`} size="sm" truncate>
+                  {meeting.title}
+                </Anchor>
+                <Text size="xs" c="dimmed" truncate>
+                  {getBoard({ boards }, meeting.boardId)?.name} · {formatDateTime(meeting.start)}
+                </Text>
+              </Stack>
+              <Badge variant="light" color="gray" radius="sm">{relative.format(days, 'day')}</Badge>
+            </Group>
+          );
+        })}
       </Stack>
     </Paper>
   );

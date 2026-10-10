@@ -5,16 +5,16 @@ import { Link } from 'react-router';
 import {
   dateRangeColumnFilter,
   selectColumnFilter,
-  useDataNavigatorController,
-} from '../../../../../packages/data-navigator/src/react';
-import type { DataNavigatorComponent } from '../../../../../packages/data-navigator/src/react';
+  useDataTableController,
+} from '../../../../../packages/data-table/src/react';
+import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
 import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react';
 import { scopeLabel } from '../../../domain';
 import type { AccessData, Grant, PrincipalRef } from '../../../domain';
 import { formatDateTime } from '../../../shared/lib/format';
 import { matchesText, oneOf, within } from '../../../shared/lib/localQuery';
+import { DataTable } from '../../../shared/ui/dataTable';
 import { appIcons } from '../../../shared/ui/icons';
-import { Navigator } from '../../../shared/ui/navigator';
 import { PrincipalLabel, principalName } from '../../../shared/ui/parts';
 import { useAccessData, useChanged, useIamService, useTableSource } from '../../iam';
 import { GrantForm } from './GrantForm';
@@ -96,7 +96,7 @@ function GrantsTable({ name, filter = () => true, preset, hide = [], title, subt
   title?: string;
   subtitle?: string;
 }): ReactElement {
-  const nav = useDataNavigatorController<GrantRow>();
+  const nav = useDataTableController<GrantRow>();
   const data = useAccessData();
   const service = useIamService();
   const dialogs = useDialogs();
@@ -118,7 +118,7 @@ function GrantsTable({ name, filter = () => true, preset, hide = [], title, subt
     nav.reload,
   );
 
-  const columns = useMemo((): readonly DataNavigatorComponent.Column<GrantRow>[] => [
+  const columns = useMemo((): readonly DataTableComponent.Column<GrantRow>[] => [
     ...(hide.includes('who') ? [] : [
       {
         key: 'who' as const,
@@ -133,9 +133,7 @@ function GrantsTable({ name, filter = () => true, preset, hide = [], title, subt
         header: 'Type',
         width: 1.2,
         hideable: true,
-        render: (row: GrantRow) => (
-          <Badge variant="light" color={row.type === 'User' ? 'gray' : undefined}>{row.type}</Badge>
-        ),
+        render: (row: GrantRow) => <Badge variant={row.type === 'User' ? 'outline' : 'light'}>{row.type}</Badge>,
         filter: selectColumnFilter({
           options: [{ value: 'User', label: 'User' }, { value: 'Group', label: 'Group' }],
           multiple: true,
@@ -170,7 +168,7 @@ function GrantsTable({ name, filter = () => true, preset, hide = [], title, subt
     { key: 'grantedBy', header: 'By', width: 1.2, hideable: true, hidden: true },
   ], [data, hide]);
 
-  const actions = useMemo((): readonly DataNavigatorComponent.Action<GrantRow>[] => {
+  const actions = useMemo((): readonly DataTableComponent.Action<GrantRow>[] => {
     const revoke = async (rows: readonly GrantRow[]) => {
       const scope = dialogs.open();
 
@@ -203,6 +201,7 @@ function GrantsTable({ name, filter = () => true, preset, hide = [], title, subt
         key: 'grant',
         label: 'Grant access',
         icon: appIcons.add,
+        variant: 'primary',
         onClick: () => void grantAccess(preset),
       },
       {
@@ -226,7 +225,7 @@ function GrantsTable({ name, filter = () => true, preset, hide = [], title, subt
   }, [dialogs, toasts, service, changed, grantAccess, preset]);
 
   return (
-    <Navigator
+    <DataTable
       controller={nav}
       {...(title === undefined ? {} : { title })}
       {...(subtitle === undefined ? {} : { subtitle })}
@@ -235,7 +234,6 @@ function GrantsTable({ name, filter = () => true, preset, hide = [], title, subt
       columns={columns}
       actions={actions}
       searchable
-      pageSize={10}
       pageSizeOptions={[10, 25, 50]}
       defaultSort={{ key: hide.includes('who') ? 'scope' : 'who', direction: 'asc' }}
       empty="No access granted."

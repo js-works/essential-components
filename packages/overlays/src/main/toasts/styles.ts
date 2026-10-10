@@ -5,6 +5,19 @@
 // -------------------------------------------------------------------
 
 import { css } from "../internal/css.js";
+import type { ToastTheme } from "./contract/api.js";
+import { darkAccent } from "./element.js";
+
+// The one source of truth for the space between cards: the flat list's `gap` (below) and
+// the offsets an expanding stack animates to (the controller) have to agree exactly, or the
+// two layouts land in different places.
+export const TOAST_GAP_PX = 8;
+
+// Re-stacking that accompanies an arriving toast travels with it, so it borrows the
+// entrance's timing and the two read as one movement. Expanding the stack on hover or a tap
+// is a direct answer to the user's own pointer and wants to be quicker still.
+export const STACK_SHUFFLE_MS = 400;
+export const STACK_TOGGLE_MS = 200;
 
 
 // Global chrome + anything targeting the slotted action buttons. Placement is
@@ -13,16 +26,16 @@ import { css } from "../internal/css.js";
 // SHADOW_STYLES). The action buttons are the exception: they're slotted
 // light-DOM <button>s, and ::slotted() styling of native form controls is
 // unreliable across engines, so we style them here in the document scope where
-// they actually live — which cleanly overrides the UA button chrome. Theme
-// tokens still resolve, since the buttons inherit the container's CSS vars.
+// they actually live — which cleanly overrides the UA button chrome. Their theme
+// colors are in a <style> of each controller (see themedContainerStyles).
 const containerStyles = css`
 .toasts-container {
   position: fixed;
   z-index: 10000;
   display: flex;
-  /* Set by the controller from TOAST_GAP_PX, which also drives the offsets an expanding
-     stack animates to — the two have to agree or the layouts disagree on where a card goes. */
-  gap: var(--toast-gap, 8px);
+  /* TOAST_GAP_PX also drives the offsets an expanding stack animates to (the controller):
+     the two have to agree or the layouts disagree on where a card goes. */
+  gap: ${TOAST_GAP_PX}px;
   pointer-events: none;
 }
 /* Stacked layout, opt-in via the "stacked" option. Collapsed, every card occupies the
@@ -31,27 +44,21 @@ const containerStyles = css`
    Expanded, none of this applies and the ordinary flex column is back.
 
    Paint order is DOM order, and the newest host is the last child, so the newest card
-   lands on top without any z-index. --stack-index (set by the controller) counts back
-   from it; --stack-dir (set with the placement) flips the offset so the pile always grows
-   away from the anchored edge. The offset stops growing after the third card: beyond that
-   they are fully covered anyway, and letting them drift on would push the pile across the
-   screen. */
+   lands on top without any z-index. The controller offsets the cards behind it (inline
+   translate and scale), away from the anchored edge, so the pile always grows into the
+   screen. The offset stops growing after the third card: beyond that they are fully
+   covered anyway, and letting them drift on would push the pile across the screen. */
 /* Grid in BOTH states, never flex: the cards share one cell throughout and only their
    transform differs, so expanding is an animation rather than a relayout.
 
    Alignment is NOT set here. applyPlacement writes align-items inline for a flex column,
    which under grid names the other axis entirely, and an inline declaration outranks this
    rule — so the controller corrects both axes inline instead (see applyContainerOptions).
-   The height is measured there too, since a one-cell grid cannot derive it. */
+   The height is measured and set inline there too, since a one-cell grid cannot derive it. */
 .toasts-container[data-stacked="on"] {
   display: grid;
   gap: 0;
-  height: var(--stack-collapsed-height, auto);
-  transition: height var(--stack-duration, 400ms) ease;
-}
-
-.toasts-container[data-stacked="on"][data-expanded="on"] {
-  height: var(--stack-expanded-height, auto);
+  transition: height ${STACK_SHUFFLE_MS}ms ease;
 }
 
 /* The offset rides on the independent "translate"/"scale" properties, NOT on transform.
@@ -62,31 +69,36 @@ const containerStyles = css`
    write transform inline for the same reason. The independent properties compose with it
    rather than replacing it, so both effects can run at once and neither has to know about
    the other. */
-/* Both offsets are computed by the controller, which is the only place that knows how tall
-   the cards actually are — a card behind a shorter one has to sit further back to clear it
-   by the same sliver. transform-origin is the anchored edge, so shrinking a card pulls its
-   trailing edge in without moving the edge it lines up on. */
+/* Both offsets are computed by the controller and set inline (translate, scale): it is the
+   only place that knows how tall the cards actually are — a card behind a shorter one has
+   to sit further back to clear it by the same sliver. Expanded, a card steps back by the
+   measured heights of everything in front of it, at full size — exactly where the flat
+   list would have put it. transform-origin is the anchored edge (data-stack-from), so
+   shrinking a card pulls its trailing edge in without moving the edge it lines up on. */
 .toasts-container[data-stacked="on"] > [data-id] {
   grid-area: 1 / 1;
-  transform-origin: var(--stack-origin, bottom);
-  translate: 0 calc(var(--stack-collapsed, 0px) * var(--stack-dir, -1));
-  scale: var(--stack-scale, 1);
+  transform-origin: bottom;
 }
 
-/* Expanded, a card steps back by the measured heights of everything in front of it, at
-   full size — which is exactly where the flat list would have put it. */
-.toasts-container[data-stacked="on"][data-expanded="on"] > [data-id] {
-  translate: 0 calc(var(--stack-offset, 0px) * var(--stack-dir, -1));
-  scale: 1;
+.toasts-container[data-stacked="on"][data-stack-from="top"] > [data-id] {
+  transform-origin: top;
 }
 
-/* --stack-duration is set by the controller: the slide's own 700ms when a toast arrives or
-   leaves, so the pile settles in step with it rather than finishing first; a brisk 200ms
-   when the user expands the stack by hand. Same easing as the slide, for the same reason. */
+/* The re-stack when a toast arrives or leaves travels with its slide, so the pile settles in
+   step with it rather than finishing first; expanding by hand (data-stack-motion="toggle")
+   is brisker. Same easing as the slide, for the same reason. */
 .toasts-container[data-stacked="on"] > [data-id] {
   transition:
-    translate var(--stack-duration, 700ms) ease-in-out,
-    scale var(--stack-duration, 700ms) ease-in-out;
+    translate ${STACK_SHUFFLE_MS}ms ease-in-out,
+    scale ${STACK_SHUFFLE_MS}ms ease-in-out;
+}
+
+.toasts-container[data-stacked="on"][data-stack-motion="toggle"] {
+  transition-duration: ${STACK_TOGGLE_MS}ms;
+}
+
+.toasts-container[data-stacked="on"][data-stack-motion="toggle"] > [data-id] {
+  transition-duration: ${STACK_TOGGLE_MS}ms;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -94,8 +106,6 @@ const containerStyles = css`
     transition: none;
   }
 }
-
-/* Expanded, the offset simply falls back to the initial values and transitions there. */
 
 .toasts-liveregion {
   position: absolute;
@@ -118,7 +128,7 @@ const containerStyles = css`
    base rule performs a FULL reset of the properties frameworks typically set —
    not just border/background — so a stray app declaration can't re-boxify the
    link. If your app forces button styles with !important, override via the
-   --action-color token or add your own higher-specificity rule. */
+   theme's actionColor or add your own higher-specificity rule. */
 .toasts-container [data-id] button[slot="action"] {
   appearance: none;
   -webkit-appearance: none;
@@ -143,25 +153,8 @@ const containerStyles = css`
   text-align: inherit;
   text-decoration: none;
   vertical-align: baseline;
-  color: var(--action-color, var(--info-accent, #2563eb));
   cursor: pointer;
   transition: opacity 150ms ease;
-}
-
-.toasts-container [data-id][type="success"] button[slot="action"] {
-  color: var(--action-color, var(--success-accent, #16a34a));
-}
-
-.toasts-container [data-id][type="warn"] button[slot="action"] {
-  color: var(--action-color, var(--warn-accent, #d97706));
-}
-
-.toasts-container [data-id][type="error"] button[slot="action"] {
-  color: var(--action-color, var(--error-accent, #dc2626));
-}
-
-.toasts-container [data-id][type="loading"] button[slot="action"] {
-  color: var(--action-color, var(--loading-accent, #2563eb));
 }
 
 /* Hover feedback is a subtle dim rather than an underline: these actions sit in
@@ -177,23 +170,76 @@ const containerStyles = css`
   outline-offset: 2px;
 }
 
-/* Solid appearance: light links on the accent-colored card (same dim-on-hover). */
-.toasts-container [data-id][appearance="solid"] button[slot="action"] {
-  color: var(--solid-text, #ffffff);
-}
-
-/* Dark appearance: reuse the same lightened accent the stripe, icon and countdown ring
-   use, since the 600-level accents are hard to read on the dark card. --dark-accent is
-   set on the host by the shadow stylesheet (see element.ts) and inherits down to these
-   slotted buttons, so the two stay in step automatically. Placed after the per-type
-   rules above, which it ties with on specificity. */
-.toasts-container [data-id][appearance="dark"] button[slot="action"] {
-  color: var(--action-color, var(--dark-accent));
-}
-
 @media (prefers-reduced-motion: reduce) {
   .toasts-container [data-id] button[slot="action"] {
     transition: none;
+  }
+}
+`;
+
+// The colors of the slotted action buttons in one controller's theme: a <style> inside its
+// container, scoped to it by a prelude-less `@scope` (the parent of the <style>); `:scope`
+// keeps the (0,3,1) of the rules below. Built once per theme. The values are put straight in
+// (no custom properties).
+const themedTexts = new WeakMap<ToastTheme, string>();
+
+export function themedContainerStyles(theme: ToastTheme): string {
+  let text = themedTexts.get(theme);
+  if (text === undefined) {
+    text = themedStyles(theme);
+    themedTexts.set(theme, text);
+  }
+  return text;
+}
+
+const themedStyles = (theme: ToastTheme): string => css`
+@scope {
+  :scope [data-id] button[slot="action"] {
+    color: ${theme.actionColor ?? theme.infoAccent};
+  }
+
+  :scope [data-id][type="success"] button[slot="action"] {
+    color: ${theme.actionColor ?? theme.successAccent};
+  }
+
+  :scope [data-id][type="warn"] button[slot="action"] {
+    color: ${theme.actionColor ?? theme.warnAccent};
+  }
+
+  :scope [data-id][type="error"] button[slot="action"] {
+    color: ${theme.actionColor ?? theme.errorAccent};
+  }
+
+  :scope [data-id][type="loading"] button[slot="action"] {
+    color: ${theme.actionColor ?? theme.loadingAccent};
+  }
+
+  /* Solid appearance: light links on the accent-colored card (same dim-on-hover). */
+  :scope [data-id][appearance="solid"] button[slot="action"] {
+    color: ${theme.solidText};
+  }
+
+  /* Dark appearance: the same lightened accent the stripe, icon and countdown ring use
+     (darkAccent in element.ts), since the 600-level accents are hard to read on the dark
+     card. After the per-type rules above, which they tie with or beat on specificity. */
+  :scope [data-id][appearance="dark"] button[slot="action"] {
+    color: ${theme.actionColor ?? darkAccent(theme.infoAccent)};
+  }
+
+  :scope [data-id][appearance="dark"][type="success"] button[slot="action"] {
+    color: ${theme.actionColor ?? darkAccent(theme.successAccent)};
+  }
+
+  :scope [data-id][appearance="dark"][type="warn"] button[slot="action"] {
+    color: ${theme.actionColor ?? darkAccent(theme.warnAccent)};
+  }
+
+  :scope [data-id][appearance="dark"][type="error"] button[slot="action"] {
+    color: ${theme.actionColor ?? darkAccent(theme.errorAccent)};
+  }
+
+  :scope [data-id][appearance="dark"][type="loading"] button[slot="action"] {
+    color: ${theme.actionColor ?? darkAccent(theme.loadingAccent)};
   }
 }
 `;

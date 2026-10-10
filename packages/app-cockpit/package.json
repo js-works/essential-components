@@ -14,15 +14,11 @@
     "typecheck": "tsc --noEmit",
     "format": "dprint fmt",
     "format:check": "dprint check",
-    "loc": "sloc src",
-    "loc:all": "sloc . --exclude 'node_modules|dist|\\.config\\.'"
+    "loc": "node scripts/loc.mjs",
+    "loc:all": "node scripts/loc.mjs --all"
   },
   "dependencies": {
     "@floating-ui/dom": "^1.8.0",
-    "@zag-js/dialog": "^1.44.0",
-    "@zag-js/menu": "^1.44.0",
-    "@zag-js/select": "^1.44.0",
-    "@zag-js/vanilla": "^1.44.0",
     "lit": "^3.3.3"
   },
   "devDependencies": {

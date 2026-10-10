@@ -1,4 +1,5 @@
 import { createAppCockpitClass } from './element/createAppCockpitClass';
+import { createAppTaskbarClass } from './element/createAppTaskbarClass';
 
-export { createAppCockpitClass };
+export { createAppCockpitClass, createAppTaskbarClass };
 export type * as AppCockpit from './api';

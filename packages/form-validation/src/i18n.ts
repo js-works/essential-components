@@ -24,7 +24,7 @@ function warnOnce(id: string, text: string) {
 }
 
 /** The namespace of the library's messages for the adapter. */
-const LIBRARY_NAMESPACE = 'formvalidation';
+const LIBRARY_NAMESPACE = 'formValidation';
 
 /** Without an adapter: the locale of <html lang>, otherwise the browser language. */
 function documentLocale(): string {

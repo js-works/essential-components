@@ -1,0 +1,434 @@
+/* The frame of the File Center, like the Board Manager's. Everything else is Mantine (its variables are set on
+   `.file-center`). */
+
+.file-center {
+  color: var(--mantine-color-text);
+  font-family: var(--mantine-font-family);
+  font-size: var(--mantine-font-size-sm);
+}
+
+/* Links are darker than Mantine's primary color in the light scheme (shade 9), like in the Board Manager. */
+.file-center[data-mantine-color-scheme='light'] .mantine-Anchor-root {
+  color: var(--mantine-primary-color-9);
+}
+
+/* The app fills the height of its element (the root page's cockpit gives it its content area): the app header stays, the
+   body below it takes the rest (2026-10-07, the user's wish, like the Board Manager and the Time Tracker). */
+.file-center:has(> .file-center__app),
+.file-center__app {
+  height: 100%;
+}
+
+.file-center__app {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-md);
+}
+
+/* Two lines (2026-10-08, like the other apps; one line with the breadcrumb before): the icon, the title, the modules as
+   tabs, Back and Forward; below them the breadcrumb (its crumbs end with an ellipsis when it is too short). A
+   container: the tabs become a menu, and Back and Forward go, when it is narrow. */
+.file-center__app-header {
+  container: file-center-app-header / inline-size;
+  /* A container is a containing block for its popups (tooltips, menus), but Floating UI (Mantine's positioning) only
+     knows that from `contain`: without it, they open far off to the side. */
+  contain: layout;
+  /* `contain: layout` makes the bar a stacking context: its popups' z-index counts only inside it. Above the page below
+     it, or the menus open under its content (e.g. the start page's tiles). */
+  position: relative;
+  z-index: 100;
+  flex: none;
+  background: var(--mantine-color-body);
+  user-select: none;
+}
+
+.file-center__app-header-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--mantine-spacing-xs) var(--mantine-spacing-lg);
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+}
+
+.file-center__title {
+  padding: 4px 6px 4px 2px;
+  white-space: nowrap;
+}
+
+/* The modules as tabs: the current one (also on its folders' pages) in the accent's light ground. */
+.file-center__modules {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 2px;
+  min-width: 0;
+}
+
+.file-center__module {
+  padding: 5px 10px;
+  border-radius: var(--mantine-radius-sm);
+  color: var(--mantine-color-dimmed);
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:hover {
+    background: var(--mantine-color-default-hover);
+    color: var(--mantine-color-text);
+  }
+
+  &[aria-current] {
+    background: var(--mantine-primary-color-light);
+    color: var(--mantine-primary-color-light-color);
+  }
+}
+
+/* The tabs as a menu: only while the app header is narrow (below). */
+.file-center__module-menu {
+  display: none;
+  padding: 4px 8px;
+  border-radius: var(--mantine-radius-sm);
+  white-space: nowrap;
+
+  &:hover {
+    background: var(--mantine-color-default-hover);
+  }
+}
+
+/* The breadcrumb's line, below the tabs. No frame around the app header (2026-10-08, the user's wish; one with rounded
+   corners around both lines before): only a line between the two, in the gray of the tiles' borders (Mantine's
+   `Paper`: gray-3, dark-4 in the dark scheme, below). */
+.file-center__crumbs {
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  padding: 6px var(--mantine-spacing-sm);
+  border-top: 1px solid var(--mantine-color-gray-3);
+
+  .file-center[data-mantine-color-scheme='dark'] & {
+    border-top-color: var(--mantine-color-dark-4);
+  }
+
+  & > .mantine-Breadcrumbs-breadcrumb {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    /* Room inside the clip (2026-10-09, the user's find): with `overflow: hidden` and Mantine's `line-height: 1`, the
+       last pixel of the text (descenders, the hover underline) was cut off. Taken back outside, so the line keeps its
+       height. */
+    padding-block: 2px;
+    margin-block: -2px;
+  }
+
+  & > .file-center__home,
+  & > .mantine-Breadcrumbs-separator {
+    flex: none;
+  }
+}
+
+/* The app icon at the start of the app header: only an icon, not a link (2026-10-04: the first crumb leads home). */
+.file-center__app-icon {
+  display: inline-flex;
+  border-radius: var(--mantine-radius-sm);
+}
+
+/* The first crumb: a house icon and "Home", a link to the start page (the app icon is no link).
+   On the start page it is the current page (not a link). As a link, icon and text take the link color (the accent, like
+   the other crumbs; 2026-10-05: a dimmed gray of its own was here, which only counted in the dark scheme). A plain link
+   like them, underlined on hover (2026-10-05, the user's wish; a padding and a gray hover ground, like a ghost button,
+   before). */
+.file-center__home {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--mantine-font-size-sm);
+
+  /* On the start page: the current page, not a link (like the last crumb). */
+  &[aria-current] {
+    color: var(--mantine-color-text);
+    font-weight: 500;
+  }
+}
+
+@container file-center-app-header (width < 56rem) {
+  .file-center__modules {
+    display: none;
+  }
+
+  .file-center__module-menu {
+    display: block;
+  }
+}
+
+@container file-center-app-header (width < 40rem) {
+  .file-center__history {
+    display: none;
+  }
+}
+
+/* The folder tree on the left, the open folder's contents on the right, both as high as the rest below the app header
+   (each scrolls on its own); below 48rem the tree goes (the breadcrumb and the table still lead everywhere). */
+.file-center__body {
+  container: file-center-body / inline-size;
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: 15.5rem minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  gap: var(--mantine-spacing-md);
+  min-height: 0;
+}
+
+/* A line on its right separates it from the table (2026-10-07, the user's wish; a frame around it before), in the color
+   of the lines between the table's rows (the data table's `colorDivider` of its Mantine theme). */
+.file-center__side {
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-xs) var(--mantine-spacing-xs) 4px;
+  border-inline-end: 1px solid var(--mantine-color-gray-3);
+  overflow: auto;
+  /* No bounce at its ends (Firefox's elastic overscroll), and the page does not scroll on (2026-10-08, the user's
+     wish; the same for every scroll area of the apps and the components). */
+  overscroll-behavior: none;
+  background: var(--mantine-color-body);
+  user-select: none;
+  scrollbar-width: thin;
+}
+
+/* The tree's header: "Folders" and "Collapse all" (2026-10-07). It stays at the top while the tree scrolls. */
+.file-center__tree-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin-bottom: 4px;
+  padding: 0 0 0 6px;
+  background: var(--mantine-color-body);
+
+  /* "Collapse all" while there is nothing to collapse: invisible, in its place. */
+  & [data-hidden] {
+    visibility: hidden;
+  }
+}
+
+.file-center[data-mantine-color-scheme='dark'] .file-center__side {
+  border-inline-end-color: var(--mantine-color-dark-4);
+}
+
+@container file-center-body (width < 48rem) {
+  .file-center__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .file-center__side {
+    display: none;
+  }
+}
+
+.file-center__main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: none;
+}
+
+/* A module without the folder tree (the Overview): its page takes the rest below the app header. */
+.file-center__app > .file-center__main {
+  flex: 1 1 auto;
+}
+
+/* The header line of a page: not selectable, like the toolbars of the tables. */
+.file-center__page-header {
+  user-select: none;
+}
+
+/* A card of the start page that is a link: its border in the accent on hover (like the other apps' start pages). */
+.file-center__card {
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 120ms;
+
+  &[data-link]:hover {
+    border-color: var(--mantine-primary-color-filled);
+  }
+}
+
+/* The name of the page a card opens, at its top right: in the accent while the card is hovered. */
+.file-center__card-target {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 2px;
+  color: var(--mantine-color-dimmed);
+  white-space: nowrap;
+  transition: color 120ms;
+
+  .file-center__card[data-link]:hover & {
+    color: var(--mantine-primary-color-filled);
+  }
+}
+
+.file-center__figures {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The table fills the height: every element from the page down to it is a flex column that takes the rest, so its
+   rows scroll and its toolbar, column headers and footer stay (the data table's "fixed header and footer").
+   `.file-center__table` is around the table (`DataTable`) and has no box of its own. Not in a dialog (outside
+   `.file-center__main`). Like the Board Manager and the Time Tracker. */
+.file-center__main :has(.file-center__table) {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.file-center__table {
+  display: contents;
+}
+
+.file-center__main .file-center__table > * {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* A node of the folder trees (the side, the move dialog): the chevron (an expander, hidden without subfolders), then
+   the folder's button. */
+.file-center .mantine-Tree-node > div,
+.file-center__move-tree .mantine-Tree-node > div {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Mantine's own highlight of a selected node (the whole row) is not used: the folder's button shows it. */
+.file-center .mantine-Tree-label[data-selected] {
+  background: none;
+}
+
+.file-center__tree-toggle {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--mantine-radius-sm);
+  color: var(--mantine-color-dimmed);
+
+  & svg {
+    transition: rotate 120ms;
+  }
+
+  &[data-expanded] svg {
+    rotate: 90deg;
+  }
+
+  &[data-hidden] {
+    visibility: hidden;
+  }
+
+  &:hover {
+    background: var(--mantine-color-default-hover);
+  }
+}
+
+.file-center__tree-node {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 30px;
+  padding: 2px 8px 2px 4px;
+  border-radius: var(--mantine-radius-sm);
+
+  &:hover:not(:disabled) {
+    background: var(--mantine-color-default-hover);
+  }
+
+  &[aria-current='page'],
+  &[data-chosen] {
+    background: var(--mantine-primary-color-light);
+    color: var(--mantine-primary-color-light-color);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+.file-center__move-tree {
+  max-height: 20rem;
+  overflow: auto;
+  overscroll-behavior: none;
+}
+
+/* The star of a favorite (2026-10-08) after a name: filled and yellow while it is one; else an outline, only while the
+   name is hovered or the star has the focus (it keeps its room). In a drawer's button always (`span`). */
+.file-center__star {
+  flex: none;
+  color: var(--mantine-color-dimmed);
+
+  &[data-on] {
+    color: var(--mantine-color-yellow-6);
+  }
+
+  &:is(button):not([data-on]):not(:focus-visible) {
+    opacity: 0;
+  }
+
+  .file-center__entry:hover &:is(button) {
+    opacity: 1;
+  }
+}
+
+.file-center__star:is(span) {
+  display: inline-flex;
+}
+
+/* The icon of a file in the table, in a color per kind (Mantine's palette). */
+.file-center__kind {
+  color: var(--mantine-color-gray-6);
+}
+
+.file-center__entry {
+  &[data-kind='image'] .file-center__kind {
+    color: var(--mantine-color-teal-6);
+  }
+
+  &[data-kind='video'] .file-center__kind {
+    color: var(--mantine-color-grape-6);
+  }
+
+  &[data-kind='audio'] .file-center__kind {
+    color: var(--mantine-color-pink-6);
+  }
+
+  &[data-kind='document'] .file-center__kind {
+    color: var(--mantine-color-blue-6);
+  }
+
+  &[data-kind='spreadsheet'] .file-center__kind {
+    color: var(--mantine-color-green-7);
+  }
+
+  &[data-kind='presentation'] .file-center__kind {
+    color: var(--mantine-color-orange-6);
+  }
+
+  &[data-kind='archive'] .file-center__kind {
+    color: var(--mantine-color-yellow-7);
+  }
+}
+
+/* The preview of a file in its drawer (made up): an image as a colored picture, every other kind its icon on gray. */
+.file-center__preview {
+  aspect-ratio: 16 / 10;
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-color-default-hover);
+  color: var(--mantine-color-dimmed);
+
+  &[data-kind='image'] {
+    color: rgb(255 255 255 / 85%);
+  }
+}

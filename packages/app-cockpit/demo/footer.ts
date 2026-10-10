@@ -69,16 +69,18 @@ const ACCENTS = [
   ['cyan', 'Cyan', '#15aabf'],
 ] as const;
 
-// The page's accent color: only the custom property `--app-accent-color` on `<html>` (none for "Design language"),
-// remembered per browser; violet by default. The cockpit follows it; the page maps it to the apps' own tokens (`demo/demo.css` of the root page).
-function accentSetting(): AppCockpit.Action {
+// The page's accent color (none for "Design language"), remembered per browser; `initial` (violet) by default, the root
+// page uses indigo (2026-10-07). The cockpit's `theme` (2026-10-10; it reads no custom property of the page), and for
+// the page the custom property `--app-accent-color` on `<html>`, which the root page maps to the apps' own tokens
+// (its `demo/demo.css`).
+function accentSetting(initial = 'violet', selector = 'app-cockpit'): AppCockpit.Action {
   const root = document.documentElement;
-  let accent = 'violet';
+  let accent = initial;
 
-  // An unknown value (e.g. "default", remembered before 2026-10-03): violet.
+  // An unknown value (e.g. "default", remembered before 2026-10-03): the initial one.
   const apply = (value: string) => {
     const [id, , color] = ACCENTS.find(([candidate]) => candidate === value)
-      ?? ACCENTS.find(([candidate]) => candidate === 'violet')!;
+      ?? ACCENTS.find(([candidate]) => candidate === initial)!;
 
     accent = id;
 
@@ -87,12 +89,21 @@ function accentSetting(): AppCockpit.Action {
     } else {
       root.style.setProperty('--app-accent-color', color);
     }
+
+    // Into the cockpit's theme (its other values kept): once the element is defined, so the first apply (from the config,
+    // before) does not replace the config's theme.
+    void customElements.whenDefined(selector).then(() => {
+      document.querySelectorAll<AppCockpit.Element>(selector).forEach((cockpit) => {
+        const { accent: _, ...rest } = cockpit.theme;
+        cockpit.theme = color === '' ? rest : { ...rest, accent: color };
+      });
+    });
   };
 
   try {
-    apply(localStorage.getItem('demo-page:accent') ?? 'violet');
+    apply(localStorage.getItem('demo-page:accent') ?? initial);
   } catch {
-    apply('violet');
+    apply(initial);
   }
 
   return {
@@ -118,15 +129,14 @@ function accentSetting(): AppCockpit.Action {
 }
 
 // The cockpit's navigation (2026-10-03, one button for two settings): which navigation (the attribute `nav`: `side`,
-// `top` (two lines), `top-compact` (one line), `top-switcher`; three attributes before, 2026-10-04; `sidebar`,
-// `topbar`, `topbar-compact`, `switcher` until 2026-10-06) and its colors (`nav-scheme`: always dark, or like the
+// `top`, `top-switcher`; three attributes before, 2026-10-04; `sidebar`, `topbar`, `topbar-compact`, `switcher` until
+// 2026-10-06; `top-compact` until 2026-10-08, when the topbar of two lines went and it became `top`) and its colors (`nav-scheme`: always dark, or like the
 // page), and its density (`density`: compact, normal, comfortable; 2026-10-05). Switched live, remembered per browser
 // (a value stored under an old name is the default).
 const NAVS: { value: AppCockpit.Nav; label: string }[] = [
   { value: 'auto', label: 'Automatic' },
   { value: 'side', label: 'Sidebar' },
   { value: 'top', label: 'Topbar' },
-  { value: 'top-compact', label: 'Topbar compact' },
   { value: 'top-switcher', label: 'App switcher' },
   { value: 'bottom', label: 'Bottom bar' },
 ];
@@ -137,7 +147,18 @@ const DENSITIES: { value: AppCockpit.Density; label: string }[] = [
   { value: 'comfortable', label: 'Comfortable' },
 ];
 
-function navigationSetting(selector = 'app-cockpit'): AppCockpit.Action {
+// `scheme`: the colors until the user chooses (the root's page: dark, 2026-10-08; this demo: like the page). `nav`: the
+// navigation until the user chooses (the root's page: the topbar of two lines, 2026-10-08; this demo: automatic).
+// `startPage`: the start page (the attribute `start-page`) until the user chooses, and a section "Start page" (On,
+// Off) in the menu (2026-10-08, the root page: on); without it, no section, and the attribute is left alone.
+function navigationSetting(
+  selector = 'app-cockpit',
+  { scheme: defaultScheme = 'page', nav: defaultNav = 'auto', startPage: defaultStartPage }: {
+    scheme?: AppCockpit.NavScheme;
+    nav?: AppCockpit.Nav;
+    startPage?: boolean;
+  } = {},
+): AppCockpit.Action {
   const cockpit = () => document.querySelector<AppCockpit.Element>(selector);
   const stored = (key: string) => {
     try {
@@ -155,19 +176,39 @@ function navigationSetting(selector = 'app-cockpit'): AppCockpit.Action {
       // Not remembered.
     }
   };
-  // Automatic by default (2026-10-06): the sidebar, the bottom bar in a narrow window.
-  const nav = NAVS.find(({ value }) => value === stored('nav'))?.value ?? 'auto';
-  // Like the page by default (2026-10-03).
-  const scheme: AppCockpit.NavScheme = stored('nav-scheme') === 'dark' ? 'dark' : 'page';
+  // The stored choice, else the default (`nav`; automatic, 2026-10-06: the sidebar, the bottom bar in a narrow window).
+  const nav = NAVS.find(({ value }) => value === stored('nav'))?.value ?? defaultNav;
+  // The stored choice, else the default (`scheme`; like the page before 2026-10-08, everywhere).
+  const storedScheme = stored('nav-scheme');
+  const scheme: AppCockpit.NavScheme = storedScheme === 'dark' || storedScheme === 'page'
+    ? storedScheme
+    : defaultScheme;
   const density = DENSITIES.find(({ value }) => value === stored('density'))?.value ?? 'normal';
 
   cockpit()?.setAttribute('nav', nav);
   cockpit()?.setAttribute('nav-scheme', scheme);
   cockpit()?.setAttribute('density', density);
 
+  // The stored choice ('on', 'off'), else the default; a boolean attribute: present or not.
+  const startPage = stored('start-page') === null ? defaultStartPage : stored('start-page') === 'on';
+  const setStartPage = (on: boolean) => {
+    cockpit()?.toggleAttribute('start-page', on);
+
+    try {
+      localStorage.setItem('demo-page:start-page', on ? 'on' : 'off');
+    } catch {
+      // Not remembered.
+    }
+  };
+
+  if (startPage !== undefined) {
+    cockpit()?.toggleAttribute('start-page', startPage);
+  }
+
   const currentNav = () => cockpit()?.nav ?? nav;
   const currentScheme = () => cockpit()?.navScheme ?? scheme;
   const currentDensity = () => cockpit()?.density ?? density;
+  const currentStartPage = () => cockpit()?.startPage ?? startPage;
 
   return {
     id: 'navigation',
@@ -185,7 +226,7 @@ function navigationSetting(selector = 'app-cockpit'): AppCockpit.Action {
       },
       {
         label: 'Colors',
-        items: [{ value: 'dark', label: 'Dark' }, { value: 'page', label: 'Like the page' }].map(
+        items: [{ value: 'dark', label: 'Dark' }, { value: 'page', label: 'Match page' }].map(
           ({ value, label }) => ({
             id: `nav-scheme:${value}`,
             label,
@@ -203,6 +244,15 @@ function navigationSetting(selector = 'app-cockpit'): AppCockpit.Action {
           onSelect: () => set('density', 'density', value),
         })),
       },
+      ...(defaultStartPage === undefined ? [] : [{
+        label: 'Start page',
+        items: [{ value: true, label: 'On' }, { value: false, label: 'Off' }].map(({ value, label }) => ({
+          id: `start-page:${value ? 'on' : 'off'}`,
+          label,
+          checked: () => currentStartPage() === value,
+          onSelect: () => setStartPage(value),
+        })),
+      }]),
     ],
   };
 }
@@ -230,6 +280,45 @@ const languageSection: AppCockpit.MenuSection = {
   })),
 };
 
+// "Reset demo" (2026-10-07): the demo as if it were opened for the very first time. Everything the page may have saved
+// is forgotten (`localStorage`, `sessionStorage`, IndexedDB, cookies, the cache storage: all of the origin, so this is
+// meant for a demo's own origin), then the page reloads at its start (no hash, no query).
+async function resetDemo(): Promise<void> {
+  const forget = async (task: () => unknown) => {
+    try {
+      await task();
+    } catch {
+      // Not available (e.g. blocked storage): nothing to forget there.
+    }
+  };
+
+  await forget(() => localStorage.clear());
+  await forget(() => sessionStorage.clear());
+  await forget(async () => {
+    for (const { name } of await indexedDB.databases()) {
+      if (name !== undefined) {
+        indexedDB.deleteDatabase(name);
+      }
+    }
+  });
+  await forget(async () => {
+    for (const name of await caches.keys()) {
+      await caches.delete(name);
+    }
+  });
+  await forget(() => {
+    for (const cookie of document.cookie.split(';')) {
+      const name = cookie.split('=')[0]?.trim();
+
+      if (name) {
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+      }
+    }
+  });
+  history.replaceState(null, '', location.pathname);
+  location.reload();
+}
+
 const MENU: AppCockpit.Footer['menu'] = [
   [
     {
@@ -245,12 +334,13 @@ const MENU: AppCockpit.Footer['menu'] = [
   languageSection,
   [
     {
-      id: 'whats-new',
-      label: 'What\'s new',
-      icon: svg('<path d="M12 3l2.4 5 5.6.8-4 3.9.9 5.5L12 15.6l-4.9 2.6.9-5.5-4-3.9 5.6-.8z"/>'),
-      onSelect: log('What\'s new'),
+      id: 'reset-demo',
+      label: 'Reset demo',
+      icon: svg(
+        '<path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/>',
+      ),
+      onSelect: () => void resetDemo(),
     },
-    { id: 'about', label: 'About', onSelect: log('About') },
   ],
 ];
 

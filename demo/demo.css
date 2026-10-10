@@ -19,9 +19,8 @@ app-cockpit {
   }
 }
 
-/* The login screen (packages/app-login), signed out: its accent is the page's, like the cockpit's and the apps'. */
+/* The login screen (packages/login), signed out (its accent: a Mantine theme from `main.ts`). */
 .login-host {
-  --app-login-accent-color: var(--app-accent-color, var(--ui-color-accent));
   animation: login-fade-in 350ms ease-out;
 }
 
@@ -50,26 +49,43 @@ app-cockpit {
   background: var(--ui-color-subtle);
 }
 
-/* The Board Manager fills the cockpit's content area (2026-10-05): its top bar stays, its page scrolls below it, and the
+/* The Board Manager fills the cockpit's content area (2026-10-05): its app header stays, its page scrolls below it, and the
    table of a page takes the rest of the height (`board-manager.css`). */
 board-manager-demo {
   display: block;
   height: 100%;
 }
 
-/* The cockpit's base text size (`--app-cockpit-font-size`, 14px by default) mapped to the apps' own text size (their
-   `--…-font-size` is Mantine's normal text, `sm`, and every other Mantine size follows it): the shell and the apps have
-   one text size. Set `--app-cockpit-font-size` on `app-cockpit` to change both (2026-10-04). */
-board-manager-demo {
-  --board-manager-font-size: var(--app-cockpit-font-size);
+/* The Time Tracker the same way (2026-10-06, `time-tracker.css`), Human Resources and the User Manager (2026-10-08,
+   `human-resources.css`, `user-manager.css`). */
+time-tracker-demo,
+human-resources-demo,
+user-manager-demo {
+  display: block;
+  height: 100%;
 }
 
-media-manager-demo {
-  --media-manager-font-size: var(--app-cockpit-font-size);
+/* The apps' own text size (their `--…-font-size` is Mantine's normal text, `sm`, and every other Mantine size follows
+   it), the same as the cockpit's (its theme's `fontSize` in `main.ts`): the shell and the apps have one text size
+   (2026-10-04). Change both together (2026-10-10: the cockpit has no custom property to read any more). */
+board-manager-demo {
+  --board-manager-font-size: 14px;
+}
+
+file-center-demo {
+  --file-center-font-size: 14px;
 }
 
 user-manager-demo {
-  --user-manager-font-size: var(--app-cockpit-font-size);
+  --user-manager-font-size: 14px;
+}
+
+time-tracker-demo {
+  --time-tracker-font-size: 14px;
+}
+
+human-resources-demo {
+  --human-resources-font-size: 14px;
 }
 
 /* The page's accent (`--app-accent-color`, the cockpit's "Accent color" menu; else the design language's), mapped to
@@ -78,10 +94,18 @@ board-manager-demo {
   --board-manager-accent-color: var(--app-accent-color, var(--ui-color-accent));
 }
 
-media-manager-demo {
-  --media-manager-accent-color: var(--app-accent-color, var(--ui-color-accent));
+file-center-demo {
+  --file-center-accent-color: var(--app-accent-color, var(--ui-color-accent));
 }
 
 user-manager-demo {
   --user-manager-accent-color: var(--app-accent-color, var(--ui-color-accent));
+}
+
+time-tracker-demo {
+  --time-tracker-accent-color: var(--app-accent-color, var(--ui-color-accent));
+}
+
+human-resources-demo {
+  --human-resources-accent-color: var(--app-accent-color, var(--ui-color-accent));
 }

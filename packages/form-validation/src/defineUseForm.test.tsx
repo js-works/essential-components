@@ -352,6 +352,59 @@ describe('defineUseForm', () => {
     expect(screen.queryByRole('alert')).toBeNull(); // the server error disappears on change
   });
 
+  it('tells with isDirty() whether a value differs from the initial one', async () => {
+    setLocale('de');
+    const user = userEvent.setup();
+    let isDirty = () => false;
+    function F() {
+      const form = useForm(z.object({ name: z.string(), note: z.string().optional() }), {
+        initial: { name: 'Ann' },
+        submit: () => {},
+      });
+      isDirty = form.isDirty;
+      return (
+        <form {...form.form()}>
+          <TextField {...form.field.name({ label: 'Name' })} />
+          <TextField {...form.field.note({ label: 'Note' })} />
+        </form>
+      );
+    }
+    render(<F />);
+    expect(isDirty()).toBe(false);
+    await user.type(screen.getByLabelText('Name'), 'a');
+    expect(isDirty()).toBe(true);
+    await user.type(screen.getByLabelText('Name'), '{Backspace}');
+    expect(isDirty()).toBe(false); // changed back
+    await user.type(screen.getByLabelText('Note'), 'x{Backspace}');
+    expect(isDirty()).toBe(false); // '' is like the missing initial value
+  });
+
+  it('focuses the first field with an error of an async server check', async () => {
+    setLocale('de');
+    const user = userEvent.setup();
+    function F() {
+      const { form, field } = useForm(z.object({ name: z.string(), username: z.string() }), {
+        submit: async (data) => {
+          await new Promise((r) => setTimeout(r, 10));
+          if (data.username === 'taken') return { fieldErrors: { username: 'This username is already taken.' } };
+        },
+      });
+      return (
+        <form {...form()}>
+          <TextField {...field.name({ label: 'Name' })} />
+          <TextField {...field.username({ label: 'Username' })} />
+          <button type="submit">Send</button>
+        </form>
+      );
+    }
+    render(<F />);
+    await user.type(screen.getByLabelText('Name'), 'Ann');
+    await user.type(screen.getByLabelText('Username'), 'taken');
+    await user.click(screen.getByText('Send'));
+    expect(await screen.findByRole('alert')).toHaveProperty('textContent', 'This username is already taken.');
+    expect(document.activeElement).toBe(screen.getByLabelText('Username'));
+  });
+
   it('respects explicit schema messages and formMeta labels', async () => {
     setLocale('de');
     const user = userEvent.setup();
@@ -468,7 +521,7 @@ describe('i18n adapter', () => {
     await user.tab();
     expect(resolveText).toHaveBeenCalledWith('myapp', 'signup.age', null, 'Age');
     expect(resolveText).toHaveBeenCalledWith(
-      'formvalidation',
+      'formValidation',
       'number.min',
       { min: 18 },
       screen.getByRole('alert').textContent,

@@ -1,7 +1,7 @@
 # XWiki attachment manager
 
 A Lit custom element (`<xwiki-attachment-manager>`) that manages the attachments of an XWiki page, like the Media
-Manager of the demo: the data navigator (search, sorting, paging, column filters), an upload drawer with the file
+Manager of the demo: the data table (search, sorting, paging, column filters), an upload drawer with the file
 upload, delete with a confirmation, details, toasts. Packaged into a XAR.
 
 It uses the sources of this monorepo's packages, so it builds only inside the monorepo, with the root `node_modules`

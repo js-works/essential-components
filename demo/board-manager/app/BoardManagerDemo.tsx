@@ -1,6 +1,7 @@
 // Mantine's layered styles (`@layer mantine`): below every unlayered rule of the page, so its global rules do not
 // restyle the other demos (like in the React demo of overlays).
 import '@mantine/core/styles.layer.css';
+import '@mantine/charts/styles.layer.css';
 import '@mantine/dates/styles.layer.css';
 import './board-manager.css';
 import {
@@ -37,7 +38,7 @@ export { App as BoardManagerApp, BoardManagerDemo, createLook };
 export type { Look };
 
 // A board manager: boards and committees, their meetings, agendas, minutes and documents. Mantine, React Router and
-// three packages: data navigators for every list, the dialogs and toasts of the overlays package, and a file upload
+// three packages: data tables for every list, the dialogs and toasts of the overlays package, and a file upload
 // for the documents of a meeting. The server is fake (db.ts), the data lives in memory.
 
 // The look of the app: Mantine's theme with the accent (the primary color), the danger, success and warning colors,
@@ -48,8 +49,8 @@ export type { Look };
 // properties): the overlays provider compares its config.
 type Look = { theme: MantineThemeOverride; cssVariablesResolver: CSSVariablesResolver; overlaysConfig: OverlaysConfig };
 
-// The font of the app: `--board-manager-font-family`, else Mantine's.
-const FONT_FAMILY = `var(--board-manager-font-family, ${DEFAULT_THEME.fontFamily})`;
+// The font of the app: `--board-manager-font-family`, else the modern theme's (Inter, 2026-10-09; Mantine's before).
+const FONT_FAMILY = `var(--board-manager-font-family, ${modernTheme.theme.fontFamily ?? DEFAULT_THEME.fontFamily})`;
 
 // Mantine's text and heading sizes in px (at a 16px root), relative to its `sm` (14px), the app's normal text.
 const FONT_SIZES = { xs: 12, sm: 14, md: 16, lg: 18, xl: 20 } as const;
@@ -147,7 +148,7 @@ function createLook(
   // More contrast than Mantine's defaults, for the app and every component in it (their themes use Mantine's
   // variables): the dimmed text (secondary texts, the table headers, the labels) and the placeholders one step darker
   // (in dark mode: lighter). The text and the lines stay Mantine's (black and `gray.4` already). The error color (the
-  // inputs' errors, the data navigator's and the file upload's danger) is the danger color, shades 6 and 8 like
+  // inputs' errors, the data table's and the file upload's danger) is the danger color, shades 6 and 8 like
   // Mantine's red.
   // The font and the text size follow the custom properties `--board-manager-font-family` and
   // `--board-manager-font-size` (the app's normal text, Mantine's `sm`; set by the host page's CSS on the
@@ -231,7 +232,7 @@ function createLook(
           <Scope>
             <Button
               size="xs"
-              variant={variant === 'secondary' ? 'default' : 'filled'}
+              variant={variant === 'secondary' ? 'default' : variant === 'link' ? 'subtle' : 'filled'}
               color={variant === 'danger' ? 'danger' : undefined}
               loading={loading}
               onClick={onClick}

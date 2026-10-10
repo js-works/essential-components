@@ -3,33 +3,7 @@
 // -------------------------------------------------------------------
 
 import { css } from "../../internal/css.js";
-import { defaultDialogTheme } from "../contract/theme.js";
-
-// Interim application mechanism: each token is a `--dialog-*` custom property (set from
-// the controller's `theme` option, see createDialogsController) whose inline fallback is
-// the built-in default from `defaultDialogTheme` — a single source. (Slated to change to
-// baking values straight into the generated stylesheet; see dialogs/theme.ts.)
-const theme = {
-  textColor: `var(--dialog-text, ${defaultDialogTheme.text})`,
-  dividerColor: `var(--dialog-divider, ${defaultDialogTheme.divider})`,
-  primaryTextColor: `var(--dialog-primary-text, ${defaultDialogTheme.primaryText})`,
-  primaryBackgroundColor: `var(--dialog-primary-background, ${defaultDialogTheme.primaryBackground})`,
-  secondaryTextColor: `var(--dialog-secondary-text, ${defaultDialogTheme.secondaryText})`,
-  secondaryBackgroundColor: `var(--dialog-secondary-background, ${defaultDialogTheme.secondaryBackground})`,
-  secondaryBorderColor: `var(--dialog-secondary-border, ${defaultDialogTheme.secondaryBorder})`,
-  dangerTextColor: `var(--dialog-danger-text, ${defaultDialogTheme.dangerText})`,
-  dangerBackgroundColor: `var(--dialog-danger-background, ${defaultDialogTheme.dangerBackground})`,
-  successColor: `var(--dialog-success-accent, ${defaultDialogTheme.successAccent})`,
-  dialogBorderRadius: `var(--dialog-radius, ${defaultDialogTheme.radius})`,
-  closeButtonBorderRadius: `var(--dialog-close-radius, ${defaultDialogTheme.closeRadius})`,
-  actionButtonBorderRadius: `var(--dialog-action-radius, ${defaultDialogTheme.actionRadius})`,
-  dialogBackgroundColor: `var(--dialog-background, ${defaultDialogTheme.background})`,
-  buttonTransition: `var(--dialog-button-transition, ${defaultDialogTheme.buttonTransition})`,
-  buttonActiveScale: `var(--dialog-button-active-scale, ${defaultDialogTheme.buttonActiveScale})`,
-  fontSize: `var(--dialog-font-size, ${defaultDialogTheme.fontSize})`,
-  fontFamily: `var(--dialog-font-family, ${defaultDialogTheme.fontFamily})`,
-  spinnerColor: `var(--dialog-spinner, ${defaultDialogTheme.spinner})`,
-} as const;
+import type { DialogTheme } from "../contract/theme.js";
 
 // Duration of the note appear/disappear (collapse) animation. Drives both the
 // CSS transition and the JS timer that removes the element after the collapse finishes.
@@ -38,6 +12,11 @@ export const REJECT_MESSAGE_ANIM_MS = 450;
 // Duration of the real dialog's grow-in (entrance) animation — used for the first real
 // dialog in a scope and every in-scope swap (see #growIn in element.ts).
 export const DIALOG_GROW_ANIM_MS = 200;
+
+// Duration of the change between the form and a question in its place (FormAttempt.ask):
+// the box morphs to its new size while the new content fades in (see #morphQuestion in
+// element.ts).
+export const QUESTION_MORPH_ANIM_MS = 220;
 
 // Duration of the spinner placeholder's drop-in animation (see #growIn in element.ts).
 export const SPINNER_DROP_ANIM_MS = 500;
@@ -69,15 +48,20 @@ export const BUTTON_SPINNER_DELAY_MS = 150;
 // Belt-and-braces close timeout in case the close animation's `animationend` never fires.
 export const CLOSE_ANIMATION_FALLBACK_MS = DIALOG_CLOSE_ANIM_MS + 100;
 
-const dialogStyles = css`
+const dialogStyles = (theme: DialogTheme): string => css`
   dialog {
     outline: none;
     position: fixed;
-    /* Sit high and horizontally centered. margin-block-start pushes the dialog
-       down proportionally on tall viewports but never lets it touch the top
-       (2em floor); margin-block-end: auto lets it grow downward rather than
-       being pulled up by a self-offset. */
-    inset: 0;
+    /* Horizontally centered; vertically a bit above the middle (2026-10-08, the user's
+       wish; a top anchor at 12dvh for most dialogs and exact centering for forms before):
+       the top edge at the middle, then up by 40% of the dialog's own height (a percentage
+       of translate is the element's own size) plus 10dvh, so the free space is split
+       40/60 above and below it. Never closer than 2em to the top (max()), and with the
+       max-height below never past the bottom. translate is its own property: the open
+       animation's transform (element.ts, #growIn) adds to it. */
+    inset-inline: 0;
+    inset-block: 50dvh auto;
+    translate: 0 max(calc(2em - 50dvh), calc(-40% - 10dvh));
     width: fit-content;
     /* Cap the line length so a long single-line message wraps to a few lines instead of
        stretching the dialog very wide - a calmer width/height ratio. Still shrinks to fit
@@ -91,15 +75,18 @@ const dialogStyles = css`
     height: fit-content;
     max-height: calc(100dvh - 4em);
     margin-inline: auto;
-    margin-block: max(2em, 12dvh) auto;
-    color: ${theme.textColor};
-    background-color: ${theme.dialogBackgroundColor};
+    margin-block: 0;
+    color: ${theme.text};
+    background-color: ${theme.background};
     border: none;
-    border-radius: ${theme.dialogBorderRadius};
+    border-radius: ${theme.radius};
     min-width: 22em;
     box-sizing: border-box;
     padding: 0;
     overflow: auto;
+    /* No bounce at the ends of a scroll area (Firefox's elastic overscroll), here and in
+       the bodies below (2026-10-08). */
+    overscroll-behavior: none;
     box-shadow: 0 10px 30px -5px rgba(0,0,0,0.25), 0 4px 10px -4px rgba(0,0,0,0.15);  
   }
 
@@ -119,7 +106,9 @@ const dialogStyles = css`
     animation: backdrop-fade-out ${BACKDROP_FADE_OUT_ANIM_MS}ms ease-in-out;
   }
 
-  /* Form dialogs get a bit more room so labelled fields aren't cramped. */
+  /* Form dialogs get a bit more room so labelled fields aren't cramped. Placed like every
+     centered dialog (above); a note added to a form (a failed save) moves it up by 40% of
+     the note's height. */
   :host([data-dialog-type="form"]) dialog,
   :host([data-dialog-type="formCritical"]) dialog {
     min-width: 26em;
@@ -131,6 +120,8 @@ const dialogStyles = css`
      Undoes the centering above: auto on the start side pushes the panel to the inline-end
      edge (right in LTR, left in RTL) and it fills the block axis. */
   :host([data-surface="drawer"]) dialog {
+    inset: 0;
+    translate: none;
     margin-inline-start: auto;
     margin-inline-end: 0;
     margin-block: 0;
@@ -138,9 +129,8 @@ const dialogStyles = css`
        the named width (data-width, below; 30em by default) and never past the viewport:
        content that needs more room (a min-width, a wide table) widens it. The floor also
        replaces the base rule's 22em, which would exceed the panel on a narrow phone. */
-    --named-width: 30em;
     width: min-content;
-    min-width: min(calc(100dvw - 2em), var(--named-width));
+    min-width: min(calc(100dvw - 2em), 30em);
     max-width: calc(100dvw - 2em);
     height: 100dvh;
     max-height: none;
@@ -152,30 +142,59 @@ const dialogStyles = css`
 
   /* ---- Named widths (data-width) ------------------------------------------
      For both surfaces. "default" keeps each surface's own sizing (a centered dialog sizes
-     itself to its text, up to 26em; a drawer is 30em). The others set --named-width, the
-     floor of the rules that use it: the drawer above, the centered dialog below. */
-  :host([data-width="wide"]) dialog {
-    --named-width: 48em;
+     itself to its text, up to 26em; a drawer is 30em). The others are the floor of the
+     width: 48em, 64em, the viewport. */
+  :host([data-surface="drawer"][data-width="wide"]) dialog {
+    min-width: min(calc(100dvw - 2em), 48em);
   }
 
-  :host([data-width="extraWide"]) dialog {
-    --named-width: 64em;
+  :host([data-surface="drawer"][data-width="extraWide"]) dialog {
+    min-width: min(calc(100dvw - 2em), 64em);
   }
 
-  :host([data-width="full"]) dialog {
-    --named-width: 100dvw;
+  :host([data-surface="drawer"][data-width="full"]) dialog {
+    min-width: calc(100dvw - 2em);
   }
 
   /* A centered dialog of a named width: like the drawer, as wide as its content needs, at
      least that width, and never past the viewport (2em of it on each side). After the
-     form rule above, whose 26em floor it replaces. Centered vertically too: such a dialog
-     is large (a preview, a long form), and the base rule's top anchor (12dvh), which keeps
-     a small dialog in place while its content changes, would push it past the bottom. */
+     form rule above, whose 26em floor it replaces. Placed vertically like every centered
+     dialog (the base rule). */
   :host(:not([data-surface="drawer"]):is([data-width="wide"], [data-width="extraWide"], [data-width="full"])) dialog {
     width: min-content;
-    min-width: min(calc(100dvw - 4em), var(--named-width));
     max-width: calc(100dvw - 4em);
-    margin-block: auto;
+  }
+
+  :host(:not([data-surface="drawer"])[data-width="wide"]) dialog {
+    min-width: min(calc(100dvw - 4em), 48em);
+  }
+
+  :host(:not([data-surface="drawer"])[data-width="extraWide"]) dialog {
+    min-width: min(calc(100dvw - 4em), 64em);
+  }
+
+  :host(:not([data-surface="drawer"])[data-width="full"]) dialog {
+    min-width: calc(100dvw - 4em);
+  }
+
+  /* A question in place of the content: the dialog is only as
+     wide as the question needs, not the form's floor (the attributes are always on the
+     host; naming them all outweighs the rules of the form and the named widths above). */
+  :host([data-asking][data-dialog-type][data-surface][data-width]:not([data-surface="drawer"])) dialog {
+    width: fit-content;
+    min-width: 0;
+  }
+
+  /* The morph between the form and a question (data-morphing, see #morphQuestion in
+     element.ts): no scrollbars while the box changes its size, and nothing outside the box
+     (2026-10-10, the user's wish: the open dialog no longer clips, see below, and the
+     content, kept at its final size meanwhile, stuck out of the morphing box).
+     ([data-surface] is always on the host, and \`dialog[open]:not(.spinner-dialog)\`
+     matches the open dialog's rule: together they outweigh it and the body's rules below,
+     which come later.) */
+  :host([data-morphing][data-surface]) dialog[open]:not(.spinner-dialog),
+  :host([data-morphing][data-surface]) .dialog-content .body {
+    overflow: hidden;
   }
 
   /* ---- Maximized (data-maximized, see DialogConfig.maximizable) --------------------
@@ -183,6 +202,8 @@ const dialogStyles = css`
      three attributes are always on the host; naming them all makes this more specific than
      the rules of the named widths above (two conditions in their :host()). */
   :host([data-maximized][data-surface][data-width]) dialog {
+    inset: 0;
+    translate: none;
     width: 100dvw;
     min-width: 0;
     max-width: none;
@@ -222,11 +243,16 @@ const dialogStyles = css`
      dialog is a column whose one child, the content, shrinks to the dialog's max-height
      (not a max-height of its own: the content's em may differ from the dialog's, e.g. with
      a theme's fontSize, and the few pixels between them gave the dialog a second scroll
-     bar). Not the spinner placeholder, which centers its spinner itself. */
+     bar). Not the spinner placeholder, which centers its spinner itself.
+     Not clipping (2026-10-10; hidden before): its body scrolls, the dialog never does. The
+     dialog's \`translate\` (its vertical position) makes it the containing block of the
+     fixed popups inside it (a date picker's calendar, a select's list: \`floatingStrategy:
+     "fixed"\`, meant to escape the scrolling body), so its own overflow clipped them at its
+     edges. */
   :host(:not([data-surface="drawer"])) dialog[open]:not(.spinner-dialog) {
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow: visible;
   }
 
   :host(:not([data-surface="drawer"])) .dialog-content {
@@ -239,6 +265,7 @@ const dialogStyles = css`
   :host(:not([data-surface="drawer"])) .dialog-content .body {
     flex: 0 1 auto;
     overflow-y: auto;
+    overscroll-behavior: none;
   }
 
   :host(:not([data-surface="drawer"])) .dialog-content > :not(.body) {
@@ -258,13 +285,17 @@ const dialogStyles = css`
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    overscroll-behavior: none;
   }
 
-  /* Slides out to the edge rather than fading in place. The distance is a custom property
-     because transforms have no logical equivalent — the element sets it per writing
-     direction (see #growIn in element.ts). */
+  /* Slides out to the edge rather than fading in place. Transforms have no logical
+     equivalent, so right-to-left text has a keyframe of its own (to the left edge). */
   :host([data-surface="drawer"]) dialog[open].closing {
     animation: drawer-slide-out ${DIALOG_CLOSE_ANIM_MS}ms ease-in-out;
+  }
+
+  :host([data-surface="drawer"]:dir(rtl)) dialog[open].closing {
+    animation-name: drawer-slide-out-rtl;
   }
 
   /* Hidden rather than absent when the dialog has no icon: the adapter renders a fixed
@@ -302,14 +333,14 @@ const dialogStyles = css`
   :host([data-dialog-type="confirm"]) #icon,
   :host([data-dialog-type="decide"]) #icon,
   :host([data-dialog-type="success"]) #icon {
-    color: ${theme.primaryBackgroundColor};
+    color: ${theme.primaryBackground};
   }
 
   :host([data-dialog-type="warn"]) #icon,
   :host([data-dialog-type="error"]) #icon,
   :host([data-dialog-type="confirmCritical"]) #icon,
   :host([data-dialog-type="decideCritical"]) #icon {
-    color: ${theme.dangerBackgroundColor};
+    color: ${theme.dangerBackground};
   }
 
   .dialog-content {
@@ -389,6 +420,72 @@ const dialogStyles = css`
     user-select: none;
   }
 
+  /* A question asked in place of the content: the body is
+     hidden (still in the DOM, so nothing typed is lost) and the footer, with the question
+     and its two buttons, shows alone; */
+  /* The header's stand-ins: a question icon, and the question's title if it has one. */
+  #ask-icon,
+  .ask-title {
+    display: none;
+  }
+  :host([data-asking]) #icon {
+    display: none;
+  }
+  /* No close button (and no maximize button) while a question is asked (2026-10-10, the
+     user's wish): its two buttons are the answers; Escape still gives the one it gives. */
+  :host([data-asking]) .header-buttons {
+    display: none;
+  }
+  :host([data-asking]) #ask-icon {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6em;
+    line-height: 1;
+    color: ${theme.primaryBackground};
+  }
+  :host([data-asking]) #ask-icon[data-tone="error"] {
+    color: ${theme.dangerBackground};
+  }
+  #ask-icon svg {
+    display: block;
+    width: 1em;
+    height: 1em;
+    overflow: visible;
+  }
+  :host([data-asking][data-ask-title]) .ask-title {
+    display: block;
+  }
+  :host([data-asking][data-ask-title]) .titles > :not(.ask-title) {
+    display: none;
+  }
+  :host([data-asking]) .dialog-content .footer .note-icon {
+    display: none;
+  }
+  :host([data-asking]) .dialog-content .body {
+    display: none;
+  }
+  :host([data-asking]) .dialog-content .footer {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  :host([data-asking]) .dialog-content .footer .note {
+    border: none;
+    background: none;
+    font-size: 1em;
+  }
+  /* The question's text left-aligned, the buttons stay centered. */
+  :host([data-asking]) .dialog-content .footer .note-inner {
+    justify-content: start;
+    text-align: start;
+  }
+  :host([data-asking]) .dialog-content .footer .action-buttons {
+    justify-content: center;
+  }
+
   .dialog-content .footer .action-buttons {
     display: flex;
     flex-direction: row-reverse;
@@ -404,7 +501,7 @@ const dialogStyles = css`
     justify-content: center;
     outline: none;
     border: none;
-    border-radius: ${theme.actionButtonBorderRadius};
+    border-radius: ${theme.actionRadius};
     padding: 0.65em 1.5em;
     /* A stack that ships a Medium (500) face, so the weight below is visible (unlike
        Helvetica/Arial, which only have 400 + 700). */
@@ -450,48 +547,67 @@ const dialogStyles = css`
   }
 
   .action-button[data-type="primary"] {
-    color: ${theme.primaryTextColor};
-    background-color: ${theme.primaryBackgroundColor};
+    color: ${theme.primaryText};
+    background-color: ${theme.primaryBackground};
   }
   .action-button[data-type="primary"]:hover {
-    background-color: color-mix(in srgb, ${theme.primaryBackgroundColor}, black 10%);
+    background-color: color-mix(in srgb, ${theme.primaryBackground}, black 10%);
   }
   .action-button[data-type="primary"]:active {
-    background-color: color-mix(in srgb, ${theme.primaryBackgroundColor}, black 20%);
+    background-color: color-mix(in srgb, ${theme.primaryBackground}, black 20%);
   }
 
   .action-button[data-type="secondary"] {
-    color: ${theme.secondaryTextColor};
-    background-color: ${theme.secondaryBackgroundColor};
-    border: 1px solid ${theme.secondaryBorderColor};
+    color: ${theme.secondaryText};
+    background-color: ${theme.secondaryBackground};
+    border: 1px solid ${theme.secondaryBorder};
   }
   .action-button[data-type="secondary"]:hover {
-    background-color: color-mix(in srgb, ${theme.secondaryBackgroundColor}, black 5%);
+    background-color: color-mix(in srgb, ${theme.secondaryBackground}, black 5%);
   }
   .action-button[data-type="secondary"]:active {
-    background-color: color-mix(in srgb, ${theme.secondaryBackgroundColor}, black 10%);
+    background-color: color-mix(in srgb, ${theme.secondaryBackground}, black 10%);
   }
 
   .action-button[data-type="danger"] {
-    color: ${theme.dangerTextColor};
-    background-color: ${theme.dangerBackgroundColor};
+    color: ${theme.dangerText};
+    background-color: ${theme.dangerBackground};
   }
   .action-button[data-type="danger"]:hover {
-    background-color: color-mix(in srgb, ${theme.dangerBackgroundColor}, black 15%);
+    background-color: color-mix(in srgb, ${theme.dangerBackground}, black 15%);
   }
   .action-button[data-type="danger"]:active {
-    background-color: color-mix(in srgb, ${theme.dangerBackgroundColor}, black 40%);
+    background-color: color-mix(in srgb, ${theme.dangerBackground}, black 40%);
+  }
+
+  /* A link action: text only, in the primary color. */
+  .action-button[data-type="link"] {
+    color: ${theme.primaryBackground};
+    background-color: transparent;
+  }
+  .action-button[data-type="link"]:hover {
+    text-decoration: underline;
+  }
+
+  /* The separate buttons (danger and link actions) on the footer's other side: it is
+     row-reverse, so the free space goes after the first of them (overridden buttons: a
+     spacer between their two slots). */
+  .action-button.separate-first {
+    margin-inline-end: auto;
+  }
+  .actions-spacer {
+    flex: 1;
   }
 
   .action-button[data-type="success"] {
     color: white;
-    background-color: ${theme.successColor};
+    background-color: ${theme.successAccent};
   }
   .action-button[data-type="success"]:hover {
-    background-color: color-mix(in srgb, ${theme.successColor}, black 10%);
+    background-color: color-mix(in srgb, ${theme.successAccent}, black 10%);
   }
   .action-button[data-type="success"]:active {
-    background-color: color-mix(in srgb, ${theme.successColor}, black 20%);
+    background-color: color-mix(in srgb, ${theme.successAccent}, black 20%);
   }
 
   /* Maximize/Restore (only with maximizable) and close, at the end of the header, at its
@@ -507,7 +623,7 @@ const dialogStyles = css`
   .close-button {
     align-self: flex-start;
     border: none;
-    border-radius: ${theme.closeButtonBorderRadius};
+    border-radius: ${theme.closeRadius};
     outline: none;
     margin: 0;
     font-size: 1em;
@@ -565,7 +681,7 @@ const dialogStyles = css`
     border-top: 1px solid #e8e8e8;
     border-bottom: 1px solid #e8e8e8;
     border-radius: 0;
-    color: ${theme.textColor};
+    color: ${theme.text};
     background-color: #f8f8f8;
     font-size: 0.85em;
     line-height: 1.35;
@@ -586,7 +702,16 @@ const dialogStyles = css`
     align-items: center;
     font-size: 1.5em;
     line-height: 1;
-    color: ${theme.dangerBackgroundColor};
+    color: ${theme.dangerBackground};
+  }
+
+  /* A question (FormAttempt.ask): not an error, so the primary color on a light ground of
+     it, with a question mark. */
+  .note[data-tone="question"] {
+    background-color: color-mix(in srgb, ${theme.primaryBackground} 8%, transparent);
+  }
+  .note[data-tone="question"] .note-icon {
+    color: ${theme.primaryBackground};
   }
 
   .note-body {
@@ -599,8 +724,10 @@ const dialogStyles = css`
     font-weight: 600;
     line-height: 1.15;
   }
+  /* A plain string: "\n" breaks the line (e.g. the discard question and its Esc hint). */
   .note-text {
     line-height: 1.25;
+    white-space: pre-line;
   }
   .note-icon svg {
     display: block;
@@ -614,7 +741,14 @@ const dialogStyles = css`
 
   @keyframes drawer-slide-out {
     to {
-      transform: translateX(var(--drawer-exit-translate, 100%));
+      transform: translateX(100%);
+      opacity: 0;
+    }
+  }
+
+  @keyframes drawer-slide-out-rtl {
+    to {
+      transform: translateX(-100%);
       opacity: 0;
     }
   }
@@ -640,7 +774,7 @@ const dialogStyles = css`
   }
 `;
 
-const placeholderStyles = css`
+const placeholderStyles = (theme: DialogTheme): string => css`
   :host {
     display: contents;
   }
@@ -659,7 +793,7 @@ const placeholderStyles = css`
     width: 2.2em;
     height: 2.2em;
     border: 3px solid color-mix(in srgb, currentColor 20%, transparent);
-    border-top: 3px solid ${theme.spinnerColor};
+    border-top: 3px solid ${theme.spinner};
     border-radius: 50%;
     animation: spin-plain 1s linear infinite;
     box-sizing: border-box;
@@ -670,4 +804,15 @@ const placeholderStyles = css`
   }
 `;
 
-export const styleText = dialogStyles + placeholderStyles;
+// The stylesheet of a theme: its values are put straight into the CSS (no custom properties, so nothing
+// inherits into the slotted content). Built once per theme object.
+const styleTexts = new WeakMap<DialogTheme, string>();
+
+export function styleText(theme: DialogTheme): string {
+  let text = styleTexts.get(theme);
+  if (text === undefined) {
+    text = dialogStyles(theme) + placeholderStyles(theme);
+    styleTexts.set(theme, text);
+  }
+  return text;
+}

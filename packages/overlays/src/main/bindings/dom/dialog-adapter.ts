@@ -208,7 +208,9 @@ function renderActionButtons(
   host: HTMLElement,
   props: DialogProps<DomDialogContent>,
 ): void {
-  for (const stale of host.querySelectorAll(':scope > [slot="action"]')) {
+  for (const stale of host.querySelectorAll(
+    ':scope > [slot="action"], :scope > [slot="action-separate"]',
+  )) {
     stale.remove();
   }
 
@@ -219,12 +221,13 @@ function renderActionButtons(
 
   props.buttons.forEach((button, index) => {
     const wrapper = document.createElement("span");
-    wrapper.setAttribute("slot", "action");
+    wrapper.setAttribute("slot", button.separate ? "action-separate" : "action");
     wrapper.dataset.actionIndex = String(index);
     wrapper.append(
       ...toNodes(
         render({
           role: button.role,
+          action: button.action,
           text: button.text,
           variant: button.type,
           loading: button.loading,

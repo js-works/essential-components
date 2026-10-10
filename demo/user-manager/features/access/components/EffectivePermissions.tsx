@@ -5,7 +5,7 @@ import type { AccessData, Reason } from '../../../domain';
 
 export { EffectivePermissions, ReasonText };
 
-// Why: "Media editor on Media Manager › Marketing, via group Marketing" (or "directly").
+// Why: "Media editor on File Center › Marketing, via group Marketing" (or "directly").
 function ReasonText({ data, reason }: { data: AccessData; reason: Reason }): ReactElement {
   return (
     <Text size="xs" c="dimmed">

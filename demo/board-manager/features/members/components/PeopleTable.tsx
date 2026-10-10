@@ -2,8 +2,8 @@ import { Anchor } from '@mantine/core';
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { selectColumnFilter, useDataNavigatorController } from '../../../../../packages/data-navigator/src/react';
-import type { DataNavigatorComponent } from '../../../../../packages/data-navigator/src/react';
+import { selectColumnFilter, useDataTableController } from '../../../../../packages/data-table/src/react';
+import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
 import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react';
 import type { Role } from '../../../domain';
 import {
@@ -22,7 +22,7 @@ import type { Dialogs } from '../../../shared/lib/flows';
 import { translate, useTranslate } from '../../../shared/lib/i18n';
 import {
   appIcons,
-  Navigator,
+  DataTable,
   organizationFilter,
   PAGE_SIZE_OPTIONS,
   personFilter,
@@ -91,14 +91,14 @@ function PeopleTable(
   { organizationId, title, subtitle }: { organizationId?: string; title: string; subtitle: string },
 ): ReactElement {
   const t = useTranslate();
-  const nav = useDataNavigatorController<PersonRow>();
+  const nav = useDataTableController<PersonRow>();
   const dialogs = useDialogs();
   const toasts = useToast();
   const navigate = useNavigate();
   const boards = useDb((state) => state.boards);
   const source = useMemo(() => fetchPeople(organizationId), [organizationId]);
 
-  const columns = useMemo<readonly DataNavigatorComponent.Column<PersonRow>[]>(() => [
+  const columns = useMemo<readonly DataTableComponent.Column<PersonRow>[]>(() => [
     {
       key: 'name',
       header: t('members.columns.person'),
@@ -136,7 +136,7 @@ function PeopleTable(
     },
   ], [t, boards, organizationId]);
 
-  const actions = useMemo<readonly DataNavigatorComponent.Action<PersonRow>[]>(() => {
+  const actions = useMemo<readonly DataTableComponent.Action<PersonRow>[]>(() => {
     const create = async () => {
       const saved = !(await dialogs.form({
         title: t('members.new'),
@@ -151,7 +151,14 @@ function PeopleTable(
     };
 
     return [
-      { type: 'general', key: 'new', label: t('members.new'), icon: appIcons.add, onClick: () => void create() },
+      {
+        type: 'general',
+        key: 'new',
+        label: t('members.new'),
+        icon: appIcons.add,
+        variant: 'primary',
+        onClick: () => void create(),
+      },
       {
         type: 'singleRow',
         key: 'open',
@@ -188,7 +195,7 @@ function PeopleTable(
   }, [t, nav, dialogs, toasts, navigate, organizationId]);
 
   return (
-    <Navigator
+    <DataTable
       controller={nav}
       title={title}
       subtitle={subtitle}
@@ -199,7 +206,6 @@ function PeopleTable(
       rowKey="id"
       columns={columns}
       actions={actions}
-      pageSize={10}
       pageSizeOptions={PAGE_SIZE_OPTIONS}
       defaultSort={{ key: 'name', direction: 'asc' }}
     />

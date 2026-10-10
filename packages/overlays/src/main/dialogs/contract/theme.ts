@@ -2,11 +2,8 @@
 // Dialog theme: the tokens the dialog chrome understands. Build one with
 // createDialogTheme() and pass it as `theme` to createDialogsController.
 //
-// NOTE (interim): tokens are currently applied via `--dialog-*` CSS custom properties
-// set on the dialog element (see dialogs/controller.ts + dialogs/styles.ts). That
-// mechanism is slated to change — values will be baked straight into the generated
-// stylesheet so the core defines no custom properties of its own — but the public shape
-// here (DialogTheme / defaultDialogTheme / createDialogTheme) is intended to stay.
+// The values are put straight into the dialog's stylesheet (see dialogs/element/styles.ts,
+// 2026-10-10): the library defines no custom properties of its own.
 // -------------------------------------------------------------------
 
 /** Theme tokens for dialogs. Every token is a CSS value string. */
@@ -51,22 +48,23 @@ export interface DialogTheme {
 }
 
 /**
- * Built-in dialog defaults — dark-mode-aware surface via `light-dark(...)`, with the
- * host design system's `--theme-*` tokens passed through where present.
+ * Built-in dialog defaults — dark-mode-aware surface via `light-dark(...)`. Plain values
+ * (2026-10-10): the library reads no custom properties of the page (it passed a host's
+ * `--theme-*` tokens through before); a host sets its colors through the theme.
  */
 export const defaultDialogTheme: DialogTheme = {
   background: "light-dark(white, #333)",
   text: "light-dark(black, white)",
   radius: "6px",
   divider: "light-dark(#e5e7eb, rgba(255, 255, 255, 0.12))",
-  primaryText: "var(--theme-surface, #ffffff)",
-  primaryBackground: "var(--theme-color-primary-500, #007EC6)",
-  secondaryText: "var(--theme-text, #1f2430)",
+  primaryText: "#ffffff",
+  primaryBackground: "#007EC6",
+  secondaryText: "#1f2430",
   secondaryBackground: "white",
   secondaryBorder: "#b0b0b0",
   dangerText: "white",
   dangerBackground: "#D03B3B",
-  successAccent: "var(--theme-color-success-500, #00883c)",
+  successAccent: "#00883c",
   closeRadius: "100%",
   actionRadius: "5px",
   buttonTransition: "120ms ease",

@@ -19,7 +19,7 @@ export const useForm = defineUseForm({
 
 ## Localization
 
-The adapter has the same shape as the one of the data navigator and the file upload, so one object fits all of them:
+The adapter has the same shape as the one of the data table and the file upload, so one object fits all of them:
 
 ```ts
 const i18nAdapter: I18nAdapter = {
@@ -39,7 +39,7 @@ const i18nAdapter: I18nAdapter = {
   - Another `type` (e.g. the old `{ useLocale, translate }`) makes `defineUseForm` throw a `TypeError`.
 - `resolveText` gets the text the library would show as `defaultValue` (already filled in) and returns it if it has no
   translation.
-  - The library's messages: namespace `'formvalidation'`, the key (`'number.min'`, ...) and the raw params.
+  - The library's messages: namespace `'formValidation'`, the key (`'number.min'`, ...) and the raw params.
   - The app's keys (labels, messages of the schema or the server): the namespace `appNamespace`, params `null` for
     labels.
 - `onChange` is subscribed while the form is mounted: a change of the language renders the form again.
@@ -111,7 +111,9 @@ adapter as `defaultValue`, so the adapter has the last word.
 are chained (the library first), refs combined, everything else overrides. `false`, `null` and `undefined` are ignored.
 
 **Submit:** `submit(data, ctx)` gets the parsed, typed data. `ctx.submitter` for several buttons, `ctx.setErrors()` or
-returning `{ fieldErrors, formError }` for server errors (keys or texts), `ctx.reset()`. If `submit` throws, `formError`
+returning `{ fieldErrors, formError }` for server errors (keys or texts), `ctx.reset()`. Field errors from the server
+(during the submit) focus the first of these fields, like invalid fields on the client; a `formError` alone moves no
+focus, and neither does a later `ctx.setErrors()` after the submit. If `submit` throws, `formError`
 shows a generic message, or the one `errorMessage(error)` of the config gives (a text or a key, once per app, e.g.
 `(error) => error instanceof Error ? error.message : undefined` for a server whose errors are meant for the user).
 
@@ -125,6 +127,10 @@ message). The overlays' form dialog takes it directly:
 const { requestSubmit, field } = useForm(schema, { submit: save });
 return <Form confirm={requestSubmit}>…</Form>; // Form from @local/overlays/react
 ```
+
+**Changed:** `isDirty()` (stable across renders, reads the values of the moment) tells whether a value differs from
+its initial one (`initial`, else the schema's default), e.g. to ask before a dialog discards the form. A value changed
+and changed back does not count; empty values (`undefined`, `null`, `''`) are alike, dates compare by time.
 
 **invalid and user-invalid:** native elements get the Zod result with `setCustomValidity()`, so `:invalid` and
 `:user-invalid` also work for regexes or `.refine()`. In addition, the library sets `aria-invalid`, `data-invalid` and

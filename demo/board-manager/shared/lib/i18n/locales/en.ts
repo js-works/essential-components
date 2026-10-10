@@ -15,7 +15,7 @@ const en = {
   },
   person: { name: 'Name', email: 'Email', organizationId: 'Organization' },
   board: { name: 'Name', description: 'Description' },
-  meeting: { boardId: 'Board', title: 'Title', start: 'Date and time', location: 'Location' },
+  meeting: { boardId: 'Board', title: 'Title', date: 'Date', time: 'Time', location: 'Location' },
   agendaItem: {
     title: 'Title',
     sectionId: 'Section',
@@ -326,7 +326,7 @@ const en = {
     couldNotCreate: 'The PDF could not be created.',
   },
 
-  // The shell: the top bar, the module menu, the breadcrumb, Back and Forward.
+  // The shell: the app header, the module menu, the breadcrumb, Back and Forward.
   shell: {
     appName: 'Board Manager',
     modulesMenu: '{{app}}: modules',
@@ -365,6 +365,28 @@ const en = {
     people_other: '{{count}} people',
     organizations_one: '{{count}} organization',
     organizations_other: '{{count}} organizations',
+    tabUpNext: 'Up next',
+    tabInsights: 'Insights',
+    tabAttention: 'Attention',
+    attention: {
+      overdue: 'Overdue meetings',
+      overdueHint: 'Planned, but the date has passed: held or cancelled?',
+      noUpcoming: 'Boards without a planned meeting',
+      noUpcomingHint: 'Nothing is planned for them.',
+      noChair: 'Boards without a chair',
+      noChairHint: 'No member has the role Chair.',
+      noOrganization: 'People without an organization',
+      noOrganizationHint: 'Not assigned to any organization.',
+      allGood: 'Nothing to do.',
+      more: 'and {{count}} more',
+    },
+    roles: 'Roles',
+    minutesApproved: 'Minutes approved',
+    byWeekday: 'Meetings by weekday',
+    peoplePerOrganization: 'People per organization',
+    meetingsPerMonth: 'Meetings per month',
+    byStatus: 'By status',
+    meetingsPerBoard: 'Meetings per board',
     nextMeetings: 'Next meetings',
     noPlannedMeetings: 'No planned meetings.',
     minutesToApprove: 'Minutes to approve',

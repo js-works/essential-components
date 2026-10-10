@@ -2,8 +2,8 @@ import type { AppCockpit } from '../src';
 
 export { FEW, GROUPS, MANY, SOME };
 
-// The apps of the demo: all are the same element (`demo-app`), told apart by their attributes.
-const app = (title: string, description: string, group?: string): AppCockpit.MiniApp => {
+// The items of the demo: all are the same element (`demo-app`), told apart by their attributes.
+const item = (title: string, description: string, group?: string): AppCockpit.NavItem => {
   const id = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
   return {
@@ -25,14 +25,14 @@ const ICONS = {
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg>',
 };
 
-// Few apps: no groups, every app with an icon.
-const FEW: readonly AppCockpit.MiniApp[] = [
-  { ...app('Calendar', 'Meetings, rooms and holidays'), icon: ICONS.calendar },
-  { ...app('Mail', 'The shared mailboxes of the office'), icon: ICONS.mail },
-  { ...app('Documents', 'Contracts, templates and letters'), icon: ICONS.folder },
+// Few items: no groups, every item with an icon.
+const FEW: readonly AppCockpit.NavItem[] = [
+  { ...item('Calendar', 'Meetings, rooms and holidays'), icon: ICONS.calendar },
+  { ...item('Mail', 'The shared mailboxes of the office'), icon: ICONS.mail },
+  { ...item('Documents', 'Contracts, templates and letters'), icon: ICONS.folder },
 ];
 
-// The groups of the 100 apps, each with its subgroups (the second level of the tree).
+// The groups of the 100 items, each with its subgroups (the second level of the tree).
 const AREAS: Readonly<Record<string, Readonly<Record<string, readonly string[]>>>> = {
   Finance: {
     Accounting: ['General Ledger', 'Accounts Payable', 'Accounts Receivable', 'Bank Reconciliation', 'Asset Register'],
@@ -116,18 +116,18 @@ const DESCRIPTIONS = [
   'Shared by the whole team',
 ];
 
-// 100 apps in twelve groups, each with subgroups (the second level); every app has a group (no "Other"). Taken from
-// the lists above evenly: the first apps of every subgroup, one round after the other, until there are 100 (so every
+// 100 items in twelve groups, each with subgroups (the second level); every item has a group (no "Other"). Taken from
+// the lists above evenly: the first items of every subgroup, one round after the other, until there are 100 (so every
 // subgroup keeps some); in the order of the lists.
-// No app icons: nobody has useful icons for 100 apps (the groups and subgroups have some).
-const ALL: readonly AppCockpit.MiniApp[] = Object.entries(AREAS).flatMap(([group, subgroups]) =>
+// No item icons: nobody has useful icons for 100 items (the groups and subgroups have some).
+const ALL: readonly AppCockpit.NavItem[] = Object.entries(AREAS).flatMap(([group, subgroups]) =>
   Object.entries(subgroups).flatMap(([subgroup, titles]) =>
-    titles.map((title, index) => ({ ...app(title, DESCRIPTIONS[index % DESCRIPTIONS.length] ?? '', group), subgroup }))
+    titles.map((title, index) => ({ ...item(title, DESCRIPTIONS[index % DESCRIPTIONS.length] ?? '', group), subgroup }))
   )
 );
 
-const MANY: readonly AppCockpit.MiniApp[] = (() => {
-  const bySubgroup = new Map<string, AppCockpit.MiniApp[]>();
+const MANY: readonly AppCockpit.NavItem[] = (() => {
+  const bySubgroup = new Map<string, AppCockpit.NavItem[]>();
 
   for (const entry of ALL) {
     const key = `${entry.group}/${entry.subgroup}`;
@@ -136,7 +136,7 @@ const MANY: readonly AppCockpit.MiniApp[] = (() => {
   }
 
   const lists = [...bySubgroup.values()];
-  const chosen = new Set<AppCockpit.MiniApp>();
+  const chosen = new Set<AppCockpit.NavItem>();
 
   for (let round = 0; chosen.size < 100 && lists.some((list) => list.length > round); round++) {
     for (const list of lists) {
@@ -151,39 +151,12 @@ const MANY: readonly AppCockpit.MiniApp[] = (() => {
   return ALL.filter((entry) => chosen.has(entry));
 })();
 
-// 30 apps: the most that still have all their groups open by default.
-const SOME: readonly AppCockpit.MiniApp[] = MANY.slice(0, 30);
+// 30 items: the most that still have all their groups open by default.
+const SOME: readonly AppCockpit.NavItem[] = MANY.slice(0, 30);
 
-// The icons of the groups of the 100 apps and of their subgroups (after Tabler icons, MIT).
+// The icons of the subgroups of the 100 items (after Tabler icons, MIT).
 const svg = (paths: string) =>
   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
-
-const GROUP_ICONS: Readonly<Record<string, string>> = {
-  'Finance': svg(
-    '<circle cx="12" cy="12" r="9"/><path d="M14.8 9a2 2 0 0 0-1.8-1h-2a2 2 0 1 0 0 4h2a2 2 0 1 1 0 4h-2a2 2 0 0 1-1.8-1M12 7v10"/>',
-  ),
-  'Human Resources': svg(
-    '<circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2M16 3.13a4 4 0 0 1 0 7.75M21 21v-2a4 4 0 0 0-3-3.85"/>',
-  ),
-  'Sales': svg('<path d="m3 17 6-6 4 4 8-8"/><path d="M14 7h7v7"/>'),
-  'Marketing': svg(
-    '<path d="M18 8a3 3 0 0 1 0 6"/><path d="M10 8v11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-5"/><path d="M12 8h0l4.524-3.77A.9.9 0 0 1 18 4.922v12.156a.9.9 0 0 1-1.476.692L12 14H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1h8"/>',
-  ),
-  'Purchasing': svg(
-    '<circle cx="6" cy="19" r="2"/><circle cx="17" cy="19" r="2"/><path d="M17 17H6V3H4M6 5l14 1-1 7H6"/>',
-  ),
-  'Logistics': svg(
-    '<circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M5 17H3V6a1 1 0 0 1 1-1h9v12M9 17h6M13 6h5l3 5v6h-2M13 11h8"/>',
-  ),
-  'Production': svg('<path d="M3 21h18M5 21V9l5 3V9l5 3V4h4v17M9 17h1M14 17h1"/>'),
-  'Quality': svg(
-    '<path d="M5 7.2A2.2 2.2 0 0 1 7.2 5h1a2.2 2.2 0 0 0 1.55-.64l.7-.7a2.2 2.2 0 0 1 3.12 0l.7.7c.41.41.97.64 1.55.64h1a2.2 2.2 0 0 1 2.2 2.2v1c0 .58.23 1.14.64 1.55l.7.7a2.2 2.2 0 0 1 0 3.12l-.7.7a2.2 2.2 0 0 0-.64 1.55v1a2.2 2.2 0 0 1-2.2 2.2h-1a2.2 2.2 0 0 0-1.55.64l-.7.7a2.2 2.2 0 0 1-3.12 0l-.7-.7a2.2 2.2 0 0 0-1.55-.64h-1a2.2 2.2 0 0 1-2.2-2.2v-1a2.2 2.2 0 0 0-.64-1.55l-.7-.7a2.2 2.2 0 0 1 0-3.12l.7-.7A2.2 2.2 0 0 0 5 8.2v-1"/><path d="m9 12 2 2 4-4"/>',
-  ),
-  'IT Services': svg('<rect x="3" y="4" width="18" height="12" rx="1"/><path d="M7 20h10M9 16v4M15 16v4"/>'),
-  'Legal': svg('<path d="M7 20h10M6 6l6-1 6 1M12 3v17M9 12 6 6l-3 6a3 3 0 0 0 6 0M21 12l-3-6-3 6a3 3 0 0 0 6 0"/>'),
-  'Facilities': svg('<path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4M9 9v.01M9 12v.01M9 15v.01M9 18v.01"/>'),
-  'Management': svg('<path d="M3 4h18M4 4v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4M12 16v4M9 20h6M8 12l3-3 2 2 3-3"/>'),
-};
 
 // The icons of the subgroups, by name (a name may be in several groups, e.g. "Operations").
 const SUBGROUP_ICONS: Readonly<Record<string, string>> = {
@@ -276,10 +249,9 @@ const SUBGROUP_ICONS: Readonly<Record<string, string>> = {
   ),
 };
 
-// The groups of the 100 apps with their icons, and the icons of their subgroups.
+// The groups of the 100 items with their icons, and the icons of their subgroups.
 const GROUPS: readonly AppCockpit.Group[] = Object.entries(AREAS).map(([name, subgroups]) => ({
   name,
-  ...(GROUP_ICONS[name] === undefined ? {} : { icon: GROUP_ICONS[name] }),
   subgroups: Object.keys(subgroups).map((subgroup) => ({
     name: subgroup,
     ...(SUBGROUP_ICONS[subgroup] === undefined ? {} : { icon: SUBGROUP_ICONS[subgroup] }),

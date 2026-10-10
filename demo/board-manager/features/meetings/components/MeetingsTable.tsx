@@ -6,9 +6,9 @@ import {
   dateRangeColumnFilter,
   selectColumnFilter,
   textColumnFilter,
-  useDataNavigatorController,
-} from '../../../../../packages/data-navigator/src/react';
-import type { DataNavigatorComponent } from '../../../../../packages/data-navigator/src/react';
+  useDataTableController,
+} from '../../../../../packages/data-table/src/react';
+import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
 import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react';
 import { MEETING_STATUSES } from '../../../domain';
 import type { MeetingStatus } from '../../../domain';
@@ -27,7 +27,7 @@ import { MeetingForm } from '../../../shared/forms';
 import { confirmAndRun } from '../../../shared/lib/flows';
 import type { Dialogs } from '../../../shared/lib/flows';
 import { translate, useTranslate } from '../../../shared/lib/i18n';
-import { appIcons, formatDateTime, Navigator, PAGE_SIZE_OPTIONS, useDb } from '../../../shared/shared';
+import { appIcons, DataTable, formatDateTime, PAGE_SIZE_OPTIONS, useDb } from '../../../shared/shared';
 
 export { deleteMeetingsFlow, editMeeting, MeetingsTable, MinutesBadge, StatusBadge };
 
@@ -115,14 +115,14 @@ function MeetingsTable(
   },
 ): ReactElement {
   const t = useTranslate();
-  const nav = useDataNavigatorController<MeetingRow>();
+  const nav = useDataTableController<MeetingRow>();
   const dialogs = useDialogs();
   const toasts = useToast();
   const navigate = useNavigate();
   const boards = useDb((state) => state.boards);
   const source = useMemo(() => fetchMeetings({ boardId, personId }), [boardId, personId]);
 
-  const columns = useMemo<readonly DataNavigatorComponent.Column<MeetingRow>[]>(() => [
+  const columns = useMemo<readonly DataTableComponent.Column<MeetingRow>[]>(() => [
     {
       key: 'start',
       header: t('meetings.columns.date'),
@@ -148,7 +148,7 @@ function MeetingsTable(
           sortable: true,
           hideable: true,
           filter: selectColumnFilter({ options: boards.map((board) => board.name), multiple: true }),
-        } satisfies DataNavigatorComponent.Column<MeetingRow>,
+        } satisfies DataTableComponent.Column<MeetingRow>,
       ]
       : []),
     {
@@ -157,6 +157,7 @@ function MeetingsTable(
       width: 2,
       hideable: true,
       hidden: boardId === undefined,
+      filter: textColumnFilter(),
     },
     {
       key: 'status',
@@ -176,8 +177,23 @@ function MeetingsTable(
       width: 1.3,
       hideable: true,
       render: (row) => <MinutesBadge meeting={row} />,
+      // The minutes of held meetings: approved or a draft.
+      filter: selectColumnFilter({
+        options: [
+          { value: 'approved', label: t('meetings.minutesApprovedBadge') },
+          { value: 'draft', label: t('meetings.minutesDraftBadge') },
+        ],
+        multiple: true,
+      }),
     },
-    { key: 'items', header: t('meetings.columns.items'), width: 1.1, sortable: true, hideable: true, align: 'end' },
+    {
+      key: 'items',
+      header: t('meetings.columns.items'),
+      width: 1.1,
+      sortable: true,
+      hideable: true,
+      align: 'end',
+    },
     {
       key: 'documents',
       header: t('meetings.columns.documents'),
@@ -189,7 +205,7 @@ function MeetingsTable(
     },
   ], [t, boardId, boards, pathOf]);
 
-  const actions = useMemo<readonly DataNavigatorComponent.Action<MeetingRow>[]>(() => {
+  const actions = useMemo<readonly DataTableComponent.Action<MeetingRow>[]>(() => {
     // The boards a new meeting may be for.
     const choices = () => {
       const state = db.getState();
@@ -259,7 +275,14 @@ function MeetingsTable(
     };
 
     return [
-      { type: 'general', key: 'new', label: t('meetings.new'), icon: appIcons.add, onClick: () => void create() },
+      {
+        type: 'general',
+        key: 'new',
+        label: t('meetings.new'),
+        icon: appIcons.add,
+        variant: 'primary',
+        onClick: () => void create(),
+      },
       {
         type: 'singleRow',
         key: 'open',
@@ -295,7 +318,7 @@ function MeetingsTable(
   }, [t, nav, dialogs, toasts, navigate, boardId, personId, pathOf]);
 
   return (
-    <Navigator
+    <DataTable
       controller={nav}
       title={title}
       subtitle={subtitle}
@@ -306,7 +329,6 @@ function MeetingsTable(
       rowKey="id"
       columns={columns}
       actions={actions}
-      pageSize={10}
       pageSizeOptions={PAGE_SIZE_OPTIONS}
       defaultSort={{ key: 'start', direction: 'desc' }}
     />

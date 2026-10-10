@@ -2,11 +2,8 @@
 // Toast theme: the tokens the toast cards understand. Build one with createToastTheme()
 // and pass it as `theme` to createToastController.
 //
-// NOTE (interim): tokens are currently applied via CSS custom properties set on the
-// stack container (see toasts/controller.ts + the shadow styles in toasts/element.ts).
-// That mechanism is slated to change — values baked into the generated stylesheet rather
-// than handed over at runtime — but the public shape here (ToastTheme / defaultToastTheme
-// / createToastTheme) is intended to stay.
+// The values are put straight into the toasts' stylesheets (see toasts/element.ts and
+// toasts/styles.ts, 2026-10-10): the library defines no custom properties for them.
 // -------------------------------------------------------------------
 
 import type { ToastTheme } from "./api.js";

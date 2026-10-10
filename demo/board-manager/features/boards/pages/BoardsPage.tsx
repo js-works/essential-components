@@ -5,22 +5,22 @@ import { Link, useNavigate } from 'react-router';
 import {
   dateRangeColumnFilter,
   textColumnFilter,
-  useDataNavigatorController,
-} from '../../../../../packages/data-navigator/src/react';
-import type { DataNavigatorComponent } from '../../../../../packages/data-navigator/src/react';
+  useDataTableController,
+} from '../../../../../packages/data-table/src/react';
+import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
 import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react';
 import { createBoard, fetchBoards } from '../../../infra/in-memory';
 import type { BoardRow } from '../../../infra/in-memory';
 import { BoardForm } from '../../../shared/forms';
 import { useTranslate } from '../../../shared/lib/i18n';
 import type { Translate } from '../../../shared/lib/i18n';
-import { appIcons, formatDateTime, Navigator, PAGE_SIZE_OPTIONS, personFilter } from '../../../shared/shared';
+import { appIcons, DataTable, formatDateTime, PAGE_SIZE_OPTIONS, personFilter } from '../../../shared/shared';
 import { deleteBoardsFlow, editBoard } from '../components/boardFlows';
 
 export { BoardsPage };
 
 // The columns, with their headers in the current language.
-const columnsOf = (t: Translate): readonly DataNavigatorComponent.Column<BoardRow>[] => [
+const columnsOf = (t: Translate): readonly DataTableComponent.Column<BoardRow>[] => [
   {
     key: 'name',
     header: t('boards.columns.board'),
@@ -47,13 +47,13 @@ const columnsOf = (t: Translate): readonly DataNavigatorComponent.Column<BoardRo
 // The "Boards" module: every board, with a new one, editing and deleting (with its meetings).
 function BoardsPage(): ReactElement {
   const t = useTranslate();
-  const nav = useDataNavigatorController<BoardRow>();
+  const nav = useDataTableController<BoardRow>();
   const columns = useMemo(() => columnsOf(t), [t]);
   const dialogs = useDialogs();
   const toasts = useToast();
   const navigate = useNavigate();
 
-  const actions = useMemo<readonly DataNavigatorComponent.Action<BoardRow>[]>(() => {
+  const actions = useMemo<readonly DataTableComponent.Action<BoardRow>[]>(() => {
     const create = async () => {
       let created = '';
       const saved = !(await dialogs.form({
@@ -87,7 +87,14 @@ function BoardsPage(): ReactElement {
     };
 
     return [
-      { type: 'general', key: 'new', label: t('boards.new'), icon: appIcons.add, onClick: () => void create() },
+      {
+        type: 'general',
+        key: 'new',
+        label: t('boards.new'),
+        icon: appIcons.add,
+        variant: 'primary',
+        onClick: () => void create(),
+      },
       {
         type: 'singleRow',
         key: 'open',
@@ -116,7 +123,7 @@ function BoardsPage(): ReactElement {
   }, [t, nav, dialogs, toasts, navigate]);
 
   return (
-    <Navigator
+    <DataTable
       controller={nav}
       title={t('modules.boards')}
       subtitle={t('boards.listSubtitle')}
@@ -127,7 +134,6 @@ function BoardsPage(): ReactElement {
       rowKey="id"
       columns={columns}
       actions={actions}
-      pageSize={10}
       pageSizeOptions={PAGE_SIZE_OPTIONS}
       defaultSort={{ key: 'name', direction: 'asc' }}
     />

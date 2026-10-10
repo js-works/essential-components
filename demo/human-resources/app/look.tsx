@@ -1,0 +1,239 @@
+import {
+  ActionIcon,
+  Badge,
+  Button,
+  CloseButton,
+  createTheme,
+  DEFAULT_THEME,
+  Menu,
+  mergeMantineTheme,
+  mergeThemeOverrides,
+  Popover,
+  Tooltip,
+} from '@mantine/core';
+import type { CSSVariablesResolver, MantineColorsTuple, MantineThemeOverride } from '@mantine/core';
+import { TbMaximize, TbMinimize } from 'react-icons/tb';
+import { combineCssVariables, modernTheme } from '../../../packages/mantine-themes/src';
+import type { OverlaysConfig } from '../../../packages/overlays/src/main/bindings/react';
+import { createDialogTheme } from '../../../packages/overlays/src/main/dialogs/dialogs';
+import { createToastTheme } from '../../../packages/overlays/src/main/toasts/toasts';
+import { Scope } from '../shared/ui/scope';
+
+export { createLook };
+export type { Look };
+
+// The look of Human Resources, the same as the Board Manager's (taken from the Time Tracker's `look.tsx`): Mantine's
+// theme, its CSS variables, and the overlays' config in Mantine's look. Only two custom properties of its own
+// (2026-10-08, allowed by the user): the accent and the text size; no font family and no scale.
+
+// The look of the app: Mantine's theme with the accent (the primary color), the danger, success and warning colors,
+// the CSS variables and the overlays' config that follow from them. Each is ten shades of Mantine (`colors.accent`,
+// `colors.danger`, `colors.success`, `colors.warning`); without them, Mantine's `indigo`, `green` and `orange`, and the
+// modern theme's red. Warning is the color of the warning toasts; the success toasts stay in the accent (the pills are
+// all in the accent too). Made once (a module constant): the overlays
+// provider compares its config.
+type Look = { theme: MantineThemeOverride; cssVariablesResolver: CSSVariablesResolver; overlaysConfig: OverlaysConfig };
+
+// The font of the app: the modern theme's (Inter, 2026-10-09; Mantine's before).
+const FONT_FAMILY = modernTheme.theme.fontFamily ?? DEFAULT_THEME.fontFamily ?? 'system-ui, sans-serif';
+
+// Mantine's text and heading sizes in px (at a 16px root), relative to its `sm` (14px), the app's normal text.
+const FONT_SIZES = { xs: 12, sm: 14, md: 16, lg: 18, xl: 20 } as const;
+const HEADING_SIZES = { h1: 34, h2: 26, h3: 22, h4: 18, h5: 16, h6: 14 } as const;
+
+// The app's normal text: `--human-resources-font-size`, else Mantine's `sm`.
+const TEXT_SIZE = 'var(--human-resources-font-size, 0.875rem)';
+
+// The accent, live from the custom property `--human-resources-accent-color` (set by the host page's CSS, e.g. the demo
+// page's accent menu): Mantine's ten shades as mixes of it with white and black, straight in Mantine's own variables
+// (no steps of our own, unlike the User Manager: no more custom properties than the two allowed); without it, mixes of
+// the theme's shade 6. The variables Mantine computes from the shades in JS (its `darken()` and `alpha()`) follow them
+// as `color-mix()`.
+const ACCENT_TOKEN = '--human-resources-accent-color';
+const ACCENT_MIX = [10, 22, 40, 58, 75, 88, 100, 88, 76, 62] as const;
+
+// The accent's filled color for the dialogs (shade 6, 8 dark), live: they are outside the app's element, where
+// Mantine's variables are not set, but the token itself is (on `<html>`); without it, the theme's own shade.
+function filledAccent(accent: MantineColorsTuple): string {
+  return `light-dark(var(${ACCENT_TOKEN}, ${accent[6]}), color-mix(in oklab, var(${ACCENT_TOKEN}, ${accent[6]}) ${
+    ACCENT_MIX[8]
+  }%, black))`;
+}
+
+function accentVariables(accent: MantineColorsTuple): ReturnType<CSSVariablesResolver> {
+  const base = `var(${ACCENT_TOKEN}, ${accent[6]})`;
+
+  return {
+    variables: Object.fromEntries(
+      ACCENT_MIX.map((percent, index) => [
+        `--mantine-color-accent-${index}`,
+        index === 6 ? base : `color-mix(in oklab, ${base} ${percent}%, ${index < 6 ? 'white' : 'black'})`,
+      ]),
+    ),
+    light: {
+      '--mantine-color-accent-outline-hover': 'color-mix(in srgb, var(--mantine-color-accent-6) 5%, transparent)',
+    },
+    dark: {
+      '--mantine-color-accent-light': 'color-mix(in srgb, var(--mantine-color-accent-9) 50%, black)',
+      '--mantine-color-accent-light-hover': 'color-mix(in srgb, var(--mantine-color-accent-9) 70%, black)',
+      '--mantine-color-accent-outline-hover': 'color-mix(in srgb, var(--mantine-color-accent-4) 5%, transparent)',
+    },
+  };
+}
+
+// A size in proportion to the app's normal text.
+function fontSize(px: number): string {
+  return px === FONT_SIZES.sm ? TEXT_SIZE : `calc(${TEXT_SIZE} * ${px} / 14)`;
+}
+
+function createLook(
+  {
+    accent = DEFAULT_THEME.colors.indigo,
+    danger = modernTheme.theme.colors?.danger ?? DEFAULT_THEME.colors.red,
+    success = DEFAULT_THEME.colors.green,
+    warning = DEFAULT_THEME.colors.orange,
+  }: {
+    accent?: MantineColorsTuple;
+    danger?: MantineColorsTuple;
+    success?: MantineColorsTuple;
+    warning?: MantineColorsTuple;
+  } = {},
+): Look {
+  // The popups of Mantine stay inside the app (no portal to `<body>`): its variables are set on the app, not on
+  // `:root`. Badges keep the case of their text (Mantine's stylesheet makes them uppercase). Buttons have a normal
+  // weight (400; Mantine's is 600), also those of the dialogs (Mantine's, see `render.actionButton`; there `xs`, like
+  // the buttons of the pages). `autoContrast`:
+  // black text on a light accent.
+  const theme = mergeThemeOverrides(
+    modernTheme.theme,
+    createTheme({
+      colors: { accent, danger, success, warning },
+      primaryColor: 'accent',
+      autoContrast: true,
+      defaultRadius: 'sm',
+      components: {
+        Badge: Badge.extend({ defaultProps: { tt: 'none' } }),
+        Button: Button.extend({
+          defaultProps: { fw: 400 },
+          // `xs` buttons (30px high) in the app's text size (`sm`, 14px) instead of Mantine's `xs` (12px).
+          vars: (theme, props) => ({ root: props.size === 'xs' ? { '--button-fz': theme.fontSizes.sm } : {} }),
+        }),
+        Menu: Menu.extend({ defaultProps: { withinPortal: false } }),
+        Popover: Popover.extend({ defaultProps: { withinPortal: false } }),
+        Tooltip: Tooltip.extend({ defaultProps: { withinPortal: false } }),
+      },
+    }),
+  );
+
+  // More contrast than Mantine's defaults, for the app and every component in it (their themes use Mantine's
+  // variables): the dimmed text (secondary texts, the table headers, the labels) and the placeholders one step darker
+  // (in dark mode: lighter). The text and the lines stay Mantine's (black and `gray.4` already). The error color (the
+  // inputs' errors, the data table's and the file upload's danger) is the danger color, shades 6 and 8 like
+  // Mantine's red.
+  // The text size follows the custom property `--human-resources-font-size` (the app's normal text, Mantine's `sm`; set
+  // by the host page's CSS; live: no JS reads it). Mantine's other sizes and the headings keep their proportions to it.
+  // Without it, Mantine's defaults.
+  const accentVars = accentVariables(accent);
+  const ownVariables: CSSVariablesResolver = () => ({
+    variables: {
+      ...accentVars.variables,
+      ...Object.fromEntries(
+        Object.entries(FONT_SIZES).map(([name, px]) => [`--mantine-font-size-${name}`, fontSize(px)]),
+      ),
+      ...Object.fromEntries(
+        Object.entries(HEADING_SIZES).map(([name, px]) => [`--mantine-${name}-font-size`, fontSize(px)]),
+      ),
+    },
+    light: {
+      ...accentVars.light,
+      '--mantine-color-error': 'var(--mantine-color-danger-6)',
+    },
+    dark: {
+      ...accentVars.dark,
+      '--mantine-color-error': 'var(--mantine-color-danger-8)',
+    },
+  });
+  // `modernTheme`'s variables (the borders, the dimmed text and the placeholders one step stronger), then the app's.
+  const cssVariablesResolver = combineCssVariables(modernTheme.cssVariablesResolver, ownVariables);
+
+  // The toasts in Mantine's palette. They live in `<body>`, outside the scopes, so Mantine's variables are not there:
+  // the colors are the values of the theme, and `light-dark()` follows the page's scheme (`color-scheme` on `<html>`).
+  // Like Mantine: a paper card (white, `dark.6`), its text and dimmed colors, the accent for info, success and loading.
+  const { colors, radius } = mergeMantineTheme(DEFAULT_THEME, theme);
+
+  const toastTheme = createToastTheme({
+    background: `light-dark(#fff, ${colors.dark[6]})`,
+    text: `light-dark(#000, ${colors.dark[0]})`,
+    radius: radius.md,
+    infoAccent: accent[6],
+    // Success in the accent too, like info (only the icon differs): one accent color in the app.
+    successAccent: accent[6],
+    warnAccent: warning[6],
+    errorAccent: danger[6],
+    loadingAccent: accent[6],
+    titleColor: `light-dark(#000, ${colors.dark[0]})`,
+    messageColor: `light-dark(${colors.gray[7]}, ${colors.dark[1]})`,
+    closeColor: `light-dark(${colors.gray[6]}, ${colors.dark[2]})`,
+    closeHoverColor: `light-dark(#000, ${colors.dark[0]})`,
+    closeHoverBackground: `light-dark(${colors.gray[0]}, ${colors.dark[5]})`,
+    darkBackground: colors.dark[7],
+    darkText: colors.dark[0],
+    darkCloseColor: colors.dark[2],
+  });
+
+  // The dialogs with their icons, and the content of each dialog in a scope of Mantine (the dialogs are outside the
+  // app's element). Their buttons and close button are Mantine's (each in a scope too): the primary one filled, a
+  // danger one filled in the danger color, the others `default`; the spinner is Mantine's `loading`. The toasts medium
+  // and stacked in the bottom right corner, in Mantine's palette.
+  const overlaysConfig: OverlaysConfig = {
+    dialogs: {
+      icons: true,
+      // The dialogs' own text (title, message) in the app's size and font, like the Mantine inputs in their content:
+      // the values of the theme (the dialogs are outside the scopes, where Mantine's variables are not set).
+      // The spinner placeholder (while a scope waits, e.g. for the PDF) in the accent's filled color (shade 6, 8 dark).
+      theme: createDialogTheme({
+        radius: radius.lg,
+        actionRadius: radius.sm,
+        fontSize: fontSize(FONT_SIZES.sm),
+        fontFamily: FONT_FAMILY,
+        spinner: filledAccent(accent),
+        // The icons of the dialogs (confirm, info: the accent; warn, error: the danger color), not the overlays' blue.
+        primaryBackground: filledAccent(accent),
+        dangerBackground: `light-dark(${danger[6]}, ${danger[8]})`,
+      }),
+      wrapContent: (content) => <Scope>{content}</Scope>,
+      render: {
+        actionButton: ({ text, variant, loading, onClick }) => (
+          <Scope>
+            <Button
+              size="xs"
+              variant={variant === 'secondary' ? 'default' : variant === 'link' ? 'subtle' : 'filled'}
+              color={variant === 'danger' ? 'danger' : undefined}
+              loading={loading}
+              onClick={onClick}
+            >
+              {text}
+            </Button>
+          </Scope>
+        ),
+        closeButton: ({ onClose }) => (
+          <Scope>
+            <CloseButton aria-label="Close" onClick={onClose} />
+          </Scope>
+        ),
+        // A dialog with `maximizable`: like the close button (gray, subtle, its size), Tabler's maximize/minimize
+        // arrows; the label ("Maximize", "Restore") as its name and its native tooltip.
+        maximizeButton: ({ maximized, label, onToggle }) => (
+          <Scope>
+            <ActionIcon variant="subtle" color="gray" aria-label={label} title={label} onClick={onToggle}>
+              {maximized ? <TbMinimize size={18} aria-hidden /> : <TbMaximize size={18} aria-hidden />}
+            </ActionIcon>
+          </Scope>
+        ),
+      },
+    },
+    toasts: { placement: 'bottom-end', size: 'medium', stacked: true, theme: toastTheme },
+  };
+
+  return { theme, cssVariablesResolver, overlaysConfig };
+}

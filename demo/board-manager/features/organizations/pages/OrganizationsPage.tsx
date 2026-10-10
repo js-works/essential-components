@@ -5,9 +5,9 @@ import { Link, useNavigate } from 'react-router';
 import {
   selectColumnFilter,
   textColumnFilter,
-  useDataNavigatorController,
-} from '../../../../../packages/data-navigator/src/react';
-import type { DataNavigatorComponent } from '../../../../../packages/data-navigator/src/react';
+  useDataTableController,
+} from '../../../../../packages/data-table/src/react';
+import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
 import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react';
 import {
   createOrganization,
@@ -23,7 +23,7 @@ import { countryName } from '../../../shared/lib/countries';
 import { confirmAndRun } from '../../../shared/lib/flows';
 import type { Dialogs } from '../../../shared/lib/flows';
 import { translate, useTranslate } from '../../../shared/lib/i18n';
-import { appIcons, Navigator, organizationFilter, PAGE_SIZE_OPTIONS, useDb } from '../../../shared/shared';
+import { appIcons, DataTable, organizationFilter, PAGE_SIZE_OPTIONS, useDb } from '../../../shared/shared';
 
 export { deleteOrganizationsFlow, editOrganization, OrganizationsPage, WebsiteLink };
 
@@ -105,13 +105,13 @@ function WebsiteLink({ url }: { url: string }): ReactElement | null {
 // organization). One opens on its own page, with its people.
 function OrganizationsPage(): ReactElement {
   const t = useTranslate();
-  const nav = useDataNavigatorController<OrganizationRow>();
+  const nav = useDataTableController<OrganizationRow>();
   const dialogs = useDialogs();
   const toasts = useToast();
   const navigate = useNavigate();
   const organizations = useDb((state) => state.organizations);
 
-  const columns = useMemo<readonly DataNavigatorComponent.Column<OrganizationRow>[]>(() => [
+  const columns = useMemo<readonly DataTableComponent.Column<OrganizationRow>[]>(() => [
     {
       key: 'name',
       header: t('organizations.columns.organization'),
@@ -167,7 +167,7 @@ function OrganizationsPage(): ReactElement {
     },
   ], [t, organizations]);
 
-  const actions = useMemo<readonly DataNavigatorComponent.Action<OrganizationRow>[]>(() => {
+  const actions = useMemo<readonly DataTableComponent.Action<OrganizationRow>[]>(() => {
     const create = async () => {
       let created = '';
       const saved = !(await dialogs.form({
@@ -189,7 +189,14 @@ function OrganizationsPage(): ReactElement {
     };
 
     return [
-      { type: 'general', key: 'new', label: t('organizations.new'), icon: appIcons.add, onClick: () => void create() },
+      {
+        type: 'general',
+        key: 'new',
+        label: t('organizations.new'),
+        icon: appIcons.add,
+        variant: 'primary',
+        onClick: () => void create(),
+      },
       {
         type: 'singleRow',
         key: 'open',
@@ -226,7 +233,7 @@ function OrganizationsPage(): ReactElement {
   }, [t, nav, dialogs, toasts, navigate]);
 
   return (
-    <Navigator
+    <DataTable
       controller={nav}
       title={t('modules.organizations')}
       subtitle={t('organizations.listSubtitle')}
@@ -237,7 +244,6 @@ function OrganizationsPage(): ReactElement {
       rowKey="id"
       columns={columns}
       actions={actions}
-      pageSize={10}
       pageSizeOptions={PAGE_SIZE_OPTIONS}
       defaultSort={{ key: 'name', direction: 'asc' }}
     />

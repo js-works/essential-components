@@ -1110,9 +1110,9 @@ describe('file upload element', () => {
       const { ui } = mountWith(i18n, { maxFiles: 3 });
 
       expect(ui.getByRole('button', { name: 'Browse' })).toBeTruthy();
-      expect(i18n.resolveText).toHaveBeenCalledWith('fileupload', 'browse', null, 'Browse');
+      expect(i18n.resolveText).toHaveBeenCalledWith('fileUpload', 'browse', null, 'Browse');
       expect(i18n.resolveText).toHaveBeenCalledWith(
-        'fileupload',
+        'fileUpload',
         'hintMaxFiles',
         { count: 3 },
         'Maximum number of files: 3',

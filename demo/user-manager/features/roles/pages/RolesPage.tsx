@@ -2,11 +2,11 @@ import { Anchor, Badge, Group, Stack, Text } from '@mantine/core';
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { useDataNavigatorController } from '../../../../../packages/data-navigator/src/react';
-import type { DataNavigatorComponent } from '../../../../../packages/data-navigator/src/react';
+import { useDataTableController } from '../../../../../packages/data-table/src/react';
+import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
 import type { AccessData, Role } from '../../../domain';
+import { DataTable } from '../../../shared/ui/dataTable';
 import { appIcons } from '../../../shared/ui/icons';
-import { Navigator } from '../../../shared/ui/navigator';
 import { PageHeader } from '../../../shared/ui/parts';
 import { useTableSource } from '../../iam';
 import { useRoleFlows } from '../flows';
@@ -26,12 +26,12 @@ function roleRows(data: AccessData): RoleRow[] {
 
 // All roles: named sets of permissions, granted on scopes.
 function RolesPage(): ReactElement {
-  const nav = useDataNavigatorController<RoleRow>();
+  const nav = useDataTableController<RoleRow>();
   const navigate = useNavigate();
   const flows = useRoleFlows();
   const source = useTableSource<RoleRow>('roles', roleRows, { search: ['name', 'description'] }, nav.reload);
 
-  const columns = useMemo((): readonly DataNavigatorComponent.Column<RoleRow>[] => [
+  const columns = useMemo((): readonly DataTableComponent.Column<RoleRow>[] => [
     {
       key: 'name',
       header: 'Name',
@@ -40,7 +40,7 @@ function RolesPage(): ReactElement {
       render: (row) => (
         <Group gap={8} wrap="nowrap">
           <Anchor component={Link} to={`/roles/${row.id}`} size="sm" truncate>{row.name}</Anchor>
-          {row.builtIn && <Badge size="xs" variant="light" color="gray">Built-in</Badge>}
+          {row.builtIn && <Badge size="xs" variant="outline">Built-in</Badge>}
         </Group>
       ),
     },
@@ -55,8 +55,15 @@ function RolesPage(): ReactElement {
     { key: 'grants', header: 'Granted', width: 1.2, sortable: true, align: 'end', hideable: true },
   ], []);
 
-  const actions = useMemo((): readonly DataNavigatorComponent.Action<RoleRow>[] => [
-    { type: 'general', key: 'new', label: 'New role', icon: appIcons.add, onClick: () => void flows.create() },
+  const actions = useMemo((): readonly DataTableComponent.Action<RoleRow>[] => [
+    {
+      type: 'general',
+      key: 'new',
+      label: 'New role',
+      icon: appIcons.add,
+      variant: 'primary',
+      onClick: () => void flows.create(),
+    },
     {
       type: 'singleRow',
       key: 'open',
@@ -90,14 +97,13 @@ function RolesPage(): ReactElement {
         title="Roles"
         subtitle="Named sets of permissions. Built-in roles cannot be changed; duplicate one to start your own."
       />
-      <Navigator
+      <DataTable
         controller={nav}
         source={source}
         rowKey="id"
         columns={columns}
         actions={actions}
         searchable
-        pageSize={25}
         defaultSort={{ key: 'name', direction: 'asc' }}
       />
     </Stack>

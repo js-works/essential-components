@@ -1,17 +1,26 @@
-import { NativeSelect, Stack, Text } from '@mantine/core';
-import { useState } from 'react';
-import type { ReactElement } from 'react';
-import { Form } from '../../../../../packages/overlays/src/main/bindings/react';
+import { Input, NativeSelect, Stack } from '@mantine/core';
+import type { FocusEvent, ReactElement, ReactNode } from 'react';
+import { z } from 'zod';
+import { binding } from '../../../../../packages/form-validation/src';
 import { scopeLabel } from '../../../domain';
-import type { AccessData, PrincipalRef } from '../../../domain';
-import { useDialogSave } from '../../../shared/lib/useDialogSave';
+import type { AccessData, PrincipalRef, Scope } from '../../../domain';
+import { useForm } from '../../../shared/lib/useForm';
 import { ScopePicker } from './ScopePicker';
 
 export { GrantForm };
 
-// "Grant access", as the content of a form dialog: who (a user or a group), which role, where (a scope). Any of them
-// may be given (e.g. the user of the page it is opened on). Native selects: a Mantine select would open outside the
-// modal dialog.
+// "Grant access", as the content of a form dialog: who (a user or a group), which role, where (a scope), validated by
+// form-validation (2026-10-06; a check of its own before): all three are required. Any of them may be given (e.g. the
+// user of the page it is opened on). Native selects: a Mantine select would open outside the modal dialog.
+const grantSchema = z.object({
+  who: z.string().min(1),
+  roleId: z.string().min(1),
+  scopeId: z.string().min(1),
+});
+
+// The scope tree is controlled: its value from the form, its `onChange` gives the scope's id.
+const scopeBinding = binding({ valueProp: 'value' });
+
 function GrantForm({ data, principal, roleId, scopeId, save }: {
   data: AccessData;
   principal?: PrincipalRef;
@@ -19,37 +28,21 @@ function GrantForm({ data, principal, roleId, scopeId, save }: {
   scopeId?: string;
   save: (principal: PrincipalRef, roleId: string, scopeId: string) => Promise<void>;
 }): ReactElement {
-  const [who, setWho] = useState(principal === undefined ? '' : `${principal.type}:${principal.id}`);
-  const [role, setRole] = useState(roleId ?? '');
-  const [scope, setScope] = useState<string | undefined>(scopeId);
-  const { error, setError, confirm } = useDialogSave(
-    () =>
-      who === ''
-        ? 'Please choose who gets access.'
-        : role === ''
-        ? 'Please choose a role.'
-        : scope === undefined
-        ? 'Please choose where.'
-        : undefined,
-    async () => {
-      const [type, id = ''] = who.split(':') as ['user' | 'group', string];
+  const { DialogForm, field } = useForm(grantSchema, {
+    initial: { who: principal === undefined ? undefined : `${principal.type}:${principal.id}`, roleId, scopeId },
+    submit: async (values) => {
+      const [type, id = ''] = values.who.split(':') as ['user' | 'group', string];
 
-      await save({ type, id }, role, scope ?? '');
+      await save({ type, id }, values.roleId, values.scopeId);
     },
-  );
+  });
   const sorted = <T extends { name: string }>(items: readonly T[]) =>
     [...items].sort((a, b) => a.name.localeCompare(b.name));
 
   return (
-    <Form confirm={confirm}>
+    <DialogForm>
       <Stack gap="sm">
         <NativeSelect
-          label="Who"
-          value={who}
-          onChange={(event) => {
-            setWho(event.currentTarget.value);
-            setError(undefined);
-          }}
           data={[
             { value: '', label: 'Choose a user or a group…' },
             {
@@ -64,37 +57,51 @@ function GrantForm({ data, principal, roleId, scopeId, save }: {
               })),
             },
           ]}
+          {...field.who({ label: 'Who' })}
         />
         <NativeSelect
-          label="Role"
-          value={role}
-          onChange={(event) => {
-            setRole(event.currentTarget.value);
-            setError(undefined);
-          }}
           data={[
             { value: '', label: 'Choose a role…' },
             ...sorted(data.roles).map((candidate) => ({ value: candidate.id, label: candidate.name })),
           ]}
+          {...field.roleId({ label: 'Role' })}
         />
-        <Stack gap={4}>
-          <Text size="sm" fw={500}>Where</Text>
-          <ScopePicker
-            scopes={data.scopes}
-            value={scope}
-            onChange={(id) => {
-              setScope(id);
-              setError(undefined);
-            }}
-          />
-          <Text size="xs" c="dimmed">
-            {scope === undefined
-              ? 'The role applies to the chosen scope and everything below it.'
-              : `On ${scopeLabel(data.scopes, scope)}, and everything below it.`}
-          </Text>
-        </Stack>
-        {error !== undefined && <Text size="sm" c="red">{error}</Text>}
+        <ScopeField scopes={data.scopes} {...field.scopeId(scopeBinding, { label: 'Where' })} />
       </Stack>
-    </Form>
+    </DialogForm>
+  );
+}
+
+// The scope tree as a field of the form: Mantine's wrapper (label, the hint below the tree, the error), so it looks and
+// behaves like the other fields (the message's popover follows the focus in the tree).
+function ScopeField({ scopes, value, onChange, onBlur, label, error, required, id, ref }: {
+  scopes: readonly Scope[];
+  // Given by the controlled binding (not in form-validation's type of the field's props).
+  value?: string;
+  onChange: (id: string) => void;
+  onBlur: (event: FocusEvent) => void;
+  label: ReactNode;
+  error?: ReactNode;
+  required?: boolean;
+  id: string;
+  ref: (element: HTMLDivElement | null) => void;
+}): ReactElement {
+  const chosen = value === '' || value === undefined ? undefined : value;
+
+  return (
+    <Input.Wrapper
+      ref={ref}
+      id={id}
+      label={label}
+      error={error}
+      required={required}
+      description={chosen === undefined
+        ? 'The role applies to the chosen scope and everything below it.'
+        : `On ${scopeLabel(scopes, chosen)}, and everything below it.`}
+      inputWrapperOrder={['label', 'input', 'description', 'error']}
+      onBlur={onBlur}
+    >
+      <ScopePicker scopes={scopes} value={chosen} onChange={onChange} />
+    </Input.Wrapper>
   );
 }

@@ -2,14 +2,14 @@ import { Anchor, Badge, Group, Stack, Text } from '@mantine/core';
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { selectColumnFilter, useDataNavigatorController } from '../../../../../packages/data-navigator/src/react';
-import type { DataNavigatorComponent } from '../../../../../packages/data-navigator/src/react';
+import { selectColumnFilter, useDataTableController } from '../../../../../packages/data-table/src/react';
+import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
 import { groupsOf } from '../../../domain';
 import type { AccessData, User } from '../../../domain';
 import { formatDateTime } from '../../../shared/lib/format';
 import { oneOf } from '../../../shared/lib/localQuery';
+import { DataTable } from '../../../shared/ui/dataTable';
 import { appIcons } from '../../../shared/ui/icons';
-import { Navigator } from '../../../shared/ui/navigator';
 import { PageHeader, UserAvatar } from '../../../shared/ui/parts';
 import { useGrantAccess } from '../../access';
 import { useTableSource } from '../../iam';
@@ -36,7 +36,7 @@ function userRows(data: AccessData): UserRow[] {
 
 // All users: their department, groups and status. Open one for its details and access.
 function UsersPage(): ReactElement {
-  const nav = useDataNavigatorController<UserRow>();
+  const nav = useDataTableController<UserRow>();
   const navigate = useNavigate();
   const flows = useUserFlows();
   const grantAccess = useGrantAccess();
@@ -48,7 +48,7 @@ function UsersPage(): ReactElement {
     },
   }, nav.reload);
 
-  const columns = useMemo((): readonly DataNavigatorComponent.Column<UserRow>[] => [
+  const columns = useMemo((): readonly DataTableComponent.Column<UserRow>[] => [
     {
       key: 'name',
       header: 'Name',
@@ -102,8 +102,15 @@ function UsersPage(): ReactElement {
     },
   ], []);
 
-  const actions = useMemo((): readonly DataNavigatorComponent.Action<UserRow>[] => [
-    { type: 'general', key: 'new', label: 'New user', icon: appIcons.addUser, onClick: () => void flows.create() },
+  const actions = useMemo((): readonly DataTableComponent.Action<UserRow>[] => [
+    {
+      type: 'general',
+      key: 'new',
+      label: 'New user',
+      icon: appIcons.add,
+      variant: 'primary',
+      onClick: () => void flows.create(),
+    },
     {
       type: 'singleRow',
       key: 'open',
@@ -159,7 +166,7 @@ function UsersPage(): ReactElement {
         title="Users"
         subtitle="Everyone who signs in. A disabled user keeps their data and grants, but has no access."
       />
-      <Navigator
+      <DataTable
         controller={nav}
         source={source}
         rowKey="id"
@@ -167,7 +174,6 @@ function UsersPage(): ReactElement {
         actions={actions}
         searchable
         reloadable
-        pageSize={25}
         pageSizeOptions={[25, 50, 100]}
         defaultSort={{ key: 'name', direction: 'asc' }}
       />

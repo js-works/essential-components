@@ -1,4 +1,4 @@
-import type { DataNavigator } from '../../../../../packages/data-navigator/src';
+import type { DataTable } from '../../../../../packages/data-table/src';
 import type { Attachment } from './xwiki/rest';
 
 export { authorOf, formatDate, formatSize, queryAttachments, rowsOf, SIZES, typeOf };
@@ -41,19 +41,19 @@ function isoDay(time: number): string {
 }
 
 // A text filter: the value contains the text, without regard to case.
-const contains = (value: string, filter: DataNavigator.FilterValue | undefined) =>
+const contains = (value: string, filter: DataTable.FilterValue | undefined) =>
   typeof filter !== 'string' || value.toLowerCase().includes(filter.toLowerCase());
 
 // One of the chosen values (a multiple select), or no filter.
-const oneOf = (value: string, filter: DataNavigator.FilterValue | undefined) =>
+const oneOf = (value: string, filter: DataTable.FilterValue | undefined) =>
   !Array.isArray(filter) || filter.length === 0 || filter.includes(value);
 
-const within = (day: string, filter: DataNavigator.FilterValue | undefined) => {
+const within = (day: string, filter: DataTable.FilterValue | undefined) => {
   if (filter === null || typeof filter !== 'object' || Array.isArray(filter)) {
     return true;
   }
 
-  const { from, to } = filter as { readonly [key: string]: DataNavigator.FilterValue };
+  const { from, to } = filter as { readonly [key: string]: DataTable.FilterValue };
 
   return typeof from !== 'string' || typeof to !== 'string' || (day >= from && day <= to);
 };
@@ -62,8 +62,8 @@ const within = (day: string, filter: DataNavigator.FilterValue | undefined) => {
 // them at once).
 function queryAttachments(
   rows: readonly AttachmentRow[],
-  query: DataNavigator.Query,
-): DataNavigator.Result<AttachmentRow> {
+  query: DataTable.Query,
+): DataTable.Result<AttachmentRow> {
   const text = query.search.toLowerCase();
   const { name, author, size, date } = query.filters;
   const found = rows

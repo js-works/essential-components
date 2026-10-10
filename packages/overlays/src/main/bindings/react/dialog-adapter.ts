@@ -44,15 +44,16 @@ export interface ReactDialogAdapter {
   refresh(): void;
 }
 
-// The confirmation a form in the content registered (`<Form confirm>`), one per dialog.
-// A box rather than state: the core asks for it on a click, so nothing re-renders when
-// it changes.
-interface ConfirmBox {
-  current: FormConfirm | undefined;
+// What a form in the content registered (`<Form confirm dirty>`), one per dialog. A box
+// rather than state: the core asks for it on a click, so nothing re-renders when it
+// changes.
+interface FormBox {
+  confirm: FormConfirm | undefined;
+  dirty: (() => boolean) | undefined;
 }
 
 // Provided around the content of a form dialog only, so `<Form>` anywhere else throws.
-const FormDialogContext = createContext<ConfirmBox | null>(null);
+const FormDialogContext = createContext<FormBox | null>(null);
 
 export interface FormProps {
   /**
@@ -62,27 +63,39 @@ export interface FormProps {
    * `requestSubmit`.
    */
   confirm: FormConfirm;
+  /**
+   * Whether the form has changes, asked when the dialog is about to close (Cancel, Escape,
+   * the close button): while it says `true`, the dialog first asks in place of the dialog's content,
+   * "Discard your changes?" (Discard, Keep editing; the dialog's texts `questionDiscard`,
+   * `buttonDiscard`, `buttonKeepEditing`; Escape answers Discard there, see
+   * `FormAttempt.askDiscard`). A function, asked at that moment, so typing
+   * needs no re-render: e.g. form-validation's `isDirty`. Without it the dialog closes at
+   * once. A loop with `guardClose` decides itself instead.
+   */
+  dirty?: () => boolean;
   children?: ReactNode;
 }
 
 /**
  * The form of a form dialog (`dialogs.form`), for a form that confirms the dialog itself.
  * Renders its children only — the dialog already has the `<form>` — and registers
- * `confirm` with the dialog. Outside the content of a form dialog it throws: there is no
- * dialog to confirm.
+ * `confirm` (and `dirty`) with the dialog. Outside the content of a form dialog it throws:
+ * there is no dialog to confirm.
  */
-export function Form({ confirm, children }: FormProps): ReactElement {
+export function Form({ confirm, dirty, children }: FormProps): ReactElement {
   const box = useContext(FormDialogContext);
   if (!box) {
     throw new Error("<Form> is only for the content of a form dialog (dialogs.form).");
   }
-  // The latest one, on every commit; gone with the form.
+  // The latest ones, on every commit; gone with the form.
   useLayoutEffect(() => {
-    box.current = confirm;
+    box.confirm = confirm;
+    box.dirty = dirty;
   });
   useLayoutEffect(
     () => () => {
-      box.current = undefined;
+      box.confirm = undefined;
+      box.dirty = undefined;
     },
     [box],
   );
@@ -99,17 +112,18 @@ export function createDialogAdapter(store: PortalStore): ReactDialogAdapter {
     requestRender,
   }) => {
     const id = store.nextId();
-    const confirmBox: ConfirmBox = { current: undefined };
+    const formBox: FormBox = { confirm: undefined, dirty: undefined };
     pending.add(requestRender);
     return {
       render(spec) {
         // Synchronous commit: the core reads layout and moves focus straight after this
         // returns (the same requirement the toast adapter documents).
         flushSync(() => {
-          store.set(id, container, createElement(DialogHost, { tag, spec, confirmBox }));
+          store.set(id, container, createElement(DialogHost, { tag, spec, formBox }));
         });
       },
-      getConfirm: () => confirmBox.current,
+      getConfirm: () => formBox.confirm,
+      isDirty: () => formBox.dirty?.() ?? false,
       destroy() {
         pending.delete(requestRender);
         flushSync(() => store.remove(id));
@@ -162,11 +176,11 @@ function content(value: Renderable<ReactContent>): ReactNode {
 function DialogHost({
   tag,
   spec,
-  confirmBox,
+  formBox,
 }: {
   tag: string;
   spec: { props: DialogProps<ReactContent>; slots: DialogSlots<ReactContent> };
-  confirmBox: ConfirmBox;
+  formBox: FormBox;
 }): ReactElement {
   const host = useRef<HTMLElement>(null);
   useLayoutEffect(() => {
@@ -190,7 +204,7 @@ function DialogHost({
           noValidate: !props.nativeValidation,
           onSubmit: preventSubmit,
         },
-        createElement(FormDialogContext.Provider, { value: confirmBox }, content(slots.content)),
+        createElement(FormDialogContext.Provider, { value: formBox }, content(slots.content)),
       )
     : createElement(
         "div",
@@ -278,10 +292,15 @@ function actionButtons(props: DialogProps<ReactContent>): ReactNode[] {
   return props.buttons.map((button, index) =>
     createElement(
       "span",
-      { slot: "action", key: `action-${index}`, "data-action-index": index },
+      {
+        slot: button.separate ? "action-separate" : "action",
+        key: `action-${index}`,
+        "data-action-index": index,
+      },
       content(
         render({
           role: button.role,
+          action: button.action,
           text: button.text,
           variant: button.type,
           loading: button.loading,

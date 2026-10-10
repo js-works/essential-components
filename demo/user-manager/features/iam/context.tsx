@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createContext, useCallback, useContext } from 'react';
-import type { DataNavigatorComponent } from '../../../../packages/data-navigator/src/react';
+import type { DataTableComponent } from '../../../../packages/data-table/src/react';
 import type { AccessData } from '../../domain';
 import { runLocalQuery } from '../../shared/lib/localQuery';
 import type { LocalQueryOptions } from '../../shared/lib/localQuery';
@@ -39,14 +39,14 @@ function useChanged(): () => Promise<void> {
   return useCallback(() => queryClient.invalidateQueries({ queryKey: iamKeys.all }), [queryClient]);
 }
 
-// A data navigator's source over rows made from the access data (`rows`), with a local search, filters and sorting
+// A data table's source over rows made from the access data (`rows`), with a local search, filters and sorting
 // (`options`). Each page is a query (`iamKeys.table`); a change reloads the table (`reload`, the controller's).
 function useTableSource<Row>(
   name: string,
   rows: (data: AccessData) => readonly Row[],
   options: LocalQueryOptions<Row>,
   reload: () => void,
-): DataNavigatorComponent.Source<Row> {
+): DataTableComponent.Source<Row> {
   const service = useIamService();
   const queryClient = useQueryClient();
 

@@ -1,4 +1,4 @@
-import type { DataNavigatorComponent } from '../../../../packages/data-navigator/src/react';
+import type { DataTableComponent } from '../../../../packages/data-table/src/react';
 import { normalizeWebsite } from '../../domain';
 import type { Organization } from '../../domain';
 import { countryName } from '../../shared/lib/countries';
@@ -30,9 +30,9 @@ async function suggestOrganizations(
 }
 
 async function fetchOrganizations(
-  query: DataNavigatorComponent.Query,
+  query: DataTableComponent.Query,
   signal: AbortSignal,
-): Promise<DataNavigatorComponent.Result<OrganizationRow>> {
+): Promise<DataTableComponent.Result<OrganizationRow>> {
   await wait(LOADING_TIME, signal);
 
   const state = db.getState();

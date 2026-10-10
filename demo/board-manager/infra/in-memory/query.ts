@@ -1,4 +1,4 @@
-import type { DataNavigatorComponent } from '../../../../packages/data-navigator/src/react';
+import type { DataTableComponent } from '../../../../packages/data-table/src/react';
 
 export { matches, oneOf, runQuery, within };
 
@@ -49,9 +49,9 @@ type QueryOptions<Row> = {
 // Search, column filters, sorting and paging, the same for every table.
 function runQuery<Row>(
   rows: readonly Row[],
-  query: DataNavigatorComponent.Query,
+  query: DataTableComponent.Query,
   options: QueryOptions<Row>,
-): DataNavigatorComponent.Result<Row> {
+): DataTableComponent.Result<Row> {
   const text = query.search.toLowerCase();
   const filtered = rows
     .filter((row) =>

@@ -1,4 +1,4 @@
-import type { DataNavigatorComponent } from '../../../../packages/data-navigator/src/react';
+import type { DataTableComponent } from '../../../../packages/data-table/src/react';
 import type { Board } from '../../domain';
 import { localDateTime } from './helpers';
 import { getPerson } from './lookups';
@@ -39,9 +39,9 @@ function getBoardRow(state: Db, id: string): BoardRow | undefined {
 }
 
 async function fetchBoards(
-  query: DataNavigatorComponent.Query,
+  query: DataTableComponent.Query,
   signal: AbortSignal,
-): Promise<DataNavigatorComponent.Result<BoardRow>> {
+): Promise<DataTableComponent.Result<BoardRow>> {
   await wait(LOADING_TIME, signal);
 
   return runQuery(boardRows(db.getState()), query, {

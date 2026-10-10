@@ -5,8 +5,8 @@ import { defineConfig } from 'vite';
 // element works with its real REST API and the real login (log in once at http://localhost:5173/xwiki/bin/login).
 // `npm run build`: one ES module, everything bundled into a single file (one attachment in XWiki), into target/js.
 //
-// The data navigator, the file upload and the overlays come from the sources of this monorepo (relative imports, their
-// dependencies from its node_modules). The data navigator is written for React: like its custom element build, the
+// The data table, the file upload and the overlays come from the sources of this monorepo (relative imports, their
+// dependencies from its node_modules). The data table is written for React: like its custom element build, the
 // bundle gets Preact's compatibility layer instead (much smaller).
 const XWIKI = 'http://localhost:8080';
 const REPOSITORY = fileURLToPath(new URL('../..', import.meta.url));

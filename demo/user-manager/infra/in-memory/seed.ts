@@ -101,7 +101,7 @@ const CATALOG: Readonly<Record<string, Readonly<Record<string, readonly (readonl
 };
 
 const APP_NAMES: Readonly<Record<string, string>> = {
-  media: 'Media Manager',
+  media: 'File Center',
   boards: 'Board Manager',
   users: 'User Manager',
   intranet: 'Intranet',

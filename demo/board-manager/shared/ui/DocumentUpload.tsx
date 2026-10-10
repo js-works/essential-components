@@ -7,7 +7,7 @@ export { DocumentUpload };
 const uploadI18n = createDemoI18n();
 
 // The file upload in Mantine's look: its theme values are Mantine's variables (inherited into its shadow DOM from the
-// scope), so it follows Mantine's color scheme and the contrast of the app's theme, like the data navigator's
+// scope), so it follows Mantine's color scheme and the contrast of the app's theme, like the data table's
 // `mantineTheme`.
 const MANTINE_UPLOAD_THEME: FileUpload.Theme = {
   accentColor: 'var(--mantine-primary-color-filled)',

@@ -3,35 +3,24 @@
 A file upload custom element, without any framework.
 The main goal is a very nice, yet simple, API, designed together with the user.
 
+## Conventions
+
+The general rules (copies of the repository's master, `docs/conventions/`):
+
+@docs/conventions/general.md
+@docs/conventions/css.md
+@docs/conventions/typescript.md
+@docs/conventions/i18n.md
+@docs/conventions/react.md
+
 ## Working rules
 
-- Design first: discuss the API step by step.
-  - Do NOT implement anything until the user gives an explicit GO.
-- Keep answers short: not longer than necessary to understand them. No long recaps or lists of what was done.
-  One topic per step.
-- When offering alternatives, number them, add small code examples, and always state which one is proposed and
-  how confident that proposal is (e.g. a percentage).
-- Prefer bullet lists over prose, in answers and in this file, wherever reasonable.
-- English is the language of the project: code, comments, docs, specs and rules. Never German there.
-  - Exception: translated texts, like the German texts of the demo's language switch.
-  - The conversation may be German.
-- VERY IMPORTANT: never introduce a new CSS custom property (`--…`) without the user's explicit permission.
-  - Ask first, with the name and why none of the existing ones does.
-  - The need should be rare: use the existing ones (`--ui-*`, the package's own), plain values, or a local calc.
-  - A new one, once allowed, carries the package's prefix (never a generic name like `--shadow` or `--border`: the
-    mini-apps are light DOM children and inherit them, and they collide with other libraries).
-- Never run `git commit` or `git push`.
-  - The user does this personally.
-  - This overrides any default attribution or commit guidance.
-- Never read, list or scan anything outside this project folder.
-  - This includes sibling projects, parent folders, the repo root and the home directory (e.g. `~/.claude`).
-  - Only the user may explicitly grant an exception for a specific path.
 - `src/api.ts` holds the draft API types we are discussing. Types only, no comments for now (comments come later).
   - Each API decision changes only this file.
   - The types are plain flat type exports (no `declare namespace`). `src/index.ts` re-exports them as a namespace:
     `export type * as FileUpload from './api'`, so users write `FileUpload.Theme`, `FileUpload.FileItem`, ...
     - Do not use runtime (value) namespaces.
-- Do not update `README.md` until the first release.
+- Do not update `README.md` for now: nobody reads it yet, so it would be wasted time.
 - Do not mention any specific i18n library by name in code, docs or specs, except react-i18next as the example.
 - Always add behavior details we decide (also small ones) to this spec, in the same step as the code.
 - Add coding guidelines to this file whenever they result from our discussion, and tell the user.
@@ -114,33 +103,15 @@ The main goal is a very nice, yet simple, API, designed together with the user.
 
 ## Code rules
 
-- Class members are either public or `#private` (ECMAScript private fields).
-  - Never use the TypeScript `private` or `protected` keywords.
 - `undefined` means "not set" (optional properties, attributes that are missing). `null` means "explicitly no value" for
   an argument that is always passed (like Web IDL's nullable types), e.g. `params` of `I18nAdapter.resolveText`.
-- No `any`.
-  - Use `unknown` and narrow it.
-  - No `@ts-ignore`. `@ts-expect-error` only with a reason comment.
-- Use `readonly` wherever useful and reasonable.
-  - Arrays in public types: `readonly T[]`, never mutable `T[]` (input we don't own must not be mutated).
-  - Class fields that are never reassigned: `readonly`.
-  - Constant lookup data: `as const`.
-  - Not needed for props object properties or local variables (`const` is enough there).
-- Named exports only, never `export default`.
-  - Per file, exports are declared in exactly two places, directly after the import statements at the top:
-    - at most one `export { ... }` for implementations
-    - at most one `export type { ... }` for types
-  - Never put `export` on the declarations themselves.
-  - The public API is exactly what `src/index.ts` re-exports. Everything else is internal.
-- Every public API change comes with a Vitest test and a usage example (demo). No feature without both.
-- Ask before adding a dependency.
-  - Keep runtime dependencies minimal (none so far).
+- Runtime dependencies: none so far.
 
 ## CSS guidelines
 
 - The CSS lives in `src/element/styles.ts` as a template string, with the theme values put in when a class is created.
-- No CSS custom properties as API without a concrete need. Prefer values put into the CSS directly (e.g. from the
-  `theme` config), `::part()` and plain CSS.
+- No CSS custom properties (see `css.md`): values put into the CSS directly (from the `theme` config), `::part()`
+  and plain CSS.
 - Never rely on the tag name: `:host`, not the tag.
 - Sizes, spacings and font sizes in `em`, never `rem` (`em` scales with the theme's `fontSize`, `rem` does not).
   - `em` is relative to the element's own font size: on a small text (6/7 of the base) the values are larger to get
@@ -159,7 +130,7 @@ The main goal is a very nice, yet simple, API, designed together with the user.
 ## Design decisions (decided)
 
 - The component does not talk to a server itself. The app gives it an upload function (like `source` in
-  `react-datanav`), so there are no URLs, headers or chunk settings in the API.
+  the data table), so there are no URLs, headers or chunk settings in the API.
   - `upload(file, { signal, onProgress })` is called once per file and returns a promise. The component only tracks the
     state of each file.
     - The promise may resolve with a string (e.g. a server id): the form value of the file (see form association).
@@ -279,11 +250,11 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     - `previews`: thumbnails of images (default: off).
     - `disabled`.
   - `density` (decided): `'compact' | 'normal' | 'comfortable'` (type `FileUpload.Density`), an
-    attribute reflected to the property, and the React prop `density`. Default `normal`, like the data navigator.
+    attribute reflected to the property, and the React prop `density`. Default `normal`, like the data table.
     - Only the vertical padding changes (the rows of the list and the drop line). Text and controls keep their size
       (the theme's `fontSize` scales those).
     - `compact` is the look so far. `normal` and `comfortable` add room.
-    - The vertical padding (`DENSITY_PADDING` in `styles.ts`): rows 0.286em, 0.571em, 1.143em (the data navigator's
+    - The vertical padding (`DENSITY_PADDING` in `styles.ts`): rows 0.286em, 0.571em, 1.143em (the data table's
       4px, 8px, 16px at 14px), the drop line 0.571em, 0.857em, 1.429em.
     - A missing or unknown value is `normal`. The element puts the value on `root` as `data-density`. A change only
       sets that attribute: the list is not rendered again, and there is no `change` event.
@@ -311,7 +282,7 @@ The main goal is a very nice, yet simple, API, designed together with the user.
     - Reusable by other components without sharing the type (structural typing): only `string`, `unknown`, `Record`,
       `null` and functions, nothing component-specific. A component types only the members it needs; a fuller adapter
       (e.g. with `hasText`) is a subtype and fits. Never change it incompatibly, only add optional members.
-    - `namespace` is `'fileupload'`. `key` is a `FileUpload.TextKey`; `FileUpload.TextParams` maps each key to its
+    - `namespace` is `'fileUpload'`. `key` is a `FileUpload.TextKey`; `FileUpload.TextParams` maps each key to its
       params (`null` for texts without params). Params hold raw numbers (`count`, `percent`) and already formatted
       strings (`size`, `types`).
     - `defaultValue` is the English text, already filled in (numbers formatted in the current locale). For a missing
@@ -345,7 +316,8 @@ These are the first proposals behind `src/api.ts` and the element. Each one can 
     - Because of the container query, the element takes its width from outside (as a block it fills its parent; as a
       flex or grid item it needs a width or has to grow).
     - Height: as high as its content, unless the element has a height limit (e.g. `max-height`, or a height as a flex
-      item). Then the list scrolls (`overflow: auto`) and the line below it (drop area, "Clear", "Upload all") stays
+      item). Then the list scrolls (`overflow: auto`; `overscroll-behavior: none` since 2026-10-08, the user's wish:
+      no bounce at its ends, and the page does not scroll on; the same in every package) and the line below it (drop area, "Clear", "Upload all") stays
       visible: the element is a flex column (label, frame), the frame's list row is `minmax(0, auto)`.
   - `multiple` (default `false`). Without it, the file input takes one file, and a newly added file replaces the current
     one: its upload is aborted and it disappears from the list.

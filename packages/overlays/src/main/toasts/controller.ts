@@ -4,10 +4,9 @@
 // the bound adapter a fully-resolved list of ToastViews to project (see contract/view.ts).
 // -------------------------------------------------------------------
 
-import { toCssVariable } from "../internal/css.js";
-import { DISMISS_EVENT, ensureElementRegistered } from "./element.js";
+import { DISMISS_EVENT, ensureElementRegistered, setToastsPaused, setToastTheme } from "./element.js";
 import { applyPlacement, splitPlacement } from "./placement.js";
-import { injectContainerStyles } from "./styles.js";
+import { injectContainerStyles, themedContainerStyles, TOAST_GAP_PX } from "./styles.js";
 import { defaultToastTheme } from "./contract/theme.js";
 import { bundledToastText } from "../i18n/texts.js";
 import { policyEnabled, roleFor } from "./contract/view.js";
@@ -23,6 +22,7 @@ import type {
   ToastSize,
   ToastSpec,
   ToastTexts,
+  ToastTheme,
   ToastType,
   ToastView,
 } from "./contract/api.js";
@@ -52,16 +52,6 @@ const EXIT_MS = 700;
 const OFFSCREEN_DISTANCE = "120vw";
 const OFFSCREEN_DISTANCE_V = "120vh";
 
-// Re-stacking that accompanies an arriving toast travels with it, so it borrows the
-// entrance's timing and the two read as one movement. Expanding the stack on hover or a tap
-// is a direct answer to the user's own pointer and wants to be quicker still.
-const STACK_SHUFFLE_MS = 400;
-const STACK_TOGGLE_MS = 200;
-// The one source of truth for the space between cards. The stylesheet reads it back as
-// --toast-gap rather than repeating the number: the flat list's `gap` and the offsets an
-// expanding stack animates to have to agree exactly, or the two layouts land in different
-// places.
-const TOAST_GAP_PX = 8;
 // How much of each card behind the front one stays visible, and how much smaller it gets.
 // Past STACK_MAX_DEPTH the cards are fully covered anyway, so they stop receding — letting
 // them go on would march the pile across the screen.
@@ -157,6 +147,12 @@ export function createToastController<C>(
 
   const container = document.createElement("div");
   container.className = "toasts-container";
+  // The stack's measured layout (see syncStackIndices and applyStackLayout).
+  const stackLayouts = new WeakMap<HTMLElement, { scale: number; collapsed: number; expanded: number }>();
+  let stackHeights = { collapsed: 0, expanded: 0 };
+  // The theme's colors of the action buttons (see themedContainerStyles).
+  const themeStyle = document.createElement("style");
+  container.append(themeStyle);
 
   // Persistent aria-live regions (opt-in). More reliable than announcing via a
   // freshly-inserted role="alert" host.
@@ -178,22 +174,22 @@ export function createToastController<C>(
   function applyContainerOptions(): void {
     applyPlacement(container, placement());
 
-    // Merge over the defaults and expose every entry as a CSS custom property on
-    // the container. Variables inherit down to each host and pierce its shadow
-    // root, so the theme is scoped per controller even though the element's
-    // stylesheet lives in shadow DOM.
-    const mergedTheme = { ...defaultToastTheme, ...opts.theme };
-    for (const [key, value] of Object.entries(mergedTheme)) {
-      if (value != null) container.style.setProperty(toCssVariable(key), value);
+    // Merge over the defaults and put the values straight into the stylesheets: the
+    // toasts' shadow CSS (setToastTheme) and the action buttons' <style> in the container.
+    // No custom properties, so nothing inherits into the slotted content.
+    const theme: ToastTheme = { ...defaultToastTheme };
+    if (opts.theme) {
+      for (const [key, value] of Object.entries(opts.theme)) {
+        if (value != null) {
+          (theme as unknown as Record<string, string>)[key] = value;
+        }
+      }
     }
+    // With the card scale, which the shadow `:host` multiplies its width, padding,
+    // font size and gaps by.
+    setToastTheme(container, theme, NOTIF_SCALES[size()]);
+    themeStyle.textContent = themedContainerStyles(theme);
 
-    // Card scale: the shadow `:host` multiplies its width/padding/font-size/gap by this,
-    // inherited through the shadow boundary like the theme tokens above.
-    container.style.setProperty("--toast-scale", NOTIF_SCALES[size()]);
-
-    // The stylesheet's `gap` reads this, so the flat list and the stack's expanded offsets
-    // are driven by the same number instead of two that have to be kept in step by hand.
-    container.style.setProperty("--toast-gap", `${TOAST_GAP_PX}px`);
 
     // Swipe-dismiss direction (physical, RTL-aware). Only meaningful once the container
     // is in the DOM, since it reads the resolved writing direction; the custom element
@@ -211,7 +207,6 @@ export function createToastController<C>(
     if (stacked()) {
       container.dataset.stacked = "on";
       const { vertical, horizontal } = splitPlacement(placement());
-      container.style.setProperty("--stack-dir", vertical === "top" ? "1" : "-1");
       // applyPlacement just set alignItems inline for a flex column, where it means the
       // INLINE axis. Under grid the same property means the BLOCK axis, so that value
       // would push the cards to the bottom of the box — invisible while the box is one
@@ -222,14 +217,21 @@ export function createToastController<C>(
       // Shrink toward the anchored edge, not the middle: that edge is where the cards line
       // up, so keeping it fixed is both what the pile should look like and what makes the
       // peek arithmetic in syncStackIndices tractable.
-      container.style.setProperty(
-        "--stack-origin",
-        vertical === "top" ? "top" : "bottom",
-      );
+      container.dataset.stackFrom = vertical === "top" ? "top" : "bottom";
     } else {
       delete container.dataset.stacked;
       delete container.dataset.expanded;
-      container.style.removeProperty("--stack-dir");
+      delete container.dataset.stackFrom;
+      delete container.dataset.stackMotion;
+      // The stack's inline layout (see applyStackLayout) belongs to the stacked state only.
+      container.style.removeProperty("height");
+      container
+        .querySelectorAll<HTMLElement>(":scope > [data-id]")
+        .forEach((host) => {
+          stackLayouts.delete(host);
+          host.style.removeProperty("translate");
+          host.style.removeProperty("scale");
+        });
       // alignItems belongs to applyPlacement again; justifyItems is meaningless for flex.
       container.style.removeProperty("justify-items");
     }
@@ -386,7 +388,7 @@ export function createToastController<C>(
     if (!stacked()) {
       return;
     }
-    container.style.setProperty("--stack-duration", `${STACK_TOGGLE_MS}ms`);
+    container.dataset.stackMotion = "toggle";
     if (expanded) {
       container.dataset.expanded = "on";
       // Only while it is open — an always-on pointermove listener for a stack nobody is
@@ -396,6 +398,7 @@ export function createToastController<C>(
       delete container.dataset.expanded;
       document.removeEventListener("pointermove", onPointerMoveOutside);
     }
+    applyStackLayout();
   }
 
   function collapseSoon(): void {
@@ -471,9 +474,9 @@ export function createToastController<C>(
     }
     if (document.hidden) {
       pauseAll();
-      container.style.setProperty("--toast-play-state", "paused");
+      setToastsPaused(container, true);
     } else {
-      container.style.setProperty("--toast-play-state", "running");
+      setToastsPaused(container, false);
       resumeAll();
     }
   }
@@ -720,7 +723,7 @@ export function createToastController<C>(
       return;
     }
     // A toast is arriving or leaving, so the re-stack travels alongside its slide.
-    container.style.setProperty("--stack-duration", `${STACK_SHUFFLE_MS}ms`);
+    container.dataset.stackMotion = "shuffle";
 
     const hosts = Array.from(
       container.querySelectorAll<HTMLElement>(':scope > [data-id]'),
@@ -742,10 +745,7 @@ export function createToastController<C>(
       // since transform-origin sits on the anchored edge.
       const peek = frontHeight + depth * STACK_PEEK_PX - host.offsetHeight * scale;
 
-      host.style.setProperty("--stack-index", String(newest - position));
-      host.style.setProperty("--stack-scale", String(scale));
-      host.style.setProperty("--stack-collapsed", `${Math.max(0, peek)}px`);
-      host.style.setProperty("--stack-offset", `${offset}px`);
+      stackLayouts.set(host, { scale, collapsed: Math.max(0, peek), expanded: offset });
       offset += host.offsetHeight + TOAST_GAP_PX;
     }
 
@@ -753,11 +753,31 @@ export function createToastController<C>(
     // would otherwise stay one card tall — the expanded pile would then hang outside the
     // area the pointer has to stay in to keep it open.
     const collapsed = hosts[newest]?.offsetHeight ?? 0;
-    container.style.setProperty("--stack-collapsed-height", `${collapsed}px`);
-    container.style.setProperty(
-      "--stack-expanded-height",
-      `${Math.max(collapsed, offset - TOAST_GAP_PX)}px`,
-    );
+    stackHeights = { collapsed, expanded: Math.max(collapsed, offset - TOAST_GAP_PX) };
+    applyStackLayout();
+  }
+
+  // The measured layout of the stack (syncStackIndices), put on the hosts and the container
+  // as the real properties, for the current state (collapsed or expanded): the stylesheet
+  // transitions them. Inline translate and scale compose with the transform the enter, exit
+  // and swipe write, so neither has to know about the other.
+  function applyStackLayout(): void {
+    if (!stacked()) {
+      return;
+    }
+    const expanded = container.dataset.expanded === "on";
+    // Away from the anchored edge, so the pile always grows into the screen.
+    const dir = splitPlacement(placement()).vertical === "top" ? 1 : -1;
+    container
+      .querySelectorAll<HTMLElement>(":scope > [data-id]")
+      .forEach((host) => {
+        const layout = stackLayouts.get(host);
+        if (layout) {
+          host.style.translate = `0 ${(expanded ? layout.expanded : layout.collapsed) * dir}px`;
+          host.style.scale = expanded ? "1" : String(layout.scale);
+        }
+      });
+    container.style.height = `${expanded ? stackHeights.expanded : stackHeights.collapsed}px`;
   }
 
   // Compose the announcement from what's actually on screen (works for any
@@ -809,8 +829,8 @@ export function createToastController<C>(
       element.style.opacity = "";
 
       // Hand the toast back to the stylesheet once it has arrived. Its inline transition
-      // is fixed at the entrance timing, while the stylesheet's is driven by
-      // --stack-duration and switches between the shuffle and the quicker hover expand —
+      // is fixed at the entrance timing, while the stylesheet's follows
+      // data-stack-motion and switches between the shuffle and the quicker hover expand —
       // which it cannot do as long as an inline declaration outranks it.
       window.setTimeout(() => {
         element.style.transition = "";

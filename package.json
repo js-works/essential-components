@@ -1,8 +1,8 @@
 {
   "name": "essential-components",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "private": true,
-  "description": "The essential components (data navigator, file upload, overlays) as workspace packages, and one demo page for all of them.",
+  "description": "The essential components (data table, file upload, overlays) as workspace packages, and one demo page for all of them.",
   "type": "module",
   "workspaces": [
     "packages/*"
@@ -21,6 +21,7 @@
     "@blocknote/core": "^0.55.0",
     "@blocknote/mantine": "^0.55.0",
     "@blocknote/react": "^0.55.0",
+    "@mantine/charts": "9.5.1",
     "@mantine/dates": "9.5.1",
     "@react-pdf/renderer": "^4.9.0",
     "@tanstack/react-query": "^5.104.0",
@@ -29,6 +30,7 @@
     "react-i18next": "^17.0.15",
     "react-icons": "^5.7.0",
     "react-router": "^8.4.0",
+    "recharts": "3.10.1",
     "zustand": "^5.0.15"
   },
   "devDependencies": {

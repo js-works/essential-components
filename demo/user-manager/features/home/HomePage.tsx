@@ -35,7 +35,7 @@ function HomePage(): ReactElement {
   return (
     <Stack gap="lg">
       <Stack gap={4}>
-        <Title order={2} size="h3">Main</Title>
+        <Title order={2} size="h3">Overview</Title>
         <Text size="sm" c="dimmed">
           Who may do what, where: users and groups get roles (sets of permissions) on scopes (the organization, an app,
           a folder, a board, ...). A role on a scope applies to everything below it. All data is made up and lives in

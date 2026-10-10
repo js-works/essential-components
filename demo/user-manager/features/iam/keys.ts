@@ -1,4 +1,4 @@
-import type { DataNavigatorComponent } from '../../../../packages/data-navigator/src/react';
+import type { DataTableComponent } from '../../../../packages/data-table/src/react';
 
 export { iamKeys };
 
@@ -7,5 +7,5 @@ const iamKeys = {
   all: ['iam'] as const,
   data: () => [...iamKeys.all, 'data'] as const,
   tables: () => [...iamKeys.all, 'table'] as const,
-  table: (name: string, query: DataNavigatorComponent.Query) => [...iamKeys.tables(), name, query] as const,
+  table: (name: string, query: DataTableComponent.Query) => [...iamKeys.tables(), name, query] as const,
 };

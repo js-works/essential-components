@@ -44,13 +44,13 @@ type Message = string | MessageFn;
 type MessageCatalog = Record<string, Message>;
 
 /**
- * The app's i18n system, the same shape as the adapters of the other components (data navigator, file upload), so one
+ * The app's i18n system, the same shape as the adapters of the other components (data table, file upload), so one
  * adapter object fits all of them.
  */
 interface I18nAdapter {
   currentLocale: () => string;
   /**
-   * The namespace is `'formvalidation'` for the messages of the library, and the app namespace (see
+   * The namespace is `'formValidation'` for the messages of the library, and the app namespace (see
    * `FormConfig.appNamespace`) for the app's keys (labels, messages of the schema or the server). `defaultValue` is the
    * text the library would show (from `messages` or its catalog, already filled in): return it if there is no
    * translation.
@@ -214,6 +214,12 @@ interface UseFormReturn<S extends z.ZodObject<any>, P extends PropNames> {
    * errors, `{ ok: false, error }` with the form-wide error (server, or a thrown `submit`).
    */
   requestSubmit(): Promise<SubmitOutcome>;
+  /**
+   * Whether a value differs from its initial one (`initial`, else the schema's default), e.g. to ask before
+   * discarding the form. A value changed and changed back does not count; empty values (`undefined`, `null`, `''`)
+   * are alike. A function, stable across renders: it reads the values of the moment.
+   */
+  isDirty(): boolean;
 }
 
 type SubmitOutcome = { ok: true } | { ok: false; error?: string };

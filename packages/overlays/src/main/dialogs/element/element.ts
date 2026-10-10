@@ -12,7 +12,9 @@
 import { registerFirstFreeTag } from "../../internal/custom-element.js";
 import { deepActiveElement, h, parseSvg } from "../../internal/dom.js";
 import {
+  alertIconSvg,
   closeIconSvg,
+  confirmIconSvg,
   maximizeIconSvg,
   noteIconSvg,
   restoreIconSvg,
@@ -20,6 +22,7 @@ import {
 import {
   CLOSE_ANIMATION_FALLBACK_MS,
   DIALOG_GROW_ANIM_MS,
+  QUESTION_MORPH_ANIM_MS,
   REJECT_MESSAGE_ANIM_MS,
   SPINNER_DROP_ANIM_MS,
   styleText,
@@ -32,6 +35,8 @@ import type {
   DialogProps,
   DialogSpec,
 } from "../contract/adapter.js";
+import { defaultDialogTheme } from "../contract/theme.js";
+import type { DialogTheme } from "../contract/theme.js";
 import type { DialogButtonView, DialogMount } from "../contract/view.js";
 
 // How many frames focusFirstInvalid() lets the caller's re-render settle before reading
@@ -186,6 +191,14 @@ class Dialog extends DialogElementBase {
   #partEls = new Map<string, HTMLElement>(); // intro / content / outro
   #actionsEl!: HTMLElement;
   #noteRegionEl!: HTMLElement;
+  #bodyEl!: HTMLElement;
+  #noteInstant = false;
+  // The header's stand-ins while a question replaces the content (shown by data-asking).
+  #askIconEl!: HTMLElement;
+  #askTitleEl!: HTMLElement;
+  // A question (FormAttempt.ask) is asked, and where the focus was before it.
+  #asking = false;
+  #focusBeforeQuestion: HTMLElement | null = null;
 
   #closeEl: HTMLElement | null = null;
   #closeSlotted = false;
@@ -229,27 +242,35 @@ class Dialog extends DialogElementBase {
   #noteSlotted = false;
   #noteTitleEl: HTMLElement | null = null;
   #noteTextEl: HTMLElement | null = null;
+  #noteBoxEl: HTMLElement | null = null;
+  #noteIconEl: HTMLElement | null = null;
+  #noteTone: "error" | "question" | null = null;
   #note: { title?: string; message: string } | null = null;
   #noteAnim: Animation | null = null;
+  // The morph between the form and a question (see #morphQuestion): the box and its content.
+  #morphAnims: Animation[] = [];
 
   #busy = false;
   #focusBeforeBusy: HTMLElement | null = null;
   #styleEl: HTMLStyleElement | null = null;
+  // The chrome's stylesheet, with the theme's values in it (see styles.ts).
+  #theme: DialogTheme = defaultDialogTheme;
+  readonly #themeStyle = h("style", null, styleText(defaultDialogTheme)) as HTMLStyleElement;
 
   constructor() {
     super();
     const root = this.attachShadow({ mode: "open" });
-    root.appendChild(h("style", null, styleText));
+    root.appendChild(this.#themeStyle);
 
     // Clicks on slotted override buttons reach props.onClick directly, bypassing the
     // wrapper #renderButton puts around the default ones — so the note dismissal
-    // is handled here for both.
+    // is handled here for both. (Not the slotted close button: its renderer gets `onClose`
+    // and calls it itself; a second `dialog-close` from here closed twice, which after a
+    // question answered "Keep editing" asked it again.)
     this.addEventListener("click", (event) => {
       const target = event.target as Element | null;
-      if (target?.closest?.('[slot="action"]')) {
+      if (target?.closest?.('[slot="action"], [slot="action-separate"]')) {
         this.#dismissNote();
-      } else if (target?.closest?.('[slot="close"]')) {
-        this.#emit("dialog-close");
       }
     });
 
@@ -390,13 +411,20 @@ class Dialog extends DialogElementBase {
     }
 
     if (props.spinnerOnly) {
-      this.#applyTheme(props.themeVars);
+      this.#applyTheme(props.theme);
       this.#showSpinner();
     } else {
+      // A question comes or goes: the box's size before the change (see #morphQuestion).
+      const morphFrom = this.#dialog.open && props.asking !== this.#asking
+        ? this.#dialog.getBoundingClientRect()
+        : null;
       this.#applyProps(props);
       this.#syncChrome(props);
       if (this.#dialog.firstChild !== this.#contentEl) {
         this.#dialog.replaceChildren(this.#contentEl!);
+      }
+      if (morphFrom) {
+        this.#morphQuestion(morphFrom);
       }
     }
 
@@ -445,14 +473,11 @@ class Dialog extends DialogElementBase {
   #growIn(): void {
     const box = this.#dialog;
     // Transforms have no logical equivalent, so the slide direction comes from the writing
-    // direction. Resolved to a literal here rather than passed as var(): custom properties
-    // are not substituted inside Web Animations keyframes. The same value is handed to CSS
-    // for the exit keyframe, which does resolve var() (see styles.ts).
+    // direction (the exit keyframe has the same two cases, see styles.ts).
     let offscreen = "100%";
     if (this.#isDrawer) {
       offscreen =
         getComputedStyle(this).direction === "rtl" ? "-100%" : "100%";
-      this.style.setProperty("--drawer-exit-translate", offscreen);
     }
     // The spinner placeholder drops in from slightly above and settles; real dialogs
     // (and in-scope swaps) grow in from nothing as before. A drawer is a pure slide — no
@@ -481,11 +506,57 @@ class Dialog extends DialogElementBase {
     this.#exitAnim = null;
   }
 
+  // The change between the form and a question in its place (both ways): the box morphs
+  // from its old size to the new one, and the new content fades in. The content keeps its
+  // final size meanwhile (the box clips it), so the text does not rewrap on every frame and
+  // the body does not shrink into a scrollbar; no scrollbars at all while it runs
+  // (data-morphing, see the styles). The vertical position follows the height by itself
+  // (translate is a percentage of it). None with reduced motion.
+  #morphQuestion(from: DOMRect): void {
+    this.#morphAnims.forEach((anim) => anim.cancel());
+    this.#morphAnims = [];
+    this.removeAttribute("data-morphing");
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+    const box = this.#dialog;
+    const content = this.#contentEl!;
+    const to = box.getBoundingClientRect();
+    const timing = { duration: QUESTION_MORPH_ANIM_MS, easing: "cubic-bezier(0.2, 0, 0, 1)" };
+    const toSize = { width: `${to.width}px`, height: `${to.height}px`, flex: "none" };
+    // Free of the min/max sizes of the form and the question, which would clamp the steps
+    // between (both ends are measured, real sizes).
+    const free = { minWidth: "0", maxWidth: "none", minHeight: "0", maxHeight: "none" };
+    const anims = [
+      content.animate([
+        { ...toSize, opacity: 0 },
+        { ...toSize, opacity: 1 },
+      ], timing),
+    ];
+    if (from.width !== to.width || from.height !== to.height) {
+      anims.push(
+        box.animate([
+          { ...free, width: `${from.width}px`, height: `${from.height}px` },
+          { ...free, width: `${to.width}px`, height: `${to.height}px` },
+        ], timing),
+      );
+    }
+    this.#morphAnims = anims;
+    this.setAttribute("data-morphing", "");
+    void Promise.all(anims.map((anim) => anim.finished)).then(
+      () => {
+        if (this.#morphAnims === anims) this.removeAttribute("data-morphing");
+      },
+      // Canceled: the next morph (or none) has taken over the attribute.
+      () => {},
+    );
+  }
+
   // Everything derived from DialogProps: host state, theme, aria and the caller
   // stylesheet. Deliberately touches no light DOM.
   #applyProps(props: DialogProps<any>): void {
     this.#spinnerOnly = false;
-    this.#applyTheme(props.themeVars);
+    this.#applyTheme(props.theme);
 
     this.#dialog.classList.remove("spinner-dialog");
     this.#dialog.setAttribute("aria-labelledby", "dialog-title");
@@ -505,12 +576,11 @@ class Dialog extends DialogElementBase {
     this.#applyCallerStyles(props.styles);
   }
 
-  // Apply the caller theme as `--dialog-*` custom properties on the host; they inherit
-  // through the shadow boundary into the chrome CSS (and to slotted light DOM). No-op
-  // when the map is empty, leaving the built-in look untouched.
-  #applyTheme(themeVars: Record<string, string>): void {
-    for (const [prop, value] of Object.entries(themeVars)) {
-      this.style.setProperty(prop, value);
+  // Put the theme's stylesheet into the shadow root (only when the theme changes).
+  #applyTheme(theme: DialogTheme): void {
+    if (theme !== this.#theme) {
+      this.#theme = theme;
+      this.#themeStyle.textContent = styleText(theme);
     }
   }
 
@@ -553,12 +623,16 @@ class Dialog extends DialogElementBase {
       h("slot", { name: "subtitle" }),
     );
 
+    this.#askIconEl = h("div", { id: "ask-icon" });
+    this.#askTitleEl = h("span", { class: "title ask-title" });
+
     this.#headerButtonsEl = h("div", { class: "header-buttons" });
     this.#headerEl = h(
       "div",
       { class: "header" },
       this.#iconEl,
-      h("div", { class: "titles" }, this.#titleEl, this.#subtitleEl),
+      this.#askIconEl,
+      h("div", { class: "titles" }, this.#titleEl, this.#subtitleEl, this.#askTitleEl),
       this.#headerButtonsEl,
     );
 
@@ -597,6 +671,7 @@ class Dialog extends DialogElementBase {
       role: "alert",
     });
     this.#actionsEl = h("div", { class: "action-buttons" });
+    this.#bodyEl = body;
 
     const footer = h(
       "div",
@@ -619,6 +694,9 @@ class Dialog extends DialogElementBase {
     if (!this.#contentEl) {
       this.#buildChrome();
     }
+    // A question in place of the content appears and goes at once, without the note's grow
+    // and collapse.
+    this.#noteInstant = props.asking || this.hasAttribute("data-asking");
     this.#syncMaximizeButton(props);
     this.#syncCloseButton(props);
     this.#syncActionButtons(props);
@@ -626,6 +704,37 @@ class Dialog extends DialogElementBase {
     this.#syncSlotPresence();
     this.#evaluateNote();
     this.#syncBusy(props);
+    this.#syncQuestion(props);
+  }
+
+  // While a question is asked (its text is the note), the body cannot be edited and the
+  // focus is on its safe answer (the cancel-role button, see #defaultButtonElement);
+  // afterwards it goes back to where it was. After #syncBusy, so its own restoring of the
+  // focus does not win.
+  #syncQuestion(props: DialogProps<any>): void {
+    const asking = props.asking;
+    this.#bodyEl.inert = asking;
+    if (asking) {
+      this.#askIconEl.replaceChildren(parseSvg(props.note?.tone === "error" ? alertIconSvg : confirmIconSvg));
+      this.#askIconEl.dataset.tone = props.note?.tone ?? "question";
+      this.#askTitleEl.textContent = props.askTitle ?? "";
+      this.toggleAttribute("data-ask-title", !!props.askTitle);
+    }
+    // In place of the content (data-asking, see the styles).
+    this.toggleAttribute("data-asking", asking);
+    if (asking && !this.#asking) {
+      this.#focusBeforeQuestion = deepActiveElement();
+      requestAnimationFrame(() => this.#defaultButtonElement()?.focus());
+    } else if (!asking && this.#asking) {
+      const back = this.#focusBeforeQuestion;
+      this.#focusBeforeQuestion = null;
+      requestAnimationFrame(() => {
+        if (back?.isConnected) {
+          back.focus();
+        }
+      });
+    }
+    this.#asking = asking;
   }
 
   // An overridden close button is framework content, so the adapter renders it into the
@@ -711,7 +820,13 @@ class Dialog extends DialogElementBase {
     if (overridden) {
       if (!this.#actionsSlotted) {
         this.#buttonEls = [];
-        this.#actionsEl.replaceChildren(h("slot", { name: "action" }));
+        // The separate ones (danger and link actions) in a slot of their own, beyond a
+        // spacer: the footer is `row-reverse`, so they end up on its other side.
+        this.#actionsEl.replaceChildren(
+          h("slot", { name: "action" }),
+          h("span", { class: "actions-spacer" }),
+          h("slot", { name: "action-separate" }),
+        );
         this.#actionsSlotted = true;
       }
       return;
@@ -732,6 +847,11 @@ class Dialog extends DialogElementBase {
         this.#actionsEl.append(el);
       }
       el.classList.toggle("loading", button.loading);
+      // The first separate one keeps the free space between it and the others.
+      el.classList.toggle(
+        "separate-first",
+        button.separate && !props.buttons[index - 1]?.separate,
+      );
       if (el.getAttribute("data-type") !== button.type) {
         el.setAttribute("data-type", button.type);
       }
@@ -777,18 +897,19 @@ class Dialog extends DialogElementBase {
       } else {
         this.#noteTitleEl = h("div", { class: "note-title" });
         this.#noteTextEl = h("div", { class: "note-text" });
-        this.#noteRegionEl.replaceChildren(
+        this.#noteIconEl = h("span", { class: "note-icon" });
+        this.#noteBoxEl = h(
+          "div",
+          { class: "note" },
           h(
             "div",
-            { class: "note" },
-            h(
-              "div",
-              { class: "note-inner" },
-              h("span", { class: "note-icon" }, parseSvg(noteIconSvg)),
-              h("div", { class: "note-body" }, this.#noteTitleEl, this.#noteTextEl),
-            ),
+            { class: "note-inner" },
+            this.#noteIconEl,
+            h("div", { class: "note-body" }, this.#noteTitleEl, this.#noteTextEl),
           ),
         );
+        this.#noteTone = null;
+        this.#noteRegionEl.replaceChildren(this.#noteBoxEl);
       }
     }
 
@@ -796,11 +917,20 @@ class Dialog extends DialogElementBase {
     // one (which only the adapter can fill).
     this.#note = slotted ? null : (props.note ?? null);
 
-    if (this.#noteTitleEl && this.#noteTextEl) {
-      const title = props.note?.title ?? "";
+    // Only while there is a note: one that goes keeps its text for the collapse.
+    if (props.note && this.#noteTitleEl && this.#noteTextEl) {
+      const title = props.note.title ?? "";
       this.#noteTitleEl.textContent = title;
       this.#noteTitleEl.hidden = title === "";
-      this.#noteTextEl.textContent = props.note?.message ?? "";
+      this.#noteTextEl.textContent = props.note.message;
+      // A question (FormAttempt.ask) has its own look and icon; an error the red one.
+      if (props.note.tone !== this.#noteTone) {
+        this.#noteTone = props.note.tone;
+        this.#noteBoxEl!.dataset.tone = props.note.tone;
+        this.#noteIconEl!.replaceChildren(
+          parseSvg(props.note.tone === "question" ? confirmIconSvg : noteIconSvg),
+        );
+      }
     }
   }
 
@@ -882,6 +1012,11 @@ class Dialog extends DialogElementBase {
   #animateNoteHeight(direction: "in" | "out", onFinish?: () => void): void {
     const el = this.#noteRegionEl;
     this.#noteAnim?.cancel();
+    if (this.#noteInstant) {
+      this.#noteAnim = null;
+      onFinish?.();
+      return;
+    }
     const height = el.getBoundingClientRect().height;
     const keyframes = [
       { height: "0px", opacity: 0 },
@@ -913,7 +1048,13 @@ class Dialog extends DialogElementBase {
       this.#noteRegionEl.classList.remove("collapsed");
       this.#animateNoteHeight("in");
     } else if (!raised && this.#noteShown && !this.#noteDismissing) {
-      this.#resetNote();
+      // A question answered by Escape or the close button (not by a click, which
+      // collapses it itself) collapses too: its buttons are going at the same moment.
+      if (this.#noteTone === "question") {
+        this.#dismissNote();
+      } else {
+        this.#resetNote();
+      }
     }
   }
 
@@ -1022,14 +1163,18 @@ class Dialog extends DialogElementBase {
   // The button Enter primes, as a DOM node. Overridden buttons live in the light DOM, so
   // reach through the `action` wrapper to whatever inside it can actually take focus.
   #defaultButtonElement(): HTMLElement | null {
+    // Without a default (critical dialogs): Cancel, the safe one; else the last button.
+    // Not simply the last: the dialog's own actions may come after Cancel.
+    const views = this.#buttonViews;
+    const cancel = views.findIndex((button) => button.role === "cancel");
+    const index =
+      this.#defaultButtonIndex ?? (cancel >= 0 ? cancel : views.length - 1);
     if (!this.#actionsSlotted) {
-      const buttons = this.#buttonEls;
-      if (buttons.length === 0) return null;
-      return buttons[this.#defaultButtonIndex ?? buttons.length - 1] ?? null;
+      return this.#buttonEls[index] ?? null;
     }
-    const wrappers = this.querySelectorAll<HTMLElement>(':scope > [slot="action"]');
-    if (wrappers.length === 0) return null;
-    const wrapper = wrappers[this.#defaultButtonIndex ?? wrappers.length - 1];
+    const wrapper = this.querySelector<HTMLElement>(
+      `:scope > [data-action-index="${index}"]`,
+    );
     return (
       wrapper?.querySelector<HTMLElement>("button, [tabindex]") ??
       (wrapper?.firstElementChild as HTMLElement | null) ??
@@ -1043,6 +1188,16 @@ class Dialog extends DialogElementBase {
   // newline. Composed input events from slotted fields still reach the shadow listeners
   // because propagation follows the flattened tree.
   #onKeyDown = (ev: KeyboardEvent): void => {
+    // Escape closes by the key itself, not by the native `cancel` event: the browser only
+    // lets a dialog refuse a close request once per user activation, so the next Escape
+    // (after "Keep editing", say) closed the dialog with no `cancel` event we could
+    // prevent. Left alone when something inside already handled the key (an open
+    // dropdown, a date picker).
+    if (ev.key === "Escape" && !ev.defaultPrevented && !ev.isComposing) {
+      ev.preventDefault();
+      this.#emit("dialog-cancel");
+      return;
+    }
     if (
       ev.key !== "Enter" ||
       ev.defaultPrevented ||
@@ -1181,6 +1336,7 @@ export function mountDialog(
     getForm: () => dialogElement(container, tag)?.getForm() ?? null,
 
     getConfirm: () => adapter.getConfirm?.(),
+    isDirty: () => adapter.isDirty?.() ?? false,
 
     focusFirstInvalid: () => dialogElement(container, tag)?.focusFirstInvalid(),
   };

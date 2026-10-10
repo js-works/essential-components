@@ -1,4 +1,4 @@
-import type { DataNavigatorComponent } from '../../../../packages/data-navigator/src/react';
+import type { DataTableComponent } from '../../../../packages/data-table/src/react';
 import type { AgendaItem, Meeting, MeetingStatus } from '../../domain';
 import { boardIdsOf, getBoard } from './lookups';
 import { matches, oneOf, runQuery, within } from './query';
@@ -22,7 +22,7 @@ function meetingRows(state: Db): MeetingRow[] {
 // The meetings of one board (`boardId`), of the boards of one person (`personId`), or of all boards (neither).
 function fetchMeetings(
   { boardId, personId }: { boardId?: string; personId?: string } = {},
-): DataNavigatorComponent.Source<MeetingRow> {
+): DataTableComponent.Source<MeetingRow> {
   return async (query, signal) => {
     await wait(LOADING_TIME, signal);
 
@@ -39,6 +39,10 @@ function fetchMeetings(
         board: (row, value) => oneOf(row.board, value),
         status: (row, value) => oneOf(row.status, value),
         start: (row, value) => within(row.start, value),
+        location: (row, value) => matches(row.location, value),
+        // Only a held meeting has minutes: `approved` or `draft` (the badge of the minutes column).
+        minutesApproved: (row, value) =>
+          oneOf(row.status === 'Held' ? (row.minutesApproved ? 'approved' : 'draft') : '', value),
       },
     });
   };

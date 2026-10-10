@@ -41,6 +41,11 @@ export const germanDialogTexts: DialogTexts = {
   titleFormCritical: "Eingabe",
   labelMaximize: "Maximieren",
   labelRestore: "Wiederherstellen",
+  questionDiscard: "Änderungen verwerfen?",
+  buttonDiscard: "Verwerfen",
+  buttonKeepEditing: "Weiter bearbeiten",
+  titleUnsavedChanges: "Nicht gespeicherte Änderungen",
+  hintEscapeDiscards: "Mit Esc werden sie verworfen.",
 };
 
 /** German toast texts. Same completeness guarantee as {@link germanDialogTexts}. */

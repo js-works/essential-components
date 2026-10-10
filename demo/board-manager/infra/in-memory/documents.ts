@@ -1,4 +1,4 @@
-import type { DataNavigatorComponent } from '../../../../packages/data-navigator/src/react';
+import type { DataTableComponent } from '../../../../packages/data-table/src/react';
 import type { FileUpload } from '../../../../packages/file-upload/src';
 import type { MeetingDocument } from '../../domain';
 import { AppError } from './errors';
@@ -8,7 +8,7 @@ import { db, LOADING_TIME, newId, save, wait } from './store';
 
 export { commitDocuments, deleteDocuments, discardDocuments, fetchDocuments, renameDocument, uploadDocument };
 
-function fetchDocuments(meetingId: string): DataNavigatorComponent.Source<MeetingDocument> {
+function fetchDocuments(meetingId: string): DataTableComponent.Source<MeetingDocument> {
   return async (query, signal) => {
     await wait(LOADING_TIME, signal);
 

@@ -1,25 +1,21 @@
 import { css, html, LitElement } from 'lit';
 import { property, state } from 'lit/decorators.js';
-import {
-  dateRangeColumnFilter,
-  selectColumnFilter,
-  textColumnFilter,
-} from '../../../../../packages/data-navigator/src';
-import type { DataNavigator } from '../../../../../packages/data-navigator/src';
+import { dateRangeColumnFilter, selectColumnFilter, textColumnFilter } from '../../../../../packages/data-table/src';
+import type { DataTable } from '../../../../../packages/data-table/src';
 import { authorOf, formatDate, formatSize, queryAttachments, rowsOf, SIZES } from './attachments';
 import type { AttachmentRow } from './attachments';
 import { icons } from './icons';
-import { createNavigatorController, dialogs, toasts } from './setup';
+import { createTableController, dialogs, toasts } from './setup';
 import { attachmentsUrlOf, deleteAttachment, listAttachments, uploadAttachment } from './xwiki/rest';
 
 export { XwikiAttachmentManager };
 
-type Controller = ReturnType<typeof createNavigatorController<AttachmentRow>>;
+type Controller = ReturnType<typeof createTableController<AttachmentRow>>;
 
 // "report.pdf" or "3 files".
 const filesText = (names: readonly string[]) => (names.length === 1 ? `"${names[0]}"` : `${names.length} files`);
 
-// The attachments of an XWiki page, like the Media Manager of the demo: the data navigator (search, sorting, paging,
+// The attachments of an XWiki page, like the File Center of the demo (the Media Manager before 2026-10-08): the data table (search, sorting, paging,
 // column filters, selection), an upload drawer with the file upload, delete with a confirmation, details in a drawer,
 // and toasts. The data comes from the REST API of XWiki (see xwiki/rest.ts).
 class XwikiAttachmentManager extends LitElement {
@@ -69,10 +65,10 @@ class XwikiAttachmentManager extends LitElement {
 
   #createController(): Controller {
     // Every load asks XWiki again (the list may have changed), then filters, sorts and pages in memory.
-    const source: DataNavigator.Source<AttachmentRow> = async (query, signal) =>
+    const source: DataTable.Source<AttachmentRow> = async (query, signal) =>
       queryAttachments(rowsOf(await listAttachments(this.#url, signal)), query);
 
-    return createNavigatorController<AttachmentRow>({
+    return createTableController<AttachmentRow>({
       source,
       rowKey: 'name',
       title: () => this.heading ?? '',
@@ -236,8 +232,8 @@ class XwikiAttachmentManager extends LitElement {
 
     return this.controller === undefined
       ? html`<p>Loading …</p>`
-      : html`<xam-data-navigator .controller=${this.controller} density="compact" striped searchable reloadable page-size="10">
-        </xam-data-navigator>`;
+      : html`<xam-data-table .controller=${this.controller} density="compact" striped searchable reloadable page-size="10">
+        </xam-data-table>`;
   }
 }
 

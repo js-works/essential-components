@@ -36,11 +36,13 @@ customElements.define(
   createAppCockpitClass({
     title: set === 'few' ? 'My Office' : 'Acme Office',
     subtitle: set === 'few' ? 'Team workspace' : 'Acme Corporation · Headquarters',
-    apps: SETS[set],
+    items: SETS[set],
     // The 100 apps: icons for their groups.
     ...(set === 'many' ? { groups: GROUPS } : {}),
     // The 100 apps: one group at a time (a select on top of the list).
     groupDisplay: set === 'many' ? 'select' : 'sections',
+    // The open apps below the open one (2026-10-07).
+    taskbar: true,
     footer: {
       actions: [
         appsAction,

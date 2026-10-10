@@ -27,10 +27,10 @@ type AsyncSelectProps = {
   id?: string;
 };
 
-// How long typing must pause before `load` is called, in milliseconds (like the data navigator's autocomplete filter).
+// How long typing must pause before `load` is called, in milliseconds (like the data table's autocomplete filter).
 const LOAD_DELAY = 250;
 
-// Mantine's `Select` (searchable, clearable), with its options loaded while typing, like the data navigator's
+// Mantine's `Select` (searchable, clearable), with its options loaded while typing, like the data table's
 // autocomplete filter: `load(query, signal)` LOAD_DELAY ms after the last key while the list is open, once the trimmed
 // query has `minQueryLength` characters; a newer query aborts the older one. No filtering here: `load` did it. While
 // the input shows the chosen label (the list was opened again), `load('')` gives all options. Mantine's `Loader` in the

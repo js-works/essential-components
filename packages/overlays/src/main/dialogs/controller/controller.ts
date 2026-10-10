@@ -4,7 +4,6 @@
 // adapter, routes button clicks, aborts, and the form retry/interaction flow.
 // -------------------------------------------------------------------
 
-import { toCssVariable } from "../../internal/css.js";
 
 import {
   cancelBtn,
@@ -13,6 +12,7 @@ import {
   noBtn,
   okBtn,
   okBtnDanger,
+  withActions,
   symbolCancel,
   symbolConfirm,
   symbolDecline,
@@ -24,6 +24,8 @@ import type { ButtonConfig } from "./buttons.js";
 import { mountDialog } from "../element/element.js";
 import { FormDialogData } from "../contract/form-data.js";
 import { defaultDialogIcon } from "../element/icons.js";
+import { defaultDialogTheme } from "../contract/theme.js";
+import type { DialogTheme } from "../contract/theme.js";
 import { BUTTON_SPINNER_DELAY_MS, SPINNER_DIALOG_DELAY_MS } from "../element/styles.js";
 import { bundledDialogText } from "../../i18n/texts.js";
 import type {
@@ -48,7 +50,10 @@ import type {
   DialogsController,
   DialogsControllerConfig,
   DialogType,
+  FormAskOptions,
+  FormAskChoicesOptions,
   FormAttempt,
+  FormCloseAttempt,
   FormConfirm,
   FormConfirmResult,
   FormDialogConfig,
@@ -79,17 +84,21 @@ function isPromiseLike<T>(value: T | PromiseLike<T>): value is PromiseLike<T> {
   );
 }
 
-// A minimal single-consumer async queue: form submits are pushed in; the caller's
-// `for await` pulls them out. `end()` completes the iteration (on accept or cancel).
+// What a form's loop can get: a submit, or with `guardClose` a request to close.
+type AnyFormAttempt = FormAttempt<string> | FormCloseAttempt;
+
+// A minimal single-consumer async queue: form submits (and, with `guardClose`, requests to
+// close) are pushed in; the caller's `for await` pulls them out. `end()` completes the
+// iteration (on accept or cancel).
 interface AttemptQueue {
-  push(attempt: FormAttempt): void;
+  push(attempt: AnyFormAttempt): void;
   end(): void;
-  iterator(): AsyncIterator<FormAttempt>;
+  iterator(): AsyncIterator<AnyFormAttempt>;
 }
 
 function createAttemptQueue(): AttemptQueue {
-  const buffer: FormAttempt[] = [];
-  let waiting: ((r: IteratorResult<FormAttempt>) => void) | null = null;
+  const buffer: AnyFormAttempt[] = [];
+  let waiting: ((r: IteratorResult<AnyFormAttempt>) => void) | null = null;
   let ended = false;
 
   return {
@@ -120,13 +129,26 @@ function createAttemptQueue(): AttemptQueue {
           if (ended) {
             return Promise.resolve({ value: undefined, done: true });
           }
-          return new Promise<IteratorResult<FormAttempt>>((resolve) => {
+          return new Promise<IteratorResult<AnyFormAttempt>>((resolve) => {
             waiting = resolve;
           });
         },
       };
     },
   };
+}
+
+// A question in place of the dialog's content (FormAttempt.ask), handed in like `raiseReject`:
+// it is view state of the dialog that produced the attempt.
+// `escapeConfirms` (internal, only the library's discard question so far): Escape answers
+// with the confirming button; the close button stays the safe answer. The message says so.
+interface AskOptions extends FormAskOptions {
+  escapeConfirms?: boolean;
+}
+
+interface Ask {
+  (message: string, options?: AskOptions): Promise<boolean>;
+  <K extends string>(message: string, options: FormAskChoicesOptions<K>): Promise<K>;
 }
 
 // Flow used by form dialogs to route confirm/cancel/abort through the retry interaction.
@@ -138,8 +160,10 @@ interface FormFlow {
     data: FormDialogData,
     raiseReject: (note: ResolvedNote) => void,
     stopSpinner: () => void,
+    action: string,
+    ask: Ask,
   ): void;
-  cancel(): void;
+  cancel(stopSpinner: () => void, ask: Ask, isDirty: () => boolean): void;
   abort(): void;
 }
 
@@ -230,16 +254,13 @@ function createDialogScope<C extends object>(
 ): DialogScope<C> {
   const dialogId = `internal-dialog-${++dialogInstanceCounter}`;
 
-  // Resolve the caller theme once into `--dialog-*` custom properties, applied to every
-  // dialog element opened in this scope. Empty when no theme is set (built-in look).
-  const themeVars: Record<string, string> = {};
+  // The caller's tokens merged over the defaults, once per scope: the element puts them
+  // straight into its stylesheet (no custom properties). A missing token keeps its default.
+  const theme: DialogTheme = { ...defaultDialogTheme };
   if (config.theme) {
     for (const [key, value] of Object.entries(config.theme)) {
-      // Generic theme key -> namespaced dialog CSS var (e.g. `primaryBackground` ->
-      // `--dialog-primary-background`), so tokens are generic while the vars the dialog
-      // CSS reads stay collision-safe and don't leak to/from the page or slotted content.
       if (value != null) {
-        themeVars[`--dialog-${toCssVariable(key).slice(2)}`] = value;
+        theme[key as keyof DialogTheme] = value;
       }
     }
   }
@@ -302,7 +323,7 @@ function createDialogScope<C extends object>(
           maximized: false,
           maximizeLabel: "",
           onToggleMaximize: noop,
-          themeVars,
+          theme,
           styles: null,
           hasForm: false,
           nativeValidation: true,
@@ -313,6 +334,7 @@ function createDialogScope<C extends object>(
           onClose: noop,
           onCancel: noop,
           note: null,
+          asking: false,
           onNoteDismiss: noop,
         },
         slots: emptySlots(),
@@ -382,7 +404,8 @@ function createDialogScope<C extends object>(
     }
 
     return spec.buttons.map((button) => {
-      const customText = overrides[button.overrideKey];
+      const customText =
+        button.overrideKey === null ? undefined : overrides[button.overrideKey];
       return customText ? { ...button, text: customText } : button;
     });
   }
@@ -391,7 +414,7 @@ function createDialogScope<C extends object>(
     return spec.config.styles ?? null;
   }
 
-  function actionFor(id: symbol): "ok" | "confirm" | "decline" | null {
+  function actionFor(id: symbol): string | null {
     if (id === symbolOk) return "ok";
     if (id === symbolConfirm) return "confirm";
     if (id === symbolDecline) return "decline";
@@ -399,9 +422,13 @@ function createDialogScope<C extends object>(
   }
 
   // Non-form dialogs only: forms route confirm/cancel through formFlow, so no form-data
-  // path is needed here.
-  function finish(id: symbol, resolve: (value: AnyDialogResult) => void): void {
-    const action = actionFor(id);
+  // path is needed here. `own` is the id of one of the dialog's own actions.
+  function finish(
+    id: symbol,
+    resolve: (value: AnyDialogResult) => void,
+    own?: string,
+  ): void {
+    const action = own ?? actionFor(id);
     if (action === null) {
       resolve({ canceled: true, aborted: false }); // cancel button / close / Esc
     } else {
@@ -473,16 +500,18 @@ function createDialogScope<C extends object>(
       const proceed = (): void => {
         // Form dialogs route through the interaction flow (auto-accept or iterator).
         if (formFlow) {
-          if (button.id === symbolConfirm) {
-            const data = form ? new FormDialogData(form) : new FormDialogData();
-            formFlow.submit(data, raiseNote, stopSpinner);
+          if (button.id === symbolConfirm || button.action !== undefined) {
+            // An action without validation has not looked the form up yet.
+            const source = form ?? handle?.getForm() ?? null;
+            const data = source ? new FormDialogData(source) : new FormDialogData();
+            formFlow.submit(data, raiseNote, stopSpinner, button.action ?? "confirm", ask);
           } else {
-            formFlow.cancel();
+            formFlow.cancel(stopSpinner, ask, isDirty);
           }
           return;
         }
 
-        finish(button.id, resolve);
+        finish(button.id, resolve, button.action);
       };
 
       if (spec.allowsForm && button.validate) {
@@ -573,7 +602,7 @@ function createDialogScope<C extends object>(
           }
           stopSpinner();
           if (result.error !== undefined) {
-            raiseNote({ message: result.error });
+            raiseNote({ message: result.error, tone: "error" });
           } else {
             handle?.focusFirstInvalid();
           }
@@ -606,7 +635,9 @@ function createDialogScope<C extends object>(
     };
 
     const buttonViews: DialogButtonView[] = buttons.map((button, index) => ({
-      role: button.overrideKey,
+      role: button.overrideKey ?? "action",
+      action: button.action,
+      separate: button.separate ?? false,
       type: button.type,
       loading: false,
       text: button.text ?? getText(button.defaultTextKey),
@@ -614,7 +645,9 @@ function createDialogScope<C extends object>(
         // Claimed before the spinner timer even starts, so the guard covers the window
         // the delayed `inert` cannot. A dropped click starts no timer either, so it
         // leaves no flash behind.
-        const claimsBusy = spec.allowsForm && button.validate;
+        // An action submits even without validation, so it claims the flag too.
+        const claimsBusy =
+          spec.allowsForm && (button.validate || button.action !== undefined);
         if (claimsBusy && busy) {
           return;
         }
@@ -653,10 +686,14 @@ function createDialogScope<C extends object>(
       (button) => button.id === symbolCancel,
     );
     const closeAsCancel = () => {
-      if (cancelIndex >= 0) {
+      // While a question is asked, the close button answers it with "no" (Escape too,
+      // unless the question says otherwise: see `onCancel` below).
+      if (question) {
+        question.dismiss();
+      } else if (cancelIndex >= 0) {
         buttonViews[cancelIndex].onClick();
       } else if (formFlow) {
-        formFlow.cancel();
+        formFlow.cancel(noop, ask, isDirty);
       } else {
         finish(symbolOk, resolve);
       }
@@ -683,6 +720,96 @@ function createDialogScope<C extends object>(
     // so the element and a maximize-button override render the same. A new dialog of the
     // scope starts unmaximized, since this lives per dialog.
     let maximized = false;
+
+    // A question in the footer (FormAttempt.ask): view state of this dialog like the note.
+    // While it is asked, its two buttons replace the dialog's own. A newer question
+    // answers the older one with "no", and so does the dialog settling meanwhile, so a
+    // caller awaiting it is never left hanging.
+    let question: {
+      note: ResolvedNote;
+      title?: string;
+      views: DialogButtonView[];
+      // The safe answer: Escape, the close button, a newer question or the dialog going.
+      dismiss: () => void;
+      // Escape: the safe answer, or the confirming one (AskOptions.escapeConfirms).
+      escape: () => void;
+    } | null = null;
+
+    const ask = ((message: string, options: AskOptions & Partial<FormAskChoicesOptions<string>> = {}) =>
+      new Promise<unknown>((resolve) => {
+        question?.dismiss();
+        // Two buttons (true / false), or one per choice (its id); the last is the safe one.
+        const answers: {
+          value: unknown;
+          type: DialogButtonView["type"];
+          text: string;
+        }[] = options.choices
+          ? Object.entries(options.choices).map(([id, choice], index) => {
+            const { text, critical } = typeof choice === "string"
+              ? { text: choice, critical: false }
+              : { text: choice.text, critical: choice.critical === true };
+            return {
+              value: id,
+              type: critical ? "danger" : index === 0 ? "primary" : "secondary",
+              text,
+            };
+          })
+          : [
+            {
+              value: true,
+              type: options.critical ? "danger" : "primary",
+              text: options.confirm ?? getText("buttonOk"),
+            },
+            { value: false, type: "secondary", text: options.cancel ?? getText("buttonCancel") },
+          ];
+        const safe = answers[answers.length - 1]!.value;
+        const escapeConfirms = options.escapeConfirms === true && !options.choices;
+        // The answer first, the form back a task later: an answer that closes the dialog
+        // (Discard) settles it meanwhile, and then the question stays until it is gone.
+        // Rendering the form at once showed it for a moment before the dialog closed.
+        const answer = (value: unknown): void => {
+          if (question !== asked) return;
+          question = null;
+          resolve(value);
+          setTimeout(() => {
+            if (!cleanupSignal?.aborted) rerender();
+          });
+        };
+        const asked = {
+          note: {
+            message,
+            tone: options.critical || (options.choices && answers.some((a) => a.type === "danger"))
+              ? "error"
+              : "question",
+          } as const,
+          dismiss: () => answer(safe),
+          escape: () => answer(escapeConfirms ? answers[0]!.value : safe),
+          title: options.title,
+          views: answers.map((a, index): DialogButtonView => ({
+            role: index === answers.length - 1 ? "cancel" : "confirm",
+            separate: false,
+            type: a.type,
+            loading: false,
+            text: a.text,
+            onClick: () => answer(a.value),
+          })),
+        };
+        if (cleanupSignal?.aborted) {
+          resolve(safe);
+          return;
+        }
+        // A note shown before (a failed save) gives way to the question, and is gone after it.
+        note = null;
+        question = asked;
+        rerender();
+      })) as Ask;
+
+    cleanupSignal?.addEventListener("abort", () => question?.dismiss(), {
+      once: true,
+    });
+
+    // Whether the content says it has changes (React: `<Form dirty>`).
+    const isDirty = (): boolean => handle?.isDirty() ?? false;
 
     const toggleMaximize = (): void => {
       maximized = !maximized;
@@ -736,19 +863,24 @@ function createDialogScope<C extends object>(
         maximized,
         maximizeLabel: getText(maximized ? "labelRestore" : "labelMaximize"),
         onToggleMaximize: toggleMaximize,
-        themeVars,
+        theme,
         styles: getStyles(spec),
         hasForm: spec.allowsForm,
         nativeValidation: nativeValidation(spec),
-        buttons: buttonViews,
+        buttons: question ? question.views : buttonViews,
         // Enter triggers the primary (first) button — except on critical dialogs, where
         // there's no default so a destructive action can't be confirmed by accident.
-        defaultButtonIndex: spec.dialogType.endsWith("Critical") ? null : 0,
+        // Nothing while asking: Enter must not answer a question like "Discard?".
+        defaultButtonIndex:
+          question || spec.dialogType.endsWith("Critical") ? null : 0,
         spinnerOnly: false,
-        note,
+        // A question is shown in the note's box (and replaces a note shown before).
+        note: question?.note ?? note,
+        asking: question !== null,
+        askTitle: question?.title,
         render: config.render,
         onClose: closeAsCancel,
-        onCancel: closeAsCancel,
+        onCancel: () => (question ? question.escape() : closeAsCancel()),
         onNoteDismiss: dismissNote,
       },
       slots: {
@@ -845,19 +977,21 @@ function createDialogScope<C extends object>(
   // Form dialogs return a FormDialogHandle: awaiting it auto-accepts the first valid
   // submit; `for await` intercepts each submit so the caller can accept() or reject()
   // (the latter keeping the same dialog open and showing a note).
-  function openForm(spec: OpenDialogSpec): FormDialogHandle<any> {
+  function openForm(spec: OpenDialogSpec): FormDialogHandle<any, string, AnyFormAttempt> {
     const queue = createAttemptQueue();
     const cleanup = new AbortController();
     const localAbort = new AbortController();
     let iterating = false;
     let settled = false;
-    let resolveResult!: (value: FormDialogResult) => void;
+    // A request to close is in the loop and not answered yet (see guardClose).
+    let closePending = false;
+    let resolveResult!: (value: FormDialogResult<string>) => void;
 
-    const resultPromise = new Promise<FormDialogResult>((resolve) => {
+    const resultPromise = new Promise<FormDialogResult<string>>((resolve) => {
       resolveResult = resolve;
     });
 
-    const settle = (value: FormDialogResult): void => {
+    const settle = (value: FormDialogResult<string>): void => {
       if (settled) return;
       settled = true;
       resolveResult(value);
@@ -865,29 +999,83 @@ function createDialogScope<C extends object>(
       cleanup.abort();
     };
 
+    // The library's own discard question (FormAttempt.askDiscard, and the one a dirty
+    // `<Form>` asks by itself).
+    const askDiscard = (ask: Ask): Promise<boolean> =>
+      // Escape answers Discard: a second Escape leaves the form. Said in a line below the
+      // question, only where there is a keyboard.
+      ask(
+        matchMedia("(hover: hover)").matches
+          ? `${getText("questionDiscard")}\n${getText("hintEscapeDiscards")}`
+          : getText("questionDiscard"),
+        {
+          confirm: getText("buttonDiscard"),
+          cancel: getText("buttonKeepEditing"),
+          critical: true,
+          title: getText("titleUnsavedChanges"),
+          escapeConfirms: true,
+        },
+      );
+
     const formFlow: FormFlow = {
-      submit(data, raiseReject, stopSpinner) {
+      submit(data, raiseReject, stopSpinner, action, ask) {
         if (iterating) {
           queue.push({
+            kind: "submit",
+            action,
             data,
+            ask,
+            askDiscard: () => askDiscard(ask),
             accept(replacement) {
               settle({
                 canceled: false,
-                action: "confirm",
+                action,
                 data: replacement ?? data,
               });
             },
             reject(message, title) {
               stopSpinner();
-              raiseReject({ title, message });
+              raiseReject({ title, message, tone: "error" });
             },
           });
         } else {
-          settle({ canceled: false, action: "confirm", data });
+          settle({ canceled: false, action, data });
         }
       },
-      cancel() {
-        settle({ canceled: true, aborted: false });
+      cancel(stopSpinner, ask, isDirty) {
+        const guarded =
+          iterating && (spec.config as FormDialogConfig<any>).guardClose === true;
+        if (!guarded) {
+          // The content says it has changes (`<Form dirty>`): ask first, in the footer.
+          if (isDirty()) {
+            stopSpinner();
+            if (closePending) return;
+            closePending = true;
+            void askDiscard(ask).then((discard) => {
+              closePending = false;
+              if (discard) settle({ canceled: true, aborted: false });
+            });
+            return;
+          }
+          settle({ canceled: true, aborted: false });
+          return;
+        }
+        // The caller decides (see FormDialogConfig.guardClose), maybe by asking in a
+        // dialog of its own: no spinner on Cancel meanwhile, and one request at a time.
+        stopSpinner();
+        if (closePending) return;
+        closePending = true;
+        queue.push({
+          kind: "close",
+          accept() {
+            settle({ canceled: true, aborted: false });
+          },
+          reject() {
+            closePending = false;
+          },
+          ask,
+          askDiscard: () => askDiscard(ask),
+        });
       },
       abort() {
         settle({ canceled: true, aborted: true });
@@ -905,7 +1093,7 @@ function createDialogScope<C extends object>(
     // Same plain-object shape as openDialog, plus the async iterator. `iterating` flips
     // only when someone actually starts a `for await`, which is what decides between
     // auto-accepting the first valid submit and handing each one to the caller.
-    const interaction: FormDialogHandle<any> = {
+    const interaction: FormDialogHandle<any, string, AnyFormAttempt> = {
       get pending() {
         return !settled;
       },
@@ -947,7 +1135,7 @@ function createDialogScope<C extends object>(
     defaultTitle:
       `title${dialogType[0].toUpperCase()}${dialogType.slice(1)}` as TextKey,
     config,
-    buttons: dialogButtons[dialogType],
+    buttons: withActions(dialogButtons[dialogType], config.actions),
     allowsForm: dialogType.startsWith("form"),
   });
 

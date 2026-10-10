@@ -1,21 +1,9 @@
-/* BlockNote's stylesheet (the minutes editor) in a layer of its own: it imports Mantine's component styles again,
-   unlayered, which would otherwise win over the rules below (e.g. the breadcrumb's). Declared after Mantine's layer, so
-   it still wins over that one. */
-@import '@blocknote/mantine/style.css' layer(blocknote);
-
-/* The selected day of a date picker's calendar. BlockNote's copy of Mantine's `UnstyledButton` rule (`background:
-   transparent`, in the `blocknote` layer above Mantine's) wins over the one for `[data-selected]` in Mantine's layer, so
-   the clicked day kept a transparent background. Unlayered, so it wins over both. */
-.board-manager :is(.mantine-DatePicker-day, .mantine-DateTimePicker-day, .mantine-Calendar-day)[data-selected] {
-  background-color: var(--mantine-primary-color-filled);
-  color: var(--mantine-primary-color-contrast);
-
-  @media (hover: hover) {
-    &:hover:not([data-disabled], [data-static]) {
-      background-color: var(--mantine-primary-color-filled-hover);
-    }
-  }
-}
+/* BlockNote's styles (the minutes editor) in a layer of their own, after Mantine's, so they win over it. Without its
+   copy of Mantine's component styles (`style.css` = `mantineStyles.css` + these; 2026-10-10): the app loads Mantine's
+   styles itself, and the copy, in the later layer, overrode Mantine's own states (`UnstyledButton`'s `background:
+   transparent` hid the selected day of a calendar and the chosen hour and minute of a time picker; the day had a patch
+   of its own here before). */
+@import '@blocknote/mantine/blocknoteStyles.css' layer(blocknote);
 
 /* The frame of the board manager. Everything else is Mantine (its variables are set on `.board-manager`). */
 
@@ -33,8 +21,8 @@
 }
 
 /* The app fills the height of its element where that has one (2026-10-05; the root page's cockpit gives it its content
-   area): the top bar stays, the page below it scrolls (`.board-manager__main`). On a host page without a height (the
-   `<board-manager>` element, e.g. in XWiki) the app is as high as its content and the page scrolls: the top bar is
+   area): the app header stays, the page below it scrolls (`.board-manager__main`). On a host page without a height (the
+   `<board-manager>` element, e.g. in XWiki) the app is as high as its content and the page scrolls: the app header is
    sticky there (below). */
 .board-manager:has(> .board-manager__app),
 .board-manager__app {
@@ -53,13 +41,17 @@
   flex-direction: column;
   min-height: 0;
   overflow: auto;
+  /* No bounce at its ends (Firefox's elastic overscroll), and the page does not scroll on (2026-10-08, the user's
+     wish; the same for every scroll area of the apps and the components). */
+  overscroll-behavior: none;
 }
 
 /* A page with a table: every element from the page down to the table is a flex column that takes the rest of the height,
    and the table shrinks into it (`min-height: 0`), so its rows scroll and its toolbar, column headers and footer stay
-   (the data navigator's "fixed header and footer"). A short table keeps its own height. Pages without a table scroll
-   as a whole. `.board-manager__table` is around every table (`Navigator` in `shared.tsx`) and has no box of its own:
-   its child is the data navigator. Not in a drawer (outside `.board-manager__main`), which sets its table's height
+   (the data table's "fixed header and footer"). A short table grows into it too (`flex: 1 1 auto`), so its footer
+   is always at the bottom (its rows area takes the empty space). Pages without a table scroll
+   as a whole. `.board-manager__table` is around every table (`DataTable` in `shared.tsx`) and has no box of its own:
+   its child is the data table. Not in a drawer (outside `.board-manager__main`), which sets its table's height
    itself. */
 .board-manager__main :has(.board-manager__table) {
   display: flex;
@@ -73,13 +65,16 @@
 }
 
 .board-manager__main .board-manager__table > * {
+  flex: 1 1 auto;
   min-height: 0;
 }
 
-/* Always one line: the icon and the title keep their size, the breadcrumb takes the rest (its crumbs end with an
-   ellipsis when it is too short). A container: Back and Forward go when it is narrow (below). */
-.board-manager__top-bar {
-  container: board-manager-top-bar / inline-size;
+/* Two lines (2026-10-08, the Human Resources' trial, rolled out; one line with a menu of the modules on the title
+   before): the icon, the title, the modules as tabs, Back and Forward; below them the breadcrumb (its crumbs end with
+   an ellipsis when it is too short). A container: the tabs become a menu, and Back and Forward go, when it is narrow
+   (below). */
+.board-manager__app-header {
+  container: board-manager-app-header / inline-size;
   /* A container is a containing block for its popups (tooltips, menus), but Floating UI (Mantine's positioning) only
      knows that from `contain`: without it, they open far off to the side. */
   contain: layout;
@@ -90,32 +85,76 @@
   top: 0;
   z-index: 100;
   flex: none;
+  background: var(--mantine-color-body);
+  /* The app's frame (icon, title, tabs, breadcrumb): not selectable, like the demo page's own header. */
+  user-select: none;
+}
+
+.board-manager__app-header-row {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
   gap: var(--mantine-spacing-xs) var(--mantine-spacing-lg);
   padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
-  border: 1px solid var(--mantine-color-default-border);
-  border-radius: var(--mantine-radius-sm);
-  background: var(--mantine-color-body);
-  /* The app's frame (icon, title menu, breadcrumb): not selectable, like the demo page's own header. */
-  user-select: none;
 }
 
 .board-manager__title {
-  padding: 4px 6px;
+  padding: 4px 6px 4px 2px;
+  white-space: nowrap;
+}
+
+/* The modules as tabs: the current one (also on its records' pages) in the accent's light ground. */
+.board-manager__modules {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 2px;
+  min-width: 0;
+}
+
+.board-manager__module {
+  padding: 5px 10px;
   border-radius: var(--mantine-radius-sm);
+  color: var(--mantine-color-dimmed);
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:hover {
+    background: var(--mantine-color-default-hover);
+    color: var(--mantine-color-text);
+  }
+
+  &[aria-current] {
+    background: var(--mantine-primary-color-light);
+    color: var(--mantine-primary-color-light-color);
+  }
 }
 
-.board-manager__title:hover {
-  background: var(--mantine-color-default-hover);
+/* The tabs as a menu: only while the app header is narrow (below). */
+.board-manager__module-menu {
+  display: none;
+  padding: 4px 8px;
+  border-radius: var(--mantine-radius-sm);
+  white-space: nowrap;
+
+  &:hover {
+    background: var(--mantine-color-default-hover);
+  }
 }
 
+/* The breadcrumb's line, below the tabs. No frame around the app header (2026-10-08, the user's wish; one with rounded
+   corners around both lines before): only a line between the two, in the gray of the tiles' borders (Mantine's
+   `Paper`: gray-3, dark-4 in the dark scheme, below). */
 .board-manager__crumbs {
-  flex: 0 1 auto;
   flex-wrap: nowrap;
   min-width: 0;
   overflow: hidden;
+  padding: 6px var(--mantine-spacing-sm);
+  border-top: 1px solid var(--mantine-color-gray-3);
+
+  .board-manager[data-mantine-color-scheme='dark'] & {
+    border-top-color: var(--mantine-color-dark-4);
+  }
 
   /* Every crumb may shrink to an ellipsis; Home (its icon and text) and the separators keep their size. */
   & > .mantine-Breadcrumbs-breadcrumb {
@@ -123,6 +162,11 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    /* Room inside the clip (2026-10-09, the user's find): with `overflow: hidden` and Mantine's `line-height: 1`, the
+       last pixel of the text (descenders, the hover underline) was cut off. Taken back outside, so the line keeps its
+       height. */
+    padding-block: 2px;
+    margin-block: -2px;
   }
 
   & > .board-manager__home,
@@ -131,14 +175,24 @@
   }
 }
 
-/* Back and Forward (at the end of the top bar) only where there is room for them next to the title and a breadcrumb. */
-@container board-manager-top-bar (width < 40rem) {
+@container board-manager-app-header (width < 56rem) {
+  .board-manager__modules {
+    display: none;
+  }
+
+  .board-manager__module-menu {
+    display: block;
+  }
+}
+
+/* Back and Forward (at the end of the app header) only where there is room for them next to the title and the menu. */
+@container board-manager-app-header (width < 40rem) {
   .board-manager__history {
     display: none;
   }
 }
 
-/* The app icon at the start of the top bar: only an icon, not a link (2026-10-04: the first crumb leads home). */
+/* The app icon at the start of the app header: only an icon, not a link (2026-10-04: the first crumb leads home). */
 .board-manager__app-icon {
   display: inline-flex;
   border-radius: var(--mantine-radius-sm);
@@ -183,47 +237,62 @@
   user-select: none;
 }
 
-/* The message of an invalid field as a badge below it (2026-10-02, taken from the overlays' React demo,
-   `packages/overlays/src/demo/react.css`): white (the body color) with a border and text in the danger color, and a shadow (2026-10-06, to try; filled before), with an arrow pointing up in front (no nose since 2026-10-06, the user's wish).
-   Only the focused field shows its badge (at most one on screen); it hangs over the field below, so
-   nothing moves when a message comes or goes. The red frame of an invalid field stays Mantine's.
-   For every Mantine input (the shared classes: `InputWrapper`, `Input`), not only `TextInput`; `:focus-within`, since
-   the focused element of a textarea or a select is no `<input>`. Absolute, not fixed: it stays with its field when a
-   dialog's body scrolls. */
-.board-manager .mantine-InputWrapper-root {
-  position: relative;
-}
+/* The message of an invalid field: a popover below it (`FieldError`, 2026-10-06, the user's wish; an absolutely
+   placed badge before, which a dialog's scrolling body could cut off). The look is the badge it was (2026-10-02, taken
+   from the overlays' React demo): the body color with a border and text in the danger color, a shadow, an arrow
+   pointing at the field in front (down when the popover is above it). Only the focused field shows it (at most one on
+   screen). The red frame of an invalid field stays Mantine's. For every Mantine input (the shared classes:
+   `InputWrapper`, `Input`). */
 
-/* Mantine reserves room under the input for the message; the badge is out of the flow, so that would only push the
+/* Mantine reserves room under the input for the message; the popover is out of the flow, so that would only push the
    next field down. */
 .board-manager .mantine-InputWrapper-root .mantine-Input-wrapper {
   margin-bottom: 0;
 }
 
-.board-manager .mantine-InputWrapper-error,
-.board-manager .board-manager__upload::part(error) {
+/* Mantine's error element only holds the popover (and keeps its id for the input's `aria-describedby`): no box, and
+   the message's plain text (for a place without a field, see `FieldError`) hidden. */
+.board-manager .mantine-InputWrapper-error {
   position: absolute;
-  z-index: 1;
-  top: 100%;
-  inset-inline-start: 0;
-  max-width: 100%;
-  width: max-content;
-  margin-block-start: 0.2em;
+  inline-size: 0;
+  block-size: 0;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+
+  & .board-manager__field-error-text {
+    display: none;
+  }
+}
+
+/* The popover: placed by `FieldError` (`top`, `left`, inline); the browser's own look of a popover undone. No
+   `display` here: a closed popover is hidden by it. */
+.board-manager__field-error {
+  inset: auto;
+  max-inline-size: min(24rem, calc(100vw - 16px));
+  margin: 0;
+  overflow: visible;
+}
+
+.board-manager__field-error,
+.board-manager .board-manager__upload::part(error) {
   padding: 0.35em 0.65em;
   border-radius: 0.25em;
-  border: 1px solid color-mix(in srgb, var(--mantine-color-error) 35%, var(--mantine-color-body));
-  background: var(--mantine-color-body);
-  color: var(--mantine-color-error);
+  /* White on the error color (2026-10-10, the user's wish; the error color on the body's, with a light red border,
+     before). */
+  border: 1px solid var(--mantine-color-error);
+  background: var(--mantine-color-error);
+  color: var(--mantine-color-white);
+  font-family: var(--mantine-font-family);
   font-size: calc(var(--mantine-font-size-xs) + 1px);
   font-weight: 500;
   line-height: 1.35;
   box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
 }
 
-/* The arrow pointing up at the field: a mask in the text's color (Tabler's `arrow-up`, stroked). Decoration only.
-   Inline, not a flex row: the upload's part has the `hidden` attribute while it is empty, which a `display` there would
-   override. Not nested (`&` is an `:is()`, which cannot hold `::part()`). */
-.board-manager .mantine-InputWrapper-error::before,
+/* The arrow pointing at the field: a mask in the text's color (Tabler's `arrow-up`, stroked), turned when the popover
+   is above the field. Decoration only. Not nested (`&` is an `:is()`, which cannot hold `::part()`). */
+.board-manager__field-error::before,
 .board-manager .board-manager__upload::part(error)::before {
   content: '';
   display: inline-block;
@@ -236,44 +305,43 @@
     center / contain no-repeat;
 }
 
-/* Hidden, not unmounted: the input's `aria-describedby` points here. */
-.board-manager .mantine-InputWrapper-error {
-  display: flex;
-  align-items: center;
-  gap: 0.5em;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-0.25em);
+.board-manager__field-error[data-side='top']::before {
+  rotate: 180deg;
+}
 
-  &::before {
-    margin-inline-end: 0;
+/* Fades in (from a little closer to the field), cuts out. */
+.board-manager__field-error:popover-open {
+  opacity: 1;
+  translate: 0 0;
+  transition: opacity 140ms ease-out, translate 140ms ease-out;
+
+  @starting-style {
+    opacity: 0;
+    translate: 0 -0.25em;
   }
 }
 
-/* The file upload (`DocumentUpload`, in the upload drawer): its error is a part of its shadow DOM, below its frame, with
-   the same badge; always shown (it is `hidden` without a message). The host is the positioned ancestor. */
-.board-manager .board-manager__upload {
-  position: relative;
-}
-
-/* Fades in, cuts out: the transition only on the shown state. */
-.board-manager .mantine-InputWrapper-root:focus-within .mantine-InputWrapper-error {
-  opacity: 1;
-  visibility: visible;
-  transform: none;
-  transition: opacity 140ms ease-out, transform 140ms ease-out;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .board-manager .mantine-InputWrapper-root:focus-within .mantine-InputWrapper-error {
+  .board-manager__field-error:popover-open {
     transition: none;
   }
 }
 
-/* Not while a date input's calendar is open: it would lie half under the calendar. The calendar (`data-dates-dropdown`)
-   is in the field's wrapper (no portal) and mounted only while open. After the rule above, so it wins. */
-.board-manager .mantine-InputWrapper-root:has([data-dates-dropdown]) .mantine-InputWrapper-error {
-  visibility: hidden;
+/* The file upload (`DocumentUpload`, in the upload drawer): its error is a part of its shadow DOM, which cannot be a
+   popover; the same look, as a badge below its frame (the host is its positioned ancestor), always shown (the part is
+   `hidden` without a message). */
+.board-manager .board-manager__upload {
+  position: relative;
+}
+
+.board-manager .board-manager__upload::part(error) {
+  position: absolute;
+  z-index: 10;
+  top: 100%;
+  inset-inline-start: 0;
+  max-width: 100%;
+  width: max-content;
+  margin-block-start: 0.2em;
 }
 
 /* The minutes editor (BlockNote, `minutes.tsx`) in the minutes drawer: framed like a Mantine input, room for a few
@@ -386,4 +454,49 @@
   height: auto;
   background: white;
   box-shadow: 0 1px 4px rgb(0 0 0 / 0.2);
+}
+
+/* The start page's charts: the grid wraps by minimum width. */
+.board-manager-home-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: var(--mantine-spacing-md);
+}
+
+.board-manager-home-charts__wide {
+  grid-column: span 2;
+}
+
+@media (max-width: 40rem) {
+  .board-manager-home-charts__wide {
+    grid-column: auto;
+  }
+}
+
+.board-manager-home-charts__title {
+  align-self: flex-start;
+}
+
+/* The start page's date block of a meeting: the month small above the day. */
+.board-manager-home-date {
+  flex: none;
+  width: 2.75rem;
+  padding: 4px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.1;
+  border-radius: var(--mantine-radius-sm);
+  background: var(--mantine-color-gray-light);
+  color: var(--mantine-color-gray-light-color);
+}
+
+.board-manager-home-date__month {
+  font-size: var(--mantine-font-size-xs);
+  text-transform: uppercase;
+}
+
+.board-manager-home-date__day {
+  font-size: var(--mantine-font-size-lg);
+  font-weight: 700;
 }

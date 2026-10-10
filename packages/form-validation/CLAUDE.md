@@ -4,24 +4,17 @@ Form validation for React with Zod 4: a `useForm` hook, defined once per app wit
 The schema is the single source of truth, the rendering stays with the app's own field components.
 The behavior and the open points are described in `README.md`.
 
+## Conventions
+
+The general rules (copies of the repository's master, `docs/conventions/`):
+
+@docs/conventions/general.md
+@docs/conventions/typescript.md
+@docs/conventions/i18n.md
+@docs/conventions/react.md
+
 ## Working rules
 
-- Design first: discuss the API step by step.
-  - Do NOT implement anything until the user gives an explicit GO.
-- Keep answers short: not longer than necessary to understand them. No long recaps or lists of what was done.
-  One topic per step.
-- When offering alternatives, number them, add small code examples, and always state which one is proposed and
-  how confident that proposal is (e.g. a percentage).
-- Prefer bullet lists over prose, in answers and in this file, wherever reasonable.
-- English is the language of the project: code, comments, docs, specs and rules. Never German there.
-  - Exception: translated texts, like the message catalogs in `src/messages/` and the German labels in the tests.
-  - The conversation may be German.
-- Never run `git commit` or `git push`.
-  - The user does this personally.
-  - This overrides any default attribution or commit guidance.
-- Never read, list or scan anything outside this project folder.
-  - This includes sibling projects, parent folders, the repo root and the home directory (e.g. `~/.claude`).
-  - Only the user may explicitly grant an exception for a specific path.
 - Always add behavior details we decide (also small ones) to `README.md`, in the same step as the code.
 - Add coding guidelines to this file whenever they result from our discussion, and tell the user.
 
@@ -30,7 +23,9 @@ The behavior and the open points are described in `README.md`.
 - TypeScript (strict), Vite (library mode), npm. React hook, no custom element.
 - No runtime dependencies. Peer dependencies: `react` (`>=19`) and `zod` (`^4`), both outside the build.
 - Tests: Vitest with jsdom, `@testing-library/react` and `@testing-library/user-event` (`src/**/*.test.ts(x)`, with
-  `vitest.setup.ts`). No demo for now.
+  `vitest.setup.ts`).
+- A small demo (2026-10-07; `npm run dev`): a React sign-up form with the demo's own field components, the app's
+  keys in English and German (following `<html lang>`), a made-up server (a taken email, a failing name).
 - npm never runs install scripts of dependencies: `.npmrc` has `ignore-scripts=true`.
 - npm only installs versions that are at least 7 days old: `.npmrc` has `min-release-age=7`.
 - `.editorconfig`: 2 spaces, LF, UTF-8, max line length 120
@@ -49,7 +44,15 @@ The behavior and the open points are described in `README.md`.
 - `src/meta.ts`: `formMeta` (an own Zod registry) and `binding`. `src/merge.ts`: `mergeProps` (chained handlers,
   combined refs).
 - `src/defineUseForm.test.tsx`: the tests.
+- `demo/`: the demo (not part of the library; typechecked with it). `FormValidationDemo.ts`: the whole demo as a light DOM
+  custom element (exported, not registered; see "Demo element" in the `CLAUDE.md` of the file upload; the root page
+  registers it as `form-validation-demo`). `FormDemo.tsx`: the form and the schema. `fields.tsx`: text, select and
+  checkbox field components. `FieldMessage.tsx`: the message of a field as a popover (2026-10-07, the user's wish; a copy of
+  the Board Manager's `FieldError` of the root page, for a plain input: in the top layer, shown while the field has the
+  focus, placed by script below the control, the arrow up or down; its CSS in `demo.css`). `useForm.ts`: `defineUseForm` once. `i18n.ts`: texts and adapter. `demo.css`, `ui/` (the
+  design language, a copy of `packages/ui-theme/src`), `main.ts` + `index.html` (the standalone page).
 - Commands:
+  - `npm run dev`: the demo
   - `npm run build`: typecheck + library build (`dist/index.js`)
   - `npm run typecheck`
   - `npm test`: Vitest (once). `npm run test:watch`: watch mode
@@ -58,14 +61,7 @@ The behavior and the open points are described in `README.md`.
 
 ## Code rules
 
-- Named exports only, never `export default`.
-  - Per file, exports are declared in exactly two places, directly after the import statements at the top:
-    - at most one `export { ... }` for implementations
-    - at most one `export type { ... }` for types
-  - Never put `export` on the declarations themselves, and no `export ... from` re-exports (import, then export).
-  - The public API is exactly what `src/index.ts` re-exports. Everything else is internal.
-- Every public API change comes with a Vitest test.
-- Ask before adding a dependency.
+- No `export ... from` re-exports (import, then export).
 
 ## TODO
 
@@ -84,4 +80,4 @@ The behavior and the open points are described in `README.md`.
   Zod internals (`_zod.def`, issue fields), `z.ZodObject<any>`, and the props of `field.x()` / `form()`
   (`Record<string, any>`, so they can be spread into any component). Decide whether and how to remove it.
 - The tests do not run in the root's deploy workflow (`.github/workflows/deploy-demo.yml`, which runs the tests of
-  `data-navigator` and `file-upload` before publishing the demo page). Decide whether to add them there.
+  `data-table` and `file-upload` before publishing the demo page). Decide whether to add them there.

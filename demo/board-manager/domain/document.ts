@@ -1,6 +1,6 @@
 export type { MeetingDocument };
 
-// The type is the extension in capitals (`PDF`), like in the media manager.
+// The type is the extension in capitals (`PDF`), like in the File Center.
 type MeetingDocument = {
   id: string;
   meetingId: string;

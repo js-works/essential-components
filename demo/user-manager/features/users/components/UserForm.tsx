@@ -1,76 +1,38 @@
-import { NativeSelect, Stack, Switch, Text, TextInput } from '@mantine/core';
-import { useState } from 'react';
+import { NativeSelect, Stack, Switch, TextInput } from '@mantine/core';
 import type { ReactElement } from 'react';
-import { Form } from '../../../../../packages/overlays/src/main/bindings/react';
+import { z } from 'zod';
 import type { User, UserValues } from '../../../domain';
-import { useDialogSave } from '../../../shared/lib/useDialogSave';
+import { useForm } from '../../../shared/lib/useForm';
 
 export { DEPARTMENTS, UserForm };
 
 const DEPARTMENTS = ['Management', 'Marketing', 'Sales', 'Finance', 'Human Resources', 'IT', 'Legal', 'Operations'];
 
-// A new user, or a user's data, as the content of a form dialog. Name and a valid email are required; the server
-// refuses an email another user has.
+// A new user, or a user's data, as the content of a form dialog, validated by form-validation (2026-10-06; a check of
+// its own before): the name is required, the email required and valid; the server refuses an email another user has.
+const userSchema = z.object({
+  name: z.string().trim().min(1),
+  email: z.email(),
+  title: z.string().trim().default(''),
+  department: z.string().min(1),
+  active: z.boolean().default(true),
+});
+
 function UserForm({ user, save }: { user?: User; save: (values: UserValues) => Promise<void> }): ReactElement {
-  const [values, setValues] = useState<UserValues>({
-    name: user?.name ?? '',
-    email: user?.email ?? '',
-    title: user?.title ?? '',
-    department: user?.department ?? DEPARTMENTS[0] ?? '',
-    active: user?.active ?? true,
+  const { DialogForm, field } = useForm(userSchema, {
+    initial: user ?? { department: DEPARTMENTS[0], active: true },
+    submit: save,
   });
-  const { error, setError, confirm } = useDialogSave(
-    () =>
-      values.name.trim() === ''
-        ? 'Please enter a name.'
-        : !/^\S+@\S+\.\S+$/.test(values.email.trim())
-        ? 'Please enter a valid email address.'
-        : undefined,
-    () => save(values),
-  );
-  const set = <K extends keyof UserValues>(key: K, value: UserValues[K]) => {
-    setValues((current) => ({ ...current, [key]: value }));
-    setError(undefined);
-  };
 
   return (
-    <Form confirm={confirm}>
+    <DialogForm>
       <Stack gap="sm">
-        <TextInput
-          label="Name"
-          required
-          data-autofocus
-          autoComplete="off"
-          value={values.name}
-          onChange={(event) => set('name', event.currentTarget.value)}
-        />
-        <TextInput
-          label="Email"
-          required
-          type="email"
-          autoComplete="off"
-          value={values.email}
-          onChange={(event) => set('email', event.currentTarget.value)}
-        />
-        <TextInput
-          label="Title"
-          autoComplete="off"
-          value={values.title}
-          onChange={(event) => set('title', event.currentTarget.value)}
-        />
-        <NativeSelect
-          label="Department"
-          data={DEPARTMENTS}
-          value={values.department}
-          onChange={(event) => set('department', event.currentTarget.value)}
-        />
-        <Switch
-          label="Active (may sign in and has access)"
-          checked={values.active}
-          onChange={(event) => set('active', event.currentTarget.checked)}
-        />
-        {error !== undefined && <Text size="sm" c="red">{error}</Text>}
+        <TextInput data-autofocus autoComplete="off" {...field.name({ label: 'Name' })} />
+        <TextInput type="email" autoComplete="off" {...field.email({ label: 'Email' })} />
+        <TextInput autoComplete="off" {...field.title({ label: 'Title' })} />
+        <NativeSelect data={DEPARTMENTS} {...field.department({ label: 'Department' })} />
+        <Switch {...field.active({ label: 'Active (may sign in and has access)' })} />
       </Stack>
-    </Form>
+    </DialogForm>
   );
 }

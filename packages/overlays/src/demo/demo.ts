@@ -1,6 +1,6 @@
 import { html, render } from "lit";
 
-import { createDialogsController, createToastController } from "../main/index.js";
+import { createDialogsController, createDialogTheme, createToastController } from "../main/index.js";
 
 // The lit adapters live behind their own entry point (published as "@local/overlays/lit") so the
 // main entry stays framework-free.
@@ -29,7 +29,7 @@ function log(label: string, value?: unknown): void {
 
 // `data` only exists on the non-canceled member of the result union, so narrow
 // before reading it.
-function logFormResult(label: string, result: FormDialogResult): void {
+function logFormResult(label: string, result: FormDialogResult<string>): void {
   if (result.canceled) {
     log(`${label} (canceled)`, result);
   } else {
@@ -135,9 +135,15 @@ function reconfigureToasts(): void {
 // A single controller for the whole page. getText / icons are optional;
 // omitting them uses the library's built-in English texts and default icons, and the
 // library's own (native) action buttons.
+// The demo's primary color: the dialogs' primary buttons, and the focus of the form fields below.
+const DEMO_PRIMARY = "#1677ff";
+
 const dialogs = createDialogsController({
   adapter: litDialogAdapter,
   icons: true,
+  // The demo's primary color (2026-10-10: through the theme; the library read the page's
+  // --theme-color-primary-500 before).
+  theme: createDialogTheme({ primaryBackground: DEMO_PRIMARY }),
 });
 
 // Example form content, built from plain native form controls — no component library
@@ -153,7 +159,7 @@ interface FormValues {
   subscribe?: boolean;
 }
 
-const formContent = (values: FormValues = {}) => html`
+const formContent = (values: FormValues = {}, { dateOfBirth = true } = {}) => html`
   <label class="field">
     <span class="label-text">Name</span>
     <input
@@ -175,16 +181,20 @@ const formContent = (values: FormValues = {}) => html`
       autocomplete="off"
     />
   </label>
-  <label class="field">
-    <span class="label-text">Date of birth</span>
-    <input
-      type="date"
-      name="dateOfBirth"
-      value=${values.dateOfBirth ?? ""}
-      required
-      autocomplete="off"
-    />
-  </label>
+  ${dateOfBirth
+  ? html`
+    <label class="field">
+      <span class="label-text">Date of birth</span>
+      <input
+        type="date"
+        name="dateOfBirth"
+        value=${values.dateOfBirth ?? ""}
+        required
+        autocomplete="off"
+      />
+    </label>
+  `
+  : null}
   <label class="check">
     <input
       type="checkbox"
@@ -241,16 +251,16 @@ const formStyles = `
   /* Same focus treatment as the demo page's own buttons. */
   .field input:focus-visible,
   .check input:focus-visible {
-    outline: 2px solid var(--theme-color-primary-500, #007EC6);
+    outline: 2px solid ${DEMO_PRIMARY};
     outline-offset: 1px;
-    border-color: var(--theme-color-primary-500, #007EC6);
+    border-color: ${DEMO_PRIMARY};
   }
 
   .check input {
     width: 1rem;
     height: 1rem;
     margin: 0;
-    accent-color: var(--theme-color-primary-500, #007EC6);
+    accent-color: ${DEMO_PRIMARY};
   }
 `;
 
@@ -329,12 +339,32 @@ async function openByType(type: DialogType): Promise<void> {
       );
       break;
     case "form": {
-      const result = await dialogs.form({
+      // Iterated with `guardClose`, like the drawer: after a change, Cancel asks in place of the form.
+      let changed = false;
+      const onChange = () => (changed = true);
+      const form = dialogs.form({
         intro: "Please fill out the form.",
-        content: formContent(),
+        content: html`<div style="display: contents" @input=${onChange} @change=${onChange}>
+          ${formContent()}
+        </div>`,
         styles: formStyles,
+        guardClose: true,
       });
-      logFormResult("Form result", result);
+      for await (const attempt of form) {
+        if (attempt.kind === "close") {
+          const discard =
+            !changed ||
+            (await attempt.askDiscard());
+          if (discard) {
+            attempt.accept();
+          } else {
+            attempt.reject();
+          }
+          continue;
+        }
+        attempt.accept();
+      }
+      logFormResult("Form result", await form);
       break;
     }
     case "formCritical": {
@@ -698,8 +728,13 @@ async function runLogin(): Promise<void> {
 
 // The drawer surface (`surface: "drawer"`): the same form contract as runLogin() above, on a
 // full-height panel at the inline-end edge. Iterated rather than plain-awaited: a wide edit panel is exactly
-// where you don't want to close on submit and lose what was typed.
+// where you don't want to close on submit and lose what was typed. With `guardClose`, Cancel, Escape and the
+// close button come through the loop too: after a change, it asks before discarding.
 async function runDrawer(): Promise<void> {
+  // Whether the user has changed anything: only the caller (or its content) can know.
+  let changed = false;
+  const onChange = () => (changed = true);
+
   // Opening a scope first is what makes the 1.5s load visible: the scope puts up the
   // spinner placeholder after SPINNER_DIALOG_DELAY_MS and swaps in the real drawer when
   // it's ready — the same shape as runSlow() above, which is how you'd fetch the record
@@ -714,17 +749,33 @@ async function runDrawer(): Promise<void> {
       // more still widens it.
       width: "wide",
       title: "Edit customer",
-      content: formContent({
-        name: "Jane Doe",
-        email: "jane.doe@example.com",
-        dateOfBirth: "1988-04-17",
-        subscribe: true,
-      }),
+      content: html`<div style="display: contents" @input=${onChange} @change=${onChange}>
+        ${formContent({
+          name: "Jane Doe",
+          email: "jane.doe@example.com",
+          dateOfBirth: "1988-04-17",
+          subscribe: true,
+        })}
+      </div>`,
       styles: formStyles,
       buttons: { confirm: "Save" },
+      guardClose: true,
     });
 
     for await (const attempt of drawer) {
+      if (attempt.kind === "close") {
+        // Asked in place of the drawer's content, no second dialog: the drawer and what was typed stay.
+        const discard =
+          !changed ||
+          (await attempt.askDiscard());
+        if (discard) {
+          attempt.accept();
+        } else {
+          attempt.reject();
+        }
+        continue;
+      }
+
       // Stand-in for a server round-trip; the Save button shows its spinner meanwhile.
       await new Promise((resolve) => setTimeout(resolve, 1200));
 
@@ -739,6 +790,109 @@ async function runDrawer(): Promise<void> {
   } finally {
     scope.dispose();
   }
+}
+
+// Buttons of the dialog's own (`actions`): "Save draft" with the built-in ones, "Discard" (danger) and
+// "Not now" (link) separate, on the footer's other side. The result's `action` is typed by their ids.
+async function runActions(): Promise<void> {
+  const result = await dialogs.confirm({
+    title: "Unsaved changes",
+    content: "Save your changes before leaving?",
+    buttons: { confirm: "Save" },
+    actions: {
+      draft: "Save draft",
+      discard: { text: "Discard", variant: "danger" },
+      later: { text: "Not now", variant: "link" },
+    },
+  });
+  log("Actions result", result); // action: "confirm" | "draft" | "discard" | "later"
+}
+
+// The same on a form: "Save draft" validates like Save, "Delete" (validate: false) does not; both carry the
+// form's data.
+async function runFormActions(): Promise<void> {
+  const result = await dialogs.form({
+    title: "Edit customer",
+    content: formContent({ name: "Jane Doe", email: "jane.doe@example.com" }),
+    styles: formStyles,
+    buttons: { confirm: "Save" },
+    actions: {
+      draft: "Save draft",
+      delete: { text: "Delete", variant: "danger", validate: false },
+    },
+  });
+  logFormResult("Form actions result", result);
+}
+
+// A question with three answers (`ask` with `choices`): Cancel on a changed form asks Save, Discard or Keep
+// editing. The ids are the result's type; the last choice is the safe one (Escape answers it).
+async function runAskSave(): Promise<void> {
+  let changed = false;
+  const onChange = () => (changed = true);
+
+  const form = dialogs.form({
+    title: "Edit customer",
+    content: html`<div style="display: contents" @input=${onChange} @change=${onChange}>
+      ${formContent({ name: "Jane Doe", email: "jane.doe@example.com" }, { dateOfBirth: false })}
+    </div>`,
+    styles: formStyles,
+    buttons: { confirm: "Save" },
+    guardClose: true,
+  });
+
+  for await (const attempt of form) {
+    if (attempt.kind === "close") {
+      const answer = !changed
+        ? "discard"
+        : await attempt.ask("Save your changes before leaving?", {
+          title: "Unsaved changes",
+          choices: {
+            save: "Save",
+            discard: { text: "Discard", critical: true },
+            keep: "Keep editing",
+          },
+        });
+      if (answer === "keep") {
+        attempt.reject();
+      } else {
+        attempt.accept();
+        log("Cancel answered", answer);
+      }
+      continue;
+    }
+    attempt.accept();
+  }
+  logFormResult("Ask (save) result", await form);
+}
+
+// A question on submit (`ask` with its own texts): the name "Jane Doe" exists already, overwrite it? "Choose
+// another name" keeps the form open with everything typed, with a note.
+async function runAskOverwrite(): Promise<void> {
+  const form = dialogs.form({
+    title: "New customer",
+    content: formContent({ name: "Jane Doe" }, { dateOfBirth: false }),
+    styles: formStyles,
+    buttons: { confirm: "Save" },
+  });
+
+  for await (const attempt of form) {
+    if (attempt.data.string("name", "") === "Jane Doe") {
+      const overwrite = await attempt.ask("A customer named Jane Doe exists already. Overwrite it?", {
+        title: "Customer exists",
+        confirm: "Overwrite",
+        cancel: "Choose another name",
+        critical: true,
+      });
+      if (!overwrite) {
+        attempt.reject("Please choose another name.", "Customer exists");
+        continue;
+      }
+    }
+    // Stand-in for a server round-trip; the Save button shows its spinner meanwhile.
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    attempt.accept();
+  }
+  logFormResult("Ask (overwrite) result", await form);
 }
 
 // The same drawer surface with destructive styling: danger-coloured confirm button, and
@@ -912,6 +1066,30 @@ const dialogsPanel = html`
           </button>
           <button class="ui-button" @click=${() => void runDrawerCritical()}>
             Delete in drawer (critical)
+          </button>
+        </div>
+      </section>
+
+      <section class="ui-stack ui-stack--tight">
+        <h2 class="ui-heading">Questions in a form dialog</h2>
+        <div class="overlays-row">
+          <button class="ui-button" @click=${() => void runAskSave()}>
+            Save, discard or keep editing (3 answers)
+          </button>
+          <button class="ui-button" @click=${() => void runAskOverwrite()}>
+            Overwrite on submit (name "Jane Doe")
+          </button>
+        </div>
+      </section>
+
+      <section class="ui-stack ui-stack--tight">
+        <h2 class="ui-heading">Actions</h2>
+        <div class="overlays-row">
+          <button class="ui-button" @click=${() => void runActions()}>
+            Confirm with own actions
+          </button>
+          <button class="ui-button" @click=${() => void runFormActions()}>
+            Form with own actions
           </button>
         </div>
       </section>

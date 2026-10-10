@@ -1,28 +1,19 @@
-import { Group, NativeSelect, Stack, Textarea, TextInput } from "@mantine/core";
-import { DateTimePicker } from "@mantine/dates";
-import { useRef } from "react";
-import type { FocusEvent, ReactElement } from "react";
-import { z } from "zod";
-import type { FileUpload } from "../../../packages/file-upload/src";
-import { binding } from "../../../packages/form-validation/src";
-import { normalizeWebsite, ROLES } from "../domain";
-import type {
-  AgendaItem,
-  AgendaSection,
-  Board,
-  Meeting,
-  MeetingDocument,
-  Organization,
-  Person,
-  Role,
-} from "../domain";
-import { MinutesEditor } from "../features/meetings/components/minutes";
-import { db, suggestPeople } from "../infra/in-memory";
-import { countryOptions } from "./lib/countries";
-import { useTranslate } from "./lib/i18n";
-import { useForm } from "./lib/useForm";
-import { AsyncSelect } from "./ui/AsyncSelect";
-import { DocumentUpload } from "./ui/DocumentUpload";
+import { Group, NativeSelect, Select, SimpleGrid, Stack, Textarea, TextInput } from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
+import { useRef } from 'react';
+import type { FocusEvent, ReactElement } from 'react';
+import { z } from 'zod';
+import type { FileUpload } from '../../../packages/file-upload/src';
+import { binding } from '../../../packages/form-validation/src';
+import { normalizeWebsite, ROLES } from '../domain';
+import type { AgendaItem, AgendaSection, Board, Meeting, MeetingDocument, Organization, Person, Role } from '../domain';
+import { MinutesEditor } from '../features/meetings/components/minutes';
+import { db, suggestPeople } from '../infra/in-memory';
+import { countryOptions } from './lib/countries';
+import { useTranslate } from './lib/i18n';
+import { useForm } from './lib/useForm';
+import { AsyncSelect } from './ui/AsyncSelect';
+import { DocumentUpload } from './ui/DocumentUpload';
 
 export {
   AgendaItemForm,
@@ -46,10 +37,10 @@ export {
 // the form's own for a factory), the messages from form-validation's catalogs. Mantine's `error` gets the message, or
 // `true` (red, without a text) for a field that turned invalid while being edited.
 // Selects are native (a Mantine select would open outside the modal dialog), except the person of a new member: an
-// `AsyncSelect` (`AsyncSelect.tsx`), its popup in the dialog like the date picker's. The date and time is Mantine's
-// `DateTimePicker`, no native picker: its popup stays in the dialog (no portal, see the theme), and a fixed position
-// keeps the dialog's scrolling body from clipping it. A field only some dialogs show (the board of a new meeting, the
-// person of a new member) gets a second schema, so it is required only there.
+// `AsyncSelect` (`AsyncSelect.tsx`), its popup in the dialog like the date picker's, and the time of a meeting. The
+// date is Mantine's `DatePickerInput`, no native picker: its popup stays in the dialog (no portal, see the theme), and a
+// fixed position keeps the dialog's scrolling body from clipping it. A field only some dialogs show (the board of a new
+// meeting, the person of a new member) gets a second schema, so it is required only there.
 
 type Save<S extends z.ZodType> = (values: z.output<S>) => Promise<void>;
 
@@ -65,20 +56,20 @@ const uploadSchema = z.object({
     .refine(
       (files) =>
         !files.some(
-          (file) => file.status === "error" || file.status === "aborted",
+          (file) => file.status === 'error' || file.status === 'aborted',
         ),
-      "errors.uploadFailed",
+      'errors.uploadFailed',
     )
     .refine(
-      (files) => files.every((file) => file.status === "done"),
-      "errors.uploadPending",
+      (files) => files.every((file) => file.status === 'done'),
+      'errors.uploadPending',
     ),
 });
 
 const uploadFiles = binding({
   fromComponent: (items: readonly FileUpload.FileItem[]) => {
     const files = items
-      .filter((item) => item.status !== "rejected")
+      .filter((item) => item.status !== 'rejected')
       .map(({ status, result }) => ({ status, result }));
 
     return files.length === 0 ? undefined : files;
@@ -95,7 +86,7 @@ function UploadForm({
   onChange?: (items: readonly FileUpload.FileItem[]) => void;
 }): ReactElement {
   const { DialogForm, field } = useForm(uploadSchema, {
-    labels: "upload",
+    labels: 'upload',
     submit: save,
   });
 
@@ -114,7 +105,7 @@ function UploadForm({
 
 const boardSchema = z.object({
   name: z.string().trim().min(1),
-  description: z.string().default(""),
+  description: z.string().default(''),
 });
 
 function BoardForm({
@@ -125,7 +116,7 @@ function BoardForm({
   save: Save<typeof boardSchema>;
 }): ReactElement {
   const { DialogForm, field } = useForm(boardSchema, {
-    labels: "board",
+    labels: 'board',
     initial: board,
     submit: save,
   });
@@ -141,15 +132,30 @@ function BoardForm({
 }
 
 // Without a fixed board (a new meeting on the meetings page), the board is chosen first: then the board is a field
-// too (a second schema, so it is required only there). The date and time is a `DateTimePicker` (`2026-09-15 10:00:00`),
-// the output the fake server's `start` (`2026-09-15T10:00`).
+// too (a second schema, so it is required only there). The date and the time are two fields (2026-10-10, the user's
+// wish: Mantine's `DateTimePicker` stacked the time's list on its calendar): the date (`2026-09-15`) and the time
+// (`10:00`), the output the fake server's `start` (`2026-09-15T10:00`).
 const meetingSchema = z.object({
   boardId: z.string().optional(),
   title: z.string().trim().min(1),
-  start: z.string().transform((value) => value.replace(" ", "T").slice(0, 16)),
-  location: z.string().default(""),
+  date: z.string().min(1),
+  time: z.string().min(1),
+  location: z.string().default(''),
 });
 const meetingWithBoardSchema = meetingSchema.extend({ boardId: z.string() });
+
+// What the form saves: the date and the time joined into the fake server's `start`.
+type MeetingValues = Omit<z.output<typeof meetingSchema>, 'date' | 'time'> & { start: string };
+
+// The times of the time select: every quarter of an hour from 7:00 to 20:45, and a meeting's own time if it is
+// another one (e.g. 6:30), so it is shown.
+const TIMES = Array.from({ length: 56 }, (_, index) => {
+  const minutes = 7 * 60 + index * 15;
+
+  return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+});
+const timeOptions = (own: string | undefined): string[] =>
+  own === undefined || TIMES.includes(own) ? TIMES : [...TIMES, own].sort();
 
 function MeetingForm({
   meeting,
@@ -158,18 +164,17 @@ function MeetingForm({
 }: {
   meeting?: Meeting;
   boards?: readonly Board[];
-  save: Save<typeof meetingSchema>;
+  save: (values: MeetingValues) => Promise<void>;
 }): ReactElement {
   const t = useTranslate();
   const { DialogForm, field } = useForm(
     boards !== undefined ? meetingWithBoardSchema : meetingSchema,
     {
-      labels: "meeting",
-      initial:
-        meeting !== undefined
-          ? { ...meeting, start: `${meeting.start.replace("T", " ")}:00` }
-          : { boardId: boards?.[0]?.id, location: t("forms.defaultLocation") },
-      submit: save,
+      labels: 'meeting',
+      initial: meeting !== undefined
+        ? { ...meeting, date: meeting.start.slice(0, 10), time: meeting.start.slice(11, 16) }
+        : { boardId: boards?.[0]?.id, location: t('forms.defaultLocation') },
+      submit: ({ date, time, ...values }) => save({ ...values, start: `${date}T${time}` }),
     },
   );
 
@@ -186,11 +191,24 @@ function MeetingForm({
           />
         )}
         <TextInput autoComplete="off" {...field.title()} />
-        <DateTimePicker
-          valueFormat="DD.MM.YYYY HH:mm"
-          popoverProps={{ floatingStrategy: "fixed" }}
-          {...field.start()}
-        />
+        {
+          /* The date and the time side by side: Mantine's date picker and a select of the times (searchable: typing
+        "14" leaves the afternoon). Their popups in the dialog (no portal: the dialog is modal), fixed, so its scrolling
+        body does not clip them. */
+        }
+        <SimpleGrid cols={2} spacing="sm">
+          <DatePickerInput
+            valueFormat="DD.MM.YYYY"
+            popoverProps={{ withinPortal: false, floatingStrategy: 'fixed' }}
+            {...field.date()}
+          />
+          <Select
+            data={timeOptions(meeting?.start.slice(11, 16))}
+            searchable
+            comboboxProps={{ withinPortal: false, floatingStrategy: 'fixed' }}
+            {...field.time()}
+          />
+        </SimpleGrid>
         <TextInput autoComplete="off" {...field.location()} />
       </Stack>
     </DialogForm>
@@ -201,10 +219,10 @@ function MeetingForm({
 // item to its end (the table moves it by dragging too). Without sections in the agenda, there is no select.
 const agendaItemSchema = z.object({
   title: z.string().trim().min(1),
-  sectionId: z.string().default(""),
-  presenterId: z.string().default(""),
+  sectionId: z.string().default(''),
+  presenterId: z.string().default(''),
   duration: z.number().min(5).max(240),
-  description: z.string().default(""),
+  description: z.string().default(''),
 });
 
 function AgendaItemForm({
@@ -220,7 +238,7 @@ function AgendaItemForm({
 }): ReactElement {
   const t = useTranslate();
   const { DialogForm, field } = useForm(agendaItemSchema, {
-    labels: "agendaItem",
+    labels: 'agendaItem',
     initial: item ?? { presenterId: members[0]?.id, duration: 15 },
     submit: save,
   });
@@ -232,7 +250,7 @@ function AgendaItemForm({
         {sections.length > 0 && (
           <NativeSelect
             data={[
-              { value: "", label: t("common.none") },
+              { value: '', label: t('common.none') },
               ...sections.map((section) => ({
                 value: section.id,
                 label: section.title,
@@ -258,8 +276,8 @@ function AgendaItemForm({
 // Nothing to validate: both fields may stay empty. The minutes are a BlockNote document (`minutes.tsx`), with `@` for
 // a member of the board (`members`).
 const minutesSchema = z.object({
-  minutes: z.string().default(""),
-  decision: z.string().default(""),
+  minutes: z.string().default(''),
+  decision: z.string().default(''),
 });
 
 function MinutesForm({
@@ -273,7 +291,7 @@ function MinutesForm({
 }): ReactElement {
   const t = useTranslate();
   const { DialogForm, field } = useForm(minutesSchema, {
-    labels: "minutes",
+    labels: 'minutes',
     initial: item,
     submit: save,
   });
@@ -282,12 +300,12 @@ function MinutesForm({
     <DialogForm>
       <Stack gap="sm" className="board-manager__minutes-form">
         <MinutesEditor
-          description={t("forms.minutesDescription")}
+          description={t('forms.minutesDescription')}
           people={members}
           {...field.minutes()}
         />
         <Textarea
-          description={t("forms.decisionDescription")}
+          description={t('forms.decisionDescription')}
           autosize
           minRows={3}
           {...field.decision()}
@@ -309,7 +327,7 @@ function DocumentForm({
   save: Save<typeof documentSchema>;
 }): ReactElement {
   const { DialogForm, field } = useForm(documentSchema, {
-    labels: "document",
+    labels: 'document',
     initial: document,
     submit: save,
   });
@@ -324,7 +342,7 @@ function DocumentForm({
             if (!focusedRef.current) {
               focusedRef.current = true;
               const input = event.currentTarget;
-              const dot = input.value.lastIndexOf(".");
+              const dot = input.value.lastIndexOf('.');
 
               input.setSelectionRange(0, dot > 0 ? dot : input.value.length);
             }
@@ -340,7 +358,7 @@ function DocumentForm({
 const personSchema = z.object({
   name: z.string().trim().min(1),
   email: z.email(),
-  organizationId: z.string().default(""),
+  organizationId: z.string().default(''),
 });
 
 function PersonForm({
@@ -353,11 +371,9 @@ function PersonForm({
   save: Save<typeof personSchema>;
 }): ReactElement {
   const t = useTranslate();
-  const organizations = [...db.getState().organizations].sort((a, b) =>
-    a.name.localeCompare(b.name),
-  );
+  const organizations = [...db.getState().organizations].sort((a, b) => a.name.localeCompare(b.name));
   const { DialogForm, field } = useForm(personSchema, {
-    labels: "person",
+    labels: 'person',
     initial: person ?? { organizationId },
     submit: save,
   });
@@ -369,7 +385,7 @@ function PersonForm({
         <TextInput type="email" autoComplete="off" {...field.email()} />
         <NativeSelect
           data={[
-            { value: "", label: t("common.none") },
+            { value: '', label: t('common.none') },
             ...organizations.map((organization) => ({
               value: organization.id,
               label: organization.name,
@@ -396,23 +412,23 @@ function organizationSchema(id: string | undefined) {
             .getState()
             .organizations.some(
               (other) =>
-                other.id !== id &&
-                other.name.toLowerCase() === name.toLowerCase(),
+                other.id !== id
+                && other.name.toLowerCase() === name.toLowerCase(),
             ),
-        "errors.organizationNameTaken",
+        'errors.organizationNameTaken',
       ),
-    description: z.string().default(""),
-    street: z.string().default(""),
-    zipCode: z.string().default(""),
-    city: z.string().default(""),
-    country: z.string().default(""),
+    description: z.string().default(''),
+    street: z.string().default(''),
+    zipCode: z.string().default(''),
+    city: z.string().default(''),
+    country: z.string().default(''),
     website: z
       .string()
       .refine(
         (value) => normalizeWebsite(value) !== undefined,
-        "errors.urlInvalid",
+        'errors.urlInvalid',
       )
-      .default(""),
+      .default(''),
   });
 }
 
@@ -425,7 +441,7 @@ function OrganizationForm({
 }): ReactElement {
   const t = useTranslate();
   const { DialogForm, field } = useForm(organizationSchema(organization?.id), {
-    labels: "organization",
+    labels: 'organization',
     initial: organization,
     submit: save,
   });
@@ -441,7 +457,7 @@ function OrganizationForm({
           <TextInput flex={1} autoComplete="off" {...field.city()} />
         </Group>
         <NativeSelect
-          data={[{ value: "", label: t("common.none") }, ...countryOptions()]}
+          data={[{ value: '', label: t('common.none') }, ...countryOptions()]}
           {...field.country()}
         />
         <TextInput
@@ -475,8 +491,8 @@ function MemberForm({
   const { DialogForm, field } = useForm(
     people !== undefined ? memberWithPersonSchema : memberSchema,
     {
-      labels: "member",
-      initial: { role: role ?? "Member" },
+      labels: 'member',
+      initial: { role: role ?? 'Member' },
       submit: save,
     },
   );
@@ -485,17 +501,16 @@ function MemberForm({
     <DialogForm>
       <Stack gap="sm">
         {people !== undefined && (
-          // Loaded while typing, like the data navigator's autocomplete filter: all candidates when the list opens.
+          // Loaded while typing, like the data table's autocomplete filter: all candidates when the list opens.
           <AsyncSelect
             minQueryLength={0}
-            placeholder={t("forms.memberSearch")}
+            placeholder={t('forms.memberSearch')}
             load={(query, signal) =>
               suggestPeople(
                 query,
                 signal,
                 people.map((person) => person.id),
-              )
-            }
+              )}
             {...field.personId()}
           />
         )}

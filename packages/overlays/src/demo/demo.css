@@ -3,15 +3,6 @@
    one is specific to the demo's own content (`.overlays-*`), never a change of the design
    language. */
 
-:root {
-  /* The variable the library's theme reads; the rest fall back to the library's own
-     defaults. Global, because the dialogs and toasts are not inside the demo element.
-     The library reads four `--theme-*` variables (--theme-color-primary-500,
-     --theme-color-success-500, --theme-text, --theme-surface), a prefix of their own, apart from
-     the `--ui-*` tokens of the design language (ui/ui.css). */
-  --theme-color-primary-500: #1677ff;
-}
-
 .overlays-demo {
   /* Only the frame of the demo cannot be selected; the result logs can (see below). */
   user-select: none;

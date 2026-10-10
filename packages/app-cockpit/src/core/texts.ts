@@ -6,11 +6,12 @@ type Texts = {
   navigation: string;
   group: string;
   search: string;
-  switchApp: string;
+  switchItem: string;
   searchPlaceholder: string;
   noResults: string;
   recent: string;
   other: string;
+  general: string;
   collapse: string;
   resize: string;
   footer: string;
@@ -20,23 +21,28 @@ type Texts = {
   loading: string;
   loadFailed: string;
   retry: string;
-  apps: (count: number) => string;
+  items: (count: number) => string;
   open: string;
   move: string;
   close: string;
   closeSheet: string;
   searchShort: string;
+  taskbar: string;
+  closeTask: (title: string) => string;
+  startPage: string;
+  clearSearch: string;
 };
 
 const EN: Texts = {
-  navigation: 'Apps',
+  navigation: 'Menu',
   group: 'Group',
-  search: 'Search apps',
-  switchApp: 'Switch app',
-  searchPlaceholder: 'Search apps by name, description or group…',
-  noResults: 'No app matches your search.',
+  search: 'Search',
+  switchItem: 'Go to…',
+  searchPlaceholder: 'Search by name, description or group…',
+  noResults: 'Nothing matches your search.',
   recent: 'Recent',
   other: 'Other',
+  general: 'General',
   collapse: 'Collapse sidebar',
   resize: 'Resize sidebar',
   footer: 'Sidebar actions',
@@ -44,25 +50,30 @@ const EN: Texts = {
   account: 'Account',
   expand: 'Expand sidebar',
   loading: 'Loading…',
-  loadFailed: 'The app could not be loaded.',
+  loadFailed: 'It could not be loaded.',
   retry: 'Try again',
-  apps: (count) => (count === 1 ? '1 app' : `${count} apps`),
+  items: (count) => (count === 1 ? '1 item' : `${count} items`),
   open: 'open',
   move: 'move',
   close: 'close',
   closeSheet: 'Close',
   searchShort: 'Search',
+  taskbar: 'Open apps',
+  closeTask: (title) => `Close ${title}`,
+  startPage: 'Start page',
+  clearSearch: 'Clear search',
 };
 
 const DE: Texts = {
-  navigation: 'Apps',
+  navigation: 'Menü',
   group: 'Gruppe',
-  search: 'Apps suchen',
-  switchApp: 'App wechseln',
-  searchPlaceholder: 'Apps nach Name, Beschreibung oder Gruppe suchen…',
-  noResults: 'Keine App passt zur Suche.',
+  search: 'Suchen',
+  switchItem: 'Gehe zu…',
+  searchPlaceholder: 'Nach Name, Beschreibung oder Gruppe suchen…',
+  noResults: 'Nichts passt zur Suche.',
   recent: 'Zuletzt verwendet',
   other: 'Weitere',
+  general: 'Allgemein',
   collapse: 'Seitenleiste einklappen',
   resize: 'Breite der Seitenleiste',
   footer: 'Aktionen der Seitenleiste',
@@ -70,14 +81,18 @@ const DE: Texts = {
   account: 'Konto',
   expand: 'Seitenleiste ausklappen',
   loading: 'Wird geladen…',
-  loadFailed: 'Die App konnte nicht geladen werden.',
+  loadFailed: 'Es konnte nicht geladen werden.',
   retry: 'Erneut versuchen',
-  apps: (count) => (count === 1 ? '1 App' : `${count} Apps`),
+  items: (count) => (count === 1 ? '1 Eintrag' : `${count} Einträge`),
   open: 'öffnen',
   move: 'wählen',
   close: 'schließen',
   closeSheet: 'Schließen',
   searchShort: 'Suchen',
+  taskbar: 'Geöffnete Apps',
+  closeTask: (title) => `${title} schließen`,
+  startPage: 'Startseite',
+  clearSearch: 'Suche leeren',
 };
 
 function textsFor(lang: string): Texts {

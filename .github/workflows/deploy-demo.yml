@@ -30,7 +30,7 @@ jobs:
       # The root lock file: all packages at once, no new resolution (so .npmrc's min-release-age does not apply).
       - run: npm ci
       # The tests of the packages. file-upload without its browser-mode project (it needs a Chromium install).
-      - run: npm test -w @local/data-navigator
+      - run: npm test -w @local/data-table
       - run: npx vitest run --project jsdom --project server
         working-directory: packages/file-upload
       - run: npm run build:pages

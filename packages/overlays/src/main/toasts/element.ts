@@ -8,49 +8,49 @@
 import { css } from "../internal/css.js";
 import { registerFirstFreeTag } from "../internal/custom-element.js";
 import { toastIcons } from "./icons.js";
-import type { ToastType } from "./contract/api.js";
+import type { ToastTheme, ToastType } from "./contract/api.js";
+import { defaultToastTheme } from "./contract/theme.js";
 
 // Fired by the shadow-DOM close button and by swipe-to-dismiss; caught (composed +
 // bubbling) on the container, which maps event.target (retargeted to the host) to an id.
 export const DISMISS_EVENT = "internal-toast:dismiss";
 
-const SHADOW_STYLES = css`
+// Size of the close/countdown affordance, and the single lever for it (see .close-wrap).
+const AFFORDANCE_SIZE = "1.9em";
+
+// The 600-level accents go muddy against the dark card, so the "dark" appearance lifts them
+// toward white. Mixing rather than hard-coding lighter hexes means a caller's own accent
+// gets the same lift.
+export const darkAccent = (accent: string): string => `color-mix(in oklab, ${accent} 65%, white)`;
+
+const shadowStyles = (theme: ToastTheme, scale: string): string => css`
 :host {
   position: relative;
   box-sizing: border-box;
-  /* --toast-scale (default 1) is the controller's \`size\` multiplier: width, padding,
+  /* The scale (default 1) is the controller's \`size\` multiplier: width, padding,
      font-size and gap all scale by it, so the whole card grows/shrinks together. At the
      default 1 every value below computes to exactly the px/em written here. */
-  width: min(calc(360px * var(--toast-scale, 1)), calc(100vw - 40px));
-  padding: calc(14px * var(--toast-scale, 1)) calc(18px * var(--toast-scale, 1))
-    calc(14px * var(--toast-scale, 1)) calc(22px * var(--toast-scale, 1));
-  background: var(--background, #ffffff);
-  color: var(--text, #111827);
-  border-radius: var(--radius, 5px);
+  width: min(calc(360px * ${scale}), calc(100vw - 40px));
+  padding: calc(14px * ${scale}) calc(18px * ${scale})
+    calc(14px * ${scale}) calc(22px * ${scale});
+  background: ${theme.background};
+  color: ${theme.text};
+  border-radius: ${theme.radius};
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-size: calc(1em * var(--toast-scale, 1));
+  font-size: calc(1em * ${scale});
   line-height: 1.5;
-  /* Fallback for a card rendered before the controller sets --shadow; kept identical to
-     defaultToastTheme.shadow, which carries the reasoning for the values. */
-  box-shadow: var(
-    --shadow,
-    0 4px 10px rgba(0, 0, 0, 0.1),
-    0 1px 2px rgba(0, 0, 0, 0.06)
-  );
+  box-shadow: ${theme.shadow};
   overflow: hidden;
   pointer-events: auto;
   transform: translateX(0);
   display: flex;
   align-items: center;
-  gap: calc(12px * var(--toast-scale, 1));
-  /* Size of the close/countdown affordance, and the single lever for it (see
-     .close-wrap). */
-  --affordance-size: 1.9em;
+  gap: calc(12px * ${scale});
   /* Pin the card's minimum height to the affordance box plus the vertical padding, so a
      collapsed affordance can't shorten the card. Without this, a toast that is both
      sticky and non-dismissible — a loading toast, typically — drops .close-wrap out of
      this flex row entirely and ends up shorter than every other toast. */
-  min-height: calc(var(--affordance-size) + 28px * var(--toast-scale, 1));
+  min-height: calc(${AFFORDANCE_SIZE} + 28px * ${scale});
   /* Let vertical scroll pass through while we own horizontal swipe. */
   touch-action: pan-y;
 }
@@ -62,23 +62,23 @@ const SHADOW_STYLES = css`
   bottom: 0.25em;
   width: 4px;
   border-radius: 2em;
-  background: var(--info-accent, #2563eb);
+  background: ${theme.infoAccent};
 }
 
 :host([type="success"]) .accent {
-  background: var(--success-accent, #16a34a);
+  background: ${theme.successAccent};
 }
 
 :host([type="warn"]) .accent {
-  background: var(--warn-accent, #d97706);
+  background: ${theme.warnAccent};
 }
 
 :host([type="error"]) .accent {
-  background: var(--error-accent, #dc2626);
+  background: ${theme.errorAccent};
 }
 
 :host([type="loading"]) .accent {
-  background: var(--loading-accent, #2563eb);
+  background: ${theme.loadingAccent};
 }
 
 .icon {
@@ -86,23 +86,23 @@ const SHADOW_STYLES = css`
   display: none;
   align-items: center;
   justify-content: center;
-  color: var(--icon-color, var(--info-accent, #2563eb));
+  color: ${theme.iconColor ?? theme.infoAccent};
 }
 
 :host([type="success"]) .icon {
-  color: var(--icon-color, var(--success-accent, #16a34a));
+  color: ${theme.iconColor ?? theme.successAccent};
 }
 
 :host([type="warn"]) .icon {
-  color: var(--icon-color, var(--warn-accent, #d97706));
+  color: ${theme.iconColor ?? theme.warnAccent};
 }
 
 :host([type="error"]) .icon {
-  color: var(--icon-color, var(--error-accent, #dc2626));
+  color: ${theme.iconColor ?? theme.errorAccent};
 }
 
 :host([type="loading"]) .icon {
-  color: var(--icon-color, var(--loading-accent, #2563eb));
+  color: ${theme.iconColor ?? theme.loadingAccent};
 }
 
 /* Built-in severity icon: shown only when the policy opts in and the caller
@@ -160,11 +160,11 @@ slot {
 
 ::slotted([slot="title"]) {
   font-weight: 600;
-  color: var(--title-color, #111827);
+  color: ${theme.titleColor};
 }
 
 ::slotted([slot="content"]) {
-  color: var(--message-color, #374151);
+  color: ${theme.messageColor};
 }
 
 /* Screen-reader-only severity prefix. Absolute so it never affects layout. */
@@ -183,8 +183,8 @@ slot {
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: calc(16px * var(--toast-scale, 1));
-  margin-top: calc(4px * var(--toast-scale, 1));
+  gap: calc(16px * ${scale});
+  margin-top: calc(4px * ${scale});
 }
 
 :host(:not([has-actions])) .actions {
@@ -195,7 +195,7 @@ slot {
    containerStyles) — ::slotted() is unreliable for native form controls. This
    element only lays them out via the slot above. */
 
-/* --affordance-size (on :host) is the one size lever here: the ring fills this box via
+/* AFFORDANCE_SIZE is the one size lever here: the ring fills this box via
    inset: 0 and scales with it through its viewBox units, .close is sized in percentages
    of it, and :host derives its min-height from it so collapsing this box never changes
    the card's height. */
@@ -205,8 +205,8 @@ slot {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: var(--affordance-size);
-  height: var(--affordance-size);
+  width: ${AFFORDANCE_SIZE};
+  height: ${AFFORDANCE_SIZE};
   /* Pulls the affordance toward the card edge. Was -0.4em when the box was 2.4em with a
      2em button inset inside it; -0.2em keeps the same optical gap now the button fills
      the box. */
@@ -236,26 +236,29 @@ slot {
      values read as a simple 0..100 "percent remaining". */
   stroke-dasharray: 100;
   stroke-dashoffset: 0;
-  stroke: var(--progress-color, var(--info-accent, #2563eb));
-  animation: toast-countdown var(--toast-duration, 7000ms) linear forwards;
-  /* Driven to "paused" by the controller when the tab is hidden. */
-  animation-play-state: var(--toast-play-state, running);
+  stroke: ${theme.progressColor ?? theme.infoAccent};
+  /* The duration is the toast's own, set inline on this element (attribute "duration"). */
+  animation: toast-countdown 7000ms linear forwards;
+}
+
+/* Paused by the controller while the tab is hidden. */
+:host([paused]) .progress-ring__value {
+  animation-play-state: paused;
 }
 
 :host([type="success"]) .progress-ring__value {
-  stroke: var(--progress-color, var(--success-accent, #16a34a));
+  stroke: ${theme.progressColor ?? theme.successAccent};
 }
 
 :host([type="warn"]) .progress-ring__value {
-  stroke: var(--progress-color, var(--warn-accent, #d97706));
+  stroke: ${theme.progressColor ?? theme.warnAccent};
 }
 
 :host([type="error"]) .progress-ring__value {
-  stroke: var(--progress-color, var(--error-accent, #dc2626));
+  stroke: ${theme.progressColor ?? theme.errorAccent};
 }
 
-/* Freezes together with the JS auto-dismiss timer, which also pauses on hover.
-   More specific than the var rule above, so hover always wins. */
+/* Freezes together with the JS auto-dismiss timer, which also pauses on hover. */
 :host(:hover) .progress-ring__value {
   animation-play-state: paused;
 }
@@ -286,15 +289,15 @@ slot {
   padding: 0;
   border: none;
   background: transparent;
-  color: var(--close-color, #9ca3af);
+  color: ${theme.closeColor};
   cursor: pointer;
   border-radius: 50%;
   transition: color 150ms ease, background 150ms ease;
 }
 
 .close:hover {
-  color: var(--close-hover-color, #374151);
-  background: var(--close-hover-background, rgba(0, 0, 0, 0.06));
+  color: ${theme.closeHoverColor};
+  background: ${theme.closeHoverBackground};
 }
 
 .close svg {
@@ -308,28 +311,28 @@ slot {
    per-type rules above so they win on equal-specificity ties by source order.
 
    "solid": the whole card takes the severity accent as its background, with a
-   light foreground (--solid-text, default white). Good for e.g. white-on-red
+   light foreground (the theme's solidText, default white). Good for e.g. white-on-red
    errors.
    ------------------------------------------------------------------------- */
 :host([appearance="solid"]) {
-  background: var(--info-accent, #2563eb);
-  color: var(--solid-text, #ffffff);
+  background: ${theme.infoAccent};
+  color: ${theme.solidText};
 }
 
 :host([appearance="solid"][type="success"]) {
-  background: var(--success-accent, #16a34a);
+  background: ${theme.successAccent};
 }
 
 :host([appearance="solid"][type="warn"]) {
-  background: var(--warn-accent, #d97706);
+  background: ${theme.warnAccent};
 }
 
 :host([appearance="solid"][type="error"]) {
-  background: var(--error-accent, #dc2626);
+  background: ${theme.errorAccent};
 }
 
 :host([appearance="solid"][type="loading"]) {
-  background: var(--loading-accent, #2563eb);
+  background: ${theme.loadingAccent};
 }
 
 /* The whole card is the accent now, so the little stripe is redundant. */
@@ -340,22 +343,22 @@ slot {
 :host([appearance="solid"]) .icon,
 :host([appearance="solid"]) ::slotted([slot="title"]),
 :host([appearance="solid"]) ::slotted([slot="content"]) {
-  color: var(--solid-text, #ffffff);
+  color: ${theme.solidText};
 }
 
 :host([appearance="solid"]) .close {
-  color: var(--solid-text, #ffffff);
+  color: ${theme.solidText};
   opacity: 0.85;
 }
 
 :host([appearance="solid"]) .close:hover {
-  color: var(--solid-text, #ffffff);
+  color: ${theme.solidText};
   opacity: 1;
   background: rgba(255, 255, 255, 0.18);
 }
 
 :host([appearance="solid"]) .progress-ring__value {
-  stroke: var(--solid-text, #ffffff);
+  stroke: ${theme.solidText};
   opacity: 0.85;
 }
 
@@ -364,61 +367,86 @@ slot {
    stripe, icon and countdown ring — so it reads as a dark-mode toast rather
    than a colored one. */
 :host([appearance="dark"]) {
-  background: var(--dark-background, #1f2937);
-  color: var(--dark-text, #f9fafb);
+  background: ${theme.darkBackground};
+  color: ${theme.darkText};
 }
 
 :host([appearance="dark"]) ::slotted([slot="title"]),
 :host([appearance="dark"]) ::slotted([slot="content"]) {
-  color: var(--dark-text, #f9fafb);
+  color: ${theme.darkText};
 }
 
 :host([appearance="dark"]) .close {
-  color: var(--dark-close-color, #9ca3af);
+  color: ${theme.darkCloseColor};
 }
 
 :host([appearance="dark"]) .close:hover {
-  color: var(--dark-text, #f9fafb);
+  color: ${theme.darkText};
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* The 600-level accents go muddy against the dark card, so they're lifted toward white
-   here. Mixing rather than hard-coding lighter hexes means a caller's own accent
-   override gets the same lift instead of being silently ignored on this appearance.
-   Resolved once per type into --dark-accent, then consumed by the three rules below. */
-:host([appearance="dark"]) {
-  --dark-accent: color-mix(in oklab, var(--info-accent, #2563eb) 65%, white);
-}
+/* The dark appearance's accents (see darkAccent), per type. These tie on specificity with
+   the per-type .accent / .icon / .progress-ring__value rules further up (the info ones),
+   or beat them, so being below them makes them win. Keep them after those rules. */
 
-:host([appearance="dark"][type="success"]) {
-  --dark-accent: color-mix(in oklab, var(--success-accent, #16a34a) 65%, white);
-}
-
-:host([appearance="dark"][type="warn"]) {
-  --dark-accent: color-mix(in oklab, var(--warn-accent, #d97706) 65%, white);
-}
-
-:host([appearance="dark"][type="error"]) {
-  --dark-accent: color-mix(in oklab, var(--error-accent, #dc2626) 65%, white);
-}
-
-:host([appearance="dark"][type="loading"]) {
-  --dark-accent: color-mix(in oklab, var(--loading-accent, #2563eb) 65%, white);
-}
-
-/* These tie on specificity with the per-type .accent / .icon / .progress-ring__value
-   rules further up, so it's source order — being below them — that makes them win.
-   Keep them after those rules. */
 :host([appearance="dark"]) .accent {
-  background: var(--dark-accent);
+  background: ${darkAccent(theme.infoAccent)};
 }
 
 :host([appearance="dark"]) .icon {
-  color: var(--icon-color, var(--dark-accent));
+  color: ${theme.iconColor ?? darkAccent(theme.infoAccent)};
 }
 
 :host([appearance="dark"]) .progress-ring__value {
-  stroke: var(--progress-color, var(--dark-accent));
+  stroke: ${theme.progressColor ?? darkAccent(theme.infoAccent)};
+}
+
+:host([appearance="dark"][type="success"]) .accent {
+  background: ${darkAccent(theme.successAccent)};
+}
+
+:host([appearance="dark"][type="success"]) .icon {
+  color: ${theme.iconColor ?? darkAccent(theme.successAccent)};
+}
+
+:host([appearance="dark"][type="success"]) .progress-ring__value {
+  stroke: ${theme.progressColor ?? darkAccent(theme.successAccent)};
+}
+
+:host([appearance="dark"][type="warn"]) .accent {
+  background: ${darkAccent(theme.warnAccent)};
+}
+
+:host([appearance="dark"][type="warn"]) .icon {
+  color: ${theme.iconColor ?? darkAccent(theme.warnAccent)};
+}
+
+:host([appearance="dark"][type="warn"]) .progress-ring__value {
+  stroke: ${theme.progressColor ?? darkAccent(theme.warnAccent)};
+}
+
+:host([appearance="dark"][type="error"]) .accent {
+  background: ${darkAccent(theme.errorAccent)};
+}
+
+:host([appearance="dark"][type="error"]) .icon {
+  color: ${theme.iconColor ?? darkAccent(theme.errorAccent)};
+}
+
+:host([appearance="dark"][type="error"]) .progress-ring__value {
+  stroke: ${theme.progressColor ?? darkAccent(theme.errorAccent)};
+}
+
+:host([appearance="dark"][type="loading"]) .accent {
+  background: ${darkAccent(theme.loadingAccent)};
+}
+
+:host([appearance="dark"][type="loading"]) .icon {
+  color: ${theme.iconColor ?? darkAccent(theme.loadingAccent)};
+}
+
+:host([appearance="dark"][type="loading"]) .progress-ring__value {
+  stroke: ${theme.progressColor ?? darkAccent(theme.loadingAccent)};
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -435,7 +463,7 @@ slot {
 `;
 
 const SHADOW_HTML = `
-<style>${SHADOW_STYLES}</style>
+<style></style>
 <span class="accent"></span>
 <span class="icon" aria-hidden="true"></span>
 <span class="icon-slot" aria-hidden="true"><slot name="icon"></slot></span>
@@ -464,6 +492,52 @@ const SHADOW_HTML = `
 // decide how to use it.
 let tagCache: string | null = null;
 
+// The theme of each stack container (set by its controller), and the shadow stylesheet of
+// each theme, built once. The values are put straight into the CSS (no custom properties
+// on the container, so nothing inherits into the slotted content).
+type ContainerStyle = { theme: ToastTheme; scale: string; text: string };
+const containerStyles = new WeakMap<Element, ContainerStyle>();
+const shadowTexts = new WeakMap<ToastTheme, Map<string, string>>();
+
+function shadowText(theme: ToastTheme, scale: string): string {
+  let texts = shadowTexts.get(theme);
+  if (texts === undefined) {
+    texts = new Map();
+    shadowTexts.set(theme, texts);
+  }
+  let text = texts.get(scale);
+  if (text === undefined) {
+    text = shadowStyles(theme, scale);
+    texts.set(scale, text);
+  }
+  return text;
+}
+
+const defaultShadowText = (): string => shadowText(defaultToastTheme, "1");
+
+// Called by the controller whenever its theme or card scale (the `size` option) is
+// (re)applied: the toasts already in the stack take the new stylesheet at once, later ones
+// on connect.
+export function setToastTheme(container: Element, theme: ToastTheme, scale: string): void {
+  containerStyles.set(container, { theme, scale, text: shadowText(theme, scale) });
+  if (tagCache) {
+    container
+      .querySelectorAll(tagCache)
+      .forEach((host) => (host as unknown as { syncTheme(): void }).syncTheme());
+  }
+}
+
+// Pauses or resumes the countdown rings of a stack (the tab hidden or shown): the toasts in
+// it at once, later ones on connect.
+export function setToastsPaused(container: Element, paused: boolean): void {
+  container.toggleAttribute("data-paused", paused);
+  if (tagCache) {
+    container
+      .querySelectorAll(tagCache)
+      .forEach((host) => host.toggleAttribute("paused", paused));
+  }
+}
+
 export function ensureElementRegistered(): string {
   if (tagCache) {
     return tagCache;
@@ -471,6 +545,8 @@ export function ensureElementRegistered(): string {
 
   class ToastElement extends HTMLElement {
     private button: HTMLButtonElement | null = null;
+    private styleEl: HTMLStyleElement | null = null;
+    private styleText: string | null = null;
     private iconEl: HTMLElement | null = null;
     private ringEl: SVGElement | null = null;
 
@@ -484,6 +560,7 @@ export function ensureElementRegistered(): string {
       super();
       const root = this.attachShadow({ mode: "open" });
       root.innerHTML = SHADOW_HTML;
+      this.styleEl = root.querySelector<HTMLStyleElement>("style");
       this.button = root.querySelector<HTMLButtonElement>("button.close");
       this.iconEl = root.querySelector<HTMLElement>(".icon");
       this.ringEl = root.querySelector<SVGElement>(".progress-ring__value");
@@ -493,6 +570,22 @@ export function ensureElementRegistered(): string {
       this.addEventListener("pointermove", this.onPointerMove);
       this.addEventListener("pointerup", this.onPointerUp);
       this.addEventListener("pointercancel", this.onPointerUp);
+    }
+
+    connectedCallback(): void {
+      this.syncTheme();
+    }
+
+    // The stylesheet of the stack this toast is in (the defaults outside one), and its
+    // paused state.
+    syncTheme(): void {
+      const container = this.closest(".toasts-container");
+      const text = (container && containerStyles.get(container)?.text) ?? defaultShadowText();
+      if (text !== this.styleText && this.styleEl) {
+        this.styleText = text;
+        this.styleEl.textContent = text;
+      }
+      this.toggleAttribute("paused", container?.hasAttribute("data-paused") ?? false);
     }
 
     private emitDismiss(): void {
@@ -513,10 +606,6 @@ export function ensureElementRegistered(): string {
       if (name === "dismiss-label") {
         this.button?.setAttribute("aria-label", value ?? "");
       } else if (name === "duration") {
-        // Feed the ring's animation-duration via a custom property. Kept off
-        // the renderer's radar (attribute, not inline style) so it never
-        // collides with the imperative slide transform written to the style.
-        this.style.setProperty("--toast-duration", `${value ?? "0"}ms`);
         // A duration change on a persistent host (e.g. loading -> success via
         // update/promise) must restart the countdown from full, otherwise the
         // already-"finished" forwards animation leaves an empty ring.
@@ -525,6 +614,10 @@ export function ensureElementRegistered(): string {
           void this.ringEl.getBoundingClientRect();
           this.ringEl.style.animation = "";
         }
+        // The ring's duration, inline on the ring in the shadow root (after the restart,
+        // which clears the inline animation): it never meets the slide transform the
+        // controller writes to the host's style.
+        this.ringEl?.style.setProperty("animation-duration", `${value ?? "0"}ms`);
       } else if (name === "type" && this.iconEl) {
         // Swap in the severity icon. Decorative only (aria-hidden), since the
         // severity is already conveyed by role + the sr-only prefix.

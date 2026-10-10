@@ -1,0 +1,555 @@
+/* The frame of the time tracker, like the Board Manager's. Everything else is Mantine (its variables are set on
+   `.time-tracker`), except the clock, the week sheet and the team calendar (below). */
+
+.time-tracker {
+  color: var(--mantine-color-text);
+  font-family: var(--mantine-font-family);
+  font-size: var(--mantine-font-size-sm);
+}
+
+/* Links are darker than Mantine's primary color in the light scheme (shade 9), like in the Board Manager. */
+.time-tracker[data-mantine-color-scheme='light'] .mantine-Anchor-root {
+  color: var(--mantine-primary-color-9);
+}
+
+/* The app fills the height of its element where that has one (the root page's cockpit gives it its content area): the
+   app header stays, the page below it scrolls (`.time-tracker__main`). Without a height, the app is as high as its
+   content and the app header is sticky. Like the Board Manager. */
+.time-tracker:has(> .time-tracker__app),
+.time-tracker__app {
+  height: 100%;
+}
+
+.time-tracker__app {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-md);
+}
+
+.time-tracker__main {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  /* No bounce at its ends (Firefox's elastic overscroll), and the page does not scroll on (2026-10-08, the user's
+     wish; the same for every scroll area of the apps and the components). */
+  overscroll-behavior: none;
+}
+
+/* A page with a table: every element from the page down to the table is a flex column that takes the rest of the
+   height, and the table fills it, so its rows scroll and its toolbar, column headers and footer stay (the data
+   table's "fixed header and footer"). `.time-tracker__table` is around every table (`DataTable`) and has no box of
+   its own. Not in a dialog (outside `.time-tracker__main`). Like the Board Manager. */
+.time-tracker__main :has(.time-tracker__table) {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.time-tracker__table {
+  display: contents;
+}
+
+.time-tracker__main .time-tracker__table > * {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Two lines (2026-10-08, the Human Resources' trial, rolled out; one line with a menu of the modules on the title
+   before): the icon, the title, the modules as tabs, the user, Back and Forward; below them the breadcrumb (its crumbs
+   end with an ellipsis when it is too short). A container: the tabs become a menu, and Back and Forward go, when it is
+   narrow. */
+.time-tracker__app-header {
+  container: time-tracker-app-header / inline-size;
+  /* A container is a containing block for its popups (tooltips, menus), but Floating UI (Mantine's positioning) only
+     knows that from `contain`: without it, they open far off to the side. */
+  contain: layout;
+  /* `contain: layout` makes the bar a stacking context: its popups' z-index counts only inside it. Above the page below
+     it. Sticky: on a host page that scrolls it stays at the top. */
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  flex: none;
+  background: var(--mantine-color-body);
+  user-select: none;
+}
+
+.time-tracker__app-header-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--mantine-spacing-xs) var(--mantine-spacing-lg);
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+}
+
+.time-tracker__title {
+  padding: 4px 6px 4px 2px;
+  white-space: nowrap;
+}
+
+/* The modules as tabs: the current one (also on its records' pages) in the accent's light ground. */
+.time-tracker__modules {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 2px;
+  min-width: 0;
+}
+
+.time-tracker__module {
+  padding: 5px 10px;
+  border-radius: var(--mantine-radius-sm);
+  color: var(--mantine-color-dimmed);
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:hover {
+    background: var(--mantine-color-default-hover);
+    color: var(--mantine-color-text);
+  }
+
+  &[aria-current] {
+    background: var(--mantine-primary-color-light);
+    color: var(--mantine-primary-color-light-color);
+  }
+}
+
+/* The tabs as a menu: only while the app header is narrow (below). */
+.time-tracker__module-menu {
+  display: none;
+  padding: 4px 8px;
+  border-radius: var(--mantine-radius-sm);
+  white-space: nowrap;
+
+  &:hover {
+    background: var(--mantine-color-default-hover);
+  }
+}
+
+/* The breadcrumb's line, below the tabs. No frame around the app header (2026-10-08, the user's wish; one with rounded
+   corners around both lines before): only a line between the two, in the gray of the tiles' borders (Mantine's
+   `Paper`: gray-3, dark-4 in the dark scheme, below). */
+.time-tracker__crumbs {
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  padding: 6px var(--mantine-spacing-sm);
+  border-top: 1px solid var(--mantine-color-gray-3);
+
+  .time-tracker[data-mantine-color-scheme='dark'] & {
+    border-top-color: var(--mantine-color-dark-4);
+  }
+
+  & > .mantine-Breadcrumbs-breadcrumb {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    /* Room inside the clip (2026-10-09, the user's find): with `overflow: hidden` and Mantine's `line-height: 1`, the
+       last pixel of the text (descenders, the hover underline) was cut off. Taken back outside, so the line keeps its
+       height. */
+    padding-block: 2px;
+    margin-block: -2px;
+  }
+
+  & > .time-tracker__home,
+  & > .mantine-Breadcrumbs-separator {
+    flex: none;
+  }
+}
+
+/* The app icon at the start of the app header: only an icon, not a link (the first crumb leads home). */
+.time-tracker__app-icon {
+  display: inline-flex;
+  border-radius: var(--mantine-radius-sm);
+}
+
+/* The first crumb: a house icon and "Home", a link to the start page; on the start page the current page. */
+.time-tracker__home {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--mantine-font-size-sm);
+
+  &[aria-current] {
+    color: var(--mantine-color-text);
+    font-weight: 500;
+  }
+}
+
+/* The user menu at the end of the app header: the avatar and the role. */
+.time-tracker__user {
+  padding: 2px 6px 2px 2px;
+  border-radius: var(--mantine-radius-xl);
+
+  &:hover {
+    background: var(--mantine-color-default-hover);
+  }
+}
+
+/* Up to eight tabs (a team lead's) next to the user menu, and the German labels are longer: they need a wide bar. */
+@container time-tracker-app-header (width < 80rem) {
+  .time-tracker__modules {
+    display: none;
+  }
+
+  .time-tracker__module-menu {
+    display: block;
+  }
+}
+
+@container time-tracker-app-header (width < 40rem) {
+  .time-tracker__history,
+  .time-tracker__user-role {
+    display: none;
+  }
+}
+
+/* The header line of a page and the tabs: not selectable, like the toolbars of the tables. */
+.time-tracker__page-header,
+.time-tracker__tabs {
+  user-select: none;
+}
+
+/* A card of the overview that is a link: its border in the accent on hover. */
+.time-tracker__card {
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 120ms;
+
+  &[data-link]:hover {
+    border-color: var(--mantine-primary-color-filled);
+  }
+}
+
+/* The name of the page a card opens, at its top right: in the accent while the card is hovered. */
+.time-tracker__card-target {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 2px;
+  color: var(--mantine-color-dimmed);
+  white-space: nowrap;
+  transition: color 120ms;
+
+  .time-tracker__card[data-link]:hover & {
+    color: var(--mantine-primary-color-filled);
+  }
+}
+
+/* The clock: the time of day, large, with tabular figures (the seconds do not shake it). */
+.time-tracker__clock-time {
+  font-size: calc(var(--mantine-font-size-sm) * 3.4);
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.time-tracker__figures {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The timeline of a day: a bar of the hours 6 to 22, with the work in the accent and the breaks in the warning color. */
+.time-tracker__timeline {
+  position: relative;
+  height: 12px;
+  border-radius: var(--mantine-radius-xl);
+  background: var(--mantine-color-default-hover);
+  overflow: hidden;
+
+  & > span {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: var(--mantine-primary-color-filled);
+
+    &[data-kind='break'] {
+      background: var(--mantine-color-warning-4);
+    }
+
+    &[data-open] {
+      opacity: 0.6;
+    }
+  }
+}
+
+/* The week sheet: a row per day; the weekend and the days off dimmed, today marked. */
+.time-tracker__week {
+  & td,
+  & th {
+    white-space: nowrap;
+  }
+
+  & tr[data-off] td {
+    color: var(--mantine-color-dimmed);
+  }
+
+  & tr[data-today] td:first-child {
+    box-shadow: inset 3px 0 0 var(--mantine-primary-color-filled);
+  }
+}
+
+.time-tracker__balance {
+  font-variant-numeric: tabular-nums;
+
+  &[data-sign='plus'] {
+    color: var(--mantine-color-success-text, var(--mantine-color-green-text));
+  }
+
+  &[data-sign='minus'] {
+    color: var(--mantine-color-error);
+  }
+}
+
+/* The team calendar: a grid of the employees (rows) and the days of a month (columns). The names stay at the left
+   while it scrolls sideways; the header stays at the top. */
+.time-tracker__grid-scroll {
+  overflow: auto;
+  overscroll-behavior: none;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-sm);
+}
+
+.time-tracker__grid {
+  display: grid;
+  min-width: max-content;
+  font-size: var(--mantine-font-size-xs);
+}
+
+.time-tracker__grid-head,
+.time-tracker__grid-name {
+  position: sticky;
+  z-index: 1;
+  background: var(--mantine-color-body);
+}
+
+.time-tracker__grid-head {
+  top: 0;
+  display: grid;
+  place-items: center;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--mantine-color-default-border);
+  color: var(--mantine-color-dimmed);
+  line-height: 1.2;
+
+  &[data-weekend] {
+    background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
+  }
+
+  &[data-today] {
+    color: var(--mantine-primary-color-filled);
+    font-weight: 700;
+  }
+
+  &[data-corner] {
+    left: 0;
+    z-index: 2;
+    place-items: center start;
+    padding-inline: 8px;
+  }
+}
+
+.time-tracker__grid-name {
+  left: 0;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: 0 8px;
+  border-right: 1px solid var(--mantine-color-default-border);
+}
+
+.time-tracker__grid-group {
+  position: sticky;
+  left: 0;
+  padding: 8px 8px 4px;
+  color: var(--mantine-color-dimmed);
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* A day of an employee: empty, or a block in the color of the absence; a pending one striped; a half day half filled.
+   The block's color is its `color`, set inline (no custom property of our own), drawn with `currentColor`. */
+.time-tracker__grid-day {
+  position: relative;
+  height: 30px;
+  border-bottom: 1px solid var(--mantine-color-default-border);
+
+  &[data-weekend] {
+    background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
+  }
+
+  &[data-today] {
+    box-shadow: inset 1px 0 0 var(--mantine-primary-color-filled), inset -1px 0 0 var(--mantine-primary-color-filled);
+  }
+
+  & > span {
+    position: absolute;
+    inset: 5px 1px;
+    border-radius: 2px;
+    background: currentColor;
+
+    &[data-pending] {
+      background: repeating-linear-gradient(-45deg, currentColor 0 3px, transparent 3px 6px);
+      outline: 1px solid currentColor;
+      outline-offset: -1px;
+    }
+
+    &[data-half='am'] {
+      right: 50%;
+    }
+
+    &[data-half='pm'] {
+      left: 50%;
+    }
+  }
+}
+
+/* The legend of the calendars: a small swatch per kind of absence (its `color` inline, like the blocks). */
+.time-tracker__swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  background: currentColor;
+
+  &[data-pending] {
+    background: repeating-linear-gradient(-45deg, currentColor 0 2px, transparent 2px 4px);
+    outline: 1px solid currentColor;
+    outline-offset: -1px;
+  }
+}
+
+/* A day of Mantine's calendar (the overview, an employee's page) with an absence: a dot in its color below the number
+   (an element of its own, its `color` inline); a pending one only a ring. */
+.time-tracker__day {
+  position: relative;
+}
+
+.time-tracker__day-dot {
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  border-radius: 50%;
+  background: currentColor;
+
+  &[data-pending] {
+    background: transparent;
+    outline: 1.5px solid currentColor;
+  }
+}
+
+/* The message of an invalid field: a popover below it (`FieldError`, 2026-10-06, the user's wish; an absolutely
+   placed badge before, which a dialog's scrolling body could cut off). The look is the Board Manager's badge: the body
+   color with a border and text in the danger color, a shadow, an arrow pointing at the field in front (down when the
+   popover is above it). Only the focused field shows it (at most one on screen). The red frame of an invalid field
+   stays Mantine's. For every Mantine input (the shared classes: `InputWrapper`, `Input`). */
+
+/* Mantine reserves room under the input for the message; the popover is out of the flow, so that would only push the
+   next field down. */
+.time-tracker .mantine-InputWrapper-root .mantine-Input-wrapper {
+  margin-bottom: 0;
+}
+
+/* Mantine's error element only holds the popover (and keeps its id for the input's `aria-describedby`): no box, and
+   the message's plain text (for a place without a field, see `FieldError`) hidden. */
+.time-tracker .mantine-InputWrapper-error {
+  position: absolute;
+  inline-size: 0;
+  block-size: 0;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+
+  & .time-tracker__field-error-text {
+    display: none;
+  }
+}
+
+/* The popover: placed by `FieldError` (`top`, `left`, inline); the browser's own look of a popover undone. No
+   `display` here: a closed popover is hidden by it. */
+.time-tracker__field-error {
+  inset: auto;
+  max-inline-size: min(24rem, calc(100vw - 16px));
+  margin: 0;
+  overflow: visible;
+}
+
+.time-tracker__field-error,
+.time-tracker .time-tracker__upload::part(error) {
+  padding: 0.35em 0.65em;
+  border-radius: 0.25em;
+  /* White on the error color (2026-10-10, the user's wish; the error color on the body's, with a light red border,
+     before). */
+  border: 1px solid var(--mantine-color-error);
+  background: var(--mantine-color-error);
+  color: var(--mantine-color-white);
+  font-family: var(--mantine-font-family);
+  font-size: calc(var(--mantine-font-size-xs) + 1px);
+  font-weight: 500;
+  line-height: 1.35;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
+}
+
+/* The arrow pointing at the field: a mask in the text's color (Tabler's `arrow-up`, stroked), turned when the popover
+   is above the field. Decoration only. Not nested (`&` is an `:is()`, which cannot hold `::part()`). */
+.time-tracker__field-error::before,
+.time-tracker .time-tracker__upload::part(error)::before {
+  content: '';
+  display: inline-block;
+  inline-size: 1.05em;
+  block-size: 1.05em;
+  margin-inline-end: 0.5em;
+  vertical-align: -0.2em;
+  background-color: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 5v14M18 11l-6-6-6 6'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+.time-tracker__field-error[data-side='top']::before {
+  rotate: 180deg;
+}
+
+/* Fades in (from a little closer to the field), cuts out. */
+.time-tracker__field-error:popover-open {
+  opacity: 1;
+  translate: 0 0;
+  transition: opacity 140ms ease-out, translate 140ms ease-out;
+
+  @starting-style {
+    opacity: 0;
+    translate: 0 -0.25em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .time-tracker__field-error:popover-open {
+    transition: none;
+  }
+}
+
+/* The file upload (`CertificateUpload`, the doctor's note): its error is a part of its shadow DOM, which cannot be a
+   popover; the same look, as a badge below its frame (the host is its positioned ancestor), always shown (the part is
+   `hidden` without a message). */
+.time-tracker .time-tracker__upload {
+  position: relative;
+}
+
+.time-tracker .time-tracker__upload::part(error) {
+  position: absolute;
+  z-index: 10;
+  top: 100%;
+  inset-inline-start: 0;
+  max-width: 100%;
+  width: max-content;
+  margin-block-start: 0.2em;
+}

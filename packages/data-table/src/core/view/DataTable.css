@@ -1,0 +1,3493 @@
+/* The stylesheet has no values of its own: every color, size and font is an internal --param-* custom property. The
+   component sets them on its root, from the theme of its configuration (createDataTableComponent, see core/config.ts). */
+.data-table {
+  /* No color-scheme of its own: the inherited one of the page decides which value of the theme colors' `light-dark()`
+     applies (`light dark` here would follow the system's scheme instead, also on a page switched to the other one). */
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 100%;
+  color: var(--param-color-text);
+  font-family: var(--param-font-family);
+  font-size: var(--param-font-size);
+  line-height: 1.5;
+}
+
+.data-table__content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+
+  & > :not(.data-table__stack) {
+    flex: none;
+  }
+}
+
+/* While the filters are open, the filter view or the drawer (2026-10-09, the user's wish; for the filter view the same
+   day, the whole table area at 80% before): only the contents of the cells (the header's too), of the cards and the
+   footer have `opacity: 0.5` (0.7 before, the same day), in grayscale, so links, badges and avatars of the app's
+   content turn gray as well (a dimmed text color would reach only plain text); the lines and backgrounds of the rows
+   stay as they are. Faded in the time the filter view unrolls, back in the time it rolls up (`FILTER_VIEW_OPEN_TIME`,
+   `FILTER_VIEW_CLOSE_TIME` in `FilterPanel.tsx`). Tried the same day for the drawer and dropped: a black veil over them
+   (40%, 10%, 5%), other opacities of the whole area (0.5, 0.4, 0.7, 1), a blur (2px, 1px). The toolbar's controls are
+   disabled (see `.data-table__toolbar-group`), the title stays. */
+.data-table__table-area {
+  & :is(.data-table__row, .data-table__header-row) > * > *,
+  & .data-table__card > *,
+  & .data-table__footer {
+    transition: opacity 250ms ease-in, filter 250ms ease-in;
+  }
+
+  .data-table__stack[data-filtering] > & {
+    & :is(.data-table__row, .data-table__header-row) > * > *,
+    & .data-table__card > *,
+    & .data-table__footer {
+      opacity: 0.5;
+      filter: grayscale(1);
+      transition: opacity 250ms ease-in-out, filter 250ms ease-in-out;
+    }
+  }
+}
+
+/* While the filter drawer is open (a prototype, 2026-10-09, the user's wish): the action area of the bar is hidden,
+   everything after its free space (the filter button with its ×, the dividers, the actions, the column menu); its room
+   is kept, so nothing moves. The drawer's header takes its place (in a table whose filter button is further left, it
+   was still seen beside the drawer). */
+.data-table[data-filter-drawer] .data-table__toolbar-bar > .data-table__toolbar-spacer ~ * {
+  visibility: hidden;
+}
+
+/* When the drawer has closed, they come back like a new bar of the toolbar: fade in with a tiny upward shift
+   (2026-10-09, the user's wish; `data-actions-back` for the time of the animation). The parts in groups (fieldsets
+   without a box) move by their content. */
+.data-table[data-actions-back] .data-table__toolbar-bar > .data-table__toolbar-spacer ~ :not(.data-table__toolbar-group),
+.data-table[data-actions-back] .data-table__toolbar-bar > .data-table__toolbar-spacer ~ .data-table__toolbar-group > * {
+  animation: data-table-bar-in 150ms ease;
+}
+
+/* The drawer (a prototype, 2026-10-09): in the cell of the stack, over the table area, at its end and as high as it;
+   it opens from the right (see `clip-path`). The buttons at the top, then the filters; only the filters scroll. (A
+   floating sheet, away from the edges with a line and corners all around, was tried the same day and dropped.) */
+.data-table__filter-sidebar {
+  position: relative;
+  z-index: 4;
+  justify-self: end;
+  display: flex;
+  flex-direction: column;
+  width: min(28rem, 100%);
+  box-sizing: border-box;
+  /* Lines on the left, top and bottom (2026-10-09, the user's wish: no top line before); the right edge is the
+     table's. */
+  /* Only a line on its left, in the color of the table's lines, `colorDivider` (2026-10-09, the user's wishes, step by
+     step: lines on the left, top and bottom, rounded on the left, at first; then only on the left; then none for a
+     while; back with the shadow on the left). */
+  border-inline-start: 1px solid var(--param-color-divider);
+  /* As tall as the table, its filters in one column (they scroll when they need more room; two columns from 7 filters
+     on, as tall as their content, were tried the same day and dropped). It ends a bit above the table's bottom edge
+     (2026-10-09, the user's wish; first for its shadow, which is gone): half of `--param-spacing-xs` (4px); with more
+     (16px), the pager's buttons showed below it. */
+  margin-bottom: calc(var(--param-spacing-xs) / 2);
+  background-color: var(--param-color-surface);
+  /* A shadow on its left side only (2026-10-09, the user's wish), in the color of the lines (no color of our own): like
+     the one of the table's fixed action column (`-6px 0 6px -6px`), but more blurred, so it reaches further and is
+     softer (the user's wish, the same day). The negative spread keeps it off the top and the bottom. Tried the same
+     day: a large one to the left and below with a hard-coded color, the menus' shadow, the theme's small one, none. */
+  /* More subtle (the user's wish, the same day): in the lighter color of the table's lines, `colorDivider`. */
+  box-shadow: -12px 0 16px -12px var(--param-color-divider);
+  /* It opens from the right edge to the left: uncovered by a clip (a `translate` from the right reached past the
+     table, and a cut-off there changed the table's height in the apps). The clip leaves room for the shadow on the left
+     only: it cuts it off flush at the top, the right and the bottom (2026-10-09, the user's wish). */
+  clip-path: inset(0 0 0 -3rem);
+  /* No animation for now (2026-10-09, the user's wish: durations 0; the opening and the closing below stay defined,
+     a duration brings them back: `clip-path 200ms ease-out, opacity 200ms ease-out`, and `DRAWER_ANIMATION` in
+     `DataTableView.tsx`). */
+  transition: none;
+
+  @starting-style {
+    clip-path: inset(0 0 0 100%);
+    opacity: 0;
+  }
+
+  /* After closing: the opening played back (2026-10-09, the user's wish): covered up again from the left to its right
+     edge and faded out, in the same time, with the mirrored easing; then removed (when the transition ends). */
+  &[data-closing] {
+    clip-path: inset(0 0 0 100%);
+    opacity: 0;
+    transition-timing-function: ease-in;
+  }
+}
+
+/* The title, then the buttons at the end: Reset | Cancel [Apply] (Cancel a ghost button with an arrow). */
+.data-table__filter-sidebar-header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: calc(var(--param-spacing-xs) / 2);
+  /* Exactly the row of the toolbar's bar, which it covers (2026-10-09, the user's wish: its buttons on the same line as
+     the toolbar's actions): the bar's height and the bar's room above and below (see `.data-table__toolbar-bar`; compact
+     below). */
+  height: max(var(--param-control-height), var(--param-button-height));
+  padding: calc(var(--param-spacing-xs) / 2) var(--param-spacing-md);
+  /* More room on top (2026-10-09, the user's wish): the drawer reaches higher than the bar by this room (see
+     `FilterSidebar`), so the buttons stay on the bar's line (the bar's buttons fill it from its top edge). */
+  box-sizing: content-box;
+  /* More room on the left (2026-10-09, the user's wish), like the filters below. */
+  padding-inline-start: calc(1.5 * var(--param-spacing-md));
+  /* It comes in like a new bar of the toolbar (the selection bar): fades in with a tiny upward shift (2026-10-09, the
+     user's wish). */
+  animation: data-table-bar-in 150ms ease;
+  /* No line below it, the top of the filters (2026-10-09, the user's wish). */
+
+  /* All its buttons as tall as the toolbar's actions (2026-10-09, the user's wish; 0.8 of a control, like the filters,
+     before): `buttonHeight`, in the Mantine theme a normal Mantine button. The icon-only ones square. */
+  & > .data-table__button[data-placement],
+  & > .data-table__apply-button {
+    height: var(--param-button-height);
+  }
+
+  & > .data-table__button[data-placement][data-icon-only] {
+    min-width: var(--param-button-height);
+  }
+
+  /* Compact: like the toolbar's bar and actions there (0.875 of a control). */
+  :where([data-density='compact']) & {
+    height: calc(0.875 * var(--param-control-height));
+
+    & > .data-table__button[data-placement],
+    & > .data-table__apply-button {
+      height: calc(0.875 * var(--param-control-height));
+    }
+
+    & > .data-table__button[data-placement][data-icon-only] {
+      min-width: calc(0.875 * var(--param-control-height));
+    }
+  }
+
+  /* A little more room around Apply than between the other buttons. */
+  & > .data-table__apply-button {
+    margin-inline: calc(var(--param-spacing-xs) / 2);
+  }
+
+  /* With its icon (a check) before the text. */
+  & > .data-table__apply-button[data-with-icon] {
+    display: inline-flex;
+    align-items: center;
+    gap: calc(0.5 * var(--param-spacing-xs));
+    padding-inline: calc(0.75 * var(--param-spacing-md));
+  }
+}
+
+/* The icon before the title (`filter-2`): in the text color, in the primary color while a filter is set (in the
+   draft), like the filter button's icon with active filters. The title and its icon also on the left of the filter
+   view's footer (2026-10-10). */
+.data-table__filter-sidebar-icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  color: var(--param-color-text);
+
+  &[data-active] {
+    color: var(--param-color-primary);
+  }
+}
+
+.data-table__filter-sidebar-title {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: calc(0.75 * var(--param-spacing-xs));
+  min-width: 0;
+  /* Like the label of the filter button (2026-10-09, the user's wish; bold before): its size (the table's text size)
+     and weight. */
+  font-size: var(--param-font-size);
+  font-weight: normal;
+  white-space: nowrap;
+}
+
+/* The filters: a grid of two columns, the labels (as wide as the widest one, right aligned) and the controls. */
+.data-table__filter-sidebar-body {
+  display: grid;
+  flex: 0 1 auto;
+  grid-template-columns: minmax(0, max-content) minmax(0, 1fr);
+  align-content: start;
+  gap: var(--param-spacing-xs) var(--param-spacing-sm);
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: none;
+  padding: var(--param-spacing-md);
+  /* More room on the left (2026-10-09, the user's wish), like the header above. */
+  padding-inline-start: calc(1.5 * var(--param-spacing-md));
+}
+
+.data-table__filter-sidebar-row {
+  display: contents;
+}
+
+/* The grid with the footer (`.data-table__table-area`) and the filter view in one grid cell, on top of each other: the height is
+   the larger of the two, so opening and closing the filter view does not change the height of the table (unless the
+   filters need more room than the rows). While the view is shown, the table area stays visible below it, faded (like
+   the inert parts of the toolbar). */
+.data-table__stack {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+  min-height: 0;
+
+  & > * {
+    grid-area: 1 / 1;
+    min-height: 0;
+  }
+
+  /* The table area under the open filters: its contents faded and gray (see `.data-table__table-area` above; the whole
+     area at 80% until 2026-10-09: 15% before, then 70%, 60% and 50% were tried, and a white veil). */
+}
+
+/* The rows area (the only part that scrolls) and the footer below it. A stacking context of its own (2026-10-09): the
+   `z-index` of the sticky header (3) and of the fixed columns stay inside it, so the filter view (`z-index: 1`) and the
+   drawer, its siblings in the stack, lie above all of it. (Its `opacity: 0.8` under the filter view did this until the
+   same day, but only while the view was open: not while it rolled up.) */
+.data-table__table-area {
+  display: flex;
+  flex-direction: column;
+  isolation: isolate;
+
+  & > :not(.data-table__scroll-area) {
+    flex: none;
+  }
+}
+
+/* The container of content rendered by a content adapter of the custom element: no box of its own. */
+.data-table__adapter-content {
+  display: contents;
+}
+
+/* A minimum height, so the table never collapses to the header alone while the first load runs. */
+.data-table__scroll-area {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: calc(6 * var(--param-spacing-md));
+}
+
+/* A line at the bottom of the rows area (2026-10-05, the user's wish): like the line under the header, in the color of
+   the row lines; also where the rows scroll (a table with a limited height), so they never end open. Laid over the
+   bottom edge of the area (`::after`, above the rows and their fixed cells): where the rows do not scroll it covers the
+   last row's own line exactly, so there is never a double line, and it adds nothing to scroll (a border of the scroller
+   with a negative margin of the table, the same day, made every table scroll by 1px). Not below the empty state (it
+   has no line) and not below cards (they have frames). */
+.data-table__scroll-area::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  height: 1px;
+  background-color: var(--param-color-divider);
+  content: '';
+  pointer-events: none;
+}
+
+.data-table__scroll-area:has(.data-table__empty-cell)::after,
+:where([data-cards]) .data-table__scroll-area::after {
+  display: none;
+}
+
+.data-table__scroller {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  /* No bounce at its ends (Firefox's elastic overscroll), and the page does not scroll on (2026-10-08, the user's
+     wish; the same for every scroll area of the components and the root's apps). */
+  overscroll-behavior: none;
+  scrollbar-gutter: stable;
+}
+
+/* Loading: a thin gray bar at the top of the visible rows area, right below the header (the overlay starts there, its
+   `top` is the measured height of the header), and only the rows are dimmed. The overlay is out of flow, so it never
+   changes the height of the table. */
+.data-table__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.data-table[data-dimmed] .data-table__row > * {
+  opacity: 0.3;
+}
+
+/* In the accent color: the track in its light tint (the selection color), and a segment in the primary color that
+   slides from left to right. With reduced motion (see the end of the file) the segment stands still. */
+.data-table__loading-bar {
+  position: absolute;
+  inset: 0 0 auto;
+  display: block;
+  height: 1px;
+  overflow: hidden;
+  background-color: var(--param-color-selected);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: 30%;
+    background-color: var(--param-color-primary);
+    animation: data-table-loading-slide 2400ms ease-in-out infinite;
+  }
+}
+
+/* From just left of the track to just right of it: the segment is 30% wide, so 100% / 30% = 333%. */
+@keyframes data-table-loading-slide {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(333%);
+  }
+}
+
+@keyframes data-table-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Toolbar: the title and the description, then a bar with the actions on the left and the search box (of a fixed
+   width) on the right. */
+.data-table__toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--param-spacing-sm);
+  padding: var(--param-spacing-sm);
+
+  /* Compact: a flatter toolbar, like the footer. Less room and smaller controls (after the rules of the controls). The
+     text size of the table, and the title's own (2026-10-05, the user's wish: density changes spacing only; a size
+     between the small and the normal one, and a smaller title, before). */
+  :where([data-density='compact']) & {
+    gap: var(--param-spacing-xs);
+    padding-block: var(--param-spacing-xs);
+  }
+}
+
+/* Everything around the data (the toolbar, the header, the header bands of the row groups, the footer, the filter
+   view and its drawer) is not text to select: a click or a drag there never starts a text selection. Text inputs
+   inside stay selectable. The rows stay selectable too. */
+.data-table__toolbar,
+.data-table__header-row,
+.data-table__group-row,
+.data-table__footer,
+.data-table__filter-view,
+.data-table__filter-sidebar {
+  user-select: none;
+
+  & :is(input, textarea) {
+    user-select: text;
+  }
+}
+
+.data-table__toolbar-heading {
+  min-width: 0;
+}
+
+/* The same size in every density (2026-10-05, the user's wish: density changes spacing only; 1.1 × in compact before). */
+.data-table__title {
+  font-size: calc(1.25 * var(--param-font-size));
+  font-weight: var(--param-font-weight-bold);
+  line-height: 1.3;
+}
+
+/* The total after the title (`showTotal`, 2026-10-06): dimmed, in the normal size and weight, like the counts of tabs. */
+.data-table__title-total {
+  margin-inline-start: var(--param-spacing-sm);
+  color: var(--param-color-text-dimmed);
+  font-size: var(--param-font-size);
+  font-weight: normal;
+  font-variant-numeric: tabular-nums;
+}
+
+.data-table__subtitle {
+  color: var(--param-color-text-dimmed);
+  font-size: var(--param-font-size-sm);
+  line-height: 1.3;
+}
+
+/* The bar, and the selection bar that takes its place while rows are selected: the same fixed height, so nothing below
+   moves when one replaces the other. A new bar fades in with a tiny upward shift. */
+.data-table__toolbar-bar {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--param-spacing-xs) / 4);
+  height: max(var(--param-control-height), var(--param-button-height));
+  min-width: 0;
+  /* A bit of room above and below it (2026-10-09, the user's wish), outside its fixed height. */
+  padding-block: calc(var(--param-spacing-xs) / 2);
+  /* The text size of the table (it was larger, 8/7 of it, until 2026-09-30: too big next to the rows). */
+  font-size: var(--param-font-size);
+  animation: data-table-bar-in 150ms ease;
+
+  /* The search box grows with the table, up to a maximum width; the free space goes between it and the buttons. */
+  & .data-table__search-field {
+    flex: 0 1 22.5rem;
+    width: auto;
+    min-width: 8rem;
+    margin-inline-end: var(--param-spacing-xs);
+  }
+
+  /* While the filter view is shown: everything but the filter button is disabled (inert), and faded like the table's
+     contents: 50% in grayscale (2026-10-09, the user's wish, like the drawer; 80% from 2026-10-07, 20% before, then 70%,
+     60% and 50% were tried), the dividers between them too; faded in the same times as the table's contents. */
+  & > *,
+  & > .data-table__toolbar-group > * {
+    transition: opacity 250ms ease-in, filter 250ms ease-in;
+  }
+
+  &[data-filtering] > .data-table__toolbar-group > [inert],
+  &[data-filtering] > .data-table__toolbar-divider {
+    opacity: 0.5;
+    filter: grayscale(1);
+    transition: opacity 250ms ease-in-out, filter 250ms ease-in-out;
+  }
+}
+
+@keyframes data-table-bar-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+/* A part of the bar that the filter drawer blocks (a prototype, 2026-10-09): a `<fieldset>` without a box of its own.
+   The actions after the free space: `disabled` (natively: no focus, no clicks, no tooltips), and hidden anyway while
+   the drawer is open (see `[data-filter-drawer]`). Reload and the search before it: `inert` (`data-inert`), faded
+   like the table's contents, `opacity: 0.5` in grayscale (2026-10-09, the user's wish; disabled with a look of their
+   own, a dimmed icon and an underlined search box without its clear button, for a while the same day). */
+.data-table__toolbar-group {
+  display: contents;
+
+  &:disabled > * {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  &[data-inert] > * {
+    opacity: 0.5;
+    filter: grayscale(1);
+  }
+}
+
+.data-table__toolbar-spacer {
+  flex: 1 1 auto;
+}
+
+/* Outlined buttons need a little more room between them than ghost buttons. */
+.data-table__toolbar-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: calc(var(--param-spacing-xs) / 2);
+}
+
+/* The Reload button, at the start of the bar (before the search box, or alone on the left without one). */
+.data-table__toolbar-reload {
+  display: flex;
+  flex: none;
+  margin-inline-end: calc(var(--param-spacing-xs) / 2);
+}
+
+/* Between the filter button and the actions, before "Cancel" in the selection bar, and after the pinned actions. */
+.data-table__toolbar-divider {
+  flex: none;
+  width: 1px;
+  height: calc(var(--param-control-height) / 2);
+  margin-inline: calc(var(--param-spacing-xs) / 2);
+  background-color: var(--param-color-border);
+}
+
+/* The number of selected rows in the selection bar ("2 selected ×"): the pill (`.data-table__pill`, the one the footer had),
+   inside a button that clears the selection. Hovered, the pill gets a background and its × gets darker, so the whole
+   pill reads as clickable. It scales in when it appears, and its text bumps when the number changes. */
+.data-table__selection-pill {
+  display: inline-flex;
+  flex: none;
+  margin-inline-end: var(--param-spacing-xs);
+  padding: 0;
+  border: none;
+  border-radius: calc(var(--param-control-height) / 2);
+  background-color: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transform-origin: left center;
+  animation: data-table-pill-in 160ms ease;
+
+  /* The × sits in the middle of the room between the text and the right edge: as much space after it as before it. */
+  & > .data-table__pill {
+    padding-inline-end: calc(var(--param-spacing-xs) / 2);
+    transition: background-color 100ms ease;
+  }
+
+  @media (hover: hover) {
+    &:hover > .data-table__pill {
+      background-color: var(--param-color-surface-strong);
+    }
+
+    &:hover .data-table__pill-icon {
+      color: var(--param-color-text);
+    }
+  }
+
+  &:active > .data-table__pill {
+    background-color: color-mix(in srgb, var(--param-color-surface-strong), var(--param-color-text) 10%);
+  }
+
+  &:focus-visible {
+    outline: var(--param-focus-ring-width) solid var(--param-color-focus);
+    outline-offset: var(--param-focus-ring-offset);
+  }
+}
+
+.data-table__selection-count {
+  display: inline-block;
+  animation: data-table-count-bump 150ms ease;
+}
+
+@keyframes data-table-pill-in {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+}
+
+@keyframes data-table-count-bump {
+  50% {
+    /* Less wide than high (the text is wide): 1.15 horizontally, 1.25 vertically. */
+    transform: scale(1.15, 1.25);
+  }
+}
+
+/* A quiet button that looks like a link (Reset, Clear all, Cancel, Clear filters). Muted: in the dimmed text color. */
+.data-table__text-button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  box-sizing: border-box;
+  height: calc(0.75 * var(--param-control-height));
+  padding: 0 calc(var(--param-spacing-xs) / 2);
+  border: none;
+  border-radius: var(--param-button-radius);
+  background-color: transparent;
+  color: var(--param-color-primary);
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 100ms ease;
+
+  &[data-muted] {
+    color: var(--param-color-text-dimmed);
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--param-color-surface-strong);
+    }
+  }
+
+  &:active {
+    background-color: color-mix(in srgb, var(--param-color-surface-strong), var(--param-color-text) 10%);
+  }
+
+  &:focus-visible {
+    outline: var(--param-focus-ring-width) solid var(--param-color-focus);
+    outline-offset: var(--param-focus-ring-offset);
+  }
+}
+
+/* The filter button and its × (while filters are active), right next to each other, without a line between them (a
+   line of its own looked like a second kind of divider in the bar): each part has its own hover, which shows that they
+   are two buttons. */
+.data-table__filter-button-group {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+}
+
+/* The count of active filters on the filter button: a small round badge in the accent color. */
+.data-table__filter-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: calc(0.55 * var(--param-control-height));
+  height: calc(0.55 * var(--param-control-height));
+  padding-inline: calc(var(--param-spacing-xs) / 4);
+  border-radius: calc(0.275 * var(--param-control-height));
+  background-color: var(--param-color-primary);
+  color: var(--param-color-on-primary);
+  font-size: calc(0.9 * var(--param-font-size-sm));
+  font-weight: var(--param-font-weight-bold);
+  line-height: 1;
+}
+
+/* The pills of the active filters, below the bar. They wrap; "Clear all" sits at the end. */
+/* A line above and below the row, edge to edge (over the side padding of the toolbar). As the last part of the
+   toolbar, the toolbar gives up its bottom padding, so the line below sits right on the column headers. */
+.data-table__filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--param-spacing-xs) / 2);
+  /* A `<fieldset>` (the filter drawer disables it, a prototype): none of its own margin, side lines and minimum width. */
+  min-width: 0;
+  margin: 0 calc(-1 * var(--param-spacing-sm));
+  padding: var(--param-spacing-xs) var(--param-spacing-sm);
+  border: none;
+  border-block: 1px solid var(--param-color-border);
+  /* Faded back in the time the filter view rolls up (`[data-inactive]` below: the time it unrolls). */
+  transition: opacity 250ms ease-in;
+
+  & > .data-table__text-button {
+    margin-inline-start: auto;
+    font-size: var(--param-font-size-sm);
+  }
+}
+
+/* While the filter view is shown (it is disabled, like the bar's other parts). */
+.data-table__filter-pills:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.data-table__filter-pills[data-inactive] {
+  opacity: 0.2;
+  transition: opacity 250ms ease-in-out;
+}
+
+.data-table__toolbar:has(> .data-table__filter-pills:last-child) {
+  padding-bottom: 0;
+}
+
+/* Outlined: a gray border on a transparent background, in the text color. Only the value is cut off
+   when the pill gets too wide: the label, the `⋯` and the × always stay. */
+.data-table__filter-pill {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  max-width: min(100%, 13.75rem);
+  height: calc(0.75 * var(--param-control-height));
+  border: 1px solid var(--param-color-border);
+  border-radius: calc(0.375 * var(--param-control-height));
+  background-color: transparent;
+  color: var(--param-color-text);
+  font-size: var(--param-font-size-sm);
+  animation: data-table-pill-in 160ms ease;
+}
+
+.data-table__filter-pill-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  min-width: 0;
+  height: 100%;
+  padding: 0 0 0 calc(0.75 * var(--param-spacing-xs));
+  border: none;
+  border-radius: calc(0.375 * var(--param-control-height)) 0 0 calc(0.375 * var(--param-control-height));
+  background-color: transparent;
+  color: inherit;
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.data-table__filter-pill-label,
+.data-table__filter-pill-more {
+  flex: none;
+}
+
+.data-table__filter-pill-value {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.data-table__filter-pill-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  /* The text of a text filter: in a small outlined box, so the `⋯` around it read as "other text". */
+  &[data-boxed] {
+    padding: 0 calc(var(--param-spacing-xs) / 4);
+    border: 1px solid var(--param-color-border);
+    border-radius: var(--param-radius);
+    line-height: 1.3;
+  }
+}
+
+/* The `⋯` of a text filter and the `+2` of a long list: display only, fainter. */
+.data-table__filter-pill-dots,
+.data-table__filter-pill-more {
+  opacity: 0.6;
+}
+
+.data-table__filter-pill-remove {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: calc(0.625 * var(--param-control-height));
+  height: calc(0.625 * var(--param-control-height));
+  margin-inline: calc(var(--param-spacing-xs) / 4);
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background-color: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: background-color 100ms ease;
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--param-color-surface-strong);
+    }
+  }
+}
+
+.data-table__filter-pill-main,
+.data-table__filter-pill-remove {
+  &:focus-visible {
+    outline: var(--param-focus-ring-width) solid var(--param-color-focus);
+    outline-offset: calc(-1 * var(--param-focus-ring-width));
+  }
+}
+
+/* The filter view: a sheet over the top of the faded grid and footer (the toolbar stays above it), only as high as its
+   filters and buttons and as wide as its filters (it ends where the filter button ends: the nose always points to
+   the button; a little below the toolbar, with a line above and below; it unrolls from its top edge and
+   fades in when it opens, and rolls up when it closes. With a limited height of the table, only its filters scroll,
+   the buttons stay. It is opaque, so nothing of the table below shines through, and above the table area (which
+   comes later and, faded, paints on its own). */
+.data-table__filter-view {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-self: start;
+  /* As wide as its filters, at the end (the inline width and the offset of the end are set by `FilterView`). */
+  justify-self: end;
+  max-height: calc(100% - var(--param-spacing-xs) / 2);
+  min-height: calc(6 * var(--param-spacing-md));
+  box-sizing: border-box;
+  /* Only a tiny gap below the toolbar: a larger one showed the top of the table's scrollbar (its arrow button, faded)
+     like a second nose. */
+  margin-top: calc(var(--param-spacing-xs) / 2);
+  /* A line all around, 1px (2026-10-04, the user's wish: at the sides too; the top line and the nose were removed and put back), rounded. Gray, the color of the lines (2026-10-04,
+     the user's wish: accent lines and a tinted background were tried, 2px too). The nose has them too. The background is
+     the surface color, white in the default theme (the stripe color, `#f8f8f8`, was tried: the user wanted white back). */
+  border: 1px solid var(--param-color-border);
+  background-color: var(--param-color-surface);
+  /* The theme's small shadow (the user's wish, 2026-10-04; none since 2026-10-01; the medium one, as the menus have, until
+     2026-10-04: too strong for a panel in the page). */
+  box-shadow: var(--param-shadow-sm);
+  /* Round at all four corners (the user's wish, 2026-10-04; the bottom ones only before). */
+  border-radius: calc(2 * var(--param-radius));
+
+  /* While its height is animated (`FilterView` in `FilterPanel.tsx`: unrolled from its top edge down, rolled up after
+     closing): no min height, its body does not scroll, and what does not fit yet is cut off at its lower edge. The clip
+     leaves room above for the nose. */
+  &[data-animating] {
+    min-height: 0;
+    clip-path: inset(-1rem -2rem -4px -2rem);
+
+    /* The body keeps its size (no shrinking), so the growing height uncovers the filters first and the buttons last. */
+    & > .data-table__filter-view-body {
+      flex-shrink: 0;
+      overflow-y: hidden;
+    }
+  }
+}
+
+/* The nose on the top edge of the filter view, under the middle of the filter button (its distance from the end is set
+   inline, measured): a small square turned by 45°, with the frame on its two upper sides; its middle lies on the frame of
+   the view, so its lower half covers that frame. */
+.data-table__filter-view-nose {
+  position: absolute;
+  top: -6px;
+  width: 10px;
+  height: 10px;
+  box-sizing: border-box;
+  margin-inline-end: -5px;
+  border-top: 1px solid var(--param-color-border);
+  border-left: 1px solid var(--param-color-border);
+  background-color: var(--param-color-surface);
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+
+/* Only as high as its filters, so the buttons follow right after them (the rest of the view stays empty below). It
+   shrinks and scrolls when the table has less height than the filters need. */
+.data-table__filter-view-body {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: none;
+  /* A bit more room above (1.5 times the side padding, 24px) and below the buttons (2026-10-04, the user's wish; 16px and
+     12px before). */
+  padding: calc(1.5 * var(--param-spacing-md)) var(--param-spacing-md) var(--param-spacing-sm);
+}
+
+/* The filters in one or two columns, centered in the view. A column has room for
+   a filter (a label of about 4rem, and the control, at most 20rem; a longer label narrows the control a little): the
+   free room before a short label adds to the gap between the columns, so it is kept small. Two when there is room for
+   both, else one. Like
+   newspaper columns: down the first, then on in the second, so each filter is only as high as it is (a grid of rows
+   made every filter as high as the tallest one of its row, which left gaps next to the text filter). */
+.data-table__filter-view-columns {
+  column-gap: var(--param-spacing-sm);
+  margin-inline: auto;
+}
+
+/* Below the filters: Reset Clear | Cancel [Apply], at the right end of a row as wide as the filters (set inline) and
+   centered like them, so Apply ends where the last column ends. No line above it. */
+.data-table__filter-panel-footer {
+  display: flex;
+  flex: none;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: flex-end;
+  gap: calc(var(--param-spacing-xs) / 2);
+  margin-inline: auto;
+  padding: var(--param-spacing-sm) var(--param-spacing-md) calc(1.25 * var(--param-spacing-md));
+
+  /* A little more room before Apply than between the ghost buttons. */
+  & > .data-table__apply-button {
+    margin-inline-start: calc(var(--param-spacing-xs) / 2);
+  }
+
+  /* Apply with its icon (a check) before the text (2026-10-10, like the drawer's). */
+  & > .data-table__apply-button[data-with-icon] {
+    display: inline-flex;
+    align-items: center;
+    gap: calc(0.5 * var(--param-spacing-xs));
+    padding-inline: calc(0.75 * var(--param-spacing-md));
+  }
+}
+
+/* The buttons of the filter view and of the edit form as high as their filters and editors (the controls of the view
+   and the form), not as the toolbar's. The icon-only ones (Reset, Clear) square. */
+:is(.data-table__filter-panel-footer, .data-table__edit-footer) > :is(.data-table__button[data-placement], .data-table__apply-button) {
+  height: calc(0.8 * var(--param-control-height));
+}
+
+:is(.data-table__filter-panel-footer, .data-table__edit-footer) > .data-table__button[data-placement][data-icon-only] {
+  min-width: calc(0.8 * var(--param-control-height));
+}
+
+/* Clear, the × in the title on the left of the filter view's footer (2026-10-10): as high as the footer's buttons. */
+.data-table__filter-panel-footer > .data-table__filter-sidebar-title > .data-table__button[data-placement] {
+  height: calc(0.8 * var(--param-control-height));
+  min-width: calc(0.8 * var(--param-control-height));
+}
+
+/* One filter: the label (muted, as wide as its text) on the left, the control (at most 20rem) on the right, at the
+   right end of its column. So the controls of a column line up on their right edge, whatever the labels, and every
+   label sits right before its control. A label that does not fit is cut off. Never split between the two columns. */
+.data-table__filter-panel-row {
+  display: grid;
+  grid-template-columns: minmax(0, max-content) minmax(0, 20rem);
+  justify-content: end;
+  align-items: start;
+  gap: var(--param-spacing-sm);
+  /* The room between two filters of a column (it was --param-spacing-sm). */
+  margin-bottom: var(--param-spacing-xs);
+  break-inside: avoid;
+}
+
+/* Right aligned, so each label sits next to its control. */
+.data-table__filter-panel-label {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  text-align: end;
+  min-height: calc(0.8 * var(--param-control-height));
+  overflow: hidden;
+  /* The text color, like the labels of a form (it was the muted one, too light in some themes). */
+  color: var(--param-color-text);
+  /* The normal size (it was the small one, too small next to the controls). */
+  font-size: var(--param-font-size);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* After a label: a dot in the primary color while its filter is set in the draft (the only accent besides Apply). Its
+   room is always there (hidden while not set), so the labels and controls never move. */
+.data-table__filter-panel-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  margin-inline-start: calc(var(--param-spacing-xs) / 2);
+  border-radius: 50%;
+  background-color: var(--param-color-primary);
+  visibility: hidden;
+
+  &[data-set] {
+    visibility: visible;
+  }
+}
+
+/* The controls fill their column: the built-in ones (small, with a text size between the small and the normal one),
+   and a custom filter too. */
+.data-table__filter-panel-control {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  & > * {
+    width: 100%;
+    min-width: 0;
+  }
+
+  & .data-table__input {
+    height: calc(0.8 * var(--param-control-height));
+    padding-inline-start: var(--param-spacing-xs);
+    font-size: calc((var(--param-font-size-sm) + var(--param-font-size)) / 2);
+  }
+
+  & .data-table__field .data-table__select {
+    padding-inline-start: calc(var(--param-spacing-xs) + 1px);
+  }
+}
+
+/* A text field with a select inside it, at its start (a text filter: how the text must match): the wrapper is the
+   field (its border, and the focus outline while the input is focused), the select a chip in it, 2px from its top,
+   start and bottom edge, and the input takes the rest, without a border of its own. */
+.data-table__prefixed-field {
+  display: flex;
+  box-sizing: border-box;
+  align-items: stretch;
+  min-width: 0;
+  height: var(--param-control-height);
+  padding: 2px;
+  border: 1px solid var(--param-color-border);
+  border-radius: var(--param-radius);
+  background-color: var(--param-color-surface);
+
+  &:has(> .data-table__field .data-table__input:focus-visible) {
+    /* The focus ring of the buttons (2026-10-09, the user's wish: only the border in the accent before). */
+    outline: var(--param-focus-ring-width) solid var(--param-color-focus);
+    outline-offset: var(--param-focus-ring-offset);
+  }
+
+  & > .data-table__field {
+    flex: 1 1 auto;
+  }
+
+  & > .data-table__field .data-table__input {
+    height: 100%;
+    border: none;
+    background-color: transparent;
+
+    /* The wrapper shows the focus. */
+    &:focus-visible {
+      outline: none;
+    }
+  }
+}
+
+.data-table__filter-panel-control .data-table__prefixed-field {
+  height: calc(0.8 * var(--param-control-height));
+}
+
+/* The chips field of a multiple autocomplete keeps growing with its chips, from the small height of the view's
+   controls on; its input fills the room inside it. */
+.data-table__filter-panel-control .data-table__chips-field {
+  height: auto;
+  min-height: calc(0.8 * var(--param-control-height));
+}
+
+.data-table__filter-panel-control .data-table__chips-input {
+  height: calc(0.8 * var(--param-control-height) - var(--param-spacing-xs) - 2px);
+}
+
+/* The chip: like the knob of the segmented control (flat, on the surface color, with a thin border), as high as the
+   room inside the field. */
+.data-table__prefix-select {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+
+  & .data-table__select {
+    width: auto;
+    height: 100%;
+    padding-inline: calc(var(--param-spacing-xs) + 1px) calc(var(--param-spacing-xs) + 1.25rem);
+    border-color: var(--param-color-border);
+    background-color: var(--param-color-surface);
+    color: var(--param-color-text);
+    white-space: nowrap;
+  }
+}
+
+/* A number range: `from – to`. */
+.data-table__filter-range {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--param-spacing-xs) / 2);
+  color: var(--param-color-text-dimmed);
+
+  & > .data-table__input {
+    flex: 1 1 0;
+    padding-inline-end: var(--param-spacing-xs);
+    color: var(--param-color-text);
+    appearance: textfield;
+  }
+
+  & > .data-table__input::-webkit-inner-spin-button,
+  & > .data-table__input::-webkit-outer-spin-button {
+    margin: 0;
+    appearance: none;
+  }
+}
+
+/* A filled button in the primary color (like the primary actions of the toolbar), as wide as its text, at the end of
+   the footer. */
+.data-table__apply-button {
+  flex: none;
+  height: var(--param-control-height);
+  padding: 0 var(--param-spacing-md);
+  border: 1px solid var(--param-color-primary);
+  border-radius: var(--param-button-radius);
+  background-color: var(--param-color-primary);
+  color: var(--param-color-on-primary);
+  font: inherit;
+  font-weight: normal;
+  cursor: pointer;
+  transition: background-color 100ms ease;
+
+  @media (hover: hover) {
+    &:hover {
+      border-color: var(--param-color-primary-hover);
+      background-color: var(--param-color-primary-hover);
+    }
+  }
+
+  &:active {
+    border-color: color-mix(in srgb, var(--param-color-primary-hover), var(--param-color-text) 15%);
+    background-color: color-mix(in srgb, var(--param-color-primary-hover), var(--param-color-text) 15%);
+  }
+
+  &:focus-visible {
+    outline: var(--param-focus-ring-width) solid var(--param-color-focus);
+    outline-offset: var(--param-focus-ring-offset);
+  }
+}
+
+/* A row of connected buttons, one of them chosen (the match of a text filter, All/Yes/No). */
+.data-table__segmented {
+  display: inline-flex;
+  box-sizing: border-box;
+  max-width: 100%;
+  /* Outlined on a transparent background (the border and the padding together keep the old 2px around the segments). */
+  padding: 1px;
+  gap: 2px;
+  border: 1px solid var(--param-color-border);
+  border-radius: var(--param-button-radius);
+  background-color: transparent;
+  font-size: calc((var(--param-font-size-sm) + var(--param-font-size)) / 2);
+
+  &[data-small] {
+    font-size: var(--param-font-size-sm);
+  }
+}
+
+.data-table__segment {
+  flex: 1 1 auto;
+  box-sizing: border-box;
+  height: calc(0.8 * var(--param-control-height) - 4px);
+  padding: 0 var(--param-spacing-xs);
+  border: 1px solid transparent;
+  border-radius: calc(var(--param-button-radius) - 1px);
+  background-color: transparent;
+  color: var(--param-color-text-dimmed);
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 100ms ease;
+
+  [data-small] > & {
+    height: calc(0.65 * var(--param-control-height) - 4px);
+    padding: 0 calc(0.75 * var(--param-spacing-xs));
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      color: var(--param-color-text);
+    }
+  }
+
+  /* The chosen one: a flat knob on the surface color (like the track), set apart by a thin border. */
+  &[aria-checked='true'] {
+    border-color: var(--param-color-border);
+    background-color: var(--param-color-surface);
+    color: var(--param-color-text);
+  }
+
+  &:focus-visible {
+    outline: var(--param-focus-ring-width) solid var(--param-color-focus);
+    outline-offset: calc(-1 * var(--param-focus-ring-width));
+  }
+}
+
+.data-table__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--param-spacing-md);
+  padding: var(--param-spacing-sm);
+  /* A little more room between the table and the footer. */
+  padding-top: var(--param-spacing-md);
+  /* For the narrow pager (see `.data-table__pager-compact`). */
+  container: data-table-footer / inline-size;
+
+  /* Compact: a flatter footer, less room around it. The text size of the table (2026-10-05, the user's wish; a size
+     between the small and the normal one before). */
+  :where([data-density='compact']) & {
+    padding: var(--param-spacing-sm) var(--param-spacing-sm) var(--param-spacing-xs);
+  }
+}
+
+.data-table__footer-side {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--param-spacing-sm);
+}
+
+/* The right side: the pager, the divider and the page size, close to the divider (2026-10-05, the user's wish; `md`
+   apart before). */
+.data-table__footer-side + .data-table__footer-side {
+  gap: var(--param-spacing-xs);
+}
+
+/* The divider of the footer: the toolbar's, without its side margin (the gap of the side is enough) and a little lower
+   (2026-10-05, the user's wish: 0.4 × the control height; half of it in the toolbar). */
+.data-table__footer .data-table__toolbar-divider {
+  height: calc(0.4 * var(--param-control-height));
+  margin-inline: 0;
+}
+
+/* The buttons of the pager and of the action column sit close together and never wrap. */
+.data-table__pager,
+/* Right-aligned (2026-10-10, the user's wish): with `visible`, rows have different numbers of actions; the ones every
+   row has line up at the end (the app puts the ones that vary first). As wide as its cell (a flex item of the cell
+   would only be as wide as its actions); the group headers' actions too. */
+.data-table__row-actions {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: calc(var(--param-spacing-xs) / 2);
+}
+
+.data-table__pill {
+  display: inline-flex;
+  align-items: center;
+  padding-inline: var(--param-spacing-xs);
+  /* Outlined, like the filter pills. */
+  border: 1px solid var(--param-color-border);
+  border-radius: calc(var(--param-control-height) / 2);
+  background-color: transparent;
+  /* The normal text size (2026-10-04, the user's wish: the small one was too small); the line height keeps the pill about
+     as high as the filter pills (0.75 of the control height). */
+  font-size: var(--param-font-size);
+  font-weight: 400;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+/* The × at the end of the selection pill (a picture only: the whole pill is the button), dimmed until hovered. */
+.data-table__pill-icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  margin-inline-start: calc(var(--param-spacing-xs) / 2);
+  color: var(--param-color-text-dimmed);
+
+  & > svg {
+    display: block;
+  }
+}
+
+.data-table__dimmed {
+  color: var(--param-color-text-dimmed);
+}
+
+/* Buttons. Without a placement (e.g. the Clear of the date picker) and the actions of the toolbar: the standard
+   buttons, secondary outlined, primary and danger filled. The view controls of the toolbar (filter, reload; `tool`):
+   ghost buttons, no border and no background at rest, a gray background on hover and while their popup is open. Row:
+   link-like, in three colors, because a border or a background of their own looks odd on a hovered or selected row. */
+.data-table__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--param-spacing-xs) / 2);
+  box-sizing: border-box;
+  height: var(--param-control-height);
+  padding: 0 var(--param-spacing-sm);
+  border: 1px solid var(--param-color-border);
+  border-radius: var(--param-button-radius);
+  background-color: var(--param-color-surface);
+  color: var(--param-color-text);
+  font: inherit;
+  /* The normal weight (bold until 2026-09-30), for every placement: the actions and the view controls alike. */
+  font-weight: normal;
+  white-space: nowrap;
+  cursor: pointer;
+
+  &[data-icon-only] {
+    width: var(--param-control-height);
+    padding: 0;
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--param-color-hover);
+    }
+  }
+
+  /* The actions of the toolbar: the standard buttons, `buttonHeight` tall. Primary and danger are filled. */
+  &[data-placement='toolbar'] {
+    height: var(--param-button-height);
+  }
+
+  &[data-placement='toolbar'][data-variant='primary'] {
+    border-color: var(--param-color-primary);
+    background-color: var(--param-color-primary);
+    color: var(--param-color-on-primary);
+  }
+
+  &[data-placement='toolbar'][data-variant='danger'] {
+    border-color: var(--param-color-danger);
+    background-color: var(--param-color-danger);
+    color: var(--param-color-on-primary);
+  }
+
+  &[data-placement='toolbar'][data-popup-open] {
+    background-color: var(--param-color-hover);
+  }
+
+  @media (hover: hover) {
+    &[data-placement='toolbar'][data-variant='primary']:hover {
+      border-color: var(--param-color-primary-hover);
+      background-color: var(--param-color-primary-hover);
+    }
+
+    /* There is no hover color for danger: the filled button keeps its red on hover. */
+    &[data-placement='toolbar'][data-variant='danger']:hover {
+      background-color: var(--param-color-danger);
+    }
+  }
+
+  /* The view controls of the toolbar (filter, reload): ghost buttons. */
+  &[data-placement='tool'] {
+    gap: calc(0.375 * var(--param-spacing-xs));
+    height: calc(0.875 * var(--param-control-height));
+    padding: 0 calc(0.75 * var(--param-spacing-xs));
+    border-color: transparent;
+    background-color: transparent;
+  }
+
+  /* Icon-only: at least square. The filter button grows with its badge. */
+  &[data-placement='tool'][data-icon-only] {
+    width: auto;
+    min-width: calc(0.875 * var(--param-control-height));
+    padding: 0 calc(0.375 * var(--param-spacing-xs));
+  }
+
+  &[data-placement='tool'][data-active] > .data-table__button-icon {
+    color: var(--param-color-primary);
+  }
+
+  /* While its menu is open, or while it is pressed (the filter button while the filter view is shown). */
+  &[data-placement='tool'][data-popup-open],
+  &[data-placement='tool'][aria-pressed='true'] {
+    background-color: var(--param-color-surface-strong);
+  }
+
+  @media (hover: hover) {
+    &[data-placement='tool']:hover {
+      background-color: var(--param-color-surface-strong);
+    }
+  }
+
+  /* The Reload button while loading: its icon turns. */
+  &[data-busy] svg {
+    animation: data-table-spin 800ms linear infinite;
+  }
+
+  &[data-placement='row'] {
+    height: calc(0.75 * var(--param-control-height));
+    padding: 0 calc(var(--param-spacing-xs) / 2);
+    border-color: transparent;
+    background-color: transparent;
+    color: var(--param-color-primary);
+    font-size: var(--param-font-size-sm);
+  }
+
+  &[data-placement='row'][data-variant='secondary'] {
+    color: var(--param-color-text);
+  }
+
+  &[data-placement='row'][data-variant='danger'] {
+    color: var(--param-color-danger);
+  }
+
+  &[data-placement='row'][data-icon-only] {
+    width: calc(0.75 * var(--param-control-height));
+    padding: 0;
+  }
+
+  /* On a hovered row the row already has the row hover color, so a hovered row button goes one shade further. */
+  @media (hover: hover) {
+    &[data-placement='row']:hover {
+      border-color: transparent;
+      background-color: var(--param-color-surface-strong);
+    }
+
+    /* On the accent hover of its row: a darker shade of the accent tint instead of the gray (like the drag handle). */
+    :where([data-selection-appearance='accent']) &[data-placement='row']:hover {
+      background-color: var(--param-color-selected-border);
+    }
+  }
+
+  /* Pressed: the hover or fill color with a little of the text color (darker in light mode, lighter in dark mode). */
+  &:active {
+    background-color: color-mix(in srgb, var(--param-color-hover), var(--param-color-text) 10%);
+  }
+
+  &[data-placement='toolbar'][data-variant='primary']:active {
+    border-color: color-mix(in srgb, var(--param-color-primary-hover), var(--param-color-text) 15%);
+    background-color: color-mix(in srgb, var(--param-color-primary-hover), var(--param-color-text) 15%);
+  }
+
+  &[data-placement='toolbar'][data-variant='danger']:active {
+    border-color: color-mix(in srgb, var(--param-color-danger), var(--param-color-text) 15%);
+    background-color: color-mix(in srgb, var(--param-color-danger), var(--param-color-text) 15%);
+  }
+
+  &[data-placement='tool']:active {
+    background-color: color-mix(in srgb, var(--param-color-surface-strong), var(--param-color-text) 10%);
+  }
+
+  &[data-placement='row']:active {
+    border-color: transparent;
+    background-color: color-mix(in srgb, var(--param-color-surface-strong), var(--param-color-text) 10%);
+  }
+
+  :where([data-selection-appearance='accent']) &[data-placement='row']:active {
+    background-color: color-mix(in srgb, var(--param-color-selected-border), var(--param-color-text) 10%);
+  }
+}
+
+.data-table__button-icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+.data-table__button-label {
+  min-width: 0;
+}
+
+/* Icon-only buttons without a look of their own: the details toggle and the pager buttons. */
+.data-table__icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: calc(0.75 * var(--param-control-height));
+  height: calc(0.75 * var(--param-control-height));
+  padding: 0;
+  border: none;
+  border-radius: var(--param-button-radius);
+  background-color: transparent;
+  color: var(--param-color-text);
+  cursor: pointer;
+
+  @media (hover: hover) {
+    &:hover:not(:disabled) {
+      background-color: var(--param-color-surface-strong);
+    }
+  }
+
+  &:active:not(:disabled) {
+    background-color: color-mix(in srgb, var(--param-color-surface-strong), var(--param-color-text) 10%);
+  }
+}
+
+/* The details toggle. On the accent hover of its row: a darker shade of the accent tint instead of the gray (like the
+   drag handle; the same weight as the gray hover and press of `.data-table__icon-button`, and later, so these win). */
+.data-table__detail-toggle {
+
+  @media (hover: hover) {
+    :where([data-selection-appearance='accent']) &:hover:not(:disabled) {
+      background-color: var(--param-color-selected-border);
+    }
+  }
+
+  :where([data-selection-appearance='accent']) &:active:not(:disabled) {
+    background-color: color-mix(in srgb, var(--param-color-selected-border), var(--param-color-text) 10%);
+  }
+}
+
+/* Fully round, like the page numbers (2026-10-05): the pager is one row of circles. Small (2026-10-05, the user's wish:
+   a denser pager): 0.65 × the control height in every density, like the page numbers (the full control height first,
+   0.875 × in compact; then 0.75 ×, the row buttons' size). */
+.data-table__pager-button {
+  width: calc(0.65 * var(--param-control-height));
+  height: calc(0.65 * var(--param-control-height));
+  border-radius: 999px;
+}
+
+/* A disabled pager button has no background of its own (no gray box): it is only faded, and the cursor says that it
+   cannot be used. */
+.data-table__pager-button:disabled {
+  background-color: transparent;
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* The page numbers between previous and next (2026-10-05; a page number field before): ghost buttons like the pager
+   buttons, at least square, as wide as a longer number needs; the figures all equally wide, so the pager keeps its width
+   while paging. */
+.data-table__pager-numbers {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--param-spacing-xs) / 4 + 1px);
+}
+
+/* The pager's buttons close together (a quarter of xs and 1px, 2026-10-05, the user's wish: the quarter alone was a bit
+   tight; the action column keeps its half). */
+.data-table__pager {
+  gap: calc(var(--param-spacing-xs) / 4 + 1px);
+}
+
+/* As small as the pager buttons. A number with more digits than fit (three and more) widens every slot alike: the view
+   sets the width that the largest page number needs inline (`min-width`), so the pager keeps its width while paging. */
+.data-table__page-button {
+  width: auto;
+  min-width: calc(0.65 * var(--param-control-height));
+  height: calc(0.65 * var(--param-control-height));
+  padding-inline: calc(var(--param-spacing-xs) / 4);
+  /* Fully round (2026-10-05): a circle for a short number, a pill for a longer one. */
+  position: relative;
+  border-radius: 999px;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+
+  /* Its page is being loaded (2026-10-05; after the delay of the loading bar): a thin ring in the primary color turns
+     around it, open at the top (it stands still with reduced motion). */
+  &[data-pending]::after {
+    /* A circle (also around a wider slot), centered: as high as the button and 2px more on each side. */
+    position: absolute;
+    top: -2px;
+    bottom: -2px;
+    left: 50%;
+    aspect-ratio: 1;
+    translate: -50% 0;
+    border: 1.5px solid var(--param-color-primary);
+    border-top-color: transparent;
+    border-radius: 999px;
+    animation: data-table-spin 800ms linear infinite;
+    content: '';
+    pointer-events: none;
+  }
+
+  /* The current page: filled like a primary button (2026-10-05; the light accent tint of the selected rows before), the
+     number bold. It does nothing when clicked, so it has no pointer and keeps its look on hover. */
+  &[aria-current='page'] {
+    background-color: var(--param-color-primary);
+    color: var(--param-color-on-primary);
+    font-weight: var(--param-font-weight-bold);
+    cursor: default;
+  }
+
+  @media (hover: hover) {
+    &[aria-current='page']:hover:not(:disabled) {
+      background-color: var(--param-color-primary);
+    }
+  }
+
+  &[aria-current='page']:active:not(:disabled) {
+    background-color: var(--param-color-primary);
+  }
+}
+
+/* The pages left out: a dimmed `…`, not clickable. */
+/* As wide as a page number (2026-10-05; narrower before): one gap or two, the pager keeps its width while paging. */
+.data-table__pager-gap {
+  flex: none;
+  width: calc(0.65 * var(--param-control-height));
+  color: var(--param-color-text-dimmed);
+  text-align: center;
+}
+
+/* "18 of 27": in place of the page numbers in a narrow footer (below). */
+.data-table__pager-compact {
+  display: none;
+  padding-inline: var(--param-spacing-xs);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* A narrow footer (a drawer, a phone): the pager is previous, "18 of 27", next, so it never wraps. */
+@container data-table-footer (width < 28rem) {
+  .data-table__pager-numbers {
+    display: none;
+  }
+
+  .data-table__pager-compact {
+    display: inline;
+  }
+}
+
+.data-table__button,
+.data-table__icon-button,
+.data-table__sort-button,
+.data-table__clear-button,
+.data-table__chevron {
+  display: inline-flex;
+  transition: transform 150ms ease, background-color 100ms ease;
+
+  &[data-expanded] {
+    transform: rotate(90deg);
+  }
+}
+
+/* The focus ring of the buttons (see the CSS guidelines; 2026-10-09: before, these had none, so the browser drew its
+   own, black and on the edge): the theme's `colorFocus`, `focusRingWidth` and `focusRingOffset`. Rings of their own,
+   later, win (the same weight): e.g. drawn inside where a box would cut them off. */
+:is(.data-table__button, .data-table__icon-button, .data-table__sort-button, .data-table__clear-button):focus-visible {
+  outline: var(--param-focus-ring-width) solid var(--param-color-focus);
+  outline-offset: var(--param-focus-ring-offset);
+}
+
+/* Checkboxes and radios: real inputs, drawn by us (`appearance: none`), so a checked one shows only its border and its
+   tick (or dot), without a fill. The check color is the text color of the input (`color`): primary by default. The
+   tick is a mask, painted in that color. */
+.data-table__check {
+  display: inline-grid;
+  flex: none;
+  place-content: center;
+  box-sizing: border-box;
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  border: 1px solid var(--param-color-border);
+  border-radius: calc(var(--param-radius) * 0.6);
+  background-color: var(--param-color-surface);
+  color: var(--param-color-primary);
+  appearance: none;
+  cursor: pointer;
+
+  &::before {
+    content: '';
+    width: 0.75rem;
+    height: 0.75rem;
+    background-color: currentColor;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5l10 -10'/%3E%3C/svg%3E") center / contain no-repeat;
+    visibility: hidden;
+  }
+
+  &:checked,
+  &:indeterminate {
+    border-color: currentColor;
+  }
+
+  &:checked::before,
+  &:indeterminate::before {
+    visibility: visible;
+  }
+
+  /* The select-all checkbox while only some rows are selected: a short dash instead of the tick. */
+  &:indeterminate::before {
+    width: 0.5rem;
+    height: 2px;
+    border-radius: 1px;
+    mask: none;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: var(--param-focus-ring-width) solid var(--param-color-focus);
+    outline-offset: var(--param-focus-ring-offset);
+  }
+}
+
+/* selectionAppearance="neutral": the selection checkboxes of the rows (and the select-all checkbox) are
+   gray too, like the selected rows. Other checkboxes (for example in a custom filter) keep the primary color. */
+:where([data-selection-appearance='neutral']) :is(.data-table__data-row > .data-table__cell > .data-table__check, .data-table__group-row > .data-table__cell > .data-table__check, .data-table__header-tall > .data-table__check, .data-table__card-select > .data-table__check, .data-table__card-group > .data-table__check) {
+  color: var(--param-color-text-dimmed);
+}
+
+/* Text inputs and selects. A field is an input with a clear button or an arrow at its end. */
+.data-table__field,
+.data-table__search-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.data-table__search-field {
+  width: 16rem;
+}
+
+
+.data-table__input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: var(--param-control-height);
+  padding: 0 calc(0.75 * var(--param-spacing-sm));
+  border: 1px solid var(--param-color-border);
+  border-radius: var(--param-radius);
+  background-color: var(--param-color-surface);
+  color: var(--param-color-text);
+  font: inherit;
+
+  &::placeholder {
+    color: var(--param-color-text-dimmed);
+    opacity: 1;
+  }
+
+  &:focus-visible {
+    /* The focus ring of the buttons (2026-10-09, the user's wish: only the border in the accent before). */
+    outline: var(--param-focus-ring-width) solid var(--param-color-focus);
+    outline-offset: var(--param-focus-ring-offset);
+  }
+}
+
+/* Room for the clear button or the arrow at the end, and for the icon at the start of the search box. */
+.data-table__field .data-table__input,
+.data-table__search-field .data-table__input {
+  padding-inline-end: calc(var(--param-spacing-xs) + 1.25rem);
+}
+
+.data-table__search-field .data-table__input {
+  padding-inline-start: calc(var(--param-spacing-xs) + 1.25rem);
+}
+
+.data-table__select {
+  display: flex;
+  align-items: center;
+  appearance: none;
+  text-align: start;
+  cursor: pointer;
+
+  &[data-empty] {
+    color: var(--param-color-text-dimmed);
+  }
+}
+
+/* Selects get 1px more padding on every side than the text inputs. */
+.data-table__field .data-table__select {
+  padding: 1px calc(var(--param-spacing-xs) + 1.25rem + 1px) 1px calc(0.75 * var(--param-spacing-sm) + 1px);
+}
+
+/* The page size of the footer: a ghost button ("10 per page" and a chevron; `.data-table__button[data-placement='tool']`), with
+   the figures of the pager. The chevron turns while the list is open. */
+.data-table__page-size-button {
+  font-variant-numeric: tabular-nums;
+
+  & > svg {
+    transition: transform 150ms ease;
+  }
+
+  &[data-popup-open] > svg {
+    transform: rotate(180deg);
+  }
+}
+
+/* The spinner of the page size while a new one is loaded (2026-10-05; after the delay of the loading bar), in place of
+   its chevron and as large: a thin turning ring, open at the top, in the primary color. */
+.data-table__pending-spinner {
+  flex: none;
+  box-sizing: border-box;
+  width: calc(0.4 * var(--param-control-height));
+  height: calc(0.4 * var(--param-control-height));
+  border: 1.5px solid var(--param-color-primary);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: data-table-spin 800ms linear infinite;
+}
+
+/* A size in its menu (the look of the other menus, `.data-table__menu-item`): the figures of the pager. */
+.data-table__page-size-item {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Compact: the bar and the search box of the toolbar and the controls of the footer are 0.875 × controlHeight (the
+   rest of the flatter toolbar and footer is in .data-table__toolbar and .data-table__footer). The actions follow; the ghost view controls are small enough already. */
+:where([data-density='compact']) .data-table__toolbar {
+  & .data-table__toolbar-bar,
+  & .data-table__button[data-placement='toolbar'] {
+    height: calc(0.875 * var(--param-control-height));
+  }
+
+  & .data-table__button[data-placement='toolbar'][data-icon-only] {
+    width: calc(0.875 * var(--param-control-height));
+  }
+
+  & .data-table__search-field .data-table__input {
+    height: calc(0.875 * var(--param-control-height));
+  }
+}
+
+.data-table__select-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.data-table__field-icon,
+.data-table__field-end,
+.data-table__clear-button {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--param-color-text-dimmed);
+}
+
+.data-table__field-icon {
+  inset-inline-start: calc(var(--param-spacing-xs) / 2);
+  pointer-events: none;
+}
+
+.data-table__field-end,
+.data-table__clear-button {
+  inset-inline-end: calc(var(--param-spacing-xs) / 2);
+}
+
+.data-table__field-end {
+  pointer-events: none;
+}
+
+.data-table__clear-button {
+  padding: 0;
+  border: none;
+  border-radius: var(--param-button-radius);
+  background-color: transparent;
+  cursor: pointer;
+
+  @media (hover: hover) {
+    &:hover {
+      color: var(--param-color-text);
+    }
+  }
+}
+
+/* Tooltips (Base UI). The tooltip turns the colors around: text color as background. */
+.data-table__tooltip-positioner {
+  z-index: 4;
+}
+
+.data-table__tooltip {
+  box-sizing: border-box;
+  /* As wide as its text (up to a limit): the layer it is rendered into has no width of its own. */
+  width: max-content;
+  max-width: 20rem;
+  padding: calc(var(--param-spacing-xs) / 2) var(--param-spacing-xs);
+  border-radius: var(--param-radius);
+  background-color: var(--param-color-text);
+  color: var(--param-color-surface);
+  box-shadow: var(--param-shadow);
+  font-size: var(--param-font-size-sm);
+  pointer-events: none;
+}
+
+.data-table__menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--param-spacing-xs);
+  box-sizing: border-box;
+  width: 100%;
+  padding: calc(var(--param-spacing-xs) / 2) var(--param-spacing-xs);
+  border: none;
+  border-radius: var(--param-radius);
+  background-color: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  white-space: nowrap;
+  cursor: pointer;
+  /* No focus outline (the exception to our rule, see the CSS guidelines): the highlight below marks the item of the
+     keyboard, like in a native menu. Base UI moves the focus to the item under the pointer too, and after a key press
+     the browser counts that as keyboard focus, so an outline would come and go on hover. */
+  outline: none;
+
+  /* Base UI marks the item under the pointer or the keyboard focus, and the item of an open submenu. The header color:
+     darker than the hover color of the rows, so the item stands out on the popup (it is also the keyboard's mark). */
+  &[data-highlighted],
+  &[data-popup-open] {
+    background-color: var(--param-color-surface-strong);
+  }
+
+  &[data-variant='danger'] {
+    color: var(--param-color-danger);
+  }
+
+  /* An item that cannot be used now (the last shown column in the column toggle menu). */
+  &[data-disabled] {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  /* The checkbox of a checkbox item is only a picture: the item handles the click. Gray, like in a multiple select. */
+  & .data-table__check {
+    color: var(--param-color-text-dimmed);
+    pointer-events: none;
+  }
+}
+
+/* The arrow of an item that opens a submenu (in the context menu of the rows), at its end. */
+.data-table__submenu-chevron {
+  margin-inline-start: auto;
+}
+
+/* Lighter than the frame of the menu: the lighter line color of the theme. */
+/* A group of a menu (a choice of radio items, under its label): no box of its own, so its items line up with the
+   others (the grid of `.data-table__menu-with-icons`). */
+.data-table__menu-group {
+  display: contents;
+}
+
+/* The label of a group: small and dimmed, like a heading of the menu. */
+.data-table__menu-group-label {
+  padding: calc(var(--param-spacing-xs) / 2) var(--param-spacing-xs);
+  color: var(--param-color-text-dimmed);
+  font-size: var(--param-font-size-sm);
+  user-select: none;
+}
+
+.data-table__menu-separator {
+  height: 1px;
+  margin: calc(var(--param-spacing-xs) / 2) 0;
+  background-color: var(--param-color-surface-strong);
+}
+
+/* The popup of a select or a menu (Base UI): at least as wide as its trigger, and never higher than the room below or
+   above it. Base UI sets --anchor-width and --available-height on the positioner. */
+.data-table__popup-positioner {
+  z-index: 3;
+  outline: none;
+}
+
+/* Every popup fades in with a tiny downward move. */
+.data-table__popup {
+  animation: data-table-popup-in 120ms ease;
+  box-sizing: border-box;
+  min-width: var(--anchor-width);
+  max-height: var(--available-height);
+  overflow-y: auto;
+  overscroll-behavior: none;
+  padding: calc(var(--param-spacing-xs) / 2);
+  border: 1px solid var(--param-color-border);
+  border-radius: var(--param-radius);
+  background-color: var(--param-color-surface);
+  color: var(--param-color-text);
+  box-shadow: var(--param-shadow);
+  outline: none;
+}
+
+/* A menu whose entries have icons (at least one): three columns (icon, text, the arrow of a submenu), and every entry
+   takes them over (subgrid), so all texts start at the same place, also next to an entry without icon. Without any
+   icon, the entries keep their plain layout. */
+.data-table__menu-with-icons {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  column-gap: var(--param-spacing-xs);
+
+  & > .data-table__menu-item,
+  & > .data-table__menu-group > .data-table__menu-item,
+  & > .data-table__menu-group > .data-table__menu-group > .data-table__menu-item {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+  }
+
+  & > .data-table__menu-separator,
+  & > .data-table__menu-group > .data-table__menu-group-label {
+    grid-column: 1 / -1;
+  }
+
+  & .data-table__menu-icon {
+    grid-column: 1;
+  }
+
+  & .data-table__menu-text {
+    grid-column: 2;
+  }
+
+  & .data-table__submenu-chevron {
+    grid-column: 3;
+  }
+}
+
+.data-table__menu-icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* The popover of a date range filter: the date picker, with a little room around it. Not as wide as its trigger at
+   least (like a select's list): the picker has its own size. */
+.data-table__date-popup {
+  min-width: 0;
+  padding: calc(var(--param-spacing-xs) / 2) var(--param-spacing-xs);
+}
+
+/* The two calendars of the date range filter (vanillajs-datepicker, see dateRangePicker.ts), side by side. The
+   library's own stylesheet is not used: its structure is styled here, with the theme's values, so the calendars
+   follow the theme and the color scheme. Its class names are global (`:global`), always below `.data-table__date-range`. */
+.data-table__date-range {
+  /* Dense: a day (and a header button) is 80% of a control high, and as wide. */
+  display: flex;
+  flex-wrap: wrap;
+  /* Clearly two sheets: wider apart than the days of one (16px with the default theme). */
+  gap: var(--param-spacing-md);
+
+  & .datepicker:not(.active),
+  & .datepicker-footer,
+  & .datepicker-title {
+    display: none;
+  }
+
+  & .datepicker-picker {
+    display: flex;
+    flex-direction: column;
+  }
+
+  & .datepicker-controls {
+    display: flex;
+  }
+
+  & .datepicker-controls .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: calc(var(--param-control-height) * 0.8);
+    padding: 0;
+    border: none;
+    border-radius: var(--param-button-radius);
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+
+    &:hover {
+      background-color: var(--param-color-hover);
+    }
+
+    &:focus-visible {
+      outline: var(--param-focus-ring-width) solid var(--param-color-focus);
+      outline-offset: calc(-1 * var(--param-focus-ring-width));
+    }
+  }
+
+  /* The month and year: a medium weight (500, the user's wish, 2026-10-01), not the theme's bold: a fixed weight, as no
+     theme value says "medium". */
+  & .datepicker-controls .view-switch {
+    flex: auto;
+    font-weight: 500;
+  }
+
+  & .datepicker-controls .prev-button,
+  & .datepicker-controls .next-button {
+    flex: 0 0 calc(100% / 7);
+    font-size: 1.25em;
+  }
+
+  & .datepicker-controls .button.disabled,
+  /* The two calendars move together (see dateRangePicker.ts): only the outer buttons are shown. A single calendar (the
+     date editor, `data-single`) has both. */
+  & > :first-child:not(:last-child) .next-button,
+  & > :last-child:not(:first-child) .prev-button {
+    visibility: hidden;
+  }
+
+  & .datepicker-view {
+    display: flex;
+    width: calc(var(--param-control-height) * 0.8 * 7);
+  }
+
+  & .datepicker-grid {
+    display: flex;
+    flex: auto;
+    flex-wrap: wrap;
+  }
+
+  & .days {
+    display: flex;
+    flex: auto;
+    flex-direction: column;
+  }
+
+  & .days-of-week {
+    display: flex;
+  }
+
+  & .datepicker span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--param-radius);
+    cursor: default;
+    user-select: none;
+  }
+
+  & .dow {
+    flex-basis: calc(100% / 7);
+    height: calc(var(--param-control-height) * 0.6);
+    color: var(--param-color-text-dimmed);
+    font-size: var(--param-font-size-sm);
+    font-weight: var(--param-font-weight-bold);
+  }
+
+  /* Their text is between the small and the normal size, like the text of the filters. */
+  & .datepicker-cell {
+    flex-basis: calc(100% / 7);
+    height: calc(var(--param-control-height) * 0.8);
+    font-size: calc((var(--param-font-size-sm) + var(--param-font-size)) / 2);
+  }
+
+  & .datepicker-cell:not(.day) {
+    flex-basis: 25%;
+    height: calc(var(--param-control-height) * 1.6);
+  }
+
+  /* Every day (and month and year) that can be picked, the ends of the range too. */
+  & .datepicker-cell:not(.disabled) {
+    cursor: pointer;
+  }
+
+  /* The day (or month or year) under the mouse: a ring in the primary color, the same inside the range and outside
+     it (the background keeps showing the range). Not on the ends of the range: they are in the primary color (the
+     hovered day is the end of the preview). */
+  & .datepicker-cell:not(.disabled, .selected, .range-start, .range-end):hover {
+    box-shadow: inset 0 0 0 1px var(--param-color-primary);
+  }
+
+  /* The keyboard position of a calendar (arrow keys, while one of its buttons has the focus). Only then: a calendar
+     moved along with the other one has its position on the 1st. */
+  & > :focus-within .datepicker-cell.focused:not(.selected) {
+    background-color: var(--param-color-surface-strong);
+  }
+
+  /* The days of the adjacent months are not shown (the library always renders six weeks; hidden, they keep their
+     place and cannot be clicked). The months and years of the other views stay dimmed. */
+  & .datepicker-cell.day:is(.prev, .next) {
+    visibility: hidden;
+  }
+
+  /* The days of the next month come last: taking no space, they leave no empty last row (the library always renders
+     six weeks). The days of the previous month keep theirs, so the 1st stays below its day of the week. */
+  & .datepicker-cell.day.next {
+    display: none;
+  }
+
+  & .datepicker-cell:is(.prev, .next):not(.disabled, .selected, .range-start, .range-end),
+  & .datepicker-cell.disabled {
+    color: var(--param-color-text-dimmed);
+  }
+
+  /* Today: a short bar below its number, in the primary color, visible on every background (on the ends of the range,
+     which are in the primary color, in their text color). Shorter than the number and rounded, so it does not look like
+     the underline of a link. */
+  & .datepicker-cell.day.today {
+    position: relative;
+
+    &::after {
+      position: absolute;
+      /* Sizes from the control height (16px wide, 2px high, 2px from the bottom with the default theme). */
+      bottom: calc(var(--param-control-height) / 16);
+      left: 50%;
+      width: calc(var(--param-control-height) / 2);
+      height: calc(var(--param-control-height) / 16);
+      border-radius: calc(var(--param-control-height) / 32);
+      background-color: var(--param-color-primary);
+      content: '';
+      translate: -50% 0;
+    }
+  }
+
+  & .datepicker-cell.day.today:is(.selected, .range-start, .range-end)::after {
+    background-color: var(--param-color-on-primary);
+  }
+
+  /* And its number in the primary color, except on the ends of the range. */
+  & .datepicker-cell.today:not(.selected, .range-start, .range-end) {
+    color: var(--param-color-primary);
+    font-weight: var(--param-font-weight-bold);
+  }
+
+  /* The days between the two ends of the range, and the ends themselves. */
+  & .datepicker-cell.range {
+    border-radius: 0;
+    background-color: var(--param-color-selected);
+  }
+
+  & .datepicker-cell.range-start:not(.range-end) {
+    border-start-end-radius: 0;
+    border-end-end-radius: 0;
+  }
+
+  & .datepicker-cell.range-end:not(.range-start) {
+    border-start-start-radius: 0;
+    border-end-start-radius: 0;
+  }
+
+  & .datepicker-cell.selected,
+  & .datepicker-cell.selected:hover,
+  & .datepicker-cell.range-start,
+  & .datepicker-cell.range-end {
+    background-color: var(--param-color-primary);
+    color: var(--param-color-on-primary);
+    font-weight: var(--param-font-weight-bold);
+  }
+}
+
+/* Below the calendars: what is picked so far (left) and the clear button (right). Always as high as a control, so the
+   calendars do not move when the button comes. */
+.data-table__date-range-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--param-spacing-sm);
+  min-height: var(--param-control-height);
+  margin-top: var(--param-spacing-xs);
+
+  /* The clear button: a little smaller than a normal button, like the calendars' own buttons. */
+  & > button {
+    height: calc(var(--param-control-height) * 0.8);
+    padding: 0 var(--param-spacing-xs);
+    font-size: calc((var(--param-font-size-sm) + var(--param-font-size)) / 2);
+  }
+}
+
+.data-table__select-item {
+  display: flex;
+  align-items: center;
+  gap: var(--param-spacing-xs);
+  padding: calc(var(--param-spacing-xs) / 2) var(--param-spacing-xs);
+  border-radius: var(--param-radius);
+  white-space: nowrap;
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+
+  /* Like the items of the menus (see `.data-table__menu-item`). */
+  &[data-highlighted] {
+    background-color: var(--param-color-surface-strong);
+  }
+
+  &[data-selected] {
+    font-weight: var(--param-font-weight-bold);
+  }
+}
+
+/* A multiple autocomplete: its values as chips, then the input, all inside one field that looks like an input. It
+   grows in height when the chips wrap. */
+.data-table__chips-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--param-spacing-xs) / 2);
+  height: auto;
+  min-height: var(--param-control-height);
+  padding-block: calc(var(--param-spacing-xs) / 2);
+  cursor: text;
+
+  &:focus-within {
+    /* The focus ring of the buttons (2026-10-09, the user's wish: only the border in the accent before). */
+    outline: var(--param-focus-ring-width) solid var(--param-color-focus);
+    outline-offset: var(--param-focus-ring-offset);
+  }
+}
+
+.data-table__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+  padding-inline: var(--param-spacing-xs) 2px;
+  border-radius: var(--param-radius);
+  background-color: var(--param-color-surface-strong);
+  font-size: var(--param-font-size-sm);
+  line-height: 1.6;
+  outline: none;
+
+  &:focus-visible {
+    outline: 1px solid var(--param-color-focus);
+  }
+}
+
+.data-table__chip-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.data-table__chip-remove {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1px;
+  border: none;
+  border-radius: var(--param-button-radius);
+  background-color: transparent;
+  color: var(--param-color-text-dimmed);
+  cursor: pointer;
+
+  @media (hover: hover) {
+    &:hover {
+      color: var(--param-color-text);
+    }
+  }
+}
+
+/* A field with a list (the select filters, the autocomplete) ends with the clear button (while something is chosen, or
+   typed), then always the chevron. The chevron turns while the list is open. In a select it is only a picture (the
+   whole field is the trigger); in an autocomplete it is a button of its own (`.data-table__field-toggle`), since a click on the
+   input does not close the list. */
+.data-table__list-field {
+  & .data-table__input {
+    padding-inline-end: calc(var(--param-spacing-xs) + 2.5rem);
+  }
+
+  & .data-table__select {
+    padding-inline-end: calc(var(--param-spacing-xs) + 2.5rem + 1px);
+  }
+
+  & > .data-table__clear-button:not(.data-table__field-toggle) {
+    inset-inline-end: calc(var(--param-spacing-xs) / 2 + 1.25rem);
+  }
+
+  /* Only with motion: this rule weighs more than the reduced motion rule at the end of the file. */
+  @media (prefers-reduced-motion: no-preference) {
+    & > :is(.data-table__field-end, .data-table__field-toggle) svg {
+      transition: rotate 150ms ease;
+    }
+  }
+
+  &:has(> [data-popup-open]) > :is(.data-table__field-end, .data-table__field-toggle) svg {
+    rotate: 180deg;
+  }
+}
+
+/* The values as comma-separated text (`maxChips` 0): one line, cut off with an ellipsis, so the input keeps its room. */
+.data-table__chips-field[data-text] {
+  flex-wrap: nowrap;
+}
+
+.data-table__chips-text {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The `+N` of the values without a chip: like a chip, without a remove button. */
+.data-table__chip-more {
+  padding-inline-end: var(--param-spacing-xs);
+  cursor: pointer;
+}
+
+/* The input after the chips: no frame of its own (the field has it), the rest of the line, at least 4rem. */
+.data-table__chips-input {
+  flex: 1 1 4rem;
+  min-width: 4rem;
+  height: calc(var(--param-control-height) - 2 * var(--param-spacing-xs) / 2 - 2px);
+  padding: 0;
+  border: none;
+  background-color: transparent;
+  color: var(--param-color-text);
+  font: inherit;
+  outline: none;
+
+  &::placeholder {
+    color: var(--param-color-text-dimmed);
+    opacity: 1;
+  }
+}
+
+/* The list of an autocomplete: no wider than 24rem, its options cut off with an ellipsis. While a newer query loads,
+   the previous options stay, faded. */
+.data-table__autocomplete-popup {
+  max-width: min(24rem, var(--available-width));
+
+  & .data-table__select-item {
+    overflow: hidden;
+  }
+
+  &[data-loading] .data-table__autocomplete-list {
+    opacity: 0.5;
+  }
+}
+
+/* The state of the list (type to search, loading, no results, failed). It stays in the DOM, so screen readers hear
+   its changes: empty, it takes no room. */
+.data-table__autocomplete-status {
+  padding: calc(var(--param-spacing-xs) / 2) var(--param-spacing-xs);
+  color: var(--param-color-text-dimmed);
+
+  &:empty {
+    padding: 0;
+  }
+}
+
+/* The room of the checkmark of a single select, kept on every option. */
+.data-table__select-check {
+  display: inline-flex;
+  flex: none;
+  width: 14px;
+  color: var(--param-color-primary);
+}
+
+/* The checkbox of a multiple select option is only a picture: the option handles the click. It is gray, calmer than
+   the selection checkboxes of the rows. */
+.data-table__select-item .data-table__check {
+  flex: none;
+  color: var(--param-color-text-dimmed);
+  pointer-events: none;
+}
+
+/* Where the popups of the widgets are rendered: inside the root, so they get the tokens, and out of the flow. */
+.data-table__layer {
+  position: absolute;
+  /* Above everything of the table, also the filter drawer (`z-index: 4`): the popups of its filters (selects, the date
+     popover, the autocomplete) open over it. A stacking context of its own, so the popups and tooltips keep their order
+     inside it. */
+  z-index: 5;
+  inset: 0 auto auto 0;
+  width: 0;
+  height: 0;
+}
+
+.data-table__table {
+  display: grid;
+
+  /* Text is selectable in one cell at a time: the one where the mouse went down (`data-selecting`, set in the view). */
+  user-select: none;
+
+  & .data-table__cell:is([data-selecting], :has(input, textarea)) {
+    user-select: text;
+  }
+}
+
+.data-table__row {
+  display: contents;
+}
+
+.data-table__data-row {
+}
+
+.data-table__cell {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: var(--param-spacing-xs) var(--param-spacing-sm);
+  /* The line between two rows: the lighter divider (2026-10-05); the header's line and the frame of a hovered or
+     selected row keep the stronger border color. */
+  border-bottom: 1px solid var(--param-color-divider);
+  /* Long words are hyphenated at syllable boundaries (by the language of the page, its `lang` attribute), and only a
+     word that does not fit on a line at all (an email address) is broken at any place. */
+  hyphens: auto;
+  overflow-wrap: break-word;
+  /* Selecting and hovering a row fade its background. */
+  transition: background-color 120ms ease;
+
+  /* selectionAppearance="neutral" (the default): a gray selection. */
+  &[data-selected] {
+    background-color: var(--param-color-surface-strong);
+  }
+
+  /* selectionAppearance="accent": a light tint of the primary color instead. */
+  :where([data-selection-appearance='accent']) &[data-selected] {
+    background-color: var(--param-color-selected);
+  }
+
+  /* Density: only the vertical padding changes. The rules use :where(), so they do not win over the padding of
+     more specific cell classes (like the group header). */
+  /* Compact: a third of xs (2026-10-05, the user's wish: a tiny bit less; half of it before). */
+  :where([data-density='compact']) & {
+    padding-block: calc(var(--param-spacing-xs) / 3);
+  }
+
+  :where([data-density='comfortable']) & {
+    padding-block: var(--param-spacing-md);
+  }
+
+  &[data-align='center'] {
+    justify-content: center;
+    text-align: center;
+  }
+
+  &[data-align='end'] {
+    justify-content: flex-end;
+    text-align: end;
+  }
+
+  /* The line before the action column (2026-10-05, back after a few hours without it; only this one, not the one after
+     the meta columns): through the data and the detail rows, in the light color of the row lines. Not in the header. */
+  &[data-divider='start'] {
+    border-inline-start: 1px solid var(--param-color-divider);
+  }
+
+  /* The outer sides of a row: a transparent line of 1px (2026-10-04, the user's wish), on the first and the last cell. On
+     hover and with a selection it takes the color of the row's lines on top and at the bottom, so they frame the row
+     (the rules below). Only its color changes, never its width, so nothing shifts. The header and the group rows are
+     cells too, so everything keeps lined up. */
+  &:first-child {
+    border-inline-start: 1px solid transparent;
+  }
+
+  &:last-child {
+    border-inline-end: 1px solid transparent;
+  }
+}
+
+.data-table__header-row {
+  position: sticky;
+  top: 0;
+  /* Above a dragged row (`z-index: 2`) too. */
+  z-index: 3;
+  display: grid;
+  grid-column: 1 / -1;
+  grid-row: 1;
+  grid-template-columns: subgrid;
+}
+
+/* Selected cells (of a selected row and of its detail row) get a line on top and at the bottom: gray with the neutral
+   appearance, a slightly darker shade of the selection color with the accent one. The cell borders are collapsed: the
+   top line overlaps the bottom line of the row above (negative margin), so there is one line between two rows, and
+   the row does not grow. */
+.data-table__cell[data-selected] {
+  margin-top: -1px;
+  border-top: 1px solid var(--param-color-border);
+  border-bottom-color: var(--param-color-border);
+}
+
+:where([data-selection-appearance='accent']) .data-table__cell[data-selected] {
+  border-top-color: var(--param-color-selected-border);
+  border-bottom-color: var(--param-color-selected-border);
+}
+
+/* A selected row shows no divider before the action column: it loses its color (never its width, so nothing shifts). */
+.data-table__cell[data-selected][data-divider='start'] {
+  border-inline-start-color: transparent;
+}
+
+/* The outer sides of a selected row take the color of its lines on top and at the bottom (the row is framed). */
+.data-table__cell[data-selected]:first-child {
+  border-inline-start-color: var(--param-color-border);
+}
+
+.data-table__cell[data-selected]:last-child {
+  border-inline-end-color: var(--param-color-border);
+}
+
+:where([data-selection-appearance='accent']) .data-table__cell[data-selected]:first-child {
+  border-inline-start-color: var(--param-color-selected-border);
+}
+
+:where([data-selection-appearance='accent']) .data-table__cell[data-selected]:last-child {
+  border-inline-end-color: var(--param-color-selected-border);
+}
+
+/* The first row needs no top line: the line below the header is right above it. A line of its own could not overlap
+   it (the sticky header paints above), so it would be a second line and make the row grow. */
+.data-table__header-row + .data-table__row > .data-table__cell[data-selected] {
+  margin-top: 0;
+  border-top: none;
+}
+
+/* The header has no band of its own: it shows the plain surface color. It is opaque all the same, so scrolled rows
+   never shine through the sticky header. The hover color of a sortable header is laid over it, so it may be
+   translucent. */
+.data-table__header {
+  align-items: flex-end;
+  /* The line under the header: the light color of the row lines (`.data-table__cell`; 2026-10-05, the user's wish: one gray for all
+     horizontal lines, the border color looked heavy at a display scaling of 125%; the border color before). */
+  font-weight: var(--param-font-weight-bold);
+  background-color: var(--param-color-surface);
+  /* Muted: the sorted column stands out in the full text color (below). */
+  color: var(--param-color-text-dimmed);
+
+  /* Compact: a little more room than the data cells (3/4 of xs instead of half of it), so a header, often a click
+     target, does not look squeezed. The group headers and the lower header row keep their own padding (later rules). */
+  :where([data-density='compact']) & {
+    padding-block: calc(0.75 * var(--param-spacing-xs));
+  }
+
+  /* The hover of a sortable header is a rounded shape a little inside the cell, behind the text, drawn by ::before.
+     The whole cell stays the click target, and the line below the header stays straight. */
+  &[data-sortable] {
+    position: relative;
+    isolation: isolate;
+    cursor: pointer;
+
+    &::before {
+      content: '';
+      position: absolute;
+      /* A little more room at the sides: neighboring shapes are 10px apart, where the resize line sits. */
+      inset: 3px 5px;
+      z-index: -1;
+      border-radius: var(--param-radius);
+    }
+  }
+
+  @media (hover: hover) {
+    &[data-sortable]:hover::before {
+      background-color: var(--param-color-surface-strong);
+    }
+
+    &[data-sortable]:hover .data-table__unsorted-icon {
+      opacity: 1;
+    }
+  }
+
+  /* Pressed: the shape with a little of the text color. */
+  &[data-sortable]:active::before {
+    background-color: color-mix(in srgb, var(--param-color-surface-strong), var(--param-color-text) 10%);
+  }
+
+  /* selectionAppearance="accent": the hover and the pressed shape are accent tints too (2026-10-04, the user's wish), light
+     ones: the hover the tint of the selected rows (`colorSelected`), the pressed shape the tint of the hovered rows
+     (`colorHoverAccent`; a darker mix with the text color, then a bit too dark). They come after the gray ones, so they
+     win at equal weight. */
+  @media (hover: hover) {
+    :where([data-selection-appearance='accent']) &[data-sortable]:hover::before {
+      background-color: var(--param-color-selected);
+    }
+  }
+
+  :where([data-selection-appearance='accent']) &[data-sortable]:active::before {
+    background-color: var(--param-color-hover-accent);
+  }
+
+  /* No hover shape while the resize line is there (the pointer is on the handle, or it is dragged): the line is the
+     only feedback. It comes after the other shapes and is more specific, so it also beats the pressed ones. */
+  &[data-sortable]:has(.data-table__resizer:hover, .data-table__resizer[data-dragging])::before {
+    background-color: transparent;
+  }
+
+  &[data-sortable]:focus-within .data-table__unsorted-icon {
+    opacity: 1;
+  }
+
+  /* The sorted column is the only one in the full text color. */
+  &[data-sorted] {
+    color: var(--param-color-text);
+  }
+}
+
+/* Fills the upper header row above a column without a group, so the header looks like one band. Like the group
+   headers, it has the bottom line, so the line runs over all data columns. */
+.data-table__header-filler {
+  grid-row: 1;
+}
+
+.data-table__header-tall {
+}
+
+/* Without column groups, the select-all checkbox sits in the middle of the header, on the center line of the column
+   headers (whose text sits at the bottom of their cells). With groups, it stays at the bottom, like the lower row. */
+.data-table__header-row:not([data-groups]) > .data-table__header-tall:has(> .data-table__check) {
+  align-items: center;
+}
+
+.data-table__header-sub {
+  grid-row: 2;
+  /* A little more room below the group headers: the density's top padding plus half the xs spacing. Padding, not a
+     margin: a gap in the sticky header would let scrolled rows shine through. */
+  padding-top: calc(1.5 * var(--param-spacing-xs));
+
+  :where([data-density='compact']) & {
+    padding-top: var(--param-spacing-xs);
+  }
+
+  :where([data-density='comfortable']) & {
+    padding-top: calc(var(--param-spacing-md) + var(--param-spacing-xs) / 2);
+  }
+}
+
+.data-table__group-header {
+  grid-row: 1;
+  padding-bottom: calc(var(--param-spacing-xs) / 2);
+}
+
+/* The line below the upper header row (group headers and fillers): one short line per cell, inset by the radius on
+   each side, so neighbors are 2 × the radius apart. The cell keeps its 1px border (transparent), so its height does
+   not change; the line is drawn over it. */
+.data-table__group-header,
+.data-table__header-filler {
+  position: relative;
+  border-bottom: 1px solid transparent;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset-inline: var(--param-radius);
+    bottom: -1px;
+    height: 1px;
+    background-color: var(--param-color-border);
+  }
+}
+
+.data-table__group-title {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.data-table__header-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The fixed columns: the control columns (handle, selection, details) stay at the start while the table is scrolled
+   sideways, the action column at the end (`data-sticky`; the start ones have their offset inline, see
+   `useStickyOffsets`). They are opaque, or the scrolled cells would shine through (`:where()`: the colors of the stripes,
+   the hover and the selection win, so those must be opaque too). While content is scrolled away behind them, the
+   innermost one casts a soft shadow. Group rows, detail rows, edit forms and the empty row span the columns and scroll
+   along. */
+[data-sticky] {
+  position: sticky;
+  z-index: 1;
+}
+
+[data-sticky='start'] {
+  inset-inline-start: 0;
+}
+
+[data-sticky='end'] {
+  inset-inline-end: 0;
+}
+
+:where([data-sticky]) {
+  background-color: var(--param-color-surface);
+}
+
+.data-table__scroller[data-overflow-start] [data-sticky='start'][data-sticky-edge] {
+  box-shadow: 6px 0 6px -6px var(--param-color-border);
+}
+
+.data-table__scroller[data-overflow-end] [data-sticky='end'] {
+  box-shadow: -6px 0 6px -6px var(--param-color-border);
+}
+
+/* The handle at the end edge of a column header (`ColumnResizer`): a thin line, shown only while the pointer is on the
+   handle itself (not on the whole header) and while dragging. The cell is its positioned parent. */
+.data-table__header[data-resizable] {
+  position: relative;
+}
+
+/* A sortable header is a stacking context of its own (`isolation`), so its handle's `z-index` does not lift it above the
+   next header, which comes later: the half of the line over that header would be hidden. So the header whose handle
+   is hovered or dragged goes above its neighbors (and above the fixed columns, `z-index: 1`). */
+.data-table__header[data-resizable]:has(.data-table__resizer:hover, .data-table__resizer[data-dragging]) {
+  z-index: 2;
+}
+
+.data-table__resizer {
+  position: absolute;
+  inset-block: 0;
+  /* Centered on the edge between two columns: half of it lies over the next header cell, above it. */
+  inset-inline-end: -5px;
+  z-index: 1;
+  width: 10px;
+  cursor: col-resize;
+  touch-action: none;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset-block: 10%;
+    /* Thinner than the handle (10px, the grab area): only the line is 3px, centered on the edge (half a pixel either
+       side: a little soft on a screen without a high pixel density). */
+    inset-inline-end: 3.5px;
+    width: 3px;
+    border-radius: 1.5px;
+    background-color: var(--param-color-border);
+    opacity: 0;
+    transition: opacity 100ms ease, background-color 100ms ease;
+  }
+
+  /* A light accent (the line color of the selection) while the pointer is on the handle, the full primary color while
+     it is dragged. */
+  &:hover::after,
+  &[data-dragging]::after {
+    opacity: 0.7;
+    background-color: var(--param-color-selected-border);
+  }
+
+  &[data-dragging]::after {
+    opacity: 0.8;
+    background-color: var(--param-color-primary);
+  }
+}
+
+/* The up/down icon of a sortable column that is not sorted: always there, but faint; clear on hover or focus. */
+.data-table__unsorted-icon {
+  opacity: 0.45;
+}
+.data-table__sort-button {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--param-spacing-xs) / 2);
+  min-width: 0;
+  max-width: 100%;
+  padding: 0;
+  border: none;
+  border-radius: var(--param-radius);
+  background-color: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: var(--param-font-weight-bold);
+  cursor: pointer;
+
+  & > svg {
+    flex: none;
+  }
+}
+
+.data-table__detail-row {
+}
+
+/* striped: a zebra tint on every other data row, starting with the first, and on its detail row (the two are one
+   unit, as they are for hover and selection). `:where()` keeps the specificity at one class, so selection and hover
+   still win over it. */
+:where(.data-table__data-row[data-stripe], .data-table__data-row[data-stripe] + .data-table__detail-row) > .data-table__cell {
+  background-color: var(--param-color-hover);
+}
+
+/* A data row and its detail row are one block, so there is never a line between the two: the detail row has no top
+   border, and the data row above it gives up its bottom line. Only the color goes, never the width, so nothing
+   shifts. The bottom border of the detail row closes the block. These come after the selection rules, which they
+   override at equal weight. */
+.data-table__detail-row > .data-table__cell {
+  margin-top: 0;
+  border-top: none;
+}
+
+/* Row click selects on all of a data cell but its controls (see `isRowTarget`), and on the free space and the plain
+   text (`.data-table__cell-text`) of a detail cell. So the pointer sits on the cell and what counts, and the rest keeps the normal
+   cursor (cursor inherits, and a value set on the content itself beats what it would inherit). */
+:where([data-selection='single'], [data-selection='multi']) :where(.data-table__data-row, .data-table__detail-row) > .data-table__cell:not([data-control]) {
+  cursor: pointer;
+}
+
+.data-table__detail-row > .data-table__cell > *,
+.data-table__data-row > .data-table__cell :is(
+    a, button, input, select, textarea, label, summary, [role='button'], [role='link'], [role='checkbox'],
+    [role='switch'], [role='menuitem'], [role='tab'], [tabindex], [contenteditable]
+  ) {
+  cursor: auto;
+}
+
+.data-table__detail-row > .data-table__cell > .data-table__cell-text {
+  cursor: inherit;
+}
+
+/* A link in a cell keeps the pointer: `auto` above would replace the browser's own `cursor: pointer` of a link (a
+   custom `render` returning an anchor, or an element with the link role). Weighs more than the rule above (2026-10-10:
+   it weighed less, `:where()` and a plain `a`, so links had the text cursor). */
+:is(.data-table__data-row, .data-table__detail-row) > .data-table__cell :is(a:any-link, [role='link']) {
+  cursor: pointer;
+}
+
+/* The meta cells (drag handle, selection, details toggle; in every row, the header and the group rows included) sit
+   closer together: half of xs on the sides that face another meta cell. The outer sides keep the normal padding: the
+   start of the first one (the table's edge) and the end of the last one (before the divider). */
+.data-table__cell[data-meta] {
+  padding-inline: calc(var(--param-spacing-xs) / 2);
+}
+
+.data-table__cell[data-meta~='first'] {
+  padding-inline-start: var(--param-spacing-sm);
+}
+
+.data-table__cell[data-meta~='last'] {
+  padding-inline-end: var(--param-spacing-sm);
+}
+
+/* The free space of the select-all cell is a click on its checkbox (while there are rows). */
+.data-table__header-tall[data-select] {
+  cursor: pointer;
+}
+
+.data-table__data-row:has(+ .data-table__detail-row) > .data-table__cell {
+  border-bottom-color: transparent;
+}
+
+/* The last row (a data row, a detail row, a group row or an edit form) has no line of its own (2026-10-06): the line
+   at the bottom of the rows area (`.data-table__scroll-area::after`) ends the rows, also where the table is taller than its rows
+   (then a line under the last row and one at the bottom were two). Only the plain divider: a selected row keeps its
+   line, and the hover and drag rules (more weight, or the same and later) set theirs. Only the color goes, never the
+   width, so nothing shifts. */
+.data-table__table > :last-child > .data-table__cell:not([data-selected]) {
+  border-bottom-color: transparent;
+}
+
+/* A data row and its detail row are one unit for the hover: hovering either of the two gives both the same color.
+   The rules are separate, so a browser without :has() still gets the others. Selected cells keep their color. */
+@media (hover: hover) {
+  /* The row hover (striped or not): one shade over the stripes, and it wins over the selection color, so a hovered
+     selected row shows the hover color too. */
+  .data-table__data-row:hover > .data-table__cell,
+  .data-table__data-row:hover + .data-table__detail-row > .data-table__cell,
+  .data-table__detail-row:hover > .data-table__cell,
+  .data-table__data-row:has(+ .data-table__detail-row:hover) > .data-table__cell {
+    background-color: var(--param-color-surface-strong);
+  }
+
+  /* selectionAppearance="accent": the hover is a light tint of the accent color, striped or not. It comes last, so it
+     wins over the gray hovers above at equal weight. */
+  :where([data-selection-appearance='accent']) .data-table__data-row:hover > .data-table__cell,
+  :where([data-selection-appearance='accent']) .data-table__data-row:hover + .data-table__detail-row > .data-table__cell,
+  :where([data-selection-appearance='accent']) .data-table__detail-row:hover > .data-table__cell,
+  :where([data-selection-appearance='accent']) .data-table__data-row:has(+ .data-table__detail-row:hover) > .data-table__cell {
+    background-color: var(--param-color-hover-accent);
+  }
+
+  /* A hovered row gets a line on top and at the bottom, around the data row and its detail row together. The top line
+     overlaps the line of the row above (negative margin, like the selection border), so nothing shifts. Selected rows
+     keep their own lines. */
+  .data-table__data-row:hover > .data-table__cell:not([data-selected]),
+  .data-table__data-row:has(+ .data-table__detail-row:hover) > .data-table__cell:not([data-selected]) {
+    margin-top: -1px;
+    border-top: 1px solid var(--param-color-border);
+  }
+
+  .data-table__data-row:hover:not(:has(+ .data-table__detail-row)) > .data-table__cell:not([data-selected]),
+  .data-table__data-row:hover + .data-table__detail-row > .data-table__cell:not([data-selected]),
+  .data-table__detail-row:hover > .data-table__cell:not([data-selected]) {
+    border-bottom-color: var(--param-color-border);
+  }
+
+  /* selectionAppearance="accent": the lines of a hovered row are in the line color of the accent selection, to go
+     with the accent hover (the same selectors, so they win at equal weight). */
+  :where([data-selection-appearance='accent']) .data-table__data-row:hover > .data-table__cell:not([data-selected]),
+  :where([data-selection-appearance='accent']) .data-table__data-row:has(+ .data-table__detail-row:hover) > .data-table__cell:not([data-selected]) {
+    border-top-color: var(--param-color-selected-border);
+  }
+
+  :where([data-selection-appearance='accent']) .data-table__data-row:hover:not(:has(+ .data-table__detail-row)) > .data-table__cell:not([data-selected]),
+  :where([data-selection-appearance='accent']) .data-table__data-row:hover + .data-table__detail-row > .data-table__cell:not([data-selected]),
+  :where([data-selection-appearance='accent']) .data-table__detail-row:hover > .data-table__cell:not([data-selected]) {
+    border-bottom-color: var(--param-color-selected-border);
+  }
+
+  /* The outer sides of a hovered row (the first and the last cell of the data row and of its detail row): the color of its
+     lines on top and at the bottom, so the row is framed; the line color of the accent selection with the accent hover.
+     Selected rows keep their own (above). */
+  .data-table__data-row:hover > .data-table__cell:not([data-selected]):first-child,
+  .data-table__data-row:has(+ .data-table__detail-row:hover) > .data-table__cell:not([data-selected]):first-child,
+  .data-table__data-row:hover + .data-table__detail-row > .data-table__cell:not([data-selected]):first-child,
+  .data-table__detail-row:hover > .data-table__cell:not([data-selected]):first-child {
+    border-inline-start-color: var(--param-color-border);
+  }
+
+  .data-table__data-row:hover > .data-table__cell:not([data-selected]):last-child,
+  .data-table__data-row:has(+ .data-table__detail-row:hover) > .data-table__cell:not([data-selected]):last-child,
+  .data-table__data-row:hover + .data-table__detail-row > .data-table__cell:not([data-selected]):last-child,
+  .data-table__detail-row:hover > .data-table__cell:not([data-selected]):last-child {
+    border-inline-end-color: var(--param-color-border);
+  }
+
+  :where([data-selection-appearance='accent']) .data-table__data-row:hover > .data-table__cell:not([data-selected]):first-child,
+  :where([data-selection-appearance='accent']) .data-table__data-row:has(+ .data-table__detail-row:hover) > .data-table__cell:not([data-selected]):first-child,
+  :where([data-selection-appearance='accent']) .data-table__data-row:hover + .data-table__detail-row > .data-table__cell:not([data-selected]):first-child,
+  :where([data-selection-appearance='accent']) .data-table__detail-row:hover > .data-table__cell:not([data-selected]):first-child {
+    border-inline-start-color: var(--param-color-selected-border);
+  }
+
+  :where([data-selection-appearance='accent']) .data-table__data-row:hover > .data-table__cell:not([data-selected]):last-child,
+  :where([data-selection-appearance='accent']) .data-table__data-row:has(+ .data-table__detail-row:hover) > .data-table__cell:not([data-selected]):last-child,
+  :where([data-selection-appearance='accent']) .data-table__data-row:hover + .data-table__detail-row > .data-table__cell:not([data-selected]):last-child,
+  :where([data-selection-appearance='accent']) .data-table__detail-row:hover > .data-table__cell:not([data-selected]):last-child {
+    border-inline-end-color: var(--param-color-selected-border);
+  }
+
+  /* The border of an unchecked checkbox of a hovered row is the one of a selected checkbox, the checkbox's own color
+     (`currentColor`: the primary color, or the gray of the neutral appearance), in both appearances (2026-10-04, the
+     user's wish). A selected one has it anyway. The same on a hovered card (2026-10-05). */
+  .data-table__data-row:hover .data-table__check:not(:checked):not(:indeterminate),
+  .data-table__data-row:has(+ .data-table__detail-row:hover) .data-table__check:not(:checked):not(:indeterminate),
+  .data-table__card:hover .data-table__check:not(:checked):not(:indeterminate) {
+    border-color: currentColor;
+  }
+
+  /* A hovered row (with its detail row) shows no divider before the action column either (only its color goes). */
+  .data-table__data-row:hover > .data-table__cell[data-divider='start'],
+  .data-table__data-row:hover + .data-table__detail-row > .data-table__cell[data-divider='start'],
+  .data-table__detail-row:hover > .data-table__cell[data-divider='start'],
+  .data-table__data-row:has(+ .data-table__detail-row:hover) > .data-table__cell[data-divider='start'] {
+    border-inline-start-color: transparent;
+  }
+
+  /* The first row needs no top line: the line of the header is right above it. A line of its own could not overlap the
+     line of the header (the sticky header paints above it), so it would make the row grow on hover. */
+  .data-table__header-row + .data-table__data-row:hover > .data-table__cell:not([data-selected]),
+  .data-table__header-row + .data-table__data-row:has(+ .data-table__detail-row:hover) > .data-table__cell:not([data-selected]) {
+    margin-top: 0;
+    border-top: none;
+  }
+}
+
+/* Plain text of a cell: one line, with an ellipsis when it does not fit. With `wrap` on its column it wraps instead
+   (hyphenated, see .data-table__cell), and so does the text of a detail row. Custom `render` content is left alone. */
+.data-table__cell-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  :where(.data-table__cell[data-wrap], .data-table__detail-cell) > & {
+    overflow: visible;
+    white-space: normal;
+  }
+}
+
+.data-table__detail-cell {
+  display: block;
+}
+
+/* Row groups (`groupBy`): the header row of a group, over the whole width, with bold text and no background of its own
+   (2026-10-04, the user's wish: a gray band looked heavy, a light one too; the gap above and the weight set it apart),
+   of the normal height of a row (no hover and no row click: only its checkbox, its toggle button and its actions act).
+   The line below is the cell's own. */
+.data-table__group-row {
+}
+
+.data-table__group-cell {
+  font-weight: var(--param-font-weight-bold);
+}
+
+/* A gap above every group header, the first one too (the one right below the column headers: without a band, a bold
+   label tight under the header line would look like a part of the header): a transparent top border. It is part of the
+   cell, so the height the row drag measures includes it, and the rows slide by the right amount (a margin would not be
+   in it). */
+.data-table__group-row > .data-table__group-cell {
+  border-top: var(--param-spacing-sm) solid transparent;
+}
+
+/* The toggle: the whole rest of the band, a caret (right while collapsed, down while expanded) and the content. */
+.data-table__group-toggle {
+  display: flex;
+  flex: 1 1 auto;
+  gap: var(--param-spacing-xs);
+  align-items: center;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--param-button-radius);
+  background-color: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: var(--param-focus-ring-width) solid var(--param-color-focus);
+    outline-offset: var(--param-focus-ring-offset);
+  }
+}
+
+.data-table__group-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The group actions at the end of the band: in the normal weight, like the row actions. */
+.data-table__group-cell > .data-table__row-actions {
+  font-weight: normal;
+}
+
+.data-table__group-count {
+  flex: none;
+  color: var(--param-color-text-dimmed);
+  font-size: var(--param-font-size-sm);
+  font-weight: normal;
+}
+
+/* Moving rows (`reorder`): the drag handle at the start of a row, a dimmed grip that takes the text color on hover.
+   Without search and filters only: otherwise it is hidden, with its room kept (`data-inactive`). No scrolling and no
+   text selection start on it (touch, mouse). */
+.data-table__drag-handle {
+  color: var(--param-color-text-dimmed);
+  cursor: grab;
+  touch-action: none;
+
+  @media (hover: hover) {
+    &:hover {
+      color: var(--param-color-text);
+    }
+
+    /* On the accent hover of its row: a darker shade of the accent tint instead of the gray (the selection's line
+       color, one step over the row). */
+    :where([data-selection-appearance='accent']) &:hover:not(:disabled) {
+      background-color: var(--param-color-selected-border);
+    }
+  }
+
+  /* The same weight as the gray hover and press of `.data-table__icon-button` (and later in the file), so these win. */
+  :where([data-selection-appearance='accent']) &:active:not(:disabled) {
+    background-color: color-mix(in srgb, var(--param-color-selected-border), var(--param-color-text) 10%);
+  }
+
+  &:focus-visible {
+    outline: var(--param-focus-ring-width) solid var(--param-color-focus);
+    outline-offset: calc(-1 * var(--param-focus-ring-width));
+  }
+
+  &[data-inactive] {
+    visibility: hidden;
+  }
+}
+
+/* During a drag: the grabbing hand everywhere, and no text selection. */
+.data-table[data-dragging] {
+  cursor: grabbing;
+  user-select: none;
+
+  & * {
+    cursor: grabbing;
+  }
+}
+
+/* The dragged row (its cells and those of its detail row, `data-drag`, moved by an inline transform) is lifted above
+   the other rows: opaque (the surface, unless the selection or the hover color it has anyway). It is above the fixed
+   columns of the other rows too (`z-index: 1`, they come later and would cover it), and the header stays above it. */
+.data-table__row > [data-drag='dragged'] {
+  z-index: 2;
+}
+
+:where(.data-table__row > [data-drag='dragged']) {
+  background-color: var(--param-color-surface);
+}
+
+/* A line on top and at the bottom of the dragged row (with its detail row), of the normal width: the normal line
+   color, and with the accent appearance the line color of the accent selection. The top line overlaps the line above
+   (like the selection border), so nothing shifts. These rules weigh more than the hover and the first-row rules and
+   come after them, so the lines are the same whether the row is hovered or not (touch), and also on the first row
+   (which moves away from the header). */
+.data-table .data-table__table .data-table__data-row > .data-table__cell[data-drag='dragged'] {
+  margin-top: -1px;
+  border-top: 1px solid var(--param-color-border);
+}
+
+.data-table .data-table__table .data-table__data-row:not(:has(+ .data-table__detail-row)) > .data-table__cell[data-drag='dragged'],
+.data-table .data-table__table .data-table__detail-row > .data-table__cell[data-drag='dragged'] {
+  border-bottom-color: var(--param-color-border);
+}
+
+/* The same selectors (the attribute on the root in `:where()`, weightless), so they win at equal weight. */
+.data-table:where([data-selection-appearance='accent']) .data-table__table .data-table__data-row > .data-table__cell[data-drag='dragged'] {
+  border-top-color: var(--param-color-selected-border);
+}
+
+.data-table:where([data-selection-appearance='accent']) .data-table__table .data-table__data-row:not(:has(+ .data-table__detail-row)) > .data-table__cell[data-drag='dragged'],
+.data-table:where([data-selection-appearance='accent']) .data-table__table .data-table__detail-row > .data-table__cell[data-drag='dragged'] {
+  border-bottom-color: var(--param-color-selected-border);
+}
+
+/* The rows it passes slide aside to make room (their transform, set inline); the dragged row follows the pointer
+   without delay. Without animation with reduced motion (the rule at the end of the file weighs less than this one). */
+@media (prefers-reduced-motion: no-preference) {
+  .data-table[data-dragging] .data-table__row > :not([data-drag='dragged']) {
+    transition: transform 150ms ease, background-color 120ms ease;
+  }
+}
+
+/* The announcement of a move, for screen readers only. */
+.data-table__live-region {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Row editing (`saveRow`, `createRow`): the edited row (blocked, not faded) shows its draft, and its edit form follows
+   it over the whole width. */
+.data-table__data-row[data-editing] > .data-table__cell {
+  cursor: auto;
+}
+
+/* It unfolds when it opens (400ms, the time of the filter view, `EDIT_FORM_OPEN_TIME` in the view, while its row folds up), from no height
+   to its own: a grid of one row from `0fr` to `1fr` (`@starting-style` below), with the padding inside the form, so
+   nothing of it shows before. It closes at once. */
+.data-table__edit-form-cell {
+  display: grid;
+  grid-template-rows: 1fr;
+  padding: 0;
+  transition: grid-template-rows 400ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.data-table__edit-form-clip {
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Its content fades in while it unfolds. Its width decides where the labels go (see `.data-table__edit-field`). */
+.data-table__edit-form {
+  container: data-table-edit-form / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--param-spacing-sm);
+  padding: var(--param-spacing-sm);
+  transition: opacity 400ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+@starting-style {
+  .data-table__edit-form-cell {
+    grid-template-rows: 0fr;
+  }
+
+  .data-table__edit-form {
+    opacity: 0;
+  }
+}
+
+/* "Cancel" (and Escape): the other way round, before it closes (its row unfolds again meanwhile, see the view), in the
+   time of the filter view's closing (250ms, `EDIT_FORM_CLOSE_TIME`). */
+.data-table__edit-form-cell[data-closing] {
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 250ms ease-in;
+
+  & .data-table__edit-form {
+    opacity: 0;
+    transition: opacity 250ms ease-in;
+  }
+}
+
+/* And the rest of the table fades back (and gets its colors back). */
+.data-table[data-edit-closing] :is(.data-table__blocker[data-blocked] > *, :where(.data-table__data-row, .data-table__detail-row, .data-table__group-row)[data-blocked] > *) {
+  opacity: 1;
+  filter: none;
+  transition: opacity 250ms ease-in, filter 250ms ease-in, background-color 120ms ease;
+}
+
+.data-table[data-edit-closing] .data-table__table-area > [data-blocked] {
+  opacity: 1;
+  filter: none;
+  transition: opacity 250ms ease-in, filter 250ms ease-in, background-color 120ms ease;
+}
+
+/* The fields: the label above the editor, in as many columns as fit (each at least 12rem wide). */
+/* The fields: in as many columns as fit (a column: the widest label, the gap and an editor of at least 12rem; the
+   view sets it, once the labels are measured). */
+.data-table__edit-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+  gap: var(--param-spacing-xs) var(--param-spacing-md);
+}
+
+/* A field: its label (muted, right aligned, as wide as the widest one, set inline) before its editor, like the filters
+   of the filter view. */
+.data-table__edit-field {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--param-spacing-sm);
+  align-items: center;
+  min-width: 0;
+}
+
+.data-table__edit-label {
+  overflow: hidden;
+  color: var(--param-color-text-dimmed);
+  text-align: end;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* A narrow form (a drawer, a phone): the label above its editor, small. */
+@container data-table-edit-form (width < 24rem) {
+  .data-table__edit-field {
+    grid-template-columns: minmax(0, 1fr);
+    gap: calc(var(--param-spacing-xs) / 2);
+  }
+
+  .data-table__edit-label {
+    font-size: var(--param-font-size-sm);
+    text-align: start;
+  }
+}
+
+/* The editors fill their field: the built-in ones small (like the controls of the filter view), and an own one too. */
+.data-table__edit-control {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  & > * {
+    width: 100%;
+    min-width: 0;
+  }
+
+  & .data-table__input {
+    height: calc(0.8 * var(--param-control-height));
+    padding-inline-start: var(--param-spacing-xs);
+    font-size: calc((var(--param-font-size-sm) + var(--param-font-size)) / 2);
+  }
+
+  & .data-table__field .data-table__select {
+    padding-inline-start: calc(var(--param-spacing-xs) + 1px);
+  }
+}
+
+/* The message of a failed save on the left, "Cancel" and "Save" on the right. */
+.data-table__edit-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: calc(var(--param-spacing-xs) / 2);
+
+  & > .data-table__apply-button {
+    display: inline-flex;
+    gap: var(--param-spacing-xs);
+    align-items: center;
+    margin-inline-start: calc(var(--param-spacing-xs) / 2);
+  }
+
+  & > .data-table__apply-button[data-busy] svg {
+    animation: data-table-spin 800ms linear infinite;
+  }
+}
+
+/* While a row is edited, everything else is blocked (inert) and faded as under the open filter view (2026-10-04, the
+   user's wish): the toolbar, the other rows and the footer to 80%, in grayscale (2026-10-10, the user's wish: like the
+   filter view, so links, badges and avatars of the app's content turn gray too), in 400ms (back in 250ms, above). The
+   column headers are not faded (they are opaque over the scrolled rows). */
+.data-table__blocker {
+  display: contents;
+}
+
+.data-table__blocker[data-blocked] > *,
+:where(.data-table__data-row, .data-table__detail-row, .data-table__group-row)[data-blocked] > *,
+.data-table__table-area > [data-blocked] {
+  opacity: 0.8;
+  filter: grayscale(1);
+}
+
+.data-table__blocker[data-blocked] > *,
+:where(.data-table__data-row, .data-table__detail-row, .data-table__group-row)[data-blocked] > *,
+.data-table__table-area > [data-blocked] {
+  /* Faded while the form unfolds, and back while it folds up after "Cancel" (after "Save" at once). */
+  transition: opacity 400ms cubic-bezier(0.2, 0, 0, 1), filter 400ms cubic-bezier(0.2, 0, 0, 1),
+    background-color 120ms ease;
+}
+
+/* The message of a failed save, at the start of the footer of the edit form. */
+.data-table__edit-error {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--param-color-danger);
+  font-size: var(--param-font-size-sm);
+}
+
+/* No line below it (the cells have one): an empty table ends with its text, not with a line. Not selectable (the
+   default text and a custom `empty` alike), like the toolbar and the footer: it is no data. */
+.data-table__empty-cell {
+  grid-column: 1 / -1;
+  user-select: none;
+  flex-direction: column;
+  gap: var(--param-spacing-xs);
+  justify-content: center;
+  padding: calc(2 * var(--param-spacing-md));
+  border-bottom: none;
+}
+
+@keyframes data-table-popup-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+/* Cards (2026-10-05): a narrow data table shows its rows as cards instead of a table (see `renderCard` in the
+   view). The list has as many columns of cards as fit (2026-10-05), each card at least 20rem wide: one in a narrow
+   table, more with "Cards" chosen in a wide one. The cards fill a line from left to right, and the cards of a line are
+   equally high. (One column with the labels of all cards lined up, by a subgrid, came first, the same day.) */
+.data-table__cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  gap: var(--param-spacing-sm);
+  padding: var(--param-spacing-xs) var(--param-spacing-sm) var(--param-spacing-sm);
+}
+
+/* A card: a framed block in the line color of the rows, a little rounder than the controls; hover and selection like a
+   row (the same colors, and the frame in the selection's line color). Two columns of its own: the labels (as wide as its
+   widest) and the values. */
+.data-table__card {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-content: start;
+  align-items: baseline;
+  gap: var(--param-spacing-xs) var(--param-spacing-md);
+  padding: var(--param-spacing-sm) var(--param-spacing-md);
+  border: 1px solid var(--param-color-divider);
+  border-radius: calc(2 * var(--param-radius));
+  background-color: var(--param-color-surface);
+  transition: background-color 120ms ease, border-color 120ms ease;
+
+  :where([data-selection='single'], [data-selection='multi']) & {
+    cursor: pointer;
+  }
+
+  /* The bar's content and the controls of a value keep the normal cursor (like the cells of a row); links keep
+     theirs. The rest of a value is part of the card's click, like the free space. */
+  & > :not(.data-table__card-value) > *,
+  & > .data-table__card-value :is(
+      a, button, input, select, textarea, label, summary, [role='button'], [role='link'], [role='checkbox'],
+    [role='switch'], [role='menuitem'], [role='tab'], [tabindex], [contenteditable]
+    ) {
+    cursor: auto;
+  }
+
+  & a:any-link {
+    cursor: pointer;
+  }
+
+  &[data-selected] {
+    border-color: var(--param-color-border);
+    background-color: var(--param-color-surface-strong);
+  }
+
+  :where([data-selection-appearance='accent']) &[data-selected] {
+    border-color: var(--param-color-selected-border);
+    background-color: var(--param-color-selected);
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      border-color: var(--param-color-border);
+      background-color: var(--param-color-surface-strong);
+    }
+
+    :where([data-selection-appearance='accent']) &:hover {
+      border-color: var(--param-color-selected-border);
+      background-color: var(--param-color-hover-accent);
+    }
+  }
+
+  /* Faded while another row is edited (like the rows of the grid), in grayscale (2026-10-10). */
+  &[data-blocked] {
+    opacity: 0.15;
+    filter: grayscale(1);
+  }
+}
+
+/* The bar on top of a card: the selection and the details toggle at the start, the row actions at the end. */
+.data-table__card-bar {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: var(--param-spacing-xs);
+  min-height: calc(0.75 * var(--param-control-height));
+}
+
+/* The selection of a card: its free space is a click on its checkbox (like the selection cell). */
+.data-table__card-select {
+  display: inline-flex;
+  align-items: center;
+  padding: calc(var(--param-spacing-xs) / 2);
+  margin: calc(var(--param-spacing-xs) / -2);
+}
+
+.data-table__card-actions {
+  margin-inline-start: auto;
+}
+
+.data-table__card-label {
+  grid-column: 1;
+  color: var(--param-color-text-dimmed);
+  user-select: none;
+}
+
+/* The value: like a cell's content, but its text wraps (a card has the room below, not beside it). */
+.data-table__card-value {
+  grid-column: 2;
+  min-width: 0;
+  overflow-wrap: break-word;
+  hyphens: auto;
+
+  & > .data-table__cell-text {
+    overflow: visible;
+    white-space: normal;
+  }
+}
+
+.data-table__card-detail {
+  grid-column: 1 / -1;
+  padding-top: var(--param-spacing-xs);
+  border-top: 1px solid var(--param-color-divider);
+  overflow-wrap: break-word;
+}
+
+/* A group header between the cards: its checkbox, the toggle and its actions on one line, set apart by room above. */
+.data-table__card-group {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: var(--param-spacing-xs);
+  padding-top: var(--param-spacing-sm);
+  font-weight: var(--param-font-weight-bold);
+  user-select: none;
+
+  &:first-child {
+    padding-top: 0;
+  }
+}
+
+.data-table__cards-empty {
+  display: flex;
+  grid-column: 1 / -1;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--param-spacing-xs);
+  padding: calc(2 * var(--param-spacing-md));
+  user-select: none;
+}
+
+/* Reduced motion (a setting of the system): no animations and no transitions (the loading bar stands still). Last in
+   the file, so it wins over the rules above at equal weight. */
+@media (prefers-reduced-motion: reduce) {
+  .data-table *,
+  .data-table *::before {
+    animation: none;
+    transition: none;
+  }
+}

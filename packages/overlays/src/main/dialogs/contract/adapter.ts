@@ -25,6 +25,7 @@ import type {
   FormConfirm,
 } from "./dialog.js";
 import type { Renderable } from "./content.js";
+import type { DialogTheme } from "./theme.js";
 
 /**
  * Data for the dialog element, as plain values. Framework content never appears here —
@@ -49,8 +50,8 @@ export interface DialogProps<C extends object> {
   /** The text of that button for its state, translated ("Maximize" or "Restore"). */
   maximizeLabel: string;
   onToggleMaximize: () => void;
-  /** Caller theme, already resolved to `--dialog-*` custom properties. */
-  themeVars: Record<string, string>;
+  /** The theme: the caller's tokens merged over the defaults. */
+  theme: DialogTheme;
   /** Caller stylesheet text, scoped by the element to its own instance. */
   styles: string | null;
   /** Whether the content slot is wrapped in a <form> (form dialogs). */
@@ -81,7 +82,15 @@ export interface DialogProps<C extends object> {
    * The note the library renders inside its own box, or null for none. Plain data, not a
    * slot: the box is shadow chrome (see DialogRenderOverrides.note for replacing it).
    */
-  note: { title?: string; message: string } | null;
+  note: { title?: string; message: string; tone: "error" | "question" } | null;
+  /**
+   * Whether a question is asked (FormAttempt.ask): its text is the note (tone
+   * "question", or "error" with `danger`), `buttons` are its two answers, and the body
+   * cannot be edited.
+   */
+  asking: boolean;
+  /** The header title shown in place of the dialog's own (FormAskOptions.title). */
+  askTitle?: string;
   /**
    * The user dismissed the note (by typing, or by pressing a button). The note itself is
    * spec state — the controller drops it and re-renders. The element has already played
@@ -166,4 +175,10 @@ export interface DialogAdapter<C extends object> {
    * validation (see {@link FormConfirm}).
    */
   getConfirm?(): FormConfirm | undefined;
+  /**
+   * Whether the dialog's content has changes, as it says itself (React: `<Form dirty>`);
+   * `false` when it says nothing. Asked when a form dialog is about to close: with changes
+   * it asks first ("Discard your changes?").
+   */
+  isDirty?(): boolean;
 }

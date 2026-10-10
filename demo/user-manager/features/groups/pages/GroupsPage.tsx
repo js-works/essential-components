@@ -2,11 +2,11 @@ import { Anchor, Group as MantineGroup, Stack, Text, ThemeIcon } from '@mantine/
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { useDataNavigatorController } from '../../../../../packages/data-navigator/src/react';
-import type { DataNavigatorComponent } from '../../../../../packages/data-navigator/src/react';
+import { useDataTableController } from '../../../../../packages/data-table/src/react';
+import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
 import type { AccessData, Group } from '../../../domain';
+import { DataTable } from '../../../shared/ui/dataTable';
 import { appIcons } from '../../../shared/ui/icons';
-import { Navigator } from '../../../shared/ui/navigator';
 import { PageHeader } from '../../../shared/ui/parts';
 import { useGrantAccess } from '../../access';
 import { useTableSource } from '../../iam';
@@ -26,13 +26,13 @@ function groupRows(data: AccessData): GroupRow[] {
 
 // All groups: what a group is granted, its members get.
 function GroupsPage(): ReactElement {
-  const nav = useDataNavigatorController<GroupRow>();
+  const nav = useDataTableController<GroupRow>();
   const navigate = useNavigate();
   const flows = useGroupFlows();
   const grantAccess = useGrantAccess();
   const source = useTableSource<GroupRow>('groups', groupRows, { search: ['name', 'description'] }, nav.reload);
 
-  const columns = useMemo((): readonly DataNavigatorComponent.Column<GroupRow>[] => [
+  const columns = useMemo((): readonly DataTableComponent.Column<GroupRow>[] => [
     {
       key: 'name',
       header: 'Name',
@@ -56,8 +56,15 @@ function GroupsPage(): ReactElement {
     { key: 'grants', header: 'Grants', width: 1.2, sortable: true, align: 'end', hideable: true },
   ], []);
 
-  const actions = useMemo((): readonly DataNavigatorComponent.Action<GroupRow>[] => [
-    { type: 'general', key: 'new', label: 'New group', icon: appIcons.add, onClick: () => void flows.create() },
+  const actions = useMemo((): readonly DataTableComponent.Action<GroupRow>[] => [
+    {
+      type: 'general',
+      key: 'new',
+      label: 'New group',
+      icon: appIcons.add,
+      variant: 'primary',
+      onClick: () => void flows.create(),
+    },
     {
       type: 'singleRow',
       key: 'open',
@@ -96,14 +103,13 @@ function GroupsPage(): ReactElement {
   return (
     <Stack gap="md">
       <PageHeader title="Groups" subtitle="Sets of users. Access granted to a group is its members' access." />
-      <Navigator
+      <DataTable
         controller={nav}
         source={source}
         rowKey="id"
         columns={columns}
         actions={actions}
         searchable
-        pageSize={25}
         defaultSort={{ key: 'name', direction: 'asc' }}
       />
     </Stack>

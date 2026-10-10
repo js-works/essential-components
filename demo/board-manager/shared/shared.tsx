@@ -25,20 +25,20 @@ import {
   TbUsers,
 } from 'react-icons/tb';
 import { useStore } from 'zustand';
-import { i18n as navigatorI18n } from '../../../packages/data-navigator/demo/i18n';
-import { autocompleteColumnFilter, createDataNavigatorComponent } from '../../../packages/data-navigator/src/react';
-import type { DataNavigatorComponent } from '../../../packages/data-navigator/src/react';
-import { mantineTheme } from '../../../packages/data-navigator/src/themes';
+import { i18n as tableI18n } from '../../../packages/data-table/demo/i18n';
+import { autocompleteColumnFilter, createDataTableComponent } from '../../../packages/data-table/src/react';
+import type { DataTableComponent } from '../../../packages/data-table/src/react';
+import { mantineTheme } from '../../../packages/data-table/src/themes';
 import { db, suggestOrganizations, suggestPeople } from '../infra/in-memory';
 import type { Db } from '../infra/in-memory';
 
 export {
   appIcons,
+  DataTable,
   formatDate,
   formatDateTime,
   formatSize,
   formatTime,
-  Navigator,
   organizationFilter,
   PAGE_SIZE_OPTIONS,
   PageHeader,
@@ -50,18 +50,21 @@ export {
   useScheme,
 };
 
-// What the pages share: the table (a data navigator with the Mantine theme), formatting, icons, the page header, and
+// What the pages share: the table (a data table with the Mantine theme), formatting, icons, the page header, and
 // the scope of Mantine (its variables and its color scheme, which follows the page's switch).
 
-// One data navigator component for every table. It follows `<html lang>` through the i18n adapter of its demo.
-const DataNavigator = createDataNavigatorComponent({ i18n: navigatorI18n, theme: mantineTheme });
+// One data table component for every table. It follows `<html lang>` through the i18n adapter of its demo.
+const BaseDataTable = createDataTableComponent({ i18n: tableI18n, theme: mantineTheme });
 
 // Every table in a `board-manager__table`, which has no box of its own (`display: contents`): the hook of the layout
-// that lets the table of a page fill the height below the top bar (`board-manager.css`).
-function Navigator<Row>(props: DataNavigatorComponent.Props<Row>): ReactElement {
+// that lets the table of a page fill the height below the app header (`board-manager.css`). The footer only when there is
+// something to page (`footer="auto"`, 2026-10-06), and the number of rows after the title (`showTotal`, so a short
+// list without a footer still tells it), and 50 rows a page (2026-10-08, the user's wish, in every app), unless a table
+// says otherwise.
+function DataTable<Row>(props: DataTableComponent.Props<Row>): ReactElement {
   return (
     <div className="board-manager__table">
-      <DataNavigator {...props} />
+      <BaseDataTable footer="auto" showTotal pageSize={50} {...props} />
     </div>
   );
 }

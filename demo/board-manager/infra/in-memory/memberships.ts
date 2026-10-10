@@ -1,4 +1,4 @@
-import type { DataNavigatorComponent } from '../../../../packages/data-navigator/src/react';
+import type { DataTableComponent } from '../../../../packages/data-table/src/react';
 import { ROLES } from '../../domain';
 import type { Membership, Role } from '../../domain';
 import { localDate } from './helpers';
@@ -14,7 +14,7 @@ type MemberRow = Membership & { name: string; email: string; organization: strin
 // A membership of a person, with the name of its board.
 type MembershipRow = Membership & { board: string };
 
-function fetchBoardMembers(boardId: string): DataNavigatorComponent.Source<MemberRow> {
+function fetchBoardMembers(boardId: string): DataTableComponent.Source<MemberRow> {
   return async (query, signal) => {
     await wait(LOADING_TIME, signal);
 
@@ -47,7 +47,7 @@ function fetchBoardMembers(boardId: string): DataNavigatorComponent.Source<Membe
 }
 
 // The memberships of one person: chair first, then vice chair, secretary, members (the table's order without a sort).
-function fetchMemberships(personId: string): DataNavigatorComponent.Source<MembershipRow> {
+function fetchMemberships(personId: string): DataTableComponent.Source<MembershipRow> {
   return async (query, signal) => {
     await wait(LOADING_TIME, signal);
 

@@ -1,64 +1,65 @@
-import type { MiniApp } from '../api';
+import type { NavItem } from '../api';
 
 export { groupsOf, search, subgroupsOf };
 export type { Group, Match };
 
-// A group of the navigation: its name (`''` for the apps without a group) and its apps, in the order of the config.
-type Group = { name: string; apps: readonly MiniApp[] };
+// A group of the navigation: its name (`''` for the items without a group) and its items, in the order of the config.
+type Group = { name: string; items: readonly NavItem[] };
 
-// A search result: the app, and where the query is in its title (for the highlight), if it is there.
-type Match = { app: MiniApp; title?: { start: number; end: number } };
+// A search result: the item, and where the query is in its title (for the highlight), if it is there.
+type Match = { item: NavItem; title?: { start: number; end: number } };
 
-// The groups in the order of their first app; the apps without a group come first.
-function groupsOf(apps: readonly MiniApp[]): Group[] {
-  const groups = new Map<string, MiniApp[]>([['', []]]);
+// The groups in the order of their first item; the items without a group come first.
+function groupsOf(items: readonly NavItem[]): Group[] {
+  const groups = new Map<string, NavItem[]>([['', []]]);
 
-  for (const app of apps) {
-    const name = app.group ?? '';
+  for (const item of items) {
+    const name = item.group ?? '';
     const list = groups.get(name);
 
     if (list === undefined) {
-      groups.set(name, [app]);
+      groups.set(name, [item]);
     } else {
-      list.push(app);
+      list.push(item);
     }
   }
 
-  return [...groups].map(([name, list]) => ({ name, apps: list })).filter((group) => group.apps.length > 0);
+  return [...groups].map(([name, list]) => ({ name, items: list })).filter((group) => group.items.length > 0);
 }
 
-// The second level of a group: its apps without a subgroup first (`loose`), then its subgroups, in the order of their
-// first app.
-function subgroupsOf(apps: readonly MiniApp[]): { loose: readonly MiniApp[]; subgroups: Group[] } {
-  const [first, ...rest] = groupsOf(apps.map((app) => ({ ...app, group: app.subgroup ?? '' })));
-  const original = (list: readonly MiniApp[]) => list.map((app) => apps.find((other) => other.id === app.id) ?? app);
+// The second level of a group: its items without a subgroup first (`loose`), then its subgroups, in the order of their
+// first item.
+function subgroupsOf(items: readonly NavItem[]): { loose: readonly NavItem[]; subgroups: Group[] } {
+  const [first, ...rest] = groupsOf(items.map((item) => ({ ...item, group: item.subgroup ?? '' })));
+  const original = (list: readonly NavItem[]) =>
+    list.map((item) => items.find((other) => other.id === item.id) ?? item);
 
   if (first === undefined) {
     return { loose: [], subgroups: [] };
   }
 
-  const groups = [first, ...rest].map((group) => ({ name: group.name, apps: original(group.apps) }));
+  const groups = [first, ...rest].map((group) => ({ name: group.name, items: original(group.items) }));
 
   return first.name === ''
-    ? { loose: groups[0]?.apps ?? [], subgroups: groups.slice(1) }
+    ? { loose: groups[0]?.items ?? [], subgroups: groups.slice(1) }
     : { loose: [], subgroups: groups };
 }
 
-// The apps that match every word of the query (ignoring the case), best first: the title starts with the query, a
+// The items that match every word of the query (ignoring the case), best first: the title starts with the query, a
 // word of the title starts with it, the title contains it, then a match in the description or the group only.
-function search(apps: readonly MiniApp[], query: string): Match[] {
+function search(items: readonly NavItem[], query: string): Match[] {
   const needle = query.trim().toLowerCase();
 
   if (needle === '') {
-    return apps.map((app) => ({ app }));
+    return items.map((item) => ({ item }));
   }
 
   const words = needle.split(/\s+/);
 
-  return apps
-    .flatMap((app) => {
-      const title = app.title.toLowerCase();
-      const all = [title, app.description ?? '', app.group ?? '', app.subgroup ?? ''].join(' ').toLowerCase();
+  return items
+    .flatMap((item) => {
+      const title = item.title.toLowerCase();
+      const all = [title, item.description ?? '', item.group ?? '', item.subgroup ?? ''].join(' ').toLowerCase();
 
       if (!words.every((word) => all.includes(word))) {
         return [];
@@ -73,8 +74,8 @@ function search(apps: readonly MiniApp[], query: string): Match[] {
         ? 2
         : 3;
 
-      return [{ app, rank, title: index >= 0 ? { start: index, end: index + needle.length } : undefined }];
+      return [{ item, rank, title: index >= 0 ? { start: index, end: index + needle.length } : undefined }];
     })
-    .sort((a, b) => a.rank - b.rank || a.app.title.localeCompare(b.app.title))
-    .map(({ app, title }) => (title === undefined ? { app } : { app, title }));
+    .sort((a, b) => a.rank - b.rank || a.item.title.localeCompare(b.item.title))
+    .map(({ item, title }) => (title === undefined ? { item } : { item, title }));
 }

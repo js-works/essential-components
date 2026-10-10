@@ -2,46 +2,56 @@
 
 The "Board Manager" tab of the root's demo page: a demo of the root (a small app, not a product): boards and
 committees, their meetings, agendas, minutes and documents. Mantine, React Router, Zustand, and three packages: a data
-navigator for every list, the dialogs and toasts of the overlays package, the file upload for documents. The rules of
+table for every list, the dialogs and toasts of the overlays package, the file upload for documents. The rules of
 the root's `CLAUDE.md` apply.
 
 - File structure (the target, open questions, decisions): `STRUCTURE.md`. Read it before moving or adding files.
 
 ## App
 
-- Made to be embedded (later e.g. in XWiki, with content around it): no side navigation, a top bar with the app icon,
-  the title "Board Manager" (a menu of the modules: Overview, Boards, Meetings, Members, Organizations) and a breadcrumb
-  that starts with a house icon and the label "Home" (2026-10-04, the user's wish: a link to the start page; the icon
+- Made to be embedded (later e.g. in XWiki, with content around it): no side navigation, an app header (`AppHeader`; "top bar" before 2026-10-08) of two lines
+  (2026-10-08, the Human Resources' trial, rolled out; one line with a menu of the modules on the title before): the
+  app icon, the title "Board Manager", the modules as tabs (Overview, Boards, Meetings, Members, Organizations;
+  `NavLink`s, the current one, also on its records' pages, in the accent's light ground; below 56rem of the bar a menu
+  in their place: the current module and a chevron), Back and Forward; below them a breadcrumb that starts with a house icon and the label "Home" (2026-10-04, the user's wish: a link to the start page; the icon
   only, labeled "Overview", before). As a link, icon and text are in the link color (the accent, in both schemes; a
   dimmed gray of its own counted in the dark scheme until 2026-10-05; the same in the Media and the User Manager), a
   plain link like the other crumbs and the links in the tables: underlined on hover (2026-10-05, the user's wish; a
   padding and a gray hover ground, like a ghost button, before). On
   the start page it is the only crumb, not a link (the current page). The app icon is only an icon, not a link
-  (2026-10-04; a link to the start page before). The top bar is above the page below it (2026-10-03,
-  `position: relative; z-index: 100`; the same in the Media Manager and the User Manager): its `contain: layout` makes
+  (2026-10-04; a link to the start page before). The app header is above the page below it (2026-10-03,
+  `position: relative; z-index: 100`; the same in the File Center and the User Manager): its `contain: layout` makes
   it a stacking context, so its menus opened under the start page's tiles. The start page is "Overview" (2026-10-04,
   the user's wish; "Main" before), its title and its menu entry; not "Home" (2026-10-03): the app works standalone and
   embedded, where "Home" means the host's.
-  - The top bar stays at the top (2026-10-05, the user's wish: scrolling it away was distracting). The app fills the
+  - The app header stays at the top (2026-10-05, the user's wish: scrolling it away was distracting). The app fills the
     height of its element where that has one (the root page: `board-manager-demo { height: 100% }` in `demo/demo.css`,
-    the cockpit's content area): the top bar stays, `.board-manager__main` scrolls below it. On a host page without a
-    height (the `<board-manager>` element) the app is as high as its content, and the top bar is `position: sticky`.
+    the cockpit's content area): the app header stays, `.board-manager__main` scrolls below it. On a host page without a
+    height (the `<board-manager>` element) the app is as high as its content, and the app header is `position: sticky`.
   - The table of a page fills the rest of the height (2026-10-05, same wish: the column headers should stay): every
     element from the page down to the table is a flex column taking the rest (`.board-manager__main
     :has(.board-manager__table)`), and the table shrinks into it, so its rows scroll and its toolbar, column headers and
-    footer stay (the data navigator's "fixed header and footer"). `Navigator` (`shared.tsx`) wraps every table in a
+    footer stay (the data table's "fixed header and footer"). A short table grows into it too (2026-10-06, the
+    user's wish): its footer is always at the bottom, the rows area takes the empty space (so the pager does not jump
+    on a short last page). Every table has `footer="auto"` (2026-10-06, the user's wish; `DataTable`'s default, a
+    table may override it): a list that fits on one page has no footer. So every table also has `showTotal` (the same
+    day): the number of its rows after its title (the list pages; a table without a title shows none). `DataTable` (`shared.tsx`) wraps every table in a
     `board-manager__table` without a box of its own (`display: contents`), the layout's hook. Not sticky to the page:
-    the data navigator's headers stick only inside its own scroll area, and making them stick to the page would break
+    the data table's headers stick only inside its own scroll area, and making them stick to the page would break
     its horizontal scrolling. Pages without a table scroll as a whole. Not in drawers (they set their table's height).
-  - The top bar is not selectable (`user-select: none`, 2026-10-01), its menu included (no portal).
+  - The app header is not selectable (`user-select: none`, 2026-10-01), its menu included (no portal).
   - The header line of an overview tab ("Overview" and its buttons) is not selectable either
     (`.board-manager__panel-header`, 2026-10-01), like the toolbars of the tables.
-  - Always one line (no wrap): the icon and the title keep their size, the breadcrumb takes the rest and its crumbs
-    end with an ellipsis when it is too short (Home and the separators keep their size). Back and Forward are hidden while the top bar is narrower
+  - No frame (2026-10-08, the user's wish; the same in all five apps; one with rounded corners around both lines
+    before): only a line between the two lines, in the gray of the tiles' borders (Mantine's `Paper withBorder`:
+    gray-3, dark-4 in the dark scheme; not `default-border`, which the theme makes darker).
+  - Each line without a wrap: the icon and the title keep their size; the breadcrumb's crumbs
+    end with an ellipsis when it is too short (Home and the separators keep their size). Back and Forward are hidden while the app header is narrower
     than 40rem (a container query, 2026-10-01).
   - Back and Forward at its right end (2026-10-01; `HistoryButtons` in `App.tsx`): through the memory router's history,
-    like the browser's buttons (which do not step through the app: the hash is only mirrored with `replaceState`, and
-    the element has none). Disabled at either end: `useHistoryPosition()` keeps the keys of the entries (push, replace,
+    like the browser's buttons (which step through the app too while the route is mirrored in the hash, 2026-10-07,
+    the user's wish: `app/hashHistory.ts`, see "The URL hash" in the root's `CLAUDE.md`; the element without `hash`
+    has only these). Disabled at either end: `useHistoryPosition()` keeps the keys of the entries (push, replace,
     pop). No keyboard shortcuts (Alt+arrows belong to the browser and the host page). Tooltips say where they go
     ("Back to Boards"; Mantine's, `fz="xs"`, after 400ms; none while disabled): the history keeps each entry's path, and the name
     is the last crumb of its routes (`matchRoutes`, the breadcrumb's `handle.crumb`), so it follows renames and new
@@ -51,13 +61,13 @@ the root's `CLAUDE.md` apply.
   `/members`, `/members/:personId` (tabs Overview, Boards, Meetings), `/organizations`, `/organizations/:organizationId` (tabs Overview, People).
   - The route is mirrored in the hash after the tab's segment (`#board-manager/boards/b1`), only while the tab is shown.
 - The fake server answers after `LOADING_TIME` (`infra/in-memory/store.ts`): 500ms since 2026-10-06 (the user's wish;
-  1s for a day, to see the data navigator's loading indicators; 300ms before), for every read, the suggestions and the
+  1s for a day, to see the data table's loading indicators; 300ms before), for every read, the suggestions and the
   saves that wait for it.
 - `infra/in-memory/`: the fake server, a Zustand store in memory (`store.ts`, `seed.ts`, one file per entity), seeded (stable) with dates relative to today: 6 boards, 28
   people, 8 organizations, about 50 meetings with agendas, minutes of the held ones, documents. The entity types it
   stores (`Board`, `Meeting`, …, `ROLES`, `MEETING_STATUSES`) are in `domain/`, one file per entity.
 
-- The column menu of the data navigator (its columns with `hideable`) only in the tables with a column hidden by
+- The column menu of the data table (its columns with `hideable`) only in the tables with a column hidden by
   default (2026-10-01): Boards, Meetings, Members (and an organization's People), Organizations, a board's members.
   Not in the agenda and the documents (no hidden column there).
 - The page sizes of the paged tables are one constant, `PAGE_SIZE_OPTIONS` (`shared.tsx`, 2026-10-05): `10, 25, 50`,
@@ -65,7 +75,7 @@ the root's `CLAUDE.md` apply.
   and the sections drawer (100), which show one page.
 - The column of an entity's name is headed by the entity: "Board", "Meeting", "Organization", "Document", "Person"
   (2026-10-02; the people tables said "Name" before).
-- Every column of an organization or a person is filtered by an autocomplete (2026-10-02, the data navigator's
+- Every column of an organization or a person is filtered by an autocomplete (2026-10-02, the data table's
   `autocompleteColumnFilter`; text filters before): `organizationFilter` and `personFilter` (`shared.tsx`), on the
   organizations, the people tables (person, organization), a board's members (person, organization) and the boards
   (chair). Multiple, `minQueryLength: 0` (all options when the list opens, typing narrows them); each option has a
@@ -124,11 +134,13 @@ the root's `CLAUDE.md` apply.
 
 - BlockNote's stylesheet is imported into a layer of its own (`@import … layer(blocknote)` at the top of
   `board-manager.css`, 2026-10-01): it imports Mantine's component styles again, unlayered, which won over the app's
-  rules (the breadcrumb wrapped).
+  rules (the breadcrumb wrapped). Since 2026-10-10 only BlockNote's own styles (`blocknoteStyles.css`, without
+  `mantineStyles.css`, its copy of Mantine's): the copy, in the later layer, won over Mantine's own states
+  (`UnstyledButton`'s transparent background hid the selected calendar day, patched before, and the chosen time).
 - Mantine is scoped: its layered CSS, its variables and color scheme on `.board-manager` (the app, and the content of
   each dialog through `wrapContent`), following the CSS `color-scheme` (see the element); its popups without portal.
 - The components' themes follow Mantine as closely as possible (their values are Mantine's variables): the data
-  navigator's `mantineTheme`, the file upload's `MANTINE_UPLOAD_THEME` (`shared/ui/DocumentUpload.tsx`, kept in the app: a theme in
+  table's `mantineTheme`, the file upload's `MANTINE_UPLOAD_THEME` (`shared/ui/DocumentUpload.tsx`, kept in the app: a theme in
   the package would need its own test and demo). More contrast comes from the app's Mantine theme instead
   (`cssVariablesResolver`, 2026-09-30): `dimmed` `gray.7` (dark `dark.1`) and `placeholder` `gray.6` (dark `dark.2`),
   one step darker than Mantine's (lighter in dark mode); the text and the lines stay Mantine's.
@@ -143,7 +155,8 @@ the root's `CLAUDE.md` apply.
 - Badges keep the case of their text (`tt: 'none'` as a default prop of `Badge` in the theme, 2026-09-30): Mantine's
   stylesheet makes them uppercase ("PLANNED").
 - The dialogs' buttons and close button are Mantine's (`render.actionButton`, `render.closeButton` in the overlays
-  config, each in a Mantine scope): primary filled, danger filled in the danger color, secondary `default`. The
+  config, each in a Mantine scope): primary filled, danger filled in the danger color, secondary `default`, link `subtle` (2026-10-08, the
+  overlays' own `actions`; the same in all five apps). The
   buttons are `size="xs"` (30px, like the buttons of the pages; 2026-10-01, the user's wish; Mantine's `sm`, 36px,
   before). The maximize button of a maximizable dialog (`render.maximizeButton`) is a gray subtle `ActionIcon` like
   the close button, with Tabler's `TbMaximize`/`TbMinimize` and the label ("Maximize", "Restore") as its name and
@@ -152,7 +165,7 @@ the root's `CLAUDE.md` apply.
   `fontSize` and `fontFamily` (`createDialogTheme`), set to Mantine's `fontSizes.sm` and `fontFamily` (the values: the
   dialogs are outside the scopes). Before, the dialogs had their fixed 16px and the system font, larger than the app.
   The spinner placeholder of a scope (the theme's `spinner`, 2026-10-01) is the accent's filled color.
-- The toasts (medium since 2026-10-02, the user's wish; small, like the Media Manager's, before; stacked, bottom
+- The toasts (medium since 2026-10-02, the user's wish; small, like the Media Manager's (now the File Center), before; stacked, bottom
   right) are in Mantine's palette (`createToastTheme()` in `createLook()`): they live in `<body>`, outside the scopes,
   so the colors are the theme's values (`mergeMantineTheme`), with `light-dark()` for the page's scheme.
   - Success toasts in the accent color, like info and loading (2026-10-01, the user's wish: one accent color in the
@@ -179,22 +192,41 @@ the root's `CLAUDE.md` apply.
     uploaded ones. No native validation, no browser bubble.
   - A failed save shows the fake server's message (`errorMessage` in `useForm.tsx`: its errors are meant for the
     user), else form-validation's generic one.
+  - Unsaved changes (2026-10-09, the user's wish; the same in the Time Tracker, the User Manager and Human
+    Resources): `DialogForm` passes form-validation's `isDirty` to the overlays' `<Form dirty>`, so Cancel, Escape
+    and the close button ask first, in place of the dialog's content ("Discard your changes?", Discard, Keep editing; the
+    overlays' texts), when a value differs from its initial one; the dialog shakes briefly. Escape there answers Discard (2026-10-09, the user's wish: Escape, Escape leaves a changed form), said in a line below the question ("Press Esc to discard them.", the overlays' text; only with a keyboard).
   - The labels are translated (`labels: '<form>'`, keys like `person.email`) by the app's i18next (see "Languages"). The adapter is given as a hook (in a dialog the form has no
     `<form>` of its own for a factory). The messages come from the library's catalogs in the same language
     ("Please fill out this field." instead of the former "Required"); the schemas' own messages are keys of `errors` (see "Languages").
 - The message of an invalid input is a badge below it (`board-manager.css`, 2026-10-02, taken from the overlays' React
-  demo): white with a border and text in the danger color, and a shadow (2026-10-06, to try; filled with it before), an arrow pointing up (a CSS mask; a warning triangle until 2026-10-06, the user's wish), no nose (removed 2026-10-06, the user's wish; it pointed up at the field); shown only while the
+  demo): white text on the danger color (2026-10-10, the user's wish, in all four apps and form-validation's demo; white with a border and text in the danger color from 2026-10-06, filled before), and a shadow, an arrow pointing up (a CSS mask; a warning triangle until 2026-10-06, the user's wish), no nose (removed 2026-10-06, the user's wish; it pointed up at the field); shown only while the
   field has the focus (`:focus-within`), hanging over the field below, so nothing moves. For every Mantine input (the
   shared classes `.mantine-InputWrapper-error`, `.mantine-Input-wrapper`); before, only `TextInput` had it, through the
   overlays demo's global CSS. Hidden while a date input's calendar is open (`:has([data-dates-dropdown])`; it lay half under it;
-  Mantine's `DateInput` sets no `aria-expanded`).
-- No native date picker: the date and time of a meeting is Mantine's `DateTimePicker` (`DD.MM.YYYY HH:mm`, its popup in
-  the dialog with a fixed position); the meeting schema's `transform` turns its value into the fake server's `start`.
+  Mantine's `DateInput` sets no `aria-expanded`). `z-index: 10` (2026-10-06, the user's wish; 1 before): above the
+  fields below it, below the app header (100) and Mantine's popups.
+  - A popover since 2026-10-06 (the user's wish; the same in the Time Tracker): `FieldError` (`shared/ui/`), given as
+    Mantine's `error` by `useForm` (which wraps every field function: a message becomes the component, `true` stays).
+    A native `popover="manual"` in the browser's top layer, so a dialog's scrolling body never cuts it off; opened
+    while the field has the focus and no date picker's calendar of it is open, placed by script below the field at its
+    start, 2px away (`GAP`; 4px before 2026-10-07, the user's wish; the same in the Time Tracker, the User Manager and
+    form-validation's demo) (above it, the arrow turned, when there is no room below; inside the window; following
+    scrolling and resizing; no library). Mantine's error element only holds it (no box; its id stays for `aria-describedby`). Same
+    look, fading in. The document upload's error (a slot of the upload, rendered in its shadow DOM part) cannot be a
+    popover: there the component is plain text, in the badge of `::part(error)` as before.
+- No native date picker. The date and the time of a meeting are two fields side by side (2026-10-10, the user's wish):
+  the date Mantine's `DatePickerInput` (`DD.MM.YYYY`), the time Mantine's `Select` of the quarter hours from 7:00 to
+  20:45 (and the meeting's own time if it is another one), searchable; both popups in the dialog with a fixed position.
+  The form joins them into the fake server's `start` (`date` + `T` + `time`) on submit (`useForm` takes a plain Zod
+  object, no `transform`). Before, one `DateTimePicker` (`DD.MM.YYYY HH:mm`): its time's list (`timePickerProps`,
+  `withDropdown`) lay on its calendar or beside its popup, and the chosen hour and minute were not highlighted until
+  BlockNote's copy of Mantine's styles was dropped (see "Mantine").
 - The person of a new member ("Add member" on a board) is an `AsyncSelect` (`AsyncSelect.tsx`, 2026-10-02; a
   `NativeSelect` of all candidates, "Name (Organization)", before): Mantine's own `Select` (`searchable`, `clearable`),
   only fed asynchronously, so it looks and behaves like a Mantine select (popup, scroll area, keyboard, clear button and
   chevron). (A `Combobox` of our own came first, the same day: not Mantine enough, the user's wish.)
-  - Loaded while typing, like the data navigator's autocomplete filter: `load` 250ms after the last key while the list
+  - Loaded while typing, like the data table's autocomplete filter: `load` 250ms after the last key while the list
     is open, a newer query aborts the older one; no filtering on the client (`filter` returns all: `load` did it).
     `minQueryLength: 0`, so all candidates show when the list opens; while the input shows the chosen name (the list
     opened again), `load('')` too.
@@ -231,8 +263,9 @@ the root's `CLAUDE.md` apply.
     Changes: any attribute change of `<html>`, `<body>` or the element reads it again (`MutationObserver`; there is no
     event for a changed computed style), and the system's setting. Not seen: a swapped stylesheet, a media query of
     the host page, a change on another ancestor (then a reload). The language follows `<html lang>`. The routes are in memory only (the host page owns its URL), unless `hash` names a prefix
-    (2026-10-01): `<board-manager hash="bm">` mirrors the route in `#bm/boards/b1`, like the demo tab (read on start, a
-    `hashchange` navigates; written with `replaceState`). A hash with another start is left alone (e.g. XWiki's
+    (2026-10-01): `<board-manager hash="bm">` mirrors the route in `#bm/boards/b1`, like the demo tab (read on start; the
+    browser's Back and Forward step through it: a new page is a new history entry, 2026-10-07; `replaceState` only
+    before). A hash with another start is left alone (e.g. XWiki's
     anchors). Read once, when the element is connected.
   - The colors are custom properties of the element, set by the host page's CSS (2026-10-02; attributes
     `accent-color` and `danger-color` before, 2026-10-01): `--board-manager-accent-color` and
@@ -260,10 +293,10 @@ the root's `CLAUDE.md` apply.
     (live): `createLook()`'s `cssVariablesResolver` sets Mantine's variables to them, with Mantine's values as the
     fallbacks. The size is the app's normal text (Mantine's `sm`, 14px by default, `0.875rem`); Mantine's other sizes
     (`xs` to `xl`) and the headings (`h1` to `h6`) keep their proportions to it. The dialogs' own text too (their
-    theme). Everything using Mantine's variables follows (the data navigator's Mantine theme, BlockNote's look).
+    theme). Everything using Mantine's variables follows (the data table's Mantine theme, BlockNote's look).
   - The scale (2026-10-02): `--board-manager-scale` (a number, 1 by default), CSS only (live): Mantine's
     `--mantine-scale`, which multiplies every size of its components (control heights, spacing, radii, text), and so
-    the data navigator's (its Mantine theme). The text is 14px times the scale, unless `--board-manager-font-size` is
+    the data table's (its Mantine theme). The text is 14px times the scale, unless `--board-manager-font-size` is
     set: that is the final text size, not scaled again (the font size alone leaves the controls as they are, fine from
     about 12 to 16px). Not scaled: what does not use Mantine's variables (the overlays' dialog frame, the file upload's
     own sizes).
@@ -319,6 +352,10 @@ the root's `CLAUDE.md` apply.
 
 ## Meetings
 
+- The filters of the meetings list (`MeetingsTable`): the date (a range), the meeting and the location (text), the
+  board and the status (multiple selects), the minutes (approved or draft, only held meetings have minutes; the
+  location and the minutes since 2026-10-09). The in-memory source (`fetchMeetings`) applies them. (The items and the
+  documents had number ranges for a few hours that day.)
 - A meeting's page opens on "Overview" (`MeetingOverview`): its base information as labels and values (title, board,
   date and time with the end from the agenda's duration, location, status and minutes badges, the number of items and
   sections, documents), "Edit", the same meeting form dialog as "Edit" in the meetings list (`editMeeting()` in
@@ -357,7 +394,7 @@ the root's `CLAUDE.md` apply.
     meanwhile the scope's spinner placeholder shows, which the preview replaces. The preview's pages are drawn
     (pdfjs, canvases) before it opens, so it opens at its final size (`renderPages`, `PdfPages`).
   - Both are loaded on first use (dynamic imports in `pdf/index.tsx`).
-- The agenda is reordered by dragging (`reorder`), the minutes are recorded per item (a form dialog), the minutes tab
+- The agenda is reordered by dragging (`reorder`), has a reload button (`reloadable`, 2026-10-07, like the documents), the minutes are recorded per item (a form dialog), the minutes tab
   shows them as one document; a held meeting's minutes are approved there. Its frame (a Mantine `Paper` with a border)
   is there without minutes too, around the note of a planned or cancelled meeting (2026-10-02).
 - The minutes of an item are a BlockNote document (`minutes.tsx`, 2026-10-01; `@blocknote/core`, `react`, `mantine`
@@ -391,7 +428,7 @@ the root's `CLAUDE.md` apply.
     loaded.
 - Documents: "Upload" (a drawer with the file upload), "Download" (the default action, a warning: not available in the
   demo), "Delete" (the selected ones, and in each row), and "Rename" (a row action in each row and in the context menu,
-  a pencil, tip "Rename document"): a form dialog "Rename document" (2026-10-01; before, the data navigator's edit form
+  a pencil, tip "Rename document"): a form dialog "Rename document" (2026-10-01; before, the data table's edit form
   in the place of the row) with one field, "Name" (`DocumentForm`, required). On its first focus only the name without
   the extension is selected, like in a file manager. "Save" saves it (`renameDocument()` in `infra/in-memory/documents.ts`: trimmed, an empty
   name refused; the type follows the new extension, like for an upload) and shows `"<name>" renamed`.
@@ -400,7 +437,7 @@ the root's `CLAUDE.md` apply.
 
 ## Agenda sections
 
-- One level; the row groups of the data navigator: `agendaSections` (`{ id, meetingId, position, title }`), and an
+- One level; the row groups of the data table: `agendaSections` (`{ id, meetingId, position, title }`), and an
   item's `sectionId` (`''`: none). Sections and items share one order per meeting (`position`), a section's items
   always follow it, and the items without a section come after all sections (`arranged()` in `domain/agenda.ts`).
 - Sections are optional: an agenda without any is flat (the default). Seed: only an agenda with four topics or more has
@@ -416,14 +453,14 @@ the root's `CLAUDE.md` apply.
   its section or into another one). No group actions, and no checkboxes in the group headers (no `selectableGroups`).
   - Only while the meeting has at least one section; without, no `groupBy` (plain rows). The table is remounted (`key`)
     when the first section comes or the last one goes.
-- "Manage sections" (a general action) opens a form drawer ("Sections", "Apply" and "Cancel") with a data navigator as
+- "Manage sections" (a general action) opens a form drawer ("Sections", "Apply" and "Cancel") with a data table as
   wide as the drawer and as high as its body (`calc(100dvh - 11rem)`; `footer="auto"`): the sections of the meeting in
   their order, also the empty ones (`#` with a fixed `3rem`, and "Name").
   - Everything in it changes a draft (`SectionDraft`: the sections' order and names): "Delete" (a row action, and a
     `multiRow` action for the selected sections, since 2026-10-01: the rows have checkboxes) and moving a section by
     its handle change the draft at once, without a confirmation. The `#` shows the numbers of the
     agenda as it would be.
-  - The names are edited in the data navigator's edit form (its row editing and new rows, see its `CLAUDE.md`): "Edit"
+  - The names are edited in the data table's edit form (its row editing and new rows, see its `CLAUDE.md`): "Edit"
     (a row action, the default one: also a double click) opens the form of a section, "Add section" (the plus and the
     label, no tooltip) the form of a new one (`addRow`). One field, "Name", with Mantine's `TextInput` as its editor
     (`mantineTextEditor()`). "OK" (also Enter) only changes the draft: `saveRow` renames, `createRow` adds the section at
@@ -437,12 +474,12 @@ the root's `CLAUDE.md` apply.
 - The item form has a "Section" select (only while the meeting has sections): another section moves the item to its
   end, "(none)" moves it to "Other" (before "Any other business").
 - The minutes tab shows the sections and "Other" as headings, their items indented.
-- An empty section is an empty group of the source (`Result.groups` with `total: 0`, see the data navigator), so the
+- An empty section is an empty group of the source (`Result.groups` with `total: 0`, see the data table), so the
   table shows its header, and items can be dragged into it. The source gives "Other" (`''`) as the last group, only
   with items.
 - The agenda table has a search box (`searchable`, 2026-10-04, the user's wish; before: none) and no column filters: an
   agenda is short, and moving its items needs all of them shown, so while a search is active the items cannot be
-  moved (the data navigator's rule: no `reorder` with a search or filters). The search looks in the title, the
+  moved (the data table's rule: no `reorder` with a search or filters). The search looks in the title, the
   description, the presenter and the decision, not in the minutes (a JSON document); with a search only the sections
   that have a match are shown (`fetchAgenda`).
 
@@ -461,3 +498,6 @@ the root's `CLAUDE.md` apply.
   element selectors), or load the built module in the demo (no HMR).
 - The color custom properties are read once (2026-10-02): a token that differs in dark mode (e.g. `light-dark()`, or a
   value set under a dark scheme selector) is not followed. That would need a new look on every change of the scheme.
+
+- The start page's charts (`features/home/components/HomeCharts.tsx`, 2026-10-09, the user's wish): `@mantine/charts` (9.5.1, with `recharts` 3.10.1, root dependencies; its layered CSS is imported in `BoardManagerDemo.tsx`): meetings per month (6 months back, 5 ahead) and per board (top 6), stacked by status, a donut of the status shares, and in the accent color (`MoreCharts`): a donut of the roles, the share of approved minutes (a ring), meetings by weekday and people per organization (top 6). Layout in the block `board-manager-home-charts`; no new custom property.
+- The start page (`HomePage.tsx`, 2026-10-09, the user's wishes): the four module tiles (icon, name and a count line; links to the modules, as before 2026-10-09), then three tabs (local state, not in the route): "Up next" (the next meetings and the minutes to approve, as rows with a date block and a relative badge) "Insights" (the charts) and "Attention" (`HomeAttention.tsx`: overdue planned meetings, boards without a planned meeting or a chair, people without an organization; each with its count and the first five as links).

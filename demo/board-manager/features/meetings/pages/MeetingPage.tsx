@@ -6,9 +6,9 @@ import {
   dateRangeColumnFilter,
   selectColumnFilter,
   textColumnFilter,
-  useDataNavigatorController,
-} from '../../../../../packages/data-navigator/src/react';
-import type { DataNavigatorComponent } from '../../../../../packages/data-navigator/src/react';
+  useDataTableController,
+} from '../../../../../packages/data-table/src/react';
+import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
 import type { FileUpload } from '../../../../../packages/file-upload/src';
 import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react';
 import type { AgendaItem, AgendaSection, Meeting, MeetingDocument, Person } from '../../../domain';
@@ -43,10 +43,10 @@ import { translate, useTranslate } from '../../../shared/lib/i18n';
 import type { Translate } from '../../../shared/lib/i18n';
 import {
   appIcons,
+  DataTable,
   formatDateTime,
   formatSize,
   formatTime,
-  Navigator,
   PAGE_SIZE_OPTIONS,
   PageHeader,
   useDb,
@@ -342,7 +342,7 @@ function AgendaDetail({ row }: { row: AgendaRow }): ReactElement {
 // is not grouped: plain rows.
 function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
   const t = useTranslate();
-  const nav = useDataNavigatorController<AgendaRow>();
+  const nav = useDataTableController<AgendaRow>();
   const dialogs = useDialogs();
   const toasts = useToast();
   const agendaItems = useDb((state) => state.agendaItems);
@@ -356,7 +356,7 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
 
   // No filters and no search: an agenda is short, and moving its items needs all of them shown. No column menu either
   // (no column is hideable): there is no column hidden by default.
-  const columns: readonly DataNavigatorComponent.Column<AgendaRow>[] = [
+  const columns: readonly DataTableComponent.Column<AgendaRow>[] = [
     { key: 'number', header: '#', width: 0.5, align: 'end' },
     { key: 'title', header: t('meetings.agenda.columns.item'), width: 4, wrap: true },
     { key: 'presenter', header: t('meetings.agenda.columns.presenter'), width: 2 },
@@ -377,7 +377,7 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
     },
   ];
 
-  const actions = useMemo<readonly DataNavigatorComponent.Action<AgendaRow>[]>(() => {
+  const actions = useMemo<readonly DataTableComponent.Action<AgendaRow>[]>(() => {
     const itemOf = (row: AgendaRow): AgendaItem | undefined =>
       db.getState().agendaItems.find((item) => item.id === row.id);
     const members = () => membersOf(db.getState(), meeting.boardId);
@@ -507,6 +507,7 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
         key: 'new',
         label: t('meetings.agenda.addItem'),
         icon: appIcons.add,
+        variant: 'primary',
         onClick: () => void create(),
       },
       {
@@ -544,14 +545,14 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
   }, [t, nav, dialogs, toasts, meeting.id, meeting.boardId]);
 
   // The positions (and the numbers) change with a move: the table is loaded again.
-  const reorder = async (move: DataNavigatorComponent.Move<AgendaRow>) => {
+  const reorder = async (move: DataTableComponent.Move<AgendaRow>) => {
     await reorderAgenda(move);
     nav.reload();
   };
 
   // The header of a section: its number and name, and the duration of its items.
   // The items without a section are the table's blank group (`''`): "Other", always the last one.
-  const renderGroup = (group: DataNavigatorComponent.RowGroup<AgendaRow>) => {
+  const renderGroup = (group: DataTableComponent.RowGroup<AgendaRow>) => {
     const section = agendaSections.find((candidate) => candidate.id === group.key);
     const duration = agendaItems
       .filter((item) => item.meetingId === meeting.id && item.sectionId === group.key)
@@ -566,15 +567,17 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
   };
 
   return (
-    <Navigator
+    <DataTable
       // A new table when the first section comes or the last one goes: no group state is carried over.
       key={grouped ? 'grouped' : 'flat'}
       controller={nav}
       title={t('meetings.agenda.title')}
       subtitle={grouped ? t('meetings.agenda.subtitleGrouped') : t('meetings.agenda.subtitle')}
       density="compact"
+      layout="table"
       footer="auto"
       searchable
+      reloadable
       source={source}
       reorder={reorder}
       groupBy={grouped ? 'sectionId' : undefined}
@@ -590,9 +593,9 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
   );
 }
 
-// A text in the edit form of a data navigator (a section's name): Mantine's input, for the column it is in (the form's
+// A text in the edit form of a data table (a section's name): Mantine's input, for the column it is in (the form's
 // label names it).
-function mantineTextEditor<Row>(): DataNavigatorComponent.ColumnEditor<Row> {
+function mantineTextEditor<Row>(): DataTableComponent.ColumnEditor<Row> {
   return ({ columnKey, value, change, labelledBy }) => (
     <TextInput
       size="xs"
@@ -617,7 +620,7 @@ function sectionTitleOf(draft: SectionRow): string {
 }
 
 // The list of the "Sections" drawer: the draft of the sections (`SectionDraft`) in their order, with their numbers on
-// the agenda as it would be with the draft. The names are edited in the data navigator's edit form: "Edit" (also a
+// the agenda as it would be with the draft. The names are edited in the data table's edit form: "Edit" (also a
 // double click) renames a section, "Add section" opens the form of a new one, which "Save" adds at the end. "Save" of
 // the form only changes the draft. "Delete" (of a row, or of the selected ones) and moving a section by its handle
 // change the draft at once (no confirmation: "Cancel" of the drawer undoes everything). The list is as wide as the
@@ -628,12 +631,12 @@ function SectionsManager({ meetingId, initial, onChange }: {
   onChange: (draft: SectionDraft) => void;
 }): ReactElement {
   const t = useTranslate();
-  const nav = useDataNavigatorController<SectionRow>();
+  const nav = useDataTableController<SectionRow>();
   const [draft, setDraft] = useState(initial);
   const first = useRef(true);
 
   // The rows: the draft with the numbers of the agenda as it would be.
-  const source = useMemo((): DataNavigatorComponent.Source<SectionRow> => {
+  const source = useMemo((): DataTableComponent.Source<SectionRow> => {
     const numbers = agendaNumbers(
       agendaOf({ ...db.getState(), ...withSectionDraft(db.getState(), meetingId, draft) }, meetingId),
     );
@@ -655,19 +658,20 @@ function SectionsManager({ meetingId, initial, onChange }: {
   }, [draft, onChange, nav]);
 
   const columns = useMemo(
-    (): readonly DataNavigatorComponent.Column<SectionRow>[] => [
+    (): readonly DataTableComponent.Column<SectionRow>[] => [
       { key: 'number', header: '#', width: '3rem', align: 'end' },
       { key: 'title', header: t('meetings.sections.name'), edit: mantineTextEditor() },
     ],
     [t],
   );
 
-  const actions = useMemo<readonly DataNavigatorComponent.Action<SectionRow>[]>(() => [
+  const actions = useMemo<readonly DataTableComponent.Action<SectionRow>[]>(() => [
     {
       type: 'general',
       key: 'new',
       icon: appIcons.add,
       label: t('meetings.sections.add'),
+      variant: 'primary',
       onClick: () => nav.addRow({ id: '', title: '', number: '' }),
     },
     { type: 'singleRow', key: 'edit', icon: appIcons.edit, tip: t('common.edit'), default: true, onClick: nav.editRow },
@@ -709,7 +713,7 @@ function SectionsManager({ meetingId, initial, onChange }: {
   };
 
   // A move: right after `after`, or right before `before` (at the top).
-  const reorder = (move: DataNavigatorComponent.Move<SectionRow>) => {
+  const reorder = (move: DataTableComponent.Move<SectionRow>) => {
     setDraft((current) => {
       const rest = current.filter((section) => section.id !== move.row.id);
       const moved = current.find((section) => section.id === move.row.id);
@@ -725,10 +729,11 @@ function SectionsManager({ meetingId, initial, onChange }: {
     // As high as the drawer's body (the screen minus the drawer's header and buttons), so the list scrolls inside it and
     // the drawer never scrolls as a whole.
     <Box h="calc(100dvh - 11rem)">
-      <Navigator
+      <DataTable
         controller={nav}
         density="compact"
         footer="auto"
+        layout="table"
         source={source}
         reorder={reorder}
         saveRow={saveRow}
@@ -831,7 +836,7 @@ function MinutesView({ meeting, agendaItems, agendaSections, boardName }: {
   );
 }
 
-const documentColumnsOf = (t: Translate): readonly DataNavigatorComponent.Column<MeetingDocument>[] => [
+const documentColumnsOf = (t: Translate): readonly DataTableComponent.Column<MeetingDocument>[] => [
   {
     key: 'name',
     header: t('meetings.documents.columns.document'),
@@ -870,12 +875,12 @@ const documentColumnsOf = (t: Translate): readonly DataNavigatorComponent.Column
 function DocumentsTable({ meeting }: { meeting: Meeting }): ReactElement {
   const t = useTranslate();
   const columns = useMemo(() => documentColumnsOf(t), [t]);
-  const nav = useDataNavigatorController<MeetingDocument>();
+  const nav = useDataTableController<MeetingDocument>();
   const dialogs = useDialogs();
   const toasts = useToast();
   const source = useMemo(() => fetchDocuments(meeting.id), [meeting.id]);
 
-  const actions = useMemo<readonly DataNavigatorComponent.Action<MeetingDocument>[]>(() => {
+  const actions = useMemo<readonly DataTableComponent.Action<MeetingDocument>[]>(() => {
     const upload = async () => {
       let items: readonly FileUpload.FileItem[] = [];
       let committed: readonly MeetingDocument[] = [];
@@ -963,6 +968,7 @@ function DocumentsTable({ meeting }: { meeting: Meeting }): ReactElement {
         key: 'upload',
         label: t('meetings.documents.upload'),
         icon: appIcons.upload,
+        variant: 'primary',
         onClick: () => void upload(),
       },
       {
@@ -1002,7 +1008,7 @@ function DocumentsTable({ meeting }: { meeting: Meeting }): ReactElement {
   }, [t, nav, dialogs, toasts, meeting.id, meeting.title]);
 
   return (
-    <Navigator
+    <DataTable
       controller={nav}
       title={t('meetings.documents.title')}
       subtitle={t('meetings.documents.subtitle')}
@@ -1013,7 +1019,6 @@ function DocumentsTable({ meeting }: { meeting: Meeting }): ReactElement {
       rowKey="id"
       columns={columns}
       actions={actions}
-      pageSize={10}
       pageSizeOptions={PAGE_SIZE_OPTIONS}
       defaultSort={{ key: 'uploaded', direction: 'asc' }}
     />

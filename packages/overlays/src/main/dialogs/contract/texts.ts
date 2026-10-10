@@ -29,6 +29,15 @@ export const defaultDialogTexts = {
   // and tooltip.
   labelMaximize: "Maximize",
   labelRestore: "Restore",
+
+  // The question a form dialog asks before closing while its content has changes (React:
+  // `<Form dirty>`), and its two answers. Escape answers it with Discard, which the hint
+  // below the question says (only with a keyboard).
+  questionDiscard: "Discard your changes?",
+  buttonDiscard: "Discard",
+  buttonKeepEditing: "Keep editing",
+  titleUnsavedChanges: "Unsaved changes",
+  hintEscapeDiscards: "Press Esc to discard them.",
 } as const;
 
 export type DialogTexts = Record<keyof typeof defaultDialogTexts, string>;

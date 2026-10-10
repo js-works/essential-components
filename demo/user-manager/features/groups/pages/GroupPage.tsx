@@ -2,14 +2,14 @@ import { Anchor, Badge, Button, Group as MantineGroup, Stack, Tabs, Text } from 
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { useDataNavigatorController } from '../../../../../packages/data-navigator/src/react';
-import type { DataNavigatorComponent } from '../../../../../packages/data-navigator/src/react';
+import { useDataTableController } from '../../../../../packages/data-table/src/react';
+import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
 import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react';
 import { membersOf } from '../../../domain';
 import type { Group, User } from '../../../domain';
 import { countText } from '../../../shared/lib/format';
+import { DataTable } from '../../../shared/ui/dataTable';
 import { appIcons } from '../../../shared/ui/icons';
-import { Navigator } from '../../../shared/ui/navigator';
 import { PageHeader, UserAvatar } from '../../../shared/ui/parts';
 import { GrantsTable } from '../../access';
 import { useAccessData, useChanged, useIamService, useTableSource } from '../../iam';
@@ -20,7 +20,7 @@ export { GroupPage };
 
 // The members of a group: add (a checklist of the others), remove.
 function MembersTable({ group }: { group: Group }): ReactElement {
-  const nav = useDataNavigatorController<User>();
+  const nav = useDataTableController<User>();
   const data = useAccessData();
   const service = useIamService();
   const dialogs = useDialogs();
@@ -37,7 +37,7 @@ function MembersTable({ group }: { group: Group }): ReactElement {
     nav.reload,
   );
 
-  const columns = useMemo((): readonly DataNavigatorComponent.Column<User>[] => [
+  const columns = useMemo((): readonly DataTableComponent.Column<User>[] => [
     {
       key: 'name',
       header: 'Name',
@@ -55,7 +55,7 @@ function MembersTable({ group }: { group: Group }): ReactElement {
     { key: 'department', header: 'Department', width: 2, sortable: true, hideable: true },
   ], []);
 
-  const actions = useMemo((): readonly DataNavigatorComponent.Action<User>[] => {
+  const actions = useMemo((): readonly DataTableComponent.Action<User>[] => {
     const add = async () => {
       if (data === undefined) {
         return;
@@ -90,7 +90,14 @@ function MembersTable({ group }: { group: Group }): ReactElement {
     };
 
     return [
-      { type: 'general', key: 'add', label: 'Add members', icon: appIcons.addUser, onClick: () => void add() },
+      {
+        type: 'general',
+        key: 'add',
+        label: 'Add members',
+        icon: appIcons.add,
+        variant: 'primary',
+        onClick: () => void add(),
+      },
       {
         type: 'singleRow',
         key: 'remove-row',
@@ -111,14 +118,13 @@ function MembersTable({ group }: { group: Group }): ReactElement {
   }, [data, group, dialogs, toasts, service, changed]);
 
   return (
-    <Navigator
+    <DataTable
       controller={nav}
       source={source}
       rowKey="id"
       columns={columns}
       actions={actions}
       searchable
-      pageSize={10}
       pageSizeOptions={[10, 25, 50]}
       defaultSort={{ key: 'name', direction: 'asc' }}
       empty="No members yet."

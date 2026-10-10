@@ -61,7 +61,7 @@ type Translate = ReturnType<typeof useTranslate>;
 
 const translate: Translate = i18n.t.bind(i18n);
 
-// The adapter of the components (here form-validation): a namespace i18next does not know (e.g. 'formvalidation')
+// The adapter of the components (here form-validation): a namespace i18next does not know (e.g. 'formValidation')
 // gives the `defaultValue`, the text of the component. Its keys are strings, not the app's typed ones.
 const resolve = i18n.t.bind(i18n) as (key: string, options: object) => string;
 

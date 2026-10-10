@@ -62,7 +62,7 @@ function RolePage(): ReactElement {
       <PageHeader
         title={role.name}
         subtitle={role.description}
-        badges={role.builtIn ? <Badge variant="light" color="gray">Built-in</Badge> : undefined}
+        badges={role.builtIn ? <Badge variant="outline">Built-in</Badge> : undefined}
         actions={
           <>
             {!role.builtIn && (
