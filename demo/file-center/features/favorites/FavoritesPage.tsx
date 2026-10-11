@@ -12,6 +12,7 @@ import { countText, formatDateTime, formatSize } from '../../shared/lib/format';
 import { useQuerySource } from '../../shared/lib/useQuerySource';
 import { DataTable } from '../../shared/ui/dataTable';
 import { appIcons } from '../../shared/ui/icons';
+import { sharedBy, useSavedFilters } from '../../shared/ui/savedFilters';
 import { browserKeys, EntryName, folderPath, KIND_LABELS, useBrowserService, useEntryActions } from '../browser';
 import type { EntryCriteria, EntryRow } from '../browser';
 
@@ -43,10 +44,17 @@ const toPaging = (query: DataTableComponent.Query) => ({
   limit: query.pageSize,
 });
 
+// The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
+const COLLEAGUES_FILTERS: readonly DataTableComponent.SavedFilter[] = [
+  sharedBy('Claire Dubois', 'Documents', { kind: ['document'] }),
+  sharedBy('Ben Carter', 'From Anna', { owner: ['Anna Schröder'] }),
+];
+
 // The module "Favorites" (2026-10-08): the folders and files marked as favorites, from all folders; the folders first.
 // A double click (or the arrow) opens a folder or shows a file's details; a star (or "Remove from favorites") unmarks
 // one, and it leaves the list.
 function FavoritesPage(): ReactElement {
+  const savedFilters = useSavedFilters('file-center:saved-filters:favorites', COLLEAGUES_FILTERS);
   const service = useBrowserService();
   const navigate = useNavigate();
   const toasts = useToast();
@@ -173,6 +181,7 @@ function FavoritesPage(): ReactElement {
       searchable
       reloadable
       pageSizeOptions={[25, 50, 100]}
+      savedFilters={savedFilters}
       defaultSort={{ key: 'name', direction: 'asc' }}
       empty="No favorites yet. Mark folders and files with their star."
     />

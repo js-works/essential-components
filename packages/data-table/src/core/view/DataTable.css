@@ -59,14 +59,6 @@
   visibility: hidden;
 }
 
-/* When the drawer has closed, they come back like a new bar of the toolbar: fade in with a tiny upward shift
-   (2026-10-09, the user's wish; `data-actions-back` for the time of the animation). The parts in groups (fieldsets
-   without a box) move by their content. */
-.data-table[data-actions-back] .data-table__toolbar-bar > .data-table__toolbar-spacer ~ :not(.data-table__toolbar-group),
-.data-table[data-actions-back] .data-table__toolbar-bar > .data-table__toolbar-spacer ~ .data-table__toolbar-group > * {
-  animation: data-table-bar-in 150ms ease;
-}
-
 /* The drawer (a prototype, 2026-10-09): in the cell of the stack, over the table area, at its end and as high as it;
    it opens from the right (see `clip-path`). The buttons at the top, then the filters; only the filters scroll. (A
    floating sheet, away from the edges with a line and corners all around, was tried the same day and dropped.) */
@@ -78,16 +70,24 @@
   flex-direction: column;
   width: min(28rem, 100%);
   box-sizing: border-box;
+  /* Its width decides between one and two columns of filters (see `.data-table__filter-sidebar-body`). */
+  container: data-table-filter-sidebar / inline-size;
+
+  /* Two columns of filters, when one would scroll (2026-10-11, the user's wish; see `FilterSidebar`): wider. */
+  &[data-two-columns] {
+    width: min(52rem, 100%);
+  }
+
   /* Lines on the left, top and bottom (2026-10-09, the user's wish: no top line before); the right edge is the
      table's. */
   /* Only a line on its left, in the color of the table's lines, `colorDivider` (2026-10-09, the user's wishes, step by
      step: lines on the left, top and bottom, rounded on the left, at first; then only on the left; then none for a
      while; back with the shadow on the left). */
   border-inline-start: 1px solid var(--param-color-divider);
-  /* As tall as the table, its filters in one column (they scroll when they need more room; two columns from 7 filters
-     on, as tall as their content, were tried the same day and dropped). It ends a bit above the table's bottom edge
-     (2026-10-09, the user's wish; first for its shadow, which is gone): half of `--param-spacing-xs` (4px); with more
-     (16px), the pager's buttons showed below it. */
+  /* As tall as the table (the filters scroll when they need more room; two columns from 7 filters on, with the drawer
+     as tall as its content, were tried the same day and dropped; two columns again since 2026-10-11, see the body).
+     It ends a bit above the table's bottom edge (2026-10-09, the user's wish; first for its shadow, which is gone):
+     half of `--param-spacing-xs` (4px); with more (16px), the pager's buttons showed below it. */
   margin-bottom: calc(var(--param-spacing-xs) / 2);
   background-color: var(--param-color-surface);
   /* A shadow on its left side only (2026-10-09, the user's wish), in the color of the lines (no color of our own): like
@@ -100,10 +100,10 @@
      table, and a cut-off there changed the table's height in the apps). The clip leaves room for the shadow on the left
      only: it cuts it off flush at the top, the right and the bottom (2026-10-09, the user's wish). */
   clip-path: inset(0 0 0 -3rem);
-  /* No animation for now (2026-10-09, the user's wish: durations 0; the opening and the closing below stay defined,
-     a duration brings them back: `clip-path 200ms ease-out, opacity 200ms ease-out`, and `DRAWER_ANIMATION` in
-     `DataTableView.tsx`). */
-  transition: none;
+  /* Uncovered from the right edge to the left and faded in, 250ms like the filter view (2026-10-11, the user's wish,
+     tried again: 150ms first, a bit slower then; 200ms on 2026-10-09, then none from the same day: durations 0). With
+     `DRAWER_ANIMATION` in `DataTableView.tsx`. */
+  transition: clip-path 250ms ease-out, opacity 250ms ease-out;
 
   @starting-style {
     clip-path: inset(0 0 0 100%);
@@ -111,15 +111,15 @@
   }
 
   /* After closing: the opening played back (2026-10-09, the user's wish): covered up again from the left to its right
-     edge and faded out, in the same time, with the mirrored easing; then removed (when the transition ends). */
+     edge and faded out, in the same time and with the same easing (2026-10-11, the user's wish: `ease-in` before, it
+     vanished abruptly at the end); then removed (when the transition ends). */
   &[data-closing] {
     clip-path: inset(0 0 0 100%);
     opacity: 0;
-    transition-timing-function: ease-in;
   }
 }
 
-/* The title, then the buttons at the end: Reset | Cancel [Apply] (Cancel a ghost button with an arrow). */
+/* The title, then the buttons at the end: Reset | [Apply] [×] (the × is Cancel). */
 .data-table__filter-sidebar-header {
   display: flex;
   flex: none;
@@ -135,9 +135,6 @@
   box-sizing: content-box;
   /* More room on the left (2026-10-09, the user's wish), like the filters below. */
   padding-inline-start: calc(1.5 * var(--param-spacing-md));
-  /* It comes in like a new bar of the toolbar (the selection bar): fades in with a tiny upward shift (2026-10-09, the
-     user's wish). */
-  animation: data-table-bar-in 150ms ease;
   /* No line below it, the top of the filters (2026-10-09, the user's wish). */
 
   /* All its buttons as tall as the toolbar's actions (2026-10-09, the user's wish; 0.8 of a control, like the filters,
@@ -223,6 +220,227 @@
 
 .data-table__filter-sidebar-row {
   display: contents;
+}
+
+/* Two columns (2026-10-11, the user's wish: when one column would scroll, `data-two-columns`; one column when the drawer is
+   narrower than 40rem, e.g. in a narrow table): each a pair of grid columns (labels, controls), each lining up its own
+   labels. The filters run down the first column, then the second (`data-column` of a row, its half): every label and
+   control has its grid column, and the dense flow puts each into the first free row of its column. */
+@container data-table-filter-sidebar (width >= 40rem) {
+  .data-table__filter-sidebar[data-two-columns] .data-table__filter-sidebar-body {
+    grid-template-columns: repeat(2, minmax(0, max-content) minmax(0, 1fr));
+    grid-auto-flow: row dense;
+  }
+
+  .data-table__filter-sidebar[data-two-columns] .data-table__filter-sidebar-row[data-column='1'] {
+    & > .data-table__filter-panel-label {
+      grid-column: 1;
+    }
+
+    & > .data-table__filter-panel-control {
+      grid-column: 2;
+    }
+  }
+
+  .data-table__filter-sidebar[data-two-columns] .data-table__filter-sidebar-row[data-column='2'] {
+    & > .data-table__filter-panel-label {
+      grid-column: 3;
+      /* More room between the two columns than between a label and its control. */
+      margin-inline-start: var(--param-spacing-md);
+    }
+
+    & > .data-table__filter-panel-control {
+      grid-column: 4;
+    }
+  }
+}
+
+/* The saved filters (2026-10-11, the user's wish; only with `savedFilters`). The bottom row of the drawer: the menu of
+   the saved filters on the left, "Save as…" on the right; or the name field with Cancel and Save. It stays below the
+   filters (only they scroll), with the room of the header. */
+.data-table__filter-sidebar-footer {
+  display: flex;
+  flex: none;
+  align-items: center;
+  /* At the drawer's bottom edge, the free space above it (2026-10-11, the user's wish; right after the filters before). */
+  margin-top: auto;
+  gap: calc(var(--param-spacing-xs) / 2);
+
+  /* "Save as…" at the end, also alone. */
+  & > .data-table__button:not(.data-table__saved-filter-button) {
+    flex: none;
+    margin-inline-start: auto;
+  }
+  padding: calc(var(--param-spacing-xs) / 2) var(--param-spacing-md) var(--param-spacing-sm);
+  padding-inline-start: calc(1.5 * var(--param-spacing-md));
+}
+
+/* In the filter view (2026-10-11): between the filters and the buttons' row, as wide as it (set inline), centered like
+   it, with its side padding. */
+.data-table__filter-sidebar-footer[data-place='view'] {
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: calc(var(--param-spacing-xs) / 2) var(--param-spacing-md) 0;
+
+  /* "Save as…" right after the saved filters, on the left (2026-10-11, the user's wish; at the end like the drawer's
+     before). */
+  & > .data-table__button:not(.data-table__saved-filter-button) {
+    margin-inline-start: 0;
+  }
+
+  /* The name field at most as wide as a filter's control (2026-10-11, the user's wish; not in the drawer). */
+  & .data-table__saved-filter-form > .data-table__field {
+    max-width: 20rem;
+  }
+}
+
+/* The name field (as wide as the room allows), Cancel, Save; the message of a failed save on a line of its own. */
+.data-table__saved-filter-form {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--param-spacing-xs) / 2);
+  min-width: 0;
+
+  & > .data-table__field {
+    flex: 1 1 10rem;
+    min-width: 0;
+  }
+
+  & .data-table__input {
+    height: calc(0.8 * var(--param-control-height));
+    padding-inline-start: var(--param-spacing-xs);
+  }
+
+  /* × and ✓: square, as tall as the field. */
+  & > .data-table__button[data-placement] {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: calc(0.8 * var(--param-control-height));
+    height: calc(0.8 * var(--param-control-height));
+    padding: 0;
+  }
+}
+
+.data-table__saved-filter-share {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--param-spacing-xs) / 2);
+  margin-inline: calc(var(--param-spacing-xs) / 2);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* The mark of a shared saved filter and the owner of another user's, in its menu. */
+.data-table__saved-filter-shared {
+  display: inline-flex;
+  flex: none;
+  color: var(--param-color-text-dimmed);
+}
+
+.data-table__saved-filter-owner {
+  color: var(--param-color-text-dimmed);
+  font-size: var(--param-font-size-sm);
+}
+
+.data-table__saved-filter-error {
+  flex: 1 0 100%;
+  color: var(--param-color-danger);
+  font-size: var(--param-font-size-sm);
+}
+
+/* The button of the saved filters: the name of the one the draft equals, cut off when long. "Save as…" keeps its
+   size (alone it stays on the right). */
+.data-table__saved-filter-button {
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: calc(var(--param-spacing-xs) / 2);
+  min-width: 0;
+  font-weight: normal;
+
+  & > .data-table__button-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  & > svg {
+    flex: none;
+  }
+
+  &[data-popup-open] > svg {
+    rotate: 180deg;
+  }
+}
+
+/* Its menu: a line per saved filter, the name (the check before it), its Share toggle and its × to delete it, items of
+   the menu each (the toggle and the × only where they apply). */
+.data-table__saved-filter-menu {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  max-width: 20rem;
+
+  & > .data-table__menu-item[data-load] {
+    display: grid;
+    grid-column: 1 / 3;
+    grid-template-columns: subgrid;
+    column-gap: var(--param-spacing-xs);
+  }
+
+  /* The name (cut off when long) with the shared mark after it, the owner below it. */
+  & .data-table__menu-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+
+    & > span:first-child {
+      display: flex;
+      align-items: center;
+      gap: calc(var(--param-spacing-xs) / 2);
+      min-width: 0;
+    }
+
+    & .data-table__button-label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  /* Share: a toggle with its state as a chip, "Private" dimmed, "Shared" in the accent (`data-checked` of Base UI's
+     checkbox item). */
+  & > .data-table__menu-item[data-share] {
+    grid-column: 3;
+    justify-content: center;
+    padding-inline: calc(var(--param-spacing-xs) / 2);
+    color: var(--param-color-text-dimmed);
+
+    &[data-checked] {
+      color: var(--param-color-primary);
+    }
+  }
+
+  & .data-table__saved-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: calc(var(--param-spacing-xs) / 2);
+    padding: 0 calc(var(--param-spacing-xs) * 0.75);
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    font-size: var(--param-font-size-sm);
+    line-height: 1.6;
+    white-space: nowrap;
+  }
+
+  & > .data-table__menu-item[data-delete] {
+    grid-column: 4;
+    justify-content: center;
+    color: var(--param-color-text-dimmed);
+  }
 }
 
 /* The grid with the footer (`.data-table__table-area`) and the filter view in one grid cell, on top of each other: the height is
@@ -417,7 +635,8 @@
 }
 
 /* The bar, and the selection bar that takes its place while rows are selected: the same fixed height, so nothing below
-   moves when one replaces the other. A new bar fades in with a tiny upward shift. */
+   moves when one replaces the other. No animation when one comes (2026-10-11, the user's wish: it faded in with a
+   tiny upward shift, 150ms, before; also the drawer's header and the actions after the drawer closed). */
 .data-table__toolbar-bar {
   display: flex;
   align-items: center;
@@ -428,7 +647,6 @@
   padding-block: calc(var(--param-spacing-xs) / 2);
   /* The text size of the table (it was larger, 8/7 of it, until 2026-09-30: too big next to the rows). */
   font-size: var(--param-font-size);
-  animation: data-table-bar-in 150ms ease;
 
   /* The search box grows with the table, up to a maximum width; the free space goes between it and the buttons. */
   & .data-table__search-field {
@@ -451,13 +669,6 @@
     opacity: 0.5;
     filter: grayscale(1);
     transition: opacity 250ms ease-in-out, filter 250ms ease-in-out;
-  }
-}
-
-@keyframes data-table-bar-in {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
   }
 }
 
@@ -1255,6 +1466,13 @@
     padding: 0;
   }
 
+  /* An icon-only menu with its chevron (2026-10-11, the user's wish; e.g. in the toolbar): as wide as its content. */
+  &[data-icon-only][data-chevron] {
+    width: auto;
+    padding-inline: calc(0.75 * var(--param-spacing-xs));
+    gap: calc(var(--param-spacing-xs) / 4);
+  }
+
   @media (hover: hover) {
     &:hover {
       background-color: var(--param-color-hover);
@@ -1282,6 +1500,17 @@
     background-color: var(--param-color-hover);
   }
 
+  /* Tertiary (2026-10-11, the user's wish): a ghost button, like the view controls: no border and no background at
+     rest, the gray of the view controls on hover and while its menu is open. */
+  &[data-placement='toolbar'][data-variant='tertiary'] {
+    border-color: transparent;
+    background-color: transparent;
+  }
+
+  &[data-placement='toolbar'][data-variant='tertiary'][data-popup-open] {
+    background-color: var(--param-color-surface-strong);
+  }
+
   @media (hover: hover) {
     &[data-placement='toolbar'][data-variant='primary']:hover {
       border-color: var(--param-color-primary-hover);
@@ -1291,6 +1520,10 @@
     /* There is no hover color for danger: the filled button keeps its red on hover. */
     &[data-placement='toolbar'][data-variant='danger']:hover {
       background-color: var(--param-color-danger);
+    }
+
+    &[data-placement='toolbar'][data-variant='tertiary']:hover {
+      background-color: var(--param-color-surface-strong);
     }
   }
 
@@ -1344,6 +1577,11 @@
     color: var(--param-color-text);
   }
 
+  /* Tertiary looks like secondary in the action column: the row buttons are link-style anyway. */
+  &[data-placement='row'][data-variant='tertiary'] {
+    color: var(--param-color-text);
+  }
+
   &[data-placement='row'][data-variant='danger'] {
     color: var(--param-color-danger);
   }
@@ -1374,6 +1612,10 @@
   &[data-placement='toolbar'][data-variant='primary']:active {
     border-color: color-mix(in srgb, var(--param-color-primary-hover), var(--param-color-text) 15%);
     background-color: color-mix(in srgb, var(--param-color-primary-hover), var(--param-color-text) 15%);
+  }
+
+  &[data-placement='toolbar'][data-variant='tertiary']:active {
+    background-color: color-mix(in srgb, var(--param-color-surface-strong), var(--param-color-text) 10%);
   }
 
   &[data-placement='toolbar'][data-variant='danger']:active {
@@ -1744,7 +1986,7 @@
     height: calc(0.875 * var(--param-control-height));
   }
 
-  & .data-table__button[data-placement='toolbar'][data-icon-only] {
+  & .data-table__button[data-placement='toolbar'][data-icon-only]:not([data-chevron]) {
     width: calc(0.875 * var(--param-control-height));
   }
 

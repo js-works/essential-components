@@ -86,6 +86,18 @@ const defaultTexts = {
   saveFailed: 'The row could not be saved',
   editRow: 'Edit row',
   newRow: 'New row',
+  savedFilters: 'Saved filters',
+  saveFilter: 'Save as…',
+  filterName: 'Name',
+  confirmSaveFilter: 'Save',
+  cancelSaveFilter: 'Cancel',
+  saveFilterFailed: 'The filter could not be saved',
+  deleteSavedFilter: 'Delete {name}',
+  shareFilter: 'Share',
+  sharedFilter: 'Shared',
+  privateFilter: 'Private',
+  filterOwner: 'by {name}',
+  shareSavedFilter: 'Share {name}',
 } as const satisfies Record<keyof Spec.Texts, string>;
 
 function createNumberFormat(locale: string): Intl.NumberFormat {
@@ -211,6 +223,18 @@ function useTexts(): Spec.Texts {
       saveFailed: translate('saveFailed'),
       editRow: translate('editRow'),
       newRow: translate('newRow'),
+      savedFilters: translate('savedFilters'),
+      saveFilter: translate('saveFilter'),
+      filterName: translate('filterName'),
+      confirmSaveFilter: translate('confirmSaveFilter'),
+      cancelSaveFilter: translate('cancelSaveFilter'),
+      saveFilterFailed: translate('saveFilterFailed'),
+      deleteSavedFilter: (params) => translate('deleteSavedFilter', params),
+      shareFilter: translate('shareFilter'),
+      sharedFilter: translate('sharedFilter'),
+      privateFilter: translate('privateFilter'),
+      filterOwner: (params) => translate('filterOwner', params),
+      shareSavedFilter: (params) => translate('shareSavedFilter', params),
     };
   }, [i18n, locale, version]);
 }

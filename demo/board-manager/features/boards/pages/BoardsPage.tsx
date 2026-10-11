@@ -15,6 +15,7 @@ import { BoardForm } from '../../../shared/forms';
 import { useTranslate } from '../../../shared/lib/i18n';
 import type { Translate } from '../../../shared/lib/i18n';
 import { appIcons, DataTable, formatDateTime, PAGE_SIZE_OPTIONS, personFilter } from '../../../shared/shared';
+import { daysFromToday, sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters';
 import { deleteBoardsFlow, editBoard } from '../components/boardFlows';
 
 export { BoardsPage };
@@ -44,8 +45,17 @@ const columnsOf = (t: Translate): readonly DataTableComponent.Column<BoardRow>[]
   },
 ];
 
+// The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
+const COLLEAGUES_FILTERS: readonly DataTableComponent.SavedFilter[] = [
+  sharedBy('Maria Keller', 'Committees', { name: { text: 'Committee', match: 'contains' } }),
+  sharedBy('Jonas Weber', 'Meeting in the next 30 days', {
+    nextMeeting: { from: daysFromToday(0), to: daysFromToday(30) },
+  }),
+];
+
 // The "Boards" module: every board, with a new one, editing and deleting (with its meetings).
 function BoardsPage(): ReactElement {
+  const savedFilters = useSavedFilters('board-manager:saved-filters:boards', COLLEAGUES_FILTERS);
   const t = useTranslate();
   const nav = useDataTableController<BoardRow>();
   const columns = useMemo(() => columnsOf(t), [t]);
@@ -135,6 +145,7 @@ function BoardsPage(): ReactElement {
       columns={columns}
       actions={actions}
       pageSizeOptions={PAGE_SIZE_OPTIONS}
+      savedFilters={savedFilters}
       defaultSort={{ key: 'name', direction: 'asc' }}
     />
   );

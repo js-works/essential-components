@@ -28,6 +28,8 @@ function createActions(
 ): readonly Item[] {
   const primary = variants ? 'primary' : 'secondary';
   const danger = variants ? 'danger' : 'secondary';
+  // The rarer actions as ghost buttons (2026-10-11, `tertiary`).
+  const tertiary = variants ? 'tertiary' : 'secondary';
 
   const add: Item = {
     type: 'general',
@@ -109,7 +111,7 @@ function createActions(
       );
     }
 
-    return { type: 'menu', key: 'export', label: 'Export', actions };
+    return { type: 'menu', key: 'export', label: 'Export', variant: tertiary, actions };
   };
 
   switch (mode) {

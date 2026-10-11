@@ -196,6 +196,8 @@ const de: Catalog<typeof en> = {
       minutes: 'Protokoll',
       items: 'Punkte',
       documents: 'Dokumente',
+      chair: 'Vorsitz',
+      created: 'Erstellt',
     },
     minutesApproved: 'Protokoll genehmigt',
     minutesDraft: 'Protokoll im Entwurf',

@@ -66,13 +66,9 @@ function useFilterDrawerFlag(): boolean {
   );
 }
 
-// Whether the filter drawer is animated (opens and closes with a transition, see the stylesheet). Off for now
-// (2026-10-09, the user's wish): the closed drawer goes at once.
-const DRAWER_ANIMATION = false;
-
-// How long the toolbar's actions are marked as coming back after the filter drawer closed (ms): a little more than
-// their animation (`data-table-bar-in`, 150ms, see the stylesheet).
-const ACTIONS_BACK_TIME = 200;
+// Whether the filter drawer is animated (opens and closes with a transition, see the stylesheet). On again since
+// 2026-10-11 (the user's wish, to try it again; off from 2026-10-09: the closed drawer went at once).
+const DRAWER_ANIMATION = true;
 
 export { DataTableView };
 
@@ -304,11 +300,6 @@ function DataTableView<Row>(props: Spec.Props<Row>): ReactElement {
   // and is covered up from the left (its animation; it goes when the animation ends, at the latest after
   // `FILTER_DRAWER_CLOSE_TIME`); one opened meanwhile is a new one. With
   // reduced motion it goes at once.
-  const [actionsBack, setActionsBack] = useState(false);
-  const actionsBackTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  useEffect(() => () => clearTimeout(actionsBackTimerRef.current), []);
-
   const [sidebarKey, setSidebarKey] = useState(0);
   const [closingSidebarKey, setClosingSidebarKey] = useState<number | undefined>(undefined);
   const sidebarTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -320,10 +311,6 @@ function DataTableView<Row>(props: Spec.Props<Row>): ReactElement {
   const closeSidebar = () => {
     setTimeout(() => filterButtonRef.current?.focus());
     setSidebar({ open: false });
-    // The toolbar's actions come back like a new bar (`data-actions-back`, for the time of their animation).
-    setActionsBack(true);
-    clearTimeout(actionsBackTimerRef.current);
-    actionsBackTimerRef.current = setTimeout(() => setActionsBack(false), ACTIONS_BACK_TIME);
     setSidebarKey((key) => key + 1);
 
     if (DRAWER_ANIMATION && !reducedMotion()) {
@@ -346,6 +333,7 @@ function DataTableView<Row>(props: Spec.Props<Row>): ReactElement {
         setClosingSidebarKey(undefined);
       }}
       anchorRef={filterButtonRef}
+      savedFilters={props.savedFilters}
       onApply={(next) => {
         nav.applyFilters(next);
         closeSidebar();
@@ -376,6 +364,7 @@ function DataTableView<Row>(props: Spec.Props<Row>): ReactElement {
       focusKey={nav.filterPanel.focusKey}
       closing={closing}
       anchorRef={filterButtonRef}
+      savedFilters={props.savedFilters}
       onApply={(next) => {
         nav.applyFilters(next);
         closeFilterView();
@@ -750,7 +739,6 @@ function DataTableView<Row>(props: Spec.Props<Row>): ReactElement {
       data-edit-closing={flag(closing)}
       data-cards={flag(cards)}
       data-filter-drawer={flag(sidebar.open)}
-      data-actions-back={flag(actionsBack)}
       onKeyDown={(event) => nav.keyDownRoot(event, layer)}
     >
       <LayerContext value={layer}>

@@ -16,6 +16,7 @@ import { oneOf, within } from '../../../shared/lib/localQuery';
 import { DataTable } from '../../../shared/ui/dataTable';
 import { appIcons } from '../../../shared/ui/icons';
 import { OpeningStatusBadge } from '../../../shared/ui/parts';
+import { sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters';
 import { departmentName, employeeOf, useHrData, useTableSource } from '../../hr';
 import { useRecruitingFlows } from '../flows';
 
@@ -47,8 +48,15 @@ function openingRows(data: HrData): OpeningRow[] {
 // The order of the states when sorted: the open ones first.
 const STATUS_ORDER: Readonly<Record<OpeningStatus, number>> = { open: 0, onHold: 1, closed: 2 };
 
+// The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
+const COLLEAGUES_FILTERS: readonly DataTableComponent.SavedFilter[] = [
+  sharedBy('Tom Becker', 'Open positions', { status: ['open'] }),
+  sharedBy('Sophie Brandt', 'Sales openings', { department: ['Sales', 'Sales DACH', 'International Sales'] }),
+];
+
 // The job openings: their department, hiring manager, status and candidates. Open one for its pipeline.
 function RecruitingPage(): ReactElement {
+  const savedFilters = useSavedFilters('human-resources:saved-filters:openings', COLLEAGUES_FILTERS);
   const t = useTranslate();
   const data = useHrData();
   const nav = useDataTableController<OpeningRow>();
@@ -175,6 +183,7 @@ function RecruitingPage(): ReactElement {
       searchable
       reloadable
       pageSizeOptions={[25, 50, 100]}
+      savedFilters={savedFilters}
       defaultSort={{ key: 'status', direction: 'asc' }}
     />
   );

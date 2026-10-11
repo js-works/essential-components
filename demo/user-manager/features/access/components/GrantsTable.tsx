@@ -16,6 +16,7 @@ import { matchesText, oneOf, within } from '../../../shared/lib/localQuery';
 import { DataTable } from '../../../shared/ui/dataTable';
 import { appIcons } from '../../../shared/ui/icons';
 import { PrincipalLabel, principalName } from '../../../shared/ui/parts';
+import { daysFromToday, sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters';
 import { useAccessData, useChanged, useIamService, useTableSource } from '../../iam';
 import { GrantForm } from './GrantForm';
 
@@ -85,6 +86,13 @@ function useGrantAccess(): (preset?: { principal?: PrincipalRef; roleId?: string
   };
 }
 
+// The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
+const COLLEAGUES_FILTERS: readonly DataTableComponent.SavedFilter[] = [
+  sharedBy('Laura Schmidt', 'Group grants', { type: ['Group'] }),
+  sharedBy('Max Müller', 'Owners', { role: ['Owner'] }),
+  sharedBy('Laura Schmidt', 'Granted this month', { created: { from: daysFromToday(-30), to: daysFromToday(0) } }),
+];
+
 // Grants in a table: all of them (the access page), or those of a user, a group or a role (`filter`). "Grant access"
 // (with `preset`: e.g. the user of the page) and "Revoke" (a critical confirmation).
 function GrantsTable({ name, filter = () => true, preset, hide = [], title, subtitle }: {
@@ -96,6 +104,7 @@ function GrantsTable({ name, filter = () => true, preset, hide = [], title, subt
   title?: string;
   subtitle?: string;
 }): ReactElement {
+  const savedFilters = useSavedFilters('user-manager:saved-filters:access', COLLEAGUES_FILTERS);
   const nav = useDataTableController<GrantRow>();
   const data = useAccessData();
   const service = useIamService();
@@ -235,6 +244,7 @@ function GrantsTable({ name, filter = () => true, preset, hide = [], title, subt
       actions={actions}
       searchable
       pageSizeOptions={[10, 25, 50]}
+      savedFilters={name === 'all' ? savedFilters : undefined}
       defaultSort={{ key: hide.includes('who') ? 'scope' : 'who', direction: 'asc' }}
       empty="No access granted."
     />

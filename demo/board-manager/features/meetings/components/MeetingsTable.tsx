@@ -28,6 +28,7 @@ import { confirmAndRun } from '../../../shared/lib/flows';
 import type { Dialogs } from '../../../shared/lib/flows';
 import { translate, useTranslate } from '../../../shared/lib/i18n';
 import { appIcons, DataTable, formatDateTime, PAGE_SIZE_OPTIONS, useDb } from '../../../shared/shared';
+import { daysFromToday, sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters';
 
 export { deleteMeetingsFlow, editMeeting, MeetingsTable, MinutesBadge, StatusBadge };
 
@@ -101,6 +102,16 @@ function MinutesBadge(
     : <Badge size="sm" variant="outline">{t('meetings.minutesDraftBadge')}</Badge>;
 }
 
+// The colleagues' shared filters of the meetings list (2026-10-11, the user's wish: to show sharing).
+const COLLEAGUES_FILTERS: readonly DataTableComponent.SavedFilter[] = [
+  sharedBy('Maria Keller', 'Minutes to approve', { status: ['Held'], minutesApproved: ['draft'] }),
+  sharedBy('Jonas Weber', 'Planned, next 90 days', {
+    status: ['Planned'],
+    start: { from: daysFromToday(0), to: daysFromToday(90) },
+  }),
+  sharedBy('Lena Hoffmann', 'Supervisory Board', { board: ['Supervisory Board'] }),
+];
+
 // The meetings of one board (`boardId`, on the board's page), of the boards of one person (`personId`, on the member's
 // page), or of all boards (the "Meetings" module). Without a board, with a board column and filter, and a new meeting
 // chooses its board (of the person's boards, with a person). `pathOf` is where a meeting opens: below its board, or
@@ -121,6 +132,9 @@ function MeetingsTable(
   const navigate = useNavigate();
   const boards = useDb((state) => state.boards);
   const source = useMemo(() => fetchMeetings({ boardId, personId }), [boardId, personId]);
+  // Saved filters only in the Meetings module (2026-10-11, the user's wish: not on a board's or a member's page).
+  const savedFilters = useSavedFilters('board-manager:saved-filters:meetings', COLLEAGUES_FILTERS);
+  const main = boardId === undefined && personId === undefined;
 
   const columns = useMemo<readonly DataTableComponent.Column<MeetingRow>[]>(() => [
     {
@@ -202,6 +216,24 @@ function MeetingsTable(
       hideable: true,
       hidden: true,
       align: 'end',
+    },
+    // Only for the look (2026-10-11, the user's wish: enough filters for the filter drawer's two columns): columns
+    // without data, whose filters the source ignores.
+    {
+      key: 'chair',
+      header: t('meetings.columns.chair'),
+      width: 2,
+      hideable: true,
+      hidden: true,
+      filter: textColumnFilter(),
+    },
+    {
+      key: 'created',
+      header: t('meetings.columns.created'),
+      width: 2,
+      hideable: true,
+      hidden: true,
+      filter: dateRangeColumnFilter(),
     },
   ], [t, boardId, boards, pathOf]);
 
@@ -331,6 +363,7 @@ function MeetingsTable(
       actions={actions}
       pageSizeOptions={PAGE_SIZE_OPTIONS}
       defaultSort={{ key: 'start', direction: 'desc' }}
+      savedFilters={main ? savedFilters : undefined}
     />
   );
 }

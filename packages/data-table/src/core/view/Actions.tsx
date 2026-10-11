@@ -69,7 +69,20 @@ function ActionList<Row>(props: ActionListProps<Row>): ReactElement {
             }
         );
 
-        return <ActionMenu key={item.key} look={look} variant={variant} placement={placement} entries={entries} />;
+        // The chevron (2026-10-11, the user's wish): always with a label; an icon-only menu has it in the toolbar (the bar
+        // and the selection bar), not in the action column; `chevron` decides instead (e.g. `false` for a "⋯" menu).
+        const chevron = item.chevron ?? (look.label !== undefined || placement === 'toolbar');
+
+        return (
+          <ActionMenu
+            key={item.key}
+            look={look}
+            variant={variant}
+            placement={placement}
+            chevron={chevron}
+            entries={entries}
+          />
+        );
       })}
     </>
   );

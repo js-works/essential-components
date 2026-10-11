@@ -24,6 +24,7 @@ import { confirmAndRun } from '../../../shared/lib/flows';
 import type { Dialogs } from '../../../shared/lib/flows';
 import { translate, useTranslate } from '../../../shared/lib/i18n';
 import { appIcons, DataTable, organizationFilter, PAGE_SIZE_OPTIONS, useDb } from '../../../shared/shared';
+import { sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters';
 
 export { deleteOrganizationsFlow, editOrganization, OrganizationsPage, WebsiteLink };
 
@@ -101,9 +102,16 @@ function WebsiteLink({ url }: { url: string }): ReactElement | null {
   );
 }
 
+// The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
+const COLLEAGUES_FILTERS: readonly DataTableComponent.SavedFilter[] = [
+  sharedBy('Maria Keller', 'Stuttgart', { city: { text: 'Stuttgart', match: 'contains' } }),
+  sharedBy('Lena Hoffmann', 'Investors', { name: ['Nordic Capital Partners', 'Gulf Invest', 'Stein Family Office'] }),
+];
+
 // The "Organizations" module: every organization, with a new one, editing and deleting (its people stay, without an
 // organization). One opens on its own page, with its people.
 function OrganizationsPage(): ReactElement {
+  const savedFilters = useSavedFilters('board-manager:saved-filters:organizations', COLLEAGUES_FILTERS);
   const t = useTranslate();
   const nav = useDataTableController<OrganizationRow>();
   const dialogs = useDialogs();
@@ -245,6 +253,7 @@ function OrganizationsPage(): ReactElement {
       columns={columns}
       actions={actions}
       pageSizeOptions={PAGE_SIZE_OPTIONS}
+      savedFilters={savedFilters}
       defaultSort={{ key: 'name', direction: 'asc' }}
     />
   );

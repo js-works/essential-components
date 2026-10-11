@@ -189,9 +189,19 @@ and imports the files it needs from its `CLAUDE.md`.
   the default of each app's `DataTable` wrapper (`pageSize={50}` before the table's own props), and no table sets its
   own, except the two of the Board Manager's meeting page that show everything on one page (the agenda: 50, its
   sections: 100). The package's own default stays 25.
+- Saved filters in the root's apps (2026-10-11, the user's wish; the data table's `savedFilters`): only in the main
+  tables of the modules with at least two filters, never on a record's page (e.g. a meeting's documents, a board's
+  meetings), nor in Trash. Board Manager: Boards, Meetings, Members, Organizations; File Center: Files, Recent,
+  Favorites; Human Resources: Employees, Recruiting, Checklists; Time Tracker: Employees, Leave (the team's tab); User
+  Manager: Users, Access. Each with 2 or 3 made-up colleagues' shared filters (`sharedBy(owner, name, filters)`, first in
+  the list, not removable; date ranges relative to today, `daysFromToday`) and its own `localStorage` key
+  (`<app>:saved-filters:<table>`), with sharing (one user here: own shared ones are only marked).
+  `<app>/shared/ui/savedFilters.ts` (`useSavedFilters`), the same file in each of the five apps: a change goes into all
+  five.
 - The toolbar of a table in the root's apps (2026-10-09, the user's wish): one action in the accent
   (`variant: 'primary'`), normally the "New …" or "Add …" one, else the main one (an upload, "Report sick"); the
-  others secondary (a danger one stays danger). Every "New …" and "Add …" action has the plus icon (`appIcons.add`,
+  others secondary (a danger one stays danger; File Center's Files: `tertiary`, ghost buttons, 2026-10-11, the user's
+  wish). Every "New …" and "Add …" action has the plus icon (`appIcons.add`,
   Tabler's `TbPlus`), not a specific one (a user plus, a folder plus).
 - The vertical position of the overlays' dialogs (2026-10-08, the user's wish; `packages/overlays/src/main/dialogs/
   element/styles.ts`): every centered dialog (not a drawer, not maximized) sits a bit above the middle, the free

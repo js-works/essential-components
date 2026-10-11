@@ -16,6 +16,7 @@ import { oneOf, within } from '../../../shared/lib/localQuery';
 import { DataTable } from '../../../shared/ui/dataTable';
 import { appIcons } from '../../../shared/ui/icons';
 import { EmployeeLabel, EmployeeStatusBadge } from '../../../shared/ui/parts';
+import { sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters';
 import { departmentName, employeeOf, useHrData, useTableSource } from '../../hr';
 import { useEmployeeFlows } from '../flows';
 
@@ -41,9 +42,17 @@ function employeeRows(data: HrData): EmployeeRow[] {
 // The order of the states when sorted: the coming ones first, the former ones last.
 const STATUS_ORDER: Readonly<Record<EmployeeStatus, number>> = { upcoming: 0, active: 1, leaving: 2, former: 3 };
 
+// The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
+const COLLEAGUES_FILTERS: readonly DataTableComponent.SavedFilter[] = [
+  sharedBy('Sophie Brandt', 'Engineering, full time', { department: ['Engineering'], employmentType: ['fullTime'] }),
+  sharedBy('Tom Becker', 'Starting soon', { status: ['upcoming'] }),
+  sharedBy('Sophie Brandt', 'Berlin office', { location: ['Berlin'] }),
+];
+
 // The directory: everyone with their job, manager, place, contract and status (former ones too: the status filter
 // narrows them). Open one for their page.
 function EmployeesPage(): ReactElement {
+  const savedFilters = useSavedFilters('human-resources:saved-filters:employees', COLLEAGUES_FILTERS);
   const t = useTranslate();
   const data = useHrData();
   const nav = useDataTableController<EmployeeRow>();
@@ -180,6 +189,7 @@ function EmployeesPage(): ReactElement {
       searchable
       reloadable
       pageSizeOptions={[25, 50, 100]}
+      savedFilters={savedFilters}
       defaultSort={{ key: 'name', direction: 'asc' }}
     />
   );

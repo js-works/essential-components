@@ -79,6 +79,18 @@ const GERMAN: Readonly<Record<keyof DataTableComponent.Texts, string>> = {
   saveFailed: 'Die Zeile konnte nicht gespeichert werden',
   editRow: 'Zeile bearbeiten',
   newRow: 'Neue Zeile',
+  savedFilters: 'Gespeicherte Filter',
+  saveFilter: 'Speichern unter…',
+  filterName: 'Name',
+  confirmSaveFilter: 'Speichern',
+  cancelSaveFilter: 'Abbrechen',
+  saveFilterFailed: 'Der Filter konnte nicht gespeichert werden',
+  deleteSavedFilter: '{name} löschen',
+  shareFilter: 'Teilen',
+  sharedFilter: 'Geteilt',
+  privateFilter: 'Privat',
+  filterOwner: 'von {name}',
+  shareSavedFilter: '{name} teilen',
 };
 
 const TRANSLATIONS: Readonly<Record<string, Readonly<Record<string, string | undefined>>>> = { de: GERMAN };

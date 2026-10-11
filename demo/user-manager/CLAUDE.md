@@ -60,6 +60,9 @@ Started 2026-10-03.
 
 ## App
 
+- Saved filters (2026-10-11, the user's wish) in Users and Access (`GrantsTable` with `name="all"` only), with
+  colleagues' shared filters: see "Saved filters in the root's apps" in the root's `CLAUDE.md`
+  (`shared/ui/savedFilters.ts`).
 - The full-height layout of the Board Manager (2026-10-08, the user's wish): the app fills its element (the root
   page: `user-manager-demo { height: 100% }` in `demo/demo.css`), the app header stays, `.user-manager__main` scrolls
   below it, and a page's table takes the rest of the height (its rows scroll, its toolbar, header and footer stay;

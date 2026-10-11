@@ -356,6 +356,15 @@ the root's `CLAUDE.md` apply.
   board and the status (multiple selects), the minutes (approved or draft, only held meetings have minutes; the
   location and the minutes since 2026-10-09). The in-memory source (`fetchMeetings`) applies them. (The items and the
   documents had number ranges for a few hours that day.)
+  - Only for the look (2026-10-11, the user's wish: enough filters for the data table's filter drawer in two
+    columns): two hidden columns without data, "Chair" (text) and "Created" (a date range), with their filters (`chair`
+    and `created` of `MeetingRow`, always empty). The source ignores these two filters. (Number ranges on the items and
+    the documents too, for a few hours the same day.)
+  - Saved filters (2026-10-11, the user's wish; the data table's `savedFilters`, in its filter view and drawer):
+    only in the Meetings module (not on a board's or a member's page, 2026-10-11, the user's wish), with the
+    colleagues' "Minutes to approve" (Maria Keller), "Planned, next 90 days" (Jonas Weber) and "Supervisory Board"
+    (Lena Hoffmann); see "Saved filters in the root's apps" in the root's `CLAUDE.md` (`shared/ui/savedFilters.ts`).
+    Also in Boards, Members (not an organization's People tab) and Organizations, with colleagues' filters too.
 - A meeting's page opens on "Overview" (`MeetingOverview`): its base information as labels and values (title, board,
   date and time with the end from the agenda's duration, location, status and minutes badges, the number of items and
   sections, documents), "Edit", the same meeting form dialog as "Edit" in the meetings list (`editMeeting()` in

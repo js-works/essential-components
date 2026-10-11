@@ -395,6 +395,36 @@ describe('attributes', () => {
     expect(screen.queryByRole('button', { name: / per page$/ })).toBeNull();
   });
 
+  it('takes the saved filters of the filter drawer as a property', async () => {
+    const [ElementClass, createController] = setupDataTable();
+    const element = create(ElementClass);
+    const savedFilters: DataTable.SavedFilters = {
+      items: [{ id: 's1', name: 'Mine', filters: { name: { text: 'a', match: 'contains' } } }],
+      save: vi.fn(),
+      remove: vi.fn(),
+    };
+
+    document.documentElement.setAttribute('data-data-table-filter-drawer', '');
+    element.controller = createController({
+      source: createSource(),
+      rowKey: 'id',
+      columns: [{ key: 'name', header: 'Name', filter: textColumnFilter() }],
+    });
+    expect(element.savedFilters).toBeUndefined();
+    element.savedFilters = savedFilters;
+    await mount(element);
+
+    expect(element.savedFilters).toBe(savedFilters);
+    fireEvent.click(await screen.findByRole('button', { name: 'Filters' }));
+
+    const drawer = await screen.findByRole('region', { name: 'Filters' });
+
+    expect(within(drawer).getByRole('button', { name: 'Saved filters' })).toBeTruthy();
+    // nothing to save yet: the draft is empty
+    expect(within(drawer).queryByRole('button', { name: 'Save as…' })).toBeNull();
+    document.documentElement.removeAttribute('data-data-table-filter-drawer');
+  });
+
   it('fixes the layout by its attribute: not set means the user chooses, an invalid value is not set', async () => {
     const [ElementClass, createController] = setupDataTable();
     const element = create(ElementClass);

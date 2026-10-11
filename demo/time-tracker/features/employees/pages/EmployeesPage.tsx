@@ -12,6 +12,7 @@ import { oneOf } from '../../../shared/lib/localQuery';
 import { DataTable } from '../../../shared/ui/dataTable';
 import { appIcons } from '../../../shared/ui/icons';
 import { EmployeeLabel, LeadOnly, TodayBadge } from '../../../shared/ui/parts';
+import { sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters';
 import { useTableSource, useTimeData } from '../../tracker';
 import { useViewer } from '../../viewer';
 import { useEmployeeFlows } from '../flows';
@@ -44,8 +45,15 @@ function employeeRows(data: TimeData): EmployeeRow[] {
   });
 }
 
+// The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
+const COLLEAGUES_FILTERS: readonly DataTableComponent.SavedFilter[] = [
+  sharedBy('Julia Wagner', 'Absent today', { todayKey: ['vacation', 'special', 'unpaid', 'sick', 'holiday'] }),
+  sharedBy('Felix Braun', 'Engineering', { team: ['Engineering'] }),
+];
+
 // All employees (a team lead): their team, hours, vacation left and where they are today. Open one for their page.
 function EmployeesPage(): ReactElement {
+  const savedFilters = useSavedFilters('time-tracker:saved-filters:employees', COLLEAGUES_FILTERS);
   const t = useTranslate();
   const data = useTimeData();
   const viewer = useViewer();
@@ -179,6 +187,7 @@ function EmployeesPage(): ReactElement {
       searchable
       reloadable
       pageSizeOptions={[25, 50, 100]}
+      savedFilters={savedFilters}
       defaultSort={{ key: 'name', direction: 'asc' }}
     />
   );

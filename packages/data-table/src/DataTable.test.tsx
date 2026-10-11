@@ -1587,6 +1587,234 @@ describe('DataTable', () => {
       expect(screen.queryByRole('button', { name: 'Apply' })).toBeNull();
       expect(clear()).toBeNull();
     });
+
+    describe('saved filters (the filter drawer)', () => {
+      const mine: Spec.SavedFilter = { id: 's1', name: 'Mine', filters: { city: 'Berlin' } };
+
+      // The drawer is a prototype behind a page flag (`data-data-table-filter-drawer` on `<html>`).
+      const withDrawer = () => document.documentElement.setAttribute('data-data-table-filter-drawer', '');
+
+      afterEach(() => document.documentElement.removeAttribute('data-data-table-filter-drawer'));
+
+      // The name field of "Save as…" (the column filter "Name" has the same name).
+      const nameField = (drawer: HTMLElement) =>
+        drawer.querySelector<HTMLInputElement>('.data-table__saved-filter-form input');
+
+      const savedFiltersOf = (items: readonly Spec.SavedFilter[] = [mine]) => ({
+        items,
+        save: vi.fn(
+          async (_name: string, _filters: Record<string, Spec.FilterValue>, _options: Spec.SaveFilterOptions) => {},
+        ),
+        remove: vi.fn(async (_id: string) => {}),
+      });
+
+      it('has no saved filters without `savedFilters`', async () => {
+        withDrawer();
+        renderNav({ columns: filteredColumns });
+        await loaded();
+
+        const drawer = await openFilters();
+
+        expect(within(drawer).queryByRole('button', { name: 'Save as…' })).toBeNull();
+        expect(within(drawer).queryByRole('button', { name: 'Saved filters' })).toBeNull();
+      });
+
+      it('saves the draft under a name; Save as… only while the draft has a filter that is not saved', async () => {
+        withDrawer();
+        const savedFilters = savedFiltersOf([]);
+
+        renderNav({ columns: filteredColumns, savedFilters });
+        await loaded();
+
+        const drawer = await openFilters();
+        const saveAs = () => within(drawer).queryByRole('button', { name: 'Save as…' });
+
+        // no menu without saved filters, no Save as… while the draft is empty
+        expect(within(drawer).queryByRole('button', { name: 'Saved filters' })).toBeNull();
+        expect(saveAs()).toBeNull();
+
+        typeName('person 07');
+        fireEvent.click(saveAs()!);
+
+        const name = nameField(drawer)!;
+
+        expect(name.getAttribute('aria-label')).toBe('Name');
+        fireEvent.change(name, { target: { value: '  Seven ' } });
+        // Enter saves (it does not apply the drawer)
+        fireEvent.keyDown(name, { key: 'Enter' });
+
+        await waitFor(() =>
+          expect(savedFilters.save).toHaveBeenCalledWith('Seven', { name: { text: 'person 07', match: 'contains' } }, {
+            shared: false,
+          })
+        );
+        await waitFor(() => expect(nameField(drawer)).toBeNull());
+        expect(screen.getByRole('region', { name: 'Filters' })).toBe(drawer);
+      });
+
+      it('shows the message of a failed save and keeps the name', async () => {
+        withDrawer();
+        const savedFilters = savedFiltersOf([]);
+
+        savedFilters.save.mockRejectedValueOnce(new Error('Name taken'));
+        renderNav({ columns: filteredColumns, savedFilters });
+        await loaded();
+
+        const drawer = await openFilters();
+
+        typeName('person 07');
+        fireEvent.click(within(drawer).getByRole('button', { name: 'Save as…' }));
+        fireEvent.change(nameField(drawer)!, { target: { value: 'Seven' } });
+        click('Save');
+
+        expect((await within(drawer).findByRole('alert')).textContent).toBe('Name taken');
+        expect(nameField(drawer)!.value).toBe('Seven');
+      });
+
+      it('loads a saved filter into the draft (Apply applies it), names the button after it, hides Save as…', async () => {
+        withDrawer();
+        const { source } = renderNav({ columns: filteredColumns, savedFilters: savedFiltersOf() });
+
+        await loaded();
+
+        const drawer = await openFilters();
+
+        fireEvent.click(within(drawer).getByRole('button', { name: 'Saved filters' }));
+        fireEvent.click(await screen.findByRole('menuitem', { name: 'Mine' }));
+
+        expect(shownIn('City')).toBe('Berlin');
+        expect(within(drawer).getByRole('button', { name: 'Mine' })).toBeTruthy();
+        expect(within(drawer).queryByRole('button', { name: 'Save as…' })).toBeNull();
+        click('Apply');
+
+        await filteredWith(source, { city: 'Berlin' }, 300);
+      });
+
+      it('shares a saved filter with `sharing`: the Share checkbox, marked and owned ones in the menu', async () => {
+        withDrawer();
+        const savedFilters = {
+          ...savedFiltersOf([
+            { ...mine, shared: true },
+            { id: 's2', name: 'Team', filters: { city: 'Vienna' }, shared: true, owner: 'Anna', removable: false },
+          ]),
+          sharing: true,
+        };
+
+        renderNav({ columns: filteredColumns, savedFilters });
+        await loaded();
+
+        const drawer = await openFilters();
+
+        fireEvent.click(within(drawer).getByRole('button', { name: 'Saved filters' }));
+        // mine: marked as shared, with its ×; Anna's: by her, without one
+        expect(await screen.findByRole('menuitem', { name: /^Mine\s*Shared$/ })).toBeTruthy();
+        expect(screen.getByRole('menuitem', { name: /^Team\s*Shared\s*by Anna$/ })).toBeTruthy();
+        expect(screen.getByRole('menuitem', { name: 'Delete Mine' })).toBeTruthy();
+        expect(screen.queryByRole('menuitem', { name: 'Delete Team' })).toBeNull();
+
+        typeName('person 07');
+        fireEvent.click(within(drawer).getByRole('button', { name: 'Save as…' }));
+        fireEvent.change(nameField(drawer)!, { target: { value: 'Seven' } });
+        fireEvent.click(within(drawer).getByRole('checkbox', { name: 'Share' }));
+        click('Save');
+
+        await waitFor(() =>
+          expect(savedFilters.save).toHaveBeenCalledWith('Seven', { name: { text: 'person 07', match: 'contains' } }, {
+            shared: true,
+          })
+        );
+      });
+
+      it('shares and unshares own saved filters in the menu with `setShared`', async () => {
+        withDrawer();
+        const setShared = vi.fn(async (_id: string, _shared: boolean) => {});
+        const savedFilters = {
+          ...savedFiltersOf([
+            mine,
+            { id: 's2', name: 'Team', filters: { city: 'Vienna' }, shared: true, owner: 'Anna', removable: false },
+          ]),
+          sharing: true,
+          setShared,
+        };
+
+        renderNav({ columns: filteredColumns, savedFilters });
+        await loaded();
+
+        const drawer = await openFilters();
+
+        fireEvent.click(within(drawer).getByRole('button', { name: 'Saved filters' }));
+
+        const share = await screen.findByRole('menuitemcheckbox', { name: 'Share Mine' });
+
+        expect(share.getAttribute('aria-checked')).toBe('false');
+        // its state as a word
+        expect(share.textContent).toBe('Private');
+        // another user's: no toggle, only the mark
+        expect(screen.queryByRole('menuitemcheckbox', { name: 'Share Team' })).toBeNull();
+        fireEvent.click(share);
+
+        await waitFor(() => expect(setShared).toHaveBeenCalledWith('s1', true));
+        // the menu stays open
+        expect(screen.getByRole('menuitemcheckbox', { name: 'Share Mine' })).toBeTruthy();
+      });
+
+      it('has them in the filter view too: loads one and saves the draft', async () => {
+        // no drawer flag: the filter view
+        const savedFilters = savedFiltersOf();
+        const { source } = renderNav({ columns: filteredColumns, savedFilters });
+
+        await loaded();
+
+        const view = await openFilters();
+
+        expect(view.querySelector('.data-table__filter-sidebar-footer[data-place="view"]')).not.toBeNull();
+        fireEvent.click(within(view).getByRole('button', { name: 'Saved filters' }));
+        fireEvent.click(await screen.findByRole('menuitem', { name: 'Mine' }));
+        expect(shownIn('City')).toBe('Berlin');
+
+        typeName('person 07');
+        fireEvent.click(within(view).getByRole('button', { name: 'Save as…' }));
+        fireEvent.change(nameField(view)!, { target: { value: 'Seven' } });
+        click('Save');
+
+        await waitFor(() =>
+          expect(savedFilters.save).toHaveBeenCalledWith(
+            'Seven',
+            { name: { text: 'person 07', match: 'contains' }, city: 'Berlin' },
+            { shared: false },
+          )
+        );
+        click('Apply');
+        await filteredWith(source, { name: { text: 'person 07', match: 'contains' }, city: 'Berlin' }, 300);
+      });
+
+      it('has no Share checkbox without `sharing`', async () => {
+        withDrawer();
+        renderNav({ columns: filteredColumns, savedFilters: savedFiltersOf([]) });
+        await loaded();
+
+        const drawer = await openFilters();
+
+        typeName('person 07');
+        fireEvent.click(within(drawer).getByRole('button', { name: 'Save as…' }));
+        expect(within(drawer).queryByRole('checkbox', { name: 'Share' })).toBeNull();
+      });
+
+      it('deletes a saved filter with the × after its name', async () => {
+        withDrawer();
+        const savedFilters = savedFiltersOf();
+
+        renderNav({ columns: filteredColumns, savedFilters });
+        await loaded();
+
+        const drawer = await openFilters();
+
+        fireEvent.click(within(drawer).getByRole('button', { name: 'Saved filters' }));
+        fireEvent.click(await screen.findByRole('menuitem', { name: 'Delete Mine' }));
+
+        await waitFor(() => expect(savedFilters.remove).toHaveBeenCalledWith('s1'));
+      });
+    });
   });
 
   describe('reload button', () => {
@@ -1887,6 +2115,43 @@ describe('DataTable', () => {
       await loaded();
 
       expect(controls()).toEqual({ checkboxes: 0, radios: 0 });
+    });
+
+    it('gives an icon-only menu a chevron in the toolbar, not in the action column; `chevron` decides instead', async () => {
+      renderNav({
+        actions: [
+          {
+            type: 'menu',
+            key: 'export',
+            tip: 'Export',
+            icon: <span>E</span>,
+            actions: [{ type: 'general', key: 'csv', label: 'CSV', onClick: noop }],
+          },
+          {
+            type: 'menu',
+            key: 'more',
+            tip: 'More',
+            icon: <span>⋯</span>,
+            chevron: false,
+            actions: [{ type: 'general', key: 'print', label: 'Print', onClick: noop }],
+          },
+          {
+            type: 'menu',
+            key: 'row',
+            tip: 'Row menu',
+            icon: <span>R</span>,
+            actions: [{ type: 'singleRow', key: 'edit', label: 'Edit', onClick: noop }],
+          },
+        ],
+      });
+
+      await loaded();
+
+      const chevron = (button: HTMLElement) => button.hasAttribute('data-chevron');
+
+      expect(chevron(screen.getByRole('button', { name: 'Export' }))).toBe(true);
+      expect(chevron(screen.getByRole('button', { name: 'More' }))).toBe(false);
+      expect(screen.getAllByRole('button', { name: 'Row menu' }).some(chevron)).toBe(false);
     });
 
     it('has no selection for general actions and for row actions that only live in the action column', async () => {
@@ -4769,6 +5034,10 @@ describe('toolbar', () => {
     );
     expect(button).toMatch(
       /&\[data-placement='toolbar'\]\[data-variant='danger'\] \{[^}]*background-color: var\(--param-color-danger\);[^}]*color: var\(--param-color-on-primary\)/,
+    );
+    // tertiary: a ghost button, like the view controls
+    expect(button).toMatch(
+      /&\[data-placement='toolbar'\]\[data-variant='tertiary'\] \{[^}]*border-color: transparent;[^}]*background-color: transparent/,
     );
     // view controls: ghost
     expect(button).toMatch(

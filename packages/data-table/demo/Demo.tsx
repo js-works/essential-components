@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
 import {
   autocompleteColumnFilter,
@@ -204,6 +204,23 @@ function Demo({ controls }: { controls: Controls }): ReactElement {
     editRow: nav.editRow,
     addRow: () => nav.addRow(newUser()),
   });
+  // Saved filters (in the filter view and the drawer), kept in memory: a name saved again replaces the
+  // filter of that name. With sharing (the demo has one user: shared ones are only marked).
+  const [saved, setSaved] = useState<readonly DataTableComponent.SavedFilter[]>([]);
+  const savedFilters: DataTableComponent.SavedFilters = {
+    items: saved,
+    sharing: true,
+    save: (name, filters, { shared }) => {
+      setSaved((current) => [
+        ...current.filter((item) => item.name !== name),
+        { id: crypto.randomUUID(), name, filters, shared },
+      ]);
+      show(`Saved filter "${name}"`);
+    },
+    remove: (id) => setSaved((current) => current.filter((item) => item.id !== id)),
+    setShared: (id, shared) =>
+      setSaved((current) => current.map((item) => (item.id === id ? { ...item, shared } : item))),
+  };
 
   return (
     <div className="ui-stack">
@@ -246,6 +263,7 @@ function Demo({ controls }: { controls: Controls }): ReactElement {
             return created;
           }}
           editFields={editFields}
+          savedFilters={savedFilters}
           defaultSort={{ key: 'lastName', direction: 'asc' }}
           renderDetail={(user) => (user.id % 3 === 0 ? null : <span className={note}>{user.notes}</span>)}
         />

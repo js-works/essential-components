@@ -75,6 +75,7 @@ export {
   filterRange,
   filterSidebar,
   filterSidebarBody,
+  filterSidebarFooter,
   filterSidebarHeader,
   filterSidebarIcon,
   filterSidebarRow,
@@ -131,6 +132,14 @@ export {
   root,
   row,
   rowActions,
+  savedFilterButton,
+  savedFilterChip,
+  savedFilterError,
+  savedFilterForm,
+  savedFilterMenu,
+  savedFilterOwner,
+  savedFilterShare,
+  savedFilterShared,
   scrollArea,
   scroller,
   searchField,
@@ -224,6 +233,15 @@ const filterBadge = 'data-table__filter-badge';
 const filterButtonGroup = 'data-table__filter-button-group';
 const filterSidebar = 'data-table__filter-sidebar';
 const filterSidebarBody = 'data-table__filter-sidebar-body';
+const filterSidebarFooter = 'data-table__filter-sidebar-footer';
+const savedFilterButton = 'data-table__saved-filter-button';
+const savedFilterMenu = 'data-table__saved-filter-menu';
+const savedFilterForm = 'data-table__saved-filter-form';
+const savedFilterError = 'data-table__saved-filter-error';
+const savedFilterShare = 'data-table__saved-filter-share';
+const savedFilterOwner = 'data-table__saved-filter-owner';
+const savedFilterShared = 'data-table__saved-filter-shared';
+const savedFilterChip = 'data-table__saved-filter-chip';
 const filterSidebarHeader = 'data-table__filter-sidebar-header';
 const filterSidebarIcon = 'data-table__filter-sidebar-icon';
 const filterSidebarRow = 'data-table__filter-sidebar-row';

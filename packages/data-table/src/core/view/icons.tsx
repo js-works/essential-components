@@ -30,11 +30,32 @@ const paths = {
   refresh: ['M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4', 'M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4'],
   // `filter-2` (three lines getting shorter): the title of the filter drawer.
   filter2: ['M4 6h16', 'M6 12h12', 'M9 18h6'],
-  // `arrow-left` (the thin one): Cancel of the filter drawer (`circle-arrow-left`, `arrow-right`, `arrow-bar-to-right`
-  // and `arrow-big-right` tried).
-  arrowLeft: ['M5 12l14 0', 'M5 12l6 6', 'M5 12l6 -6'],
+  // `eraser`: Clear of the filter drawer (after its title).
+  eraser: [
+    'M19 20h-10.5l-4.21 -4.3a1 1 0 0 1 0 -1.41l10 -10a1 1 0 0 1 1.41 0l5 5a1 1 0 0 1 0 1.41l-9.2 9.3',
+    'M18 13.3l-6.3 -6.3',
+  ],
   // `rotate`: Reset of the filter drawer (a circular arrow turning counterclockwise).
   rotate: ['M19.95 11a8 8 0 1 0 -.5 4m.5 5v-5h-5'],
+  // `users`: a shared saved filter in the filter drawer's menu.
+  users: [
+    'M5 7a4 4 0 1 0 8 0a4 4 0 1 0 -8 0',
+    'M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2',
+    'M16 3.13a4 4 0 0 1 0 7.75',
+    'M21 21v-2a4 4 0 0 0 -3 -3.85',
+  ],
+  // `lock`: a private saved filter (its Share toggle in the filter drawer's menu).
+  lock: [
+    'M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-6z',
+    'M11 16a1 1 0 1 0 2 0a1 1 0 0 0 -2 0',
+    'M8 11v-4a4 4 0 1 1 8 0v4',
+  ],
+  // `device-floppy`: "Save as…" of the saved filters in the filter drawer.
+  deviceFloppy: [
+    'M6 4h10l4 4v10a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2',
+    'M10 14a2 2 0 1 0 4 0a2 2 0 1 0 -4 0',
+    'M14 4l0 4l-6 0l0 -4',
+  ],
   // `grip-vertical`: the drag handle of a row.
   gripVertical: [
     'M9 5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0',
@@ -144,7 +165,10 @@ const icons = {
   FitWidth: icon('fitWidth'),
   ArrowBackUp: icon('arrowBackUp'),
   Rotate: icon('rotate'),
-  ArrowLeft: icon('arrowLeft'),
+  Eraser: icon('eraser'),
+  Save: icon('deviceFloppy'),
+  Users: icon('users'),
+  Lock: icon('lock'),
   FilterLines: icon('filter2'),
   Filter: filledIcon(filledPaths.filter, 16, 'nonzero'),
   Deselect: icon('deselect'),

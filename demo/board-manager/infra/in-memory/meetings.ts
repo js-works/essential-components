@@ -8,7 +8,8 @@ import type { Db } from './store';
 export { approveMinutes, createMeeting, deleteMeetings, fetchMeetings, setMeetingStatus, updateMeeting };
 export type { MeetingRow };
 
-type MeetingRow = Meeting & { board: string; items: number; documents: number };
+// `chair` and `created` are always empty: their columns are there only for their filters, for the look (2026-10-11).
+type MeetingRow = Meeting & { board: string; items: number; documents: number; chair: string; created: string };
 
 function meetingRows(state: Db): MeetingRow[] {
   return state.meetings.map((meeting) => ({
@@ -16,6 +17,8 @@ function meetingRows(state: Db): MeetingRow[] {
     board: getBoard(state, meeting.boardId)?.name ?? '',
     items: state.agendaItems.filter((item) => item.meetingId === meeting.id).length,
     documents: state.documents.filter((document) => document.meetingId === meeting.id).length,
+    chair: '',
+    created: '',
   }));
 }
 

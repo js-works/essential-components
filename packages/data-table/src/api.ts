@@ -43,6 +43,25 @@ declare namespace DataTable {
 
   type ResultGroup = { key: string; total: number };
 
+  type SavedFilter = {
+    id: string;
+    name: string;
+    filters: Record<string, FilterValue>;
+    shared?: boolean;
+    owner?: string;
+    removable?: boolean;
+  };
+
+  type SaveFilterOptions = { shared: boolean };
+
+  type SavedFilters = {
+    items: readonly SavedFilter[];
+    save: (name: string, filters: Record<string, FilterValue>, options: SaveFilterOptions) => void | Promise<void>;
+    remove: (id: string) => void | Promise<void>;
+    sharing?: boolean;
+    setShared?: (id: string, shared: boolean) => void | Promise<void>;
+  };
+
   type GroupBy<Row> = (keyof Row & string) | ((row: Row) => string);
 
   type RowGroup<Row> = { key: string; rows: readonly Row[]; total: number | undefined };
@@ -103,7 +122,7 @@ declare namespace DataTable {
 
   type ColumnAlign = 'start' | 'center' | 'end';
 
-  type ActionVariant = 'primary' | 'secondary' | 'danger';
+  type ActionVariant = 'primary' | 'secondary' | 'tertiary' | 'danger';
 
   type ActionSeparator = { type: 'separator' };
 
@@ -183,6 +202,18 @@ declare namespace DataTable {
     saveFailed: string; // The row could not be saved
     editRow: string; // Edit row
     newRow: string; // New row
+    savedFilters: string; // Saved filters
+    saveFilter: string; // Save as…
+    filterName: string; // Name
+    confirmSaveFilter: string; // Save
+    cancelSaveFilter: string; // Cancel
+    saveFilterFailed: string; // The filter could not be saved
+    deleteSavedFilter: (params: { name: string }) => string; // Delete {name}
+    shareFilter: string; // Share
+    sharedFilter: string; // Shared
+    privateFilter: string; // Private
+    filterOwner: (params: { name: string }) => string; // by {name}
+    shareSavedFilter: (params: { name: string }) => string; // Share {name}
   };
 
   type ThemeValue = string | { light: string; dark: string };
@@ -339,6 +370,7 @@ declare namespace DataTable {
     type: 'menu';
     key: string;
     variant?: ActionVariant;
+    chevron?: boolean;
     actions: readonly (Action<Row, C> | ActionSeparator)[];
   } & ActionLook<C>;
 
@@ -387,6 +419,7 @@ declare namespace DataTable {
     selectionAppearance: SelectionAppearance;
     pageSize: number;
     pageSizeOptions: readonly number[];
+    savedFilters: SavedFilters | undefined;
   };
 
   type ElementClass<C> = {

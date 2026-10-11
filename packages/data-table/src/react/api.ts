@@ -28,6 +28,12 @@ declare namespace DataTableComponent {
 
   type ResultGroup = DataTable.ResultGroup;
 
+  type SavedFilter = DataTable.SavedFilter;
+
+  type SaveFilterOptions = DataTable.SaveFilterOptions;
+
+  type SavedFilters = DataTable.SavedFilters;
+
   type GroupBy<Row> = DataTable.GroupBy<Row>;
 
   type RowGroup<Row> = DataTable.RowGroup<Row>;
@@ -165,6 +171,7 @@ declare namespace DataTableComponent {
     type: 'menu';
     key: string;
     variant?: ActionVariant;
+    chevron?: boolean;
     actions: readonly (Action<Row> | ActionSeparator)[];
   } & ActionLook;
 
@@ -198,6 +205,7 @@ declare namespace DataTableComponent {
     selectableGroups?: boolean;
     rowActionLook?: RowActionLook;
     controller?: Controller<Row>;
+    savedFilters?: SavedFilters;
   };
 
   type Config = {

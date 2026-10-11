@@ -190,6 +190,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     `always`), `striped`, `searchable`, `reloadable`, `show-total` (`showTotal`), `selectable-groups` (`selectableGroups`), `row-action-look` (`rowActionLook`: `icon`, `label`, `iconAndLabel`),
     `selection-appearance` (`selectionAppearance`: `neutral`, `accent`), `page-size` (`pageSize`).
   - `pageSizeOptions`: a property only (an array).
+  - `savedFilters`: a property only (an object with functions; see "Saved filters").
 - Content (`render`, `renderDetail`, the `header` function) is `string | C`. `C` comes from a content adapter in the
   config of `setupDataTable` (`content`); the default adapter is for `Node`.
   ```ts
@@ -1710,7 +1711,9 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     its badge).
   - The Reload button's icon turns while loading (`data-busy`).
   - Animations (short, and none with the system's reduced motion setting, see "Look and feel"): a new bar (the bar or
-    the selection bar) fades in with a tiny upward shift (150ms); the selection pill and the filter pills scale in
+    the selection bar) comes at once (2026-10-11, the user's wish; it faded in with a tiny upward shift, 150ms, before,
+    and so did the filter drawer's header and the actions after the drawer closed: `data-table-bar-in` and
+    `data-actions-back` are gone); the selection pill and the filter pills scale in
     from 0.7 (160ms, the selection pill from its left); the text of the selection pill bumps (1.15 wide and 1.25 high, 150ms; it was 1.25 in both directions, then 1.1 wide) when the count
     changes.
 - Actions come in four types: general, single-row, multi-row and group (the group one since 2026-09-30, see "Group
@@ -1781,14 +1784,20 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       (`aria-label`) and its tooltip. On an action with a label, the tip is a tooltip only.
     - Tooltips are Base UI's (see Tooltips), on hover and on focus.
     - It applies to toolbar buttons, to the buttons in the action column and to menu buttons (an icon-only menu
-      button has no chevron). In a dropdown, an item shows its icon and its label, or its tip if it has no label.
+      button has a chevron in the toolbar only, see menus below). In a dropdown, an item shows its icon and its label, or its tip if it has no label.
     - Touch devices have no hover, so an icon-only button has no visible name there (screen readers read the tip).
       Recommendation: give actions that matter a label, and use icon-only buttons for well-known icons (edit, delete).
       A long-press tooltip is on the todo list.
     - The icons are the app's business: `icon` is any `ReactNode` (the demo uses the icon set of each library).
-  - Every action and every menu has a `variant?: 'primary' | 'secondary' | 'danger'` (default `'secondary'`).
+  - Every action and every menu has a `variant?: 'primary' | 'secondary' | 'tertiary' | 'danger'` (default
+    `'secondary'`).
     - `primary`: the one main action, emphasized. `secondary`: the normal look. `danger`: destructive actions, in a red
       tone. There is no combination of primary and danger.
+    - `tertiary` (2026-10-11, the user's wish; proposed at about 65%, over a table setting `actionLook: 'outline' |
+      'ghost'`, which could not mix both): less important than secondary. In the toolbar and the selection bar a ghost
+      button like the view controls (no border, no background at rest; `colorSurfaceStrong` on hover and while its menu
+      is open); in the action column and in menus the same as secondary. Named by its role, like the others (Carbon's
+      "tertiary" is an outlined button, its "ghost" the borderless one; Mantine calls the look `subtle`).
     - Guidance for apps: at most one primary (the thing most users come for), danger only for actions that destroy
       something (still with a confirmation or undo in the app), everything else secondary. An app that never sets a
       variant gets an all-secondary, calm toolbar.
@@ -1819,6 +1828,11 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       a visible action is before and after it: none at the start or at the end, and only one where several follow each
       other. A menu with only separators and invisible actions is hidden.
     - Works in the toolbar and in the action column.
+    - The chevron of a menu button (2026-10-11, the user's wish): always with a label; an icon-only menu has one in the
+      toolbar and the selection bar (a 12px chevron after the icon, the button then as wide as its content,
+      `data-chevron`), not in the action column (tight room). `chevron?: boolean` on a menu decides instead (React and
+      the element), e.g. `false` for a "⋯" menu, where a chevron would say "more" twice. Before, icon-only menus had
+      none anywhere. (Weighed: on every icon-only menu, the rows' too; only by `chevron: true`.)
   - A single-row action can be the default action: `default?: boolean` on `RowAction`.
     - A double click on a row runs it, with that row. The same area as the single click: all of a data cell but its
       controls, the free space and plain text of a detail cell (and its layout elements), never a control cell.
@@ -2223,12 +2237,67 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   draft, so the drawer's main advantage, the results beside it, does not count; two columns show more at once; the nose
   ties it to the filter button; in narrow places it becomes one column. The drawer stays switchable for now). Both
   are in the code: the filter view (`FilterView`, the sheet below the toolbar, see Filtering) and the drawer, a prototype
-  (`FilterSidebar` in `FilterPanel.tsx`: at the right edge over the rows, its buttons at the top: `⟲ | [← Cancel]
-  [✓ Apply]`, the title with the count and Clear's ×). A page flag switches every table, live: the attribute
+  (`FilterSidebar` in `FilterPanel.tsx`: at the right edge over the rows, its buttons at the top: `⟲ | [✓ Apply] [×]`, Cancel an icon-only × at the very end, tipped "Cancel" (2026-10-11,
+  the user's wish: where a drawer's close button is; before, "Cancel" as a ghost button before Apply, with Tabler's
+  thin `arrow-left` until the same day), the title with the count and Clear as Tabler's `eraser` (the same day; the ×
+  before); animated (2026-10-11, the user's wish, tried again; off from 2026-10-09): uncovered from the right edge to
+  the left and faded in, 250ms `ease-out` like the filter view (150ms for a moment the same day), closing the same back with the same easing (`ease-in` for a moment the same day: it vanished abruptly), none with reduced motion (a `clip-path`,
+  `DRAWER_ANIMATION`); two columns when one column would scroll (2026-10-11, the
+  user's wish: adaptive; from 7 filters on for a few minutes the same day), decided once when it opens, before the
+  first paint (no switch while it is open; a resize counts at the next opening), the drawer `min(52rem, 100%)` wide (`28rem` with one), the filters down the first
+  column, then the second, each column lining up its labels; one column again below 40rem of the drawer, a container
+  query). A page flag switches every table, live: the attribute
   `data-data-table-filter-drawer` on `<html>` (`useFilterDrawerFlag` in `DataTableView.tsx`, a `MutationObserver`;
   not an API; 2026-10-09, the user's wish: a check item "Filter drawer" in the section "Prototypes" of the root page's
   kebab menu, remembered per browser, off by default; the constant `FILTER_SIDEBAR` before). A switch closes what is
   open, its draft dropped. Then remove the other one and the flag, or make it a prop.
+  - Saved filters (2026-10-11, the user's wish; first only in the drawer, in the filter view too since the same day: a
+    row of its own between the filters and the buttons' row, as wide as that and centered like it (the same
+    `SaveFilterFooter`, `data-place="view"`; there "Save as…" follows the saved filters on the left, not at the end, and the name field is at most 20rem wide,
+    like a filter's control; in the buttons' row after the title it would be squeezed again, like in
+    the drawer's header)): the optional
+    prop `savedFilters` (`SavedFilters = { items, save(name, filters), remove(id) }`, `SavedFilter = { id, name,
+    filters }`; on the element a property). The app stores them (the user's choice: not a `storageKey` of the table);
+    `save` and `remove` may return a promise. Without the prop the drawer is as before.
+    - The drawer's bottom row (`SaveFilterFooter`, `.filter-sidebar-footer`, below the filters, which scroll; at the
+      drawer's bottom edge, the free space above it, `margin-top: auto`, 2026-10-11, the user's wish; only while it has
+      something): the saved filters on the left, "Save as…" at the end (2026-10-11, the user's wish: after
+      the title for a few hours the same day, where the button's text went for lack of room when the count came); while the name field of "Save as…" is open, the row is that field).
+    - The saved filters, only while there are some: a ghost button with the name of the saved filter the draft
+      equals (`sameValue`), else "Saved filters" (`Texts.savedFilters`; with a name, that is its description), cut off
+      when long, and a chevron; its menu (opens upwards) (`SavedFilterMenu` in `FilterPanel.tsx`, `.saved-filter-menu`): per saved
+      filter two items on one line, the name (a check at the current one; a click loads it into the draft, Apply
+      applies it as always) and an × (`Texts.deleteSavedFilter`, "Delete {name}"; calls `remove`, the menu stays
+      open; a rejection is only logged).
+    - "Save as…"
+      (`Texts.saveFilter`, Tabler's `device-floppy`, a ghost button), only while there is something to save: not while
+      the draft is empty or equals a saved filter (the user's wish the same day; disabled while empty before; the
+      footer goes with it). It becomes a
+      name field (`Texts.filterName`, focused), Cancel and Save: square outlined icon buttons, × and ✓, as tall as the
+      field, their texts (`Texts.cancelSaveFilter`, `Texts.confirmSaveFilter`) as tooltips and names (2026-10-11, the
+      user's wish: the words, Cancel a ghost button and Save outlined, were too long in some languages); Save disabled
+      while the name is empty ("OK" was proposed, "Save" taken).
+      Save and Enter call `save` with the trimmed name and the draft (not the applied filters); the app decides what an
+      existing name means. Meanwhile Save's check is a turning icon; a rejection keeps the field and shows the message below it
+      (`role="alert"`, the `Error`'s message, else `Texts.saveFilterFailed`), the next change removes it. Enter and
+      Escape in the field belong to it (they neither apply nor cancel the drawer); Escape closes the field.
+    - Sharing (2026-10-11, the user's wish; proposed at about 65%): the table knows no users, the app decides who sees
+      what. `SavedFilters.sharing` (off by default) adds a "Share" checkbox to the name row (`Texts.shareFilter`, our
+      native checkbox in the primary color; unchecked for every new name), and `save` gets `{ shared }`
+      (`SaveFilterOptions`) as its third argument (always `false` without `sharing`). A `SavedFilter` may have
+      `shared` (Tabler's `users` after the name, dimmed, named `Texts.sharedFilter`), `owner` (another user's: "by
+      {name}", `Texts.filterOwner`, dimmed and small below the name) and `removable: false` (no ×, its place empty).
+      Sharing and unsharing later (2026-10-11, the user's wish, proposed at about 70%): with `sharing` and the optional
+      `setShared(id, shared)`, every removable (own) filter has a toggle in the menu between its name and its ×: Base
+      UI's checkbox item (`menuitemcheckbox`, `Texts.shareSavedFilter`, "Share {name}") showing its state as a round
+      chip with an icon and a word (`.saved-filter-chip`, the small size, a 1px line in its color): "🔒 Private"
+      (Tabler's `lock`, `Texts.privateFilter`, dimmed) or "👥 Shared" (`users`, `Texts.sharedFilter`, in the primary
+      color); a click switches it (2026-10-11, the user's wish: first the `users` icon alone, dimmed or in the primary
+      color, which did not say which state was which); the menu stays open; a rejection is only logged. It replaces the plain mark on
+      those lines; another user's keeps the mark. (Weighed: "Save as…" for a saved filter again, replacing it by name.)
+      Not done: sorting the menu into own and shared ones.
+    - Demo: the React tab, in memory, with sharing (a name saved again replaces that one); the Board Manager's
+      meetings tables in `localStorage`, with sharing and a made-up colleague's shared filter. Tests: `DataTable.test.tsx` ("saved filters (the filter drawer)"), the element's property.
 
 - Cards in a narrow table (2026-10-05, the first step is done, see "Cards in a narrow table"). TBD:
   - Sorting: there are no column headers; e.g. a sort menu in the toolbar (the sortable columns, ascending or

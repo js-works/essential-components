@@ -63,6 +63,8 @@ Started 2026-10-08.
 
 ## App
 
+- Saved filters (2026-10-11, the user's wish) in Employees, Recruiting (the openings) and Checklists, with colleagues'
+  shared filters: see "Saved filters in the root's apps" in the root's `CLAUDE.md` (`shared/ui/savedFilters.ts`).
 - App header (`AppHeader`, 2026-10-08; "top bar" before): the app icon (`TbUsersGroup`; the cockpit's the same Tabler icon), "Human Resources" ("Personal" in German),
   the user menu (the viewer's avatar and title, "My page"), Back and Forward.
   - The modules as tabs (2026-10-08, the user's wish: tried here first, then rolled out to the Board Manager, the User

@@ -24,6 +24,7 @@ type ElementSettings = {
   selectionAppearance: DataTable.SelectionAppearance;
   pageSize: number;
   pageSizeOptions: readonly number[];
+  savedFilters: DataTable.SavedFilters | undefined;
 };
 
 // The inner state of every controller, by controller (not part of the object the app sees).
@@ -251,6 +252,7 @@ function menuOf<Row, C>(menu: DataTable.ActionMenu<Row, C>, content: ContentRend
     type: 'menu',
     key: menu.key,
     variant: menu.variant,
+    chevron: menu.chevron,
     actions: menu.actions.map((action) => (action.type === 'separator' ? action : actionOf(action, content))),
     ...lookOf(menu, content),
   };

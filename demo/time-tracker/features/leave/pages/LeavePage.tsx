@@ -1,10 +1,12 @@
 import { Loader, Stack, Tabs } from '@mantine/core';
 import { useState } from 'react';
 import type { ReactElement } from 'react';
+import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
 import { membersOf, todayDate, vacationBalance } from '../../../domain';
 import { useTranslate } from '../../../shared/lib/i18n';
 import { appIcons } from '../../../shared/ui/icons';
 import { PageHeader } from '../../../shared/ui/parts';
+import { sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters';
 import { useTimeData } from '../../tracker';
 import { useViewer } from '../../viewer';
 import { BalanceCards } from '../components/BalanceCards';
@@ -12,9 +14,16 @@ import { LeaveTable } from '../components/LeaveTable';
 
 export { LeavePage };
 
+// The colleagues' shared filters of the team's requests (2026-10-11, the user's wish: to show sharing).
+const COLLEAGUES_FILTERS: readonly DataTableComponent.SavedFilter[] = [
+  sharedBy('Julia Wagner', 'Pending requests', { status: ['pending'] }),
+  sharedBy('Felix Braun', 'Vacation', { type: ['vacation'] }),
+];
+
 // Leave: the viewer's vacation of this year and their requests; a team lead also sees the requests of their team, to
 // approve or reject them.
 function LeavePage(): ReactElement {
+  const savedFilters = useSavedFilters('time-tracker:saved-filters:team-leave', COLLEAGUES_FILTERS);
   const t = useTranslate();
   const data = useTimeData();
   const viewer = useViewer();
@@ -62,6 +71,7 @@ function LeavePage(): ReactElement {
             mine={false}
             title={t('leave.team')}
             subtitle={t('leave.teamSubtitle')}
+            savedFilters={savedFilters}
           />
         </Tabs.Panel>
       </Tabs>

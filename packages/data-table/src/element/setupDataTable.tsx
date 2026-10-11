@@ -36,6 +36,7 @@ const UPGRADED_PROPERTIES = [
   'selectionAppearance',
   'pageSize',
   'pageSizeOptions',
+  'savedFilters',
 ] as const;
 
 // Called once per app, with the app's theme, i18n factory, content adapter and the defaults of its elements. Returns an element class (not
@@ -73,6 +74,7 @@ function setupDataTable<C = Node>(
     // With the i18n adapter of this element: the factory is asked once, on the first connect, with the element.
     #config: ResolvedConfig | undefined;
     #pageSizeOptions: readonly number[] | undefined;
+    #savedFilters: DataTable.SavedFilters | undefined;
     #root: Root | undefined;
     #stopListening: (() => void) | undefined;
 
@@ -235,6 +237,16 @@ function setupDataTable<C = Node>(
       this.#render();
     }
 
+    // Saved filters in the filter drawer (optional; the app stores them): a property only (an object with functions).
+    get savedFilters(): DataTable.SavedFilters | undefined {
+      return this.#savedFilters;
+    }
+
+    set savedFilters(savedFilters: DataTable.SavedFilters | undefined) {
+      this.#savedFilters = savedFilters;
+      this.#render();
+    }
+
     connectedCallback(): void {
       this.#upgradeProperties();
       this.setAttribute(HOST_ATTRIBUTE, '');
@@ -283,6 +295,7 @@ function setupDataTable<C = Node>(
         selectionAppearance: this.selectionAppearance,
         pageSize: this.pageSize,
         pageSizeOptions: this.pageSizeOptions,
+        savedFilters: this.savedFilters,
       };
     }
 

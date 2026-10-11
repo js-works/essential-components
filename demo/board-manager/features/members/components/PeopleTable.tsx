@@ -28,6 +28,7 @@ import {
   personFilter,
   useDb,
 } from '../../../shared/shared';
+import { sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters';
 
 export { deletePeopleFlow, editPerson, memberPath, PeopleTable };
 
@@ -83,6 +84,12 @@ async function deletePeopleFlow(
   return done;
 }
 
+// The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
+const COLLEAGUES_FILTERS: readonly DataTableComponent.SavedFilter[] = [
+  sharedBy('Lena Hoffmann', 'Audit Committee', { boards: ['Audit Committee'] }),
+  sharedBy('Jonas Weber', 'Works Council', { organization: ['Works Council'] }),
+];
+
 // The people (create, edit, delete), with their boards and roles: all of them (the "Members" module), or those of one
 // organization (`organizationId`, on its page: a new person belongs to it, and the organization column is hidden). A
 // person opens on their own page ("Open", also a double click, or the name). The memberships are changed on the page
@@ -90,6 +97,7 @@ async function deletePeopleFlow(
 function PeopleTable(
   { organizationId, title, subtitle }: { organizationId?: string; title: string; subtitle: string },
 ): ReactElement {
+  const savedFilters = useSavedFilters('board-manager:saved-filters:members', COLLEAGUES_FILTERS);
   const t = useTranslate();
   const nav = useDataTableController<PersonRow>();
   const dialogs = useDialogs();
@@ -207,6 +215,7 @@ function PeopleTable(
       columns={columns}
       actions={actions}
       pageSizeOptions={PAGE_SIZE_OPTIONS}
+      savedFilters={organizationId === undefined ? savedFilters : undefined}
       defaultSort={{ key: 'name', direction: 'asc' }}
     />
   );

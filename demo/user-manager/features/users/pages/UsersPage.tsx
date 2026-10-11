@@ -11,6 +11,7 @@ import { oneOf } from '../../../shared/lib/localQuery';
 import { DataTable } from '../../../shared/ui/dataTable';
 import { appIcons } from '../../../shared/ui/icons';
 import { PageHeader, UserAvatar } from '../../../shared/ui/parts';
+import { sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters';
 import { useGrantAccess } from '../../access';
 import { useTableSource } from '../../iam';
 import { DEPARTMENTS } from '../components/UserForm';
@@ -34,8 +35,15 @@ function userRows(data: AccessData): UserRow[] {
   });
 }
 
+// The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
+const COLLEAGUES_FILTERS: readonly DataTableComponent.SavedFilter[] = [
+  sharedBy('Laura Schmidt', 'Disabled users', { status: ['Disabled'] }),
+  sharedBy('Max Müller', 'IT and Finance', { department: ['IT', 'Finance'] }),
+];
+
 // All users: their department, groups and status. Open one for its details and access.
 function UsersPage(): ReactElement {
+  const savedFilters = useSavedFilters('user-manager:saved-filters:users', COLLEAGUES_FILTERS);
   const nav = useDataTableController<UserRow>();
   const navigate = useNavigate();
   const flows = useUserFlows();
@@ -175,6 +183,7 @@ function UsersPage(): ReactElement {
         searchable
         reloadable
         pageSizeOptions={[25, 50, 100]}
+        savedFilters={savedFilters}
         defaultSort={{ key: 'name', direction: 'asc' }}
       />
     </Stack>

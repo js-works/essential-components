@@ -74,6 +74,8 @@ structure completely (`demo/board-manager/STRUCTURE.md`): a reference for its ph
 
 ## App
 
+- Saved filters (2026-10-11, the user's wish) in Files (a folder's list), Recent and Favorites, with colleagues' shared
+  filters: see "Saved filters in the root's apps" in the root's `CLAUDE.md` (`shared/ui/savedFilters.ts`).
 - Modules (2026-10-08, the user's wish, built one by one): Overview, Files, Recent, Favorites, Trash. Done so far:
   all five.
 - Trash (2026-10-08; `/trash`, `features/trash/`):
@@ -94,7 +96,7 @@ structure completely (`demo/board-manager/STRUCTURE.md`): a reference for its ph
   - A star after the name in every table (Files, Recent, Favorites; `FavoriteStar`): filled (yellow) while it is one,
     else an outline shown only while the name is hovered or the star has the focus; a click marks or unmarks it at
     once, then saves (no toast; a failed save takes it back).
-  - In Files a menu "Favorites" for the selected rows: "Add to favorites", "Remove from favorites" (a toast).
+  - In Files a menu "Favorites" (icon only, a star with its tooltip, 2026-10-11, the user's wish) for the selected rows: "Add to favorites", "Remove from favorites" (a toast).
   - In the drawer of a folder's or a file's details a button "Add to favorites" / "Remove from favorites".
   - The module (`/favorites`; `features/favorites/`): a table of the marked folders and files of all folders (the
     folders first, like Files; `favorites()` of the browser service), with Folder (the path of the folder it is in, a
@@ -176,7 +178,11 @@ structure completely (`demo/board-manager/STRUCTURE.md`): a reference for its ph
     click on a file shows its details (Details is a default action too: the first one marked that is there for the
     row counts).
   - Details and Rename (icons in each row and in the selection bar for one row).
-  - Move, Delete (danger), Download (a menu: as zip, as tar.gz) for the selected rows.
+  - The secondary actions of the Files toolbar are `tertiary` (ghost buttons, 2026-10-11, the user's wish): Upload,
+    Details, Favorites, Download; Move and Rename stay secondary (outlined, the user's wish the same day); Rename with its icon and text in the
+    selection bar (icon only before), the icon only in the rows.
+  - Move, Delete (danger), Download (a menu: as zip, as tar.gz; icon only with its tooltip, 2026-10-11, the user's
+    wish) for the selected rows.
 - New folder, Rename: a form dialog with one field (`NameForm`, the overlays' `<Form confirm>`): an empty name is
   refused at once; the server refuses a name a sibling folder has already (ignoring the case), or a slash; the message
   shows under the field and the dialog stays open. Renaming a file selects the name without its extension first.

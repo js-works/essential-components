@@ -12,6 +12,7 @@ import { oneOf } from '../../../shared/lib/localQuery';
 import { DataTable } from '../../../shared/ui/dataTable';
 import { appIcons } from '../../../shared/ui/icons';
 import { EmployeeLabel, ProgressCell } from '../../../shared/ui/parts';
+import { sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters';
 import { employeeOf, useHrData, useTableSource } from '../../hr';
 import { useChecklistFlows } from '../flows';
 import { taskTitle } from '../taskTitle';
@@ -49,8 +50,15 @@ function checklistRows(data: HrData): ChecklistRow[] {
   });
 }
 
+// The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
+const COLLEAGUES_FILTERS: readonly DataTableComponent.SavedFilter[] = [
+  sharedBy('Sophie Brandt', 'Open onboardings', { kind: ['onboarding'], state: ['open'] }),
+  sharedBy('Tom Becker', 'Offboardings', { kind: ['offboarding'] }),
+];
+
 // The checklists of joiners and leavers: whose, which kind, their day, how far, what comes next. The open ones first.
 function ChecklistsPage(): ReactElement {
+  const savedFilters = useSavedFilters('human-resources:saved-filters:checklists', COLLEAGUES_FILTERS);
   const t = useTranslate();
   const data = useHrData();
   const nav = useDataTableController<ChecklistRow>();
@@ -184,6 +192,7 @@ function ChecklistsPage(): ReactElement {
       searchable
       reloadable
       pageSizeOptions={[25, 50, 100]}
+      savedFilters={savedFilters}
       defaultSort={{ key: 'anchor', direction: 'asc' }}
     />
   );

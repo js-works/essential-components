@@ -33,14 +33,15 @@ function employeeColumn(header: string): DataTableComponent.Column<LeaveRow> {
 // Leave requests as a table: the viewer's own (`mine`: new, cancel) or those of employees (a team lead: approve,
 // reject; `pendingOnly`: only those still to decide, the approvals). Only pending requests are decided and only a
 // pending or coming approved one is cancelled; others among the selected rows are skipped (a toast says so when none is
-// left).
-function LeaveTable({ data, employees, mine, pendingOnly = false, title, subtitle }: {
+// left). `savedFilters` only where the page gives them (the Leave page's team tab, 2026-10-11).
+function LeaveTable({ data, employees, mine, pendingOnly = false, title, subtitle, savedFilters }: {
   data: TimeData;
   employees: readonly Employee[];
   mine: boolean;
   pendingOnly?: boolean;
   title: string;
   subtitle?: string;
+  savedFilters?: DataTableComponent.SavedFilters;
 }): ReactElement {
   const t = useTranslate();
   const nav = useDataTableController<LeaveRow>();
@@ -205,6 +206,7 @@ function LeaveTable({ data, employees, mine, pendingOnly = false, title, subtitl
       actions={actions}
       searchable={!mine}
       pageSizeOptions={[25, 50, 100]}
+      savedFilters={savedFilters}
       defaultSort={{ key: 'from', direction: pendingOnly ? 'asc' : 'desc' }}
     />
   );

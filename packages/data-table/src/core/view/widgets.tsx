@@ -293,7 +293,7 @@ function buttonContent(look: Spec.ActionLook, chevron: boolean): ReactNode {
     <>
       {hasContent(look.icon) && <span className={styles.buttonIcon}>{look.icon}</span>}
       {look.label !== undefined && <span className={styles.buttonLabel}>{look.label}</span>}
-      {chevron && look.label !== undefined && <icons.ChevronDown size={14} />}
+      {chevron && <icons.ChevronDown size={look.label === undefined ? 12 : 14} />}
     </>
   );
 }
@@ -327,14 +327,18 @@ function ActionButton(
   );
 }
 
-type ActionMenuProps = Omit<ActionButtonProps, 'onClick' | 'busy' | 'disabled'> & { entries: readonly MenuEntry[] };
+type ActionMenuProps = Omit<ActionButtonProps, 'onClick' | 'busy' | 'disabled'> & {
+  // A chevron after the content (an icon-only button then is no longer square).
+  chevron: boolean;
+  entries: readonly MenuEntry[];
+};
 
 // A button with a flat list of actions (Base UI's Menu): arrow keys, Home, End and typing move between the items,
 // Enter chooses one, Escape and a click outside close it, and the focus goes back to the button. The list opens below
 // the button, aligned to its end (the actions of the toolbar and the action column both sit at the right), so it does
 // not reach past the table. It is rendered in the layer of the root (so it gets the tokens of the theme). It is not modal. The
 // tooltip of the button is disabled while the menu is open.
-function ActionMenu({ look, variant, placement, entries }: ActionMenuProps): ReactElement {
+function ActionMenu({ look, variant, placement, chevron, entries }: ActionMenuProps): ReactElement {
   const layer = useContext(LayerContext);
   const [open, setOpen] = useState(false);
   const withIcons = entries.some((entry) => entry.type !== 'separator' && hasContent(entry.icon));
@@ -342,8 +346,8 @@ function ActionMenu({ look, variant, placement, entries }: ActionMenuProps): Rea
   return (
     <BaseMenu.Root modal={false} open={open} onOpenChange={setOpen}>
       <WithTip tip={look.tip} describe={look.label !== undefined} disabled={open}>
-        <BaseMenu.Trigger {...buttonAttributes(look, variant, placement)}>
-          {buttonContent(look, true)}
+        <BaseMenu.Trigger {...buttonAttributes(look, variant, placement)} data-chevron={flag(chevron)}>
+          {buttonContent(look, chevron)}
         </BaseMenu.Trigger>
       </WithTip>
       <BaseMenu.Portal container={layer}>

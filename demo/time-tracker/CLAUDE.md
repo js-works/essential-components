@@ -102,6 +102,9 @@ Started 2026-10-06.
 
 ## App
 
+- Saved filters (2026-10-11, the user's wish) in Employees and in the team's tab of Leave (`LeaveTable`'s
+  `savedFilters`, given by `LeavePage`), with colleagues' shared filters: see "Saved filters in the root's apps" in
+  the root's `CLAUDE.md` (`shared/ui/savedFilters.ts`).
 - App header (`AppHeader`, 2026-10-08; "top bar" before) like the Board Manager's, two lines (2026-10-08, the Human Resources' trial, rolled out; a menu of the modules
   on the title, the breadcrumb in the same line before): the app icon (`TbClock`, also the cockpit's), "Time Tracker",
   the modules as tabs (Overview, Time clock, Timesheet, Leave, Sick calls, Team calendar; for a team lead also Approvals

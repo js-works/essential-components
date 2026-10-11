@@ -15,6 +15,7 @@ import { formatDateTime, formatSize } from '../../shared/lib/format';
 import { useQuerySource } from '../../shared/lib/useQuerySource';
 import { DataTable } from '../../shared/ui/dataTable';
 import { appIcons, kindIcon } from '../../shared/ui/icons';
+import { daysFromToday, sharedBy, useSavedFilters } from '../../shared/ui/savedFilters';
 import { browserKeys, FavoriteStar, folderPath, KIND_LABELS, useBrowserService, useEntryActions } from '../browser';
 
 export { RecentPage };
@@ -62,10 +63,17 @@ const toPaging = (query: DataTableComponent.Query) => ({
   limit: query.pageSize,
 });
 
+// The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
+const COLLEAGUES_FILTERS: readonly DataTableComponent.SavedFilter[] = [
+  sharedBy('Ben Carter', 'This week', { modified: { from: daysFromToday(-7), to: daysFromToday(0) } }),
+  sharedBy('Anna Schröder', 'Media', { kind: ['image', 'video', 'audio'] }),
+];
+
 // The module "Recent" (2026-10-08): the files of all folders, the last modified first, from the last 30 days (a
 // default filter: changed or removed like any other). A double click (or the arrow) shows a file's details; its folder
 // is a link. Changes (rename, move, delete, upload) are made in Files.
 function RecentPage(): ReactElement {
+  const savedFilters = useSavedFilters('file-center:saved-filters:recent', COLLEAGUES_FILTERS);
   const service = useBrowserService();
   const navigate = useNavigate();
   const nav = useDataTableController<MediaFile>();
@@ -190,6 +198,7 @@ function RecentPage(): ReactElement {
       searchable
       reloadable
       pageSizeOptions={[25, 50, 100]}
+      savedFilters={savedFilters}
       defaultSort={{ key: 'modified', direction: 'desc' }}
       defaultFilters={defaultFilters}
       empty="No files were modified in this time."

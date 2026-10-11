@@ -19,6 +19,7 @@ import { countText, formatDateTime, formatSize } from '../../../shared/lib/forma
 import { useQuerySource } from '../../../shared/lib/useQuerySource';
 import { DataTable } from '../../../shared/ui/dataTable';
 import { appIcons } from '../../../shared/ui/icons';
+import { sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters';
 import { EntryName } from '../components/EntryName';
 import { MoveForm } from '../components/MoveForm';
 import { NameForm } from '../components/NameForm';
@@ -117,11 +118,19 @@ function FolderPage(): ReactElement {
   return <FolderTable key={folder.id} folder={folder} folders={folders} owners={owners} />;
 }
 
+// The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
+const COLLEAGUES_FILTERS: readonly DataTableComponent.SavedFilter[] = [
+  sharedBy('Anna Schröder', 'Images', { kind: ['image'] }),
+  sharedBy('Ben Carter', 'Office documents', { kind: ['document', 'spreadsheet', 'presentation'] }),
+  sharedBy('Claire Dubois', 'My files', { owner: ['Claire Dubois'] }),
+];
+
 function FolderTable({ folder, folders, owners }: {
   folder: Folder;
   folders: readonly Folder[];
   owners: readonly string[];
 }): ReactElement {
+  const savedFilters = useSavedFilters('file-center:saved-filters:files', COLLEAGUES_FILTERS);
   const service = useBrowserService();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -395,7 +404,15 @@ function FolderTable({ folder, folders, owners }: {
         variant: 'primary',
         onClick: () => void newFolder(),
       },
-      { type: 'general', key: 'upload', label: 'Upload', icon: appIcons.upload, onClick: () => void upload() },
+      // The secondary actions of the toolbar as ghost buttons (2026-10-11, the user's wish: `tertiary`).
+      {
+        type: 'general',
+        key: 'upload',
+        label: 'Upload',
+        icon: appIcons.upload,
+        variant: 'tertiary',
+        onClick: () => void upload(),
+      },
       // The default actions (a double click): a folder opens, a file shows its details (the first one marked that is
       // there for the row). "Open" only for folders (2026-10-10, the user's wish: for a file it did the same as
       // "Details"; the data table's `visible`).
@@ -412,6 +429,7 @@ function FolderTable({ folder, folders, owners }: {
       {
         type: 'singleRow',
         key: 'info',
+        variant: 'tertiary',
         icon: appIcons.info,
         tip: 'Details',
         show: 'both',
@@ -421,12 +439,21 @@ function FolderTable({ folder, folders, owners }: {
       {
         type: 'singleRow',
         key: 'rename',
+        // Outlined (2026-10-11, the user's wish), like Move; with its text in the selection bar (the same day; icon only
+        // before), the icon only in the rows (the table's `rowActionLook`), named by its label.
+        label: 'Rename',
         icon: appIcons.rename,
-        tip: 'Rename',
         show: 'both',
         onClick: (row) => void rename(row),
       },
-      { type: 'multiRow', key: 'move', label: 'Move', icon: appIcons.move, onClick: (rows) => void move(rows) },
+      {
+        type: 'multiRow',
+        key: 'move',
+        label: 'Move',
+        icon: appIcons.move,
+        // Outlined (2026-10-11, the user's wish): the main action on the selection.
+        onClick: (rows) => void move(rows),
+      },
       {
         type: 'multiRow',
         key: 'delete',
@@ -438,7 +465,9 @@ function FolderTable({ folder, folders, owners }: {
       {
         type: 'menu',
         key: 'favorites',
-        label: 'Favorites',
+        // Icon only, with its tooltip (2026-10-11, the user's wish), like Download.
+        tip: 'Favorites',
+        variant: 'tertiary',
         icon: appIcons.star,
         actions: [
           {
@@ -458,7 +487,8 @@ function FolderTable({ folder, folders, owners }: {
       {
         type: 'menu',
         key: 'download',
-        label: 'Download',
+        tip: 'Download',
+        variant: 'tertiary',
         icon: appIcons.download,
         actions: [
           { type: 'multiRow', key: 'download-zip', label: 'Selected items as zip', onClick: download },
@@ -488,6 +518,7 @@ function FolderTable({ folder, folders, owners }: {
       searchable
       reloadable
       pageSizeOptions={[25, 50, 100]}
+      savedFilters={savedFilters}
       defaultSort={{ key: 'name', direction: 'asc' }}
       empty="This folder is empty. Create a folder or upload files."
     />
