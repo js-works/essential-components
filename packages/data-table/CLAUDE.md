@@ -2249,7 +2249,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   query). A page flag switches every table, live: the attribute
   `data-data-table-filter-drawer` on `<html>` (`useFilterDrawerFlag` in `DataTableView.tsx`, a `MutationObserver`;
   not an API; 2026-10-09, the user's wish: a check item "Filter drawer" in the section "Prototypes" of the root page's
-  kebab menu, remembered per browser, off by default; the constant `FILTER_SIDEBAR` before). A switch closes what is
+  kebab menu, remembered per browser, on by default since 2026-10-11 (the user's wish; off before); the constant `FILTER_SIDEBAR` before). A switch closes what is
   open, its draft dropped. Then remove the other one and the flag, or make it a prop.
   - Saved filters (2026-10-11, the user's wish; first only in the drawer, in the filter view too since the same day: a
     row of its own between the filters and the buttons' row, as wide as that and centered like it (the same

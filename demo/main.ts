@@ -31,14 +31,16 @@ const planned = async () => {
 // Prototypes to try out, in a section of the kebab menu (2026-10-09, the user's wish), before "Reset demo": a check
 // item each, remembered per browser. "Filter drawer": the data table's filters in a drawer at the right edge
 // instead of the filter view, for every table (the attribute `data-data-table-filter-drawer` on `<html>`, which every
-// table follows live; a page flag of the prototype, not an API, see the todo in `packages/data-table/CLAUDE.md`).
+// table follows live; a page flag of the prototype, not an API, see the todo in `packages/data-table/CLAUDE.md`). On
+// by default (2026-10-11, the user's wish; off before): only an "off" remembered turns it off.
 const FILTER_DRAWER = 'data-data-table-filter-drawer';
 const FILTER_DRAWER_KEY = 'demo-page:filter-drawer';
 
 try {
-  document.documentElement.toggleAttribute(FILTER_DRAWER, localStorage.getItem(FILTER_DRAWER_KEY) === 'on');
+  document.documentElement.toggleAttribute(FILTER_DRAWER, localStorage.getItem(FILTER_DRAWER_KEY) !== 'off');
 } catch {
-  // Not remembered: off.
+  // Not remembered: on.
+  document.documentElement.setAttribute(FILTER_DRAWER, '');
 }
 
 const prototypesSection: AppCockpit.MenuSection = {
