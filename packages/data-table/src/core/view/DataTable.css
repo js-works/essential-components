@@ -44,10 +44,10 @@
     & :is(.data-table__row, .data-table__header-row) > * > *,
     & .data-table__card > *,
     & .data-table__footer {
-      /* A try (2026-10-11, the user's wish): 50% and blurred a little, 1.05px (0.5 and 1.25px first, then 0.4 and 1.1px, then 0.5 and 1.1px;
-         2px and 1px tried on 2026-10-09 and dropped). */
-      opacity: 0.5;
-      filter: grayscale(1) blur(1.05px);
+      /* 40% (2026-10-11, the user's wish; 50% before; the toolbar's blocked parts too). No blur (tried again and
+         dropped the same day: 1.25px, 1.1px, 1.05px; 2px and 1px on 2026-10-09). */
+      opacity: 0.4;
+      filter: grayscale(1);
       transition: opacity 250ms ease-in-out, filter 250ms ease-in-out;
     }
   }
@@ -668,9 +668,8 @@
 
   &[data-filtering] > .data-table__toolbar-group > [inert],
   &[data-filtering] > .data-table__toolbar-divider {
-    /* Like the table's contents (2026-10-11, a try: blurred 1.05px; 40% and 1.1px for a moment the same day). */
-    opacity: 0.5;
-    filter: grayscale(1) blur(1.05px);
+    opacity: 0.4;
+    filter: grayscale(1);
     transition: opacity 250ms ease-in-out, filter 250ms ease-in-out;
   }
 }
@@ -688,11 +687,9 @@
     pointer-events: none;
   }
 
-  /* Like the table's contents (2026-10-11, a try: blurred 1.05px; 40% and 1.1px for a moment the same day): the pinned actions,
-     Reload, the search. */
   &[data-inert] > * {
-    opacity: 0.5;
-    filter: grayscale(1) blur(1.05px);
+    opacity: 0.4;
+    filter: grayscale(1);
   }
 }
 

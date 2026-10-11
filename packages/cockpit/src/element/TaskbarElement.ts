@@ -7,7 +7,22 @@ import { textsFor } from '../core/texts';
 import { closeIcon, initialsIcon } from './icons';
 import { taskbarStyles } from './taskbarStyles';
 
-export { AppTaskbarElement };
+export { taskbarTagFor };
+export type { Task, TaskEventDetail, TaskMoveEventDetail };
+
+// An entry of the taskbar: an open item. `icon`: SVG markup, drawn in `currentColor`. `closable: false`: no close
+// button.
+type Task = {
+  id: string;
+  title: string;
+  icon?: string;
+  closable?: boolean;
+};
+
+type TaskEventDetail = { id: string };
+
+// `index`: the task's new place in `tasks` (counted after taking it out).
+type TaskMoveEventDetail = { id: string; index: number };
 
 // A pressed task. `slots`: every task's place when the drag started (empty until it has moved far enough); `from`, `to`:
 // its old and its new index; `gap`: the room between two tasks.
@@ -22,8 +37,8 @@ type Drag = {
   gap: number;
 };
 
-// The taskbar (`<app-taskbar>`, 2026-10-07): the open apps in a row, to switch between them and close them. It keeps
-// no state: the host sets `tasks` (in the order to show) and `active`, and gets `task-select` and `task-close` (a
+// The taskbar (2026-10-07; private since 2026-10-11, see `taskbarTagFor`): the open apps in a row, to switch between
+// them and close them. It keeps no state: the host sets `tasks` (in the order to show) and `active`, and gets `task-select` and `task-close` (a
 // `CustomEvent<{ id }>`, bubbling, not composed). The cockpit uses it below the open item (`taskbar: true`).
 //
 // - A toolbar: one tab stop (the active task), Left and Right (Home, End) move between its buttons; Delete closes the
@@ -32,14 +47,14 @@ type Drag = {
 //   selects; the others slide aside; Escape cancels), or moved by Ctrl+Shift+Left/Right; then `task-move`.
 // - Its look: its `theme` (the cockpit passes its own), else the defaults (the design language's values; its `--ui-*`
 //   tokens are for demos only).
-class AppTaskbarElement extends LitElement implements Spec.TaskbarElement {
+class TaskbarElement extends LitElement {
   static override properties = {
     tasks: { attribute: false },
     active: {},
     theme: { attribute: false },
   };
 
-  declare tasks: readonly Spec.Task[];
+  declare tasks: readonly Task[];
   declare active: string | undefined;
   // The look (2026-10-10): the cockpit passes its own; alone, the defaults. Its stylesheet is built from it.
   declare theme: Spec.Theme;
@@ -131,12 +146,12 @@ class AppTaskbarElement extends LitElement implements Spec.TaskbarElement {
   }
 
   #emit(type: 'task-select' | 'task-close', id: string): void {
-    this.dispatchEvent(new CustomEvent<Spec.TaskEventDetail>(type, { detail: { id }, bubbles: true }));
+    this.dispatchEvent(new CustomEvent<TaskEventDetail>(type, { detail: { id }, bubbles: true }));
   }
 
   #move(id: string, index: number): void {
     this.dispatchEvent(
-      new CustomEvent<Spec.TaskMoveEventDetail>('task-move', { detail: { id, index }, bubbles: true }),
+      new CustomEvent<TaskMoveEventDetail>('task-move', { detail: { id, index }, bubbles: true }),
     );
   }
 
@@ -270,7 +285,7 @@ class AppTaskbarElement extends LitElement implements Spec.TaskbarElement {
     }
   }
 
-  #close(task: Spec.Task): void {
+  #close(task: Task): void {
     if (task.closable === false) {
       return;
     }
@@ -381,4 +396,29 @@ class AppTaskbarElement extends LitElement implements Spec.TaskbarElement {
       </div>
     `;
   }
+}
+
+// The tags of the taskbars, by the cockpit class (one `createCockpitClass()` call) that uses it.
+const taskbarTags = new WeakMap<object, string>();
+
+// The tag of the taskbar of a cockpit class (2026-10-11, the user's rule: a package never takes a tag name of its own;
+// `<app-taskbar>` and an exported `createAppTaskbarClass()` before): registered on first use as
+// `internal-cockpit-taskbar-<n>`, `n` the first number not registered yet, with a class of its own (a registry takes
+// each class once). The same tag for every cockpit of that class.
+function taskbarTagFor(owner: object): string {
+  let tag = taskbarTags.get(owner);
+
+  if (tag === undefined) {
+    let n = 1;
+
+    while (customElements.get(`internal-cockpit-taskbar-${n}`) !== undefined) {
+      n += 1;
+    }
+
+    tag = `internal-cockpit-taskbar-${n}`;
+    customElements.define(tag, class extends TaskbarElement {});
+    taskbarTags.set(owner, tag);
+  }
+
+  return tag;
 }

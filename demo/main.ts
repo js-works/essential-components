@@ -1,16 +1,9 @@
 // The design language first, so the CSS of the demos comes after it.
 import './ui/ui.css';
 import './demo.css';
-import {
-  accentSetting,
-  MENU,
-  navigationSetting,
-  pageSettings,
-  USER,
-  userMenu,
-} from '../packages/app-cockpit/demo/footer';
-import { createAppCockpitClass } from '../packages/app-cockpit/src';
-import type { AppCockpit } from '../packages/app-cockpit/src';
+import { accentSetting, MENU, navigationSetting, pageSettings, USER, userMenu } from '../packages/cockpit/demo/footer';
+import { createCockpitClass } from '../packages/cockpit/src';
+import type { Cockpit } from '../packages/cockpit/src';
 import { mountLoginScreen } from '../packages/login/src';
 import type { Login } from '../packages/login/src';
 
@@ -43,7 +36,7 @@ try {
   document.documentElement.setAttribute(FILTER_DRAWER, '');
 }
 
-const prototypesSection: AppCockpit.MenuSection = {
+const prototypesSection: Cockpit.MenuSection = {
   label: 'Prototypes',
   items: [{
     id: 'filter-drawer',
@@ -62,7 +55,7 @@ const prototypesSection: AppCockpit.MenuSection = {
 };
 
 // The made-up kebab menu of the cockpit's demo, with the prototypes before its last section ("Reset demo").
-const menu: AppCockpit.Footer['menu'] = MENU === undefined
+const menu: Cockpit.Footer['menu'] = MENU === undefined
   ? [prototypesSection]
   : [...MENU.slice(0, -1), prototypesSection, ...MENU.slice(-1)];
 
@@ -72,7 +65,7 @@ const icon = (paths: string) =>
 
 customElements.define(
   'app-cockpit',
-  createAppCockpitClass({
+  createCockpitClass({
     title: 'Back Office',
     subtitle: 'Acme Corporate',
     // The search (Ctrl K), although there are only a few apps.

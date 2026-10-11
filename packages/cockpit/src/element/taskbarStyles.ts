@@ -3,8 +3,8 @@ import { themeValues } from './styles';
 
 export { taskbarStyles };
 
-// The CSS of `<app-taskbar>`, in its shadow root, built from its theme (2026-10-10; the cockpit's `--app-cockpit-*`
-// custom properties, inherited, before): inside a cockpit the cockpit's theme, else the defaults (the design language's
+// The CSS of the taskbar (`internal-cockpit-taskbar-<n>`), in its shadow root, built from its theme (2026-10-10; the
+// cockpit's `--app-cockpit-*` custom properties, inherited, before): inside a cockpit the cockpit's theme, else the defaults (the design language's
 // values; never its `--ui-*` tokens: those are for demos only). No `rem` (like the cockpit: a page's root font size must
 // not change it).
 function taskbarStyles(theme: Spec.Theme): string {

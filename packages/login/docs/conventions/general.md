@@ -13,6 +13,11 @@ copied into a customer's monorepo. A change is made in the master, then copied i
 - One name per package, in every form (2026-10-10):
   - the folder and package: `data-table`, `@local/data-table`
   - the component, element and types: `DataTable`, `<data-table>`
+    - The host registers the element under a tag of its choice; the package suggests its own name. A one-word package
+      (no hyphen, so no valid tag) suggests a tag of two words with it, e.g. `@local/cockpit` and `<app-cockpit>`
+      (2026-10-11).
+    - A package never registers a tag itself; an internal element of its own is registered as `internal-<name>-<n>`,
+      `n` the first number not registered yet (e.g. the cockpit's taskbar, `internal-cockpit-taskbar-1`; 2026-10-11).
   - the BEM block: `data-table`, `data-table__cell` (see `css.md`)
   - the i18n namespace: `'dataTable'` (see `i18n.md`)
 - Decisions (also small ones) go into the package's docs, in the same step as the code.

@@ -1308,9 +1308,9 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     - The height of the table does not change when the view opens or closes (decided 2026-09-29, the user's idea):
       the grid with the footer (`.tableArea`) and the view lie in one grid cell (`.stack`), so the height is the
       larger of the two. While the view is shown, the table area stays mounted below it, `inert`, and its contents
-      are faded and gray: the contents of the cells (the header's too), of the cards and the footer at `opacity: 0.5`
-      in grayscale, the lines and backgrounds of the rows as they are (2026-10-09, the user's wish: the look of the filter
-      drawer, see the todo; before, the whole table area at 80%, `opacity: 0.8`, 2026-10-07; 0.7, 0.6 and 0.5 tried the same day, 0.15 (2026-10-04) and 0.4 before; a white veil over an
+      are faded and gray: the contents of the cells (the header's too), of the cards and the footer at `opacity: 0.4`
+      in grayscale, the lines and backgrounds of the rows as they are (since 2026-10-11, the user's wish, the toolbar's
+      blocked parts too; 0.5 before; no blur: 1.25px, 1.1px and 1.05px tried and dropped the same day; 2026-10-09, the user's wish: the look of the filter drawer, see the todo; before, the whole table area at 80%, `opacity: 0.8`, 2026-10-07; 0.7, 0.6 and 0.5 tried the same day, 0.15 (2026-10-04) and 0.4 before; a white veil over an
       unfaded table was tried and dropped: it looked the same, but not in a dark theme), the header row(s) too (they were
       invisible, `opacity: 0`, from 2026-10-04 until the view got only as wide as its filters the same day: the header
       next to it would have been missing); the toolbar's disabled parts and the pills fade in the same times as the table area
@@ -1377,7 +1377,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       one-off lookup. So the search box stays in the toolbar. (Taking the search into the filter view as a draft
       field was tried and dropped for that reason.)
     - While the view is shown, everything of the toolbar's bar but the filter button is disabled (`inert`) and faded
-      like the table's contents (`opacity: 0.5` in grayscale, 2026-10-09; 0.8 from 2026-10-07, 0.2 before, then 0.7, 0.6 and 0.5 tried; the dividers between them too, `.toolbarBar[data-filtering] > [inert]`): the Reload button, the search box, the general
+      like the table's contents (`opacity: 0.4` in grayscale since 2026-10-11, 0.5 from 2026-10-09; 0.8 from 2026-10-07, 0.2 before, then 0.7, 0.6 and 0.5 tried; the dividers between them too, `.toolbarBar[data-filtering] > [inert]`): the Reload button, the search box, the general
       actions and the column toggle menu. The filter button is the way back to the rows (besides Cancel, Apply and
       Escape). So nothing loads into the hidden table meanwhile.
     - Body: one filter per column that has one, in the order of the columns, in one or two columns (never more; as

@@ -1,7 +1,8 @@
-# app-cockpit
+# cockpit
 
-`<app-cockpit>` (`@local/app-cockpit`): an admin panel shell for office mini-apps (micro-frontends): a navigation on
-the left, the chosen mini-app on the right. The root's demo page is its first user. The rules of the root's `CLAUDE.md` apply.
+`@local/cockpit` (`app-cockpit` until 2026-10-11, the user's wish: the host chooses the tag anyway, so the name needs
+no hyphen; `app-shell` was weighed again and dropped, Mantine's `AppShell`): an admin panel shell for office
+mini-apps (micro-frontends): a navigation on the left, the chosen mini-app on the right. The root's demo page is its first user. The rules of the root's `CLAUDE.md` apply.
 
 ## Conventions
 
@@ -14,7 +15,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 ## Working rules
 
 - `src/api.ts` holds the draft API types we are discussing. Types only, flat exports; `src/index.ts` re-exports them
-  as a namespace: `export type * as AppCockpit from './api'` (`AppCockpit.NavItem`).
+  as a namespace: `export type * as Cockpit from './api'` (`Cockpit.NavItem`; `AppCockpit` until 2026-10-11).
 - Always add the decisions (also small ones) to this file, in the same step as the code.
 - Rewritten 2026-10-03 (the user's GO, without the browser tests proposed first): Lit and Zag.js instead of React and
   Base UI, with `@floating-ui/dom` (inside Zag, and for the tooltips). Almost vanilla: to be replaced by the Popover API
@@ -82,8 +83,10 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   so it shows above an open dialog too (the top layer).
 - Closed popups are `hidden` (forced by `[hidden] { display: none !important }`); open animations by
   `@starting-style` (none on closing, except the search in the sidebar layout, see there).
-- The name: `<app-cockpit>`, package `@local/app-cockpit`, types `AppCockpit.*` (clear rather than charming; e.g. not
-  `tidy-cockpit`, `app-shell`).
+- The name: package `@local/cockpit`, `createCockpitClass()`, types `Cockpit.*` (2026-10-11; `@local/app-cockpit`,
+  `createAppCockpitClass()`, `AppCockpit.*` before; clear rather than charming: not `tidy-cockpit`, nor `app-shell`,
+  Mantine's `AppShell`). The element's tag is the host's choice (a hyphen needed); the root page and the package's demo
+  register `<app-cockpit>`.
 - No iframes (overlays could not leave them; language, scheme and routing would need syncing).
 - Implemented 2026-10-03 (the user asked to build it the way proposed, without discussing each step):
   - The terms of the navigation (2026-10-07, the user's wish: the sidebar does not know what an entry is, so it is not
@@ -92,7 +95,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     element; config `items`, `defaultItem`, `activeItem`). Other words: the **group select** (`groupDisplay: 'select'`),
     **Recent** (the last items used), a **flyout** (a group or subgroup in the rail), the **rail** (the narrow
     sidebar), the **topbar lines**. "Mini-app" is only what a host puts behind an item.
-  - `createAppCockpitClass(config)`, like `createFileUploadClass`: `{ title?, subtitle?, search?, user?, userMenu?, items, groups?, groupDisplay?, footer?,
+  - `createCockpitClass(config)` (`createAppCockpitClass` until 2026-10-11), like `createFileUploadClass`: `{ title?, subtitle?, search?, user?, userMenu?, items, groups?, groupDisplay?, footer?,
     defaultItem?, startPage?, storageKey?, taskbar? }`;
     `groups`: `{ name, subgroups?: { name, icon?, placement? }[] }[]`, extra data of the groups and their
     subgroups (by the `group` and `subgroup` of the items), for now the icons of the subgroups (a group has no icon, 2026-10-07). The host
@@ -158,7 +161,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   "Try again"), then kept: the others get `hidden`, so each keeps its state. Its element gets `data-hash-segment` (its
   id): `ui.ts` counts it as a level of the hash, so tabs inside it write `#app/tab`, and restore that when it is shown
   again.
-- The sidebar adapts to the number of apps (`FEW` = 8 since 2026-10-07 (12 before: the root page has 9 apps and wanted "Recent" and folders), `MANY` = 30 in `AppCockpitElement.ts`):
+- The sidebar adapts to the number of apps (`FEW` = 8 since 2026-10-07 (12 before: the root page has 9 apps and wanted "Recent" and folders), `MANY` = 30 in `CockpitElement.ts`):
   - Up to 8: every app listed, the groups as plain headings; no search, no "Recent".
   - More: a search button (2026-10-03: an icon-only button with the tooltip "Search (Ctrl K)", in the title row,
     at its right end, vertically centered on title and subtitle; in the rail below the logo; also Ctrl+K / ⌘K: a command palette, a modal `<dialog>`; ranked: title starts with the
@@ -229,7 +232,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 - With `nav="side"`, the cockpit uses only the left column (2026-10-03): no top bar; the right side is the open app alone. The host's
   parts: the `logo` slot (replaces the default logo: four filled squares, two of them lighter, in the accent color on no background) and the `sidebar-end` slot (at the bottom of the sidebar, above
   the footer, e.g. global switches; hidden in the rail).
-- `nav` (2026-10-04): the navigation, one attribute (and property, reflected; `AppCockpit.Nav`), switchable live (not a
+- `nav` (2026-10-04): the navigation, one attribute (and property, reflected; `Cockpit.Nav`), switchable live (not a
   config option, so a host can switch it). Named by where the navigation is and a variant (2026-10-06, the user's
   wish: systematic names; `sidebar`, `topbar`, `topbar-compact`, `switcher` before); an unknown value is the sidebar:
   - `side` (the default): the sidebar on the left.
@@ -335,7 +338,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 - The search panel's footer (the keys, the count; the switcher's and the sidebar's panel) has no background of its own in a light
   panel (2026-10-04; `nav-scheme="page"` on a light page: as light as the rest; white was tried) and a darker strip
   (black at 14%) in a dark one.
-- `nav-scheme` (2026-10-03): an attribute (and property `navScheme`, reflected; `AppCockpit.NavScheme`), `dark` (the
+- `nav-scheme` (2026-10-03): an attribute (and property `navScheme`, reflected; `Cockpit.NavScheme`), `dark` (the
   default) or `page`. Not "light": a light navigation on a dark page makes no sense. `page` follows the page (light on a
   light page, dark on a dark one): every part that is dark by default (`color-scheme: dark`: the sidebar, its popups,
   the footer, the topbar's line, the bottom bar, the search) has a nested `:host([nav-scheme='page']) & { color-scheme:
@@ -347,7 +350,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   Jira Cloud's header; the field color, `--app-cockpit-field`), the sidebar's color on a dark one; its menus keep the
   sidebar's light gray. Discussed, not decided: a third value with an accent-colored topbar. The demos: the
   section "Colors" of the footer's "Navigation" button (Dark, Match page).
-- `density` (2026-10-05): an attribute (and property `density`, reflected; `AppCockpit.Density`), `compact`, `normal`
+- `density` (2026-10-05): an attribute (and property `density`, reflected; `Cockpit.Density`), `compact`, `normal`
   (the default) or `comfortable`: the same names as the data table's `density`. CSS only (`:host([density=…])`, at
   the end of `styles.ts`), and subtle: mostly the sidebar's vertical rhythm.
   - `compact`: the app entries 32px (36px), the subgroup headers 30px (32px), the group headers 26px (28px), the gaps
@@ -389,12 +392,17 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   icons for hundreds of apps help nobody), except in the rail, where the icon is all there is: its initials (framed
   in the rail, 2026-10-09, and in its flyouts).
 - The taskbar (2026-10-07, the user's wish: the split proposed, the rest as proposed, without discussing each step):
-  - `<app-taskbar>` (`AppTaskbarElement.ts`, its CSS `taskbarStyles.ts`): a Lit element of its own, without state: the
-    host sets `tasks` (`AppCockpit.Task`: `{ id, title, icon?, closable? }`, in the order to show) and `active`, and
-    gets `task-select` and `task-close` (`CustomEvent<{ id }>`, bubbling, not composed), and `task-move` (below). Usable without the cockpit:
-    `createAppTaskbarClass()` (exported), registered by the host.
+  - An internal Lit element (`TaskbarElement.ts`, its CSS `taskbarStyles.ts`), without state: the cockpit sets
+    `tasks` (`Task`: `{ id, title, icon?, closable? }`, in the order to show) and `active`, and gets `task-select` and
+    `task-close` (`CustomEvent<{ id }>`, bubbling, not composed), and `task-move` (below).
+  - Private since 2026-10-11 (the user's rule: a package never takes a tag name of its own): the tag
+    `internal-cockpit-taskbar-<n>`, `n` the first number not registered yet, registered on first use with a class of
+    its own, once per cockpit class (`taskbarTagFor()`, by `createCockpitClass()` call), rendered with Lit's
+    `unsafeStatic`. Before: `<app-taskbar>`, registered by the cockpit unless the host had, and
+    `createAppTaskbarClass()` exported for hosts without the cockpit (nobody used it); its types (`Task`, …) were in
+    `api.ts`.
   - The cockpit uses it with `taskbar: true` (config): below the open item, in the sidebar layout and the topbars, not
-    with the bottom bar. It registers `app-taskbar` itself (`defineAppTaskbar()`), unless the host has done so.
+    with the bottom bar.
   - The entries: the open items (created, being loaded, or failed), in the order they were opened. A click opens one
     (a history entry, like the navigation). Closing (`close(id)` of the element, public) removes its element, so its
     state is lost; closing the open one shows the one used before it. The last open item has no close button (the
@@ -439,7 +447,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   kept Firefox's elastic bounce); the taskbar `overscroll-behavior-x: none` (sideways only). The same in every package
   and in the root's apps.
 - The theme (2026-10-10, the user's choice of three; proposed at about 65%): the element's property `theme`
-  (`AppCockpit.Theme`, no attribute), its first value the config's `theme`, switchable live (a new object).
+  (`Cockpit.Theme`, no attribute), its first value the config's `theme`, switchable live (a new object).
   - Its keys (the user's choice of two, proposed at about 60%: what a host could override before, and the accent; the
     colors stay the design language's, a key is added when needed): `accent` (one color; lighter in a dark scheme, e.g.
     the dark navigation, by `color-mix(in oklab, <accent> 60%, white)`; without it the design language's,
@@ -457,9 +465,10 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - Before: the cockpit read the page's `--app-accent-color` (2026-10-03). The demos' "Accent color" choice
     (`accentSetting()` in `demo/footer.ts`) sets the cockpit's `theme.accent` (merged into its theme, once the element
     is defined), and `--app-accent-color` on `<html>` for the page (the root page maps it to its apps).
-- Texts in English and German, by `<html lang>` (`core/texts.ts`).
+- Texts in English and German, by `<html lang>` (`core/texts.ts`). Kept so (2026-10-11, the user's decision): no
+  `I18nAdapter` like the other packages (`i18n.md`), for now.
 - Remembered per browser (`localStorage`, `storageKey`, ignored when storage fails): the recent apps, the rail, the
-  open groups.
+  open groups. The default key is `cockpit` (2026-10-11; `app-cockpit` before: stored choices started over once).
 - (History, until 2026-10-10: the cockpit has no custom properties now, see the theme.) Custom properties on the cockpit's host leak into the mini-apps (light DOM children, they inherit): a name in the
   shadow CSS must not be one that a component library of an app reads (2026-10-04: the cockpit's plain `--button-radius`
   was Mantine's own variable name for the radius of its buttons: every Mantine button in the apps, e.g. the dialogs',
@@ -490,9 +499,9 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 
 ## Layout and commands
 
-- `src/api.ts`: the types; `src/element/`: the custom element (`AppCockpitElement.ts`, Lit: shadow root, light-DOM apps,
-  routing, the whole UI), `menu.ts` (the menus), `icons.ts`, its CSS (`styles.ts`); the taskbar (`AppTaskbarElement.ts`,
-  `taskbarStyles.ts`, `createAppTaskbarClass.ts`); `src/core/`: search, texts, storage.
+- `src/api.ts`: the types; `src/element/`: the custom element (`CockpitElement.ts`, Lit: shadow root, light-DOM apps,
+  routing, the whole UI; `createCockpitClass.ts`), `menu.ts` (the menus), `icons.ts`, its CSS (`styles.ts`); the
+  taskbar (`TaskbarElement.ts`, `taskbarStyles.ts`); `src/core/`: search, texts, storage.
 - `demo/`: the package's demo (`npm run dev`), with 3, 30 or 100 apps (the "Apps" choice in the footer; `?apps=some`, `?apps=many`); the 100 apps with `groupDisplay: 'select'`; in the 30 and 100 apps every app has a group and a
   subgroup (no "Other"); `demo/ui/`: the
   design language (a copy, like in every package).
@@ -501,6 +510,11 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   with each one's share of the code as a bar (`scripts/loc.mjs`, 2026-10-08, the user's wish; plain `sloc` before). sloc
   counts each file; the kind comes from its name, as the CSS and the icons live in TypeScript: `*styles.ts` is "CSS (in
   TS)", `icons.ts` "SVG (in TS)", other `.ts` TypeScript, `.css` CSS. `demo/ui` is marked as a copy of ui-theme.
+
+## Plans
+
+- Split into smaller parts (2026-10-11, the user's plan): today the cockpit is a launcher for mini-apps; later it
+  shall be built from smaller parts, and the launcher for mini-apps will be one incarnation of them.
 
 ## Not set up yet
 

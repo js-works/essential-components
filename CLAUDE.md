@@ -49,7 +49,8 @@ and imports the files it needs from its `CLAUDE.md`.
   - `overlays` (`@local/overlays`): dialogs and toasts.
   - `form-validation` (`@local/form-validation`): form validation for React with Zod, a `useForm` hook. Tests, and a
     small demo (2026-10-07, `npm run dev` inside it).
-  - `app-cockpit` (`@local/app-cockpit`, `<app-cockpit>`): an admin panel shell for office mini-apps
+  - `cockpit` (`@local/cockpit`, `createCockpitClass()`; `app-cockpit` until 2026-10-11, the user's wish: the host
+    chooses the tag; the root page registers `<app-cockpit>`): an admin panel shell for office mini-apps
     (micro-frontends): only a sidebar with the apps (search, recent, groups; from a few apps up to hundreds); the
     open app fills the rest. Lit in its shadow DOM (its own menus and native `<dialog>`s since 2026-10-08; Zag.js before), styled with the `ui-*` tokens. The root's demo page uses it.
   - `login` (`@local/login`, 2026-10-03; `app-login` until 2026-10-10, the user's wish: the "app" added nothing): a generic login screen for apps (React, Mantine): `LoginScreen`, and
@@ -64,7 +65,7 @@ and imports the files it needs from its `CLAUDE.md`.
   - A package keeps its own tests, demo (`npm run dev` inside it) and `package-lock.json` (unused in the workspace,
     where the root lock file counts; it matters again in a standalone copy).
 - The root is the demo page of all packages:
-  - `index.html`: an `<app-cockpit>` (2026-10-03, `packages/app-cockpit`) that fills the window: the demos are its
+  - `index.html`: an `<app-cockpit>` (2026-10-03, `packages/cockpit`) that fills the window: the demos are its
     mini-apps, in two sections (groups, 2026-10-07, the user's wish), each with folders (subgroups: collapsible, with a count, their apps indented along a guide line):
     - "Main" (2026-10-07; "Apps" before): the folders "Apps" with "Human Resources" (2026-10-08),
       "Time Tracker" (2026-10-06), "Board Manager", and "Administration" (gear icon) with "File Center" (2026-10-08;
@@ -93,7 +94,7 @@ and imports the files it needs from its `CLAUDE.md`.
       { scheme: 'dark' })` in `demo/main.ts`; a stored choice counts; the cockpit's own demo keeps "Match page" ("Like the page" until 2026-10-08)), the accent color (2026-10-03: one of Mantine's usual colors, indigo by default since 2026-10-07 (violet before; the cockpit's own demo keeps violet), or "Design language", i.e. `ui.css`'s; it sets the cockpit's `theme` (2026-10-10; the cockpit read `--app-accent-color` before) and `--app-accent-color` on `<html>`, which `demo/demo.css` maps to the apps' `--board-manager-accent-color`, `--file-center-accent-color`, `--user-manager-accent-color`, `--time-tracker-accent-color`, `--human-resources-accent-color`, with the design language's accent as the fallback, so the cockpit and the apps have one color; the package demos keep `ui.css`'s) and the page's settings (the language `en-US`/`de-DE` in the kebab menu, 2026-10-03; a section "Prototypes" there, before "Reset demo",
       only on the root page (2026-10-09, `demo/main.ts`): "Filter drawer", a check item that switches every data
       table to the filter drawer, on by default since 2026-10-11 (the user's wish; off before), see the todo in `packages/data-table/CLAUDE.md`; the color scheme: System, Light (the default), Dark, 2026-10-03; from
-      `packages/app-cockpit/demo/footer.ts`, with a made-up menu), which change `<html>` (`lang`, `data-scheme`) for every
+      `packages/cockpit/demo/footer.ts`, with a made-up menu), which change `<html>` (`lang`, `data-scheme`) for every
       demo.
     - Signing out (2026-10-03; the user menu's "Sign out") shows the login screen (`packages/login`; its subtitle "Welcome to Acme Corporate", 2026-10-07) in place of
       the cockpit (`hidden`), animated (2026-10-04): the cockpit fades out (250 ms), then the login screen fades in (350 ms;
@@ -109,7 +110,7 @@ and imports the files it needs from its `CLAUDE.md`.
         apps (`app/hashHistory.ts`, the same file in each: a change goes into all five). Their memory routers follow the
         browser's Back and Forward, and their own Back and Forward buttons move the browser too (unless another app was
         used in between: then they replace the entry). The package demos' tabs (`ui.ts`) still only replace the hash.
-  - `demo/main.ts`: creates the cockpit (`createAppCockpitClass`, title "Back Office", subtitle "Acme Corporate" (2026-10-03; "App Center" without a subtitle before), with the search, a made-up
+  - `demo/main.ts`: creates the cockpit (`createCockpitClass`, title "Back Office", subtitle "Acme Corporate" (2026-10-03; "App Center" without a subtitle before), with the search, a made-up
     signed-in user) with
     the demos. Each is loaded when it is opened
     the first time (`load`: a dynamic `import()` by a relative path, e.g. `../packages/file-upload/demo/FileUploadDemo`)

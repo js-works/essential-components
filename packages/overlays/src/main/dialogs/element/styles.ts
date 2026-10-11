@@ -14,9 +14,12 @@ export const REJECT_MESSAGE_ANIM_MS = 450;
 export const DIALOG_GROW_ANIM_MS = 200;
 
 // Duration of the change between the form and a question in its place (FormAttempt.ask):
-// the box morphs to its new size while the new content fades in (see #morphQuestion in
-// element.ts).
-export const QUESTION_MORPH_ANIM_MS = 220;
+// the box takes its new size at once, its content is gone for a moment (the first 30%) and
+// then fades in: like a fade out and in, without delaying the change (see #morphQuestion in
+// element.ts; 2026-10-11, the user's wish: the box morphed to its new size in 220 ms before,
+// which did not look good; then a fade alone, 150 ms, hardly seen; then a fade rising 6px,
+// 250 ms).
+export const QUESTION_MORPH_ANIM_MS = 300;
 
 // Duration of the spinner placeholder's drop-in animation (see #growIn in element.ts).
 export const SPINNER_DROP_ANIM_MS = 500;

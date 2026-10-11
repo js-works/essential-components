@@ -51,3 +51,17 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   `var(--theme-…, …)` pass-through of a host's `--theme-*` tokens is gone. The vanilla demo sets its blue through the
   theme (`DEMO_PRIMARY` in `src/demo/demo.ts`); its `--theme-color-primary-500` on `:root` (`demo.css`) is gone.
 - Always add the decisions (also small ones) to this file, in the same step as the code.
+- The change between a form and its question in place (`FormAttempt.ask`, e.g. the discard question; 2026-10-11, the
+  user's wish: the morph did not look good): the box takes its new size at once, its content is gone for a moment and
+  then fades in, like a fade out and in without delaying the change (300 ms, `ease-out`, the first 30% empty; tried
+  the same day: a fade alone, 150 ms, hardly seen; a fade rising 6px, 250 ms; `#morphQuestion` in `src/main/dialogs/element/element.ts`). Before: the box morphed from the
+  form's size to the question's (220 ms) while the content faded in. None with reduced motion.
+- The form's scroll position survives its question (2026-10-11, the user's wish): the body, hidden while the question
+  shows (`display: none` drops a scroll position), gets its `scrollTop` back when the form returns, and the focus goes
+  back without scrolling (`preventScroll`; it scrolled the focused field into view before, near but not the same
+  place). `#syncQuestion` in `src/main/dialogs/element/element.ts`.
+- A click on a button of a question (`FormAttempt.ask`, e.g. Discard) does not collapse the note (2026-10-11, the
+  user's wish): the note is the question itself; before, its text vanished at once while the dialog faded out. A
+  click in a form still dismisses its note first (an error note). (`#asking` in the click handlers of
+  `src/main/dialogs/element/element.ts`. A guard that ignored updates while closing was tried first, the same day, and
+  reverted: it was not the cause.)

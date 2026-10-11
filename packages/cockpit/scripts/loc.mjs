@@ -84,6 +84,6 @@ function percent(share) {
 
 const folders = [...new Set(files.map((file) => file.folder))].sort();
 
-console.log(`\n\x1b[1mapp-cockpit\x1b[0m: ${FOLDERS.join(', ')}\n`);
+console.log(`\n\x1b[1mcockpit\x1b[0m: ${FOLDERS.join(', ')}\n`);
 print('By kind', rows((file) => file.kind, KINDS.map((kind) => kind.name)));
 print('By folder', rows((file) => file.folder, folders));

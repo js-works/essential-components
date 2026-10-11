@@ -5,13 +5,13 @@ import { ifDefined } from 'lit/directives/if-defined.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
+import { html as staticHtml, unsafeStatic } from 'lit/static-html.js';
 import type * as Spec from '../api';
 import { groupsOf, search, subgroupsOf } from '../core/search';
 import type { Group, Match } from '../core/search';
 import { readStored, writeStored } from '../core/storage';
 import { textsFor } from '../core/texts';
 import type { Texts } from '../core/texts';
-import { defineAppTaskbar } from './createAppTaskbarClass';
 import {
   checkIcon,
   chevronIcon,
@@ -30,8 +30,10 @@ import {
 import { Menu } from './menu';
 import type { MenuOptions } from './menu';
 import { layoutStyles, styles } from './styles';
+import { taskbarTagFor } from './TaskbarElement';
+import type { Task, TaskEventDetail, TaskMoveEventDetail } from './TaskbarElement';
 
-export { AppCockpitElement };
+export { CockpitElement };
 
 type Status = 'loading' | 'ready' | 'failed';
 
@@ -87,7 +89,7 @@ let instances = 0;
 //   entry.
 // - An item is created when it is opened the first time (after its `load()`), and then kept: the others get `hidden`.
 //   Its element gets `data-hash-segment` (its id), so tabs inside it know their level.
-class AppCockpitElement extends LitElement implements Spec.Element {
+class CockpitElement extends LitElement implements Spec.Element {
   static override properties = {
     nav: { reflect: true },
     navScheme: { attribute: 'nav-scheme', reflect: true },
@@ -123,6 +125,8 @@ class AppCockpitElement extends LitElement implements Spec.Element {
   readonly #elements = new Map<string, HTMLElement>();
   readonly #status = new Map<string, Status>();
   readonly #key: string;
+  // The tag of the taskbar (`taskbar: true`): an internal one of this cockpit class.
+  readonly #taskbarTag: string | undefined;
 
   #active: string | undefined;
   // The open items (created, or being loaded), the one used last first: closing the open one shows the next.
@@ -171,14 +175,15 @@ class AppCockpitElement extends LitElement implements Spec.Element {
     this.startPage = config.startPage === true;
     this.theme = config.theme ?? {};
     this.#config = config;
-    this.#key = config.storageKey ?? 'app-cockpit';
+    this.#key = config.storageKey ?? 'cockpit';
     this.#recent = readStored<string[]>(`${this.#key}:recent`, []);
     this.#collapsed = readStored(`${this.#key}:collapsed`, false);
     this.#width = readStored<number | undefined>(`${this.#key}:width`, undefined);
     this.#openGroups = readStored(`${this.#key}:groups`, {});
 
+    // The taskbar's tag: internal, registered once per cockpit class (see `taskbarTagFor`).
     if (config.taskbar === true) {
-      defineAppTaskbar();
+      this.#taskbarTag = taskbarTagFor(this.constructor);
     }
   }
 
@@ -513,7 +518,7 @@ class AppCockpitElement extends LitElement implements Spec.Element {
       this.append(element);
       this.#status.set(item.id, 'ready');
     } catch (error) {
-      console.error(`app-cockpit: the item "${item.id}" could not be loaded.`, error);
+      console.error(`cockpit: the item "${item.id}" could not be loaded.`, error);
       this.#status.set(item.id, 'failed');
     }
 
@@ -846,12 +851,12 @@ class AppCockpitElement extends LitElement implements Spec.Element {
   // The taskbar below the open item (`taskbar: true`, 2026-10-07): the open items in the order they were opened; the
   // last one cannot be closed, except with a start page (`startPage`). None open: no taskbar.
   #taskbar(): TemplateResult | typeof nothing {
-    if (this.#opened.length === 0) {
+    if (this.#opened.length === 0 || this.#taskbarTag === undefined) {
       return nothing;
     }
 
     const closable = this.#opened.length > 1 || this.startPage;
-    const tasks: Spec.Task[] = this.#opened.flatMap((id) => {
+    const tasks: Task[] = this.#opened.flatMap((id) => {
       const item = this.#itemOf(id);
 
       return item === undefined
@@ -859,16 +864,17 @@ class AppCockpitElement extends LitElement implements Spec.Element {
         : [{ id: item.id, title: item.title, ...(item.icon === undefined ? {} : { icon: item.icon }), closable }];
     });
 
-    return html`<app-taskbar
+    const tag = unsafeStatic(this.#taskbarTag);
+
+    return staticHtml`<${tag}
       class="taskbar"
       .tasks=${tasks}
       .active=${this.#active}
       .theme=${this.theme}
-      @task-select=${(event: CustomEvent<Spec.TaskEventDetail>) => this.open(event.detail.id)}
-      @task-close=${(event: CustomEvent<Spec.TaskEventDetail>) => this.close(event.detail.id)}
-      @task-move=${(event: CustomEvent<Spec.TaskMoveEventDetail>) =>
-      this.#moveTask(event.detail.id, event.detail.index)}
-    ></app-taskbar>`;
+      @task-select=${(event: CustomEvent<TaskEventDetail>) => this.open(event.detail.id)}
+      @task-close=${(event: CustomEvent<TaskEventDetail>) => this.close(event.detail.id)}
+      @task-move=${(event: CustomEvent<TaskMoveEventDetail>) => this.#moveTask(event.detail.id, event.detail.index)}
+    ></${tag}>`;
   }
 
   // A task dragged (or moved by the keys) to another place of the taskbar.

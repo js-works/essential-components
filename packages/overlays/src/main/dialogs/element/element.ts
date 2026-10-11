@@ -199,6 +199,8 @@ class Dialog extends DialogElementBase {
   // A question (FormAttempt.ask) is asked, and where the focus was before it.
   #asking = false;
   #focusBeforeQuestion: HTMLElement | null = null;
+  // The body's scroll position before the question (the hidden body loses it, see #syncQuestion).
+  #scrollBeforeQuestion = 0;
 
   #closeEl: HTMLElement | null = null;
   #closeSlotted = false;
@@ -247,7 +249,7 @@ class Dialog extends DialogElementBase {
   #noteTone: "error" | "question" | null = null;
   #note: { title?: string; message: string } | null = null;
   #noteAnim: Animation | null = null;
-  // The morph between the form and a question (see #morphQuestion): the box and its content.
+  // The change between the form and a question (see #morphQuestion): its content's fade.
   #morphAnims: Animation[] = [];
 
   #busy = false;
@@ -269,7 +271,7 @@ class Dialog extends DialogElementBase {
     // question answered "Keep editing" asked it again.)
     this.addEventListener("click", (event) => {
       const target = event.target as Element | null;
-      if (target?.closest?.('[slot="action"], [slot="action-separate"]')) {
+      if (target?.closest?.('[slot="action"], [slot="action-separate"]') && !this.#asking) {
         this.#dismissNote();
       }
     });
@@ -506,41 +508,28 @@ class Dialog extends DialogElementBase {
     this.#exitAnim = null;
   }
 
-  // The change between the form and a question in its place (both ways): the box morphs
-  // from its old size to the new one, and the new content fades in. The content keeps its
-  // final size meanwhile (the box clips it), so the text does not rewrap on every frame and
-  // the body does not shrink into a scrollbar; no scrollbars at all while it runs
-  // (data-morphing, see the styles). The vertical position follows the height by itself
-  // (translate is a percentage of it). None with reduced motion.
-  #morphQuestion(from: DOMRect): void {
+  // The change between the form and a question in its place (both ways): the box takes its
+  // new size at once, its content is gone for a moment and then fades in, like a fade out and
+  // in (2026-10-11, the user's wish: a simple change; the box morphed from its old size to the
+  // new one before; then a fade, then a fade rising 6px). No
+  // scrollbars while it runs (data-morphing, see the styles). None with reduced motion.
+  // (`from`, the box's size before the change, is no longer used for an animation.)
+  #morphQuestion(_from: DOMRect): void {
     this.#morphAnims.forEach((anim) => anim.cancel());
     this.#morphAnims = [];
     this.removeAttribute("data-morphing");
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
       return;
     }
-    const box = this.#dialog;
     const content = this.#contentEl!;
-    const to = box.getBoundingClientRect();
-    const timing = { duration: QUESTION_MORPH_ANIM_MS, easing: "cubic-bezier(0.2, 0, 0, 1)" };
-    const toSize = { width: `${to.width}px`, height: `${to.height}px`, flex: "none" };
-    // Free of the min/max sizes of the form and the question, which would clamp the steps
-    // between (both ends are measured, real sizes).
-    const free = { minWidth: "0", maxWidth: "none", minHeight: "0", maxHeight: "none" };
+    const timing = { duration: QUESTION_MORPH_ANIM_MS, easing: "ease-out" };
     const anims = [
       content.animate([
-        { ...toSize, opacity: 0 },
-        { ...toSize, opacity: 1 },
+        { opacity: 0 },
+        { opacity: 0, offset: 0.3 },
+        { opacity: 1 },
       ], timing),
     ];
-    if (from.width !== to.width || from.height !== to.height) {
-      anims.push(
-        box.animate([
-          { ...free, width: `${from.width}px`, height: `${from.height}px` },
-          { ...free, width: `${to.width}px`, height: `${to.height}px` },
-        ], timing),
-      );
-    }
     this.#morphAnims = anims;
     this.setAttribute("data-morphing", "");
     void Promise.all(anims.map((anim) => anim.finished)).then(
@@ -713,6 +702,12 @@ class Dialog extends DialogElementBase {
   // focus does not win.
   #syncQuestion(props: DialogProps<any>): void {
     const asking = props.asking;
+    // The body is hidden while the question shows (display: none drops its scroll position):
+    // its position is kept, and set again when the form comes back (2026-10-11, the user's
+    // wish), before the focus returns (which then does not scroll).
+    if (asking && !this.#asking) {
+      this.#scrollBeforeQuestion = this.#bodyEl.scrollTop;
+    }
     this.#bodyEl.inert = asking;
     if (asking) {
       this.#askIconEl.replaceChildren(parseSvg(props.note?.tone === "error" ? alertIconSvg : confirmIconSvg));
@@ -727,10 +722,13 @@ class Dialog extends DialogElementBase {
       requestAnimationFrame(() => this.#defaultButtonElement()?.focus());
     } else if (!asking && this.#asking) {
       const back = this.#focusBeforeQuestion;
+      const scrollTop = this.#scrollBeforeQuestion;
       this.#focusBeforeQuestion = null;
+      this.#bodyEl.scrollTop = scrollTop;
       requestAnimationFrame(() => {
+        this.#bodyEl.scrollTop = scrollTop;
         if (back?.isConnected) {
-          back.focus();
+          back.focus({ preventScroll: true });
         }
       });
     }
@@ -871,7 +869,12 @@ class Dialog extends DialogElementBase {
         class: "action-button",
         type: "button",
         onclick: () => {
-          this.#dismissNote();
+          // Not while a question is asked: its note is the question itself, which stays until
+          // the dialog is gone or the form is back (2026-10-11, the user's wish: after Discard
+          // its text vanished at once while the rest faded out).
+          if (!this.#asking) {
+            this.#dismissNote();
+          }
           this.#buttonViews[index]?.onClick();
         },
       },

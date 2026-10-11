@@ -1,5 +1,5 @@
 {
-  "name": "@local/app-cockpit",
+  "name": "@local/cockpit",
   "version": "0.0.0",
   "private": true,
   "description": "An admin panel shell: a navigation on the left, the chosen mini-app (a custom element) on the right.",

@@ -1,8 +1,8 @@
 // The design language first, so the demo's own CSS comes after it.
 import './ui/ui.css';
 import './demo.css';
-import { createAppCockpitClass } from '../src';
-import type { AppCockpit } from '../src';
+import { createCockpitClass } from '../src';
+import type { Cockpit } from '../src';
 import { FEW, GROUPS, MANY, SOME } from './apps';
 import { DemoApp } from './DemoApp';
 import { accentSetting, MENU, navigationSetting, pageSettings, USER, userMenu } from './footer';
@@ -13,7 +13,7 @@ const SETS = { few: FEW, some: SOME, many: MANY } as const;
 const param = new URLSearchParams(location.search).get('apps');
 const set: keyof typeof SETS = param === 'some' || param === 'many' ? param : 'few';
 
-const appsAction: AppCockpit.Action = {
+const appsAction: Cockpit.Action = {
   id: 'apps',
   label: 'Apps',
   icon:
@@ -33,7 +33,7 @@ const appsAction: AppCockpit.Action = {
 customElements.define('demo-app', DemoApp);
 customElements.define(
   'app-cockpit',
-  createAppCockpitClass({
+  createCockpitClass({
     title: set === 'few' ? 'My Office' : 'Acme Office',
     subtitle: set === 'few' ? 'Team workspace' : 'Acme Corporation · Headquarters',
     items: SETS[set],
@@ -54,6 +54,6 @@ customElements.define(
     },
     user: USER,
     userMenu: userMenu(),
-    storageKey: `app-cockpit-demo-${set}`,
+    storageKey: `cockpit-demo-${set}`,
   }),
 );

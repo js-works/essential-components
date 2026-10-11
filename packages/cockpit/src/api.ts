@@ -112,8 +112,8 @@ export type Config = {
   // The first value of the element's `startPage` (the attribute `start-page`), which can be switched live.
   startPage?: boolean;
   storageKey?: string;
-  // `true` (2026-10-07): a taskbar (`<app-taskbar>`) below the open item, with the items opened so far: switch between
-  // them, close them. Not with the bottom bar.
+  // `true` (2026-10-07): a taskbar (an internal element) below the open item, with the items opened so far: switch
+  // between them, close them. Not with the bottom bar.
   taskbar?: boolean;
   // The first value of the element's `theme`.
   theme?: Theme;
@@ -154,30 +154,3 @@ export type Element = HTMLElement & {
 };
 
 export type ElementClass = new() => Element;
-
-// --- The taskbar (`<app-taskbar>`, 2026-10-07) ----------------------------------------------------------------------
-
-// An entry of the taskbar: an open app. `icon`: SVG markup, drawn in `currentColor`. `closable: false`: no close button.
-export type Task = {
-  id: string;
-  title: string;
-  icon?: string;
-  closable?: boolean;
-};
-
-// The taskbar keeps no state: the host sets `tasks` and `active`, and gets `task-select` and `task-close` (a
-// `CustomEvent<TaskEventDetail>`, bubbling, not composed), and `task-move` (`CustomEvent<TaskMoveEventDetail>`, a task
-// dragged or moved by the keys to another place: the host reorders its `tasks`).
-export type TaskbarElement = HTMLElement & {
-  tasks: readonly Task[];
-  active: string | undefined;
-  // The look (2026-10-10; see `Theme`): the cockpit passes its own.
-  theme: Theme;
-};
-
-export type TaskEventDetail = { id: string };
-
-// `index`: the task's new place in `tasks` (counted after taking it out).
-export type TaskMoveEventDetail = { id: string; index: number };
-
-export type TaskbarElementClass = new() => TaskbarElement;
