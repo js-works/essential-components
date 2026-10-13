@@ -6,22 +6,22 @@ import {
   dateRangeColumnFilter,
   textColumnFilter,
   useDataTableController,
-} from '../../../../../packages/data-table/src/react';
-import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
-import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react';
-import { createBoard, fetchBoards } from '../../../infra/in-memory';
-import type { BoardRow } from '../../../infra/in-memory';
-import { BoardForm } from '../../../shared/forms';
-import { useTranslate } from '../../../shared/lib/i18n';
-import type { Translate } from '../../../shared/lib/i18n';
-import { appIcons, DataTable, formatDateTime, PAGE_SIZE_OPTIONS, personFilter } from '../../../shared/shared';
-import { daysFromToday, sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters';
-import { deleteBoardsFlow, editBoard } from '../components/boardFlows';
+} from '../../../../../packages/data-table/src/react/index.js';
+import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
+import { createBoard, fetchBoards } from '../../../infra/in-memory/index.js';
+import type { BoardRow } from '../../../infra/in-memory/index.js';
+import { BoardForm } from '../../../shared/forms.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import type { Translate } from '../../../shared/lib/i18n/index.js';
+import { appIcons, DataTable, formatDateTime, PAGE_SIZE_OPTIONS, personFilter } from '../../../shared/shared.js';
+import { daysFromToday, sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters.js';
+import { deleteBoardsFlow, editBoard } from '../components/boardFlows.js';
 
 export { BoardsPage };
 
 // The columns, with their headers in the current language.
-const columnsOf = (t: Translate): readonly DataTableComponent.Column<BoardRow>[] => [
+const columnsOf = (t: Translate): readonly dataTable.Column<BoardRow>[] => [
   {
     key: 'name',
     header: t('boards.columns.board'),
@@ -46,7 +46,7 @@ const columnsOf = (t: Translate): readonly DataTableComponent.Column<BoardRow>[]
 ];
 
 // The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
-const COLLEAGUES_FILTERS: readonly DataTableComponent.SavedFilter[] = [
+const COLLEAGUES_FILTERS: readonly dataTable.SavedFilter[] = [
   sharedBy('Maria Keller', 'Committees', { name: { text: 'Committee', match: 'contains' } }),
   sharedBy('Jonas Weber', 'Meeting in the next 30 days', {
     nextMeeting: { from: daysFromToday(0), to: daysFromToday(30) },
@@ -63,7 +63,7 @@ function BoardsPage(): ReactElement {
   const toasts = useToast();
   const navigate = useNavigate();
 
-  const actions = useMemo<readonly DataTableComponent.Action<BoardRow>[]>(() => {
+  const actions = useMemo<readonly dataTable.Action<BoardRow>[]>(() => {
     const create = async () => {
       let created = '';
       const saved = !(await dialogs.form({

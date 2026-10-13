@@ -6,12 +6,12 @@ import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { html as staticHtml, unsafeStatic } from 'lit/static-html.js';
-import type * as Spec from '../api';
-import { groupsOf, search, subgroupsOf } from '../core/search';
-import type { Group, Match } from '../core/search';
-import { readStored, writeStored } from '../core/storage';
-import { textsFor } from '../core/texts';
-import type { Texts } from '../core/texts';
+import type * as Spec from '../api/index.js';
+import { groupsOf, search, subgroupsOf } from '../core/search.js';
+import type { Group, Match } from '../core/search.js';
+import { readStored, writeStored } from '../core/storage.js';
+import { textsFor } from '../core/texts.js';
+import type { Texts } from '../core/texts.js';
 import {
   checkIcon,
   chevronIcon,
@@ -26,12 +26,12 @@ import {
   panelIcon,
   searchIcon,
   selectorIcon,
-} from './icons';
-import { Menu } from './menu';
-import type { MenuOptions } from './menu';
-import { layoutStyles, styles } from './styles';
-import { taskbarTagFor } from './TaskbarElement';
-import type { Task, TaskEventDetail, TaskMoveEventDetail } from './TaskbarElement';
+} from './icons.js';
+import { Menu } from './menu.js';
+import type { MenuOptions } from './menu.js';
+import { layoutStyles, styles } from './styles.js';
+import { taskbarTagFor } from './TaskbarElement.js';
+import type { Task, TaskEventDetail, TaskMoveEventDetail } from './TaskbarElement.js';
 
 export { CockpitElement };
 
@@ -89,7 +89,7 @@ let instances = 0;
 //   entry.
 // - An item is created when it is opened the first time (after its `load()`), and then kept: the others get `hidden`.
 //   Its element gets `data-hash-segment` (its id), so tabs inside it know their level.
-class CockpitElement extends LitElement implements Spec.Element {
+class CockpitElement extends LitElement implements Spec.CockpitElement {
   static override properties = {
     nav: { reflect: true },
     navScheme: { attribute: 'nav-scheme', reflect: true },

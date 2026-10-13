@@ -1,4 +1,4 @@
-import { createFileUploadClass } from './element/createFileUploadClass';
+import { createFileUploadClass } from './element/createFileUploadClass.js';
 
 export { createFileUploadClass };
-export type * as FileUpload from './api';
+export type * as fileUpload from './api/index.js';

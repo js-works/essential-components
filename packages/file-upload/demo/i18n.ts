@@ -1,9 +1,9 @@
-import type { FileUpload } from '../src';
+import type { fileUpload } from '../src/index.js';
 
 export { createDemoI18n, createLocaleI18n };
 
 // The demo's translations. English is missing on purpose: the component's own texts are the defaults.
-const GERMAN: Readonly<Partial<Record<FileUpload.TextKey, string>>> = {
+const GERMAN: Readonly<Partial<Record<fileUpload.TextKey, string>>> = {
   dropHint: 'Dateien hierher ziehen oder',
   browse: 'Durchsuchen',
   hintAccept: 'Erlaubt: {types}',
@@ -37,7 +37,7 @@ const TRANSLATIONS: Readonly<Record<string, Readonly<Record<string, string | und
 
 // A minimal adapter: the locale is the `lang` of `<html>`, texts are looked up by language (`de-CH` uses `de`), and
 // `{name}` placeholders are filled in, numbers formatted for the locale.
-function createDemoI18n(): FileUpload.I18nAdapter {
+function createDemoI18n(): fileUpload.I18nAdapter {
   const root = document.documentElement;
   const currentLocale = () => root.lang || 'en-US';
 
@@ -58,7 +58,7 @@ function createDemoI18n(): FileUpload.I18nAdapter {
 }
 
 // The same texts, in a fixed locale (the React demo creates a new adapter when its locale changes).
-function createLocaleI18n(locale: string): FileUpload.I18nAdapter {
+function createLocaleI18n(locale: string): fileUpload.I18nAdapter {
   return {
     currentLocale: () => locale,
     resolveText: (namespace, key, params, defaultValue) => resolveText(locale, namespace, key, params, defaultValue),

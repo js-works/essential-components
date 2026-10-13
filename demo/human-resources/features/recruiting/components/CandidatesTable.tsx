@@ -5,18 +5,18 @@ import {
   dateRangeColumnFilter,
   selectColumnFilter,
   useDataTableController,
-} from '../../../../../packages/data-table/src/react';
-import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
-import { CANDIDATE_SOURCES, STAGES } from '../../../domain';
-import type { Candidate, HrData, Opening, Stage } from '../../../domain';
-import { formatDate } from '../../../shared/lib/format';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { oneOf, within } from '../../../shared/lib/localQuery';
-import { DataTable } from '../../../shared/ui/dataTable';
-import { appIcons } from '../../../shared/ui/icons';
-import { Rating, StageBadge } from '../../../shared/ui/parts';
-import { useTableSource } from '../../hr';
-import { useRecruitingFlows } from '../flows';
+} from '../../../../../packages/data-table/src/react/index.js';
+import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import { CANDIDATE_SOURCES, STAGES } from '../../../domain/index.js';
+import type { Candidate, HrData, Opening, Stage } from '../../../domain/index.js';
+import { formatDate } from '../../../shared/lib/format.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { oneOf, within } from '../../../shared/lib/localQuery.js';
+import { DataTable } from '../../../shared/ui/dataTable.js';
+import { appIcons } from '../../../shared/ui/icons.js';
+import { Rating, StageBadge } from '../../../shared/ui/parts.js';
+import { useTableSource } from '../../hr/index.js';
+import { useRecruitingFlows } from '../flows.js';
 
 export { CandidatesTable };
 
@@ -46,7 +46,7 @@ function CandidatesTable({ data, opening }: { data: HrData; opening: Opening }):
     nav.reload,
   );
 
-  const columns = useMemo((): readonly DataTableComponent.Column<Candidate>[] => [
+  const columns = useMemo((): readonly dataTable.Column<Candidate>[] => [
     {
       key: 'name',
       header: t('candidates.name'),
@@ -101,8 +101,8 @@ function CandidatesTable({ data, opening }: { data: HrData; opening: Opening }):
   ], [t]);
 
   const actions = useMemo((): readonly (
-    | DataTableComponent.Action<Candidate>
-    | DataTableComponent.ActionMenu<Candidate>
+    | dataTable.Action<Candidate>
+    | dataTable.ActionMenu<Candidate>
   )[] => [
     {
       type: 'general',

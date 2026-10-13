@@ -113,7 +113,7 @@ and imports the files it needs from its `CLAUDE.md`.
   - `demo/main.ts`: creates the cockpit (`createCockpitClass`, title "Back Office", subtitle "Acme Corporate" (2026-10-03; "App Center" without a subtitle before), with the search, a made-up
     signed-in user) with
     the demos. Each is loaded when it is opened
-    the first time (`load`: a dynamic `import()` by a relative path, e.g. `../packages/file-upload/demo/FileUploadDemo`)
+    the first time (`load`: a dynamic `import()` by a relative path, e.g. `../packages/file-upload/demo/FileUploadDemo.js`)
     and registered then (`data-table-demo`, `file-upload-demo`, `overlays-demo`; the root's own `file-center-demo`,
     `board-manager-demo`, `user-manager-demo`, `time-tracker-demo` and `human-resources-demo`). Each demo element is a light DOM custom element of its package (see "Demo element" in
     the package's `CLAUDE.md`), exported and not registered.

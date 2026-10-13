@@ -1,4 +1,4 @@
-import { holidaysAround, todayDate } from '../../domain';
+import { holidaysAround, todayDate } from '../../domain/index.js';
 import type {
   CorrectionRepository,
   EmployeeRepository,
@@ -7,7 +7,7 @@ import type {
   SickRepository,
   TeamRepository,
   TimeData,
-} from '../../domain';
+} from '../../domain/index.js';
 
 export { createTimeService };
 export type { TimeService };

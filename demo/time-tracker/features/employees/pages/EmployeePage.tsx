@@ -2,20 +2,20 @@ import { Badge, Button, Grid, Group, Loader, Paper, SimpleGrid, Stack, Tabs, Tex
 import { useState } from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import { useParams } from 'react-router';
-import { todayDate, todayStatus, vacationBalance, weekStart } from '../../../domain';
-import type { Employee, TimeData } from '../../../domain';
-import { formatDate } from '../../../shared/lib/format';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { useNow } from '../../../shared/lib/useNow';
-import { appIcons } from '../../../shared/ui/icons';
-import { EmployeeAvatar, LeadOnly, PageHeader, TodayBadge } from '../../../shared/ui/parts';
-import { AbsenceLegend, MonthCalendar } from '../../calendar';
-import { BalanceCards, LeaveTable } from '../../leave';
-import { SickTable } from '../../sick';
-import { WeekNavigator, WeekSheet, weekSheets } from '../../timesheet';
-import { useTimeData } from '../../tracker';
-import { useViewer } from '../../viewer';
-import { useEmployeeFlows } from '../flows';
+import { todayDate, todayStatus, vacationBalance, weekStart } from '../../../domain/index.js';
+import type { Employee, TimeData } from '../../../domain/index.js';
+import { formatDate } from '../../../shared/lib/format.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { useNow } from '../../../shared/lib/useNow.js';
+import { appIcons } from '../../../shared/ui/icons.js';
+import { EmployeeAvatar, LeadOnly, PageHeader, TodayBadge } from '../../../shared/ui/parts.js';
+import { AbsenceLegend, MonthCalendar } from '../../calendar/index.js';
+import { BalanceCards, LeaveTable } from '../../leave/index.js';
+import { SickTable } from '../../sick/index.js';
+import { WeekNavigator, WeekSheet, weekSheets } from '../../timesheet/index.js';
+import { useTimeData } from '../../tracker/index.js';
+import { useViewer } from '../../viewer/index.js';
+import { useEmployeeFlows } from '../flows.js';
 
 export { EmployeePage };
 

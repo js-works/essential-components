@@ -1,4 +1,4 @@
-import type { Action, StatusIcon } from '../core/view';
+import type { Action, StatusIcon } from '../core/view.js';
 
 export { createIcon };
 export type { IconName };

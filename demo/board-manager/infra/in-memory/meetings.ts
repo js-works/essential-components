@@ -1,9 +1,9 @@
-import type { DataTableComponent } from '../../../../packages/data-table/src/react';
-import type { AgendaItem, Meeting, MeetingStatus } from '../../domain';
-import { boardIdsOf, getBoard } from './lookups';
-import { matches, oneOf, runQuery, within } from './query';
-import { db, LOADING_TIME, newId, save, wait } from './store';
-import type { Db } from './store';
+import type { dataTable } from '../../../../packages/data-table/src/react/index.js';
+import type { AgendaItem, Meeting, MeetingStatus } from '../../domain/index.js';
+import { boardIdsOf, getBoard } from './lookups.js';
+import { matches, oneOf, runQuery, within } from './query.js';
+import { db, LOADING_TIME, newId, save, wait } from './store.js';
+import type { Db } from './store.js';
 
 export { approveMinutes, createMeeting, deleteMeetings, fetchMeetings, setMeetingStatus, updateMeeting };
 export type { MeetingRow };
@@ -25,7 +25,7 @@ function meetingRows(state: Db): MeetingRow[] {
 // The meetings of one board (`boardId`), of the boards of one person (`personId`), or of all boards (neither).
 function fetchMeetings(
   { boardId, personId }: { boardId?: string; personId?: string } = {},
-): DataTableComponent.Source<MeetingRow> {
+): dataTable.Source<MeetingRow> {
   return async (query, signal) => {
     await wait(LOADING_TIME, signal);
 

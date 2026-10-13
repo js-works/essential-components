@@ -7,16 +7,23 @@ import {
   dateRangeColumnFilter,
   selectColumnFilter,
   useDataTableController,
-} from '../../../../packages/data-table/src/react';
-import type { DataTableComponent } from '../../../../packages/data-table/src/react';
-import { ancestorsOf, FILE_KINDS } from '../../domain';
-import type { FileCriteria, FileKind, FileSortKey, Folder, MediaFile } from '../../domain';
-import { formatDateTime, formatSize } from '../../shared/lib/format';
-import { useQuerySource } from '../../shared/lib/useQuerySource';
-import { DataTable } from '../../shared/ui/dataTable';
-import { appIcons, kindIcon } from '../../shared/ui/icons';
-import { daysFromToday, sharedBy, useSavedFilters } from '../../shared/ui/savedFilters';
-import { browserKeys, FavoriteStar, folderPath, KIND_LABELS, useBrowserService, useEntryActions } from '../browser';
+} from '../../../../packages/data-table/src/react/index.js';
+import type { dataTable } from '../../../../packages/data-table/src/react/index.js';
+import { ancestorsOf, FILE_KINDS } from '../../domain/index.js';
+import type { FileCriteria, FileKind, FileSortKey, Folder, MediaFile } from '../../domain/index.js';
+import { formatDateTime, formatSize } from '../../shared/lib/format.js';
+import { useQuerySource } from '../../shared/lib/useQuerySource.js';
+import { DataTable } from '../../shared/ui/dataTable.js';
+import { appIcons, kindIcon } from '../../shared/ui/icons.js';
+import { daysFromToday, sharedBy, useSavedFilters } from '../../shared/ui/savedFilters.js';
+import {
+  browserKeys,
+  FavoriteStar,
+  folderPath,
+  KIND_LABELS,
+  useBrowserService,
+  useEntryActions,
+} from '../browser/index.js';
 
 export { RecentPage };
 
@@ -36,7 +43,7 @@ function daysAgo(days: number): string {
 }
 
 // The table's state as the repository's query, over all folders: its search and filters, its sort, its page.
-function toCriteria(query: DataTableComponent.Query): FileCriteria {
+function toCriteria(query: dataTable.Query): FileCriteria {
   const { kind, owner, modified } = query.filters as Record<string, unknown>;
   const range = modified as { from?: string; to?: string } | undefined;
 
@@ -50,7 +57,7 @@ function toCriteria(query: DataTableComponent.Query): FileCriteria {
   };
 }
 
-function toSort(query: DataTableComponent.Query) {
+function toSort(query: dataTable.Query) {
   const key = query.sort?.key as FileSortKey | undefined;
 
   return query.sort !== undefined && key !== undefined && SORT_KEYS.includes(key)
@@ -58,13 +65,13 @@ function toSort(query: DataTableComponent.Query) {
     : undefined;
 }
 
-const toPaging = (query: DataTableComponent.Query) => ({
+const toPaging = (query: dataTable.Query) => ({
   offset: (query.page - 1) * query.pageSize,
   limit: query.pageSize,
 });
 
 // The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
-const COLLEAGUES_FILTERS: readonly DataTableComponent.SavedFilter[] = [
+const COLLEAGUES_FILTERS: readonly dataTable.SavedFilter[] = [
   sharedBy('Ben Carter', 'This week', { modified: { from: daysFromToday(-7), to: daysFromToday(0) } }),
   sharedBy('Anna Schröder', 'Media', { kind: ['image', 'video', 'audio'] }),
 ];
@@ -100,7 +107,7 @@ function RecentPage(): ReactElement {
     nav.reload,
   );
 
-  const columns = useMemo((): readonly DataTableComponent.Column<MediaFile>[] => [
+  const columns = useMemo((): readonly dataTable.Column<MediaFile>[] => [
     {
       key: 'name',
       header: 'Name',
@@ -163,7 +170,7 @@ function RecentPage(): ReactElement {
     },
   ], [folders, owners, setFavorite]);
 
-  const actions = useMemo((): readonly DataTableComponent.Action<MediaFile>[] => {
+  const actions = useMemo((): readonly dataTable.Action<MediaFile>[] => {
     return [
       // The default action (a double click): the file's details.
       {

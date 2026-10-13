@@ -1,13 +1,13 @@
 import { Combobox as BaseCombobox } from '@base-ui/react/combobox';
 import { useContext, useEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
-import type { DataTableComponent as Spec } from '../../react/api';
-import { useTexts } from '../texts';
-import { flag } from '../utils';
-import * as styles from './classes';
-import { icons } from './icons';
-import { LayerContext } from './layer';
-import { ClearButton } from './widgets';
+import type * as Spec from '../../api/react/index.js';
+import { useTexts } from '../texts.js';
+import { flag } from '../utils.js';
+import * as styles from './classes.js';
+import { icons } from './icons.js';
+import { LayerContext } from './layer.js';
+import { ClearButton } from './widgets.js';
 
 export { AutocompleteFilterInput, autocompleteIdsOf, LOAD_DELAY };
 

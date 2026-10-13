@@ -1,15 +1,6 @@
+import type { ColorSetup } from './api/theme.js';
+
 export { colorSetups };
-export type { ColorName, ColorSetup };
-
-// A color as a hex string (`#0ea5e9`, or `#09f`).
-type ColorSetup = {
-  primary?: string;
-  success?: string;
-  warning?: string;
-  danger?: string;
-};
-
-type ColorName = keyof typeof colorSetups;
 
 // Named color setups for `createMantineTheme({ colors: 'skyBlue' })`: the primary color and, where the primary does not
 // go well with Mantine's red, a danger color. The success and the warning colors are Mantine's green and orange unless

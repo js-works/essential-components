@@ -1,8 +1,8 @@
 import { Stack, Textarea, TextInput } from '@mantine/core';
 import type { ReactElement } from 'react';
 import { z } from 'zod';
-import type { Group } from '../../../domain';
-import { useForm } from '../../../shared/lib/useForm';
+import type { Group } from '../../../domain/index.js';
+import { useForm } from '../../../shared/lib/useForm.js';
 
 export { GroupForm };
 

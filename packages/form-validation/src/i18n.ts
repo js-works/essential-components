@@ -1,5 +1,5 @@
-import { catalogs, localeCandidates } from './messages';
-import type { FormConfig, I18nAdapter, Message, MessageContext, PropNames } from './types';
+import type { FormConfig, I18nAdapter, Message, MessageContext, PropNames } from './api/index.js';
+import { catalogs, localeCandidates } from './messages/index.js';
 
 export { checkI18nType, createTranslator, documentLocale, humanize, isDev, LIBRARY_NAMESPACE, warnOnce };
 export type { ErrorData };

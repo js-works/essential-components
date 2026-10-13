@@ -16,13 +16,24 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 
 ## Working rules
 
-- Two files hold the draft API types we are discussing. Types only, no comments for now (comments come later).
-  - `src/api.ts`: the namespace `DataTable`: the custom element and the shared types (`Query`, `Source`, `Theme`,
-    `I18nAdapter`, `Texts`, ...).
-  - `src/react/api.ts`: the namespace `DataTableComponent`: the React component (`Props`, `Column`, `Action`,
-    `Controller`, ...), which re-exports the shared types, so React code never needs `DataTable`.
-  - Both namespaces use the same short names (`Column`, `Action`, ...) with their own meaning.
-  - Exception: `DataTable.Texts` has the en-US text as a comment after each line.
+- `src/api/` holds the draft API types we are discussing (2026-10-12; `src/api.ts` with `declare namespace DataTable`
+  and `src/react/api.ts` with `DataTableComponent` before). Types only, no comments for now (comments come later).
+  - Shared by both entries: `query.ts` (`Query`, `Result`, `Source`, `Sort`, `FilterValue`, `GroupBy`, `RowGroup`),
+    `rows.ts` (`Move`, `Reorder`, `SaveRow`, `CreateRow`), `filters.ts`, `editors.ts`, `saved-filters.ts`,
+    `settings.ts` (`Density`, `Layout`, `FooterMode`, `ColumnAlign`, `ActionVariant`, …), `theme.ts`, `texts.ts`,
+    `i18n.ts`.
+  - The element's own: `columns.ts`, `actions.ts`, `autocomplete.ts` (content `string | C`, `string | Node`),
+    `content.ts`, `controller.ts`, `element.ts` (`SetupConfig`, `DataTableElement`, `SetupDataTable`, …).
+  - The React entry's own (`src/api/react/`): `columns.ts`, `actions.ts`, `autocomplete.ts` (content `ReactNode`),
+    `component.ts` (`Props`, `Config`, `Controller`, `Component`).
+  - `src/api/index.ts` re-exports the shared and the element's files, `src/api/react/index.ts` the shared and the
+    React ones: both entries export the type namespace `dataTable` (`import type { dataTable } from
+    '@local/data-table/react'`, `dataTable.Column<User>`; from `@local/data-table`, `dataTable.Column<User, Node>`).
+  - Both use the same short names (`Column`, `Action`, ...) with their own meaning (unique within one entry's
+    namespace, `typescript.md`).
+  - Inside the package: `import type * as Spec from '../api/react/index.js'` (the React code), `import type * as
+    DataTable from '../api/index.js'` (the element's).
+  - Exception: `Texts` (`src/api/texts.ts`) has the en-US text as a comment after each line.
   - Each API decision changes only these files.
   - Type-only namespaces are fine. Do not use runtime (value) namespaces.
 - Do not update `README.md` for now: nobody reads it yet, so it would be wasted time.
@@ -59,7 +70,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     build (a chunk loaded on first use), so an app never installs it. Its stylesheet is not used (see the filter).
   - The builds list the licenses of everything bundled in: `dist/third-party-licenses-react.md` (the React entry) and
     `dist/third-party-licenses.md` (the custom element, with Preact and Base UI).
-- Customization: a small set of general design values, the `DataTable.Theme` (see Configuration), not one per part.
+- Customization: a small set of general design values, the `dataTable.Theme` (see Configuration), not one per part.
   - The values (30), with their placeholders in the stylesheet (`colorTextDimmed` → `var(--param-color-text-dimmed)`):
     - Colors: `colorText`, `colorTextDimmed`, `colorSurface`, `colorSurfaceStrong`, `colorBorder`, `colorDivider`, `colorHover`,
       `colorHoverAccent`, `colorSelected`, `colorSelectedBorder`, `colorPrimary`, `colorPrimaryHover`, `colorOnPrimary`,
@@ -146,15 +157,15 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   with it (checked in the browser: rendering, sorting, search, paging, all filters, selection, actions, the menu,
   tooltips, row details, the language switch).
 - Entries (like `file-upload`):
-  - `@local/data-table`: the element (`setupDataTable`), its column filters and editors and the types (namespace
-    `DataTable`). Preact is bundled in (as React), the app needs no React.
+  - `@local/data-table`: the element (`setupDataTable`), its column filters and editors and the types (the namespace
+    `dataTable`, with the element's types). Preact is bundled in (as React), the app needs no React.
   - `@local/data-table/react`: `createDataTableComponent` (renamed from `createDataTable`), the hooks, the
-    React column filters and their types (namespace `DataTableComponent`), with the app's React (an optional peer
-    dependency).
+    React column filters and their types (the namespace `dataTable`, with the React types), with the app's React (an
+    optional peer dependency).
   - `@local/data-table/themes`: `defaultTheme`, `softTheme`, `mantineTheme`, `antdTheme` (plain data, used by both; no React,
     no element). The other entries export no themes.
-  - Shared types (`Theme`, `I18nAdapter`, `Query`, ...) stay in `DataTable` of the main entry: a type-only import
-    loads no bundle, so React apps may import them from there.
+  - Shared types (`Theme`, `I18nAdapter`, `Query`, ...) are in the `dataTable` of both entries (2026-10-12; only in
+    the main entry's `DataTable` before), so a React app needs only `/react`.
   - Needs the built files (`exports` to `dist/`), else the app's bundler resolves `react` itself.
 - `setupDataTable(config)` is called once per app with the config (theme, i18n factory, content adapter, and
   `defaults` (2026-10-09, the user's wish): the settings of every element where it has no attribute or property of its
@@ -198,7 +209,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     render: (content: C, container: HTMLElement) => void; // called again with new content
     clear?: (container: HTMLElement) => void; // when a cell or detail goes away
   };
-  const litContent: DataTable.ContentAdapter<TemplateResult> = {
+  const litContent: dataTable.ContentAdapter<TemplateResult> = {
     render: (content, container) => render(content, container),
   };
   ```
@@ -224,9 +235,9 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - Custom content is rendered by the content adapter into an empty container that React creates.
   - Our stylesheet is added once per document, or per shadow root when the element sits inside one.
   - Page rules for bare elements (e.g. a global `button {}`) can reach our table; our class names are scoped.
-- Draft types: in `src/api.ts` (`SetupDataTable`, `SetupConfig`, `ContentAdapter`, `ControllerOptions`,
-  `TableController`, `Column`, `Action`, `Element`, `ElementClass`, ...).
-  - `Element<C>` and `TableController<Row, C>` carry the content type of their setup, so a controller of one setup
+- Draft types: in `src/api/` (`SetupDataTable`, `SetupConfig`, `ContentAdapter`, `ControllerOptions`,
+  `TableController`, `Column`, `Action`, `DataTableElement`, `ElementClass`, ...).
+  - `DataTableElement<C>` and `TableController<Row, C>` carry the content type of their setup, so a controller of one setup
     cannot be set on the element of another (e.g. Lit and `Node`).
 - Styling from outside: the theme. Stable hooks for app CSS come when needed (see "Todo (later)").
 - Behavior details:
@@ -262,7 +273,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     and dropped: a source hook with `reload` (covers only the reload), a ref handle (the same sharing problem, and
     `null` before the mount), a hook that returns a bound component (fragile), helpers in the action callbacks (no
     triggers from outside the table), controlled props (more wiring, and still no reload).
-  - `DataTable.Controller<Row>` has exactly these methods, and `editRow(row)` and `addRow(template)` since
+  - `dataTable.Controller<Row>` (of `/react`) has exactly these methods, and `editRow(row)` and `addRow(template)` since
     2026-09-30 (see "Row editing and new rows"). The `controller` prop is optional: without it the table works as
     before.
 - The framework-free core is `createDataTableController()` (`src/core/controller.ts`, no React). The hooks only
@@ -291,7 +302,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   <DataTable source={source} rowKey="id" columns={columns} />; // no localization or theme in sight
   ```
   - The same model as the `file-upload` project (`createFileUploadClass({ i18n })`), so both are configured alike.
-  - `createDataTableComponent(config?: DataTableComponent.Config)`. Both parts are optional.
+  - `createDataTableComponent(config?: dataTable.Config)`. Both parts are optional.
   - Create it once, at module level, never inside a component (a new component per render would remount the table).
   - It is the only way to get the component: no ready-made, unconfigured `DataTable` next to it.
   - Several looks or languages in one app: several factory calls.
@@ -315,7 +326,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   `resolveText(namespace, key, params, defaultValue)`, optional `onChange`).
   - Only `string`, `unknown`, `Record`, `null` and functions, nothing component-specific, so one adapter object fits
     both components (structural typing). Never change it incompatibly, only add optional members.
-  - Our namespace is `'dataTable'`, the keys are the keys of `DataTable.Texts`. `defaultValue` is the English text,
+  - Our namespace is `'dataTable'`, the keys are the keys of `dataTable.Texts`. `defaultValue` is the English text,
     already filled in.
   - `currentLocale()` is read on every render, for `Intl` (numbers). `onChange` is subscribed while mounted (an
     effect in `useTexts`), and a notification re-renders, so every text and number is refreshed.
@@ -324,7 +335,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - Without an adapter: the English texts, and the locale of `<html lang>` (else `en-US`).
   - No i18n library is a dependency. An adapter for react-i18next (or any other library) is a few lines.
   - This replaced a hidden `useTranslation('dataTable')` of react-i18next, which tied every app to one i18n library.
-- Theme: `config.theme`, a typed `DataTable.Theme`: the design values in camelCase (`colorText`, `colorSelected`,
+- Theme: `config.theme`, a typed `dataTable.Theme`: the design values in camelCase (`colorText`, `colorSelected`,
   `radius`, `fontSize`, ...), all optional; missing ones come from the default theme.
   - Colors take a string or `{ light, dark }`, which becomes `light-dark(light, dark)`: it follows the `color-scheme`
     the root inherits from the page (the root sets none: `light dark` would follow the system's scheme instead). Values
@@ -351,7 +362,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 - The public API of the React entry (`@local/data-table/react`): `createDataTableComponent`,
   `useDataTableController`, `useDataTableSelection`, `textColumnFilter`, `selectColumnFilter`,
   `dateRangeColumnFilter`, `numberRangeColumnFilter`, `booleanColumnFilter`, `autocompleteColumnFilter`, `textColumnEditor`, `selectColumnEditor`,
-  `dateColumnEditor`, and the types (`DataTableComponent.Config`, `.Theme`, `.I18nAdapter`, `.Component`,
+  `dateColumnEditor`, and the types (`dataTable.Config`, `.Theme`, `.I18nAdapter`, `.Component`,
   `.Controller`, `.Props`, ...). The themes (`defaultTheme`, `softTheme`, `mantineTheme`, `antdTheme`) come from
   `@local/data-table/themes`.
 
@@ -392,13 +403,13 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 
 ## Project layout and commands
 
-- `src/api.ts` and `src/react/api.ts`: the spec (types only), see "Working rules".
-  - The React code (`src/core/`, `src/react/`) imports `DataTableComponent as Spec`.
+- `src/api/` and `src/api/react/`: the spec (types only), see "Working rules".
+  - The React code (`src/core/`, `src/react/`) imports `* as Spec` from `api/react/index.js`.
 - Three entries (`exports` in `package.json`, to `dist/`):
   - `src/index.ts` (`@local/data-table`): the custom element (`setupDataTable`, the element's column filters)
-    and the type namespace `DataTable`.
-  - `src/react/index.ts` (`@local/data-table/react`): the React API and the type namespace
-    `DataTableComponent`.
+    and the type namespace `dataTable` (`src/api/index.ts`).
+  - `src/react/index.ts` (`@local/data-table/react`): the React API and the type namespace `dataTable`
+    (`src/api/react/index.ts`).
   - `src/themes/index.ts` (`@local/data-table/themes`): the three themes.
 - `src/element/`: the custom element, a wrapper of the React view:
   - `setupDataTable.tsx`: the setup and the element class (attributes, properties, the React root in the light
@@ -918,7 +929,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 ## Design decisions
 
 - No virtual scrolling. Pagination only.
-- The specification (this file and `src/api.ts`) is the durable part. See Theming for how it looks in each library.
+- The specification (this file and `src/api/`) is the durable part. See Theming for how it looks in each library.
   - No `components` prop and no slots.
   - The state and logic live in the headless hook `useDataTable` in `src/core/`, the rendering in
     `src/core/view/`.
@@ -1069,7 +1080,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 
 - The component must be localizable (i18n).
   - No hard-coded user-visible strings.
-  - The needed texts are defined by the type `DataTable.Texts` in `src/api.ts`, with the en-US text after each line.
+  - The needed texts are defined by the type `Texts` in `src/api/texts.ts`, with the en-US text after each line.
     - A text without parameters is a `string`. A text with parameters is `(params: { ... }) => string`.
     - The en-US comments use the simplest valid ICU MessageFormat, e.g. `{count} selected`.
       Full ICU syntax (plural, select) only where a text really needs it.
@@ -1480,7 +1491,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       background, at first `--param-color-surface-strong`.) The modes: `contains` (default), `starts with`, `ends with`
       (`Texts.textContains`, ...). (A segmented control below the input was tried first, 2026-09-28; the user replaced
       it on 2026-09-29.) When the view opens, the text input (not the select) gets the focus. The value is
-      `{ text, match }` (`DataTable.TextFilterValue`, `match`: `'contains' | 'startsWith' | 'endsWith'`), the text
+      `{ text, match }` (`dataTable.TextFilterValue`, `match`: `'contains' | 'startsWith' | 'endsWith'`), the text
       trimmed; an empty text removes the filter. (It was a plain string, before the match modes.) The placeholder is
       `Texts.filterPlaceholder` ("Filter") or `placeholder`. Its clear button (`Texts.clearFilter`) empties it.
     - `selectColumnFilter({ options, multiple? })`: unchanged (`SelectField`): the value of the chosen option, or a list
@@ -1491,7 +1502,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       closes the calendars (not the filter view); Clear removes it from the draft.
     - `numberRangeColumnFilter()` (new): two number inputs in one row, `from – to` (placeholders and names
       `Texts.rangeFrom` "From", `Texts.rangeTo` "To", each named with the label of the filter in front, e.g. "Logins
-      From"). The value is `{ from?, to? }` (`DataTable.NumberRangeFilterValue`), both inclusive; an empty side is
+      From"). The value is `{ from?, to? }` (`dataTable.NumberRangeFilterValue`), both inclusive; an empty side is
       open, both empty remove the filter. Native `<input type="number">`, without the spin buttons.
     - `booleanColumnFilter()` (new): a segmented control `All` / `Yes` / `No` (`Texts.filterAll`, `filterYes`,
       `filterNo`); the value is `true` or `false`, "All" removes the filter (and shows no pill).
@@ -2390,7 +2401,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - If done: one kind of widget per step (tooltips, menus, selects, the context menu, the autocomplete), each with its
     tests; until the last step both libraries are bundled.
 
-- `src/api.ts`, `src/react/api.ts`: add the final comments to all types, and group the `Props` properties with blank
+- `src/api/`: add the final comments to all types, and group the `Props` properties with blank
   lines again.
 
 - Array helper: turns an array into a `source` (client-side sorting, filtering and paging).
@@ -2402,7 +2413,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   "one of"), and how an own filter supplies its predicate.
 - Controlled query state (`query` and `onQueryChange`), e.g. for URL sync or "reset all" from outside.
   - Design it as one unit, together with `pageSize` and the selection reset.
-- Error state: what happens when `source` rejects (display, retry, texts in `DataTable.Texts`).
+- Error state: what happens when `source` rejects (display, retry, texts in `dataTable.Texts`).
   - Not specified yet, and not part of the component or the demo yet.
 - `rowKey` as a function `(row) => string`, for rows with a composite key. For now it is only a property name.
 - To discuss: keep the details toggle column and the action column while there are no rows. Today both go away

@@ -1,9 +1,9 @@
 import type { ReactElement } from 'react';
-import type { DataTableComponent as Spec } from '../../react/api';
-import { useThemed } from '../config';
-import { pagerSlots } from '../pager';
-import * as classes from './classes';
-import { PageButton, PagerButton, PageSizeField } from './widgets';
+import type * as Spec from '../../api/react/index.js';
+import { useThemed } from '../config.js';
+import { pagerSlots } from '../pager.js';
+import * as classes from './classes.js';
+import { PageButton, PagerButton, PageSizeField } from './widgets.js';
 
 export { Footer };
 

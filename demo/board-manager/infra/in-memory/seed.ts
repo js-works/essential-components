@@ -1,4 +1,4 @@
-import { ROLES } from '../../domain';
+import { ROLES } from '../../domain/index.js';
 import type {
   AgendaItem,
   AgendaSection,
@@ -8,9 +8,9 @@ import type {
   Membership,
   Organization,
   Person,
-} from '../../domain';
-import { CURRENT_USER, localDate, localDateTime, typeOf } from './helpers';
-import type { Db } from './store';
+} from '../../domain/index.js';
+import { CURRENT_USER, localDate, localDateTime, typeOf } from './helpers.js';
+import type { Db } from './store.js';
 
 export { seedDb };
 

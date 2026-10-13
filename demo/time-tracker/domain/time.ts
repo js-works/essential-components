@@ -1,4 +1,4 @@
-import { minutesOf } from './dates';
+import { minutesOf } from './dates.js';
 
 export { clockStateOf, entriesOf, nextClockActions, spentMinutes };
 export type {

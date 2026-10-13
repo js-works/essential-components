@@ -8,8 +8,8 @@ import type {
   Membership,
   Organization,
   Person,
-} from '../../domain';
-import { seedDb } from './seed';
+} from '../../domain/index.js';
+import { seedDb } from './seed.js';
 
 export { db, LOADING_TIME, newId, save, SAVE_TIME, wait };
 export type { Db };

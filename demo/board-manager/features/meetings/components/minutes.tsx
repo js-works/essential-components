@@ -14,11 +14,11 @@ import { Anchor, Input, Text } from '@mantine/core';
 import { useRef } from 'react';
 import type { ReactElement, ReactNode, Ref } from 'react';
 import { Link, useInRouterContext } from 'react-router';
-import type { Person } from '../../../domain';
-import { getPerson } from '../../../infra/in-memory';
-import { useLanguage, useTranslate } from '../../../shared/lib/i18n';
-import { useDb, useScheme } from '../../../shared/shared';
-import { parseMinutes } from './minutes-format';
+import type { Person } from '../../../domain/index.js';
+import { getPerson } from '../../../infra/in-memory/index.js';
+import { useLanguage, useTranslate } from '../../../shared/lib/i18n/index.js';
+import { useDb, useScheme } from '../../../shared/shared.js';
+import { parseMinutes } from './minutes-format.js';
 
 export { MinutesEditor, MinutesText };
 

@@ -61,9 +61,8 @@ import "@mantine/dates/styles.layer.css";
 import "./react.css";
 
 import { OverlaysProvider, useDialogs } from "../main/bindings/react/index.js";
-import type { OverlaysConfig } from "../main/bindings/react/index.js";
+import type { overlays } from "../main/bindings/react/index.js";
 import { createDialogTheme } from "../main/index.js";
-import type { ActionButtonType } from "../main/index.js";
 
 function today(): string {
   return new Date().toISOString().slice(0, 10);
@@ -334,7 +333,7 @@ function DialogPopups({ children }: { children: ReactNode }) {
 
 // The library's four button looks, mapped onto Mantine's.
 const MANTINE_BUTTON: Record<
-  ActionButtonType,
+  overlays.ActionButtonType,
   { variant?: string; color?: string }
 > = {
   primary: {},
@@ -351,7 +350,7 @@ const MANTINE_BUTTON: Record<
 // Nothing here depends on component state, so it is a module constant rather than a
 // literal in the tree: rebuilding it on every render would hand the provider a new
 // config object each time.
-const OVERLAYS_CONFIG: OverlaysConfig = {
+const OVERLAYS_CONFIG: overlays.OverlaysConfig = {
   dialogs: {
     icons: true,
     // The dialog's own text (title, message) in Mantine's body size and font, like the

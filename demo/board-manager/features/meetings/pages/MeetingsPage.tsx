@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { MeetingsTable } from '../components/MeetingsTable';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { MeetingsTable } from '../components/MeetingsTable.js';
 
 export { MeetingsPage };
 

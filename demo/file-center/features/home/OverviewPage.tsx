@@ -2,12 +2,12 @@ import { Anchor, Grid, Group, Loader, Paper, Progress, SimpleGrid, Stack, Text, 
 import { useQuery } from '@tanstack/react-query';
 import type { ReactElement, ReactNode } from 'react';
 import { Link } from 'react-router';
-import { ROOT_ID } from '../../domain';
-import type { Folder } from '../../domain';
-import { formatDateTime, formatSize } from '../../shared/lib/format';
-import { appIcons, kindIcon } from '../../shared/ui/icons';
-import { browserKeys, folderPath, KIND_LABELS, useBrowserService } from '../browser';
-import type { Overview } from '../browser';
+import { ROOT_ID } from '../../domain/index.js';
+import type { Folder } from '../../domain/index.js';
+import { formatDateTime, formatSize } from '../../shared/lib/format.js';
+import { appIcons, kindIcon } from '../../shared/ui/icons.js';
+import { browserKeys, folderPath, KIND_LABELS, useBrowserService } from '../browser/index.js';
+import type { Overview } from '../browser/index.js';
 
 export { OverviewPage };
 

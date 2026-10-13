@@ -1,4 +1,4 @@
-import type { DataTable } from '../api';
+import type * as DataTable from '../api/index.js';
 
 export { antdTheme };
 

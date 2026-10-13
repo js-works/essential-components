@@ -1,14 +1,14 @@
 import { useNavigate } from 'react-router';
-import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react';
-import { addDays, currentSalary, todayDate } from '../../domain';
-import type { Employee, EmployeeDocument, HrData } from '../../domain';
-import { errorText } from '../../shared/lib/errorText';
-import { translate } from '../../shared/lib/i18n';
-import { useChanged, useHrService } from '../hr';
-import { DocumentsForm } from './components/DocumentsForm';
-import { EmployeeForm } from './components/EmployeeForm';
-import { EndForm } from './components/EndForm';
-import { SalaryForm } from './components/SalaryForm';
+import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react/index.js';
+import { addDays, currentSalary, todayDate } from '../../domain/index.js';
+import type { Employee, EmployeeDocument, HrData } from '../../domain/index.js';
+import { errorText } from '../../shared/lib/errorText.js';
+import { translate } from '../../shared/lib/i18n/index.js';
+import { useChanged, useHrService } from '../hr/index.js';
+import { DocumentsForm } from './components/DocumentsForm.js';
+import { EmployeeForm } from './components/EmployeeForm.js';
+import { EndForm } from './components/EndForm.js';
+import { SalaryForm } from './components/SalaryForm.js';
 
 export { useEmployeeFlows };
 

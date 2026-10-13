@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type * as Spec from '../api';
-import { createFileUploadClass } from './createFileUploadClass';
+import type * as Spec from '../api/index.js';
+import { createFileUploadClass } from './createFileUploadClass.js';
 
 // Form association runs in a real browser (jsdom lacks it).
 
@@ -24,11 +24,13 @@ const file = (name: string, type = 'text/plain') => new File(['x'], name, { type
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 // A form with one element, whose uploads the test ends itself.
-function mount(options: Partial<Pick<Spec.Element, 'name' | 'required' | 'multiple' | 'accept' | 'disabled'>> = {}) {
+function mount(
+  options: Partial<Pick<Spec.FileUploadElement, 'name' | 'required' | 'multiple' | 'accept' | 'disabled'>> = {},
+) {
   const pending: Pending[] = [];
   const form = document.createElement('form');
   const fieldset = document.createElement('fieldset');
-  const element = document.createElement(TAG) as Spec.Element;
+  const element = document.createElement(TAG) as Spec.FileUploadElement;
 
   Object.assign(element, {
     multiple: true,
@@ -273,7 +275,7 @@ describe('density', () => {
       ['comfortable', 4.664],
     ] as const,
   )('gives the empty element (%s) the height of the placeholder', async (density, em) => {
-    const element = document.createElement(TAG) as Spec.Element;
+    const element = document.createElement(TAG) as Spec.FileUploadElement;
 
     element.style.fontSize = '14px';
     element.density = density;

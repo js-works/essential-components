@@ -1,8 +1,8 @@
 import { Anchor, Avatar, Group, Stack, Text, ThemeIcon, Title } from '@mantine/core';
 import type { ReactElement, ReactNode } from 'react';
 import { Link } from 'react-router';
-import type { AccessData, PrincipalRef } from '../../domain';
-import { appIcons } from './icons';
+import type { AccessData, PrincipalRef } from '../../domain/index.js';
+import { appIcons } from './icons.js';
 
 export { PageHeader, PrincipalLabel, principalName, principalPath, UserAvatar };
 

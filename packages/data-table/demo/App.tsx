@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ReactElement } from 'react';
-import type { DataTableComponent } from '../src/react';
+import type { dataTable } from '../src/react/index.js';
 import type {
   Controls,
   DemoActions,
@@ -12,8 +12,8 @@ import type {
   DemoStriped,
   DemoTheme,
   DemoVariants,
-} from './controls';
-import { Demo } from './Demo';
+} from './controls.js';
+import { Demo } from './Demo.js';
 
 export { App };
 
@@ -21,11 +21,11 @@ function App(): ReactElement {
   const [theme, setTheme] = useState<DemoTheme>('default');
   const [actions, setActions] = useState<DemoActions>('multi-row');
   const [variants, setVariants] = useState<DemoVariants>('off');
-  const [selectionAppearance, setSelectionAppearance] = useState<DataTableComponent.SelectionAppearance>('accent');
-  const [rowActionLook, setRowActionLook] = useState<DataTableComponent.RowActionLook>('icon');
-  const [density, setDensity] = useState<DataTableComponent.Density>('normal');
+  const [selectionAppearance, setSelectionAppearance] = useState<dataTable.SelectionAppearance>('accent');
+  const [rowActionLook, setRowActionLook] = useState<dataTable.RowActionLook>('icon');
+  const [density, setDensity] = useState<dataTable.Density>('normal');
   const [layout, setLayout] = useState<DemoLayout>('user');
-  const [footer, setFooter] = useState<DataTableComponent.FooterMode>('always');
+  const [footer, setFooter] = useState<dataTable.FooterMode>('always');
   const [striped, setStriped] = useState<DemoStriped>('on');
   const [columns, setColumns] = useState<DemoColumns>('flat');
   const [filters, setFilters] = useState<DemoFilters>('on');

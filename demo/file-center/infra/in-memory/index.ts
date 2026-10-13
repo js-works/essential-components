@@ -1,8 +1,8 @@
-import type { FileRepository, FolderRepository } from '../../domain';
-import { createFileRepository } from './files';
-import { createFolderRepository } from './folders';
-import { seed } from './seed';
-import { createStore } from './store';
+import type { FileRepository, FolderRepository } from '../../domain/index.js';
+import { createFileRepository } from './files.js';
+import { createFolderRepository } from './folders.js';
+import { seed } from './seed.js';
+import { createStore } from './store.js';
 
 export { createInMemoryRepositories };
 

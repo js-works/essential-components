@@ -1,12 +1,12 @@
-import type * as Spec from '../api';
-import { createPreviewUrl } from '../core/preview';
-import { FileUploadStore } from '../core/store';
-import type { StoreOptions } from '../core/store';
-import { createLocalizer } from '../core/texts';
-import type { Localizer } from '../core/texts';
-import { actionsOf, hintsOf, invalidityOf, statusIconOf, statusTextOf } from '../core/view';
-import type { Action, Limits } from '../core/view';
-import { createIcon } from './icons';
+import type * as Spec from '../api/index.js';
+import { createPreviewUrl } from '../core/preview.js';
+import { FileUploadStore } from '../core/store.js';
+import type { StoreOptions } from '../core/store.js';
+import { createLocalizer } from '../core/texts.js';
+import type { Localizer } from '../core/texts.js';
+import { actionsOf, hintsOf, invalidityOf, statusIconOf, statusTextOf } from '../core/view.js';
+import type { Action, Limits } from '../core/view.js';
+import { createIcon } from './icons.js';
 
 export { FileUploadElement, setElementI18nAdapter };
 export type { GetI18nAdapter };
@@ -50,11 +50,11 @@ const PROPERTIES = [
   'required',
   'label',
   'error',
-] as const satisfies readonly (keyof Spec.Element)[];
+] as const satisfies readonly (keyof Spec.FileUploadElement)[];
 
 // The base class of every class that `createFileUploadClass` creates. It is not exported: each app class gets its
 // styles from the factory.
-class FileUploadElement extends HTMLElement implements Spec.Element {
+class FileUploadElement extends HTMLElement implements Spec.FileUploadElement {
   static readonly formAssociated = true;
 
   static readonly observedAttributes = [
@@ -1055,7 +1055,7 @@ class FileUploadElement extends HTMLElement implements Spec.Element {
 }
 
 // Internal, for the React wrapper: an adapter for one element (see `setI18nAdapter`).
-function setElementI18nAdapter(element: Spec.Element, adapter: Spec.I18nAdapter | undefined): void {
+function setElementI18nAdapter(element: Spec.FileUploadElement, adapter: Spec.I18nAdapter | undefined): void {
   if (element instanceof FileUploadElement) {
     element[setI18nAdapter](adapter);
   }

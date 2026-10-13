@@ -2,11 +2,11 @@ import { Anchor, Button, Grid, Group, Loader, Menu, Paper, SimpleGrid, Stack, Ta
 import { useState } from 'react';
 import type { ReactElement } from 'react';
 import { Link, useParams } from 'react-router';
-import { progressOf, reportsOf, statusOf, todayDate, yearsBetween } from '../../../domain';
-import type { Employee, HrData } from '../../../domain';
-import { formatDate } from '../../../shared/lib/format';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { appIcons } from '../../../shared/ui/icons';
+import { progressOf, reportsOf, statusOf, todayDate, yearsBetween } from '../../../domain/index.js';
+import type { Employee, HrData } from '../../../domain/index.js';
+import { formatDate } from '../../../shared/lib/format.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { appIcons } from '../../../shared/ui/icons.js';
 import {
   Detail,
   EmployeeAvatar,
@@ -14,12 +14,12 @@ import {
   EmployeeStatusBadge,
   PageHeader,
   ProgressCell,
-} from '../../../shared/ui/parts';
-import { useChecklistFlows } from '../../checklists';
-import { departmentName, employeeOf, useHrData } from '../../hr';
-import { DocumentsTable } from '../components/DocumentsTable';
-import { SalaryTable } from '../components/SalaryTable';
-import { useEmployeeFlows } from '../flows';
+} from '../../../shared/ui/parts.js';
+import { useChecklistFlows } from '../../checklists/index.js';
+import { departmentName, employeeOf, useHrData } from '../../hr/index.js';
+import { DocumentsTable } from '../components/DocumentsTable.js';
+import { SalaryTable } from '../components/SalaryTable.js';
+import { useEmployeeFlows } from '../flows.js';
 
 export { EmployeePage };
 

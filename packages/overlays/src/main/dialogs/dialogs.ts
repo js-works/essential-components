@@ -1,56 +1,11 @@
-// Public entry point for the dialogs feature. The implementation is split across the
-// sibling modules (dialog, content, adapter, form-data, texts, buttons, icons, styles,
-// view, element, controller); this file just re-exports the public surface, kept stable
-// for ../index.ts and the package's `exports` map.
+// Public entry point for the dialogs feature: its values (the types are in ../api/dialogs/,
+// exported by the package's entries as the type namespace `overlays`). The implementation
+// is split across the sibling modules (form-data, theme and texts with the runtime
+// defaults, buttons, icons, styles, view, element, controller); this file just re-exports
+// the public values, kept stable for ../index.ts and the package's `exports` map.
 
 export { createDialogsController } from "./controller/controller.js";
-export type {
-  DialogAdapter,
-  DialogAdapterFactory,
-  DialogProps,
-  DialogSlots,
-  DialogSpec,
-} from "./contract/adapter.js";
 export { Dialog } from "./element/element.js";
-export { createDialogTheme, defaultDialogTheme } from "./contract/theme.js";
-export { defaultDialogTexts } from "./contract/texts.js";
-export type { DialogTheme } from "./contract/theme.js";
-
-export type { Renderable } from "./contract/content.js";
-export type { DialogTexts } from "./contract/texts.js";
-export { FormDialogData } from "./contract/form-data.js";
-export type {
-  ActionButtonRender,
-  ActionButtonType,
-  DialogConfig,
-  ButtonRole,
-  CloseButtonRender,
-  MaximizeButtonRender,
-  ConfirmDialogResult,
-  DecideDialogResult,
-  DialogAction,
-  DialogActions,
-  DialogInfo,
-  DialogRenderOverrides,
-  DialogScope,
-  DialogSurface,
-  DialogWidth,
-  DialogsController,
-  DialogsControllerConfig,
-  DialogType,
-  DialogViewConfig,
-  FormAskOptions,
-  FormAskChoicesOptions,
-  FormAttempt,
-  FormAttemptOf,
-  FormCloseAttempt,
-  FormConfirm,
-  FormConfirmResult,
-  FormDialogConfig,
-  FormDialogResult,
-  DialogHandle,
-  FormDialogHandle,
-  FormValidator,
-  MessageDialogResult,
-  NoteRender,
-} from "./contract/dialog.js";
+export { createDialogTheme, defaultDialogTheme } from "./theme.js";
+export { defaultDialogTexts } from "./texts.js";
+export { FormDialogData } from "./form-data.js";

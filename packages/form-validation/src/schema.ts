@@ -1,6 +1,6 @@
 import type { z } from 'zod';
-import { formRegistry } from './meta';
-import type { FormMeta } from './types';
+import type { FormMeta } from './api/index.js';
+import { formRegistry } from './meta.js';
 
 export { collectFields, getPath, setPath, unwrap };
 export type { FieldInfo, FieldKind };

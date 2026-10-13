@@ -2,10 +2,10 @@ import { Anchor } from '@mantine/core';
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { selectColumnFilter, useDataTableController } from '../../../../../packages/data-table/src/react';
-import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
-import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react';
-import type { Role } from '../../../domain';
+import { selectColumnFilter, useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
+import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
+import type { Role } from '../../../domain/index.js';
 import {
   boardIdsOf,
   createPerson,
@@ -14,12 +14,12 @@ import {
   fetchPeople,
   getPerson,
   updatePerson,
-} from '../../../infra/in-memory';
-import type { PersonRow } from '../../../infra/in-memory';
-import { PersonForm } from '../../../shared/forms';
-import { confirmAndRun } from '../../../shared/lib/flows';
-import type { Dialogs } from '../../../shared/lib/flows';
-import { translate, useTranslate } from '../../../shared/lib/i18n';
+} from '../../../infra/in-memory/index.js';
+import type { PersonRow } from '../../../infra/in-memory/index.js';
+import { PersonForm } from '../../../shared/forms.js';
+import { confirmAndRun } from '../../../shared/lib/flows.js';
+import type { Dialogs } from '../../../shared/lib/flows.js';
+import { translate, useTranslate } from '../../../shared/lib/i18n/index.js';
 import {
   appIcons,
   DataTable,
@@ -27,8 +27,8 @@ import {
   PAGE_SIZE_OPTIONS,
   personFilter,
   useDb,
-} from '../../../shared/shared';
-import { sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters';
+} from '../../../shared/shared.js';
+import { sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters.js';
 
 export { deletePeopleFlow, editPerson, memberPath, PeopleTable };
 
@@ -85,7 +85,7 @@ async function deletePeopleFlow(
 }
 
 // The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
-const COLLEAGUES_FILTERS: readonly DataTableComponent.SavedFilter[] = [
+const COLLEAGUES_FILTERS: readonly dataTable.SavedFilter[] = [
   sharedBy('Lena Hoffmann', 'Audit Committee', { boards: ['Audit Committee'] }),
   sharedBy('Jonas Weber', 'Works Council', { organization: ['Works Council'] }),
 ];
@@ -106,7 +106,7 @@ function PeopleTable(
   const boards = useDb((state) => state.boards);
   const source = useMemo(() => fetchPeople(organizationId), [organizationId]);
 
-  const columns = useMemo<readonly DataTableComponent.Column<PersonRow>[]>(() => [
+  const columns = useMemo<readonly dataTable.Column<PersonRow>[]>(() => [
     {
       key: 'name',
       header: t('members.columns.person'),
@@ -144,7 +144,7 @@ function PeopleTable(
     },
   ], [t, boards, organizationId]);
 
-  const actions = useMemo<readonly DataTableComponent.Action<PersonRow>[]>(() => {
+  const actions = useMemo<readonly dataTable.Action<PersonRow>[]>(() => {
     const create = async () => {
       const saved = !(await dialogs.form({
         title: t('members.new'),

@@ -1,11 +1,11 @@
 // The design language first, so the demo's own CSS comes after it.
 import './ui/ui.css';
 import './demo.css';
-import { createCockpitClass } from '../src';
-import type { Cockpit } from '../src';
-import { FEW, GROUPS, MANY, SOME } from './apps';
-import { DemoApp } from './DemoApp';
-import { accentSetting, MENU, navigationSetting, pageSettings, USER, userMenu } from './footer';
+import { createCockpitClass } from '../src/index.js';
+import type { cockpit } from '../src/index.js';
+import { FEW, GROUPS, MANY, SOME } from './apps.js';
+import { DemoApp } from './DemoApp.js';
+import { accentSetting, MENU, navigationSetting, pageSettings, USER, userMenu } from './footer.js';
 
 // The page: a cockpit with 3, 30 or 100 apps (kept in the query string: the apps of a cockpit are fixed, so a change
 // reloads the page). Its footer has the page's settings: the number of apps, the language and the color scheme.
@@ -13,7 +13,7 @@ const SETS = { few: FEW, some: SOME, many: MANY } as const;
 const param = new URLSearchParams(location.search).get('apps');
 const set: keyof typeof SETS = param === 'some' || param === 'many' ? param : 'few';
 
-const appsAction: Cockpit.Action = {
+const appsAction: cockpit.Action = {
   id: 'apps',
   label: 'Apps',
   icon:

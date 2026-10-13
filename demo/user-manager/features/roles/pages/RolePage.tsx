@@ -2,13 +2,13 @@ import { Alert, Anchor, Badge, Button, Group, Stack, Tabs, Text } from '@mantine
 import { useEffect, useState } from 'react';
 import type { ReactElement } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { useToast } from '../../../../../packages/overlays/src/main/bindings/react';
-import { appIcons } from '../../../shared/ui/icons';
-import { PageHeader } from '../../../shared/ui/parts';
-import { GrantsTable } from '../../access';
-import { useAccessData, useChanged, useIamService } from '../../iam';
-import { PermissionMatrix } from '../components/PermissionMatrix';
-import { useRoleFlows } from '../flows';
+import { useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
+import { appIcons } from '../../../shared/ui/icons.js';
+import { PageHeader } from '../../../shared/ui/parts.js';
+import { GrantsTable } from '../../access/index.js';
+import { useAccessData, useChanged, useIamService } from '../../iam/index.js';
+import { PermissionMatrix } from '../components/PermissionMatrix.js';
+import { useRoleFlows } from '../flows.js';
 
 export { RolePage };
 

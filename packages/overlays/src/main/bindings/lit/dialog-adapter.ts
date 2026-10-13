@@ -21,7 +21,7 @@ import type {
   DialogAdapterFactory,
   DialogProps,
   DialogSlots,
-} from "../../dialogs/contract/adapter.js";
+} from "../../api/dialogs/adapter.js";
 
 export const litDialogAdapter: DialogAdapterFactory<TemplateResult> = ({
   container,

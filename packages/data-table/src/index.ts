@@ -1,5 +1,4 @@
-import type { DataTable } from './api';
-import { dateColumnEditor, selectColumnEditor, textColumnEditor } from './element/editors';
+import { dateColumnEditor, selectColumnEditor, textColumnEditor } from './element/editors.js';
 import {
   autocompleteColumnFilter,
   booleanColumnFilter,
@@ -7,8 +6,8 @@ import {
   numberRangeColumnFilter,
   selectColumnFilter,
   textColumnFilter,
-} from './element/filters';
-import { setupDataTable } from './element/setupDataTable';
+} from './element/filters.js';
+import { setupDataTable } from './element/setupDataTable.js';
 
 export {
   autocompleteColumnFilter,
@@ -22,7 +21,7 @@ export {
   textColumnEditor,
   textColumnFilter,
 };
-export type { DataTable };
+export type * as dataTable from './api/index.js';
 
 // The main entry, `@local/data-table`: the custom element. React is bundled into its build, so an app needs none.
 // React apps use `@local/data-table/react` instead.

@@ -1,9 +1,9 @@
 import type { ReactElement } from 'react';
-import type { DataTableComponent as Spec } from '../../react/api';
-import { variantOf } from '../actions';
-import type { ActionItem } from '../actions';
-import { ActionButton, ActionMenu } from './widgets';
-import type { ButtonPlacement, MenuEntry } from './widgets';
+import type * as Spec from '../../api/react/index.js';
+import { variantOf } from '../actions.js';
+import type { ActionItem } from '../actions.js';
+import { ActionButton, ActionMenu } from './widgets.js';
+import type { ButtonPlacement, MenuEntry } from './widgets.js';
 
 export { ActionList };
 

@@ -1,4 +1,4 @@
-import type { DataTableComponent } from '../src/react';
+import type { dataTable } from '../src/react/index.js';
 
 export {
   countries,
@@ -215,9 +215,9 @@ async function suggestEmails(query: string, signal: AbortSignal): Promise<readon
 }
 
 async function fetchUsers(
-  query: DataTableComponent.Query,
+  query: dataTable.Query,
   signal: AbortSignal,
-): Promise<DataTableComponent.Result<User>> {
+): Promise<dataTable.Result<User>> {
   await wait(signal);
 
   const found = findUsers(query);
@@ -229,9 +229,9 @@ async function fetchUsers(
 // The source of the "Row grouping" tab: the users grouped by country. The rows come sorted by country first (the
 // table groups consecutive rows), then by the sort of the query, and with the total of every group on the page.
 async function fetchUsersByCountry(
-  query: DataTableComponent.Query,
+  query: dataTable.Query,
   signal: AbortSignal,
-): Promise<DataTableComponent.Result<User>> {
+): Promise<dataTable.Result<User>> {
   await wait(signal);
 
   // A stable sort: within a country, the order of the query's sort stays.
@@ -247,7 +247,7 @@ async function fetchUsersByCountry(
 }
 
 // The users that match the search and the filters of the query, sorted by its sort (all of them, not paged).
-function findUsers(query: DataTableComponent.Query): readonly User[] {
+function findUsers(query: dataTable.Query): readonly User[] {
   const { sort } = query;
   const text = query.search.toLowerCase();
   const { firstName, lastName, email, role, country, dateOfBirth, logins, active } = query.filters;
@@ -318,9 +318,9 @@ function findUsers(query: DataTableComponent.Query): readonly User[] {
 }
 
 async function fetchNothing(
-  _query: DataTableComponent.Query,
+  _query: dataTable.Query,
   signal: AbortSignal,
-): Promise<DataTableComponent.Result<User>> {
+): Promise<dataTable.Result<User>> {
   await wait(signal);
 
   return { rows: [], total: 0 };

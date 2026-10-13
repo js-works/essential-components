@@ -1,5 +1,5 @@
 import type { InputHTMLAttributes, ReactElement, SelectHTMLAttributes } from 'react';
-import { FieldMessage } from './FieldMessage';
+import { FieldMessage } from './FieldMessage.js';
 
 export { CheckboxField, SelectField, TextField };
 

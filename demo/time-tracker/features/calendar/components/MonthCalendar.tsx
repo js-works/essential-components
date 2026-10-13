@@ -1,10 +1,10 @@
 import { Group, Text } from '@mantine/core';
 import { Calendar } from '@mantine/dates';
 import type { ReactElement } from 'react';
-import { absenceOn, isWeekend } from '../../../domain';
-import type { AbsenceKind, TimeData } from '../../../domain';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { absenceColor, absenceText } from '../../../shared/ui/parts';
+import { absenceOn, isWeekend } from '../../../domain/index.js';
+import type { AbsenceKind, TimeData } from '../../../domain/index.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { absenceColor, absenceText } from '../../../shared/ui/parts.js';
 
 export { AbsenceLegend, MonthCalendar };
 

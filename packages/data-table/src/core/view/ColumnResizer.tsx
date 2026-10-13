@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import type { PointerEvent, ReactElement } from 'react';
-import { MIN_COLUMN_WIDTH } from '../utils';
-import * as classes from './classes';
+import { MIN_COLUMN_WIDTH } from '../utils.js';
+import * as classes from './classes.js';
 
 export { ColumnResizer };
 

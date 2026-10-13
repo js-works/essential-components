@@ -1,4 +1,4 @@
-import { createCockpitClass } from './element/createCockpitClass';
+import { createCockpitClass } from './element/createCockpitClass.js';
 
 export { createCockpitClass };
-export type * as Cockpit from './api';
+export type * as cockpit from './api/index.js';

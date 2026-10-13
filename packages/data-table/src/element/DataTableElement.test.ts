@@ -1,15 +1,15 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { DataTable } from '../api';
-import { textColumnEditor } from './editors';
+import type * as DataTable from '../api/index.js';
+import { textColumnEditor } from './editors.js';
 import {
   booleanColumnFilter,
   dateRangeColumnFilter,
   numberRangeColumnFilter,
   selectColumnFilter,
   textColumnFilter,
-} from './filters';
-import { setupDataTable } from './setupDataTable';
+} from './filters.js';
+import { setupDataTable } from './setupDataTable.js';
 
 type Person = { id: number; name: string; city: string };
 

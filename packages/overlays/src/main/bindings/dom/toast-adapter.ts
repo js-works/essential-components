@@ -1,20 +1,15 @@
 // -------------------------------------------------------------------
 // The framework-free rendering adapter. Projects the core's keyed list of ToastViews into
-// the container it was bound to; the core owns all state and behaviour (see view.ts for
-// the adapter contract).
+// the container it was bound to; the core owns all state and behaviour (see api/toasts/adapter.ts
+// for the adapter contract).
 //
 // Its lit and React siblings sit next to it under bindings/ — each is its own entry point,
 // so the main entry pulls in nothing framework-specific.
 // -------------------------------------------------------------------
 
 import { h } from "../../internal/dom.js";
-import type { ToastAdapterFactory } from "../../toasts/contract/api.js";
-
-/**
- * Framework-free adapter. Content is a plain string or a DOM `Node`. Does its
- * own keyed reconciliation of the host list.
- */
-export type DomToastContent = string | Node;
+import type { DomToastContent } from "../../api/dom/content.js";
+import type { ToastAdapterFactory } from "../../api/toasts/adapter.js";
 
 function setAttrIfChanged(el: Element, name: string, value: string) {
   // Avoid re-triggering attributeChangedCallback (e.g. re-injecting the icon)
@@ -54,6 +49,10 @@ function buildActions(actions: { label: DomToastContent }[]): HTMLElement[] {
   );
 }
 
+/**
+ * Framework-free adapter. Content is a plain string or a DOM `Node`. Does its
+ * own keyed reconciliation of the host list.
+ */
 export const domToastAdapter: ToastAdapterFactory<DomToastContent> = ({
   container,
   tag,

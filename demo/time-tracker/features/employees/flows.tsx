@@ -1,9 +1,9 @@
 import { useNavigate } from 'react-router';
-import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react';
-import type { Employee, Team } from '../../domain';
-import { translate } from '../../shared/lib/i18n';
-import { useChanged, useTimeService } from '../tracker';
-import { EmployeeForm } from './components/EmployeeForm';
+import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react/index.js';
+import type { Employee, Team } from '../../domain/index.js';
+import { translate } from '../../shared/lib/i18n/index.js';
+import { useChanged, useTimeService } from '../tracker/index.js';
+import { EmployeeForm } from './components/EmployeeForm.js';
 
 export { useEmployeeFlows };
 

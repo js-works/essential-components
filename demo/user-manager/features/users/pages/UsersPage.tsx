@@ -2,20 +2,20 @@ import { Anchor, Badge, Group, Stack, Text } from '@mantine/core';
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { selectColumnFilter, useDataTableController } from '../../../../../packages/data-table/src/react';
-import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
-import { groupsOf } from '../../../domain';
-import type { AccessData, User } from '../../../domain';
-import { formatDateTime } from '../../../shared/lib/format';
-import { oneOf } from '../../../shared/lib/localQuery';
-import { DataTable } from '../../../shared/ui/dataTable';
-import { appIcons } from '../../../shared/ui/icons';
-import { PageHeader, UserAvatar } from '../../../shared/ui/parts';
-import { sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters';
-import { useGrantAccess } from '../../access';
-import { useTableSource } from '../../iam';
-import { DEPARTMENTS } from '../components/UserForm';
-import { useUserFlows } from '../flows';
+import { selectColumnFilter, useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
+import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import { groupsOf } from '../../../domain/index.js';
+import type { AccessData, User } from '../../../domain/index.js';
+import { formatDateTime } from '../../../shared/lib/format.js';
+import { oneOf } from '../../../shared/lib/localQuery.js';
+import { DataTable } from '../../../shared/ui/dataTable.js';
+import { appIcons } from '../../../shared/ui/icons.js';
+import { PageHeader, UserAvatar } from '../../../shared/ui/parts.js';
+import { sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters.js';
+import { useGrantAccess } from '../../access/index.js';
+import { useTableSource } from '../../iam/index.js';
+import { DEPARTMENTS } from '../components/UserForm.js';
+import { useUserFlows } from '../flows.js';
 
 export { UsersPage };
 
@@ -36,7 +36,7 @@ function userRows(data: AccessData): UserRow[] {
 }
 
 // The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
-const COLLEAGUES_FILTERS: readonly DataTableComponent.SavedFilter[] = [
+const COLLEAGUES_FILTERS: readonly dataTable.SavedFilter[] = [
   sharedBy('Laura Schmidt', 'Disabled users', { status: ['Disabled'] }),
   sharedBy('Max Müller', 'IT and Finance', { department: ['IT', 'Finance'] }),
 ];
@@ -56,7 +56,7 @@ function UsersPage(): ReactElement {
     },
   }, nav.reload);
 
-  const columns = useMemo((): readonly DataTableComponent.Column<UserRow>[] => [
+  const columns = useMemo((): readonly dataTable.Column<UserRow>[] => [
     {
       key: 'name',
       header: 'Name',
@@ -110,7 +110,7 @@ function UsersPage(): ReactElement {
     },
   ], []);
 
-  const actions = useMemo((): readonly DataTableComponent.Action<UserRow>[] => [
+  const actions = useMemo((): readonly dataTable.Action<UserRow>[] => [
     {
       type: 'general',
       key: 'new',

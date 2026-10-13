@@ -1,14 +1,14 @@
-import type { DataTableComponent } from '../../../../packages/data-table/src/react';
-import type { FileUpload } from '../../../../packages/file-upload/src';
-import type { MeetingDocument } from '../../domain';
-import { AppError } from './errors';
-import { CURRENT_USER, localDateTime, typeOf } from './helpers';
-import { matches, oneOf, runQuery, within } from './query';
-import { db, LOADING_TIME, newId, save, wait } from './store';
+import type { dataTable } from '../../../../packages/data-table/src/react/index.js';
+import type { fileUpload } from '../../../../packages/file-upload/src/index.js';
+import type { MeetingDocument } from '../../domain/index.js';
+import { AppError } from './errors.js';
+import { CURRENT_USER, localDateTime, typeOf } from './helpers.js';
+import { matches, oneOf, runQuery, within } from './query.js';
+import { db, LOADING_TIME, newId, save, wait } from './store.js';
 
 export { commitDocuments, deleteDocuments, discardDocuments, fetchDocuments, renameDocument, uploadDocument };
 
-function fetchDocuments(meetingId: string): DataTableComponent.Source<MeetingDocument> {
+function fetchDocuments(meetingId: string): dataTable.Source<MeetingDocument> {
   return async (query, signal) => {
     await wait(LOADING_TIME, signal);
 
@@ -31,7 +31,7 @@ function fetchDocuments(meetingId: string): DataTableComponent.Source<MeetingDoc
 // `commitDocuments` adds staged files ("Apply" of the upload drawer), `discardDocuments` drops them ("Cancel").
 const staged = new Map<string, MeetingDocument>();
 
-function uploadDocument(meetingId: string): FileUpload.Upload {
+function uploadDocument(meetingId: string): fileUpload.Upload {
   return async (file, { signal, onProgress }) => {
     const duration = Math.min(4000, 800 + file.size / 1000);
     const steps = 10;

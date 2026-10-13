@@ -2,9 +2,8 @@
 // Tiny DOM helpers shared by the framework-free dialog and toast cores.
 // -------------------------------------------------------------------
 
-// Recursive: a child may be an array of children, which appendChildren flattens.
-export type Child = Node | string | number | boolean | null | undefined | Child[];
-export type Attrs = Record<string, unknown>;
+// A child may be an array of children, which appendChildren flattens.
+import type { Attrs, Child } from "../api/dom/content.js";
 
 // Build an element. Props: `class` sets className; `on*` function props add listeners
 // (onClick -> "click"); `true` sets a boolean attribute; other values set attributes.

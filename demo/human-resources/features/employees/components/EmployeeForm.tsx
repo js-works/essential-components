@@ -2,12 +2,12 @@ import { Divider, Group, NumberInput, SimpleGrid, Stack, Switch, Text, Textarea,
 import { DatePickerInput } from '@mantine/dates';
 import type { ReactElement } from 'react';
 import { z } from 'zod';
-import { EMPLOYMENT_TYPES, todayDate } from '../../../domain';
-import type { Employee, HrData } from '../../../domain';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { useForm } from '../../../shared/lib/useForm';
-import { FormSelect } from '../../../shared/ui/FormSelect';
-import { departmentOptions, managerOptions } from '../../hr';
+import { EMPLOYMENT_TYPES, todayDate } from '../../../domain/index.js';
+import type { Employee, HrData } from '../../../domain/index.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { useForm } from '../../../shared/lib/useForm.js';
+import { FormSelect } from '../../../shared/ui/FormSelect.js';
+import { departmentOptions, managerOptions } from '../../hr/index.js';
 
 export { EmployeeForm, employeeSchema, newEmployeeSchema };
 

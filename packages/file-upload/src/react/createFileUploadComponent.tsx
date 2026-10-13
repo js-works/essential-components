@@ -1,15 +1,15 @@
 import { createElement, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactNode, Ref } from 'react';
-import type * as Spec from '../api';
-import { DEFAULT_THEME, DENSITY_PADDING } from '../element/styles';
-import type * as ReactSpec from './api';
+import type * as Spec from '../api/index.js';
+import type * as ReactSpec from '../api/react/index.js';
+import { DEFAULT_THEME, DENSITY_PADDING } from '../element/styles.js';
 
 export { createFileUploadComponent };
 
 // The element class, registered under its tag name, and the internal setter for an adapter per element.
 type Registration = {
   readonly tag: string;
-  readonly setI18nAdapter: (element: Spec.Element, adapter: Spec.I18nAdapter | undefined) => void;
+  readonly setI18nAdapter: (element: Spec.FileUploadElement, adapter: Spec.I18nAdapter | undefined) => void;
 };
 
 // The props that become properties of the element, with the value for "not set".
@@ -25,7 +25,7 @@ const PROPERTY_DEFAULTS = {
   disabled: false,
   name: undefined,
   required: false,
-} as const satisfies Partial<Record<keyof Spec.Element, unknown>>;
+} as const satisfies Partial<Record<keyof Spec.FileUploadElement, unknown>>;
 
 const PROPERTIES = Object.keys(PROPERTY_DEFAULTS) as readonly (keyof typeof PROPERTY_DEFAULTS)[];
 
@@ -45,7 +45,7 @@ const useNoI18nAdapter = (): Spec.I18nAdapter | undefined => undefined;
 // A React component for the file upload element. The call itself has no side effect (it also works on the server): the
 // element class is created and registered on the first mount on the client. Until then (and on the server) the
 // component renders a placeholder with the height of the empty element.
-function createFileUploadComponent(config: ReactSpec.Config = {}): (props: ReactSpec.Props) => ReactNode {
+function createFileUploadComponent(config: ReactSpec.ComponentConfig = {}): (props: ReactSpec.Props) => ReactNode {
   const { i18n, tagName, ...rest } = config;
   const fontSize = config.theme?.fontSize ?? DEFAULT_THEME.fontSize;
   let registration: Promise<Registration> | undefined;
@@ -62,7 +62,7 @@ function createFileUploadComponent(config: ReactSpec.Config = {}): (props: React
   const useI18nAdapter = i18n?.type === 'hook' ? i18n.useAdapter : useNoI18nAdapter;
 
   const register = () =>
-    registration ??= import('./client').then(({ createFileUploadClass, setElementI18nAdapter }) => {
+    registration ??= import('./client.js').then(({ createFileUploadClass, setElementI18nAdapter }) => {
       const elementClass = createFileUploadClass(elementConfig);
       const tag = tagName ?? freeTagName();
 
@@ -77,7 +77,7 @@ function createFileUploadComponent(config: ReactSpec.Config = {}): (props: React
     const adapter = useI18nAdapter();
     const [registered, setRegistered] = useState<Registration>();
     const [failure, setFailure] = useState<{ error: unknown }>();
-    const [element, setElement] = useState<Spec.Element | null>(null);
+    const [element, setElement] = useState<Spec.FileUploadElement | null>(null);
     const onChangeRef = useRef(onChange);
 
     // Client only: effects do not run on the server.
@@ -182,7 +182,10 @@ function freeTagName(): string {
 }
 
 // Sets the app's ref to the element, and back to `null` when it goes away. A callback ref may return its own cleanup.
-function assignRef(ref: Ref<Spec.Element> | undefined, element: Spec.Element): (() => void) | undefined {
+function assignRef(
+  ref: Ref<Spec.FileUploadElement> | undefined,
+  element: Spec.FileUploadElement,
+): (() => void) | undefined {
   if (typeof ref === 'function') {
     const cleanup = ref(element);
 

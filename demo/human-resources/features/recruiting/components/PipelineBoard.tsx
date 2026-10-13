@@ -2,13 +2,13 @@ import { ActionIcon, Anchor, Group, Menu, Stack, Text } from '@mantine/core';
 import { useState } from 'react';
 import type { DragEvent, ReactElement } from 'react';
 import { Link } from 'react-router';
-import { PIPELINE, STAGES } from '../../../domain';
-import type { Candidate, HrData, Opening, Stage } from '../../../domain';
-import { formatDate } from '../../../shared/lib/format';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { appIcons } from '../../../shared/ui/icons';
-import { EmployeeAvatar, Rating } from '../../../shared/ui/parts';
-import { useRecruitingFlows } from '../flows';
+import { PIPELINE, STAGES } from '../../../domain/index.js';
+import type { Candidate, HrData, Opening, Stage } from '../../../domain/index.js';
+import { formatDate } from '../../../shared/lib/format.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { appIcons } from '../../../shared/ui/icons.js';
+import { EmployeeAvatar, Rating } from '../../../shared/ui/parts.js';
+import { useRecruitingFlows } from '../flows.js';
 
 export { PipelineBoard };
 

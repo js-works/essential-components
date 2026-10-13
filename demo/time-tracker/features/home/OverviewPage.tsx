@@ -1,16 +1,16 @@
 import { Anchor, Grid, Group, Loader, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';
-import { absenceOn, addDays, daySheet, membersOf, vacationBalance, weekStart } from '../../domain';
-import type { Employee, TimeData } from '../../domain';
-import { formatDateRange, formatDays, formatDuration } from '../../shared/lib/format';
-import { useTranslate } from '../../shared/lib/i18n';
-import { useNow } from '../../shared/lib/useNow';
-import { AbsenceBadge, EmployeeLabel, PageHeader, StatCard } from '../../shared/ui/parts';
-import { AbsenceLegend, MonthCalendar } from '../calendar';
-import { ClockCard } from '../clock';
-import { useTimeData } from '../tracker';
-import { useViewer } from '../viewer';
+import { absenceOn, addDays, daySheet, membersOf, vacationBalance, weekStart } from '../../domain/index.js';
+import type { Employee, TimeData } from '../../domain/index.js';
+import { formatDateRange, formatDays, formatDuration } from '../../shared/lib/format.js';
+import { useTranslate } from '../../shared/lib/i18n/index.js';
+import { useNow } from '../../shared/lib/useNow.js';
+import { AbsenceBadge, EmployeeLabel, PageHeader, StatCard } from '../../shared/ui/parts.js';
+import { AbsenceLegend, MonthCalendar } from '../calendar/index.js';
+import { ClockCard } from '../clock/index.js';
+import { useTimeData } from '../tracker/index.js';
+import { useViewer } from '../viewer/index.js';
 
 export { OverviewPage };
 

@@ -2,21 +2,21 @@ import { Group, Text } from '@mantine/core';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
-import { useDataTableController } from '../../../../packages/data-table/src/react';
-import type { DataTableComponent } from '../../../../packages/data-table/src/react';
-import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react';
-import { countText, formatDateTime, formatSize } from '../../shared/lib/format';
-import { useQuerySource } from '../../shared/lib/useQuerySource';
-import { DataTable } from '../../shared/ui/dataTable';
-import { appIcons, kindIcon } from '../../shared/ui/icons';
-import { browserKeys, confirmAndRun, KIND_LABELS, useBrowserService } from '../browser';
-import type { TrashRow, TrashSortKey } from '../browser';
+import { useDataTableController } from '../../../../packages/data-table/src/react/index.js';
+import type { dataTable } from '../../../../packages/data-table/src/react/index.js';
+import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react/index.js';
+import { countText, formatDateTime, formatSize } from '../../shared/lib/format.js';
+import { useQuerySource } from '../../shared/lib/useQuerySource.js';
+import { DataTable } from '../../shared/ui/dataTable.js';
+import { appIcons, kindIcon } from '../../shared/ui/icons.js';
+import { browserKeys, confirmAndRun, KIND_LABELS, useBrowserService } from '../browser/index.js';
+import type { TrashRow, TrashSortKey } from '../browser/index.js';
 
 export { TrashPage };
 
 const SORT_KEYS: readonly TrashSortKey[] = ['name', 'size', 'from', 'deletedAt', 'owner'];
 
-function toSort(query: DataTableComponent.Query) {
+function toSort(query: dataTable.Query) {
   const key = query.sort?.key as TrashSortKey | undefined;
 
   return query.sort !== undefined && key !== undefined && SORT_KEYS.includes(key)
@@ -24,7 +24,7 @@ function toSort(query: DataTableComponent.Query) {
     : undefined;
 }
 
-const toPaging = (query: DataTableComponent.Query) => ({
+const toPaging = (query: dataTable.Query) => ({
   offset: (query.page - 1) * query.pageSize,
   limit: query.pageSize,
 });
@@ -52,7 +52,7 @@ function TrashPage(): ReactElement {
     nav.reload,
   );
 
-  const columns = useMemo((): readonly DataTableComponent.Column<TrashRow>[] => [
+  const columns = useMemo((): readonly dataTable.Column<TrashRow>[] => [
     {
       key: 'name',
       header: 'Name',
@@ -100,7 +100,7 @@ function TrashPage(): ReactElement {
     { key: 'owner', header: 'Owner', width: 2, sortable: true, hideable: true },
   ], []);
 
-  const actions = useMemo((): readonly DataTableComponent.Action<TrashRow>[] => {
+  const actions = useMemo((): readonly dataTable.Action<TrashRow>[] => {
     const changed = () => queryClient.invalidateQueries({ queryKey: browserKeys.all });
 
     const restore = async (rows: readonly TrashRow[]) => {

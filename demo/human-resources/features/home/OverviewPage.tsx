@@ -11,15 +11,15 @@ import {
   statusOf,
   todayDate,
   upcomingEvents,
-} from '../../domain';
-import type { HrData, UpcomingEvent } from '../../domain';
-import { formatDayMonth, formatRelativeDays } from '../../shared/lib/format';
-import { useTranslate } from '../../shared/lib/i18n';
-import { appIcons } from '../../shared/ui/icons';
-import { EmployeeLabel, PageHeader, StatCard } from '../../shared/ui/parts';
-import { taskTitle } from '../checklists';
-import { headcount } from '../departments';
-import { employeeOf, useHrData } from '../hr';
+} from '../../domain/index.js';
+import type { HrData, UpcomingEvent } from '../../domain/index.js';
+import { formatDayMonth, formatRelativeDays } from '../../shared/lib/format.js';
+import { useTranslate } from '../../shared/lib/i18n/index.js';
+import { appIcons } from '../../shared/ui/icons.js';
+import { EmployeeLabel, PageHeader, StatCard } from '../../shared/ui/parts.js';
+import { taskTitle } from '../checklists/index.js';
+import { headcount } from '../departments/index.js';
+import { employeeOf, useHrData } from '../hr/index.js';
 
 export { OverviewPage };
 

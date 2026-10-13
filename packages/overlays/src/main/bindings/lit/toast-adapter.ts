@@ -8,8 +8,8 @@
 import { render } from "lit-html";
 import { html, unsafeStatic } from "lit-html/static.js";
 import { repeat } from "lit-html/directives/repeat.js";
-import type { TemplateResult } from "lit-html";
-import type { ToastAdapterFactory } from "../../toasts/contract/api.js";
+import type { LitContent } from "../../api/lit/content.js";
+import type { ToastAdapterFactory } from "../../api/toasts/adapter.js";
 
 /**
  * lit-html adapter. Content is a lit `TemplateResult` or a plain string. The
@@ -17,8 +17,6 @@ import type { ToastAdapterFactory } from "../../toasts/contract/api.js";
  * position, leaking the imperative slide-out transform onto whichever
  * toast lands in that slot after a re-render.
  */
-export type LitContent = string | TemplateResult;
-
 export const litToastAdapter: ToastAdapterFactory<LitContent> = ({
   container,
   tag,

@@ -14,21 +14,21 @@ import {
   useNavigationType,
 } from 'react-router';
 import type { Params, RouteObject } from 'react-router';
-import { BoardPage } from '../features/boards/pages/BoardPage';
-import { BoardsPage } from '../features/boards/pages/BoardsPage';
-import { HomePage } from '../features/home/pages/HomePage';
-import { MeetingPage } from '../features/meetings/pages/MeetingPage';
-import { MeetingsPage } from '../features/meetings/pages/MeetingsPage';
-import { MemberPage } from '../features/members/pages/MemberPage';
-import { MembersPage } from '../features/members/pages/MembersPage';
-import { OrganizationPage } from '../features/organizations/pages/OrganizationPage';
-import { OrganizationsPage } from '../features/organizations/pages/OrganizationsPage';
-import { getBoard, getMeeting, getOrganization, getPerson } from '../infra/in-memory';
-import { i18n, useTranslate } from '../shared/lib/i18n';
-import type { Translate } from '../shared/lib/i18n';
-import { appIcons, useDb } from '../shared/shared';
-import { NotFound } from '../shared/ui/NotFound';
-import { mirrorInHash, pathFromHash } from './hashHistory';
+import { BoardPage } from '../features/boards/pages/BoardPage.js';
+import { BoardsPage } from '../features/boards/pages/BoardsPage.js';
+import { HomePage } from '../features/home/pages/HomePage.js';
+import { MeetingPage } from '../features/meetings/pages/MeetingPage.js';
+import { MeetingsPage } from '../features/meetings/pages/MeetingsPage.js';
+import { MemberPage } from '../features/members/pages/MemberPage.js';
+import { MembersPage } from '../features/members/pages/MembersPage.js';
+import { OrganizationPage } from '../features/organizations/pages/OrganizationPage.js';
+import { OrganizationsPage } from '../features/organizations/pages/OrganizationsPage.js';
+import { getBoard, getMeeting, getOrganization, getPerson } from '../infra/in-memory/index.js';
+import { i18n, useTranslate } from '../shared/lib/i18n/index.js';
+import type { Translate } from '../shared/lib/i18n/index.js';
+import { appIcons, useDb } from '../shared/shared.js';
+import { NotFound } from '../shared/ui/NotFound.js';
+import { mirrorInHash, pathFromHash } from './hashHistory.js';
 
 export { createAppRouter };
 

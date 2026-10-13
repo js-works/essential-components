@@ -1,4 +1,4 @@
-import { checklistAnchor, dateOf, descendantIds, fullName, splitName, tasksFromTemplate } from '../../domain';
+import { checklistAnchor, dateOf, descendantIds, fullName, splitName, tasksFromTemplate } from '../../domain/index.js';
 import type {
   CandidateRepository,
   ChecklistRepository,
@@ -8,10 +8,10 @@ import type {
   EmployeeRepository,
   OpeningRepository,
   SalaryRepository,
-} from '../../domain';
-import { AppError } from './errors';
-import { seed } from './seed';
-import type { Data } from './seed';
+} from '../../domain/index.js';
+import { AppError } from './errors.js';
+import { seed } from './seed.js';
+import type { Data } from './seed.js';
 
 export { createInMemoryRepositories };
 export type { Repositories };

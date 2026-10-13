@@ -1,7 +1,7 @@
 import { Badge, Checkbox, Group, Paper, Stack, Table, Text } from '@mantine/core';
 import type { ReactElement } from 'react';
-import { permissionParts } from '../../../domain';
-import type { Permission, Scope } from '../../../domain';
+import { permissionParts } from '../../../domain/index.js';
+import type { Permission, Scope } from '../../../domain/index.js';
 
 export { PermissionMatrix };
 

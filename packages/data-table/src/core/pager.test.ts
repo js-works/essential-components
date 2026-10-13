@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { pagerSlots } from './pager';
+import { pagerSlots } from './pager.js';
 
 describe('pagerSlots', () => {
   it('shows every page up to seven', () => {

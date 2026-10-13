@@ -1,4 +1,4 @@
-import type { Texts } from './api';
+import type { Texts } from './api/texts.js';
 
 export { textsFor };
 

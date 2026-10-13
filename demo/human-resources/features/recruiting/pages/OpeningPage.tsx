@@ -2,15 +2,15 @@ import { Button, Group, Loader, Paper, SimpleGrid, Stack, Tabs, Text } from '@ma
 import { useState } from 'react';
 import type { ReactElement } from 'react';
 import { useParams } from 'react-router';
-import { daysBetween, isInProcess, todayDate } from '../../../domain';
-import { formatDate } from '../../../shared/lib/format';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { appIcons } from '../../../shared/ui/icons';
-import { Detail, EmployeeLabel, OpeningStatusBadge, PageHeader } from '../../../shared/ui/parts';
-import { departmentName, employeeOf, useHrData } from '../../hr';
-import { CandidatesTable } from '../components/CandidatesTable';
-import { PipelineBoard } from '../components/PipelineBoard';
-import { useRecruitingFlows } from '../flows';
+import { daysBetween, isInProcess, todayDate } from '../../../domain/index.js';
+import { formatDate } from '../../../shared/lib/format.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { appIcons } from '../../../shared/ui/icons.js';
+import { Detail, EmployeeLabel, OpeningStatusBadge, PageHeader } from '../../../shared/ui/parts.js';
+import { departmentName, employeeOf, useHrData } from '../../hr/index.js';
+import { CandidatesTable } from '../components/CandidatesTable.js';
+import { PipelineBoard } from '../components/PipelineBoard.js';
+import { useRecruitingFlows } from '../flows.js';
 
 export { OpeningPage };
 

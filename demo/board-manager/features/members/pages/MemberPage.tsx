@@ -2,18 +2,18 @@ import { Anchor, Button, Group, SimpleGrid, Stack, Tabs, Text } from '@mantine/c
 import { Fragment, useMemo, useState } from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { useDataTableController } from '../../../../../packages/data-table/src/react';
-import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
-import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react';
-import type { Person } from '../../../domain';
-import { boardIdsOf, fetchMemberships, getOrganization, getPerson } from '../../../infra/in-memory';
-import type { MembershipRow } from '../../../infra/in-memory';
-import { useTranslate } from '../../../shared/lib/i18n';
-import type { Translate } from '../../../shared/lib/i18n';
-import { appIcons, DataTable, formatDate, PAGE_SIZE_OPTIONS, PageHeader, useDb } from '../../../shared/shared';
-import { NotFound } from '../../../shared/ui/NotFound';
-import { MeetingsTable } from '../../meetings/components/MeetingsTable';
-import { deletePeopleFlow, editPerson } from '../components/PeopleTable';
+import { useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
+import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
+import type { Person } from '../../../domain/index.js';
+import { boardIdsOf, fetchMemberships, getOrganization, getPerson } from '../../../infra/in-memory/index.js';
+import type { MembershipRow } from '../../../infra/in-memory/index.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import type { Translate } from '../../../shared/lib/i18n/index.js';
+import { appIcons, DataTable, formatDate, PAGE_SIZE_OPTIONS, PageHeader, useDb } from '../../../shared/shared.js';
+import { NotFound } from '../../../shared/ui/NotFound.js';
+import { MeetingsTable } from '../../meetings/components/MeetingsTable.js';
+import { deletePeopleFlow, editPerson } from '../components/PeopleTable.js';
 
 export { MemberPage };
 
@@ -128,7 +128,7 @@ function MemberOverview({ person }: { person: Person }): ReactElement {
   );
 }
 
-const membershipColumnsOf = (t: Translate): readonly DataTableComponent.Column<MembershipRow>[] => [
+const membershipColumnsOf = (t: Translate): readonly dataTable.Column<MembershipRow>[] => [
   {
     key: 'board',
     header: t('members.columns.board'),
@@ -160,7 +160,7 @@ function MembershipsTable({ personId }: { personId: string }): ReactElement {
   const nav = useDataTableController<MembershipRow>();
   const navigate = useNavigate();
   const source = useMemo(() => fetchMemberships(personId), [personId]);
-  const actions = useMemo<readonly DataTableComponent.Action<MembershipRow>[]>(() => [
+  const actions = useMemo<readonly dataTable.Action<MembershipRow>[]>(() => [
     {
       type: 'singleRow',
       key: 'open',

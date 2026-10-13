@@ -1,9 +1,9 @@
-import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react';
-import type { Department, HrData } from '../../domain';
-import { errorText } from '../../shared/lib/errorText';
-import { translate } from '../../shared/lib/i18n';
-import { useChanged, useHrService } from '../hr';
-import { DepartmentForm } from './components/DepartmentForm';
+import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react/index.js';
+import type { Department, HrData } from '../../domain/index.js';
+import { errorText } from '../../shared/lib/errorText.js';
+import { translate } from '../../shared/lib/i18n/index.js';
+import { useChanged, useHrService } from '../hr/index.js';
+import { DepartmentForm } from './components/DepartmentForm.js';
 
 export { useDepartmentFlows };
 

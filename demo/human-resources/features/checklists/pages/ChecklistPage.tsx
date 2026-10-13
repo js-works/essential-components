@@ -16,15 +16,15 @@ import {
 } from '@mantine/core';
 import type { ReactElement } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { checklistAnchor, daysBetween, isOverdue, progressOf, TASK_OWNERS, todayDate } from '../../../domain';
-import type { Checklist, ChecklistTask, HrData, TaskOwner } from '../../../domain';
-import { formatDate, formatRelativeDays } from '../../../shared/lib/format';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { appIcons } from '../../../shared/ui/icons';
-import { EmployeeAvatar, PageHeader } from '../../../shared/ui/parts';
-import { departmentName, employeeOf, useHrData } from '../../hr';
-import { useChecklistFlows } from '../flows';
-import { taskTitle } from '../taskTitle';
+import { checklistAnchor, daysBetween, isOverdue, progressOf, TASK_OWNERS, todayDate } from '../../../domain/index.js';
+import type { Checklist, ChecklistTask, HrData, TaskOwner } from '../../../domain/index.js';
+import { formatDate, formatRelativeDays } from '../../../shared/lib/format.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { appIcons } from '../../../shared/ui/icons.js';
+import { EmployeeAvatar, PageHeader } from '../../../shared/ui/parts.js';
+import { departmentName, employeeOf, useHrData } from '../../hr/index.js';
+import { useChecklistFlows } from '../flows.js';
+import { taskTitle } from '../taskTitle.js';
 
 export { ChecklistPage };
 

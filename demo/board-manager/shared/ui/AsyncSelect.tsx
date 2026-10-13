@@ -2,7 +2,7 @@ import { CheckIcon, Group, Loader, Select, Text } from '@mantine/core';
 import type { ComboboxItem } from '@mantine/core';
 import { forwardRef, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { useTranslate } from '../lib/i18n';
+import { useTranslate } from '../lib/i18n/index.js';
 
 export { AsyncSelect };
 export type { AsyncOption };

@@ -1,11 +1,11 @@
 import type { ReactElement, ReactNode } from 'react';
-import type { DataTable } from '../api';
-import { createDataTableController, subscribeToSelection } from '../core/controller';
-import { DataTableView } from '../core/view/DataTableView';
-import type { DataTableComponent as Spec } from '../react/api';
-import type { ContentRenderer } from './content';
-import { editorOf } from './editors';
-import { reactFilterOf } from './filters';
+import type * as DataTable from '../api/index.js';
+import type * as Spec from '../api/react/index.js';
+import { createDataTableController, subscribeToSelection } from '../core/controller.js';
+import { DataTableView } from '../core/view/DataTableView.js';
+import type { ContentRenderer } from './content.js';
+import { editorOf } from './editors.js';
+import { reactFilterOf } from './filters.js';
 
 export { bindController, controllerFactoryOf, releaseController, renderController };
 export type { ElementSettings };

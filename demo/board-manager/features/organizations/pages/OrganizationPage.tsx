@@ -2,15 +2,15 @@ import { Button, Group, SimpleGrid, Stack, Tabs, Text } from '@mantine/core';
 import { Fragment, useState } from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react';
-import type { Organization } from '../../../domain';
-import { getOrganization } from '../../../infra/in-memory';
-import { countryName } from '../../../shared/lib/countries';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { appIcons, PageHeader, useDb } from '../../../shared/shared';
-import { NotFound } from '../../../shared/ui/NotFound';
-import { PeopleTable } from '../../members/components/PeopleTable';
-import { deleteOrganizationsFlow, editOrganization, WebsiteLink } from './OrganizationsPage';
+import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
+import type { Organization } from '../../../domain/index.js';
+import { getOrganization } from '../../../infra/in-memory/index.js';
+import { countryName } from '../../../shared/lib/countries.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { appIcons, PageHeader, useDb } from '../../../shared/shared.js';
+import { NotFound } from '../../../shared/ui/NotFound.js';
+import { PeopleTable } from '../../members/components/PeopleTable.js';
+import { deleteOrganizationsFlow, editOrganization, WebsiteLink } from './OrganizationsPage.js';
 
 export { OrganizationPage };
 

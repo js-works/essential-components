@@ -10,7 +10,7 @@ const isTest = (path: string) => /\.test\.tsx?$/.test(path);
 // The parts, in order. Every file belongs to the first part that matches it.
 const PARTS = [
   { name: 'tests', matches: isTest },
-  { name: 'api', matches: (path: string) => path === 'src/api.ts' || path === 'src/index.ts' },
+  { name: 'api', matches: (path: string) => path.startsWith('src/api/') || path === 'src/index.ts' },
   { name: 'core (plain TS)', matches: (path: string) => path.startsWith('src/core/') },
   { name: 'element (UI)', matches: (path: string) => path.startsWith('src/element/') },
   { name: 'react', matches: (path: string) => path.startsWith('src/react/') },

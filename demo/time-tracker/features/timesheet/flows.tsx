@@ -1,11 +1,11 @@
-import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react';
-import type { Correction, Decision, Employee } from '../../domain';
-import { formatDate, formatTime } from '../../shared/lib/format';
-import { translate } from '../../shared/lib/i18n';
-import { DecisionForm } from '../../shared/ui/DecisionForm';
-import { useChanged, useTimeService } from '../tracker';
-import { useViewer } from '../viewer';
-import { CorrectionForm } from './components/CorrectionForm';
+import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react/index.js';
+import type { Correction, Decision, Employee } from '../../domain/index.js';
+import { formatDate, formatTime } from '../../shared/lib/format.js';
+import { translate } from '../../shared/lib/i18n/index.js';
+import { DecisionForm } from '../../shared/ui/DecisionForm.js';
+import { useChanged, useTimeService } from '../tracker/index.js';
+import { useViewer } from '../viewer/index.js';
+import { CorrectionForm } from './components/CorrectionForm.js';
 
 export { useCorrectionFlows };
 

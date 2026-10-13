@@ -1,11 +1,18 @@
 // The design language first, so the CSS of the demos comes after it.
 import './ui/ui.css';
 import './demo.css';
-import { accentSetting, MENU, navigationSetting, pageSettings, USER, userMenu } from '../packages/cockpit/demo/footer';
-import { createCockpitClass } from '../packages/cockpit/src';
-import type { Cockpit } from '../packages/cockpit/src';
-import { mountLoginScreen } from '../packages/login/src';
-import type { Login } from '../packages/login/src';
+import {
+  accentSetting,
+  MENU,
+  navigationSetting,
+  pageSettings,
+  USER,
+  userMenu,
+} from '../packages/cockpit/demo/footer.js';
+import { createCockpitClass } from '../packages/cockpit/src/index.js';
+import type { cockpit } from '../packages/cockpit/src/index.js';
+import { mountLoginScreen } from '../packages/login/src/index.js';
+import type { login } from '../packages/login/src/index.js';
 
 // The page: an app cockpit, with every demo as one of its mini-apps. The page's settings (in the cockpit's footer) set
 // `<html lang>` and the color scheme for every demo. Each demo is a light DOM custom element of its project, loaded
@@ -18,7 +25,7 @@ function define(tag: string, element: CustomElementConstructor): void {
 
 // The placeholder of the planned components (one element for all, told apart by its attributes).
 const planned = async () => {
-  define('planned-demo', (await import('./planned/PlannedDemo')).PlannedDemo);
+  define('planned-demo', (await import('./planned/PlannedDemo.js')).PlannedDemo);
 };
 
 // Prototypes to try out, in a section of the kebab menu (2026-10-09, the user's wish), before "Reset demo": a check
@@ -36,7 +43,7 @@ try {
   document.documentElement.setAttribute(FILTER_DRAWER, '');
 }
 
-const prototypesSection: Cockpit.MenuSection = {
+const prototypesSection: cockpit.MenuSection = {
   label: 'Prototypes',
   items: [{
     id: 'filter-drawer',
@@ -55,7 +62,7 @@ const prototypesSection: Cockpit.MenuSection = {
 };
 
 // The made-up kebab menu of the cockpit's demo, with the prototypes before its last section ("Reset demo").
-const menu: Cockpit.Footer['menu'] = MENU === undefined
+const menu: cockpit.Footer['menu'] = MENU === undefined
   ? [prototypesSection]
   : [...MENU.slice(0, -1), prototypesSection, ...MENU.slice(-1)];
 
@@ -147,7 +154,7 @@ customElements.define(
         load: async () => {
           define(
             'human-resources-demo',
-            (await import('./human-resources/app/HumanResourcesDemo')).HumanResourcesDemo,
+            (await import('./human-resources/app/HumanResourcesDemo.js')).HumanResourcesDemo,
           );
         },
       },
@@ -161,7 +168,7 @@ customElements.define(
         icon: icon('<path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/><path d="M12 7v5l3 3"/>'),
         element: 'time-tracker-demo',
         load: async () => {
-          define('time-tracker-demo', (await import('./time-tracker/app/TimeTrackerDemo')).TimeTrackerDemo);
+          define('time-tracker-demo', (await import('./time-tracker/app/TimeTrackerDemo.js')).TimeTrackerDemo);
         },
       },
       {
@@ -176,7 +183,7 @@ customElements.define(
         ),
         element: 'board-manager-demo',
         load: async () => {
-          define('board-manager-demo', (await import('./board-manager/app/BoardManagerDemo')).BoardManagerDemo);
+          define('board-manager-demo', (await import('./board-manager/app/BoardManagerDemo.js')).BoardManagerDemo);
         },
       },
       {
@@ -190,7 +197,7 @@ customElements.define(
         ),
         element: 'file-center-demo',
         load: async () => {
-          define('file-center-demo', (await import('./file-center/app/FileCenterDemo')).FileCenterDemo);
+          define('file-center-demo', (await import('./file-center/app/FileCenterDemo.js')).FileCenterDemo);
         },
       },
       {
@@ -204,7 +211,7 @@ customElements.define(
         ),
         element: 'user-manager-demo',
         load: async () => {
-          define('user-manager-demo', (await import('./user-manager/app/UserManagerDemo')).UserManagerDemo);
+          define('user-manager-demo', (await import('./user-manager/app/UserManagerDemo.js')).UserManagerDemo);
         },
       },
       {
@@ -217,7 +224,7 @@ customElements.define(
         load: async () => {
           define(
             'data-table-demo',
-            (await import('../packages/data-table/demo/DataTableDemo')).DataTableDemo,
+            (await import('../packages/data-table/demo/DataTableDemo.js')).DataTableDemo,
           );
         },
       },
@@ -229,7 +236,7 @@ customElements.define(
         subgroup: 'Components',
         element: 'file-upload-demo',
         load: async () => {
-          define('file-upload-demo', (await import('../packages/file-upload/demo/FileUploadDemo')).FileUploadDemo);
+          define('file-upload-demo', (await import('../packages/file-upload/demo/FileUploadDemo.js')).FileUploadDemo);
         },
       },
       {
@@ -240,7 +247,7 @@ customElements.define(
         subgroup: 'Components',
         element: 'overlays-demo',
         load: async () => {
-          define('overlays-demo', (await import('../packages/overlays/src/demo/OverlaysDemo')).OverlaysDemo);
+          define('overlays-demo', (await import('../packages/overlays/src/demo/OverlaysDemo.js')).OverlaysDemo);
         },
       },
       {
@@ -253,7 +260,7 @@ customElements.define(
         load: async () => {
           define(
             'form-validation-demo',
-            (await import('../packages/form-validation/demo/FormValidationDemo')).FormValidationDemo,
+            (await import('../packages/form-validation/demo/FormValidationDemo.js')).FormValidationDemo,
           );
         },
       },
@@ -277,9 +284,9 @@ customElements.define(
 
 // Signing out (the user menu's "Sign out") shows the login screen in place of the cockpit; any username and password
 // sign in again (a demo: it is about the look). Signed out is remembered per browser, so a reload stays there.
-const cockpit = document.querySelector<HTMLElement>('app-cockpit')!;
+const cockpitElement = document.querySelector<HTMLElement>('app-cockpit')!;
 const loginHost = document.createElement('div');
-let login: Login.Mounted | undefined;
+let loginScreen: login.Mounted | undefined;
 
 const LOGO =
   '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2" opacity="0.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2" opacity="0.6"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></svg>';
@@ -303,20 +310,20 @@ async function signOut(): Promise<void> {
 
   signingOut = true;
   remember(false);
-  cockpit.dataset['fading'] = '';
+  cockpitElement.dataset['fading'] = '';
   await new Promise((resolve) =>
-    setTimeout(resolve, parseFloat(getComputedStyle(cockpit).transitionDuration) * 1000 || 0)
+    setTimeout(resolve, parseFloat(getComputedStyle(cockpitElement).transitionDuration) * 1000 || 0)
   );
-  delete cockpit.dataset['fading'];
+  delete cockpitElement.dataset['fading'];
   showLogin();
   signingOut = false;
 }
 
 function showLogin(): void {
-  cockpit.hidden = true;
+  cockpitElement.hidden = true;
   loginHost.className = 'login-host';
   document.body.append(loginHost);
-  login ??= mountLoginScreen(loginHost, {
+  loginScreen ??= mountLoginScreen(loginHost, {
     title: 'Back Office',
     subtitle: 'Welcome to Acme Corporate',
     logo: LOGO,
@@ -373,10 +380,10 @@ function loginAccent(): string {
 
 function signIn(): void {
   remember(true);
-  login?.unmount();
-  login = undefined;
+  loginScreen?.unmount();
+  loginScreen = undefined;
   loginHost.remove();
-  cockpit.hidden = false;
+  cockpitElement.hidden = false;
 }
 
 try {

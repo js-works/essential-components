@@ -1,14 +1,14 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import { useDialogs } from '../../../../packages/overlays/src/main/bindings/react';
-import { ROOT_ID } from '../../domain';
-import type { Folder, MediaFile } from '../../domain';
-import { FavoriteButton } from './components/Favorite';
-import { FileDetails } from './components/FileDetails';
-import { FolderDetails } from './components/FolderDetails';
-import { useBrowserService } from './context';
-import { browserKeys } from './keys';
-import type { EntryRow } from './service';
+import { useDialogs } from '../../../../packages/overlays/src/main/bindings/react/index.js';
+import { ROOT_ID } from '../../domain/index.js';
+import type { Folder, MediaFile } from '../../domain/index.js';
+import { FavoriteButton } from './components/Favorite.js';
+import { FileDetails } from './components/FileDetails.js';
+import { FolderDetails } from './components/FolderDetails.js';
+import { useBrowserService } from './context.js';
+import { browserKeys } from './keys.js';
+import type { EntryRow } from './service.js';
 
 export { useEntryActions };
 

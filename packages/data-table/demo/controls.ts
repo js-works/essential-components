@@ -1,4 +1,4 @@
-import type { DataTableComponent } from '../src/react';
+import type { dataTable } from '../src/react/index.js';
 
 export type {
   Controls,
@@ -34,7 +34,7 @@ type DemoActions = 'general' | 'single-row' | 'multi-row';
 
 // The settings of the demo.
 // `user`: the app sets no layout, the user chooses it in the column menu.
-type DemoLayout = 'user' | DataTableComponent.Layout;
+type DemoLayout = 'user' | dataTable.Layout;
 
 type Controls = {
   theme: DemoTheme;
@@ -43,16 +43,16 @@ type Controls = {
   setActions: (actions: DemoActions) => void;
   variants: DemoVariants;
   setVariants: (variants: DemoVariants) => void;
-  selectionAppearance: DataTableComponent.SelectionAppearance;
-  rowActionLook: DataTableComponent.RowActionLook;
-  setRowActionLook: (look: DataTableComponent.RowActionLook) => void;
-  setSelectionAppearance: (appearance: DataTableComponent.SelectionAppearance) => void;
-  density: DataTableComponent.Density;
-  setDensity: (density: DataTableComponent.Density) => void;
+  selectionAppearance: dataTable.SelectionAppearance;
+  rowActionLook: dataTable.RowActionLook;
+  setRowActionLook: (look: dataTable.RowActionLook) => void;
+  setSelectionAppearance: (appearance: dataTable.SelectionAppearance) => void;
+  density: dataTable.Density;
+  setDensity: (density: dataTable.Density) => void;
   layout: DemoLayout;
   setLayout: (layout: DemoLayout) => void;
-  footer: DataTableComponent.FooterMode;
-  setFooter: (footer: DataTableComponent.FooterMode) => void;
+  footer: dataTable.FooterMode;
+  setFooter: (footer: dataTable.FooterMode) => void;
   striped: DemoStriped;
   setStriped: (striped: DemoStriped) => void;
   filters: DemoFilters;

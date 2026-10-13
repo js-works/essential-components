@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef } from 'react';
 import type { ReactElement, ReactNode } from 'react';
-import type { DataTable } from '../api';
-import * as classes from '../core/view/classes';
+import type * as DataTable from '../api/index.js';
+import * as classes from '../core/view/classes.js';
 
 export { contentRendererOf, nodeContent };
 export type { ContentRenderer };

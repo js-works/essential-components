@@ -2,9 +2,9 @@ import { Anchor, Avatar, Badge, Group, Paper, SimpleGrid, Stack, Text, useMantin
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';
-import { localDateTime } from '../../../infra/in-memory';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { useDb } from '../../../shared/shared';
+import { localDateTime } from '../../../infra/in-memory/index.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { useDb } from '../../../shared/shared.js';
 
 export { HomeAttention };
 

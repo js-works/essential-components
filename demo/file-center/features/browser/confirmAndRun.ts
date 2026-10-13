@@ -1,4 +1,4 @@
-import type { useDialogs } from '../../../../packages/overlays/src/main/bindings/react';
+import type { useDialogs } from '../../../../packages/overlays/src/main/bindings/react/index.js';
 
 export { confirmAndRun };
 

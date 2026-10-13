@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
-import type { DataTableComponent } from '../src/react';
-import type { DemoActions } from './controls';
-import type { User } from './data';
+import type { dataTable } from '../src/react/index.js';
+import type { DemoActions } from './controls.js';
+import type { User } from './data.js';
 
 export { createActions, fullName };
 export type { DemoIcons };
@@ -10,7 +10,7 @@ function fullName(user: User): string {
   return `${user.firstName} ${user.lastName}`;
 }
 
-type Item = DataTableComponent.Action<User> | DataTableComponent.ActionMenu<User>;
+type Item = dataTable.Action<User> | dataTable.ActionMenu<User>;
 
 // The icons of the actions.
 type DemoIcons = { add: ReactNode; edit: ReactNode; remove: ReactNode };
@@ -78,7 +78,7 @@ function createActions(
   // "Export all" needs no selection (general actions). "Export selection" needs selected rows (rows actions): it only
   // exists in the multi-row set, and it is only visible while at least one row is selected.
   const exportMenu = (withSelection: boolean): Item => {
-    const actions: (DataTableComponent.Action<User> | DataTableComponent.ActionSeparator)[] = [
+    const actions: (dataTable.Action<User> | dataTable.ActionSeparator)[] = [
       {
         type: 'general',
         key: 'export-all-csv',

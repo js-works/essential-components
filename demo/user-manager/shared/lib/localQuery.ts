@@ -1,4 +1,4 @@
-import type { DataTableComponent } from '../../../../packages/data-table/src/react';
+import type { dataTable } from '../../../../packages/data-table/src/react/index.js';
 
 export { matchesText, oneOf, runLocalQuery, within };
 export type { LocalQueryOptions };
@@ -55,9 +55,9 @@ function within(date: string, filter: unknown): boolean {
 
 function runLocalQuery<Row>(
   rows: readonly Row[],
-  query: DataTableComponent.Query,
+  query: dataTable.Query,
   options: LocalQueryOptions<Row>,
-): DataTableComponent.Result<Row> {
+): dataTable.Result<Row> {
   const text = query.search.trim().toLowerCase();
   const filtered = rows
     .filter((row) =>

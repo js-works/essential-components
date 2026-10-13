@@ -1,11 +1,6 @@
 import type * as React from 'react';
 import { useEffect, useId, useReducer, useRef, useState } from 'react';
 import type { z } from 'zod';
-import { checkI18nType, createTranslator, documentLocale, type ErrorData, warnOnce } from './i18n';
-import { DEFAULT_MESSAGE, issueToError } from './issues';
-import { mergeProps } from './merge';
-import { formRegistry, isBinding } from './meta';
-import { collectFields, type FieldInfo, getPath, setPath } from './schema';
 import type {
   BindingConfig,
   FieldArg,
@@ -17,7 +12,12 @@ import type {
   UseFormOptions,
   UseFormReturn,
   ValidateOn,
-} from './types';
+} from './api/index.js';
+import { checkI18nType, createTranslator, documentLocale, type ErrorData, warnOnce } from './i18n.js';
+import { DEFAULT_MESSAGE, issueToError } from './issues.js';
+import { mergeProps } from './merge.js';
+import { formRegistry, isBinding } from './meta.js';
+import { collectFields, type FieldInfo, getPath, setPath } from './schema.js';
 
 export { defineUseForm };
 

@@ -22,25 +22,25 @@ import {
 } from "./buttons.js";
 import type { ButtonConfig } from "./buttons.js";
 import { mountDialog } from "../element/element.js";
-import { FormDialogData } from "../contract/form-data.js";
+import { FormDialogData } from "../form-data.js";
 import { defaultDialogIcon } from "../element/icons.js";
-import { defaultDialogTheme } from "../contract/theme.js";
-import type { DialogTheme } from "../contract/theme.js";
+import { defaultDialogTheme } from "../theme.js";
+import type { DialogTheme } from "../../api/dialogs/theme.js";
 import { BUTTON_SPINNER_DELAY_MS, SPINNER_DIALOG_DELAY_MS } from "../element/styles.js";
 import { bundledDialogText } from "../../i18n/texts.js";
 import type {
   DialogAdapterFactory,
   DialogSlots,
   DialogSpec,
-} from "../contract/adapter.js";
-import type { Renderable } from "../contract/content.js";
-import type { TextKey } from "../contract/texts.js";
+} from "../../api/dialogs/adapter.js";
+import type { Renderable } from "../../api/dialogs/content.js";
+import type { TextKey } from "../texts.js";
 import type {
   DialogButtonView,
   DialogMount,
   ResolvedNote,
-} from "../contract/view.js";
-import type { DialogViewConfig } from "../contract/dialog.js";
+} from "../view.js";
+import type { DialogViewConfig } from "../../api/dialogs/dialog.js";
 import type {
   AnyDialogResult,
   DialogConfig,
@@ -61,7 +61,7 @@ import type {
   DialogHandle,
   FormDialogHandle,
   MessageDialogResult,
-} from "../contract/dialog.js";
+} from "../../api/dialogs/dialog.js";
 
 // Combine any number of (optional) signals into one. Returns undefined when none are
 // present, the single signal when exactly one is, else an `AbortSignal.any` of all.

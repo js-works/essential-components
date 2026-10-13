@@ -1,4 +1,4 @@
-import type * as Spec from '../api';
+import type * as Spec from '../api/index.js';
 
 export { layoutStyles, styles, themeValues };
 

@@ -1,5 +1,5 @@
-import type * as Spec from '../api';
-import type { Localizer } from './texts';
+import type * as Spec from '../api/index.js';
+import type { Localizer } from './texts.js';
 
 export { actionsOf, hintsOf, invalidityOf, statusIconOf, statusTextOf };
 export type { Action, Invalidity, Limits, StatusIcon };

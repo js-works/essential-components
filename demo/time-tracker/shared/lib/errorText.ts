@@ -1,5 +1,5 @@
-import { AppError } from '../../infra/in-memory';
-import { translateKey } from './i18n';
+import { AppError } from '../../infra/in-memory/index.js';
+import { translateKey } from './i18n/index.js';
 
 export { errorText };
 

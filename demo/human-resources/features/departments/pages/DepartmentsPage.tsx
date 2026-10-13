@@ -1,18 +1,18 @@
 import { Button, Loader, Stack, Tabs } from '@mantine/core';
 import { useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
-import { useDataTableController } from '../../../../../packages/data-table/src/react';
-import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
-import { departmentPath, todayDate } from '../../../domain';
-import type { Department, Employee, HrData } from '../../../domain';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { DataTable } from '../../../shared/ui/dataTable';
-import { appIcons } from '../../../shared/ui/icons';
-import { EmployeeLabel, PageHeader } from '../../../shared/ui/parts';
-import { employeeOf, useHrData, useTableSource } from '../../hr';
-import { OrgChart } from '../components/OrgChart';
-import { useDepartmentFlows } from '../flows';
-import { headcount } from '../headcount';
+import { useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
+import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import { departmentPath, todayDate } from '../../../domain/index.js';
+import type { Department, Employee, HrData } from '../../../domain/index.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { DataTable } from '../../../shared/ui/dataTable.js';
+import { appIcons } from '../../../shared/ui/icons.js';
+import { EmployeeLabel, PageHeader } from '../../../shared/ui/parts.js';
+import { employeeOf, useHrData, useTableSource } from '../../hr/index.js';
+import { OrgChart } from '../components/OrgChart.js';
+import { useDepartmentFlows } from '../flows.js';
+import { headcount } from '../headcount.js';
 
 export { DepartmentsPage };
 
@@ -89,7 +89,7 @@ function DepartmentTable({ data }: { data: HrData }): ReactElement {
     search: ['name', 'path', 'headName', 'costCenter'],
   }, nav.reload);
 
-  const columns = useMemo((): readonly DataTableComponent.Column<DepartmentRow>[] => [
+  const columns = useMemo((): readonly dataTable.Column<DepartmentRow>[] => [
     { key: 'name', header: t('departments.name'), width: 2, sortable: true },
     { key: 'parent', header: t('departments.parent'), width: 2, sortable: true },
     {
@@ -104,7 +104,7 @@ function DepartmentTable({ data }: { data: HrData }): ReactElement {
     { key: 'costCenter', header: t('departments.costCenter'), width: 1.2, sortable: true, hideable: true },
   ], [t]);
 
-  const actions = useMemo((): readonly DataTableComponent.Action<DepartmentRow>[] => [
+  const actions = useMemo((): readonly dataTable.Action<DepartmentRow>[] => [
     {
       type: 'singleRow',
       key: 'edit',

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { dateOf, timeOf } from '../../domain';
+import { dateOf, timeOf } from '../../domain/index.js';
 
 export { useNow };
 

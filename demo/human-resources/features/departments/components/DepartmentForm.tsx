@@ -1,11 +1,11 @@
 import { SimpleGrid, Stack, TextInput } from '@mantine/core';
 import type { ReactElement } from 'react';
 import { z } from 'zod';
-import { departmentPath, descendantIds, statusOf, todayDate } from '../../../domain';
-import type { Department, HrData } from '../../../domain';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { useForm } from '../../../shared/lib/useForm';
-import { FormSelect } from '../../../shared/ui/FormSelect';
+import { departmentPath, descendantIds, statusOf, todayDate } from '../../../domain/index.js';
+import type { Department, HrData } from '../../../domain/index.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { useForm } from '../../../shared/lib/useForm.js';
+import { FormSelect } from '../../../shared/ui/FormSelect.js';
 
 export { DepartmentForm, departmentSchema };
 

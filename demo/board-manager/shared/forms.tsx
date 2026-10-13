@@ -3,17 +3,26 @@ import { DatePickerInput } from '@mantine/dates';
 import { useRef } from 'react';
 import type { FocusEvent, ReactElement } from 'react';
 import { z } from 'zod';
-import type { FileUpload } from '../../../packages/file-upload/src';
-import { binding } from '../../../packages/form-validation/src';
-import { normalizeWebsite, ROLES } from '../domain';
-import type { AgendaItem, AgendaSection, Board, Meeting, MeetingDocument, Organization, Person, Role } from '../domain';
-import { MinutesEditor } from '../features/meetings/components/minutes';
-import { db, suggestPeople } from '../infra/in-memory';
-import { countryOptions } from './lib/countries';
-import { useTranslate } from './lib/i18n';
-import { useForm } from './lib/useForm';
-import { AsyncSelect } from './ui/AsyncSelect';
-import { DocumentUpload } from './ui/DocumentUpload';
+import type { fileUpload } from '../../../packages/file-upload/src/index.js';
+import { binding } from '../../../packages/form-validation/src/index.js';
+import { normalizeWebsite, ROLES } from '../domain/index.js';
+import type {
+  AgendaItem,
+  AgendaSection,
+  Board,
+  Meeting,
+  MeetingDocument,
+  Organization,
+  Person,
+  Role,
+} from '../domain/index.js';
+import { MinutesEditor } from '../features/meetings/components/minutes.js';
+import { db, suggestPeople } from '../infra/in-memory/index.js';
+import { countryOptions } from './lib/countries.js';
+import { useTranslate } from './lib/i18n/index.js';
+import { useForm } from './lib/useForm.js';
+import { AsyncSelect } from './ui/AsyncSelect.js';
+import { DocumentUpload } from './ui/DocumentUpload.js';
 
 export {
   AgendaItemForm,
@@ -67,7 +76,7 @@ const uploadSchema = z.object({
 });
 
 const uploadFiles = binding({
-  fromComponent: (items: readonly FileUpload.FileItem[]) => {
+  fromComponent: (items: readonly fileUpload.FileItem[]) => {
     const files = items
       .filter((item) => item.status !== 'rejected')
       .map(({ status, result }) => ({ status, result }));
@@ -81,9 +90,9 @@ function UploadForm({
   save,
   onChange,
 }: {
-  upload: FileUpload.Upload;
+  upload: fileUpload.Upload;
   save: Save<typeof uploadSchema>;
-  onChange?: (items: readonly FileUpload.FileItem[]) => void;
+  onChange?: (items: readonly fileUpload.FileItem[]) => void;
 }): ReactElement {
   const { DialogForm, field } = useForm(uploadSchema, {
     labels: 'upload',

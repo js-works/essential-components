@@ -34,10 +34,10 @@ import type {
   DialogAdapterFactory,
   DialogProps,
   DialogSpec,
-} from "../contract/adapter.js";
-import { defaultDialogTheme } from "../contract/theme.js";
-import type { DialogTheme } from "../contract/theme.js";
-import type { DialogButtonView, DialogMount } from "../contract/view.js";
+} from "../../api/dialogs/adapter.js";
+import { defaultDialogTheme } from "../theme.js";
+import type { DialogTheme } from "../../api/dialogs/theme.js";
+import type { DialogButtonView, DialogMount } from "../view.js";
 
 // How many frames focusFirstInvalid() lets the caller's re-render settle before reading
 // aria-invalid off the form. Three is a frame past where React lands in practice, and

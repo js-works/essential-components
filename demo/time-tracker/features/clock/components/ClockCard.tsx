@@ -1,14 +1,14 @@
 import { Alert, Button, Group, Paper, Progress, Stack, Text } from '@mantine/core';
 import type { ReactElement } from 'react';
-import { clockStateOf, daySheet, nextClockActions } from '../../../domain';
-import type { ClockAction, Employee, TimeData } from '../../../domain';
-import { formatDuration } from '../../../shared/lib/format';
-import { useLanguage, useTranslate } from '../../../shared/lib/i18n';
-import { useNow } from '../../../shared/lib/useNow';
-import { appIcons } from '../../../shared/ui/icons';
-import { absenceText, ClockBadge } from '../../../shared/ui/parts';
-import { useClock } from '../flows';
-import { DayTimeline } from './DayTimeline';
+import { clockStateOf, daySheet, nextClockActions } from '../../../domain/index.js';
+import type { ClockAction, Employee, TimeData } from '../../../domain/index.js';
+import { formatDuration } from '../../../shared/lib/format.js';
+import { useLanguage, useTranslate } from '../../../shared/lib/i18n/index.js';
+import { useNow } from '../../../shared/lib/useNow.js';
+import { appIcons } from '../../../shared/ui/icons.js';
+import { absenceText, ClockBadge } from '../../../shared/ui/parts.js';
+import { useClock } from '../flows.js';
+import { DayTimeline } from './DayTimeline.js';
 
 export { ClockCard };
 

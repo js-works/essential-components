@@ -1,13 +1,13 @@
 import { Alert, Loader, Stack, Tabs } from '@mantine/core';
 import { useState } from 'react';
 import type { ReactElement } from 'react';
-import { certificateRequired, membersOf } from '../../../domain';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { appIcons } from '../../../shared/ui/icons';
-import { PageHeader } from '../../../shared/ui/parts';
-import { useTimeData } from '../../tracker';
-import { useViewer } from '../../viewer';
-import { SickTable } from '../components/SickTable';
+import { certificateRequired, membersOf } from '../../../domain/index.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { appIcons } from '../../../shared/ui/icons.js';
+import { PageHeader } from '../../../shared/ui/parts.js';
+import { useTimeData } from '../../tracker/index.js';
+import { useViewer } from '../../viewer/index.js';
+import { SickTable } from '../components/SickTable.js';
 
 export { SickPage };
 

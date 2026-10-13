@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { Binding, BindingConfig, FormMeta } from './types';
+import type { Binding, BindingConfig, FormMeta } from './api/index.js';
 
 export { binding, formMeta, formRegistry, isBinding };
 

@@ -6,9 +6,9 @@ import {
   selectColumnFilter,
   textColumnFilter,
   useDataTableController,
-} from '../../../../../packages/data-table/src/react';
-import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
-import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react';
+} from '../../../../../packages/data-table/src/react/index.js';
+import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
 import {
   createOrganization,
   db,
@@ -16,15 +16,15 @@ import {
   fetchOrganizations,
   getOrganization,
   updateOrganization,
-} from '../../../infra/in-memory';
-import type { OrganizationRow } from '../../../infra/in-memory';
-import { OrganizationForm } from '../../../shared/forms';
-import { countryName } from '../../../shared/lib/countries';
-import { confirmAndRun } from '../../../shared/lib/flows';
-import type { Dialogs } from '../../../shared/lib/flows';
-import { translate, useTranslate } from '../../../shared/lib/i18n';
-import { appIcons, DataTable, organizationFilter, PAGE_SIZE_OPTIONS, useDb } from '../../../shared/shared';
-import { sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters';
+} from '../../../infra/in-memory/index.js';
+import type { OrganizationRow } from '../../../infra/in-memory/index.js';
+import { OrganizationForm } from '../../../shared/forms.js';
+import { countryName } from '../../../shared/lib/countries.js';
+import { confirmAndRun } from '../../../shared/lib/flows.js';
+import type { Dialogs } from '../../../shared/lib/flows.js';
+import { translate, useTranslate } from '../../../shared/lib/i18n/index.js';
+import { appIcons, DataTable, organizationFilter, PAGE_SIZE_OPTIONS, useDb } from '../../../shared/shared.js';
+import { sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters.js';
 
 export { deleteOrganizationsFlow, editOrganization, OrganizationsPage, WebsiteLink };
 
@@ -103,7 +103,7 @@ function WebsiteLink({ url }: { url: string }): ReactElement | null {
 }
 
 // The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
-const COLLEAGUES_FILTERS: readonly DataTableComponent.SavedFilter[] = [
+const COLLEAGUES_FILTERS: readonly dataTable.SavedFilter[] = [
   sharedBy('Maria Keller', 'Stuttgart', { city: { text: 'Stuttgart', match: 'contains' } }),
   sharedBy('Lena Hoffmann', 'Investors', { name: ['Nordic Capital Partners', 'Gulf Invest', 'Stein Family Office'] }),
 ];
@@ -119,7 +119,7 @@ function OrganizationsPage(): ReactElement {
   const navigate = useNavigate();
   const organizations = useDb((state) => state.organizations);
 
-  const columns = useMemo<readonly DataTableComponent.Column<OrganizationRow>[]>(() => [
+  const columns = useMemo<readonly dataTable.Column<OrganizationRow>[]>(() => [
     {
       key: 'name',
       header: t('organizations.columns.organization'),
@@ -175,7 +175,7 @@ function OrganizationsPage(): ReactElement {
     },
   ], [t, organizations]);
 
-  const actions = useMemo<readonly DataTableComponent.Action<OrganizationRow>[]>(() => {
+  const actions = useMemo<readonly dataTable.Action<OrganizationRow>[]>(() => {
     const create = async () => {
       let created = '';
       const saved = !(await dialogs.form({

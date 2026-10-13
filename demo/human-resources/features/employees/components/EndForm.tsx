@@ -2,8 +2,8 @@ import { Stack, Switch, Text } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import type { ReactElement } from 'react';
 import { z } from 'zod';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { useForm } from '../../../shared/lib/useForm';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { useForm } from '../../../shared/lib/useForm.js';
 
 export { EndForm, endSchema };
 

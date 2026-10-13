@@ -7,7 +7,7 @@ import {
   minutesOf,
   timeOf,
   vacationBalance,
-} from '../../domain';
+} from '../../domain/index.js';
 import type {
   CorrectionRepository,
   EmployeeRepository,
@@ -16,10 +16,10 @@ import type {
   SickRepository,
   TeamRepository,
   TimeEntry,
-} from '../../domain';
-import { AppError } from './errors';
-import { seed } from './seed';
-import type { Data } from './seed';
+} from '../../domain/index.js';
+import { AppError } from './errors.js';
+import { seed } from './seed.js';
+import type { Data } from './seed.js';
 
 export { createInMemoryRepositories };
 export type { Repositories };

@@ -5,18 +5,18 @@ import {
   dateRangeColumnFilter,
   selectColumnFilter,
   useDataTableController,
-} from '../../../../../packages/data-table/src/react';
-import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
-import { useToast } from '../../../../../packages/overlays/src/main/bindings/react';
-import { DOCUMENT_CATEGORIES } from '../../../domain';
-import type { Employee, EmployeeDocument } from '../../../domain';
-import { formatSize, formatStamp } from '../../../shared/lib/format';
-import { translate, useTranslate } from '../../../shared/lib/i18n';
-import { oneOf, within } from '../../../shared/lib/localQuery';
-import { DataTable } from '../../../shared/ui/dataTable';
-import { appIcons } from '../../../shared/ui/icons';
-import { useTableSource } from '../../hr';
-import { useEmployeeFlows } from '../flows';
+} from '../../../../../packages/data-table/src/react/index.js';
+import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import { useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
+import { DOCUMENT_CATEGORIES } from '../../../domain/index.js';
+import type { Employee, EmployeeDocument } from '../../../domain/index.js';
+import { formatSize, formatStamp } from '../../../shared/lib/format.js';
+import { translate, useTranslate } from '../../../shared/lib/i18n/index.js';
+import { oneOf, within } from '../../../shared/lib/localQuery.js';
+import { DataTable } from '../../../shared/ui/dataTable.js';
+import { appIcons } from '../../../shared/ui/icons.js';
+import { useTableSource } from '../../hr/index.js';
+import { useEmployeeFlows } from '../flows.js';
 
 export { DocumentsTable };
 
@@ -39,7 +39,7 @@ function DocumentsTable({ employee }: { employee: Employee }): ReactElement {
     nav.reload,
   );
 
-  const columns = useMemo((): readonly DataTableComponent.Column<EmployeeDocument>[] => [
+  const columns = useMemo((): readonly dataTable.Column<EmployeeDocument>[] => [
     {
       key: 'name',
       header: t('documents.name'),
@@ -81,7 +81,7 @@ function DocumentsTable({ employee }: { employee: Employee }): ReactElement {
     },
   ], [t]);
 
-  const actions = useMemo((): readonly DataTableComponent.Action<EmployeeDocument>[] => [
+  const actions = useMemo((): readonly dataTable.Action<EmployeeDocument>[] => [
     {
       type: 'general',
       key: 'upload',

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { DataTableComponent } from '../../../../packages/data-table/src/react';
+import type { dataTable } from '../../../../packages/data-table/src/react/index.js';
 
 export { daysFromToday, sharedBy, useSavedFilters };
 
@@ -7,9 +7,9 @@ export { daysFromToday, sharedBy, useSavedFilters };
 // change goes into all five). Not in the tables of a record's page (e.g. a meeting's documents), nor where a table
 // has fewer than two filters.
 
-type SavedFilter = DataTableComponent.SavedFilter;
+type SavedFilter = dataTable.SavedFilter;
 
-type Filters = Record<string, DataTableComponent.FilterValue>;
+type Filters = Record<string, dataTable.FilterValue>;
 
 // A made-up colleague's shared filter: first in the list, not removable.
 function sharedBy(owner: string, name: string, filters: Filters): SavedFilter {
@@ -31,7 +31,7 @@ function daysFromToday(days: number): string {
 // The saved filters of one table, per browser in `localStorage` under `key`, after the colleagues' shared ones: a name
 // saved again replaces the filter of that name; shared ones are only marked (one user here). Without storage (blocked,
 // private mode) they live until the page is left.
-function useSavedFilters(key: string, colleagues: readonly SavedFilter[] = []): DataTableComponent.SavedFilters {
+function useSavedFilters(key: string, colleagues: readonly SavedFilter[] = []): dataTable.SavedFilters {
   const [items, setItems] = useState<readonly SavedFilter[]>(() => {
     try {
       const stored: unknown = JSON.parse(localStorage.getItem(key) ?? '[]');

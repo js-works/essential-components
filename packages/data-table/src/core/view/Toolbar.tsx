@@ -1,13 +1,13 @@
 import type { ReactElement, ReactNode } from 'react';
-import type { DataTableComponent as Spec } from '../../react/api';
-import { variantOf } from '../actions';
-import type { ActionItem } from '../actions';
-import type { SearchBox } from '../useDataTable';
-import { flag, hasContent, textFieldKeys } from '../utils';
-import { ActionList } from './Actions';
-import * as classes from './classes';
-import { icons } from './icons';
-import { ActionButton, Pill, SearchField, WithTip } from './widgets';
+import type * as Spec from '../../api/react/index.js';
+import { variantOf } from '../actions.js';
+import type { ActionItem } from '../actions.js';
+import type { SearchBox } from '../useDataTable.js';
+import { flag, hasContent, textFieldKeys } from '../utils.js';
+import { ActionList } from './Actions.js';
+import * as classes from './classes.js';
+import { icons } from './icons.js';
+import { ActionButton, Pill, SearchField, WithTip } from './widgets.js';
 
 export { Toolbar };
 

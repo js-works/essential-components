@@ -1,10 +1,10 @@
-import { createFileUploadClass } from '../src';
+import { createFileUploadClass } from '../src/index.js';
 import './demo.css';
-import { submitted, summarize } from './format';
-import { createDemoI18n } from './i18n';
-import { mountReactDemo } from './react/ReactDemo';
-import { setupUi } from './ui/ui';
-import { createUpload, isUploadBehavior } from './upload';
+import { submitted, summarize } from './format.js';
+import { createDemoI18n } from './i18n.js';
+import { mountReactDemo } from './react/ReactDemo.js';
+import { setupUi } from './ui/ui.js';
+import { createUpload, isUploadBehavior } from './upload.js';
 
 export { FileUploadDemo };
 

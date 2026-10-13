@@ -1,7 +1,7 @@
-import type { useToast } from '../../../../../packages/overlays/src/main/bindings/react';
-import type { Meeting } from '../../../domain';
-import type { Dialogs } from '../../../shared/lib/flows';
-import { translate } from '../../../shared/lib/i18n';
+import type { useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
+import type { Meeting } from '../../../domain/index.js';
+import type { Dialogs } from '../../../shared/lib/flows.js';
+import { translate } from '../../../shared/lib/i18n/index.js';
 
 export { downloadMeetingPdf, previewMeetingPdf, printMeetingPdf };
 
@@ -10,7 +10,7 @@ export { downloadMeetingPdf, previewMeetingPdf, printMeetingPdf };
 
 type Toasts = ReturnType<typeof useToast>;
 
-const build = async (meeting: Meeting): Promise<Blob> => (await import('./report')).buildMeetingPdf(meeting.id);
+const build = async (meeting: Meeting): Promise<Blob> => (await import('./report.js')).buildMeetingPdf(meeting.id);
 
 // `Annual review – 2026-09-15.pdf`: the title (without characters a file name may not have) and the date.
 function fileName(meeting: Meeting): string {
@@ -107,7 +107,7 @@ async function previewMeetingPdf(dialogs: Dialogs, toasts: Toasts, meeting: Meet
 
   try {
     // The pages are drawn (pdfjs) before the dialog opens, still under the spinner: it opens at its final size.
-    const [file, { PdfPages, renderPages }] = await Promise.all([create(meeting), import('./preview')]);
+    const [file, { PdfPages, renderPages }] = await Promise.all([create(meeting), import('./preview.js')]);
     const pages = await renderPages(file);
     const result = await scope.confirm({
       width: 'extraWide',

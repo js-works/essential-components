@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import type { QueryKey } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef } from 'react';
-import type { DataTableComponent } from '../../../../packages/data-table/src/react';
+import type { dataTable } from '../../../../packages/data-table/src/react/index.js';
 
 export { useQuerySource };
 
@@ -9,11 +9,11 @@ export { useQuerySource };
 // deduplicated like any other read. When a query under `watch` is invalidated (a change, `invalidateQueries`), the
 // table reloads (`reload`, e.g. the controller's): the data table loads its pages itself, it does not observe them.
 function useQuerySource<Row>(
-  key: (query: DataTableComponent.Query) => QueryKey,
-  fetch: (query: DataTableComponent.Query, signal: AbortSignal) => Promise<DataTableComponent.Result<Row>>,
+  key: (query: dataTable.Query) => QueryKey,
+  fetch: (query: dataTable.Query, signal: AbortSignal) => Promise<dataTable.Result<Row>>,
   watch: QueryKey,
   reload: () => void,
-): DataTableComponent.Source<Row> {
+): dataTable.Source<Row> {
   const queryClient = useQueryClient();
   const latest = useRef({ key, fetch, reload, watch });
 

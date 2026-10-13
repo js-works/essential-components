@@ -1,14 +1,14 @@
 import { Stack, Text } from '@mantine/core';
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
-import { selectColumnFilter, useDataTableController } from '../../../../../packages/data-table/src/react';
-import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
-import { permissionParts } from '../../../domain';
-import type { AccessData } from '../../../domain';
-import { oneOf } from '../../../shared/lib/localQuery';
-import { DataTable } from '../../../shared/ui/dataTable';
-import { PageHeader } from '../../../shared/ui/parts';
-import { useAccessData, useTableSource } from '../../iam';
+import { selectColumnFilter, useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
+import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import { permissionParts } from '../../../domain/index.js';
+import type { AccessData } from '../../../domain/index.js';
+import { oneOf } from '../../../shared/lib/localQuery.js';
+import { DataTable } from '../../../shared/ui/dataTable.js';
+import { PageHeader } from '../../../shared/ui/parts.js';
+import { useAccessData, useTableSource } from '../../iam/index.js';
 
 export { PermissionsPage };
 
@@ -38,7 +38,7 @@ function PermissionsPage(): ReactElement {
     data?.scopes.find((scope) => scope.id === `s-${app}`)?.name ?? app
   );
 
-  const columns = useMemo((): readonly DataTableComponent.Column<PermissionRow>[] => [
+  const columns = useMemo((): readonly dataTable.Column<PermissionRow>[] => [
     {
       key: 'id',
       header: 'Permission',

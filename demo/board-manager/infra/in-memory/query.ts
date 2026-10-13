@@ -1,4 +1,4 @@
-import type { DataTableComponent } from '../../../../packages/data-table/src/react';
+import type { dataTable } from '../../../../packages/data-table/src/react/index.js';
 
 export { matches, oneOf, runQuery, within };
 
@@ -49,9 +49,9 @@ type QueryOptions<Row> = {
 // Search, column filters, sorting and paging, the same for every table.
 function runQuery<Row>(
   rows: readonly Row[],
-  query: DataTableComponent.Query,
+  query: dataTable.Query,
   options: QueryOptions<Row>,
-): DataTableComponent.Result<Row> {
+): dataTable.Result<Row> {
   const text = query.search.toLowerCase();
   const filtered = rows
     .filter((row) =>

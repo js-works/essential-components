@@ -7,11 +7,11 @@ import {
   selectColumnFilter,
   textColumnFilter,
   useDataTableController,
-} from '../../../../../packages/data-table/src/react';
-import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
-import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react';
-import { MEETING_STATUSES } from '../../../domain';
-import type { MeetingStatus } from '../../../domain';
+} from '../../../../../packages/data-table/src/react/index.js';
+import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
+import { MEETING_STATUSES } from '../../../domain/index.js';
+import type { MeetingStatus } from '../../../domain/index.js';
 import {
   boardIdsOf,
   createMeeting,
@@ -21,14 +21,14 @@ import {
   getMeeting,
   setMeetingStatus,
   updateMeeting,
-} from '../../../infra/in-memory';
-import type { MeetingRow } from '../../../infra/in-memory';
-import { MeetingForm } from '../../../shared/forms';
-import { confirmAndRun } from '../../../shared/lib/flows';
-import type { Dialogs } from '../../../shared/lib/flows';
-import { translate, useTranslate } from '../../../shared/lib/i18n';
-import { appIcons, DataTable, formatDateTime, PAGE_SIZE_OPTIONS, useDb } from '../../../shared/shared';
-import { daysFromToday, sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters';
+} from '../../../infra/in-memory/index.js';
+import type { MeetingRow } from '../../../infra/in-memory/index.js';
+import { MeetingForm } from '../../../shared/forms.js';
+import { confirmAndRun } from '../../../shared/lib/flows.js';
+import type { Dialogs } from '../../../shared/lib/flows.js';
+import { translate, useTranslate } from '../../../shared/lib/i18n/index.js';
+import { appIcons, DataTable, formatDateTime, PAGE_SIZE_OPTIONS, useDb } from '../../../shared/shared.js';
+import { daysFromToday, sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters.js';
 
 export { deleteMeetingsFlow, editMeeting, MeetingsTable, MinutesBadge, StatusBadge };
 
@@ -103,7 +103,7 @@ function MinutesBadge(
 }
 
 // The colleagues' shared filters of the meetings list (2026-10-11, the user's wish: to show sharing).
-const COLLEAGUES_FILTERS: readonly DataTableComponent.SavedFilter[] = [
+const COLLEAGUES_FILTERS: readonly dataTable.SavedFilter[] = [
   sharedBy('Maria Keller', 'Minutes to approve', { status: ['Held'], minutesApproved: ['draft'] }),
   sharedBy('Jonas Weber', 'Planned, next 90 days', {
     status: ['Planned'],
@@ -136,7 +136,7 @@ function MeetingsTable(
   const savedFilters = useSavedFilters('board-manager:saved-filters:meetings', COLLEAGUES_FILTERS);
   const main = boardId === undefined && personId === undefined;
 
-  const columns = useMemo<readonly DataTableComponent.Column<MeetingRow>[]>(() => [
+  const columns = useMemo<readonly dataTable.Column<MeetingRow>[]>(() => [
     {
       key: 'start',
       header: t('meetings.columns.date'),
@@ -162,7 +162,7 @@ function MeetingsTable(
           sortable: true,
           hideable: true,
           filter: selectColumnFilter({ options: boards.map((board) => board.name), multiple: true }),
-        } satisfies DataTableComponent.Column<MeetingRow>,
+        } satisfies dataTable.Column<MeetingRow>,
       ]
       : []),
     {
@@ -237,7 +237,7 @@ function MeetingsTable(
     },
   ], [t, boardId, boards, pathOf]);
 
-  const actions = useMemo<readonly DataTableComponent.Action<MeetingRow>[]>(() => {
+  const actions = useMemo<readonly dataTable.Action<MeetingRow>[]>(() => {
     // The boards a new meeting may be for.
     const choices = () => {
       const state = db.getState();

@@ -1,16 +1,16 @@
 import { Menu as BaseMenu } from '@base-ui/react/menu';
 import { Fragment, useContext, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, ReactElement, ReactNode, Ref, RefObject } from 'react';
-import type { DataTableComponent as Spec } from '../../react/api';
-import { useThemed } from '../config';
-import { sameValue, withoutKey } from '../filters';
-import { useLocale } from '../texts';
-import { flag } from '../utils';
-import * as styles from './classes';
-import { summaryOf } from './ColumnFilters';
-import { icons } from './icons';
-import { LayerContext } from './layer';
-import { ActionButton, TextButton } from './widgets';
+import type * as Spec from '../../api/react/index.js';
+import { useThemed } from '../config.js';
+import { sameValue, withoutKey } from '../filters.js';
+import { useLocale } from '../texts.js';
+import { flag } from '../utils.js';
+import * as styles from './classes.js';
+import { summaryOf } from './ColumnFilters.js';
+import { icons } from './icons.js';
+import { LayerContext } from './layer.js';
+import { ActionButton, TextButton } from './widgets.js';
 
 export {
   FILTER_DRAWER_CLOSE_TIME,

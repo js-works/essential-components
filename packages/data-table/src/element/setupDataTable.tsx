@@ -1,14 +1,14 @@
 import { Fragment } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
-import type { DataTable } from '../api';
-import { checkI18nType, ConfigContext, resolveConfig } from '../core/config';
-import type { ResolvedConfig } from '../core/config';
-import { DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS } from '../core/useDataTable';
-import { contentRendererOf, nodeContent } from './content';
-import { bindController, controllerFactoryOf, releaseController, renderController } from './controller';
-import type { ElementSettings } from './controller';
-import { HOST_ATTRIBUTE, provideStyles } from './styles';
+import type * as DataTable from '../api/index.js';
+import { checkI18nType, ConfigContext, resolveConfig } from '../core/config.js';
+import type { ResolvedConfig } from '../core/config.js';
+import { DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS } from '../core/useDataTable.js';
+import { contentRendererOf, nodeContent } from './content.js';
+import { bindController, controllerFactoryOf, releaseController, renderController } from './controller.js';
+import type { ElementSettings } from './controller.js';
+import { HOST_ATTRIBUTE, provideStyles } from './styles.js';
 
 export { setupDataTable };
 

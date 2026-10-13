@@ -1,9 +1,9 @@
 import { useNavigate } from 'react-router';
-import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react';
-import type { User } from '../../domain';
-import { countText } from '../../shared/lib/format';
-import { useChanged, useIamService } from '../iam';
-import { UserForm } from './components/UserForm';
+import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react/index.js';
+import type { User } from '../../domain/index.js';
+import { countText } from '../../shared/lib/format.js';
+import { useChanged, useIamService } from '../iam/index.js';
+import { UserForm } from './components/UserForm.js';
 
 export { useUserFlows };
 

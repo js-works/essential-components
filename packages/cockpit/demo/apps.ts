@@ -1,9 +1,9 @@
-import type { Cockpit } from '../src';
+import type { cockpit } from '../src/index.js';
 
 export { FEW, GROUPS, MANY, SOME };
 
 // The items of the demo: all are the same element (`demo-app`), told apart by their attributes.
-const item = (title: string, description: string, group?: string): Cockpit.NavItem => {
+const item = (title: string, description: string, group?: string): cockpit.NavItem => {
   const id = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
   return {
@@ -26,7 +26,7 @@ const ICONS = {
 };
 
 // Few items: no groups, every item with an icon.
-const FEW: readonly Cockpit.NavItem[] = [
+const FEW: readonly cockpit.NavItem[] = [
   { ...item('Calendar', 'Meetings, rooms and holidays'), icon: ICONS.calendar },
   { ...item('Mail', 'The shared mailboxes of the office'), icon: ICONS.mail },
   { ...item('Documents', 'Contracts, templates and letters'), icon: ICONS.folder },
@@ -120,14 +120,14 @@ const DESCRIPTIONS = [
 // the lists above evenly: the first items of every subgroup, one round after the other, until there are 100 (so every
 // subgroup keeps some); in the order of the lists.
 // No item icons: nobody has useful icons for 100 items (the groups and subgroups have some).
-const ALL: readonly Cockpit.NavItem[] = Object.entries(AREAS).flatMap(([group, subgroups]) =>
+const ALL: readonly cockpit.NavItem[] = Object.entries(AREAS).flatMap(([group, subgroups]) =>
   Object.entries(subgroups).flatMap(([subgroup, titles]) =>
     titles.map((title, index) => ({ ...item(title, DESCRIPTIONS[index % DESCRIPTIONS.length] ?? '', group), subgroup }))
   )
 );
 
-const MANY: readonly Cockpit.NavItem[] = (() => {
-  const bySubgroup = new Map<string, Cockpit.NavItem[]>();
+const MANY: readonly cockpit.NavItem[] = (() => {
+  const bySubgroup = new Map<string, cockpit.NavItem[]>();
 
   for (const entry of ALL) {
     const key = `${entry.group}/${entry.subgroup}`;
@@ -136,7 +136,7 @@ const MANY: readonly Cockpit.NavItem[] = (() => {
   }
 
   const lists = [...bySubgroup.values()];
-  const chosen = new Set<Cockpit.NavItem>();
+  const chosen = new Set<cockpit.NavItem>();
 
   for (let round = 0; chosen.size < 100 && lists.some((list) => list.length > round); round++) {
     for (const list of lists) {
@@ -152,7 +152,7 @@ const MANY: readonly Cockpit.NavItem[] = (() => {
 })();
 
 // 30 items: the most that still have all their groups open by default.
-const SOME: readonly Cockpit.NavItem[] = MANY.slice(0, 30);
+const SOME: readonly cockpit.NavItem[] = MANY.slice(0, 30);
 
 // The icons of the subgroups of the 100 items (after Tabler icons, MIT).
 const svg = (paths: string) =>
@@ -250,7 +250,7 @@ const SUBGROUP_ICONS: Readonly<Record<string, string>> = {
 };
 
 // The groups of the 100 items with their icons, and the icons of their subgroups.
-const GROUPS: readonly Cockpit.Group[] = Object.entries(AREAS).map(([name, subgroups]) => ({
+const GROUPS: readonly cockpit.Group[] = Object.entries(AREAS).map(([name, subgroups]) => ({
   name,
   subgroups: Object.keys(subgroups).map((subgroup) => ({
     name: subgroup,

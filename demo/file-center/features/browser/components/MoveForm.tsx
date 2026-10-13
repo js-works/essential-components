@@ -3,10 +3,10 @@ import type { TreeNodeData } from '@mantine/core';
 import { useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
 import { TbChevronRight } from 'react-icons/tb';
-import { Form } from '../../../../../packages/overlays/src/main/bindings/react';
-import { ancestorsOf, isInside, ROOT_ID } from '../../../domain';
-import type { Folder } from '../../../domain';
-import { folderIcon, toTreeData } from './FolderTree';
+import { Form } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
+import { ancestorsOf, isInside, ROOT_ID } from '../../../domain/index.js';
+import type { Folder } from '../../../domain/index.js';
+import { folderIcon, toTreeData } from './FolderTree.js';
 
 export { MoveForm };
 

@@ -3,8 +3,9 @@ import userEvent from '@testing-library/user-event';
 import { createContext, useContext } from 'react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { useDataTableController, useDataTableSelection } from './core/controllerHooks';
-import { dateColumnEditor, selectColumnEditor, textColumnEditor } from './core/view/ColumnEditors';
+import type * as Spec from './api/react/index.js';
+import { useDataTableController, useDataTableSelection } from './core/controllerHooks.js';
+import { dateColumnEditor, selectColumnEditor, textColumnEditor } from './core/view/ColumnEditors.js';
 import {
   autocompleteColumnFilter,
   booleanColumnFilter,
@@ -12,14 +13,13 @@ import {
   numberRangeColumnFilter,
   selectColumnFilter,
   textColumnFilter,
-} from './core/view/ColumnFilters';
+} from './core/view/ColumnFilters.js';
 import baseStylesheet from './core/view/DataTable.css?raw';
-import type { DataTableComponent as Spec } from './react/api';
-import { createDataTableComponent } from './react/createDataTableComponent';
-import { antdTheme } from './themes/antd';
-import { defaultTheme } from './themes/default';
-import { mantineTheme } from './themes/mantine';
-import { softTheme } from './themes/soft';
+import { createDataTableComponent } from './react/createDataTableComponent.js';
+import { antdTheme } from './themes/antd.js';
+import { defaultTheme } from './themes/default.js';
+import { mantineTheme } from './themes/mantine.js';
+import { softTheme } from './themes/soft.js';
 
 // The component under test: created without a configuration (English texts, the default theme).
 const Nav = createDataTableComponent();

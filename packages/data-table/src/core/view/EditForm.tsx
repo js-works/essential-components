@@ -1,11 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
-import type { DataTableComponent as Spec } from '../../react/api';
-import { useThemed } from '../config';
-import { flag } from '../utils';
-import * as classes from './classes';
-import { icons } from './icons';
-import { ActionButton } from './widgets';
+import type * as Spec from '../../api/react/index.js';
+import { useThemed } from '../config.js';
+import { flag } from '../utils.js';
+import * as classes from './classes.js';
+import { icons } from './icons.js';
+import { ActionButton } from './widgets.js';
 
 export { EditForm };
 

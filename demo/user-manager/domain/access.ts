@@ -1,9 +1,9 @@
-import type { Grant } from './grant';
-import type { Permission, Role } from './permission';
-import type { Group, User } from './principal';
-import { groupsOf } from './principal';
-import type { Scope } from './scope';
-import { pathOf } from './scope';
+import type { Grant } from './grant.js';
+import type { Permission, Role } from './permission.js';
+import type { Group, User } from './principal.js';
+import { groupsOf } from './principal.js';
+import type { Scope } from './scope.js';
+import { pathOf } from './scope.js';
 
 export { checkAccess, effectivePermissions, grantsOf };
 export type { AccessData, Decision, EffectivePermission, Reason };

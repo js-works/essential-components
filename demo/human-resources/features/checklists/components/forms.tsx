@@ -2,11 +2,11 @@ import { Group, Stack, Text, TextInput } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import type { ReactElement } from 'react';
 import { z } from 'zod';
-import { CHECKLIST_KINDS, statusOf, TASK_OWNERS, todayDate } from '../../../domain';
-import type { HrData } from '../../../domain';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { useForm } from '../../../shared/lib/useForm';
-import { FormSelect } from '../../../shared/ui/FormSelect';
+import { CHECKLIST_KINDS, statusOf, TASK_OWNERS, todayDate } from '../../../domain/index.js';
+import type { HrData } from '../../../domain/index.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { useForm } from '../../../shared/lib/useForm.js';
+import { FormSelect } from '../../../shared/ui/FormSelect.js';
 
 export { ChecklistForm, checklistSchema, TaskForm, taskSchema };
 

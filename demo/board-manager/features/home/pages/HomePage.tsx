@@ -2,12 +2,12 @@ import { Anchor, Badge, Card, Group, Paper, SimpleGrid, Stack, Tabs, Text, Theme
 import { useMemo, useState } from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import { Link } from 'react-router';
-import type { Meeting } from '../../../domain';
-import { getBoard, localDateTime } from '../../../infra/in-memory';
-import { useLanguage, useTranslate } from '../../../shared/lib/i18n';
-import { appIcons, formatDateTime, useDb } from '../../../shared/shared';
-import { HomeAttention } from '../components/HomeAttention';
-import { HomeCharts } from '../components/HomeCharts';
+import type { Meeting } from '../../../domain/index.js';
+import { getBoard, localDateTime } from '../../../infra/in-memory/index.js';
+import { useLanguage, useTranslate } from '../../../shared/lib/i18n/index.js';
+import { appIcons, formatDateTime, useDb } from '../../../shared/shared.js';
+import { HomeAttention } from '../components/HomeAttention.js';
+import { HomeCharts } from '../components/HomeCharts.js';
 
 export { HomePage };
 

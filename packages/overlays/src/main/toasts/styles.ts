@@ -5,7 +5,7 @@
 // -------------------------------------------------------------------
 
 import { css } from "../internal/css.js";
-import type { ToastTheme } from "./contract/api.js";
+import type { ToastTheme } from "../api/toasts/theme.js";
 import { darkAccent } from "./element.js";
 
 // The one source of truth for the space between cards: the flat list's `gap` (below) and

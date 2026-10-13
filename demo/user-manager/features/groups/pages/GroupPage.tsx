@@ -2,19 +2,19 @@ import { Anchor, Badge, Button, Group as MantineGroup, Stack, Tabs, Text } from 
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { useDataTableController } from '../../../../../packages/data-table/src/react';
-import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
-import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react';
-import { membersOf } from '../../../domain';
-import type { Group, User } from '../../../domain';
-import { countText } from '../../../shared/lib/format';
-import { DataTable } from '../../../shared/ui/dataTable';
-import { appIcons } from '../../../shared/ui/icons';
-import { PageHeader, UserAvatar } from '../../../shared/ui/parts';
-import { GrantsTable } from '../../access';
-import { useAccessData, useChanged, useIamService, useTableSource } from '../../iam';
-import { AddMembersForm } from '../components/AddMembersForm';
-import { useGroupFlows } from '../flows';
+import { useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
+import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
+import { membersOf } from '../../../domain/index.js';
+import type { Group, User } from '../../../domain/index.js';
+import { countText } from '../../../shared/lib/format.js';
+import { DataTable } from '../../../shared/ui/dataTable.js';
+import { appIcons } from '../../../shared/ui/icons.js';
+import { PageHeader, UserAvatar } from '../../../shared/ui/parts.js';
+import { GrantsTable } from '../../access/index.js';
+import { useAccessData, useChanged, useIamService, useTableSource } from '../../iam/index.js';
+import { AddMembersForm } from '../components/AddMembersForm.js';
+import { useGroupFlows } from '../flows.js';
 
 export { GroupPage };
 
@@ -37,7 +37,7 @@ function MembersTable({ group }: { group: Group }): ReactElement {
     nav.reload,
   );
 
-  const columns = useMemo((): readonly DataTableComponent.Column<User>[] => [
+  const columns = useMemo((): readonly dataTable.Column<User>[] => [
     {
       key: 'name',
       header: 'Name',
@@ -55,7 +55,7 @@ function MembersTable({ group }: { group: Group }): ReactElement {
     { key: 'department', header: 'Department', width: 2, sortable: true, hideable: true },
   ], []);
 
-  const actions = useMemo((): readonly DataTableComponent.Action<User>[] => {
+  const actions = useMemo((): readonly dataTable.Action<User>[] => {
     const add = async () => {
       if (data === undefined) {
         return;

@@ -6,19 +6,19 @@ import {
   dateRangeColumnFilter,
   selectColumnFilter,
   useDataTableController,
-} from '../../../../../packages/data-table/src/react';
-import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
-import { EMPLOYEE_STATUSES, EMPLOYMENT_TYPES, statusOf, todayDate } from '../../../domain';
-import type { Employee, EmployeeStatus, HrData } from '../../../domain';
-import { formatDate } from '../../../shared/lib/format';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { oneOf, within } from '../../../shared/lib/localQuery';
-import { DataTable } from '../../../shared/ui/dataTable';
-import { appIcons } from '../../../shared/ui/icons';
-import { EmployeeLabel, EmployeeStatusBadge } from '../../../shared/ui/parts';
-import { sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters';
-import { departmentName, employeeOf, useHrData, useTableSource } from '../../hr';
-import { useEmployeeFlows } from '../flows';
+} from '../../../../../packages/data-table/src/react/index.js';
+import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import { EMPLOYEE_STATUSES, EMPLOYMENT_TYPES, statusOf, todayDate } from '../../../domain/index.js';
+import type { Employee, EmployeeStatus, HrData } from '../../../domain/index.js';
+import { formatDate } from '../../../shared/lib/format.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { oneOf, within } from '../../../shared/lib/localQuery.js';
+import { DataTable } from '../../../shared/ui/dataTable.js';
+import { appIcons } from '../../../shared/ui/icons.js';
+import { EmployeeLabel, EmployeeStatusBadge } from '../../../shared/ui/parts.js';
+import { sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters.js';
+import { departmentName, employeeOf, useHrData, useTableSource } from '../../hr/index.js';
+import { useEmployeeFlows } from '../flows.js';
 
 export { EmployeesPage };
 
@@ -43,7 +43,7 @@ function employeeRows(data: HrData): EmployeeRow[] {
 const STATUS_ORDER: Readonly<Record<EmployeeStatus, number>> = { upcoming: 0, active: 1, leaving: 2, former: 3 };
 
 // The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
-const COLLEAGUES_FILTERS: readonly DataTableComponent.SavedFilter[] = [
+const COLLEAGUES_FILTERS: readonly dataTable.SavedFilter[] = [
   sharedBy('Sophie Brandt', 'Engineering, full time', { department: ['Engineering'], employmentType: ['fullTime'] }),
   sharedBy('Tom Becker', 'Starting soon', { status: ['upcoming'] }),
   sharedBy('Sophie Brandt', 'Berlin office', { location: ['Berlin'] }),
@@ -76,7 +76,7 @@ function EmployeesPage(): ReactElement {
     [data],
   );
 
-  const columns = useMemo((): readonly DataTableComponent.Column<EmployeeRow>[] => [
+  const columns = useMemo((): readonly dataTable.Column<EmployeeRow>[] => [
     {
       key: 'name',
       header: t('employees.name'),
@@ -145,7 +145,7 @@ function EmployeesPage(): ReactElement {
     },
   ], [t, departments, locations]);
 
-  const actions = useMemo((): readonly DataTableComponent.Action<EmployeeRow>[] => [
+  const actions = useMemo((): readonly dataTable.Action<EmployeeRow>[] => [
     {
       type: 'general',
       key: 'new',

@@ -1,9 +1,9 @@
-import type { DataTableComponent } from '../src/react';
+import type { dataTable } from '../src/react/index.js';
 
 export { i18n };
 
 // The demo's translations. English is missing on purpose: the component's own texts are the defaults.
-const GERMAN: Readonly<Record<keyof DataTableComponent.Texts, string>> = {
+const GERMAN: Readonly<Record<keyof dataTable.Texts, string>> = {
   selectedCount: '{count} ausgewählt',
   itemRange: '{from}-{to} von {total}',
   itemSingle: '{item} von {total}',
@@ -102,7 +102,7 @@ const currentLocale = () => root.lang || 'en-US';
 // A minimal I18nAdapter, without any i18n library (the same shape as the one of the file-upload component, so one
 // object could serve both): the locale is the `lang` of `<html>`, texts are looked up by language (`de-AT` uses `de`),
 // and `{name}` placeholders are filled in, numbers formatted for the locale.
-const adapter: DataTableComponent.I18nAdapter = {
+const adapter: dataTable.I18nAdapter = {
   currentLocale,
 
   resolveText: (namespace, key, params, defaultValue) => {

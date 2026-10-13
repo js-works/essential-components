@@ -2,16 +2,16 @@ import { within } from '@testing-library/dom';
 import { act, cleanup, render, waitFor } from '@testing-library/react';
 import { createContext, createRef, useContext, useMemo } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type * as Spec from '../api';
-import type * as ReactSpec from './api';
-import { createFileUploadComponent } from './createFileUploadComponent';
+import type * as Spec from '../api/index.js';
+import type * as ReactSpec from '../api/react/index.js';
+import { createFileUploadComponent } from './createFileUploadComponent.js';
 
 afterEach(cleanup);
 
 const file = (name: string) => new File(['x'], name, { type: 'text/plain' });
 
 // The element, once the placeholder was replaced.
-async function elementIn(container: HTMLElement, tag = 'internal-file-upload-'): Promise<Spec.Element> {
+async function elementIn(container: HTMLElement, tag = 'internal-file-upload-'): Promise<Spec.FileUploadElement> {
   const found = await waitFor(() => {
     const element = [...container.querySelectorAll('*')].find((node) => node.localName.startsWith(tag));
 
@@ -20,10 +20,10 @@ async function elementIn(container: HTMLElement, tag = 'internal-file-upload-'):
     return element;
   });
 
-  return found as Spec.Element;
+  return found as Spec.FileUploadElement;
 }
 
-function choose(element: Spec.Element, ...files: File[]) {
+function choose(element: Spec.FileUploadElement, ...files: File[]) {
   const input = element.shadowRoot!.querySelector<HTMLInputElement>('input[type="file"]')!;
 
   Object.defineProperty(input, 'files', { value: files, configurable: true });
@@ -123,7 +123,7 @@ describe('createFileUploadComponent', () => {
 
   it('points the ref to the element', async () => {
     const Upload = createFileUploadComponent();
-    const ref = createRef<Spec.Element>();
+    const ref = createRef<Spec.FileUploadElement>();
     const { container, unmount } = render(<Upload ref={ref} />);
     const element = await elementIn(container);
 
@@ -168,7 +168,7 @@ describe('createFileUploadComponent', () => {
   });
 
   it('passes an adapter factory on to the element', async () => {
-    const getAdapter = vi.fn((element: Spec.Element) => adapterFor(element.lang));
+    const getAdapter = vi.fn((element: Spec.FileUploadElement) => adapterFor(element.lang));
     const Upload = createFileUploadComponent({ i18n: { type: 'factory', getAdapter } });
     const { container } = render(<Upload lang="de" />);
     const element = await elementIn(container);
@@ -221,7 +221,9 @@ describe('createFileUploadComponent', () => {
 
   it('throws a TypeError for an unknown i18n type', () => {
     // A cast config, as plain JavaScript would pass it.
-    const config = { i18n: { type: 'other', useAdapter: () => adapterFor('en') } } as unknown as ReactSpec.Config;
+    const config = {
+      i18n: { type: 'other', useAdapter: () => adapterFor('en') },
+    } as unknown as ReactSpec.ComponentConfig;
 
     expect(() => createFileUploadComponent(config)).toThrow(TypeError);
   });

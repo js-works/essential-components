@@ -6,14 +6,7 @@ import { createDialogsController, createDialogTheme, createToastController } fro
 // main entry stays framework-free.
 import { litDialogAdapter, litToastAdapter } from "../main/bindings/lit/index.js";
 
-import type {
-  DialogType,
-  FormDialogResult,
-  Placement,
-  ToastAppearance,
-  ToastSize,
-  ToastType,
-} from "../main/index.js";
+import type { overlays } from "../main/index.js";
 
 // The result logs on the page: one next to each panel (Toasts, Dialogs), all showing the same
 // entries. Filled in by mountLitDemo() (bottom of this file).
@@ -29,7 +22,7 @@ function log(label: string, value?: unknown): void {
 
 // `data` only exists on the non-canceled member of the result union, so narrow
 // before reading it.
-function logFormResult(label: string, result: FormDialogResult<string>): void {
+function logFormResult(label: string, result: overlays.FormDialogResult<string>): void {
   if (result.canceled) {
     log(`${label} (canceled)`, result);
   } else {
@@ -94,17 +87,17 @@ export const trashIcon = html`
 // `appearance` and `placement` are both read once, when the controller is built, so the
 // pickers below can't just reassign them — each change has to tear the controller down
 // and build a fresh one. Hence mutable module state plus a factory.
-const INITIAL_APPEARANCE: ToastAppearance = "light";
-const INITIAL_PLACEMENT: Placement = "top-end";
-const INITIAL_SIZE: ToastSize = "medium";
+const INITIAL_APPEARANCE: overlays.ToastAppearance = "light";
+const INITIAL_PLACEMENT: overlays.Placement = "top-end";
+const INITIAL_SIZE: overlays.ToastSize = "medium";
 const INITIAL_STACKED: StackedChoice = "no";
 
 // Annotated, not inferred: TypeScript narrows the consts above to their literal types,
 // so `let appearance = INITIAL_APPEARANCE` would be typed `"light"` and reject any other
 // appearance.
-let appearance: ToastAppearance = INITIAL_APPEARANCE;
-let placement: Placement = INITIAL_PLACEMENT;
-let size: ToastSize = INITIAL_SIZE;
+let appearance: overlays.ToastAppearance = INITIAL_APPEARANCE;
+let placement: overlays.Placement = INITIAL_PLACEMENT;
+let size: overlays.ToastSize = INITIAL_SIZE;
 let stacked: StackedChoice = INITIAL_STACKED;
 
 function toastOptions() {
@@ -264,7 +257,7 @@ const formStyles = `
   }
 `;
 
-async function openByType(type: DialogType): Promise<void> {
+async function openByType(type: overlays.DialogType): Promise<void> {
   switch (type) {
     case "info":
       log(
@@ -387,7 +380,7 @@ function humanize(type: string): string {
 }
 
 // A demo trigger button; uniform grayish look, clicks wired in the template below.
-const notifier = (type: Exclude<ToastType, "loading">) => html`
+const notifier = (type: Exclude<overlays.ToastType, "loading">) => html`
   <button
     class="ui-button"
     @click=${() =>
@@ -462,15 +455,15 @@ async function runLoadingWithProgress(): Promise<void> {
   }
 }
 
-const APPEARANCES: readonly ToastAppearance[] = ["light", "solid", "dark"];
-const SIZES: readonly ToastSize[] = ["small", "medium", "large"];
+const APPEARANCES: readonly overlays.ToastAppearance[] = ["light", "solid", "dark"];
+const SIZES: readonly overlays.ToastSize[] = ["small", "medium", "large"];
 
 // radioGroup labels its options from their values, so the choice is spelled yes/no rather
 // than kept as a boolean and translated at the last moment.
 type StackedChoice = "no" | "yes";
 const STACKED_CHOICES: readonly StackedChoice[] = ["no", "yes"];
 
-const PLACEMENTS: readonly Placement[] = [
+const PLACEMENTS: readonly overlays.Placement[] = [
   "top-start",
   "top-center",
   "top-end",
@@ -565,7 +558,7 @@ const placementPicker = () => html`
       class="ui-select"
       autocomplete="off"
       @change=${(event: Event) => {
-        placement = (event.target as HTMLSelectElement).value as Placement;
+        placement = (event.target as HTMLSelectElement).value as overlays.Placement;
         reconfigureToasts();
         log("Toast placement", placement);
       }}
@@ -582,7 +575,7 @@ const placementPicker = () => html`
 `;
 
 // A demo trigger button; native <button> in the look of the design language (ui/ui.css).
-const trigger = (type: DialogType) => html`
+const trigger = (type: overlays.DialogType) => html`
   <button class="ui-button" @click=${() => void openByType(type)}>
     ${humanize(type)}
   </button>

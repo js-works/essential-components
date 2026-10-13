@@ -2,12 +2,12 @@ import { NumberInput, SimpleGrid, Stack, Switch, Text, Textarea, TextInput } fro
 import { DatePickerInput } from '@mantine/dates';
 import type { ReactElement } from 'react';
 import { z } from 'zod';
-import { addDays, CANDIDATE_SOURCES, EMPLOYMENT_TYPES, OPENING_STATUSES, todayDate } from '../../../domain';
-import type { Candidate, HrData, Opening } from '../../../domain';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { useForm } from '../../../shared/lib/useForm';
-import { FormSelect } from '../../../shared/ui/FormSelect';
-import { departmentOptions, managerOptions } from '../../hr';
+import { addDays, CANDIDATE_SOURCES, EMPLOYMENT_TYPES, OPENING_STATUSES, todayDate } from '../../../domain/index.js';
+import type { Candidate, HrData, Opening } from '../../../domain/index.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { useForm } from '../../../shared/lib/useForm.js';
+import { FormSelect } from '../../../shared/ui/FormSelect.js';
+import { departmentOptions, managerOptions } from '../../hr/index.js';
 
 export { CandidateForm, candidateSchema, HireForm, hireSchema, OpeningForm, openingSchema };
 

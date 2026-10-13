@@ -15,10 +15,17 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 
 ## Working rules
 
-- `src/api.ts` holds the draft API types we are discussing. Types only, no comments for now (comments come later).
-  - Each API decision changes only this file.
-  - The types are plain flat type exports (no `declare namespace`). `src/index.ts` re-exports them as a namespace:
-    `export type * as FileUpload from './api'`, so users write `FileUpload.Theme`, `FileUpload.FileItem`, ...
+- `src/api/` holds the API types (2026-10-12; `src/api.ts` and `src/react/api.ts` before, with the namespaces
+  `FileUpload` and `FileUploadComponent`). Types only, no comments for now (comments come later).
+  - Each API decision changes only these files.
+  - By topic: `upload.ts` (`Upload`, `UploadContext`, `FileItem`, `FileStatus`, `Rejection`), `element.ts` (`FileUploadElement`,
+    `ElementClass`, `Density`), `config.ts`, `theme.ts` (`Theme`, `ThemeColor`), `texts.ts` (`TextKey`, `TextParams`),
+    `i18n.ts`; `index.ts` re-exports them.
+  - The React entry's own types: `src/api/react/component.ts` (`ComponentConfig`, the config of
+    `createFileUploadComponent`, `Config` before: the name is taken by the element's; `Props`), and
+    `src/api/react/index.ts`, which re-exports `../index` and them.
+  - Both entries export one type namespace `fileUpload` (`import type { fileUpload } from '@local/file-upload'`,
+    `fileUpload.Theme`); the one of `/react` has the React types too.
     - Do not use runtime (value) namespaces.
 - Do not update `README.md` for now: nobody reads it yet, so it would be wasted time.
 - Do not mention any specific i18n library by name in code, docs or specs, except react-i18next as the example.
@@ -48,7 +55,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 
 ## Project layout and commands
 
-- `src/api.ts`: the spec (types only, flat exports): `Element`, `ElementClass`, `Config`, `Theme`, `Upload`,
+- `src/api/`: the spec (types only, by topic, see the working rules): `FileUploadElement`, `ElementClass`, `Config`, `Theme`, `Upload`,
   `FileItem`, ...
 - `src/core/`: plain TypeScript, no DOM rendering.
   - `store.ts`: `FileUploadStore`, all state and behavior (validation, list, queue, abort), with `subscribe` and
@@ -63,10 +70,9 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - `styles.ts`: the CSS (a template string with the theme values put in) and the shared stylesheet.
   - `icons.ts`: the SVG icons (Tabler, with the license notice, including Tabler's `upload` for the drop area).
   - `FileUploadElement.test.ts`: the tests of the element. `FileUploadElement.browser.test.ts`: form association.
-- `src/index.ts`: the public API (`createFileUploadClass` and the types as the namespace `FileUpload`).
+- `src/index.ts`: the public API (`createFileUploadClass` and the types as the namespace `fileUpload`).
 - `src/react/`: the React wrapper, the subpath `@local/file-upload/react` (built as `dist/react.js`, the main entry as `dist/index.js`).
-  - `api.ts`: its types (`Config`, `Props`), like `src/api.ts`. `index.ts` exports `createFileUploadComponent` and the
-    types as the namespace `FileUploadComponent`.
+  - `index.ts` exports `createFileUploadComponent` and the types (`src/api/react/`) as the namespace `fileUpload`.
   - `createFileUploadComponent.tsx`: the factory. `client.ts`: the DOM part (the element class, the internal adapter
     setter), loaded with `import()` on the first mount, so the wrapper can be imported on the server.
   - Tests: `createFileUploadComponent.test.tsx` (jsdom), `createFileUploadComponent.server.test.tsx` (Node).
@@ -155,11 +161,11 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     - Usual usage: a one-line subclass, so the app's class is a value and a type at once:
       `class AcmeUpload extends createFileUploadClass({ ... }) {}`, then
       `customElements.define('acme-upload', AcmeUpload)`.
-    - No base class is exported as a value. A type for the instance (`FileUpload.Element`) is exported only for
+    - No base class is exported as a value. A type for the instance (`fileUpload.FileUploadElement`) is exported only for
       generic code that works with any variant (e.g. the later React wrapper).
     - The code never relies on the tag name (use `:host`, not the tag, in CSS).
   - Styling config (per class):
-    - `theme` (type `FileUpload.Theme`): typed values (colors, radius, fonts) that are put straight into our CSS when
+    - `theme` (type `fileUpload.Theme`): typed values (colors, radius, fonts) that are put straight into our CSS when
       the class is created. No public CSS custom properties, so no token names and no prefix. Every color
       (`accentColor` too) takes a string or `{ light, dark }` (turned into `light-dark()`). Values may be `var(...)`:
       the variables of the app's design system are inherited into the shadow DOM.
@@ -207,8 +213,8 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - Package name: `@local/file-upload` (private, never published: copied into customer monorepos; replaces
     `file-upload-element`, before that `react-file-upload`). The React wrapper is the subpath
     `@local/file-upload/react` of the same package.
-  - React wrapper: `createFileUploadComponent(config)` returns a React component. Its types are the namespace
-    `FileUploadComponent` (`FileUploadComponent.Config`, `FileUploadComponent.Props`) of the subpath.
+  - React wrapper: `createFileUploadComponent(config)` returns a React component. Its types are in the namespace
+    `fileUpload` of the subpath (`fileUpload.ComponentConfig`, `fileUpload.Props`, with all of the main entry's).
     - The call has no side effect and needs no DOM (it also works on the server).
     - The first mount on the client loads the element code (`import()`), creates the class and registers it, under the next free generated tag name
       (`internal-file-upload-<n>`), or under the optional `tagName` of the config (a stable name for tests, DevTools,
@@ -231,7 +237,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     - The props (decided): one camelCase prop per element property (`upload`, `accept`, `maxFiles`, `maxFileSize`,
       `maxParallel`, `multiple`, `manualUpload`, `previews`, `disabled`, `name`, `required`), plus `lang`,
       `onChange(items)` (gets `items` directly; the native event stays reachable via the ref) and `ref` to the element
-      (`FileUpload.Element`, a plain prop as in React 19). Uncontrolled.
+      (`fileUpload.FileUploadElement`, a plain prop as in React 19). Uncontrolled.
       - The wrapper sets the properties itself (not through React's handling of custom elements), and only those that
         changed, because every change renders the list of the element again. A prop that goes away sets the property
         back to its default (`maxParallel`: the attribute is removed).
@@ -239,17 +245,16 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       the default content.
     - Other attributes that pass through to the element (typed explicitly): `className`, `style`, `id`, `aria-*`,
       `data-*`.
-  - Types: flat type exports in `src/api.ts`, re-exported from the main entry as the namespace `FileUpload`
-    (`import { createFileUploadClass, type FileUpload } from '@local/file-upload'`). No `declare namespace`, no
-    `/types` subpath. The instance type is `FileUpload.Element`. A namespace import cannot merge with the later React
-    component, so the wrapper's types are decided then.
+  - Types: in `src/api/`, exported by each entry as the type namespace `fileUpload` (2026-10-12; `FileUpload` before)
+    (`import { createFileUploadClass, type fileUpload } from '@local/file-upload'`). No `declare namespace`, no
+    `/types` subpath. The instance type is `fileUpload.FileUploadElement`.
   - Boolean attributes switch something on, so every boolean defaults to `false` (HTML convention). Positive names, no
     verbs (like `<video controls>`):
     - `multiple`: several files (default: one file, like the native file input).
     - `manual-upload` (`manualUpload`): files wait as `ready` (default: upload right away). Replaces `autoUpload`.
     - `previews`: thumbnails of images (default: off).
     - `disabled`.
-  - `density` (decided): `'compact' | 'normal' | 'comfortable'` (type `FileUpload.Density`), an
+  - `density` (decided): `'compact' | 'normal' | 'comfortable'` (type `fileUpload.Density`), an
     attribute reflected to the property, and the React prop `density`. Default `normal`, like the data table.
     - Only the vertical padding changes (the rows of the list and the drop line). Text and controls keep their size
       (the theme's `fontSize` scales those).
@@ -282,7 +287,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     - Reusable by other components without sharing the type (structural typing): only `string`, `unknown`, `Record`,
       `null` and functions, nothing component-specific. A component types only the members it needs; a fuller adapter
       (e.g. with `hasText`) is a subtype and fits. Never change it incompatibly, only add optional members.
-    - `namespace` is `'fileUpload'`. `key` is a `FileUpload.TextKey`; `FileUpload.TextParams` maps each key to its
+    - `namespace` is `'fileUpload'`. `key` is a `fileUpload.TextKey`; `fileUpload.TextParams` maps each key to its
       params (`null` for texts without params). Params hold raw numbers (`count`, `percent`) and already formatted
       strings (`size`, `types`).
     - `defaultValue` is the English text, already filled in (numbers formatted in the current locale). For a missing
@@ -301,7 +306,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 
 ## Requirements (drafted by Claude, not discussed yet)
 
-These are the first proposals behind `src/api.ts` and the element. Each one can be changed.
+These are the first proposals behind `src/api/` and the element. Each one can be changed.
 
 - Adding files:
   - A "Browse" button (which opens the file dialog) and drag and drop. The whole element is the drop target (also the

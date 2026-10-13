@@ -14,10 +14,11 @@
 // That is what makes region variants work without shipping a table for each — "de-AT" and
 // "de-CH" both land on "de", which is correct for them until a string actually diverges.
 
-import type { DialogTexts, TextKey } from "../dialogs/contract/texts.js";
-import { defaultDialogTexts } from "../dialogs/contract/texts.js";
-import type { ToastTexts } from "../toasts/contract/texts.js";
-import { defaultToastTexts } from "../toasts/contract/texts.js";
+import type { DialogTexts } from "../api/dialogs/texts.js";
+import type { TextKey } from "../dialogs/texts.js";
+import { defaultDialogTexts } from "../dialogs/texts.js";
+import type { ToastTexts } from "../api/toasts/texts.js";
+import { defaultToastTexts } from "../toasts/texts.js";
 
 /**
  * German dialog texts. Typed as the full {@link DialogTexts} rather than a partial, so a

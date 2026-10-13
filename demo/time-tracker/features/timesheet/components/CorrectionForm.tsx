@@ -2,9 +2,9 @@ import { Stack, Text, Textarea } from '@mantine/core';
 import { DatePickerInput, TimeInput } from '@mantine/dates';
 import type { ReactElement } from 'react';
 import { z } from 'zod';
-import { addDays, todayDate } from '../../../domain';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { useForm } from '../../../shared/lib/useForm';
+import { addDays, todayDate } from '../../../domain/index.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { useForm } from '../../../shared/lib/useForm.js';
 
 export { CorrectionForm, correctionSchema };
 

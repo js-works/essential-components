@@ -6,7 +6,7 @@ import type {
   RoleRepository,
   ScopeRepository,
   UserRepository,
-} from '../../domain';
+} from '../../domain/index.js';
 
 export { createIamService };
 export type { IamService };

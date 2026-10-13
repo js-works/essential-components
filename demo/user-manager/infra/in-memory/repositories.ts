@@ -5,9 +5,9 @@ import type {
   RoleRepository,
   ScopeRepository,
   UserRepository,
-} from '../../domain';
-import type { Data } from './seed';
-import { seed } from './seed';
+} from '../../domain/index.js';
+import type { Data } from './seed.js';
+import { seed } from './seed.js';
 
 export { createInMemoryRepositories };
 export type { Repositories };

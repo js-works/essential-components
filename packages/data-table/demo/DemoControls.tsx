@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import type { Controls } from './controls';
+import type { Controls } from './controls.js';
 
 export { DemoControls };
 

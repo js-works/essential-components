@@ -14,9 +14,9 @@ import {
 } from '@mantine/core';
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent, ReactElement, ReactNode } from 'react';
-import type * as Spec from './api';
-import { useLang } from './page';
-import { textsFor } from './texts';
+import type * as Spec from './api/index.js';
+import { useLang } from './page.js';
+import { textsFor } from './texts.js';
 
 export { LoginScreen };
 

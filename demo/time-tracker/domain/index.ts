@@ -11,7 +11,7 @@ export {
   sickDays,
   vacationBalance,
   workingDays,
-} from './absence';
+} from './absence.js';
 export type {
   Absence,
   AbsenceKind,
@@ -24,7 +24,7 @@ export type {
   SickNoteValues,
   SickRepository,
   VacationBalance,
-} from './absence';
+} from './absence.js';
 export {
   addDays,
   dateOf,
@@ -38,11 +38,11 @@ export {
   todayDate,
   weekdayOf,
   weekStart,
-} from './dates';
-export type { Holiday, HolidayName } from './dates';
-export { dailyTargetMinutes, membersOf } from './employee';
-export type { Employee, EmployeeRepository, EmployeeValues, Team, TeamRepository } from './employee';
-export { clockStateOf, entriesOf, nextClockActions, spentMinutes } from './time';
+} from './dates.js';
+export type { Holiday, HolidayName } from './dates.js';
+export { dailyTargetMinutes, membersOf } from './employee.js';
+export type { Employee, EmployeeRepository, EmployeeValues, Team, TeamRepository } from './employee.js';
+export { clockStateOf, entriesOf, nextClockActions, spentMinutes } from './time.js';
 export type {
   ClockAction,
   ClockState,
@@ -53,6 +53,6 @@ export type {
   EntryRepository,
   RequestStatus,
   TimeEntry,
-} from './time';
-export { daySheet, todayStatus } from './timesheet';
-export type { DaySheet, TimeData, TodayStatus } from './timesheet';
+} from './time.js';
+export { daySheet, todayStatus } from './timesheet.js';
+export type { DaySheet, TimeData, TodayStatus } from './timesheet.js';

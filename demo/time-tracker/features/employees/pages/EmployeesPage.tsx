@@ -2,20 +2,20 @@ import { Badge, Loader } from '@mantine/core';
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router';
-import { selectColumnFilter, useDataTableController } from '../../../../../packages/data-table/src/react';
-import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
-import { todayDate, todayStatus, vacationBalance } from '../../../domain';
-import type { Employee, TimeData, TodayStatus } from '../../../domain';
-import { formatDays } from '../../../shared/lib/format';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { oneOf } from '../../../shared/lib/localQuery';
-import { DataTable } from '../../../shared/ui/dataTable';
-import { appIcons } from '../../../shared/ui/icons';
-import { EmployeeLabel, LeadOnly, TodayBadge } from '../../../shared/ui/parts';
-import { sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters';
-import { useTableSource, useTimeData } from '../../tracker';
-import { useViewer } from '../../viewer';
-import { useEmployeeFlows } from '../flows';
+import { selectColumnFilter, useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
+import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import { todayDate, todayStatus, vacationBalance } from '../../../domain/index.js';
+import type { Employee, TimeData, TodayStatus } from '../../../domain/index.js';
+import { formatDays } from '../../../shared/lib/format.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { oneOf } from '../../../shared/lib/localQuery.js';
+import { DataTable } from '../../../shared/ui/dataTable.js';
+import { appIcons } from '../../../shared/ui/icons.js';
+import { EmployeeLabel, LeadOnly, TodayBadge } from '../../../shared/ui/parts.js';
+import { sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters.js';
+import { useTableSource, useTimeData } from '../../tracker/index.js';
+import { useViewer } from '../../viewer/index.js';
+import { useEmployeeFlows } from '../flows.js';
 
 export { EmployeesPage };
 
@@ -46,7 +46,7 @@ function employeeRows(data: TimeData): EmployeeRow[] {
 }
 
 // The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
-const COLLEAGUES_FILTERS: readonly DataTableComponent.SavedFilter[] = [
+const COLLEAGUES_FILTERS: readonly dataTable.SavedFilter[] = [
   sharedBy('Julia Wagner', 'Absent today', { todayKey: ['vacation', 'special', 'unpaid', 'sick', 'holiday'] }),
   sharedBy('Felix Braun', 'Engineering', { team: ['Engineering'] }),
 ];
@@ -70,7 +70,7 @@ function EmployeesPage(): ReactElement {
     },
   }, nav.reload);
 
-  const columns = useMemo((): readonly DataTableComponent.Column<EmployeeRow>[] => [
+  const columns = useMemo((): readonly dataTable.Column<EmployeeRow>[] => [
     {
       key: 'name',
       header: t('employees.name'),
@@ -139,7 +139,7 @@ function EmployeesPage(): ReactElement {
     },
   ], [t, teams]);
 
-  const actions = useMemo((): readonly DataTableComponent.Action<EmployeeRow>[] => [
+  const actions = useMemo((): readonly dataTable.Action<EmployeeRow>[] => [
     {
       type: 'general',
       key: 'new',

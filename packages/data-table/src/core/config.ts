@@ -1,8 +1,8 @@
 import { createContext, useContext } from 'react';
-import type { DataTableComponent as Spec } from '../react/api';
-import { defaultTheme } from '../themes/default';
-import { resolveTheme, themeStylesheet } from './stylesheet';
-import type { ThemeStylesheet } from './stylesheet';
+import type * as Spec from '../api/react/index.js';
+import { defaultTheme } from '../themes/default.js';
+import { resolveTheme, themeStylesheet } from './stylesheet.js';
+import type { ThemeStylesheet } from './stylesheet.js';
 
 export { checkI18nType, ConfigContext, resolveConfig, useThemed };
 export type { ResolvedConfig };

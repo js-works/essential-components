@@ -7,8 +7,8 @@ import {
   isWorkingDay,
   minutesOf,
   timeOf,
-} from '../../domain';
-import type { Correction, Employee, LeaveRequest, LeaveType, SickNote, Team, TimeEntry } from '../../domain';
+} from '../../domain/index.js';
+import type { Correction, Employee, LeaveRequest, LeaveType, SickNote, Team, TimeEntry } from '../../domain/index.js';
 
 export { seed, VIEWER_ID };
 export type { Data };

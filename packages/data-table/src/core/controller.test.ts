@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { connectController, createDataTableController, notifySelection, subscribeToSelection } from './controller';
+import { connectController, createDataTableController, notifySelection, subscribeToSelection } from './controller.js';
 
 const targetOf = (rows: readonly unknown[] = []) => ({
   reload: vi.fn(),

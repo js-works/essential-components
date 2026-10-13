@@ -1,5 +1,5 @@
-import { addDays } from './dates';
-import type { Employee } from './employee';
+import { addDays } from './dates.js';
+import type { Employee } from './employee.js';
 
 export {
   CHECKLIST_KINDS,

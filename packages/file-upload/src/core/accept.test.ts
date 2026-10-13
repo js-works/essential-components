@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { matchesAccept } from './accept';
+import { matchesAccept } from './accept.js';
 
 const pdf = { name: 'Report.PDF', type: 'application/pdf' };
 const photo = { name: 'photo.jpg', type: 'image/jpeg' };

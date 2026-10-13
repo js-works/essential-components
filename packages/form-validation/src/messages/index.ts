@@ -1,15 +1,14 @@
-import type { MessageCatalog } from '../types';
-import { ar } from './ar';
-import { de, type LibCatalog, type MessageKey } from './de';
-import { en } from './en';
-import { es } from './es';
-import { fr } from './fr';
-import { hu } from './hu';
-import { ru } from './ru';
-import { zhCN, zhTW } from './zh';
+import type { MessageCatalog } from '../api/texts.js';
+import { ar } from './ar.js';
+import { de } from './de.js';
+import { en } from './en.js';
+import { es } from './es.js';
+import { fr } from './fr.js';
+import { hu } from './hu.js';
+import { ru } from './ru.js';
+import { zhCN, zhTW } from './zh.js';
 
 export { catalogs, localeCandidates };
-export type { LibCatalog, MessageKey };
 
 const catalogs: Record<string, MessageCatalog> = {
   de,

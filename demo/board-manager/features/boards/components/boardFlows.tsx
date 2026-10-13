@@ -1,9 +1,9 @@
-import type { useToast } from '../../../../../packages/overlays/src/main/bindings/react';
-import { db, deleteBoards, getBoard, updateBoard } from '../../../infra/in-memory';
-import { BoardForm } from '../../../shared/forms';
-import { confirmAndRun } from '../../../shared/lib/flows';
-import type { Dialogs } from '../../../shared/lib/flows';
-import { translate } from '../../../shared/lib/i18n';
+import type { useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
+import { db, deleteBoards, getBoard, updateBoard } from '../../../infra/in-memory/index.js';
+import { BoardForm } from '../../../shared/forms.js';
+import { confirmAndRun } from '../../../shared/lib/flows.js';
+import type { Dialogs } from '../../../shared/lib/flows.js';
+import { translate } from '../../../shared/lib/i18n/index.js';
 
 export { deleteBoardsFlow, editBoard };
 

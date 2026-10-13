@@ -13,17 +13,17 @@ import {
 } from '@mantine/core';
 import { useState } from 'react';
 import type { ReactElement } from 'react';
-import { addDays, membersOf, weekStart } from '../../../domain';
-import type { Employee, TimeData } from '../../../domain';
-import { formatDate, formatDateRange, formatStamp, formatTime } from '../../../shared/lib/format';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { useNow } from '../../../shared/lib/useNow';
-import { appIcons } from '../../../shared/ui/icons';
-import { PageHeader, RequestStatusBadge } from '../../../shared/ui/parts';
-import { useTimeData } from '../../tracker';
-import { useViewer } from '../../viewer';
-import { WeekSheet, weekSheets } from '../components/WeekSheet';
-import { useCorrectionFlows } from '../flows';
+import { addDays, membersOf, weekStart } from '../../../domain/index.js';
+import type { Employee, TimeData } from '../../../domain/index.js';
+import { formatDate, formatDateRange, formatStamp, formatTime } from '../../../shared/lib/format.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { useNow } from '../../../shared/lib/useNow.js';
+import { appIcons } from '../../../shared/ui/icons.js';
+import { PageHeader, RequestStatusBadge } from '../../../shared/ui/parts.js';
+import { useTimeData } from '../../tracker/index.js';
+import { useViewer } from '../../viewer/index.js';
+import { WeekSheet, weekSheets } from '../components/WeekSheet.js';
+import { useCorrectionFlows } from '../flows.js';
 
 export { TimesheetPage, WeekNavigator };
 

@@ -1,6 +1,6 @@
-import { kindOf, ROOT_ID, typeOf } from '../../domain';
-import type { Folder, MediaFile } from '../../domain';
-import { localDateTime } from './store';
+import { kindOf, ROOT_ID, typeOf } from '../../domain/index.js';
+import type { Folder, MediaFile } from '../../domain/index.js';
+import { localDateTime } from './store.js';
 
 export { OWNERS, seed };
 

@@ -1,9 +1,9 @@
 import { createTheme, DEFAULT_THEME } from '@mantine/core';
 import type { CSSVariablesResolver, MantineColorsTuple } from '@mantine/core';
-import type * as Spec from './api';
-import { colorSetups } from './color-setups';
-import { parseHex, shades } from './colors';
-import { MODERN_DANGER, modernOverride, modernVariables } from './modern';
+import type * as Spec from './api/theme.js';
+import { colorSetups } from './color-setups.js';
+import { parseHex, shades } from './colors.js';
+import { MODERN_DANGER, modernOverride, modernVariables } from './modern.js';
 
 export { combineCssVariables, createMantineTheme, modernTheme };
 

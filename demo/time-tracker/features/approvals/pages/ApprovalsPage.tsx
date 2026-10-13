@@ -1,14 +1,14 @@
 import { Badge, Loader, Stack, Tabs } from '@mantine/core';
 import { useState } from 'react';
 import type { ReactElement } from 'react';
-import { membersOf } from '../../../domain';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { appIcons } from '../../../shared/ui/icons';
-import { LeadOnly, PageHeader } from '../../../shared/ui/parts';
-import { LeaveTable } from '../../leave';
-import { CorrectionTable } from '../../timesheet';
-import { useTimeData } from '../../tracker';
-import { useViewer } from '../../viewer';
+import { membersOf } from '../../../domain/index.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { appIcons } from '../../../shared/ui/icons.js';
+import { LeadOnly, PageHeader } from '../../../shared/ui/parts.js';
+import { LeaveTable } from '../../leave/index.js';
+import { CorrectionTable } from '../../timesheet/index.js';
+import { useTimeData } from '../../tracker/index.js';
+import { useViewer } from '../../viewer/index.js';
 
 export { ApprovalsPage };
 

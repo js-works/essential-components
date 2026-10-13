@@ -14,14 +14,14 @@ import {
   useParams,
 } from 'react-router';
 import type { RouteObject } from 'react-router';
-import { ancestorsOf, ROOT_ID } from '../domain';
-import { browserKeys, FolderPage, folderPath, FolderTree, useBrowserService } from '../features/browser';
-import { FavoritesPage } from '../features/favorites';
-import { OverviewPage } from '../features/home';
-import { RecentPage } from '../features/recent';
-import { TrashPage } from '../features/trash';
-import { appIcons } from '../shared/ui/icons';
-import { mirrorInHash, pathFromHash } from './hashHistory';
+import { ancestorsOf, ROOT_ID } from '../domain/index.js';
+import { browserKeys, FolderPage, folderPath, FolderTree, useBrowserService } from '../features/browser/index.js';
+import { FavoritesPage } from '../features/favorites/index.js';
+import { OverviewPage } from '../features/home/index.js';
+import { RecentPage } from '../features/recent/index.js';
+import { TrashPage } from '../features/trash/index.js';
+import { appIcons } from '../shared/ui/icons.js';
+import { mirrorInHash, pathFromHash } from './hashHistory.js';
 
 export { createAppRouter };
 

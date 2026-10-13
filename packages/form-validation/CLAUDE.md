@@ -33,10 +33,15 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 
 ## Project layout and commands
 
-- `src/index.ts`: the public API (`defineUseForm`, `binding`, `formMeta`, `formRegistry`, `catalogs` and the types).
+- `src/index.ts`: the public API (`defineUseForm`, `binding`, `formMeta`, `formRegistry`, `catalogs`, flat, and the
+  types as the type namespace `formValidation`: `import type { formValidation } from '@local/form-validation'`,
+  `formValidation.UseFormOptions<S>`; flat type exports before 2026-10-12).
 - `src/defineUseForm.ts`: the hook factory: the store (values, errors, dirty and shown fields), events, submit and
   the props of `form()` and `field.x()`.
-- `src/types.ts`: the public types.
+- `src/api/`: the public types (2026-10-12; `src/types.ts` before): `fields.ts` (bindings, field options and props),
+  `form.ts` (`UseFormOptions`, `UseFormReturn`, the submit, `FormConfig`, `FormMeta`), `texts.ts` (the messages,
+  also `MessageKey` and `LibCatalog`, in `messages/de.ts` before), `i18n.ts` (`I18nAdapter`, `I18nConfig`);
+  `index.ts` re-exports them.
 - `src/schema.ts`: reads the fields from the Zod schema (kind, semantic type, required, default, bounds).
 - `src/issues.ts`: turns Zod issues into message keys with parameters.
 - `src/i18n.ts`: the translator (adapter, app messages, catalogs), `Intl` formatting, plural forms, `humanize`.
@@ -61,7 +66,8 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 
 ## Code rules
 
-- No `export ... from` re-exports (import, then export).
+- No `export ... from` re-exports (import, then export). Except the types (`typescript.md`): `src/api/index.ts` and
+  the entry's `export type * as formValidation from './api/index.js'`.
 
 ## TODO
 

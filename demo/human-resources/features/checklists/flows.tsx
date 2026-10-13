@@ -1,11 +1,11 @@
 import { useNavigate } from 'react-router';
-import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react';
-import { todayDate } from '../../domain';
-import type { Checklist, ChecklistKind, ChecklistTask, Employee, HrData } from '../../domain';
-import { errorText } from '../../shared/lib/errorText';
-import { translate } from '../../shared/lib/i18n';
-import { employeeOf, useChanged, useHrService } from '../hr';
-import { ChecklistForm, TaskForm } from './components/forms';
+import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react/index.js';
+import { todayDate } from '../../domain/index.js';
+import type { Checklist, ChecklistKind, ChecklistTask, Employee, HrData } from '../../domain/index.js';
+import { errorText } from '../../shared/lib/errorText.js';
+import { translate } from '../../shared/lib/i18n/index.js';
+import { employeeOf, useChanged, useHrService } from '../hr/index.js';
+import { ChecklistForm, TaskForm } from './components/forms.js';
 
 export { useChecklistFlows };
 

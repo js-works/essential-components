@@ -1,12 +1,12 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createContext, useCallback, useContext } from 'react';
-import type { DataTableComponent } from '../../../../packages/data-table/src/react';
-import type { TimeData } from '../../domain';
-import { runLocalQuery } from '../../shared/lib/localQuery';
-import type { LocalQueryOptions } from '../../shared/lib/localQuery';
-import { useQuerySource } from '../../shared/lib/useQuerySource';
-import { trackerKeys } from './keys';
-import type { TimeService } from './service';
+import type { dataTable } from '../../../../packages/data-table/src/react/index.js';
+import type { TimeData } from '../../domain/index.js';
+import { runLocalQuery } from '../../shared/lib/localQuery.js';
+import type { LocalQueryOptions } from '../../shared/lib/localQuery.js';
+import { useQuerySource } from '../../shared/lib/useQuerySource.js';
+import { trackerKeys } from './keys.js';
+import type { TimeService } from './service.js';
 
 export { TimeServiceContext, useChanged, useTableSource, useTimeData, useTimeService };
 
@@ -47,7 +47,7 @@ function useTableSource<Row>(
   rows: (data: TimeData) => readonly Row[],
   options: LocalQueryOptions<Row>,
   reload: () => void,
-): DataTableComponent.Source<Row> {
+): dataTable.Source<Row> {
   const service = useTimeService();
   const queryClient = useQueryClient();
 

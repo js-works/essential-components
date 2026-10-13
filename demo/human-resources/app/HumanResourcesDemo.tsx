@@ -14,15 +14,15 @@ import type { ReactElement, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
 import { RouterProvider } from 'react-router';
-import { OverlaysProvider } from '../../../packages/overlays/src/main/bindings/react';
-import { createHrService, HrServiceContext } from '../features/hr';
-import type { HrService } from '../features/hr';
-import { ViewerProvider } from '../features/viewer';
-import { createInMemoryRepositories, VIEWER_ID } from '../infra/in-memory';
-import { useLanguage } from '../shared/lib/i18n';
-import { Scope, SCOPE_CLASS, useScheme } from '../shared/ui/scope';
-import { createAppRouter } from './App';
-import { createLook } from './look';
+import { OverlaysProvider } from '../../../packages/overlays/src/main/bindings/react/index.js';
+import { createHrService, HrServiceContext } from '../features/hr/index.js';
+import type { HrService } from '../features/hr/index.js';
+import { ViewerProvider } from '../features/viewer/index.js';
+import { createInMemoryRepositories, VIEWER_ID } from '../infra/in-memory/index.js';
+import { useLanguage } from '../shared/lib/i18n/index.js';
+import { Scope, SCOPE_CLASS, useScheme } from '../shared/ui/scope.js';
+import { createAppRouter } from './App.js';
+import { createLook } from './look.js';
 
 export { HumanResourcesDemo };
 

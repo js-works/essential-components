@@ -2,9 +2,9 @@ import { Checkbox, Paper, ScrollArea, Stack, Text, TextInput } from '@mantine/co
 import { useState } from 'react';
 import type { ReactElement } from 'react';
 import { z } from 'zod';
-import { binding } from '../../../../../packages/form-validation/src';
-import type { User } from '../../../domain';
-import { useForm } from '../../../shared/lib/useForm';
+import { binding } from '../../../../../packages/form-validation/src/index.js';
+import type { User } from '../../../domain/index.js';
+import { useForm } from '../../../shared/lib/useForm.js';
 
 export { AddMembersForm };
 

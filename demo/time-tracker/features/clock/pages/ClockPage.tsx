@@ -1,16 +1,16 @@
 import { Anchor, Grid, Group, Loader, Paper, Stack, Text, Title } from '@mantine/core';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';
-import { addDays, daySheet, weekStart } from '../../../domain';
-import type { Employee, TimeData } from '../../../domain';
-import { formatDuration } from '../../../shared/lib/format';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { useNow } from '../../../shared/lib/useNow';
-import { PageHeader } from '../../../shared/ui/parts';
-import { useTimeData } from '../../tracker';
-import { useViewer } from '../../viewer';
-import { ClockCard } from '../components/ClockCard';
-import { DayEntries } from '../components/DayTimeline';
+import { addDays, daySheet, weekStart } from '../../../domain/index.js';
+import type { Employee, TimeData } from '../../../domain/index.js';
+import { formatDuration } from '../../../shared/lib/format.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { useNow } from '../../../shared/lib/useNow.js';
+import { PageHeader } from '../../../shared/ui/parts.js';
+import { useTimeData } from '../../tracker/index.js';
+import { useViewer } from '../../viewer/index.js';
+import { ClockCard } from '../components/ClockCard.js';
+import { DayEntries } from '../components/DayTimeline.js';
 
 export { ClockPage, WeekSoFar };
 

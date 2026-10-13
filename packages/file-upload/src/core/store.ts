@@ -1,6 +1,6 @@
-import type * as Spec from '../api';
-import { matchesAccept } from './accept';
-import { clamp } from './utils';
+import type * as Spec from '../api/index.js';
+import { matchesAccept } from './accept.js';
+import { clamp } from './utils.js';
 
 export { FileUploadStore };
 export type { StoreOptions };

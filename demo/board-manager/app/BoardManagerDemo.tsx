@@ -25,14 +25,14 @@ import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
 import { TbMaximize, TbMinimize } from 'react-icons/tb';
 import { RouterProvider } from 'react-router';
-import { combineCssVariables, modernTheme } from '../../../packages/mantine-themes/src';
-import { OverlaysProvider } from '../../../packages/overlays/src/main/bindings/react';
-import type { OverlaysConfig } from '../../../packages/overlays/src/main/bindings/react';
-import { createDialogTheme } from '../../../packages/overlays/src/main/dialogs/dialogs';
-import { createToastTheme } from '../../../packages/overlays/src/main/toasts/toasts';
-import { translate, useLanguage } from '../shared/lib/i18n';
-import { Scope, SCOPE_CLASS, useScheme } from '../shared/shared';
-import { createAppRouter } from './App';
+import { combineCssVariables, modernTheme } from '../../../packages/mantine-themes/src/index.js';
+import { OverlaysProvider } from '../../../packages/overlays/src/main/bindings/react/index.js';
+import type { overlays } from '../../../packages/overlays/src/main/bindings/react/index.js';
+import { createDialogTheme } from '../../../packages/overlays/src/main/dialogs/dialogs.js';
+import { createToastTheme } from '../../../packages/overlays/src/main/toasts/toasts.js';
+import { translate, useLanguage } from '../shared/lib/i18n/index.js';
+import { Scope, SCOPE_CLASS, useScheme } from '../shared/shared.js';
+import { createAppRouter } from './App.js';
 
 export { App as BoardManagerApp, BoardManagerDemo, createLook };
 export type { Look };
@@ -47,7 +47,11 @@ export type { Look };
 // Success and warning are the states of the meetings and their minutes (held, approved; a draft) and the warning
 // toasts; the success toasts stay in the accent. Made once per element (the `<board-manager>` element's color custom
 // properties): the overlays provider compares its config.
-type Look = { theme: MantineThemeOverride; cssVariablesResolver: CSSVariablesResolver; overlaysConfig: OverlaysConfig };
+type Look = {
+  theme: MantineThemeOverride;
+  cssVariablesResolver: CSSVariablesResolver;
+  overlaysConfig: overlays.OverlaysConfig;
+};
 
 // The font of the app: `--board-manager-font-family`, else the modern theme's (Inter, 2026-10-09; Mantine's before).
 const FONT_FAMILY = `var(--board-manager-font-family, ${modernTheme.theme.fontFamily ?? DEFAULT_THEME.fontFamily})`;
@@ -210,7 +214,7 @@ function createLook(
   // app's element). Their buttons and close button are Mantine's (each in a scope too): the primary one filled, a
   // danger one filled in the danger color, the others `default`; the spinner is Mantine's `loading`. The toasts medium
   // and stacked in the bottom right corner, in Mantine's palette.
-  const overlaysConfig: OverlaysConfig = {
+  const overlaysConfig: overlays.OverlaysConfig = {
     dialogs: {
       icons: true,
       // The dialogs' own text (title, message) in the app's size and font, like the Mantine inputs in their content:

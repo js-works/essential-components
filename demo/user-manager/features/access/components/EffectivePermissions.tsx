@@ -1,7 +1,7 @@
 import { Badge, Group, Stack, Table, Text } from '@mantine/core';
 import type { ReactElement } from 'react';
-import { effectivePermissions, scopeLabel } from '../../../domain';
-import type { AccessData, Reason } from '../../../domain';
+import { effectivePermissions, scopeLabel } from '../../../domain/index.js';
+import type { AccessData, Reason } from '../../../domain/index.js';
 
 export { EffectivePermissions, ReasonText };
 

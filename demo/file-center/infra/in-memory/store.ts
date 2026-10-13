@@ -1,4 +1,4 @@
-import type { Folder, MediaFile } from '../../domain';
+import type { Folder, MediaFile } from '../../domain/index.js';
 
 export {
   createStore,

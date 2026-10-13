@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import type { ReactElement } from 'react';
 import { toast, toastIcon, toasts as stack } from './Demo.module.css';
-import { icons } from './icons';
+import { icons } from './icons.js';
 
 export { useToasts };
 

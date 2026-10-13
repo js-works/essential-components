@@ -1,13 +1,13 @@
-import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react';
-import { addDays, todayDate, vacationBalance, weekStart } from '../../domain';
-import type { Decision, Employee, LeaveRequest, TimeData } from '../../domain';
-import { errorText } from '../../shared/lib/errorText';
-import { formatDateRange } from '../../shared/lib/format';
-import { translate } from '../../shared/lib/i18n';
-import { DecisionForm } from '../../shared/ui/DecisionForm';
-import { useChanged, useTimeService } from '../tracker';
-import { useViewer } from '../viewer';
-import { LeaveForm } from './components/LeaveForm';
+import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react/index.js';
+import { addDays, todayDate, vacationBalance, weekStart } from '../../domain/index.js';
+import type { Decision, Employee, LeaveRequest, TimeData } from '../../domain/index.js';
+import { errorText } from '../../shared/lib/errorText.js';
+import { formatDateRange } from '../../shared/lib/format.js';
+import { translate } from '../../shared/lib/i18n/index.js';
+import { DecisionForm } from '../../shared/ui/DecisionForm.js';
+import { useChanged, useTimeService } from '../tracker/index.js';
+import { useViewer } from '../viewer/index.js';
+import { LeaveForm } from './components/LeaveForm.js';
 
 export { useLeaveFlows };
 

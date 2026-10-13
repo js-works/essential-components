@@ -18,59 +18,19 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import type { ReactElement, ReactNode } from "react";
+import type { ReactElement } from "react";
 
 import { createDialogsController } from "../../dialogs/dialogs.js";
 import { createToastController } from "../../toasts/toasts.js";
-import type { DialogsController, DialogsControllerConfig } from "../../dialogs/dialogs.js";
-import type { ToastsController, ToastsControllerOptions } from "../../toasts/toasts.js";
+import type { DialogsController, DialogsControllerConfig } from "../../api/dialogs/dialog.js";
+import type { ToastsController, ToastsControllerOptions } from "../../api/toasts/toast.js";
 
 import { createDialogAdapter } from "./dialog-adapter.js";
 import { createToastAdapter } from "./toast-adapter.js";
 import { createPortalStore, usePortalEntries } from "./portals.js";
 import type { PortalStore } from "./portals.js";
-import type { ReactContent } from "./dialog-adapter.js";
-import type { ReactToastContent } from "./toast-adapter.js";
-
-/**
- * Set-up for both features, minus the adapters — the provider supplies those.
- *
- * Live: change it and the change applies, with no remount and nothing on screen thrown
- * away. Dialog config is read when a dialog opens, so it takes effect from the *next*
- * one — a dialog already on screen keeps what it opened with, and whatever the user has
- * typed into it survives. Toast config is applied to the running stack immediately.
- *
- * It is deliberately one object rather than two props: there is no change detection
- * behind this (the current values are simply written through on every commit), so an
- * inline `config={{…}}` — a fresh object on every render — is free and safe.
- */
-export interface OverlaysConfig {
-  dialogs?: Omit<DialogsControllerConfig<ReactContent>, "adapter">;
-  toasts?: Omit<ToastsControllerOptions<ReactToastContent>, "adapter">;
-}
-
-export interface OverlaysProviderProps {
-  /** Optional: omit it entirely for the built-in defaults. */
-  config?: OverlaysConfig;
-  /**
-   * Change this to re-render the dialogs that are currently on screen.
-   *
-   * The library's own chrome — button labels, the default title, the header icon — is
-   * resolved from `config.dialogs.getText` and `.icons` when a dialog's spec is built.
-   * Your *content* is React and re-renders itself, so after a language switch a dialog
-   * that stays open would show translated content next to untranslated buttons. Pass the
-   * value that changes and both move together:
-   *
-   * ```tsx
-   * const { i18n } = useTranslation();
-   * <OverlaysProvider refreshKey={i18n.language} config={…}>
-   * ```
-   *
-   * Anything comparable with `Object.is` works; nothing happens while it stays the same.
-   */
-  refreshKey?: unknown;
-  children?: ReactNode;
-}
+import type { ReactContent, ReactToastContent } from "../../api/react/content.js";
+import type { OverlaysProviderProps } from "../../api/react/provider.js";
 
 interface Overlays {
   dialogs: DialogsController<ReactContent>;

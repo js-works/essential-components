@@ -2,12 +2,12 @@ import { StrictMode } from 'react';
 import type { ComponentType, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
-import { App } from './App';
-import { mountElementDemo } from './ElementDemo';
-import { GroupedReorderDemo } from './GroupedReorderDemo';
-import { GroupingDemo } from './GroupingDemo';
-import { ReorderDemo } from './ReorderDemo';
-import { setupUi } from './ui/ui';
+import { App } from './App.js';
+import { mountElementDemo } from './ElementDemo.js';
+import { GroupedReorderDemo } from './GroupedReorderDemo.js';
+import { GroupingDemo } from './GroupingDemo.js';
+import { ReorderDemo } from './ReorderDemo.js';
+import { setupUi } from './ui/ui.js';
 
 export { DataTableDemo };
 

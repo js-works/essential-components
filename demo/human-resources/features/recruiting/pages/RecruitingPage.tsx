@@ -6,19 +6,19 @@ import {
   dateRangeColumnFilter,
   selectColumnFilter,
   useDataTableController,
-} from '../../../../../packages/data-table/src/react';
-import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
-import { isInProcess, OPENING_STATUSES } from '../../../domain';
-import type { HrData, Opening, OpeningStatus } from '../../../domain';
-import { formatDate } from '../../../shared/lib/format';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { oneOf, within } from '../../../shared/lib/localQuery';
-import { DataTable } from '../../../shared/ui/dataTable';
-import { appIcons } from '../../../shared/ui/icons';
-import { OpeningStatusBadge } from '../../../shared/ui/parts';
-import { sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters';
-import { departmentName, employeeOf, useHrData, useTableSource } from '../../hr';
-import { useRecruitingFlows } from '../flows';
+} from '../../../../../packages/data-table/src/react/index.js';
+import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import { isInProcess, OPENING_STATUSES } from '../../../domain/index.js';
+import type { HrData, Opening, OpeningStatus } from '../../../domain/index.js';
+import { formatDate } from '../../../shared/lib/format.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { oneOf, within } from '../../../shared/lib/localQuery.js';
+import { DataTable } from '../../../shared/ui/dataTable.js';
+import { appIcons } from '../../../shared/ui/icons.js';
+import { OpeningStatusBadge } from '../../../shared/ui/parts.js';
+import { sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters.js';
+import { departmentName, employeeOf, useHrData, useTableSource } from '../../hr/index.js';
+import { useRecruitingFlows } from '../flows.js';
 
 export { RecruitingPage };
 
@@ -49,7 +49,7 @@ function openingRows(data: HrData): OpeningRow[] {
 const STATUS_ORDER: Readonly<Record<OpeningStatus, number>> = { open: 0, onHold: 1, closed: 2 };
 
 // The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
-const COLLEAGUES_FILTERS: readonly DataTableComponent.SavedFilter[] = [
+const COLLEAGUES_FILTERS: readonly dataTable.SavedFilter[] = [
   sharedBy('Tom Becker', 'Open positions', { status: ['open'] }),
   sharedBy('Sophie Brandt', 'Sales openings', { department: ['Sales', 'Sales DACH', 'International Sales'] }),
 ];
@@ -73,7 +73,7 @@ function RecruitingPage(): ReactElement {
   }, nav.reload);
   const departments = data?.departments;
 
-  const columns = useMemo((): readonly DataTableComponent.Column<OpeningRow>[] => [
+  const columns = useMemo((): readonly dataTable.Column<OpeningRow>[] => [
     {
       key: 'title',
       header: t('openings.position'),
@@ -139,7 +139,7 @@ function RecruitingPage(): ReactElement {
     },
   ], [t, departments]);
 
-  const actions = useMemo((): readonly DataTableComponent.Action<OpeningRow>[] => [
+  const actions = useMemo((): readonly dataTable.Action<OpeningRow>[] => [
     {
       type: 'general',
       key: 'new',

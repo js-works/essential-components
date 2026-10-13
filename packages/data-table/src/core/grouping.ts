@@ -1,4 +1,4 @@
-import type { DataTableComponent as Spec } from '../react/api';
+import type * as Spec from '../api/react/index.js';
 
 export { flatRows, groupKeyOf, linesOf, moveInSegments, segmentsOf };
 export type { Line, Segment, SegmentMove };

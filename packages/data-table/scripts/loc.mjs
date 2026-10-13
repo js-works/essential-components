@@ -14,9 +14,7 @@ const patterns = [
 // Every file lands in exactly one area, the first one that matches. The order is the interesting story of this
 // project: one generic component, against what a theme for one UI library costs.
 const publicApi = [
-  'src/api.ts',
   'src/index.ts',
-  'src/react/api.ts',
   'src/react/index.ts',
   'src/react/createDataTableComponent.tsx',
   'src/themes/index.ts',
@@ -24,7 +22,7 @@ const publicApi = [
 
 const areas = [
   { label: 'Tests', match: (path) => path.includes('.test.') },
-  { label: 'Public API', match: (path) => publicApi.includes(path) },
+  { label: 'Public API', match: (path) => publicApi.includes(path) || path.startsWith('src/api/') },
   { label: 'Component', match: (path) => path.startsWith('src/core/') || path.startsWith('src/element/') },
   { label: 'Themes', match: (path) => path.startsWith('src/themes/') },
   { label: 'Demo', match: (path) => path.startsWith('demo/') },

@@ -1,11 +1,11 @@
 import { Input, NativeSelect, Stack } from '@mantine/core';
 import type { FocusEvent, ReactElement, ReactNode } from 'react';
 import { z } from 'zod';
-import { binding } from '../../../../../packages/form-validation/src';
-import { scopeLabel } from '../../../domain';
-import type { AccessData, PrincipalRef, Scope } from '../../../domain';
-import { useForm } from '../../../shared/lib/useForm';
-import { ScopePicker } from './ScopePicker';
+import { binding } from '../../../../../packages/form-validation/src/index.js';
+import { scopeLabel } from '../../../domain/index.js';
+import type { AccessData, PrincipalRef, Scope } from '../../../domain/index.js';
+import { useForm } from '../../../shared/lib/useForm.js';
+import { ScopePicker } from './ScopePicker.js';
 
 export { GrantForm };
 

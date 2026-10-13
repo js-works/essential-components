@@ -1,17 +1,17 @@
 import { Badge, SimpleGrid, Stack, Text } from '@mantine/core';
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
-import { useDataTableController } from '../../../../../packages/data-table/src/react';
-import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
-import { currentSalary, todayDate } from '../../../domain';
-import type { Employee, HrData, SalaryChange } from '../../../domain';
-import { formatDate, formatMoney, formatNumber } from '../../../shared/lib/format';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { DataTable } from '../../../shared/ui/dataTable';
-import { appIcons } from '../../../shared/ui/icons';
-import { StatCard } from '../../../shared/ui/parts';
-import { useTableSource } from '../../hr';
-import { useEmployeeFlows } from '../flows';
+import { useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
+import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import { currentSalary, todayDate } from '../../../domain/index.js';
+import type { Employee, HrData, SalaryChange } from '../../../domain/index.js';
+import { formatDate, formatMoney, formatNumber } from '../../../shared/lib/format.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { DataTable } from '../../../shared/ui/dataTable.js';
+import { appIcons } from '../../../shared/ui/icons.js';
+import { StatCard } from '../../../shared/ui/parts.js';
+import { useTableSource } from '../../hr/index.js';
+import { useEmployeeFlows } from '../flows.js';
 
 export { SalaryTable };
 
@@ -56,7 +56,7 @@ function SalaryTable({ data, employee }: { data: HrData; employee: Employee }): 
   const coming = rows.filter((row) => row.from > todayDate());
   const first = rows[0];
 
-  const columns = useMemo((): readonly DataTableComponent.Column<SalaryRow>[] => [
+  const columns = useMemo((): readonly dataTable.Column<SalaryRow>[] => [
     {
       key: 'from',
       header: t('salary.from'),
@@ -102,7 +102,7 @@ function SalaryTable({ data, employee }: { data: HrData; employee: Employee }): 
     { key: 'note', header: t('salary.note'), width: 3 },
   ], [t]);
 
-  const actions = useMemo((): readonly DataTableComponent.Action<SalaryRow>[] => [
+  const actions = useMemo((): readonly dataTable.Action<SalaryRow>[] => [
     {
       type: 'general',
       key: 'new',

@@ -1,4 +1,4 @@
-import type { LibCatalog } from './de';
+import type { LibCatalog } from '../api/texts.js';
 
 export { ar };
 

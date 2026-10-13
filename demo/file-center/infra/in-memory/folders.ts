@@ -1,5 +1,5 @@
-import { isInside, ROOT_ID } from '../../domain';
-import type { Folder, FolderRepository } from '../../domain';
+import { isInside, ROOT_ID } from '../../domain/index.js';
+import type { Folder, FolderRepository } from '../../domain/index.js';
 import {
   CURRENT_USER,
   liveFolderIds,
@@ -9,8 +9,8 @@ import {
   wait,
   withFavorite,
   withoutDeletedAt,
-} from './store';
-import type { Store } from './store';
+} from './store.js';
+import type { Store } from './store.js';
 
 export { createFolderRepository };
 

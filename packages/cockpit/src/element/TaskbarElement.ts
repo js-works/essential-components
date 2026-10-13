@@ -2,10 +2,10 @@ import { html, LitElement, nothing } from 'lit';
 import type { PropertyValues, TemplateResult } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
-import type * as Spec from '../api';
-import { textsFor } from '../core/texts';
-import { closeIcon, initialsIcon } from './icons';
-import { taskbarStyles } from './taskbarStyles';
+import type * as Spec from '../api/index.js';
+import { textsFor } from '../core/texts.js';
+import { closeIcon, initialsIcon } from './icons.js';
+import { taskbarStyles } from './taskbarStyles.js';
 
 export { taskbarTagFor };
 export type { Task, TaskEventDetail, TaskMoveEventDetail };

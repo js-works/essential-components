@@ -18,17 +18,17 @@ import type {
   ReactElement,
   ReactNode,
 } from 'react';
-import type { DataTableComponent as Spec } from '../../react/api';
-import { ConfigContext } from '../config';
-import { useNarrowerThan, useScrollEdges, useStickyOffsets } from '../hooks';
-import { provideStylesheet } from '../stylesheet';
-import { useDataTable } from '../useDataTable';
-import type { RowGroupEntry } from '../useDataTable';
-import { flag, formatValue, hasContent, suppressesTextSelection, suppressesWordSelection } from '../utils';
-import { ActionList } from './Actions';
-import * as classes from './classes';
-import { ColumnResizer } from './ColumnResizer';
-import { EditForm } from './EditForm';
+import type * as Spec from '../../api/react/index.js';
+import { ConfigContext } from '../config.js';
+import { useNarrowerThan, useScrollEdges, useStickyOffsets } from '../hooks.js';
+import { provideStylesheet } from '../stylesheet.js';
+import { useDataTable } from '../useDataTable.js';
+import type { RowGroupEntry } from '../useDataTable.js';
+import { flag, formatValue, hasContent, suppressesTextSelection, suppressesWordSelection } from '../utils.js';
+import { ActionList } from './Actions.js';
+import * as classes from './classes.js';
+import { ColumnResizer } from './ColumnResizer.js';
+import { EditForm } from './EditForm.js';
 import {
   FILTER_DRAWER_CLOSE_TIME,
   FILTER_VIEW_CLOSE_TIME,
@@ -37,14 +37,14 @@ import {
   FilterPills,
   FilterSidebar,
   FilterView,
-} from './FilterPanel';
-import { Footer } from './Footer';
-import { icons } from './icons';
-import { LayerContext } from './layer';
-import { RowContextMenu } from './RowContextMenu';
-import { useRowDrag } from './rowDrag';
-import { Toolbar } from './Toolbar';
-import { ActionButton, Checkbox, ChevronButton, LoadingBar, SortButton, ToggleMenu } from './widgets';
+} from './FilterPanel.js';
+import { Footer } from './Footer.js';
+import { icons } from './icons.js';
+import { LayerContext } from './layer.js';
+import { RowContextMenu } from './RowContextMenu.js';
+import { useRowDrag } from './rowDrag.js';
+import { Toolbar } from './Toolbar.js';
+import { ActionButton, Checkbox, ChevronButton, LoadingBar, SortButton, ToggleMenu } from './widgets.js';
 
 // A prototype (2026-10-09): the filters in a sidebar at the right edge (like AG Grid's), instead of the filter view.
 // Which one stays is open (see the todo in `CLAUDE.md`). Until then a page flag, not an API (2026-10-09, the user's

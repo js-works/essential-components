@@ -1,9 +1,9 @@
 import { Badge, Center, Group, Stack, Table, Text } from '@mantine/core';
 import type { ReactElement, ReactNode } from 'react';
-import type { FileDetails as Details, Folder, MediaFile } from '../../../domain';
-import { ancestorsOf } from '../../../domain';
-import { formatDateTime, formatSize } from '../../../shared/lib/format';
-import { kindIcon } from '../../../shared/ui/icons';
+import type { FileDetails as Details, Folder, MediaFile } from '../../../domain/index.js';
+import { ancestorsOf } from '../../../domain/index.js';
+import { formatDateTime, formatSize } from '../../../shared/lib/format.js';
+import { kindIcon } from '../../../shared/ui/icons.js';
 
 export { FileDetails };
 

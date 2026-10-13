@@ -1,7 +1,7 @@
-import { datesBetween, isWeekend } from './dates';
-import type { Holiday } from './dates';
-import type { Employee } from './employee';
-import type { Decision, RequestStatus } from './time';
+import { datesBetween, isWeekend } from './dates.js';
+import type { Holiday } from './dates.js';
+import type { Employee } from './employee.js';
+import type { Decision, RequestStatus } from './time.js';
 
 export {
   absenceOn,

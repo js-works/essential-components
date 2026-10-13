@@ -1,11 +1,11 @@
-import { absenceOn } from './absence';
-import type { Absence, LeaveRequest, SickNote } from './absence';
-import { isWeekend } from './dates';
-import type { Holiday } from './dates';
-import { dailyTargetMinutes } from './employee';
-import type { Employee, Team } from './employee';
-import { clockStateOf, entriesOf, spentMinutes } from './time';
-import type { ClockState, Correction, TimeEntry } from './time';
+import { absenceOn } from './absence.js';
+import type { Absence, LeaveRequest, SickNote } from './absence.js';
+import { isWeekend } from './dates.js';
+import type { Holiday } from './dates.js';
+import { dailyTargetMinutes } from './employee.js';
+import type { Employee, Team } from './employee.js';
+import { clockStateOf, entriesOf, spentMinutes } from './time.js';
+import type { ClockState, Correction, TimeEntry } from './time.js';
 
 export { daySheet, todayStatus };
 export type { DaySheet, TimeData, TodayStatus };

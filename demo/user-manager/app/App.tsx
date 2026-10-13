@@ -3,15 +3,15 @@ import { useEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import { createMemoryRouter, Link, NavLink, Outlet, useLocation, useNavigate, useNavigationType } from 'react-router';
 import type { RouteObject } from 'react-router';
-import type { AccessData } from '../domain';
-import { AccessPage, CheckAccessPage } from '../features/access';
-import { GroupPage, GroupsPage } from '../features/groups';
-import { HomePage } from '../features/home';
-import { useAccessData } from '../features/iam';
-import { PermissionsPage, RolePage, RolesPage } from '../features/roles';
-import { UserPage, UsersPage } from '../features/users';
-import { appIcons } from '../shared/ui/icons';
-import { mirrorInHash, pathFromHash } from './hashHistory';
+import type { AccessData } from '../domain/index.js';
+import { AccessPage, CheckAccessPage } from '../features/access/index.js';
+import { GroupPage, GroupsPage } from '../features/groups/index.js';
+import { HomePage } from '../features/home/index.js';
+import { useAccessData } from '../features/iam/index.js';
+import { PermissionsPage, RolePage, RolesPage } from '../features/roles/index.js';
+import { UserPage, UsersPage } from '../features/users/index.js';
+import { appIcons } from '../shared/ui/icons.js';
+import { mirrorInHash, pathFromHash } from './hashHistory.js';
 
 export { createAppRouter };
 

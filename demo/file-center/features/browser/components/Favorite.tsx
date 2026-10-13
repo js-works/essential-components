@@ -1,7 +1,7 @@
 import { ActionIcon, Button } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import type { ReactElement } from 'react';
-import { appIcons } from '../../../shared/ui/icons';
+import { appIcons } from '../../../shared/ui/icons.js';
 
 export { FavoriteButton, FavoriteStar };
 

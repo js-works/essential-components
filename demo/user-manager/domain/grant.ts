@@ -1,4 +1,4 @@
-import type { PrincipalRef } from './principal';
+import type { PrincipalRef } from './principal.js';
 
 export type { Grant, GrantRepository };
 

@@ -1,9 +1,9 @@
 import type { ReactElement } from 'react';
-import type { DataTableComponent as Spec } from '../../react/api';
-import { optionsOf } from '../filters';
-import * as styles from './classes';
-import { DateInput } from './DateRangeFilter';
-import { SelectInput } from './widgets';
+import type * as Spec from '../../api/react/index.js';
+import { optionsOf } from '../filters.js';
+import * as styles from './classes.js';
+import { DateInput } from './DateRangeFilter.js';
+import { SelectInput } from './widgets.js';
 
 export { dateColumnEditor, selectColumnEditor, textColumnEditor };
 

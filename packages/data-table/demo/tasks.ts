@@ -1,4 +1,4 @@
-import type { DataTableComponent } from '../src/react';
+import type { dataTable } from '../src/react/index.js';
 
 export { fetchTasks, reorderTasks, statuses };
 export type { Task };
@@ -79,9 +79,9 @@ function wait(time: number, signal?: AbortSignal): Promise<void> {
 
 // The source: the tasks in their order (the table has no column sorting), with search and filters.
 async function fetchTasks(
-  query: DataTableComponent.Query,
+  query: dataTable.Query,
   signal: AbortSignal,
-): Promise<DataTableComponent.Result<Task>> {
+): Promise<dataTable.Result<Task>> {
   await wait(LOADING_TIME, signal);
 
   const { page, pageSize } = query;
@@ -96,7 +96,7 @@ async function fetchTasks(
 
 // Saves a move: the task goes right after `after` (or right before `before`, at the top of a page). With `fail`, the
 // save is refused, and the table loads the page again.
-async function reorderTasks(move: DataTableComponent.Move<Task>, fail: boolean): Promise<void> {
+async function reorderTasks(move: dataTable.Move<Task>, fail: boolean): Promise<void> {
   await wait(SAVING_TIME);
 
   if (fail) {

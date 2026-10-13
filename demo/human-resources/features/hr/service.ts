@@ -7,7 +7,7 @@ import type {
   HrData,
   OpeningRepository,
   SalaryRepository,
-} from '../../domain';
+} from '../../domain/index.js';
 
 export { createHrService };
 export type { HrService };

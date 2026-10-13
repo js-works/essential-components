@@ -1,8 +1,8 @@
 import { Stack, Text, Textarea } from '@mantine/core';
 import type { ReactElement } from 'react';
 import { z } from 'zod';
-import type { Decision } from '../../domain';
-import { useForm } from '../lib/useForm';
+import type { Decision } from '../../domain/index.js';
+import { useForm } from '../lib/useForm.js';
 
 export { DecisionForm, decisionSchema };
 

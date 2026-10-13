@@ -1,8 +1,8 @@
-import type { DataTableComponent } from '../../../../packages/data-table/src/react';
-import type { Person } from '../../domain';
-import { getBoard, organizationOf } from './lookups';
-import { oneOf, runQuery } from './query';
-import { db, LOADING_TIME, newId, save, wait } from './store';
+import type { dataTable } from '../../../../packages/data-table/src/react/index.js';
+import type { Person } from '../../domain/index.js';
+import { getBoard, organizationOf } from './lookups.js';
+import { oneOf, runQuery } from './query.js';
+import { db, LOADING_TIME, newId, save, wait } from './store.js';
 
 export { createPerson, deletePeople, fetchPeople, suggestPeople, updatePerson };
 export type { PersonRow, PersonValues };
@@ -31,7 +31,7 @@ async function suggestPeople(
 }
 
 // All people, or those of one organization (`organizationId`).
-function fetchPeople(organizationId?: string): DataTableComponent.Source<PersonRow> {
+function fetchPeople(organizationId?: string): dataTable.Source<PersonRow> {
   return async (query, signal) => {
     await wait(LOADING_TIME, signal);
 

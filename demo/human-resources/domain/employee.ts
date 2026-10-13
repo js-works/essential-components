@@ -1,4 +1,4 @@
-import { addDays, daysBetween, nextYearly, yearsBetween } from './dates';
+import { addDays, daysBetween, nextYearly, yearsBetween } from './dates.js';
 
 export {
   currentSalary,

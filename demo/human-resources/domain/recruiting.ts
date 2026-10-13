@@ -1,4 +1,4 @@
-import type { Employee, EmploymentType } from './employee';
+import type { Employee, EmploymentType } from './employee.js';
 
 export { CANDIDATE_SOURCES, isInProcess, OPENING_STATUSES, PIPELINE, STAGES };
 export type {

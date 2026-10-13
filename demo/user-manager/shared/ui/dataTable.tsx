@@ -1,8 +1,8 @@
 import type { ReactElement } from 'react';
-import { i18n as tableI18n } from '../../../../packages/data-table/demo/i18n';
-import { createDataTableComponent } from '../../../../packages/data-table/src/react';
-import type { DataTableComponent } from '../../../../packages/data-table/src/react';
-import { mantineTheme } from '../../../../packages/data-table/src/themes';
+import { i18n as tableI18n } from '../../../../packages/data-table/demo/i18n.js';
+import { createDataTableComponent } from '../../../../packages/data-table/src/react/index.js';
+import type { dataTable } from '../../../../packages/data-table/src/react/index.js';
+import { mantineTheme } from '../../../../packages/data-table/src/themes/index.js';
 
 export { DataTable };
 
@@ -13,7 +13,7 @@ const BaseDataTable = createDataTableComponent({ i18n: tableI18n, theme: mantine
 // `user-manager__table`, which has no box of its own (`display: contents`): the hook of the layout that lets the table
 // of a page fill the height below the app header (`user-manager.css`, 2026-10-08), like the Board Manager's. 50 rows a
 // page (2026-10-08, the user's wish, in every app), unless a table says otherwise.
-function DataTable<Row>(props: DataTableComponent.Props<Row>): ReactElement {
+function DataTable<Row>(props: dataTable.Props<Row>): ReactElement {
   return (
     <div className="user-manager__table">
       <BaseDataTable density="compact" pageSize={50} {...props} />

@@ -1,7 +1,7 @@
 import { fireEvent, within } from '@testing-library/dom';
 import { describe, expect, it, vi } from 'vitest';
-import type * as Spec from '../api';
-import { createFileUploadClass } from './createFileUploadClass';
+import type * as Spec from '../api/index.js';
+import { createFileUploadClass } from './createFileUploadClass.js';
 
 type Pending = {
   file: File;
@@ -10,7 +10,7 @@ type Pending = {
   reject: (error: unknown) => void;
 };
 
-type Options = Partial<Omit<Spec.Element, 'items' | keyof HTMLElement>>;
+type Options = Partial<Omit<Spec.FileUploadElement, 'items' | keyof HTMLElement>>;
 
 const TAG = 'test-upload';
 
@@ -34,7 +34,7 @@ function createUpload() {
   return { upload, pending };
 }
 
-function queries(element: Spec.Element) {
+function queries(element: Spec.FileUploadElement) {
   // Testing Library types its container as an element, but a shadow root works the same for the queries.
   const shadow = element.shadowRoot!;
   const ui = within(shadow as unknown as HTMLElement);
@@ -53,7 +53,7 @@ function queries(element: Spec.Element) {
 
 function mount(options: Options = {}, markup = '') {
   const { upload, pending } = createUpload();
-  const element = document.createElement(TAG) as Spec.Element;
+  const element = document.createElement(TAG) as Spec.FileUploadElement;
 
   element.innerHTML = markup;
   Object.assign(element, { upload, ...options });
@@ -772,7 +772,7 @@ describe('file upload element', () => {
     it('takes the properties that were set before the element was defined', () => {
       const tag = 'late-upload';
       const { upload, pending } = createUpload();
-      const element = document.createElement(tag) as Spec.Element;
+      const element = document.createElement(tag) as Spec.FileUploadElement;
 
       Object.assign(element, { upload, multiple: true });
       document.body.append(element);
@@ -1097,7 +1097,7 @@ describe('file upload element', () => {
       );
 
       const { upload, pending } = createUpload();
-      const element = document.createElement(tag) as Spec.Element;
+      const element = document.createElement(tag) as Spec.FileUploadElement;
 
       Object.assign(element, { upload, ...options });
       document.body.append(element);
@@ -1152,13 +1152,13 @@ describe('file upload element', () => {
 
     it('asks the factory once per element, on its first connect, with the element', () => {
       const { i18n } = createI18n();
-      const getAdapter = vi.fn((_element: Spec.Element) => i18n);
+      const getAdapter = vi.fn((_element: Spec.FileUploadElement) => i18n);
       const tag = `i18n-upload-${crypto.randomUUID()}`;
 
       customElements.define(tag, class extends createFileUploadClass({ i18n: { type: 'factory', getAdapter } }) {});
 
-      const first = document.createElement(tag) as Spec.Element;
-      const second = document.createElement(tag) as Spec.Element;
+      const first = document.createElement(tag) as Spec.FileUploadElement;
+      const second = document.createElement(tag) as Spec.FileUploadElement;
 
       expect(getAdapter).not.toHaveBeenCalled();
 
@@ -1180,7 +1180,7 @@ describe('file upload element', () => {
   });
 
   describe('createFileUploadClass', () => {
-    const cssOf = (element: Spec.Element) => {
+    const cssOf = (element: Spec.FileUploadElement) => {
       const shadow = element.shadowRoot!;
       const sheets = shadow.adoptedStyleSheets.flatMap((sheet) => [...sheet.cssRules].map((rule) => rule.cssText));
 

@@ -1,13 +1,13 @@
 import { Stack, Text } from '@mantine/core';
 import type { ReactElement } from 'react';
 import { z } from 'zod';
-import type { FileUpload } from '../../../../../packages/file-upload/src';
-import { binding } from '../../../../../packages/form-validation/src';
-import { DOCUMENT_CATEGORIES } from '../../../domain';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { useForm } from '../../../shared/lib/useForm';
-import { FormSelect } from '../../../shared/ui/FormSelect';
-import { DocumentUpload } from '../../../shared/ui/upload';
+import type { fileUpload } from '../../../../../packages/file-upload/src/index.js';
+import { binding } from '../../../../../packages/form-validation/src/index.js';
+import { DOCUMENT_CATEGORIES } from '../../../domain/index.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { useForm } from '../../../shared/lib/useForm.js';
+import { FormSelect } from '../../../shared/ui/FormSelect.js';
+import { DocumentUpload } from '../../../shared/ui/upload.js';
 
 export { DocumentsForm, documentsSchema };
 
@@ -27,7 +27,7 @@ const documentsSchema = z.object({
 });
 
 const uploadFiles = binding({
-  fromComponent: (items: readonly FileUpload.FileItem[]) => {
+  fromComponent: (items: readonly fileUpload.FileItem[]) => {
     const files = items
       .filter((item) => item.status !== 'rejected')
       .map(({ status, result }) => ({ status, result }));
@@ -38,7 +38,7 @@ const uploadFiles = binding({
 
 function DocumentsForm({ name, upload, save }: {
   name: string;
-  upload: FileUpload.Upload;
+  upload: fileUpload.Upload;
   save: (values: z.output<typeof documentsSchema>) => Promise<void>;
 }): ReactElement {
   const t = useTranslate();

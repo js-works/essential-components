@@ -1,15 +1,15 @@
 import { ActionIcon, Button, Group, Loader, NativeSelect, Stack, Text, Tooltip } from '@mantine/core';
 import { useState } from 'react';
 import type { ReactElement } from 'react';
-import { todayDate } from '../../../domain';
-import { formatMonth } from '../../../shared/lib/format';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { appIcons } from '../../../shared/ui/icons';
-import { PageHeader } from '../../../shared/ui/parts';
-import { useTimeData } from '../../tracker';
-import { useViewer } from '../../viewer';
-import { AbsenceLegend } from '../components/MonthCalendar';
-import { TeamGrid } from '../components/TeamGrid';
+import { todayDate } from '../../../domain/index.js';
+import { formatMonth } from '../../../shared/lib/format.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { appIcons } from '../../../shared/ui/icons.js';
+import { PageHeader } from '../../../shared/ui/parts.js';
+import { useTimeData } from '../../tracker/index.js';
+import { useViewer } from '../../viewer/index.js';
+import { AbsenceLegend } from '../components/MonthCalendar.js';
+import { TeamGrid } from '../components/TeamGrid.js';
 
 export { CalendarPage };
 

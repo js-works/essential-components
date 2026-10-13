@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { BrowserService } from './service';
+import type { BrowserService } from './service.js';
 
 export { BrowserServiceContext, folderPath, useBrowserService };
 

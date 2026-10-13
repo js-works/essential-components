@@ -1,15 +1,15 @@
 import { Popover as BasePopover } from '@base-ui/react/popover';
 import { useContext, useEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
-import type { DataTableComponent as Spec } from '../../react/api';
-import { useLocale, useTexts } from '../texts';
-import { flag } from '../utils';
-import * as styles from './classes';
-import { createDatePicker, createRangePicker } from './dateRangePicker';
-import type { RangeSelection } from './dateRangePicker';
-import { icons } from './icons';
-import { LayerContext } from './layer';
-import { ClearButton } from './widgets';
+import type * as Spec from '../../api/react/index.js';
+import { useLocale, useTexts } from '../texts.js';
+import { flag } from '../utils.js';
+import * as styles from './classes.js';
+import { createDatePicker, createRangePicker } from './dateRangePicker.js';
+import type { RangeSelection } from './dateRangePicker.js';
+import { icons } from './icons.js';
+import { LayerContext } from './layer.js';
+import { ClearButton } from './widgets.js';
 
 export { DateInput, DateRangeFilterInput, formatRange, rangeOf };
 

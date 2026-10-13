@@ -5,9 +5,9 @@ import { createTheme, MantineProvider, mergeThemeOverrides } from '@mantine/core
 import { StrictMode } from 'react';
 import type { ReactElement } from 'react';
 import { createRoot } from 'react-dom/client';
-import type * as Spec from './api';
-import { LoginScreen } from './LoginScreen';
-import { useScheme } from './page';
+import type * as Spec from './api/index.js';
+import { LoginScreen } from './LoginScreen.js';
+import { useScheme } from './page.js';
 
 export { mountLoginScreen };
 

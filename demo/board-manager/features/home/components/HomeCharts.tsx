@@ -2,10 +2,10 @@ import { BarChart, DonutChart } from '@mantine/charts';
 import { Paper, RingProgress, Stack, Text, useMantineTheme } from '@mantine/core';
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
-import { MEETING_STATUSES, ROLES } from '../../../domain';
-import type { Meeting, MeetingStatus } from '../../../domain';
-import { useLanguage, useTranslate } from '../../../shared/lib/i18n';
-import { useDb } from '../../../shared/shared';
+import { MEETING_STATUSES, ROLES } from '../../../domain/index.js';
+import type { Meeting, MeetingStatus } from '../../../domain/index.js';
+import { useLanguage, useTranslate } from '../../../shared/lib/i18n/index.js';
+import { useDb } from '../../../shared/shared.js';
 
 export { HomeCharts };
 

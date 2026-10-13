@@ -15,8 +15,24 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 
 ## Working rules
 
-- Its own code style: double quotes, `.js` suffixes on relative imports, no dprint.
+- Its own code style: double quotes, no dprint (the `.js` suffixes on relative imports are the rule of every package
+  since 2026-10-13, `typescript.md`).
 - The demo rules are in the comment of `src/demo/OverlaysDemo.ts`.
+- The API types live in `src/main/api/` (2026-10-12, `typescript.md`; `dialogs/contract/` and `toasts/contract/`
+  before, types and runtime code mixed):
+  - `dialogs/` (`dialog.ts`, `adapter.ts`, `content.ts`, `theme.ts`, `texts.ts`), `toasts/` (`toast.ts`, `adapter.ts`,
+    `theme.ts`, `texts.ts`), `theme.ts` (`ThemePalette`, `Themes`: both features); `index.ts` re-exports them.
+  - Per binding entry: `dom/`, `lit/`, `react/` (its `content.ts`, React's `provider.ts` too), each with an `index.ts`
+    that re-exports `../index.js` and its own files.
+  - The runtime code of the former `contract/` is beside its feature: `dialogs/theme.ts`, `dialogs/texts.ts` (the
+    defaults; `TextKey` stays internal there), `dialogs/form-data.ts`, `dialogs/view.ts` (the internal view types),
+    `toasts/theme.ts`, `toasts/texts.ts`, `toasts/view.ts` (the policy helpers).
+  - Every entry exports the values flat and the types as the one type namespace `overlays`
+    (`import type { overlays } from "@local/overlays/react"`, `overlays.DialogTheme`, `overlays.OverlaysConfig`); the
+    names kept their prefixes (`Dialog…`, `Toast…`): both features share the namespace. Flat type exports before.
+  - Public since then too (all exports of `api/dialogs/dialog.ts`): `Aborted`, `Answered`, `Dismissed`,
+    `AnyDialogResult`, the parts of the result types.
+  - To discuss later: `overlays.OverlaysConfig` repeats itself (`Config`, `ProviderConfig`).
 - Not yet following the conventions (older than them; to be discussed, not changed on the side):
   - Exports on the declarations (`export function …`) and TypeScript `private` in places (`typescript.md`).
   - i18n through picolingo namespaces (`createNamespace()`), not the `I18nAdapter` of `i18n.md`.

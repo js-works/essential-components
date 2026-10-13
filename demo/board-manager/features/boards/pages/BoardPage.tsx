@@ -7,10 +7,10 @@ import {
   dateRangeColumnFilter,
   selectColumnFilter,
   useDataTableController,
-} from '../../../../../packages/data-table/src/react';
-import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
-import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react';
-import { ROLES } from '../../../domain';
+} from '../../../../../packages/data-table/src/react/index.js';
+import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
+import { ROLES } from '../../../domain/index.js';
 import {
   addMember,
   changeRole,
@@ -19,12 +19,12 @@ import {
   getBoard,
   getBoardRow,
   removeMembers,
-} from '../../../infra/in-memory';
-import type { MemberRow } from '../../../infra/in-memory';
-import { MemberForm } from '../../../shared/forms';
-import { confirmAndRun } from '../../../shared/lib/flows';
-import { useTranslate } from '../../../shared/lib/i18n';
-import type { Translate } from '../../../shared/lib/i18n';
+} from '../../../infra/in-memory/index.js';
+import type { MemberRow } from '../../../infra/in-memory/index.js';
+import { MemberForm } from '../../../shared/forms.js';
+import { confirmAndRun } from '../../../shared/lib/flows.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import type { Translate } from '../../../shared/lib/i18n/index.js';
 import {
   appIcons,
   DataTable,
@@ -35,10 +35,10 @@ import {
   PageHeader,
   personFilter,
   useDb,
-} from '../../../shared/shared';
-import { NotFound } from '../../../shared/ui/NotFound';
-import { MeetingsTable } from '../../meetings/components/MeetingsTable';
-import { deleteBoardsFlow, editBoard } from '../components/boardFlows';
+} from '../../../shared/shared.js';
+import { NotFound } from '../../../shared/ui/NotFound.js';
+import { MeetingsTable } from '../../meetings/components/MeetingsTable.js';
+import { deleteBoardsFlow, editBoard } from '../components/boardFlows.js';
 
 export { BoardPage };
 
@@ -151,7 +151,7 @@ function BoardOverview({ boardId }: { boardId: string }): ReactElement | null {
 }
 
 // The columns, with their headers in the current language.
-const columnsOf = (t: Translate): readonly DataTableComponent.Column<MemberRow>[] => [
+const columnsOf = (t: Translate): readonly dataTable.Column<MemberRow>[] => [
   { key: 'name', header: t('boards.columns.person'), width: 2.5, sortable: true, filter: personFilter },
   {
     key: 'role',
@@ -193,7 +193,7 @@ function MembersTable({ boardId }: { boardId: string }): ReactElement {
   const toasts = useToast();
   const source = useMemo(() => fetchBoardMembers(boardId), [boardId]);
 
-  const actions = useMemo<readonly DataTableComponent.Action<MemberRow>[]>(() => {
+  const actions = useMemo<readonly dataTable.Action<MemberRow>[]>(() => {
     const add = async () => {
       const state = db.getState();
       const members = new Set(

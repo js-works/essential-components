@@ -1,6 +1,6 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
-import type { DataTableComponent as Spec } from '../react/api';
-import { ConfigContext } from './config';
+import type * as Spec from '../api/react/index.js';
+import { ConfigContext } from './config.js';
 
 export { useLocale, useTexts };
 

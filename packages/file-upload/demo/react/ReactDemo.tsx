@@ -1,11 +1,11 @@
 import { createContext, StrictMode, useContext, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
-import type { FileUpload } from '../../src';
-import { createFileUploadComponent } from '../../src/react';
-import { submitted, summarize } from '../format';
-import { createLocaleI18n } from '../i18n';
-import { createUpload } from '../upload';
+import type { fileUpload } from '../../src/index.js';
+import { createFileUploadComponent } from '../../src/react/index.js';
+import { submitted, summarize } from '../format.js';
+import { createLocaleI18n } from '../i18n.js';
+import { createUpload } from '../upload.js';
 
 export { mountReactDemo };
 
@@ -34,7 +34,7 @@ function Column(
   const [locale, setLocale] = useState(initialLocale);
   const [required, setRequired] = useState(false);
   const [failed, setFailed] = useState(false);
-  const [items, setItems] = useState<readonly FileUpload.FileItem[]>([]);
+  const [items, setItems] = useState<readonly fileUpload.FileItem[]>([]);
   const [sent, setSent] = useState('');
 
   return (

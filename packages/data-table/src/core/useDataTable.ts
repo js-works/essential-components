@@ -1,5 +1,6 @@
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent, MouseEvent } from 'react';
+import type * as Spec from '../api/react/index.js';
 import {
   hasContent,
   isPlainRowClick,
@@ -7,8 +8,7 @@ import {
   isTextEditingTarget,
   MAX_OPTIMAL_COLUMN_WIDTH,
   MIN_COLUMN_WIDTH,
-} from '../core/utils';
-import type { DataTableComponent as Spec } from '../react/api';
+} from '../core/utils.js';
 import {
   columnItems,
   contextMenuItems,
@@ -19,15 +19,15 @@ import {
   pinnedToolbarItems,
   selectionModeOf,
   selectionToolbarItems,
-} from './actions';
-import { connectController, notifySelection } from './controller';
-import type { ControllerTarget } from './controller';
-import { sameValue, withoutKey } from './filters';
-import { flatRows, groupKeyOf, linesOf, moveInSegments, segmentsOf } from './grouping';
-import type { Line, Segment } from './grouping';
-import { useDelayedFlag, useElementHeight, useScrollbarWidth } from './hooks';
-import { createLayout, withoutHidden } from './layout';
-import { useTexts } from './texts';
+} from './actions.js';
+import { connectController, notifySelection } from './controller.js';
+import type { ControllerTarget } from './controller.js';
+import { sameValue, withoutKey } from './filters.js';
+import { flatRows, groupKeyOf, linesOf, moveInSegments, segmentsOf } from './grouping.js';
+import type { Line, Segment } from './grouping.js';
+import { useDelayedFlag, useElementHeight, useScrollbarWidth } from './hooks.js';
+import { createLayout, withoutHidden } from './layout.js';
+import { useTexts } from './texts.js';
 
 export { DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS, useDataTable };
 export type { ContextTarget, RowGroupEntry, SearchBox };

@@ -16,11 +16,9 @@ import type {
   DialogAdapterFactory,
   DialogProps,
   DialogSlots,
-} from "../../dialogs/contract/adapter.js";
-import type { Renderable } from "../../dialogs/contract/content.js";
-
-/** Content the built-in adapter understands: no framework required. */
-export type DomDialogContent = Node;
+} from "../../api/dialogs/adapter.js";
+import type { Renderable } from "../../api/dialogs/content.js";
+import type { DomDialogContent } from "../../api/dom/content.js";
 
 /** Wrapper element per slot, matching what the dialog element's shadow chrome expects. */
 const slotTags: Record<keyof DialogSlots<any>, string> = {

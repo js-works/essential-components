@@ -3,11 +3,11 @@ import { Select as BaseSelect } from '@base-ui/react/select';
 import { Tooltip as BaseTooltip } from '@base-ui/react/tooltip';
 import { useContext, useLayoutEffect, useRef, useState } from 'react';
 import type { KeyboardEventHandler, ReactElement, ReactNode } from 'react';
-import type { DataTableComponent as Spec } from '../../react/api';
-import { flag, hasContent, isShiftClick } from '../utils';
-import * as styles from './classes';
-import { icons } from './icons';
-import { LayerContext } from './layer';
+import type * as Spec from '../../api/react/index.js';
+import { flag, hasContent, isShiftClick } from '../utils.js';
+import * as styles from './classes.js';
+import { icons } from './icons.js';
+import { LayerContext } from './layer.js';
 
 export {
   ActionButton,

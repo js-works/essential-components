@@ -1,4 +1,4 @@
-import { ancestorsOf, childrenOf, FILE_KINDS, isInside, ROOT_ID } from '../../domain';
+import { ancestorsOf, childrenOf, FILE_KINDS, isInside, ROOT_ID } from '../../domain/index.js';
 import type {
   FileCriteria,
   FileKind,
@@ -10,7 +10,7 @@ import type {
   Page,
   Paging,
   Sort,
-} from '../../domain';
+} from '../../domain/index.js';
 
 export { createBrowserService };
 export type { BrowserService, EntryCriteria, EntryRow, Overview, TrashRow, TrashSortKey };

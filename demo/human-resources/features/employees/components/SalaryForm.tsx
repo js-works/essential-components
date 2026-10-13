@@ -2,12 +2,12 @@ import { Group, NumberInput, Stack, Text, Textarea } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import type { ReactElement } from 'react';
 import { z } from 'zod';
-import { SALARY_REASONS } from '../../../domain';
-import type { SalaryChange } from '../../../domain';
-import { formatMoney } from '../../../shared/lib/format';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { useForm } from '../../../shared/lib/useForm';
-import { FormSelect } from '../../../shared/ui/FormSelect';
+import { SALARY_REASONS } from '../../../domain/index.js';
+import type { SalaryChange } from '../../../domain/index.js';
+import { formatMoney } from '../../../shared/lib/format.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { useForm } from '../../../shared/lib/useForm.js';
+import { FormSelect } from '../../../shared/ui/FormSelect.js';
 
 export { SalaryForm, salarySchema };
 

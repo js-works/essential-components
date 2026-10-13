@@ -1,13 +1,13 @@
 import { ContextMenu as BaseContextMenu } from '@base-ui/react/context-menu';
 import { useContext, useEffect, useRef } from 'react';
 import type { CSSProperties, ReactElement, ReactNode } from 'react';
-import type { DataTableComponent as Spec } from '../../react/api';
-import type { ActionItem, ContextMenuItem } from '../actions';
-import type { ContextTarget } from '../useDataTable';
-import { hasContent } from '../utils';
-import * as classes from './classes';
-import { icons } from './icons';
-import { LayerContext } from './layer';
+import type * as Spec from '../../api/react/index.js';
+import type { ActionItem, ContextMenuItem } from '../actions.js';
+import type { ContextTarget } from '../useDataTable.js';
+import { hasContent } from '../utils.js';
+import * as classes from './classes.js';
+import { icons } from './icons.js';
+import { LayerContext } from './layer.js';
 
 export { RowContextMenu };
 

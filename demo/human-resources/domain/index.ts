@@ -1,10 +1,10 @@
 // The domain of human resources: departments, employees (their job, salary history and documents), recruiting
 // (openings and candidates) and the checklists of joiners and leavers. Pure TypeScript; imports nothing from outside.
 
-import type { Checklist } from './checklist';
-import type { Employee, EmployeeDocument, SalaryChange } from './employee';
-import type { Department } from './organization';
-import type { Candidate, Opening } from './recruiting';
+import type { Checklist } from './checklist.js';
+import type { Employee, EmployeeDocument, SalaryChange } from './employee.js';
+import type { Department } from './organization.js';
+import type { Candidate, Opening } from './recruiting.js';
 
 export type { HrData };
 
@@ -17,7 +17,7 @@ export {
   progressOf,
   TASK_OWNERS,
   tasksFromTemplate,
-} from './checklist';
+} from './checklist.js';
 export type {
   Checklist,
   ChecklistKind,
@@ -26,8 +26,8 @@ export type {
   TaskOwner,
   TaskValues,
   TemplateTask,
-} from './checklist';
-export { addDays, dateOf, daysBetween, nextYearly, todayDate, yearsBetween } from './dates';
+} from './checklist.js';
+export { addDays, dateOf, daysBetween, nextYearly, todayDate, yearsBetween } from './dates.js';
 export {
   currentSalary,
   DOCUMENT_CATEGORIES,
@@ -39,7 +39,7 @@ export {
   splitName,
   statusOf,
   upcomingEvents,
-} from './employee';
+} from './employee.js';
 export type {
   DocumentCategory,
   DocumentRepository,
@@ -54,10 +54,10 @@ export type {
   SalaryRepository,
   SalaryValues,
   UpcomingEvent,
-} from './employee';
-export { childrenOf, departmentPath, descendantIds } from './organization';
-export type { Department, DepartmentRepository, DepartmentValues } from './organization';
-export { CANDIDATE_SOURCES, isInProcess, OPENING_STATUSES, PIPELINE, STAGES } from './recruiting';
+} from './employee.js';
+export { childrenOf, departmentPath, descendantIds } from './organization.js';
+export type { Department, DepartmentRepository, DepartmentValues } from './organization.js';
+export { CANDIDATE_SOURCES, isInProcess, OPENING_STATUSES, PIPELINE, STAGES } from './recruiting.js';
 export type {
   Candidate,
   CandidateRepository,
@@ -69,7 +69,7 @@ export type {
   OpeningStatus,
   OpeningValues,
   Stage,
-} from './recruiting';
+} from './recruiting.js';
 
 // Everything the app shows, in one read (the lists are small).
 type HrData = {

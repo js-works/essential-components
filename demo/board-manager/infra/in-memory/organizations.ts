@@ -1,11 +1,11 @@
-import type { DataTableComponent } from '../../../../packages/data-table/src/react';
-import { normalizeWebsite } from '../../domain';
-import type { Organization } from '../../domain';
-import { countryName } from '../../shared/lib/countries';
-import { AppError } from './errors';
-import { matches, oneOf, runQuery } from './query';
-import { db, LOADING_TIME, newId, save, SAVE_TIME, wait } from './store';
-import type { Db } from './store';
+import type { dataTable } from '../../../../packages/data-table/src/react/index.js';
+import { normalizeWebsite } from '../../domain/index.js';
+import type { Organization } from '../../domain/index.js';
+import { countryName } from '../../shared/lib/countries.js';
+import { AppError } from './errors.js';
+import { matches, oneOf, runQuery } from './query.js';
+import { db, LOADING_TIME, newId, save, SAVE_TIME, wait } from './store.js';
+import type { Db } from './store.js';
 
 export { createOrganization, deleteOrganizations, fetchOrganizations, suggestOrganizations, updateOrganization };
 export type { OrganizationRow, OrganizationValues };
@@ -30,9 +30,9 @@ async function suggestOrganizations(
 }
 
 async function fetchOrganizations(
-  query: DataTableComponent.Query,
+  query: dataTable.Query,
   signal: AbortSignal,
-): Promise<DataTableComponent.Result<OrganizationRow>> {
+): Promise<dataTable.Result<OrganizationRow>> {
   await wait(LOADING_TIME, signal);
 
   const state = db.getState();

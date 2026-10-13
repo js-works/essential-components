@@ -2,15 +2,15 @@ import { Anchor, Group as MantineGroup, Stack, Text, ThemeIcon } from '@mantine/
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { useDataTableController } from '../../../../../packages/data-table/src/react';
-import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
-import type { AccessData, Group } from '../../../domain';
-import { DataTable } from '../../../shared/ui/dataTable';
-import { appIcons } from '../../../shared/ui/icons';
-import { PageHeader } from '../../../shared/ui/parts';
-import { useGrantAccess } from '../../access';
-import { useTableSource } from '../../iam';
-import { useGroupFlows } from '../flows';
+import { useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
+import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import type { AccessData, Group } from '../../../domain/index.js';
+import { DataTable } from '../../../shared/ui/dataTable.js';
+import { appIcons } from '../../../shared/ui/icons.js';
+import { PageHeader } from '../../../shared/ui/parts.js';
+import { useGrantAccess } from '../../access/index.js';
+import { useTableSource } from '../../iam/index.js';
+import { useGroupFlows } from '../flows.js';
 
 export { GroupsPage };
 
@@ -32,7 +32,7 @@ function GroupsPage(): ReactElement {
   const grantAccess = useGrantAccess();
   const source = useTableSource<GroupRow>('groups', groupRows, { search: ['name', 'description'] }, nav.reload);
 
-  const columns = useMemo((): readonly DataTableComponent.Column<GroupRow>[] => [
+  const columns = useMemo((): readonly dataTable.Column<GroupRow>[] => [
     {
       key: 'name',
       header: 'Name',
@@ -56,7 +56,7 @@ function GroupsPage(): ReactElement {
     { key: 'grants', header: 'Grants', width: 1.2, sortable: true, align: 'end', hideable: true },
   ], []);
 
-  const actions = useMemo((): readonly DataTableComponent.Action<GroupRow>[] => [
+  const actions = useMemo((): readonly dataTable.Action<GroupRow>[] => [
     {
       type: 'general',
       key: 'new',

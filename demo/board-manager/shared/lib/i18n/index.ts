@@ -1,8 +1,8 @@
 import i18next from 'i18next';
 import { useTranslation } from 'react-i18next';
-import type { I18nAdapter } from '../../../../../packages/form-validation/src';
-import { de } from './locales/de';
-import { en } from './locales/en';
+import type { formValidation } from '../../../../../packages/form-validation/src/index.js';
+import { de } from './locales/de.js';
+import { en } from './locales/en.js';
 
 export { i18n, i18nAdapter, translate, translateKey, useLanguage, useTranslate };
 export type { Translate };
@@ -70,7 +70,7 @@ function translateKey(key: string, params?: object): string {
   return resolve(key, { ...params });
 }
 
-const i18nAdapter: I18nAdapter = {
+const i18nAdapter: formValidation.I18nAdapter = {
   currentLocale: () => i18n.language,
   resolveText: (namespace, key, params, defaultValue) => resolve(key, { ns: namespace, ...params, defaultValue }),
   onChange: (listener) => {

@@ -1,19 +1,19 @@
 import { Badge, Group, Text } from '@mantine/core';
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
-import { selectColumnFilter, useDataTableController } from '../../../../../packages/data-table/src/react';
-import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
-import { certificateRequired, sickDays, todayDate } from '../../../domain';
-import type { Employee, SickNote } from '../../../domain';
-import { formatDateRange, formatStamp } from '../../../shared/lib/format';
-import { useTranslate } from '../../../shared/lib/i18n';
-import type { Translate } from '../../../shared/lib/i18n';
-import { oneOf } from '../../../shared/lib/localQuery';
-import { DataTable } from '../../../shared/ui/dataTable';
-import { appIcons } from '../../../shared/ui/icons';
-import { EmployeeLabel } from '../../../shared/ui/parts';
-import { useTableSource } from '../../tracker';
-import { useSickFlows } from '../flows';
+import { selectColumnFilter, useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
+import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import { certificateRequired, sickDays, todayDate } from '../../../domain/index.js';
+import type { Employee, SickNote } from '../../../domain/index.js';
+import { formatDateRange, formatStamp } from '../../../shared/lib/format.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import type { Translate } from '../../../shared/lib/i18n/index.js';
+import { oneOf } from '../../../shared/lib/localQuery.js';
+import { DataTable } from '../../../shared/ui/dataTable.js';
+import { appIcons } from '../../../shared/ui/icons.js';
+import { EmployeeLabel } from '../../../shared/ui/parts.js';
+import { useTableSource } from '../../tracker/index.js';
+import { useSickFlows } from '../flows.js';
 
 export { SickTable };
 
@@ -82,8 +82,8 @@ function SickTable({ employees, mine, title, subtitle }: {
     filters: { certificateState: (row, value) => oneOf(row.certificateState, value) },
   }, nav.reload);
 
-  const columns = useMemo((): readonly DataTableComponent.Column<SickRow>[] => {
-    const employeeColumn: DataTableComponent.Column<SickRow> = {
+  const columns = useMemo((): readonly dataTable.Column<SickRow>[] => {
+    const employeeColumn: dataTable.Column<SickRow> = {
       key: 'employeeName',
       header: t('sick.employee'),
       width: 3,
@@ -138,7 +138,7 @@ function SickTable({ employees, mine, title, subtitle }: {
     ];
   }, [mine, t]);
 
-  const actions = useMemo((): readonly DataTableComponent.Action<SickRow>[] =>
+  const actions = useMemo((): readonly dataTable.Action<SickRow>[] =>
     mine
       ? [
         {

@@ -1,5 +1,5 @@
-import type * as Spec from '../api';
-import { themeValues } from './styles';
+import type * as Spec from '../api/index.js';
+import { themeValues } from './styles.js';
 
 export { taskbarStyles };
 

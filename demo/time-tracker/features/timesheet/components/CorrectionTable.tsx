@@ -1,17 +1,17 @@
 import { Text } from '@mantine/core';
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
-import { useDataTableController } from '../../../../../packages/data-table/src/react';
-import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
-import { minutesOf } from '../../../domain';
-import type { Correction, Employee, TimeData } from '../../../domain';
-import { formatDate, formatDuration, formatStamp, formatTime } from '../../../shared/lib/format';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { DataTable } from '../../../shared/ui/dataTable';
-import { appIcons } from '../../../shared/ui/icons';
-import { EmployeeLabel } from '../../../shared/ui/parts';
-import { useTableSource } from '../../tracker';
-import { useCorrectionFlows } from '../flows';
+import { useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
+import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import { minutesOf } from '../../../domain/index.js';
+import type { Correction, Employee, TimeData } from '../../../domain/index.js';
+import { formatDate, formatDuration, formatStamp, formatTime } from '../../../shared/lib/format.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { DataTable } from '../../../shared/ui/dataTable.js';
+import { appIcons } from '../../../shared/ui/icons.js';
+import { EmployeeLabel } from '../../../shared/ui/parts.js';
+import { useTableSource } from '../../tracker/index.js';
+import { useCorrectionFlows } from '../flows.js';
 
 export { CorrectionTable };
 
@@ -51,7 +51,7 @@ function CorrectionTable({ data, employees, title, subtitle }: {
 
   const nameOf = (id: string) => data.employees.find((employee) => employee.id === id)?.name ?? '';
 
-  const columns = useMemo((): readonly DataTableComponent.Column<CorrectionRow>[] => [
+  const columns = useMemo((): readonly dataTable.Column<CorrectionRow>[] => [
     {
       key: 'employeeName',
       header: t('correction.employee'),
@@ -81,7 +81,7 @@ function CorrectionTable({ data, employees, title, subtitle }: {
     },
   ], [t]);
 
-  const actions = useMemo((): readonly DataTableComponent.Action<CorrectionRow>[] => [
+  const actions = useMemo((): readonly dataTable.Action<CorrectionRow>[] => [
     {
       type: 'multiRow',
       key: 'approve',

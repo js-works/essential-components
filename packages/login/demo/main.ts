@@ -1,8 +1,8 @@
 // The design language first, so the demo's own CSS comes after it.
 import './ui/ui.css';
 import './demo.css';
-import { mountLoginScreen } from '../src';
-import type { Login } from '../src';
+import { mountLoginScreen } from '../src/index.js';
+import type { login } from '../src/index.js';
 
 // The demo: the login screen; any username and password sign in (after a short delay), except the password "wrong",
 // which shows the error; so do the made-up providers, except "Google" (it fails). Signed in: the user's name and a button to sign out again.
@@ -11,11 +11,11 @@ const app = document.querySelector<HTMLElement>('#app')!;
 const LOGO =
   '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2" opacity="0.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2" opacity="0.6"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></svg>';
 
-let login: Login.Mounted | undefined;
+let loginScreen: login.Mounted | undefined;
 
 function signOut(): void {
   app.replaceChildren();
-  login = mountLoginScreen(app, {
+  loginScreen = mountLoginScreen(app, {
     title: 'Back Office',
     subtitle: 'Acme Corporate',
     logo: LOGO,
@@ -69,8 +69,8 @@ function signOut(): void {
 }
 
 function signIn(username: string): void {
-  login?.unmount();
-  login = undefined;
+  loginScreen?.unmount();
+  loginScreen = undefined;
 
   const panel = document.createElement('div');
   const text = document.createElement('p');

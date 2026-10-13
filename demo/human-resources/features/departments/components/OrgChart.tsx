@@ -2,14 +2,14 @@ import { ActionIcon, Anchor, Badge, Group, Menu, Stack, Text } from '@mantine/co
 import { useLayoutEffect, useRef } from 'react';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';
-import { childrenOf, todayDate } from '../../../domain';
-import type { Department, HrData } from '../../../domain';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { appIcons } from '../../../shared/ui/icons';
-import { EmployeeAvatar } from '../../../shared/ui/parts';
-import { employeeOf } from '../../hr';
-import { useDepartmentFlows } from '../flows';
-import { headcount } from '../headcount';
+import { childrenOf, todayDate } from '../../../domain/index.js';
+import type { Department, HrData } from '../../../domain/index.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { appIcons } from '../../../shared/ui/icons.js';
+import { EmployeeAvatar } from '../../../shared/ui/parts.js';
+import { employeeOf } from '../../hr/index.js';
+import { useDepartmentFlows } from '../flows.js';
+import { headcount } from '../headcount.js';
 
 export { OrgChart };
 

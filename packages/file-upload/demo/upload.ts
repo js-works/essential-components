@@ -1,4 +1,4 @@
-import type { FileUpload } from '../src';
+import type { fileUpload } from '../src/index.js';
 
 export { createUpload, isUploadBehavior };
 export type { UploadBehavior };
@@ -15,7 +15,7 @@ function isUploadBehavior(value: string): value is UploadBehavior {
 
 // A fake server: the time depends on the size of the file. It reports its progress, stops as soon as the signal is
 // aborted, like a fetch would, and answers with an id for the file (the form value).
-function createUpload(behavior: UploadBehavior): FileUpload.Upload {
+function createUpload(behavior: UploadBehavior): fileUpload.Upload {
   return (file, { signal, onProgress }) =>
     new Promise<string>((resolve, reject) => {
       const base = Math.min(5000, 1500 + file.size / 500);

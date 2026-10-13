@@ -1,5 +1,5 @@
-import type * as Spec from '../api';
-import { CockpitElement } from './CockpitElement';
+import type * as Spec from '../api/index.js';
+import { CockpitElement } from './CockpitElement.js';
 
 export { createCockpitClass };
 

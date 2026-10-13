@@ -1,9 +1,9 @@
 import { useNavigate } from 'react-router';
-import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react';
-import type { Group } from '../../domain';
-import { countText } from '../../shared/lib/format';
-import { useChanged, useIamService } from '../iam';
-import { GroupForm } from './components/GroupForm';
+import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react/index.js';
+import type { Group } from '../../domain/index.js';
+import { countText } from '../../shared/lib/format.js';
+import { useChanged, useIamService } from '../iam/index.js';
+import { GroupForm } from './components/GroupForm.js';
 
 export { useGroupFlows };
 

@@ -1,9 +1,9 @@
 import { useNavigate } from 'react-router';
-import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react';
-import type { Role } from '../../domain';
-import { countText } from '../../shared/lib/format';
-import { useChanged, useIamService } from '../iam';
-import { RoleForm } from './components/RoleForm';
+import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react/index.js';
+import type { Role } from '../../domain/index.js';
+import { countText } from '../../shared/lib/format.js';
+import { useChanged, useIamService } from '../iam/index.js';
+import { RoleForm } from './components/RoleForm.js';
 
 export { useRoleFlows };
 

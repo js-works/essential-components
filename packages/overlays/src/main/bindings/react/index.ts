@@ -12,7 +12,7 @@
 // React itself, so the hooks can share a single provider-owned portal registry.
 
 export { OverlaysProvider, useDialogs, useToast } from "./provider.js";
-export type { OverlaysConfig, OverlaysProviderProps } from "./provider.js";
 export { Form } from "./dialog-adapter.js";
-export type { FormProps, ReactContent } from "./dialog-adapter.js";
-export type { ReactToastContent } from "./toast-adapter.js";
+
+// The types (with all of the main entry's): `import type { overlays } from "@local/overlays/react"`.
+export type * as overlays from "../../api/react/index.js";

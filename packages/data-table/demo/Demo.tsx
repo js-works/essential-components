@@ -13,18 +13,18 @@ import {
   textColumnFilter,
   useDataTableController,
   useDataTableSelection,
-} from '../src/react';
-import type { DataTableComponent } from '../src/react';
-import { antdTheme, defaultTheme, mantineTheme, softTheme } from '../src/themes';
-import type { Controls, DemoTheme } from './controls';
-import { countries, createUser, fetchNothing, fetchUsers, newUser, roles, saveUser, suggestEmails } from './data';
-import type { User } from './data';
+} from '../src/react/index.js';
+import type { dataTable } from '../src/react/index.js';
+import { antdTheme, defaultTheme, mantineTheme, softTheme } from '../src/themes/index.js';
+import type { Controls, DemoTheme } from './controls.js';
+import { countries, createUser, fetchNothing, fetchUsers, newUser, roles, saveUser, suggestEmails } from './data.js';
+import type { User } from './data.js';
 import { badge, fixedHeight, note, selectedLine, suggestion } from './Demo.module.css';
-import { DemoControls } from './DemoControls';
-import { i18n } from './i18n';
-import { icons } from './icons';
-import { createActions } from './shared';
-import { useToasts } from './Toasts';
+import { DemoControls } from './DemoControls.js';
+import { i18n } from './i18n.js';
+import { icons } from './icons.js';
+import { createActions } from './shared.js';
+import { useToasts } from './Toasts.js';
 import antdVariables from './variables/antd.css?inline';
 import mantineVariables from './variables/mantine.css?inline';
 
@@ -32,7 +32,7 @@ export { Demo };
 
 // An app creates its data table once, with its configuration. The demo creates one per theme, all with the same
 // I18nAdapter, and shows the one of the chosen theme.
-const tables: Record<DemoTheme, DataTableComponent.Component> = {
+const tables: Record<DemoTheme, dataTable.Component> = {
   default: createDataTableComponent({ i18n, theme: defaultTheme }),
   soft: createDataTableComponent({ i18n, theme: softTheme }),
   mantine: createDataTableComponent({ i18n, theme: mantineTheme }),
@@ -48,11 +48,11 @@ const libraryVariables: Record<DemoTheme, string> = {
   antd: antdVariables,
 };
 
-type UserColumn = DataTableComponent.Column<User>;
+type UserColumn = dataTable.Column<User>;
 
 // The edit form ("Edit", a double click; "Add user" for a new row): a field for every column with an editor (`edit`,
 // also a hidden one), then the extra fields, values that are no column (`editFields`).
-const editFields: readonly DataTableComponent.EditField<User>[] = [
+const editFields: readonly dataTable.EditField<User>[] = [
   { key: 'city', label: 'City', edit: textColumnEditor() },
   { key: 'notes', label: 'Notes', edit: textColumnEditor({ placeholder: 'A note about the user' }) },
 ];
@@ -133,7 +133,7 @@ const active: UserColumn = {
   render: (user) => (user.active ? 'Yes' : 'No'),
 };
 
-const filterOf: Record<string, DataTableComponent.ColumnFilter> = {
+const filterOf: Record<string, dataTable.ColumnFilter> = {
   // With the select of how the text must match (contains, starts with, ends with); the other text filters are plain.
   firstName: textColumnFilter({ matchModes: true }),
   lastName: textColumnFilter({ matchModes: true }),
@@ -161,7 +161,7 @@ const filterOf: Record<string, DataTableComponent.ColumnFilter> = {
 function createColumns(
   grouped: boolean,
   filtered: boolean,
-): readonly (UserColumn | DataTableComponent.ColumnGroup<User>)[] {
+): readonly (UserColumn | dataTable.ColumnGroup<User>)[] {
   const filter = (column: UserColumn): UserColumn => {
     const columnFilter = filterOf[column.key];
 
@@ -206,8 +206,8 @@ function Demo({ controls }: { controls: Controls }): ReactElement {
   });
   // Saved filters (in the filter view and the drawer), kept in memory: a name saved again replaces the
   // filter of that name. With sharing (the demo has one user: shared ones are only marked).
-  const [saved, setSaved] = useState<readonly DataTableComponent.SavedFilter[]>([]);
-  const savedFilters: DataTableComponent.SavedFilters = {
+  const [saved, setSaved] = useState<readonly dataTable.SavedFilter[]>([]);
+  const savedFilters: dataTable.SavedFilters = {
     items: saved,
     sharing: true,
     save: (name, filters, { shared }) => {

@@ -16,18 +16,11 @@ import type {
   DialogAdapterFactory,
   DialogProps,
   DialogSlots,
-} from "../../dialogs/contract/adapter.js";
-import type { Renderable } from "../../dialogs/contract/content.js";
-import type { FormConfirm } from "../../dialogs/contract/dialog.js";
+} from "../../api/dialogs/adapter.js";
+import type { Renderable } from "../../api/dialogs/content.js";
+import type { FormConfirm } from "../../api/dialogs/dialog.js";
+import type { FormProps, ReactContent } from "../../api/react/content.js";
 import type { PortalStore } from "./portals.js";
-
-/**
- * Content a React controller accepts: an element (so `<>{…}</>` covers a list), or the
- * plain `string` every adapter takes. It is an element rather than the whole `ReactNode`
- * union because the core's content type is constrained to an object — the same reason the
- * Lit adapter's is `TemplateResult` and not "anything Lit can render".
- */
-export type ReactContent = ReactElement;
 
 /**
  * The factory, plus a `refresh()` that asks the core for a fresh spec for every dialog
@@ -54,27 +47,6 @@ interface FormBox {
 
 // Provided around the content of a form dialog only, so `<Form>` anywhere else throws.
 const FormDialogContext = createContext<FormBox | null>(null);
-
-export interface FormProps {
-  /**
-   * The form's own confirmation, run on the dialog's confirm click instead of the dialog's
-   * validation: it validates, does the work (e.g. saves) and returns the outcome (see
-   * {@link FormConfirm}). A form library provides it, e.g. form-validation's
-   * `requestSubmit`.
-   */
-  confirm: FormConfirm;
-  /**
-   * Whether the form has changes, asked when the dialog is about to close (Cancel, Escape,
-   * the close button): while it says `true`, the dialog first asks in place of the dialog's content,
-   * "Discard your changes?" (Discard, Keep editing; the dialog's texts `questionDiscard`,
-   * `buttonDiscard`, `buttonKeepEditing`; Escape answers Discard there, see
-   * `FormAttempt.askDiscard`). A function, asked at that moment, so typing
-   * needs no re-render: e.g. form-validation's `isDirty`. Without it the dialog closes at
-   * once. A loop with `guardClose` decides itself instead.
-   */
-  dirty?: () => boolean;
-  children?: ReactNode;
-}
 
 /**
  * The form of a form dialog (`dialogs.form`), for a form that confirms the dialog itself.

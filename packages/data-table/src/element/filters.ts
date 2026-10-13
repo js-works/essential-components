@@ -1,7 +1,7 @@
-import type { DataTable } from '../api';
-import * as reactFilters from '../core/view/ColumnFilters';
-import type { DataTableComponent } from '../react/api';
-import { contentRendererOf, nodeContent } from './content';
+import type * as DataTable from '../api/index.js';
+import type * as DataTableComponent from '../api/react/index.js';
+import * as reactFilters from '../core/view/ColumnFilters.js';
+import { contentRendererOf, nodeContent } from './content.js';
 
 export {
   autocompleteColumnFilter,

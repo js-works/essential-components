@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { createContext, useContext, useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { binding, defineUseForm, formMeta, type I18nAdapter, type I18nConfig } from './index';
+import { binding, defineUseForm, formMeta, type formValidation } from './index.js';
 
 /* A minimal locale store as a stand-in for the app adapter */
 let currentLocale = 'de';
@@ -18,7 +18,7 @@ const labels: Record<string, Record<string, string>> = {
 };
 
 /* The app adapter: labels from the table above, everything else as the library has it */
-const adapter: I18nAdapter = {
+const adapter: formValidation.I18nAdapter = {
   currentLocale: () => currentLocale,
   resolveText: (_ns, key, _params, defaultValue) => labels[currentLocale]?.[key] ?? defaultValue,
   onChange: (listener) => {
@@ -552,7 +552,7 @@ describe('i18n adapter', () => {
   });
 
   it('throws a TypeError for an unknown i18n type (e.g. the old form)', () => {
-    const old = { useLocale: () => 'en' } as unknown as I18nConfig;
+    const old = { useLocale: () => 'en' } as unknown as formValidation.I18nConfig;
     expect(() => defineUseForm({ i18n: old })).toThrow(TypeError);
   });
 });

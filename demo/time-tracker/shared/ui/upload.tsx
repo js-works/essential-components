@@ -1,6 +1,6 @@
-import { createDemoI18n } from '../../../../packages/file-upload/demo/i18n';
-import type { FileUpload } from '../../../../packages/file-upload/src';
-import { createFileUploadComponent } from '../../../../packages/file-upload/src/react';
+import { createDemoI18n } from '../../../../packages/file-upload/demo/i18n.js';
+import type { fileUpload } from '../../../../packages/file-upload/src/index.js';
+import { createFileUploadComponent } from '../../../../packages/file-upload/src/react/index.js';
 
 export { CertificateUpload };
 
@@ -8,7 +8,7 @@ const uploadI18n = createDemoI18n();
 
 // The file upload in Mantine's look, like the Board Manager's: its theme values are Mantine's variables (inherited into
 // its shadow DOM from the scope), so it follows Mantine's color scheme and the contrast of the app's theme.
-const MANTINE_UPLOAD_THEME: FileUpload.Theme = {
+const MANTINE_UPLOAD_THEME: fileUpload.Theme = {
   accentColor: 'var(--mantine-primary-color-filled)',
   accentTextColor: 'var(--mantine-primary-color-contrast)',
   textColor: 'var(--mantine-color-text)',

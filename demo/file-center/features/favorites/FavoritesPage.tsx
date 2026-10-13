@@ -3,25 +3,32 @@ import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { selectColumnFilter, useDataTableController } from '../../../../packages/data-table/src/react';
-import type { DataTableComponent } from '../../../../packages/data-table/src/react';
-import { useToast } from '../../../../packages/overlays/src/main/bindings/react';
-import { ancestorsOf, FILE_KINDS } from '../../domain';
-import type { FileKind, FileSortKey, Folder } from '../../domain';
-import { countText, formatDateTime, formatSize } from '../../shared/lib/format';
-import { useQuerySource } from '../../shared/lib/useQuerySource';
-import { DataTable } from '../../shared/ui/dataTable';
-import { appIcons } from '../../shared/ui/icons';
-import { sharedBy, useSavedFilters } from '../../shared/ui/savedFilters';
-import { browserKeys, EntryName, folderPath, KIND_LABELS, useBrowserService, useEntryActions } from '../browser';
-import type { EntryCriteria, EntryRow } from '../browser';
+import { selectColumnFilter, useDataTableController } from '../../../../packages/data-table/src/react/index.js';
+import type { dataTable } from '../../../../packages/data-table/src/react/index.js';
+import { useToast } from '../../../../packages/overlays/src/main/bindings/react/index.js';
+import { ancestorsOf, FILE_KINDS } from '../../domain/index.js';
+import type { FileKind, FileSortKey, Folder } from '../../domain/index.js';
+import { countText, formatDateTime, formatSize } from '../../shared/lib/format.js';
+import { useQuerySource } from '../../shared/lib/useQuerySource.js';
+import { DataTable } from '../../shared/ui/dataTable.js';
+import { appIcons } from '../../shared/ui/icons.js';
+import { sharedBy, useSavedFilters } from '../../shared/ui/savedFilters.js';
+import {
+  browserKeys,
+  EntryName,
+  folderPath,
+  KIND_LABELS,
+  useBrowserService,
+  useEntryActions,
+} from '../browser/index.js';
+import type { EntryCriteria, EntryRow } from '../browser/index.js';
 
 export { FavoritesPage };
 
 const SORT_KEYS: readonly FileSortKey[] = ['name', 'type', 'size', 'modified', 'owner'];
 
 // The table's state as the service's query: its search and filters, its sort, its page as a window.
-function toCriteria(query: DataTableComponent.Query): EntryCriteria {
+function toCriteria(query: dataTable.Query): EntryCriteria {
   const { kind, owner } = query.filters as Record<string, unknown>;
 
   return {
@@ -31,7 +38,7 @@ function toCriteria(query: DataTableComponent.Query): EntryCriteria {
   };
 }
 
-function toSort(query: DataTableComponent.Query) {
+function toSort(query: dataTable.Query) {
   const key = query.sort?.key as FileSortKey | undefined;
 
   return query.sort !== undefined && key !== undefined && SORT_KEYS.includes(key)
@@ -39,13 +46,13 @@ function toSort(query: DataTableComponent.Query) {
     : undefined;
 }
 
-const toPaging = (query: DataTableComponent.Query) => ({
+const toPaging = (query: dataTable.Query) => ({
   offset: (query.page - 1) * query.pageSize,
   limit: query.pageSize,
 });
 
 // The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
-const COLLEAGUES_FILTERS: readonly DataTableComponent.SavedFilter[] = [
+const COLLEAGUES_FILTERS: readonly dataTable.SavedFilter[] = [
   sharedBy('Claire Dubois', 'Documents', { kind: ['document'] }),
   sharedBy('Ben Carter', 'From Anna', { owner: ['Anna Schröder'] }),
 ];
@@ -80,7 +87,7 @@ function FavoritesPage(): ReactElement {
     nav.reload,
   );
 
-  const columns = useMemo((): readonly DataTableComponent.Column<EntryRow>[] => [
+  const columns = useMemo((): readonly dataTable.Column<EntryRow>[] => [
     {
       key: 'name',
       header: 'Name',
@@ -138,7 +145,7 @@ function FavoritesPage(): ReactElement {
     },
   ], [folders, owners, setFavorite]);
 
-  const actions = useMemo((): readonly DataTableComponent.Action<EntryRow>[] => [
+  const actions = useMemo((): readonly dataTable.Action<EntryRow>[] => [
     // The default action (a double click): a folder opens, a file shows its details.
     {
       type: 'singleRow',

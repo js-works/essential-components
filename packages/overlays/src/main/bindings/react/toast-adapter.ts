@@ -9,16 +9,9 @@
 import { createElement } from "react";
 import { flushSync } from "react-dom";
 import type { ReactNode } from "react";
-import type { ToastAdapterFactory, ToastView } from "../../toasts/contract/api.js";
+import type { ToastAdapterFactory, ToastView } from "../../api/toasts/adapter.js";
+import type { ReactToastContent } from "../../api/react/content.js";
 import type { PortalStore } from "./portals.js";
-
-/**
- * Content a React toast accepts: anything React can render. Wider than the dialog side's
- * {@link ReactContent}, which the dialogs core constrains to an object — toasts take `C`
- * bare (there is no `| string` in their content union), so the whole `ReactNode` is both
- * usable and necessary for a plain-string message to type-check.
- */
-export type ReactToastContent = ReactNode;
 
 export function createToastAdapter(
   store: PortalStore,

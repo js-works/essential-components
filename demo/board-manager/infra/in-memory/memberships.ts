@@ -1,10 +1,10 @@
-import type { DataTableComponent } from '../../../../packages/data-table/src/react';
-import { ROLES } from '../../domain';
-import type { Membership, Role } from '../../domain';
-import { localDate } from './helpers';
-import { getBoard, getPerson, organizationOf } from './lookups';
-import { oneOf, runQuery, within } from './query';
-import { db, LOADING_TIME, newId, save, wait } from './store';
+import type { dataTable } from '../../../../packages/data-table/src/react/index.js';
+import { ROLES } from '../../domain/index.js';
+import type { Membership, Role } from '../../domain/index.js';
+import { localDate } from './helpers.js';
+import { getBoard, getPerson, organizationOf } from './lookups.js';
+import { oneOf, runQuery, within } from './query.js';
+import { db, LOADING_TIME, newId, save, wait } from './store.js';
 
 export { addMember, changeRole, fetchBoardMembers, fetchMemberships, removeMembers };
 export type { MemberRow, MembershipRow };
@@ -14,7 +14,7 @@ type MemberRow = Membership & { name: string; email: string; organization: strin
 // A membership of a person, with the name of its board.
 type MembershipRow = Membership & { board: string };
 
-function fetchBoardMembers(boardId: string): DataTableComponent.Source<MemberRow> {
+function fetchBoardMembers(boardId: string): dataTable.Source<MemberRow> {
   return async (query, signal) => {
     await wait(LOADING_TIME, signal);
 
@@ -47,7 +47,7 @@ function fetchBoardMembers(boardId: string): DataTableComponent.Source<MemberRow
 }
 
 // The memberships of one person: chair first, then vice chair, secretary, members (the table's order without a sort).
-function fetchMemberships(personId: string): DataTableComponent.Source<MembershipRow> {
+function fetchMemberships(personId: string): dataTable.Source<MembershipRow> {
   return async (query, signal) => {
     await wait(LOADING_TIME, signal);
 

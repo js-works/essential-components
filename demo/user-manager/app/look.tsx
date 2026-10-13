@@ -13,11 +13,11 @@ import {
 } from '@mantine/core';
 import type { CSSVariablesResolver, MantineColorsTuple, MantineThemeOverride } from '@mantine/core';
 import { TbMaximize, TbMinimize } from 'react-icons/tb';
-import { combineCssVariables, modernTheme } from '../../../packages/mantine-themes/src';
-import type { OverlaysConfig } from '../../../packages/overlays/src/main/bindings/react';
-import { createDialogTheme } from '../../../packages/overlays/src/main/dialogs/dialogs';
-import { createToastTheme } from '../../../packages/overlays/src/main/toasts/toasts';
-import { Scope } from '../shared/ui/scope';
+import { combineCssVariables, modernTheme } from '../../../packages/mantine-themes/src/index.js';
+import type { overlays } from '../../../packages/overlays/src/main/bindings/react/index.js';
+import { createDialogTheme } from '../../../packages/overlays/src/main/dialogs/dialogs.js';
+import { createToastTheme } from '../../../packages/overlays/src/main/toasts/toasts.js';
+import { Scope } from '../shared/ui/scope.js';
 
 export { createLook };
 export type { Look };
@@ -30,7 +30,11 @@ export type { Look };
 // `colors.danger`, `colors.success`, `colors.warning`); without them, Mantine's `indigo`, `green` and `orange`, and the modern theme's red.
 // Success and warning are the states of the meetings and their minutes (held, approved; a draft) and the warning
 // toasts; the success toasts stay in the accent. Made once (a module constant): the overlays provider compares its config.
-type Look = { theme: MantineThemeOverride; cssVariablesResolver: CSSVariablesResolver; overlaysConfig: OverlaysConfig };
+type Look = {
+  theme: MantineThemeOverride;
+  cssVariablesResolver: CSSVariablesResolver;
+  overlaysConfig: overlays.OverlaysConfig;
+};
 
 // The font of the app: `--user-manager-font-family`, else the modern theme's (Inter, 2026-10-09; Mantine's before).
 const FONT_FAMILY = `var(--user-manager-font-family, ${modernTheme.theme.fontFamily ?? DEFAULT_THEME.fontFamily})`;
@@ -193,7 +197,7 @@ function createLook(
   // app's element). Their buttons and close button are Mantine's (each in a scope too): the primary one filled, a
   // danger one filled in the danger color, the others `default`; the spinner is Mantine's `loading`. The toasts medium
   // and stacked in the bottom right corner, in Mantine's palette.
-  const overlaysConfig: OverlaysConfig = {
+  const overlaysConfig: overlays.OverlaysConfig = {
     dialogs: {
       icons: true,
       // The dialogs' own text (title, message) in the app's size and font, like the Mantine inputs in their content:

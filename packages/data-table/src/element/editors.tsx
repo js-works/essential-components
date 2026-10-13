@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactElement, ReactNode } from 'react';
-import type { DataTable } from '../api';
-import * as reactEditors from '../core/view/ColumnEditors';
-import type { DataTableComponent } from '../react/api';
-import type { ContentRenderer } from './content';
+import type * as DataTable from '../api/index.js';
+import type * as DataTableComponent from '../api/react/index.js';
+import * as reactEditors from '../core/view/ColumnEditors.js';
+import type { ContentRenderer } from './content.js';
 
 export { dateColumnEditor, editorOf, selectColumnEditor, textColumnEditor };
 

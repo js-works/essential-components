@@ -1,7 +1,7 @@
 import { Stack, Textarea, TextInput } from '@mantine/core';
 import type { ReactElement } from 'react';
 import { z } from 'zod';
-import { useForm } from '../../../shared/lib/useForm';
+import { useForm } from '../../../shared/lib/useForm.js';
 
 export { RoleForm };
 

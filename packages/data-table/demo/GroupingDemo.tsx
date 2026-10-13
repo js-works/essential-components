@@ -1,22 +1,22 @@
 import { useState } from 'react';
 import type { ReactElement } from 'react';
-import { createDataTableComponent, selectColumnFilter, textColumnFilter } from '../src/react';
-import type { DataTableComponent } from '../src/react';
-import { defaultTheme } from '../src/themes';
-import { fetchUsersByCountry, roles } from './data';
-import type { User } from './data';
+import { createDataTableComponent, selectColumnFilter, textColumnFilter } from '../src/react/index.js';
+import type { dataTable } from '../src/react/index.js';
+import { defaultTheme } from '../src/themes/index.js';
+import { fetchUsersByCountry, roles } from './data.js';
+import type { User } from './data.js';
 import { badge, fixedHeight, note } from './Demo.module.css';
-import { i18n } from './i18n';
-import { icons } from './icons';
-import { fullName } from './shared';
-import { useToasts } from './Toasts';
+import { i18n } from './i18n.js';
+import { icons } from './icons.js';
+import { fullName } from './shared.js';
+import { useToasts } from './Toasts.js';
 
 export { GroupingDemo };
 
 const DataTable = createDataTableComponent({ i18n, theme: defaultTheme });
 
 // The country is the group, so it has no column of its own.
-const columns: readonly DataTableComponent.Column<User>[] = [
+const columns: readonly dataTable.Column<User>[] = [
   { key: 'firstName', header: 'First name', width: 2, sortable: true, filter: textColumnFilter() },
   { key: 'lastName', header: 'Last name', width: 2, sortable: true, filter: textColumnFilter() },
   { key: 'email', header: 'Email', width: 4, sortable: true },
@@ -35,7 +35,7 @@ type Totals = 'source' | 'page';
 type Header = 'default' | 'custom';
 
 // Without the totals of the source, a group counts only its rows on the page.
-const fetchWithoutTotals: DataTableComponent.Source<User> = async (query, signal) => {
+const fetchWithoutTotals: dataTable.Source<User> = async (query, signal) => {
   const { rows, total } = await fetchUsersByCountry(query, signal);
 
   return { rows, total };
@@ -49,7 +49,7 @@ function GroupingDemo(): ReactElement {
   const [totals, setTotals] = useState<Totals>('source');
   const [header, setHeader] = useState<Header>('default');
 
-  const actions: readonly DataTableComponent.Action<User>[] = [
+  const actions: readonly dataTable.Action<User>[] = [
     {
       type: 'multiRow',
       key: 'message',

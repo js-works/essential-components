@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
-import { checkI18nType, ConfigContext, resolveConfig } from '../core/config';
-import type { ResolvedConfig } from '../core/config';
-import { DataTableView } from '../core/view/DataTableView';
-import type { DataTableComponent as Spec } from './api';
+import type * as Spec from '../api/react/index.js';
+import { checkI18nType, ConfigContext, resolveConfig } from '../core/config.js';
+import type { ResolvedConfig } from '../core/config.js';
+import { DataTableView } from '../core/view/DataTableView.js';
 
 export { createDataTableComponent };
 

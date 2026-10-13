@@ -1,10 +1,10 @@
 import { useNavigate } from 'react-router';
-import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react';
-import type { Candidate, Employee, HrData, Opening, Stage } from '../../domain';
-import { errorText } from '../../shared/lib/errorText';
-import { translate } from '../../shared/lib/i18n';
-import { useChanged, useHrService } from '../hr';
-import { CandidateForm, HireForm, OpeningForm } from './components/forms';
+import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react/index.js';
+import type { Candidate, Employee, HrData, Opening, Stage } from '../../domain/index.js';
+import { errorText } from '../../shared/lib/errorText.js';
+import { translate } from '../../shared/lib/i18n/index.js';
+import { useChanged, useHrService } from '../hr/index.js';
+import { CandidateForm, HireForm, OpeningForm } from './components/forms.js';
 
 export { useRecruitingFlows };
 

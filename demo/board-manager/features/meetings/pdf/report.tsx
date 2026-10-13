@@ -1,12 +1,12 @@
 import { Document, Page, pdf, StyleSheet, Text, View } from '@react-pdf/renderer';
 import type { ReactElement, ReactNode } from 'react';
-import { agendaNumbers, agendaOf, ROLES } from '../../../domain';
-import type { AgendaEntry, Meeting, MeetingDocument } from '../../../domain';
-import { db, getBoard, getMeeting, getPerson } from '../../../infra/in-memory';
-import type { Db } from '../../../infra/in-memory';
-import { translate } from '../../../shared/lib/i18n';
-import { formatDateTime, formatSize, formatTime } from '../../../shared/shared';
-import { parseMinutes } from '../components/minutes-format';
+import { agendaNumbers, agendaOf, ROLES } from '../../../domain/index.js';
+import type { AgendaEntry, Meeting, MeetingDocument } from '../../../domain/index.js';
+import { db, getBoard, getMeeting, getPerson } from '../../../infra/in-memory/index.js';
+import type { Db } from '../../../infra/in-memory/index.js';
+import { translate } from '../../../shared/lib/i18n/index.js';
+import { formatDateTime, formatSize, formatTime } from '../../../shared/shared.js';
+import { parseMinutes } from '../components/minutes-format.js';
 
 export { buildMeetingPdf };
 

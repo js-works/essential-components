@@ -1,9 +1,9 @@
 import { SimpleGrid } from '@mantine/core';
 import type { ReactElement } from 'react';
-import type { VacationBalance } from '../../../domain';
-import { formatDays } from '../../../shared/lib/format';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { StatCard } from '../../../shared/ui/parts';
+import type { VacationBalance } from '../../../domain/index.js';
+import { formatDays } from '../../../shared/lib/format.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { StatCard } from '../../../shared/ui/parts.js';
 
 export { BalanceCards };
 

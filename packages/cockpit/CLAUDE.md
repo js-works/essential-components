@@ -14,8 +14,12 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 
 ## Working rules
 
-- `src/api.ts` holds the draft API types we are discussing. Types only, flat exports; `src/index.ts` re-exports them
-  as a namespace: `export type * as Cockpit from './api'` (`Cockpit.NavItem`; `AppCockpit` until 2026-10-11).
+- `src/api/` holds the draft API types we are discussing (2026-10-12; `src/api.ts` with the namespace `Cockpit`
+  before, `AppCockpit` until 2026-10-11): `navigation.ts` (`NavItem`, `Group`, `Subgroup`, `Nav`, `NavScheme`),
+  `menus.ts` (`Action`, `Choice`, `Choices`, `MenuItem`, `MenuSection`, `User`, `Footer`), `theme.ts`, `config.ts`,
+  `element.ts` (`CockpitElement`, `ElementClass`, `Density`); no `texts.ts` nor `i18n.ts` (no `I18nAdapter`, see the texts).
+  `src/index.ts` exports them as the type namespace `cockpit` (`import type { cockpit } from '@local/cockpit'`,
+  `cockpit.NavItem`). The demos' variables of the element are `cockpitElement` or `element`, not `cockpit`.
 - Always add the decisions (also small ones) to this file, in the same step as the code.
 - Rewritten 2026-10-03 (the user's GO, without the browser tests proposed first): Lit and Zag.js instead of React and
   Base UI, with `@floating-ui/dom` (inside Zag, and for the tooltips). Almost vanilla: to be replaced by the Popover API
@@ -83,7 +87,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   so it shows above an open dialog too (the top layer).
 - Closed popups are `hidden` (forced by `[hidden] { display: none !important }`); open animations by
   `@starting-style` (none on closing, except the search in the sidebar layout, see there).
-- The name: package `@local/cockpit`, `createCockpitClass()`, types `Cockpit.*` (2026-10-11; `@local/app-cockpit`,
+- The name: package `@local/cockpit`, `createCockpitClass()`, types `cockpit.*` (2026-10-12; `Cockpit.*` from 2026-10-11; `@local/app-cockpit`,
   `createAppCockpitClass()`, `AppCockpit.*` before; clear rather than charming: not `tidy-cockpit`, nor `app-shell`,
   Mantine's `AppShell`). The element's tag is the host's choice (a hyphen needed); the root page and the package's demo
   register `<app-cockpit>`.
@@ -232,7 +236,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 - With `nav="side"`, the cockpit uses only the left column (2026-10-03): no top bar; the right side is the open app alone. The host's
   parts: the `logo` slot (replaces the default logo: four filled squares, two of them lighter, in the accent color on no background) and the `sidebar-end` slot (at the bottom of the sidebar, above
   the footer, e.g. global switches; hidden in the rail).
-- `nav` (2026-10-04): the navigation, one attribute (and property, reflected; `Cockpit.Nav`), switchable live (not a
+- `nav` (2026-10-04): the navigation, one attribute (and property, reflected; `cockpit.Nav`), switchable live (not a
   config option, so a host can switch it). Named by where the navigation is and a variant (2026-10-06, the user's
   wish: systematic names; `sidebar`, `topbar`, `topbar-compact`, `switcher` before); an unknown value is the sidebar:
   - `side` (the default): the sidebar on the left.
@@ -338,7 +342,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 - The search panel's footer (the keys, the count; the switcher's and the sidebar's panel) has no background of its own in a light
   panel (2026-10-04; `nav-scheme="page"` on a light page: as light as the rest; white was tried) and a darker strip
   (black at 14%) in a dark one.
-- `nav-scheme` (2026-10-03): an attribute (and property `navScheme`, reflected; `Cockpit.NavScheme`), `dark` (the
+- `nav-scheme` (2026-10-03): an attribute (and property `navScheme`, reflected; `cockpit.NavScheme`), `dark` (the
   default) or `page`. Not "light": a light navigation on a dark page makes no sense. `page` follows the page (light on a
   light page, dark on a dark one): every part that is dark by default (`color-scheme: dark`: the sidebar, its popups,
   the footer, the topbar's line, the bottom bar, the search) has a nested `:host([nav-scheme='page']) & { color-scheme:
@@ -350,7 +354,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   Jira Cloud's header; the field color, `--app-cockpit-field`), the sidebar's color on a dark one; its menus keep the
   sidebar's light gray. Discussed, not decided: a third value with an accent-colored topbar. The demos: the
   section "Colors" of the footer's "Navigation" button (Dark, Match page).
-- `density` (2026-10-05): an attribute (and property `density`, reflected; `Cockpit.Density`), `compact`, `normal`
+- `density` (2026-10-05): an attribute (and property `density`, reflected; `cockpit.Density`), `compact`, `normal`
   (the default) or `comfortable`: the same names as the data table's `density`. CSS only (`:host([density=…])`, at
   the end of `styles.ts`), and subtle: mostly the sidebar's vertical rhythm.
   - `compact`: the app entries 32px (36px), the subgroup headers 30px (32px), the group headers 26px (28px), the gaps
@@ -447,7 +451,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   kept Firefox's elastic bounce); the taskbar `overscroll-behavior-x: none` (sideways only). The same in every package
   and in the root's apps.
 - The theme (2026-10-10, the user's choice of three; proposed at about 65%): the element's property `theme`
-  (`Cockpit.Theme`, no attribute), its first value the config's `theme`, switchable live (a new object).
+  (`cockpit.Theme`, no attribute), its first value the config's `theme`, switchable live (a new object).
   - Its keys (the user's choice of two, proposed at about 60%: what a host could override before, and the accent; the
     colors stay the design language's, a key is added when needed): `accent` (one color; lighter in a dark scheme, e.g.
     the dark navigation, by `color-mix(in oklab, <accent> 60%, white)`; without it the design language's,
@@ -499,7 +503,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 
 ## Layout and commands
 
-- `src/api.ts`: the types; `src/element/`: the custom element (`CockpitElement.ts`, Lit: shadow root, light-DOM apps,
+- `src/api/`: the types (by topic); `src/element/`: the custom element (`CockpitElement.ts`, Lit: shadow root, light-DOM apps,
   routing, the whole UI; `createCockpitClass.ts`), `menu.ts` (the menus), `icons.ts`, its CSS (`styles.ts`); the
   taskbar (`TaskbarElement.ts`, `taskbarStyles.ts`); `src/core/`: search, texts, storage.
 - `demo/`: the package's demo (`npm run dev`), with 3, 30 or 100 apps (the "Apps" choice in the footer; `?apps=some`, `?apps=many`); the 100 apps with `groupDisplay: 'select'`; in the 30 and 100 apps every app has a group and a

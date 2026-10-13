@@ -1,5 +1,5 @@
-import { defineUseForm } from '../src';
-import { adapter } from './i18n';
+import { defineUseForm } from '../src/index.js';
+import { adapter } from './i18n.js';
 
 export { useForm };
 

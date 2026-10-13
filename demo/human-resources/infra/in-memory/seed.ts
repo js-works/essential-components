@@ -1,4 +1,4 @@
-import { addDays, dateOf, daysBetween, splitName, tasksFromTemplate } from '../../domain';
+import { addDays, dateOf, daysBetween, splitName, tasksFromTemplate } from '../../domain/index.js';
 import type {
   Candidate,
   CandidateSource,
@@ -10,7 +10,7 @@ import type {
   Opening,
   SalaryChange,
   Stage,
-} from '../../domain';
+} from '../../domain/index.js';
 
 export { seed, VIEWER_ID };
 export type { Data };

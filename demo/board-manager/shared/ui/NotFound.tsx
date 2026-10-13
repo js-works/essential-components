@@ -1,7 +1,7 @@
 import { Anchor, Stack, Text, Title } from '@mantine/core';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';
-import { useTranslate } from '../lib/i18n';
+import { useTranslate } from '../lib/i18n/index.js';
 
 export { NotFound };
 

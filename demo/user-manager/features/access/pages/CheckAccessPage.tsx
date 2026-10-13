@@ -1,12 +1,12 @@
 import { Alert, Grid, Group, Paper, Select, Stack, Text, ThemeIcon } from '@mantine/core';
 import { useState } from 'react';
 import type { ReactElement } from 'react';
-import { checkAccess, scopeLabel } from '../../../domain';
-import { appIcons } from '../../../shared/ui/icons';
-import { PageHeader } from '../../../shared/ui/parts';
-import { useAccessData } from '../../iam';
-import { ReasonText } from '../components/EffectivePermissions';
-import { ScopePicker } from '../components/ScopePicker';
+import { checkAccess, scopeLabel } from '../../../domain/index.js';
+import { appIcons } from '../../../shared/ui/icons.js';
+import { PageHeader } from '../../../shared/ui/parts.js';
+import { useAccessData } from '../../iam/index.js';
+import { ReasonText } from '../components/EffectivePermissions.js';
+import { ScopePicker } from '../components/ScopePicker.js';
 
 export { CheckAccessPage };
 

@@ -1,6 +1,6 @@
-import { kindOf, ROOT_ID, typeOf } from '../../domain';
-import type { FileDetails, FileRepository, MediaFile } from '../../domain';
-import { OWNERS } from './seed';
+import { kindOf, ROOT_ID, typeOf } from '../../domain/index.js';
+import type { FileDetails, FileRepository, MediaFile } from '../../domain/index.js';
+import { OWNERS } from './seed.js';
 import {
   CURRENT_USER,
   liveFolderIds,
@@ -10,8 +10,8 @@ import {
   wait,
   withFavorite,
   withoutDeletedAt,
-} from './store';
-import type { Store } from './store';
+} from './store.js';
+import type { Store } from './store.js';
 
 export { createFileRepository };
 

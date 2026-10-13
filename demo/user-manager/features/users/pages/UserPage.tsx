@@ -1,13 +1,13 @@
 import { Anchor, Badge, Button, Group, Paper, SimpleGrid, Stack, Tabs, Text } from '@mantine/core';
 import type { ReactElement } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { effectivePermissions, groupsOf } from '../../../domain';
-import { formatDateTime } from '../../../shared/lib/format';
-import { appIcons } from '../../../shared/ui/icons';
-import { PageHeader, UserAvatar } from '../../../shared/ui/parts';
-import { EffectivePermissions, GrantsTable } from '../../access';
-import { useAccessData } from '../../iam';
-import { useUserFlows } from '../flows';
+import { effectivePermissions, groupsOf } from '../../../domain/index.js';
+import { formatDateTime } from '../../../shared/lib/format.js';
+import { appIcons } from '../../../shared/ui/icons.js';
+import { PageHeader, UserAvatar } from '../../../shared/ui/parts.js';
+import { EffectivePermissions, GrantsTable } from '../../access/index.js';
+import { useAccessData } from '../../iam/index.js';
+import { useUserFlows } from '../flows.js';
 
 export { UserPage };
 

@@ -1,7 +1,7 @@
 import { Stack } from '@mantine/core';
 import type { ReactElement } from 'react';
-import { PageHeader } from '../../../shared/ui/parts';
-import { GrantsTable } from '../components/GrantsTable';
+import { PageHeader } from '../../../shared/ui/parts.js';
+import { GrantsTable } from '../components/GrantsTable.js';
 
 export { AccessPage };
 

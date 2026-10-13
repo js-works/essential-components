@@ -1,7 +1,7 @@
-import { antdTheme } from './antd';
-import { defaultTheme } from './default';
-import { mantineTheme } from './mantine';
-import { softTheme } from './soft';
+import { antdTheme } from './antd.js';
+import { defaultTheme } from './default.js';
+import { mantineTheme } from './mantine.js';
+import { softTheme } from './soft.js';
 
 export { antdTheme, defaultTheme, mantineTheme, softTheme };
 

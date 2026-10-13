@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { I18nAdapter } from '../src';
+import type { formValidation } from '../src/index.js';
 
 export { adapter, text, useLocale };
 
@@ -79,7 +79,7 @@ const text = (key: string): string => TEXTS[language()][key] ?? key;
 // Renders the component again when the page's language changes.
 const useLocale = (): string => useSyncExternalStore(subscribe, () => document.documentElement.lang || 'en');
 
-const adapter: I18nAdapter = {
+const adapter: formValidation.I18nAdapter = {
   currentLocale: () => document.documentElement.lang || 'en',
   resolveText: (_namespace, key, _params, defaultValue) => TEXTS[language()][key] ?? defaultValue,
   onChange: subscribe,

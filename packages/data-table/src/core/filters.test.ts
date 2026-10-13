@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { optionsOf, sameValue } from './filters';
+import { optionsOf, sameValue } from './filters.js';
 
 describe('sameValue', () => {
   it('treats equal JSON values as the same', () => {

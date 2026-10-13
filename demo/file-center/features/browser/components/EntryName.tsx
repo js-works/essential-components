@@ -1,10 +1,10 @@
 import { Anchor, Group, Text } from '@mantine/core';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';
-import { appIcons, kindIcon } from '../../../shared/ui/icons';
-import { folderPath } from '../context';
-import type { EntryRow } from '../service';
-import { FavoriteStar } from './Favorite';
+import { appIcons, kindIcon } from '../../../shared/ui/icons.js';
+import { folderPath } from '../context.js';
+import type { EntryRow } from '../service.js';
+import { FavoriteStar } from './Favorite.js';
 
 export { EntryName };
 

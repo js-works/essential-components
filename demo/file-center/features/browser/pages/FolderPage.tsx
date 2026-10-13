@@ -7,28 +7,28 @@ import {
   dateRangeColumnFilter,
   selectColumnFilter,
   useDataTableController,
-} from '../../../../../packages/data-table/src/react';
-import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
-import { createDemoI18n } from '../../../../../packages/file-upload/demo/i18n';
-import type { FileUpload } from '../../../../../packages/file-upload/src';
-import { createFileUploadComponent } from '../../../../../packages/file-upload/src/react';
-import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react';
-import { FILE_KINDS, ROOT_ID } from '../../../domain';
-import type { FileKind, FileSortKey, Folder, MediaFile } from '../../../domain';
-import { countText, formatDateTime, formatSize } from '../../../shared/lib/format';
-import { useQuerySource } from '../../../shared/lib/useQuerySource';
-import { DataTable } from '../../../shared/ui/dataTable';
-import { appIcons } from '../../../shared/ui/icons';
-import { sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters';
-import { EntryName } from '../components/EntryName';
-import { MoveForm } from '../components/MoveForm';
-import { NameForm } from '../components/NameForm';
-import { confirmAndRun } from '../confirmAndRun';
-import { folderPath, useBrowserService } from '../context';
-import { browserKeys } from '../keys';
-import { KIND_LABELS } from '../labels';
-import type { EntryCriteria, EntryRow } from '../service';
-import { useEntryActions } from '../useEntryActions';
+} from '../../../../../packages/data-table/src/react/index.js';
+import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import { createDemoI18n } from '../../../../../packages/file-upload/demo/i18n.js';
+import type { fileUpload } from '../../../../../packages/file-upload/src/index.js';
+import { createFileUploadComponent } from '../../../../../packages/file-upload/src/react/index.js';
+import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
+import { FILE_KINDS, ROOT_ID } from '../../../domain/index.js';
+import type { FileKind, FileSortKey, Folder, MediaFile } from '../../../domain/index.js';
+import { countText, formatDateTime, formatSize } from '../../../shared/lib/format.js';
+import { useQuerySource } from '../../../shared/lib/useQuerySource.js';
+import { DataTable } from '../../../shared/ui/dataTable.js';
+import { appIcons } from '../../../shared/ui/icons.js';
+import { sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters.js';
+import { EntryName } from '../components/EntryName.js';
+import { MoveForm } from '../components/MoveForm.js';
+import { NameForm } from '../components/NameForm.js';
+import { confirmAndRun } from '../confirmAndRun.js';
+import { folderPath, useBrowserService } from '../context.js';
+import { browserKeys } from '../keys.js';
+import { KIND_LABELS } from '../labels.js';
+import type { EntryCriteria, EntryRow } from '../service.js';
+import { useEntryActions } from '../useEntryActions.js';
 
 export { FolderPage };
 
@@ -36,7 +36,7 @@ const uploadI18n = createDemoI18n();
 
 // The file upload in Mantine's look: its theme values are Mantine's variables (inherited into its shadow DOM from the
 // scope), like the data table's `mantineTheme`.
-const MANTINE_UPLOAD_THEME: FileUpload.Theme = {
+const MANTINE_UPLOAD_THEME: fileUpload.Theme = {
   accentColor: 'var(--mantine-primary-color-filled)',
   accentTextColor: 'var(--mantine-primary-color-contrast)',
   textColor: 'var(--mantine-color-text)',
@@ -59,7 +59,7 @@ const MediaUpload = createFileUploadComponent({
 const SORT_KEYS: readonly FileSortKey[] = ['name', 'type', 'size', 'modified', 'owner'];
 
 // The table's state as the service's query: its search and filters as file criteria, its sort, its page as a window.
-function toCriteria(query: DataTableComponent.Query): EntryCriteria {
+function toCriteria(query: dataTable.Query): EntryCriteria {
   const { kind, owner, modified } = query.filters as Record<string, unknown>;
   const range = modified as { from?: string; to?: string } | undefined;
 
@@ -73,7 +73,7 @@ function toCriteria(query: DataTableComponent.Query): EntryCriteria {
   };
 }
 
-function toSort(query: DataTableComponent.Query) {
+function toSort(query: dataTable.Query) {
   const key = query.sort?.key as FileSortKey | undefined;
 
   return query.sort !== undefined && key !== undefined && SORT_KEYS.includes(key)
@@ -81,7 +81,7 @@ function toSort(query: DataTableComponent.Query) {
     : undefined;
 }
 
-const toPaging = (query: DataTableComponent.Query) => ({
+const toPaging = (query: dataTable.Query) => ({
   offset: (query.page - 1) * query.pageSize,
   limit: query.pageSize,
 });
@@ -119,7 +119,7 @@ function FolderPage(): ReactElement {
 }
 
 // The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
-const COLLEAGUES_FILTERS: readonly DataTableComponent.SavedFilter[] = [
+const COLLEAGUES_FILTERS: readonly dataTable.SavedFilter[] = [
   sharedBy('Anna Schröder', 'Images', { kind: ['image'] }),
   sharedBy('Ben Carter', 'Office documents', { kind: ['document', 'spreadsheet', 'presentation'] }),
   sharedBy('Claire Dubois', 'My files', { owner: ['Claire Dubois'] }),
@@ -150,7 +150,7 @@ function FolderTable({ folder, folders, owners }: {
     nav.reload,
   );
 
-  const columns = useMemo((): readonly DataTableComponent.Column<EntryRow>[] => [
+  const columns = useMemo((): readonly dataTable.Column<EntryRow>[] => [
     {
       key: 'name',
       header: 'Name',
@@ -339,7 +339,7 @@ function FolderTable({ folder, folders, owners }: {
     // files to the folder, "Cancel" discards them. The native validation blocks "Apply" while a file is unfinished or
     // failed, and while there is none (`required`).
     const upload = async () => {
-      let items: readonly FileUpload.FileItem[] = [];
+      let items: readonly fileUpload.FileItem[] = [];
       let committed: readonly MediaFile[] = [];
       const drawer = dialogs.form({
         surface: 'drawer',
@@ -382,7 +382,7 @@ function FolderTable({ folder, folders, owners }: {
 
     const parent = folders.find((candidate) => candidate.id === folder.parentId);
 
-    const list: readonly (DataTableComponent.Action<EntryRow> | DataTableComponent.ActionMenu<EntryRow>)[] = [
+    const list: readonly (dataTable.Action<EntryRow> | dataTable.ActionMenu<EntryRow>)[] = [
       // To the parent folder (2026-10-07, the user's wish; in place of a ".." row): not in the root. Pinned (2026-10-10,
       // the user's wish): at the start of the bar, and still there while files are selected.
       ...(parent === undefined ? [] : [

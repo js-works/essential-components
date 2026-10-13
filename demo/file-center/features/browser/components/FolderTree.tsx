@@ -4,11 +4,11 @@ import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
 import { TbChevronRight } from 'react-icons/tb';
-import { ancestorsOf, childrenOf, ROOT_ID } from '../../../domain';
-import type { Folder } from '../../../domain';
-import { appIcons } from '../../../shared/ui/icons';
-import { useBrowserService } from '../context';
-import { browserKeys } from '../keys';
+import { ancestorsOf, childrenOf, ROOT_ID } from '../../../domain/index.js';
+import type { Folder } from '../../../domain/index.js';
+import { appIcons } from '../../../shared/ui/icons.js';
+import { useBrowserService } from '../context.js';
+import { browserKeys } from '../keys.js';
 
 export { folderIcon, FolderTree, toTreeData };
 

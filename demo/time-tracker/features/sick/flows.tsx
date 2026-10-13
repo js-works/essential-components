@@ -1,9 +1,9 @@
-import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react';
-import { todayDate } from '../../domain';
-import type { Employee, SickNote } from '../../domain';
-import { translate } from '../../shared/lib/i18n';
-import { useChanged, useTimeService } from '../tracker';
-import { CertificateForm, SickForm } from './components/SickForm';
+import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react/index.js';
+import { todayDate } from '../../domain/index.js';
+import type { Employee, SickNote } from '../../domain/index.js';
+import { translate } from '../../shared/lib/i18n/index.js';
+import { useChanged, useTimeService } from '../tracker/index.js';
+import { CertificateForm, SickForm } from './components/SickForm.js';
 
 export { useSickFlows };
 

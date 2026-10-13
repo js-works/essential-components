@@ -1,4 +1,4 @@
-import type { DataTableComponent } from '../../../../packages/data-table/src/react';
+import type { dataTable } from '../../../../packages/data-table/src/react/index.js';
 
 export { hrKeys };
 
@@ -7,5 +7,5 @@ const hrKeys = {
   all: ['human-resources'] as const,
   data: () => [...hrKeys.all, 'data'] as const,
   tables: () => [...hrKeys.all, 'table'] as const,
-  table: (name: string, query: DataTableComponent.Query) => [...hrKeys.tables(), name, query] as const,
+  table: (name: string, query: dataTable.Query) => [...hrKeys.tables(), name, query] as const,
 };

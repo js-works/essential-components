@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import type { ReactElement } from 'react';
 import { z } from 'zod';
-import { CheckboxField, SelectField, TextField } from './fields';
-import { text, useLocale } from './i18n';
-import { useForm } from './useForm';
+import { CheckboxField, SelectField, TextField } from './fields.js';
+import { text, useLocale } from './i18n.js';
+import { useForm } from './useForm.js';
 
 export { FormDemo };
 

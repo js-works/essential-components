@@ -2,20 +2,20 @@ import { Badge, Loader, Stack, Text } from '@mantine/core';
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router';
-import { selectColumnFilter, useDataTableController } from '../../../../../packages/data-table/src/react';
-import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
-import { CHECKLIST_KINDS, checklistAnchor, isOverdue, nextTask, progressOf, todayDate } from '../../../domain';
-import type { Checklist, Employee, HrData } from '../../../domain';
-import { formatDate } from '../../../shared/lib/format';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { oneOf } from '../../../shared/lib/localQuery';
-import { DataTable } from '../../../shared/ui/dataTable';
-import { appIcons } from '../../../shared/ui/icons';
-import { EmployeeLabel, ProgressCell } from '../../../shared/ui/parts';
-import { sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters';
-import { employeeOf, useHrData, useTableSource } from '../../hr';
-import { useChecklistFlows } from '../flows';
-import { taskTitle } from '../taskTitle';
+import { selectColumnFilter, useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
+import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import { CHECKLIST_KINDS, checklistAnchor, isOverdue, nextTask, progressOf, todayDate } from '../../../domain/index.js';
+import type { Checklist, Employee, HrData } from '../../../domain/index.js';
+import { formatDate } from '../../../shared/lib/format.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { oneOf } from '../../../shared/lib/localQuery.js';
+import { DataTable } from '../../../shared/ui/dataTable.js';
+import { appIcons } from '../../../shared/ui/icons.js';
+import { EmployeeLabel, ProgressCell } from '../../../shared/ui/parts.js';
+import { sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters.js';
+import { employeeOf, useHrData, useTableSource } from '../../hr/index.js';
+import { useChecklistFlows } from '../flows.js';
+import { taskTitle } from '../taskTitle.js';
 
 export { ChecklistsPage };
 
@@ -51,7 +51,7 @@ function checklistRows(data: HrData): ChecklistRow[] {
 }
 
 // The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
-const COLLEAGUES_FILTERS: readonly DataTableComponent.SavedFilter[] = [
+const COLLEAGUES_FILTERS: readonly dataTable.SavedFilter[] = [
   sharedBy('Sophie Brandt', 'Open onboardings', { kind: ['onboarding'], state: ['open'] }),
   sharedBy('Tom Becker', 'Offboardings', { kind: ['offboarding'] }),
 ];
@@ -73,7 +73,7 @@ function ChecklistsPage(): ReactElement {
     sortValue: { done: (row) => (row.total === 0 ? 0 : row.done / row.total) },
   }, nav.reload);
 
-  const columns = useMemo((): readonly DataTableComponent.Column<ChecklistRow>[] => [
+  const columns = useMemo((): readonly dataTable.Column<ChecklistRow>[] => [
     {
       key: 'name',
       header: t('checklists.employee'),
@@ -148,7 +148,7 @@ function ChecklistsPage(): ReactElement {
     },
   ], [t]);
 
-  const actions = useMemo((): readonly DataTableComponent.Action<ChecklistRow>[] => [
+  const actions = useMemo((): readonly dataTable.Action<ChecklistRow>[] => [
     {
       type: 'general',
       key: 'new',

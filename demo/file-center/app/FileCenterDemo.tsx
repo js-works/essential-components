@@ -9,13 +9,13 @@ import type { ReactElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
 import { RouterProvider } from 'react-router';
-import { OverlaysProvider } from '../../../packages/overlays/src/main/bindings/react';
-import { BrowserServiceContext, createBrowserService } from '../features/browser';
-import type { BrowserService } from '../features/browser';
-import { createInMemoryRepositories } from '../infra/in-memory';
-import { Scope, SCOPE_CLASS, useScheme } from '../shared/ui/scope';
-import { createAppRouter } from './App';
-import { createLook } from './look';
+import { OverlaysProvider } from '../../../packages/overlays/src/main/bindings/react/index.js';
+import { BrowserServiceContext, createBrowserService } from '../features/browser/index.js';
+import type { BrowserService } from '../features/browser/index.js';
+import { createInMemoryRepositories } from '../infra/in-memory/index.js';
+import { Scope, SCOPE_CLASS, useScheme } from '../shared/ui/scope.js';
+import { createAppRouter } from './App.js';
+import { createLook } from './look.js';
 
 export { FileCenterDemo };
 

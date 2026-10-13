@@ -1,34 +1,6 @@
-import type { Message } from '../types';
+import type { LibCatalog } from '../api/texts.js';
 
 export { de };
-export type { LibCatalog, MessageKey };
-
-type MessageKey =
-  | 'required'
-  | 'invalid'
-  | 'submitFailed'
-  | 'email'
-  | 'url'
-  | 'format'
-  | 'mustAccept'
-  | 'enum'
-  | 'number.type'
-  | 'number.int'
-  | 'number.min'
-  | 'number.max'
-  | 'number.gt'
-  | 'number.lt'
-  | 'number.between'
-  | 'number.step'
-  | 'string.min'
-  | 'string.max'
-  | 'string.between'
-  | 'string.length'
-  | 'date.type'
-  | 'date.min'
-  | 'date.max';
-
-type LibCatalog = Record<MessageKey, Message>;
 
 const de: LibCatalog = {
   required: 'Bitte füllen Sie dieses Feld aus.',

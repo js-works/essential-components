@@ -31,7 +31,7 @@ import {
   TbUpload,
   TbVideo,
 } from 'react-icons/tb';
-import type { FileKind } from '../../domain';
+import type { FileKind } from '../../domain/index.js';
 
 export { appIcons, kindIcon };
 

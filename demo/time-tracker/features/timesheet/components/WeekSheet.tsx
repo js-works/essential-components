@@ -1,11 +1,11 @@
 import { ActionIcon, Table, Text, Tooltip } from '@mantine/core';
 import type { ReactElement } from 'react';
-import { addDays, daySheet } from '../../../domain';
-import type { DaySheet, Employee, TimeData } from '../../../domain';
-import { formatDayShort, formatDuration, formatTime } from '../../../shared/lib/format';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { appIcons } from '../../../shared/ui/icons';
-import { AbsenceBadge } from '../../../shared/ui/parts';
+import { addDays, daySheet } from '../../../domain/index.js';
+import type { DaySheet, Employee, TimeData } from '../../../domain/index.js';
+import { formatDayShort, formatDuration, formatTime } from '../../../shared/lib/format.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { appIcons } from '../../../shared/ui/icons.js';
+import { AbsenceBadge } from '../../../shared/ui/parts.js';
 
 export { Balance, WeekSheet, weekSheets };
 

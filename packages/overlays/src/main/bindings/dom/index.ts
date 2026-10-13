@@ -15,10 +15,8 @@
 // nodes and mutate them, which is how you would write DOM without a framework anyway.
 
 export { domDialogAdapter } from "./dialog-adapter.js";
-export type { DomDialogContent } from "./dialog-adapter.js";
 
 export { domToastAdapter } from "./toast-adapter.js";
-export type { DomToastContent } from "./toast-adapter.js";
 
 // Building content without a framework means document.createElement chains. This takes
 // the boilerplate off without introducing a template language: no parsing, no innerHTML,
@@ -27,4 +25,6 @@ export type { DomToastContent } from "./toast-adapter.js";
 //   const email = h("input", { name: "email", type: "email", required: true });
 //   const form = h("div", null, h("label", null, "Email"), email);
 export { h } from "../../internal/dom.js";
-export type { Attrs, Child } from "../../internal/dom.js";
+
+// The types (with all of the main entry's): `import type { overlays } from "@local/overlays/dom"`.
+export type * as overlays from "../../api/dom/index.js";

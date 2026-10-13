@@ -1,5 +1,5 @@
-import type { FileCriteria, FileSortKey, Paging, Sort } from '../../domain';
-import type { EntryCriteria, TrashSortKey } from './service';
+import type { FileCriteria, FileSortKey, Paging, Sort } from '../../domain/index.js';
+import type { EntryCriteria, TrashSortKey } from './service.js';
 
 export { browserKeys };
 

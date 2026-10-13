@@ -1,10 +1,10 @@
-import type { DataTableComponent } from '../../../../packages/data-table/src/react';
-import type { Board } from '../../domain';
-import { localDateTime } from './helpers';
-import { getPerson } from './lookups';
-import { matches, oneOf, runQuery, within } from './query';
-import { db, LOADING_TIME, newId, save, wait } from './store';
-import type { Db } from './store';
+import type { dataTable } from '../../../../packages/data-table/src/react/index.js';
+import type { Board } from '../../domain/index.js';
+import { localDateTime } from './helpers.js';
+import { getPerson } from './lookups.js';
+import { matches, oneOf, runQuery, within } from './query.js';
+import { db, LOADING_TIME, newId, save, wait } from './store.js';
+import type { Db } from './store.js';
 
 export { createBoard, deleteBoards, fetchBoards, getBoardRow, updateBoard };
 export type { BoardRow };
@@ -39,9 +39,9 @@ function getBoardRow(state: Db, id: string): BoardRow | undefined {
 }
 
 async function fetchBoards(
-  query: DataTableComponent.Query,
+  query: dataTable.Query,
   signal: AbortSignal,
-): Promise<DataTableComponent.Result<BoardRow>> {
+): Promise<dataTable.Result<BoardRow>> {
   await wait(LOADING_TIME, signal);
 
   return runQuery(boardRows(db.getState()), query, {

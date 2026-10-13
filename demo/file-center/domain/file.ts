@@ -1,4 +1,4 @@
-import type { Page, Paging, Range, Sort } from './query';
+import type { Page, Paging, Range, Sort } from './query.js';
 
 export { FILE_KINDS, kindOf, typeOf };
 export type { FileCriteria, FileDetails, FileKind, FileRepository, FileSortKey, MediaFile };

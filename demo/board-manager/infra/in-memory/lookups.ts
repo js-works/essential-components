@@ -1,5 +1,5 @@
-import type { Board, Meeting, Organization, Person } from '../../domain';
-import type { Db } from './store';
+import type { Board, Meeting, Organization, Person } from '../../domain/index.js';
+import type { Db } from './store.js';
 
 export { boardIdsOf, getBoard, getMeeting, getOrganization, getPerson, organizationOf };
 

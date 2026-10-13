@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { DataTableComponent as Spec } from '../react/api';
+import type * as Spec from '../api/react/index.js';
 
 export { createLayout, withoutHidden };
 export type { Layout };

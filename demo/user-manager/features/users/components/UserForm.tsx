@@ -1,8 +1,8 @@
 import { NativeSelect, Stack, Switch, TextInput } from '@mantine/core';
 import type { ReactElement } from 'react';
 import { z } from 'zod';
-import type { User, UserValues } from '../../../domain';
-import { useForm } from '../../../shared/lib/useForm';
+import type { User, UserValues } from '../../../domain/index.js';
+import { useForm } from '../../../shared/lib/useForm.js';
 
 export { DEPARTMENTS, UserForm };
 

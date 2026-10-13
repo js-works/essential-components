@@ -22,7 +22,9 @@ export const useForm = defineUseForm({
 The adapter has the same shape as the one of the data table and the file upload, so one object fits all of them:
 
 ```ts
-const i18nAdapter: I18nAdapter = {
+import type { formValidation } from '@local/form-validation';
+
+const i18nAdapter: formValidation.I18nAdapter = {
   currentLocale: () => myI18n.language,
   resolveText: (namespace, key, params, defaultValue) => myI18n.t(key, { ns: namespace, ...params, defaultValue }),
   onChange: (listener) => myI18n.subscribe(listener), // returns the unsubscribe function

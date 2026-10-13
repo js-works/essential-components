@@ -7,12 +7,12 @@ import {
   selectColumnFilter,
   textColumnFilter,
   useDataTableController,
-} from '../../../../../packages/data-table/src/react';
-import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
-import type { FileUpload } from '../../../../../packages/file-upload/src';
-import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react';
-import type { AgendaItem, AgendaSection, Meeting, MeetingDocument, Person } from '../../../domain';
-import { agendaNumbers, agendaOf } from '../../../domain';
+} from '../../../../../packages/data-table/src/react/index.js';
+import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import type { fileUpload } from '../../../../../packages/file-upload/src/index.js';
+import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
+import type { AgendaItem, AgendaSection, Meeting, MeetingDocument, Person } from '../../../domain/index.js';
+import { agendaNumbers, agendaOf } from '../../../domain/index.js';
 import {
   approveMinutes,
   commitDocuments,
@@ -34,13 +34,13 @@ import {
   updateAgendaItem,
   uploadDocument,
   withSectionDraft,
-} from '../../../infra/in-memory';
-import type { AgendaRow, Db, SectionDraft } from '../../../infra/in-memory';
-import { AgendaItemForm, DocumentForm, MinutesForm, UploadForm } from '../../../shared/forms';
-import { confirmAndRun } from '../../../shared/lib/flows';
-import type { Dialogs } from '../../../shared/lib/flows';
-import { translate, useTranslate } from '../../../shared/lib/i18n';
-import type { Translate } from '../../../shared/lib/i18n';
+} from '../../../infra/in-memory/index.js';
+import type { AgendaRow, Db, SectionDraft } from '../../../infra/in-memory/index.js';
+import { AgendaItemForm, DocumentForm, MinutesForm, UploadForm } from '../../../shared/forms.js';
+import { confirmAndRun } from '../../../shared/lib/flows.js';
+import type { Dialogs } from '../../../shared/lib/flows.js';
+import { translate, useTranslate } from '../../../shared/lib/i18n/index.js';
+import type { Translate } from '../../../shared/lib/i18n/index.js';
 import {
   appIcons,
   DataTable,
@@ -50,11 +50,11 @@ import {
   PAGE_SIZE_OPTIONS,
   PageHeader,
   useDb,
-} from '../../../shared/shared';
-import { NotFound } from '../../../shared/ui/NotFound';
-import { deleteMeetingsFlow, editMeeting, MinutesBadge, StatusBadge } from '../components/MeetingsTable';
-import { MinutesText } from '../components/minutes';
-import { downloadMeetingPdf, previewMeetingPdf, printMeetingPdf } from '../pdf';
+} from '../../../shared/shared.js';
+import { NotFound } from '../../../shared/ui/NotFound.js';
+import { deleteMeetingsFlow, editMeeting, MinutesBadge, StatusBadge } from '../components/MeetingsTable.js';
+import { MinutesText } from '../components/minutes.js';
+import { downloadMeetingPdf, previewMeetingPdf, printMeetingPdf } from '../pdf/index.js';
 
 export { MeetingPage };
 
@@ -356,7 +356,7 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
 
   // No filters and no search: an agenda is short, and moving its items needs all of them shown. No column menu either
   // (no column is hideable): there is no column hidden by default.
-  const columns: readonly DataTableComponent.Column<AgendaRow>[] = [
+  const columns: readonly dataTable.Column<AgendaRow>[] = [
     { key: 'number', header: '#', width: 0.5, align: 'end' },
     { key: 'title', header: t('meetings.agenda.columns.item'), width: 4, wrap: true },
     { key: 'presenter', header: t('meetings.agenda.columns.presenter'), width: 2 },
@@ -377,7 +377,7 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
     },
   ];
 
-  const actions = useMemo<readonly DataTableComponent.Action<AgendaRow>[]>(() => {
+  const actions = useMemo<readonly dataTable.Action<AgendaRow>[]>(() => {
     const itemOf = (row: AgendaRow): AgendaItem | undefined =>
       db.getState().agendaItems.find((item) => item.id === row.id);
     const members = () => membersOf(db.getState(), meeting.boardId);
@@ -545,14 +545,14 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
   }, [t, nav, dialogs, toasts, meeting.id, meeting.boardId]);
 
   // The positions (and the numbers) change with a move: the table is loaded again.
-  const reorder = async (move: DataTableComponent.Move<AgendaRow>) => {
+  const reorder = async (move: dataTable.Move<AgendaRow>) => {
     await reorderAgenda(move);
     nav.reload();
   };
 
   // The header of a section: its number and name, and the duration of its items.
   // The items without a section are the table's blank group (`''`): "Other", always the last one.
-  const renderGroup = (group: DataTableComponent.RowGroup<AgendaRow>) => {
+  const renderGroup = (group: dataTable.RowGroup<AgendaRow>) => {
     const section = agendaSections.find((candidate) => candidate.id === group.key);
     const duration = agendaItems
       .filter((item) => item.meetingId === meeting.id && item.sectionId === group.key)
@@ -595,7 +595,7 @@ function AgendaTable({ meeting }: { meeting: Meeting }): ReactElement {
 
 // A text in the edit form of a data table (a section's name): Mantine's input, for the column it is in (the form's
 // label names it).
-function mantineTextEditor<Row>(): DataTableComponent.ColumnEditor<Row> {
+function mantineTextEditor<Row>(): dataTable.ColumnEditor<Row> {
   return ({ columnKey, value, change, labelledBy }) => (
     <TextInput
       size="xs"
@@ -636,7 +636,7 @@ function SectionsManager({ meetingId, initial, onChange }: {
   const first = useRef(true);
 
   // The rows: the draft with the numbers of the agenda as it would be.
-  const source = useMemo((): DataTableComponent.Source<SectionRow> => {
+  const source = useMemo((): dataTable.Source<SectionRow> => {
     const numbers = agendaNumbers(
       agendaOf({ ...db.getState(), ...withSectionDraft(db.getState(), meetingId, draft) }, meetingId),
     );
@@ -658,14 +658,14 @@ function SectionsManager({ meetingId, initial, onChange }: {
   }, [draft, onChange, nav]);
 
   const columns = useMemo(
-    (): readonly DataTableComponent.Column<SectionRow>[] => [
+    (): readonly dataTable.Column<SectionRow>[] => [
       { key: 'number', header: '#', width: '3rem', align: 'end' },
       { key: 'title', header: t('meetings.sections.name'), edit: mantineTextEditor() },
     ],
     [t],
   );
 
-  const actions = useMemo<readonly DataTableComponent.Action<SectionRow>[]>(() => [
+  const actions = useMemo<readonly dataTable.Action<SectionRow>[]>(() => [
     {
       type: 'general',
       key: 'new',
@@ -713,7 +713,7 @@ function SectionsManager({ meetingId, initial, onChange }: {
   };
 
   // A move: right after `after`, or right before `before` (at the top).
-  const reorder = (move: DataTableComponent.Move<SectionRow>) => {
+  const reorder = (move: dataTable.Move<SectionRow>) => {
     setDraft((current) => {
       const rest = current.filter((section) => section.id !== move.row.id);
       const moved = current.find((section) => section.id === move.row.id);
@@ -836,7 +836,7 @@ function MinutesView({ meeting, agendaItems, agendaSections, boardName }: {
   );
 }
 
-const documentColumnsOf = (t: Translate): readonly DataTableComponent.Column<MeetingDocument>[] => [
+const documentColumnsOf = (t: Translate): readonly dataTable.Column<MeetingDocument>[] => [
   {
     key: 'name',
     header: t('meetings.documents.columns.document'),
@@ -880,9 +880,9 @@ function DocumentsTable({ meeting }: { meeting: Meeting }): ReactElement {
   const toasts = useToast();
   const source = useMemo(() => fetchDocuments(meeting.id), [meeting.id]);
 
-  const actions = useMemo<readonly DataTableComponent.Action<MeetingDocument>[]>(() => {
+  const actions = useMemo<readonly dataTable.Action<MeetingDocument>[]>(() => {
     const upload = async () => {
-      let items: readonly FileUpload.FileItem[] = [];
+      let items: readonly fileUpload.FileItem[] = [];
       let committed: readonly MeetingDocument[] = [];
       const { canceled } = await dialogs.form({
         surface: 'drawer',

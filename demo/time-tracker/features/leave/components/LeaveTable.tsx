@@ -1,26 +1,26 @@
 import { Badge, Stack, Text } from '@mantine/core';
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
-import { selectColumnFilter, useDataTableController } from '../../../../../packages/data-table/src/react';
-import type { DataTableComponent } from '../../../../../packages/data-table/src/react';
-import { useToast } from '../../../../../packages/overlays/src/main/bindings/react';
-import { leaveDays, todayDate } from '../../../domain';
-import type { Employee, LeaveRequest, TimeData } from '../../../domain';
-import { formatDateRange, formatDays, formatStamp } from '../../../shared/lib/format';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { oneOf } from '../../../shared/lib/localQuery';
-import { DataTable } from '../../../shared/ui/dataTable';
-import { appIcons } from '../../../shared/ui/icons';
-import { absenceText, EmployeeLabel, RequestStatusBadge } from '../../../shared/ui/parts';
-import { useTableSource } from '../../tracker';
-import { useLeaveFlows } from '../flows';
+import { selectColumnFilter, useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
+import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import { useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
+import { leaveDays, todayDate } from '../../../domain/index.js';
+import type { Employee, LeaveRequest, TimeData } from '../../../domain/index.js';
+import { formatDateRange, formatDays, formatStamp } from '../../../shared/lib/format.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { oneOf } from '../../../shared/lib/localQuery.js';
+import { DataTable } from '../../../shared/ui/dataTable.js';
+import { appIcons } from '../../../shared/ui/icons.js';
+import { absenceText, EmployeeLabel, RequestStatusBadge } from '../../../shared/ui/parts.js';
+import { useTableSource } from '../../tracker/index.js';
+import { useLeaveFlows } from '../flows.js';
 
 export { LeaveTable };
 
 type LeaveRow = LeaveRequest & { employee: Employee | undefined; employeeName: string; days: number };
 
 // The employee of a request, with a link to their page (only in the team's table).
-function employeeColumn(header: string): DataTableComponent.Column<LeaveRow> {
+function employeeColumn(header: string): dataTable.Column<LeaveRow> {
   return {
     key: 'employeeName',
     header,
@@ -41,7 +41,7 @@ function LeaveTable({ data, employees, mine, pendingOnly = false, title, subtitl
   pendingOnly?: boolean;
   title: string;
   subtitle?: string;
-  savedFilters?: DataTableComponent.SavedFilters;
+  savedFilters?: dataTable.SavedFilters;
 }): ReactElement {
   const t = useTranslate();
   const nav = useDataTableController<LeaveRow>();
@@ -72,7 +72,7 @@ function LeaveTable({ data, employees, mine, pendingOnly = false, title, subtitl
 
   const nameOf = (id: string) => data.employees.find((employee) => employee.id === id)?.name ?? '';
 
-  const columns = useMemo((): readonly DataTableComponent.Column<LeaveRow>[] => [
+  const columns = useMemo((): readonly dataTable.Column<LeaveRow>[] => [
     ...(mine ? [] : [employeeColumn(t('leave.employee'))]),
     {
       key: 'type',
@@ -144,7 +144,7 @@ function LeaveTable({ data, employees, mine, pendingOnly = false, title, subtitl
     },
   ], [mine, t]);
 
-  const actions = useMemo((): readonly DataTableComponent.Action<LeaveRow>[] => {
+  const actions = useMemo((): readonly dataTable.Action<LeaveRow>[] => {
     // The rows an action applies to; a toast when none of the selected does.
     const only = (rows: readonly LeaveRow[], fits: (row: LeaveRow) => boolean, act: (rows: LeaveRow[]) => void) => {
       const fitting = rows.filter(fits);

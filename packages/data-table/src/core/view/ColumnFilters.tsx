@@ -1,13 +1,13 @@
 import { useEffect, useId, useState } from 'react';
 import type { ReactElement } from 'react';
-import type { DataTableComponent as Spec } from '../../react/api';
-import { fallbackSummary, isRecord, optionsOf } from '../filters';
-import type { FilterSummary, SummaryContext } from '../filters';
-import { useTexts } from '../texts';
-import { AutocompleteFilterInput, autocompleteIdsOf } from './AutocompleteFilter';
-import * as styles from './classes';
-import { DateRangeFilterInput, formatRange, rangeOf } from './DateRangeFilter';
-import { FilterSelectField, FilterTextField, PrefixedTextField, Segmented } from './widgets';
+import type * as Spec from '../../api/react/index.js';
+import { fallbackSummary, isRecord, optionsOf } from '../filters.js';
+import type { FilterSummary, SummaryContext } from '../filters.js';
+import { useTexts } from '../texts.js';
+import { AutocompleteFilterInput, autocompleteIdsOf } from './AutocompleteFilter.js';
+import * as styles from './classes.js';
+import { DateRangeFilterInput, formatRange, rangeOf } from './DateRangeFilter.js';
+import { FilterSelectField, FilterTextField, PrefixedTextField, Segmented } from './widgets.js';
 
 export {
   autocompleteColumnFilter,

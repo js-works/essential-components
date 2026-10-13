@@ -3,11 +3,11 @@ import { DatePickerInput } from '@mantine/dates';
 import { useState } from 'react';
 import type { ReactElement } from 'react';
 import { z } from 'zod';
-import { leaveDays } from '../../../domain';
-import type { HalfDay, Holiday, VacationBalance } from '../../../domain';
-import { formatDays } from '../../../shared/lib/format';
-import { useTranslate } from '../../../shared/lib/i18n';
-import { useForm } from '../../../shared/lib/useForm';
+import { leaveDays } from '../../../domain/index.js';
+import type { HalfDay, Holiday, VacationBalance } from '../../../domain/index.js';
+import { formatDays } from '../../../shared/lib/format.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { useForm } from '../../../shared/lib/useForm.js';
 
 export { LeaveForm, leaveSchema };
 

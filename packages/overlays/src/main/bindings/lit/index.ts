@@ -7,4 +7,6 @@
 
 export { litDialogAdapter } from "./dialog-adapter.js";
 export { litToastAdapter } from "./toast-adapter.js";
-export type { LitContent } from "./toast-adapter.js";
+
+// The types (with all of the main entry's): `import type { overlays } from "@local/overlays/lit"`.
+export type * as overlays from "../../api/lit/index.js";

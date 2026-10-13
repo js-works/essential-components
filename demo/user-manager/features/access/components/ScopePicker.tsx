@@ -3,8 +3,8 @@ import type { TreeNodeData } from '@mantine/core';
 import { useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
 import { TbChevronRight } from 'react-icons/tb';
-import { pathOf, scopeChildren } from '../../../domain';
-import type { Scope } from '../../../domain';
+import { pathOf, scopeChildren } from '../../../domain/index.js';
+import type { Scope } from '../../../domain/index.js';
 
 export { ScopePicker };
 

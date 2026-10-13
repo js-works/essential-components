@@ -1,9 +1,9 @@
 import { Group, Table, Text, Tooltip } from '@mantine/core';
 import type { ReactElement } from 'react';
-import { minutesOf } from '../../../domain';
-import type { TimeEntry } from '../../../domain';
-import { formatDuration, formatTime } from '../../../shared/lib/format';
-import { useTranslate } from '../../../shared/lib/i18n';
+import { minutesOf } from '../../../domain/index.js';
+import type { TimeEntry } from '../../../domain/index.js';
+import { formatDuration, formatTime } from '../../../shared/lib/format.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
 
 export { DayEntries, DayTimeline };
 

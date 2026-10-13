@@ -16,4 +16,8 @@ export { germanDialogTexts, germanToastTexts } from "./i18n/texts.js";
 // Both features' themes from one palette. The per-feature createToastTheme /
 // createDialogTheme come from the two blocks above and stay the finer-grained way in.
 export { createThemes } from "./themes/palette.js";
-export type { ThemePalette, Themes } from "./themes/palette.js";
+
+// # Types
+// All of them in one type namespace: `import type { overlays } from "@local/overlays"`, then
+// `overlays.DialogTheme`. The bindings' entries export it too, with their own types added.
+export type * as overlays from "./api/index.js";
