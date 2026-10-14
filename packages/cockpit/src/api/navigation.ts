@@ -1,4 +1,4 @@
-export type { Group, Nav, NavItem, NavScheme, Subgroup };
+export type { NavGroup, NavItem, NavLayout, NavScheme, NavSubgroup };
 
 type NavItem = {
   id: string;
@@ -16,12 +16,12 @@ type NavItem = {
   load?: () => Promise<unknown>;
 };
 
-type Group = {
+type NavGroup = {
   name: string;
-  subgroups?: readonly Subgroup[];
+  subgroups?: readonly NavSubgroup[];
 };
 
-type Subgroup = {
+type NavSubgroup = {
   name: string;
   icon?: string;
   // `pinned`: in the topbar and the rail an entry of its own after the pinned items (in the topbar a
@@ -38,7 +38,7 @@ type Subgroup = {
 // - `bottom`: a bar at the bottom (phones): "Apps" (a sheet with the whole sidebar), the three items used last, the
 //   search;
 // - `auto`: by the cockpit's width: the sidebar, below 768px the bottom bar.
-type Nav = 'auto' | 'side' | 'top' | 'top-switcher' | 'bottom';
+type NavLayout = 'auto' | 'side' | 'top' | 'top-switcher' | 'bottom';
 
 // The navigation's colors: always dark (the default), or like the page (light on a light page, dark on a dark one).
 type NavScheme = 'dark' | 'page';

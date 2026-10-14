@@ -3,8 +3,8 @@ import type { ToastTextResolver } from "./texts.js";
 import type { ToastTheme } from "./theme.js";
 
 export type {
-  OverflowMode,
-  Placement,
+  ToastOverflow,
+  ToastPlacement,
   ToastAction,
   ToastHandle,
   ToastOptions,
@@ -58,7 +58,7 @@ interface ToastsController<C> {
   destroy(): void;
 }
 
-type Placement =
+type ToastPlacement =
   | "top-start"
   | "top-center"
   | "top-end"
@@ -66,7 +66,7 @@ type Placement =
   | "bottom-center"
   | "bottom-end";
 
-type OverflowMode = "evict" | "queue";
+type ToastOverflow = "evict" | "queue";
 
 type ToastSize = "small" | "medium" | "large";
 
@@ -87,8 +87,8 @@ interface ToastsControllerOptions<C> {
   autoTitles?: boolean | ToastType[];
   autoIcons?: boolean | ToastType[];
   maxVisible?: number;
-  overflow?: OverflowMode;
-  placement?: Placement;
+  overflow?: ToastOverflow;
+  placement?: ToastPlacement;
   stacked?: boolean;
   dismissOnSwipe?: boolean;
   pauseOnHidden?: boolean;

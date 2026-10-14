@@ -23,7 +23,7 @@ const ACCENT_MIX = [10, 22, 40, 58, 75, 88, 100, 88, 76, 62] as const;
 // - `accentProperty` (e.g. `--app-accent-color`): the accent live from this custom property (any CSS color, set by the
 //   page's CSS, e.g. a menu): its ten shades as `color-mix()` of it with white and black; the shades of `colors` count
 //   where it is not set.
-function createMantineTheme(options: Spec.Options = {}): Spec.ThemeBundle {
+function createMantineTheme(options: Spec.ThemeOptions = {}): Spec.ThemeBundle {
   const { size = 'default', variant = 'default', accentProperty } = options;
   const setup = typeof options.colors === 'string' ? setupOf(options.colors) : options.colors ?? {};
   const modern = variant === 'modern';

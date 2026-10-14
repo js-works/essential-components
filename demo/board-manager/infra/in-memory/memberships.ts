@@ -1,4 +1,4 @@
-import type { dataTable } from '../../../../packages/data-table/src/react/index.js';
+import type { RowSource } from '../../../../packages/data-table/src/react/index.js';
 import { ROLES } from '../../domain/index.js';
 import type { Membership, Role } from '../../domain/index.js';
 import { localDate } from './helpers.js';
@@ -14,7 +14,7 @@ type MemberRow = Membership & { name: string; email: string; organization: strin
 // A membership of a person, with the name of its board.
 type MembershipRow = Membership & { board: string };
 
-function fetchBoardMembers(boardId: string): dataTable.Source<MemberRow> {
+function fetchBoardMembers(boardId: string): RowSource<MemberRow> {
   return async (query, signal) => {
     await wait(LOADING_TIME, signal);
 
@@ -47,7 +47,7 @@ function fetchBoardMembers(boardId: string): dataTable.Source<MemberRow> {
 }
 
 // The memberships of one person: chair first, then vice chair, secretary, members (the table's order without a sort).
-function fetchMemberships(personId: string): dataTable.Source<MembershipRow> {
+function fetchMemberships(personId: string): RowSource<MembershipRow> {
   return async (query, signal) => {
     await wait(LOADING_TIME, signal);
 

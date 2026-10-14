@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
-import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import type { TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
 import type { AccessData, Group } from '../../../domain/index.js';
 import { DataTable } from '../../../shared/ui/dataTable.js';
 import { appIcons } from '../../../shared/ui/icons.js';
@@ -32,7 +32,7 @@ function GroupsPage(): ReactElement {
   const grantAccess = useGrantAccess();
   const source = useTableSource<GroupRow>('groups', groupRows, { search: ['name', 'description'] }, nav.reload);
 
-  const columns = useMemo((): readonly dataTable.Column<GroupRow>[] => [
+  const columns = useMemo((): readonly TableColumn<GroupRow>[] => [
     {
       key: 'name',
       header: 'Name',
@@ -56,7 +56,7 @@ function GroupsPage(): ReactElement {
     { key: 'grants', header: 'Grants', width: 1.2, sortable: true, align: 'end', hideable: true },
   ], []);
 
-  const actions = useMemo((): readonly dataTable.Action<GroupRow>[] => [
+  const actions = useMemo((): readonly TableAction<GroupRow>[] => [
     {
       type: 'general',
       key: 'new',

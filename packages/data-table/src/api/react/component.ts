@@ -1,57 +1,57 @@
 import type { ReactElement, ReactNode } from 'react';
-import type { SetupConfig } from '../element.js';
+import type { DataTableSetupConfig } from '../element.js';
 import type { I18nAdapter } from '../i18n.js';
-import type { FilterValue, GroupBy, RowGroup, Sort, Source } from '../query.js';
-import type { CreateRow, Reorder, SaveRow } from '../rows.js';
+import type { ColumnSort, FilterValue, GroupBy, RowGroup, RowSource } from '../query.js';
+import type { CreateRow, ReorderRows, SaveRow } from '../rows.js';
 import type { SavedFilters } from '../saved-filters.js';
-import type { Density, FooterMode, Layout, RowActionLook, SelectionAppearance } from '../settings.js';
-import type { Theme } from '../theme.js';
-import type { Action, ActionMenu } from './actions.js';
-import type { Column, ColumnGroup, EditField } from './columns.js';
+import type { FooterMode, RowActionLook, SelectionAppearance, TableDensity, TableLayout } from '../settings.js';
+import type { DataTableTheme } from '../theme.js';
+import type { ActionMenu, TableAction } from './actions.js';
+import type { ColumnGroup, EditField, TableColumn } from './columns.js';
 
-export type { Component, Config, Controller, Props };
+export type { DataTableComponent, DataTableComponentConfig, DataTableProps, TableController };
 
-type Props<Row> = {
-  source: Source<Row>;
-  reorder?: Reorder<Row>;
+type DataTableProps<Row> = {
+  source: RowSource<Row>;
+  reorder?: ReorderRows<Row>;
   saveRow?: SaveRow<Row>;
   createRow?: CreateRow<Row>;
   editFields?: readonly EditField<Row>[];
   rowKey: keyof Row & string;
-  columns: readonly (Column<Row> | ColumnGroup<Row>)[];
+  columns: readonly (TableColumn<Row> | ColumnGroup<Row>)[];
   title?: ReactNode;
   subtitle?: ReactNode;
   selectionAppearance?: SelectionAppearance;
-  density?: Density;
-  layout?: Layout;
+  density?: TableDensity;
+  layout?: TableLayout;
   footer?: FooterMode;
   striped?: boolean;
   renderDetail?: (row: Row) => ReactNode;
   groupBy?: GroupBy<Row>;
   renderGroup?: (group: RowGroup<Row>) => ReactNode;
   empty?: ReactNode;
-  actions?: readonly (Action<Row> | ActionMenu<Row>)[];
+  actions?: readonly (TableAction<Row> | ActionMenu<Row>)[];
   pageSize?: number;
   pageSizeOptions?: readonly number[];
-  defaultSort?: Sort;
+  defaultSort?: ColumnSort;
   defaultFilters?: Record<string, FilterValue>;
   searchable?: boolean;
   reloadable?: boolean;
   showTotal?: boolean;
   selectableGroups?: boolean;
   rowActionLook?: RowActionLook;
-  controller?: Controller<Row>;
+  controller?: TableController<Row>;
   savedFilters?: SavedFilters;
 };
 
-type Config = {
-  i18n?: NonNullable<SetupConfig['i18n']> | { type: 'hook'; useAdapter: () => I18nAdapter };
-  theme?: Theme;
+type DataTableComponentConfig = {
+  i18n?: NonNullable<DataTableSetupConfig['i18n']> | { type: 'hook'; useAdapter: () => I18nAdapter };
+  theme?: DataTableTheme;
 };
 
-type Component = <Row>(props: Props<Row>) => ReactElement;
+type DataTableComponent = <Row>(props: DataTableProps<Row>) => ReactElement;
 
-type Controller<Row> = {
+type TableController<Row> = {
   reload: () => void;
   clearRowSelection: () => void;
   getSelectedRows: () => readonly Row[];

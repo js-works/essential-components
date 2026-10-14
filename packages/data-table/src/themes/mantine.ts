@@ -4,7 +4,7 @@ export { mantineTheme };
 
 // The Mantine theme: maps the design values onto Mantine's CSS variables. Mantine's variables adapt to its color
 // scheme, so dark mode follows Mantine.
-const mantineTheme: Required<DataTable.Theme> = {
+const mantineTheme: Required<DataTable.DataTableTheme> = {
   colorText: 'var(--mantine-color-text)',
   colorTextDimmed: 'var(--mantine-color-dimmed)',
   colorSurface: 'var(--mantine-color-body)',

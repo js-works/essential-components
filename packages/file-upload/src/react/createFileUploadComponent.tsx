@@ -37,7 +37,7 @@ const TAG_PREFIX = 'internal-file-upload-';
 // The height of the empty element (the drop line only), relative to the theme's `fontSize`: its content (1.806em, the
 // "Browse" button, measured at 14px; its 2px border does not scale with the text), its padding (per density) and the
 // borders (4px).
-const placeholderHeight = (density: Spec.Density) =>
+const placeholderHeight = (density: Spec.UploadDensity) =>
   `calc(${Number((1.806 + 2 * DENSITY_PADDING[density].drop).toFixed(3))}em + 4px)`;
 
 const useNoI18nAdapter = (): Spec.I18nAdapter | undefined => undefined;
@@ -45,7 +45,9 @@ const useNoI18nAdapter = (): Spec.I18nAdapter | undefined => undefined;
 // A React component for the file upload element. The call itself has no side effect (it also works on the server): the
 // element class is created and registered on the first mount on the client. Until then (and on the server) the
 // component renders a placeholder with the height of the empty element.
-function createFileUploadComponent(config: ReactSpec.ComponentConfig = {}): (props: ReactSpec.Props) => ReactNode {
+function createFileUploadComponent(
+  config: ReactSpec.FileUploadComponentConfig = {},
+): (props: ReactSpec.FileUploadProps) => ReactNode {
   const { i18n, tagName, ...rest } = config;
   const fontSize = config.theme?.fontSize ?? DEFAULT_THEME.fontSize;
   let registration: Promise<Registration> | undefined;
@@ -71,7 +73,7 @@ function createFileUploadComponent(config: ReactSpec.ComponentConfig = {}): (pro
       return { tag, setI18nAdapter: setElementI18nAdapter };
     });
 
-  function FileUpload(props: ReactSpec.Props): ReactNode {
+  function FileUpload(props: ReactSpec.FileUploadProps): ReactNode {
     const { ref, onChange, lang, id, className, style, maxParallel, label, error, icon, prompt, limits, ...rest } =
       props;
     const adapter = useI18nAdapter();

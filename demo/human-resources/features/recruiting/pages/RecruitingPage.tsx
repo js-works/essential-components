@@ -7,7 +7,7 @@ import {
   selectColumnFilter,
   useDataTableController,
 } from '../../../../../packages/data-table/src/react/index.js';
-import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import type { SavedFilter, TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
 import { isInProcess, OPENING_STATUSES } from '../../../domain/index.js';
 import type { HrData, Opening, OpeningStatus } from '../../../domain/index.js';
 import { formatDate } from '../../../shared/lib/format.js';
@@ -49,7 +49,7 @@ function openingRows(data: HrData): OpeningRow[] {
 const STATUS_ORDER: Readonly<Record<OpeningStatus, number>> = { open: 0, onHold: 1, closed: 2 };
 
 // The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
-const COLLEAGUES_FILTERS: readonly dataTable.SavedFilter[] = [
+const COLLEAGUES_FILTERS: readonly SavedFilter[] = [
   sharedBy('Tom Becker', 'Open positions', { status: ['open'] }),
   sharedBy('Sophie Brandt', 'Sales openings', { department: ['Sales', 'Sales DACH', 'International Sales'] }),
 ];
@@ -73,7 +73,7 @@ function RecruitingPage(): ReactElement {
   }, nav.reload);
   const departments = data?.departments;
 
-  const columns = useMemo((): readonly dataTable.Column<OpeningRow>[] => [
+  const columns = useMemo((): readonly TableColumn<OpeningRow>[] => [
     {
       key: 'title',
       header: t('openings.position'),
@@ -139,7 +139,7 @@ function RecruitingPage(): ReactElement {
     },
   ], [t, departments]);
 
-  const actions = useMemo((): readonly dataTable.Action<OpeningRow>[] => [
+  const actions = useMemo((): readonly TableAction<OpeningRow>[] => [
     {
       type: 'general',
       key: 'new',

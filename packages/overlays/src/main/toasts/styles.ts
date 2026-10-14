@@ -20,7 +20,7 @@ export const STACK_SHUFFLE_MS = 400;
 export const STACK_TOGGLE_MS = 200;
 
 
-// Global chrome + anything targeting the slotted action buttons. Placement is
+// Global chrome + anything targeting the slotted action buttons. ToastPlacement is
 // applied as inline styles per controller (see applyPlacement); a single
 // toast's own box lives in the custom element's shadow root (see
 // SHADOW_STYLES). The action buttons are the exception: they're slotted

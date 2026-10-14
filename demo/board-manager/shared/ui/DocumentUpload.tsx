@@ -1,5 +1,5 @@
 import { createDemoI18n } from '../../../../packages/file-upload/demo/i18n.js';
-import type { fileUpload } from '../../../../packages/file-upload/src/index.js';
+import type { FileUploadTheme } from '../../../../packages/file-upload/src/index.js';
 import { createFileUploadComponent } from '../../../../packages/file-upload/src/react/index.js';
 
 export { DocumentUpload };
@@ -9,7 +9,7 @@ const uploadI18n = createDemoI18n();
 // The file upload in Mantine's look: its theme values are Mantine's variables (inherited into its shadow DOM from the
 // scope), so it follows Mantine's color scheme and the contrast of the app's theme, like the data table's
 // `mantineTheme`.
-const MANTINE_UPLOAD_THEME: fileUpload.Theme = {
+const MANTINE_UPLOAD_THEME: FileUploadTheme = {
   accentColor: 'var(--mantine-primary-color-filled)',
   accentTextColor: 'var(--mantine-primary-color-contrast)',
   textColor: 'var(--mantine-color-text)',

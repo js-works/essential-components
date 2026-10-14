@@ -1,11 +1,11 @@
 import type { FileUploadElement } from './element.js';
 import type { I18nAdapter } from './i18n.js';
-import type { Theme } from './theme.js';
+import type { FileUploadTheme } from './theme.js';
 
-export type { Config };
+export type { FileUploadClassConfig };
 
-type Config = {
-  theme?: Theme;
+type FileUploadClassConfig = {
+  theme?: FileUploadTheme;
   styles?: string;
   i18n?: { type: 'factory'; getAdapter: (element: FileUploadElement) => I18nAdapter };
 };

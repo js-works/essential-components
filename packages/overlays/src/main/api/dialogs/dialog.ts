@@ -7,7 +7,7 @@
 
 import type { DialogAdapterFactory } from "./adapter.js";
 import type { DialogTheme } from "./theme.js";
-import type { Renderable } from "./content.js";
+import type { OverlayContent } from "./content.js";
 import type { DialogTexts } from "./texts.js";
 import type { FormDialogData } from "../../dialogs/form-data.js";
 
@@ -121,7 +121,7 @@ export interface NoteRender {
 
 /**
  * Optional per-part render overrides. Each is all-or-nothing: when provided, the library
- * renders nothing of its own for that part and inserts the returned Renderable instead
+ * renders nothing of its own for that part and inserts the returned OverlayContent instead
  * (so the caller can drop in their design system's components). A custom part supplies
  * its own states/animation from the descriptor — e.g. a custom action button shows its
  * own loading state, and a custom reject message provides its own enter/leave animation.
@@ -191,7 +191,7 @@ export interface DialogsControllerConfig<C extends object> {
    *
    * Not called when a dialog has no content at all.
    */
-  wrapContent?(content: Renderable<C>, dialogInfo: DialogInfo): Renderable<C>;
+  wrapContent?(content: OverlayContent<C>, dialogInfo: DialogInfo): OverlayContent<C>;
 }
 
 /** What {@link DialogsControllerConfig.wrapContent} is told about the dialog it is wrapping. */
@@ -212,17 +212,17 @@ export interface DialogInfo {
  * there is no list to keep in sync.
  */
 export interface DialogViewConfig<C extends object> {
-  title?: Renderable<C>;
-  subtitle?: Renderable<C>;
+  title?: OverlayContent<C>;
+  subtitle?: OverlayContent<C>;
   /**
    * Header icon. `true` shows the built-in icon for this dialog type, `false` hides it,
    * content supplies a custom icon; omit to defer to the controller's
    * {@link DialogsControllerConfig.icons} policy.
    */
   icon?: C | boolean;
-  intro?: Renderable<C>;
-  content?: Renderable<C>;
-  outro?: Renderable<C>;
+  intro?: OverlayContent<C>;
+  content?: OverlayContent<C>;
+  outro?: OverlayContent<C>;
   /** Caller-supplied CSS, scoped per-instance by the core. */
   styles?: string;
   /** Caller overrides for button labels, keyed by button role. */
@@ -520,20 +520,20 @@ export interface DialogScope<C extends object> extends DialogMethods<C> {
 // `aborted` says why there was no answer.
 
 /** The user answered. `A` is which answers this kind allows, `T` any data it carries. */
-export interface Answered<A extends string, T = undefined> {
+export interface DialogAnswered<A extends string, T = undefined> {
   canceled: false;
   action: A;
   data: T;
 }
 
 /** The user made it go away without answering: cancel button, close button, Escape. */
-export interface Dismissed {
+export interface DialogDismissed {
   canceled: true;
   aborted: false;
 }
 
 /** It was taken away programmatically: `abort()`, an `abortSignal`, a disposed scope. */
-export interface Aborted {
+export interface DialogAborted {
   canceled: true;
   aborted: true;
 }
@@ -541,25 +541,25 @@ export interface Aborted {
 /**
  * Result of the acknowledge-only dialogs: info, success, warn, error.
  *
- * No {@link Dismissed}: these have no cancel button, and dismissing a message *is*
+ * No {@link DialogDismissed}: these have no cancel button, and dismissing a message *is*
  * acknowledging it — so Escape and the close button resolve as `ok` like the button does.
  * The only way here without an answer is an abort.
  *
  * `A` in each: the ids of the dialog's own actions (see {@link DialogConfig.actions}).
  */
-export type MessageDialogResult<A extends string = never> = Answered<"ok" | A> | Aborted;
+export type MessageDialogResult<A extends string = never> = DialogAnswered<"ok" | A> | DialogAborted;
 export type ConfirmDialogResult<A extends string = never> =
-  | Answered<"confirm" | A>
-  | Dismissed
-  | Aborted;
+  | DialogAnswered<"confirm" | A>
+  | DialogDismissed
+  | DialogAborted;
 export type DecideDialogResult<A extends string = never> =
-  | Answered<"confirm" | "decline" | A>
-  | Dismissed
-  | Aborted;
+  | DialogAnswered<"confirm" | "decline" | A>
+  | DialogDismissed
+  | DialogAborted;
 export type FormDialogResult<A extends string = never> =
-  | Answered<"confirm" | A, FormDialogData>
-  | Dismissed
-  | Aborted;
+  | DialogAnswered<"confirm" | A, FormDialogData>
+  | DialogDismissed
+  | DialogAborted;
 
 /** One submission of a form dialog while iterating for retry (see {@link DialogMethods.form}). */
 export interface FormAttempt<A extends string = never> {
@@ -719,4 +719,4 @@ export type FormDialogHandle<
  * it: `MessageDialogResult | ConfirmDialogResult | DecideDialogResult | FormDialogResult`
  * says the same thing more precisely and needs no declaration of its own.
  */
-export type AnyDialogResult = Answered<string, unknown> | Dismissed | Aborted;
+export type AnyDialogResult = DialogAnswered<string, unknown> | DialogDismissed | DialogAborted;

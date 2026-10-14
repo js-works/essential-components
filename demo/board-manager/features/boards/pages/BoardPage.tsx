@@ -8,7 +8,7 @@ import {
   selectColumnFilter,
   useDataTableController,
 } from '../../../../../packages/data-table/src/react/index.js';
-import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import type { TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
 import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
 import { ROLES } from '../../../domain/index.js';
 import {
@@ -151,7 +151,7 @@ function BoardOverview({ boardId }: { boardId: string }): ReactElement | null {
 }
 
 // The columns, with their headers in the current language.
-const columnsOf = (t: Translate): readonly dataTable.Column<MemberRow>[] => [
+const columnsOf = (t: Translate): readonly TableColumn<MemberRow>[] => [
   { key: 'name', header: t('boards.columns.person'), width: 2.5, sortable: true, filter: personFilter },
   {
     key: 'role',
@@ -193,7 +193,7 @@ function MembersTable({ boardId }: { boardId: string }): ReactElement {
   const toasts = useToast();
   const source = useMemo(() => fetchBoardMembers(boardId), [boardId]);
 
-  const actions = useMemo<readonly dataTable.Action<MemberRow>[]>(() => {
+  const actions = useMemo<readonly TableAction<MemberRow>[]>(() => {
     const add = async () => {
       const state = db.getState();
       const members = new Set(

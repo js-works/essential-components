@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router';
 import { selectColumnFilter, useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
-import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import type { SavedFilter, TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
 import { CHECKLIST_KINDS, checklistAnchor, isOverdue, nextTask, progressOf, todayDate } from '../../../domain/index.js';
 import type { Checklist, Employee, HrData } from '../../../domain/index.js';
 import { formatDate } from '../../../shared/lib/format.js';
@@ -51,7 +51,7 @@ function checklistRows(data: HrData): ChecklistRow[] {
 }
 
 // The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
-const COLLEAGUES_FILTERS: readonly dataTable.SavedFilter[] = [
+const COLLEAGUES_FILTERS: readonly SavedFilter[] = [
   sharedBy('Sophie Brandt', 'Open onboardings', { kind: ['onboarding'], state: ['open'] }),
   sharedBy('Tom Becker', 'Offboardings', { kind: ['offboarding'] }),
 ];
@@ -73,7 +73,7 @@ function ChecklistsPage(): ReactElement {
     sortValue: { done: (row) => (row.total === 0 ? 0 : row.done / row.total) },
   }, nav.reload);
 
-  const columns = useMemo((): readonly dataTable.Column<ChecklistRow>[] => [
+  const columns = useMemo((): readonly TableColumn<ChecklistRow>[] => [
     {
       key: 'name',
       header: t('checklists.employee'),
@@ -148,7 +148,7 @@ function ChecklistsPage(): ReactElement {
     },
   ], [t]);
 
-  const actions = useMemo((): readonly dataTable.Action<ChecklistRow>[] => [
+  const actions = useMemo((): readonly TableAction<ChecklistRow>[] => [
     {
       type: 'general',
       key: 'new',

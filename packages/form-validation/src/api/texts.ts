@@ -1,4 +1,4 @@
-export type { LibCatalog, Message, MessageCatalog, MessageContext, MessageFn, MessageKey, PluralForms };
+export type { BuiltInCatalog, MessageCatalog, MessageContext, MessageFn, MessageKey, PluralForms, ValidationMessage };
 
 type PluralForms = Partial<Record<Intl.LDMLPluralRule, string>>;
 
@@ -10,8 +10,8 @@ interface MessageContext {
 
 /** The parameters arrive already formatted for the locale (numbers, dates). */
 type MessageFn = (params: Record<string, string>, ctx: MessageContext) => string;
-type Message = string | MessageFn;
-type MessageCatalog = Record<string, Message>;
+type ValidationMessage = string | MessageFn;
+type MessageCatalog = Record<string, ValidationMessage>;
 
 /** The keys of the library's own messages (its bundled catalogs). */
 type MessageKey =
@@ -39,4 +39,4 @@ type MessageKey =
   | 'date.min'
   | 'date.max';
 
-type LibCatalog = Record<MessageKey, Message>;
+type BuiltInCatalog = Record<MessageKey, ValidationMessage>;

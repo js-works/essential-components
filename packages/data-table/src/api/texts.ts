@@ -1,6 +1,6 @@
-export type { Texts };
+export type { DataTableTexts };
 
-type Texts = {
+type DataTableTexts = {
   selectedCount: (params: { count: number }) => string; // {count} selected
   itemRange: (params: { from: number; to: number; total: number }) => string; // {from}-{to} of {total}
   itemSingle: (params: { item: number; total: number }) => string; // {item} of {total}
@@ -27,8 +27,8 @@ type Texts = {
   collapseAllDetails: string; // Hide all details
   expandDetails: string; // Show details
   collapseDetails: string; // Hide details
-  sortAsc: string; // Sort ascending
-  sortDesc: string; // Sort descending
+  sortAsc: string; // ColumnSort ascending
+  sortDesc: string; // ColumnSort descending
   calendarPrevious: string; // Previous
   calendarNext: string; // Next
   clear: string; // Clear
@@ -56,11 +56,11 @@ type Texts = {
   columns: string; // Columns
   resetColumnWidths: string; // Reset column widths
   optimizeColumnWidths: string; // Optimize column widths
-  layout: string; // Layout
+  layout: string; // TableLayout
   layoutAuto: string; // Automatic
   layoutTable: string; // Table
   layoutCards: string; // Cards
-  moveRow: string; // Move row
+  moveRow: string; // RowMove row
   emptyGroup: string; // (Blank)
   movedTo: (params: { position: number }) => string; // Moved to position {position}
   expandGroup: string; // Show group

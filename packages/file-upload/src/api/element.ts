@@ -1,11 +1,11 @@
-import type { FileItem, Upload } from './upload.js';
+import type { FileItem, UploadFn } from './upload.js';
 
-export type { Density, ElementClass, FileUploadElement };
+export type { FileUploadClass, FileUploadElement, UploadDensity };
 
-type Density = 'compact' | 'normal' | 'comfortable';
+type UploadDensity = 'compact' | 'normal' | 'comfortable';
 
 type FileUploadElement = HTMLElement & {
-  upload: Upload | undefined;
+  upload: UploadFn | undefined;
   accept: string | undefined;
   maxFiles: number | undefined;
   maxFileSize: number | undefined;
@@ -13,7 +13,7 @@ type FileUploadElement = HTMLElement & {
   multiple: boolean;
   manualUpload: boolean;
   previews: boolean;
-  density: Density;
+  density: UploadDensity;
   disabled: boolean;
   name: string | undefined;
   required: boolean;
@@ -30,7 +30,7 @@ type FileUploadElement = HTMLElement & {
   setCustomValidity: (message: string) => void;
 };
 
-type ElementClass = {
+type FileUploadClass = {
   new(): FileUploadElement;
   readonly prototype: FileUploadElement;
 };

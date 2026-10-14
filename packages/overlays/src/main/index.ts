@@ -18,6 +18,6 @@ export { germanDialogTexts, germanToastTexts } from "./i18n/texts.js";
 export { createThemes } from "./themes/palette.js";
 
 // # Types
-// All of them in one type namespace: `import type { overlays } from "@local/overlays"`, then
-// `overlays.DialogTheme`. The bindings' entries export it too, with their own types added.
-export type * as overlays from "./api/index.js";
+// All of them, flat: `import type { DialogTheme } from "@local/overlays"`. The bindings' entries export them too,
+// with their own types added.
+export type * from "./api/index.js";

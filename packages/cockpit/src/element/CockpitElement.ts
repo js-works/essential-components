@@ -6,12 +6,12 @@ import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { html as staticHtml, unsafeStatic } from 'lit/static-html.js';
-import type * as Spec from '../api/index.js';
 import { groupsOf, search, subgroupsOf } from '../core/search.js';
 import type { Group, Match } from '../core/search.js';
 import { readStored, writeStored } from '../core/storage.js';
 import { textsFor } from '../core/texts.js';
 import type { Texts } from '../core/texts.js';
+import type * as Spec from '../index.js';
 import {
   checkIcon,
   chevronIcon,
@@ -101,24 +101,24 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
   // The attribute `nav`: `side` (the default), `top` (one line, two-pane menus), `top-switcher` (one line,
   // one dropdown with the open item), `bottom` (a bar at the bottom) or `auto` (the sidebar, the bottom bar when
   // narrow). An unknown value is the sidebar.
-  declare nav: Spec.Nav;
+  declare nav: Spec.NavLayout;
   // The attribute `nav-scheme`: the navigation always dark (the default), or like the page (only CSS: `:host([nav-scheme])`).
   declare navScheme: Spec.NavScheme;
   // The attribute `density`: the sidebar's rows and gaps, `compact`, `normal` (the default) or `comfortable` (only CSS:
   // `:host([density])`).
-  declare density: Spec.Density;
+  declare density: Spec.NavDensity;
   // The attribute `start-page` (2026-10-08): a start page while no item is open; its first value the config's
   // `startPage`, switchable live. Switched off on the start page: `defaultItem`, else the first item, opens.
   declare startPage: boolean;
   // The theme (2026-10-10): its first value the config's `theme`, switchable live (a new object). The stylesheet is
   // built from it (`styles()`, `#themeSheet`); the values only known at run time (the resized sidebar, the switcher's
   // panel) are in a second one (`layoutStyles()`, `#layoutSheet`). No custom properties.
-  declare theme: Spec.Theme;
+  declare theme: Spec.CockpitTheme;
   readonly #themeSheet = new CSSStyleSheet();
   readonly #layoutSheet = new CSSStyleSheet();
   #layoutText = '';
 
-  readonly #config: Spec.Config;
+  readonly #config: Spec.CockpitClassConfig;
   readonly #id = `cockpit${++instances}`;
   // The menus, by key (`#menu`).
   readonly #menuByKey = new Map<string, Menu>();
@@ -167,7 +167,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
   #paneShown: string | undefined;
   #paneTimer: ReturnType<typeof setTimeout> | undefined;
 
-  constructor(config: Spec.Config) {
+  constructor(config: Spec.CockpitClassConfig) {
     super();
     this.nav = 'side';
     this.navScheme = 'dark';
@@ -604,7 +604,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
   }
 
   // A subgroup's extra data in the config's `groups` (its icon, its placement).
-  #subgroupOf(group: string, subgroup: string): Spec.Subgroup | undefined {
+  #subgroupOf(group: string, subgroup: string): Spec.NavSubgroup | undefined {
     return this.#config.groups?.find((candidate) => candidate.name === group)?.subgroups?.find((candidate) =>
       candidate.name === subgroup
     );
@@ -1927,7 +1927,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
 
   // The user in the top line: the avatar (the name as the tooltip); with `userMenu` a button that opens it below,
   // with the name and the second line on top.
-  #topUser(texts: Texts, user: Spec.User): TemplateResult {
+  #topUser(texts: Texts, user: Spec.SignedInUser): TemplateResult {
     const sections = this.#config.userMenu ?? [];
     const avatar = user.avatar === undefined
       ? html`<span class="avatar" aria-hidden="true">${initialsOf(user.name).toUpperCase()}</span>`
@@ -2197,7 +2197,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
 
   // The signed-in user, above the footer: the avatar, the name and a second line. With a menu (`userMenu`), the row is a
   // button that opens it to the right of the sidebar, touching it; in the rail only the avatar (the name as the tooltip).
-  #userRow(texts: Texts, rail: boolean, user: Spec.User): TemplateResult {
+  #userRow(texts: Texts, rail: boolean, user: Spec.SignedInUser): TemplateResult {
     const sections = this.#config.userMenu ?? [];
     const avatar = user.avatar === undefined
       ? html`<span class="avatar" aria-hidden="true">${initialsOf(user.name).toUpperCase()}</span>`
@@ -2288,7 +2288,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
       >${icon}</button>`;
 
     // An action with a menu of sections: like the kebab's menu, at this button.
-    const sectionMenu = (action: Spec.Action, sections: readonly Spec.MenuSection[]) => {
+    const sectionMenu = (action: Spec.FooterAction, sections: readonly Spec.MenuSection[]) => {
       const menu = this.#menu(`action:${action.id}`, {
         ...where,
         onSelect: (value) => this.#select(sections, value),
@@ -2299,7 +2299,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
       }`;
     };
 
-    const choiceMenu = (action: Spec.Action, choices: Spec.Choices) => {
+    const choiceMenu = (action: Spec.FooterAction, choices: Spec.ActionChoices) => {
       const menu = this.#menu(`choice:${action.id}`, {
         ...where,
         onSelect: (value) => {
@@ -2386,7 +2386,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
     </div>`;
   }
 
-  #actionIcon(action: Spec.Action): TemplateResult {
+  #actionIcon(action: Spec.FooterAction): TemplateResult {
     return html`<span class="footer-icon" aria-hidden="true">${unsafeHTML(action.icon)}</span>${
       action.badge === true ? html`<span class="footer-badge" aria-hidden="true"></span>` : nothing
     }`;

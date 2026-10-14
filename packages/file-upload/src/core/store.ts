@@ -6,7 +6,7 @@ export { FileUploadStore };
 export type { StoreOptions };
 
 type StoreOptions = {
-  upload: Spec.Upload | undefined;
+  upload: Spec.UploadFn | undefined;
   accept?: string | undefined;
   maxFiles?: number | undefined;
   maxFileSize?: number | undefined;
@@ -188,7 +188,7 @@ class FileUploadStore {
     }
   }
 
-  #begin(id: string, file: File, upload: Spec.Upload): void {
+  #begin(id: string, file: File, upload: Spec.UploadFn): void {
     const controller = new AbortController();
 
     this.#controllers.set(id, controller);
@@ -240,7 +240,7 @@ function rejectionOf(
   maxFileSize: number | undefined,
   maxFiles: number | undefined,
   accepted: number,
-): Spec.Rejection | undefined {
+): Spec.FileRejection | undefined {
   if (!matchesAccept(file, accept)) {
     return 'type';
   }

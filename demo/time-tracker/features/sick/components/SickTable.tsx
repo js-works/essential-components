@@ -2,7 +2,7 @@ import { Badge, Group, Text } from '@mantine/core';
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { selectColumnFilter, useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
-import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import type { TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
 import { certificateRequired, sickDays, todayDate } from '../../../domain/index.js';
 import type { Employee, SickNote } from '../../../domain/index.js';
 import { formatDateRange, formatStamp } from '../../../shared/lib/format.js';
@@ -82,8 +82,8 @@ function SickTable({ employees, mine, title, subtitle }: {
     filters: { certificateState: (row, value) => oneOf(row.certificateState, value) },
   }, nav.reload);
 
-  const columns = useMemo((): readonly dataTable.Column<SickRow>[] => {
-    const employeeColumn: dataTable.Column<SickRow> = {
+  const columns = useMemo((): readonly TableColumn<SickRow>[] => {
+    const employeeColumn: TableColumn<SickRow> = {
       key: 'employeeName',
       header: t('sick.employee'),
       width: 3,
@@ -138,7 +138,7 @@ function SickTable({ employees, mine, title, subtitle }: {
     ];
   }, [mine, t]);
 
-  const actions = useMemo((): readonly dataTable.Action<SickRow>[] =>
+  const actions = useMemo((): readonly TableAction<SickRow>[] =>
     mine
       ? [
         {

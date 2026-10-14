@@ -27,7 +27,7 @@ import {
 import { useStore } from 'zustand';
 import { i18n as tableI18n } from '../../../packages/data-table/demo/i18n.js';
 import { autocompleteColumnFilter, createDataTableComponent } from '../../../packages/data-table/src/react/index.js';
-import type { dataTable } from '../../../packages/data-table/src/react/index.js';
+import type { DataTableProps } from '../../../packages/data-table/src/react/index.js';
 import { mantineTheme } from '../../../packages/data-table/src/themes/index.js';
 import { db, suggestOrganizations, suggestPeople } from '../infra/in-memory/index.js';
 import type { Db } from '../infra/in-memory/index.js';
@@ -61,7 +61,7 @@ const BaseDataTable = createDataTableComponent({ i18n: tableI18n, theme: mantine
 // something to page (`footer="auto"`, 2026-10-06), and the number of rows after the title (`showTotal`, so a short
 // list without a footer still tells it), and 50 rows a page (2026-10-08, the user's wish, in every app), unless a table
 // says otherwise.
-function DataTable<Row>(props: dataTable.Props<Row>): ReactElement {
+function DataTable<Row>(props: DataTableProps<Row>): ReactElement {
   return (
     <div className="board-manager__table">
       <BaseDataTable footer="auto" showTotal pageSize={50} {...props} />

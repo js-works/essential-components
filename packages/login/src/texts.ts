@@ -1,10 +1,10 @@
-import type { Texts } from './api/texts.js';
+import type { LoginTexts } from './api/texts.js';
 
 export { textsFor };
 
 // The login screen's own texts, in the language of the page (`<html lang>`): German for `de…`, else English. A host
 // can replace each of them (`texts`).
-const EN: Texts = {
+const EN: LoginTexts = {
   heading: 'Sign in',
   username: 'Username',
   password: 'Password',
@@ -32,7 +32,7 @@ const EN: Texts = {
   providerFailed: 'The sign in failed. Please try again.',
 };
 
-const DE: Texts = {
+const DE: LoginTexts = {
   heading: 'Anmelden',
   username: 'Benutzername',
   password: 'Passwort',
@@ -62,6 +62,6 @@ const DE: Texts = {
   providerFailed: 'Die Anmeldung ist fehlgeschlagen. Bitte versuchen Sie es erneut.',
 };
 
-function textsFor(lang: string): Texts {
+function textsFor(lang: string): LoginTexts {
   return lang.toLowerCase().startsWith('de') ? DE : EN;
 }

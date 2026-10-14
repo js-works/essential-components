@@ -32,7 +32,7 @@ function groupKeyOf<Row>(row: Row, groupBy: Spec.GroupBy<Row>): string {
 function segmentsOf<Row>(
   rows: readonly Row[],
   keyOf: ((row: Row) => string) | undefined,
-  groups?: readonly Spec.ResultGroup[],
+  groups?: readonly Spec.GroupTotal[],
 ): Segment<Row>[] {
   if (keyOf === undefined) {
     return [{ key: undefined, rows }];

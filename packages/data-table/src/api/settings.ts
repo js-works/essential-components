@@ -2,21 +2,21 @@ export type {
   ActionSeparator,
   ActionVariant,
   ColumnAlign,
-  Density,
   FooterMode,
-  Layout,
   RowActionLook,
   SelectionAppearance,
   SelectionMode,
+  TableDensity,
+  TableLayout,
 };
 
 type SelectionMode = 'none' | 'single' | 'multi';
 
-type Density = 'compact' | 'normal' | 'comfortable';
+type TableDensity = 'compact' | 'normal' | 'comfortable';
 
 type FooterMode = 'always' | 'auto' | 'never';
 
-type Layout = 'auto' | 'table' | 'cards';
+type TableLayout = 'auto' | 'table' | 'cards';
 
 type SelectionAppearance = 'neutral' | 'accent';
 

@@ -14,8 +14,8 @@ import type { ToastAppearance, ToastView } from "../api/toasts/adapter.js";
 import type { ToastTexts } from "../api/toasts/texts.js";
 import type { ToastTheme } from "../api/toasts/theme.js";
 import type {
-  OverflowMode,
-  Placement,
+  ToastOverflow,
+  ToastPlacement,
   ToastAction,
   ToastHandle,
   ToastOptions,
@@ -110,8 +110,8 @@ export function createToastController<C>(
 
   // Icons are on by default (they were always shown before this option existed).
   const autoIcons = (): boolean | ToastType[] => opts.autoIcons ?? true;
-  const placement = (): Placement => opts.placement ?? "bottom-end";
-  const overflow = (): OverflowMode => opts.overflow ?? "evict";
+  const placement = (): ToastPlacement => opts.placement ?? "bottom-end";
+  const overflow = (): ToastOverflow => opts.overflow ?? "evict";
   const dismissOnSwipe = (): boolean => opts.dismissOnSwipe ?? true;
   const pauseOnHidden = (): boolean => opts.pauseOnHidden ?? true;
   const liveRegion = (): boolean => opts.liveRegion ?? false;

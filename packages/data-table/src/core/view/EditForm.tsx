@@ -20,7 +20,7 @@ type EditFormProps<Row> = {
   closing: boolean;
   error: string | undefined;
   fields: readonly Spec.EditField<Row>[];
-  texts: Spec.Texts;
+  texts: Spec.DataTableTexts;
   fieldId: (key: string) => string;
   onChange: (patch: Partial<Row>) => void;
   onSave: () => void;

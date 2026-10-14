@@ -8,7 +8,7 @@ import {
   textColumnFilter,
   useDataTableController,
 } from '../../../../../packages/data-table/src/react/index.js';
-import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import type { SavedFilter, TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
 import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
 import { MEETING_STATUSES } from '../../../domain/index.js';
 import type { MeetingStatus } from '../../../domain/index.js';
@@ -103,7 +103,7 @@ function MinutesBadge(
 }
 
 // The colleagues' shared filters of the meetings list (2026-10-11, the user's wish: to show sharing).
-const COLLEAGUES_FILTERS: readonly dataTable.SavedFilter[] = [
+const COLLEAGUES_FILTERS: readonly SavedFilter[] = [
   sharedBy('Maria Keller', 'Minutes to approve', { status: ['Held'], minutesApproved: ['draft'] }),
   sharedBy('Jonas Weber', 'Planned, next 90 days', {
     status: ['Planned'],
@@ -136,7 +136,7 @@ function MeetingsTable(
   const savedFilters = useSavedFilters('board-manager:saved-filters:meetings', COLLEAGUES_FILTERS);
   const main = boardId === undefined && personId === undefined;
 
-  const columns = useMemo<readonly dataTable.Column<MeetingRow>[]>(() => [
+  const columns = useMemo<readonly TableColumn<MeetingRow>[]>(() => [
     {
       key: 'start',
       header: t('meetings.columns.date'),
@@ -162,7 +162,7 @@ function MeetingsTable(
           sortable: true,
           hideable: true,
           filter: selectColumnFilter({ options: boards.map((board) => board.name), multiple: true }),
-        } satisfies dataTable.Column<MeetingRow>,
+        } satisfies TableColumn<MeetingRow>,
       ]
       : []),
     {
@@ -237,7 +237,7 @@ function MeetingsTable(
     },
   ], [t, boardId, boards, pathOf]);
 
-  const actions = useMemo<readonly dataTable.Action<MeetingRow>[]>(() => {
+  const actions = useMemo<readonly TableAction<MeetingRow>[]>(() => {
     // The boards a new meeting may be for.
     const choices = () => {
       const state = db.getState();

@@ -1,4 +1,4 @@
-import type { LibCatalog } from '../api/texts.js';
+import type { BuiltInCatalog } from '../api/texts.js';
 
 export { ru };
 
@@ -7,7 +7,7 @@ const charsGen = { one: '# символа', other: '# символов' };
 // Nominative/accusative after "ровно"
 const charsNom = { one: '# символ', few: '# символа', many: '# символов', other: '# символа' };
 
-const ru: LibCatalog = {
+const ru: BuiltInCatalog = {
   required: 'Пожалуйста, заполните это поле.',
   invalid: 'Пожалуйста, проверьте введённые данные.',
   submitFailed: 'При отправке произошла ошибка. Пожалуйста, попробуйте ещё раз.',

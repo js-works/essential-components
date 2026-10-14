@@ -1,8 +1,8 @@
-import type { LibCatalog } from '../api/texts.js';
+import type { BuiltInCatalog } from '../api/texts.js';
 
 export { zhCN, zhTW };
 
-const zhCN: LibCatalog = {
+const zhCN: BuiltInCatalog = {
   required: '请填写此字段。',
   invalid: '请检查您的输入。',
   submitFailed: '提交时出错，请重试。',
@@ -28,7 +28,7 @@ const zhCN: LibCatalog = {
   'date.max': (p) => `日期不能晚于 ${p.max}。`,
 };
 
-const zhTW: LibCatalog = {
+const zhTW: BuiltInCatalog = {
   required: '請填寫此欄位。',
   invalid: '請檢查您的輸入。',
   submitFailed: '送出時發生錯誤，請再試一次。',

@@ -12,7 +12,7 @@ type ActionListProps<Row> = {
   placement: ButtonPlacement;
   // What the action column (the placement `row`) shows of an action. Other places show the look as it is.
   rowActionLook?: Spec.RowActionLook;
-  invoke: (action: Spec.Action<Row>) => void;
+  invoke: (action: Spec.TableAction<Row>) => void;
 };
 
 // The look of an action (or a menu) in this place. In the action column, `rowActionLook` decides: `'icon'` shows only

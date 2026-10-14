@@ -7,7 +7,7 @@ export { createFileUploadClass };
 // A new element class with the given config. The app registers it itself, under a tag name of its choice:
 // `class AcmeUpload extends createFileUploadClass({ theme }) {}`, then `customElements.define('acme-upload', AcmeUpload)`.
 // Every call creates a new class, because a registry accepts each class only once.
-function createFileUploadClass(config: Spec.Config = {}): Spec.ElementClass {
+function createFileUploadClass(config: Spec.FileUploadClassConfig = {}): Spec.FileUploadClass {
   // Built once per class, when the first element is created, and shared by all its elements.
   let styles: CSSStyleSheet | string | undefined;
 

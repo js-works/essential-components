@@ -2,8 +2,8 @@ import { html, LitElement, nothing } from 'lit';
 import type { PropertyValues, TemplateResult } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
-import type * as Spec from '../api/index.js';
 import { textsFor } from '../core/texts.js';
+import type * as Spec from '../index.js';
 import { closeIcon, initialsIcon } from './icons.js';
 import { taskbarStyles } from './taskbarStyles.js';
 
@@ -57,7 +57,7 @@ class TaskbarElement extends LitElement {
   declare tasks: readonly Task[];
   declare active: string | undefined;
   // The look (2026-10-10): the cockpit passes its own; alone, the defaults. Its stylesheet is built from it.
-  declare theme: Spec.Theme;
+  declare theme: Spec.CockpitTheme;
   readonly #themeSheet = new CSSStyleSheet();
 
   // A task was closed from inside: the focus goes to the active task once the host has removed it.

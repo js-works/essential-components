@@ -1,4 +1,4 @@
-import type { dataTable } from '../../../../packages/data-table/src/react/index.js';
+import type { RowQuery } from '../../../../packages/data-table/src/react/index.js';
 
 export { iamKeys };
 
@@ -7,5 +7,5 @@ const iamKeys = {
   all: ['iam'] as const,
   data: () => [...iamKeys.all, 'data'] as const,
   tables: () => [...iamKeys.all, 'table'] as const,
-  table: (name: string, query: dataTable.Query) => [...iamKeys.tables(), name, query] as const,
+  table: (name: string, query: RowQuery) => [...iamKeys.tables(), name, query] as const,
 };

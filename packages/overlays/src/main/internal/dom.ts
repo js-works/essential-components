@@ -3,7 +3,7 @@
 // -------------------------------------------------------------------
 
 // A child may be an array of children, which appendChildren flattens.
-import type { Attrs, Child } from "../api/dom/content.js";
+import type { DomAttrs, DomChild } from "../api/dom/content.js";
 
 // Build an element. Props: `class` sets className; `on*` function props add listeners
 // (onClick -> "click"); `true` sets a boolean attribute; other values set attributes.
@@ -11,8 +11,8 @@ import type { Attrs, Child } from "../api/dom/content.js";
 // null/false/undefined are skipped. No parsing, so nothing here is an injection surface.
 export function h<K extends keyof HTMLElementTagNameMap>(
   tag: K,
-  props?: Attrs | null,
-  ...children: Child[]
+  props?: DomAttrs | null,
+  ...children: DomChild[]
 ): HTMLElementTagNameMap[K] {
   const el = document.createElement(tag);
   if (props) {
@@ -40,7 +40,7 @@ export function h<K extends keyof HTMLElementTagNameMap>(
   return el;
 }
 
-export function appendChildren(parent: Node, children: Child[]): void {
+export function appendChildren(parent: Node, children: DomChild[]): void {
   for (const child of children) {
     if (child == null || child === false || child === true) continue;
     if (Array.isArray(child)) {

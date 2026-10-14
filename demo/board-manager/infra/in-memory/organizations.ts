@@ -1,4 +1,4 @@
-import type { dataTable } from '../../../../packages/data-table/src/react/index.js';
+import type { RowPage, RowQuery } from '../../../../packages/data-table/src/react/index.js';
 import { normalizeWebsite } from '../../domain/index.js';
 import type { Organization } from '../../domain/index.js';
 import { countryName } from '../../shared/lib/countries.js';
@@ -30,9 +30,9 @@ async function suggestOrganizations(
 }
 
 async function fetchOrganizations(
-  query: dataTable.Query,
+  query: RowQuery,
   signal: AbortSignal,
-): Promise<dataTable.Result<OrganizationRow>> {
+): Promise<RowPage<OrganizationRow>> {
   await wait(LOADING_TIME, signal);
 
   const state = db.getState();

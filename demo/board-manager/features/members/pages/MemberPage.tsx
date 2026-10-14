@@ -3,7 +3,7 @@ import { Fragment, useMemo, useState } from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
-import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import type { TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
 import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
 import type { Person } from '../../../domain/index.js';
 import { boardIdsOf, fetchMemberships, getOrganization, getPerson } from '../../../infra/in-memory/index.js';
@@ -128,7 +128,7 @@ function MemberOverview({ person }: { person: Person }): ReactElement {
   );
 }
 
-const membershipColumnsOf = (t: Translate): readonly dataTable.Column<MembershipRow>[] => [
+const membershipColumnsOf = (t: Translate): readonly TableColumn<MembershipRow>[] => [
   {
     key: 'board',
     header: t('members.columns.board'),
@@ -160,7 +160,7 @@ function MembershipsTable({ personId }: { personId: string }): ReactElement {
   const nav = useDataTableController<MembershipRow>();
   const navigate = useNavigate();
   const source = useMemo(() => fetchMemberships(personId), [personId]);
-  const actions = useMemo<readonly dataTable.Action<MembershipRow>[]>(() => [
+  const actions = useMemo<readonly TableAction<MembershipRow>[]>(() => [
     {
       type: 'singleRow',
       key: 'open',

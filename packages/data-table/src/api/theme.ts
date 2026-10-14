@@ -1,8 +1,8 @@
-export type { Theme, ThemeValue };
+export type { DataTableTheme, ThemeValue };
 
 type ThemeValue = string | { light: string; dark: string };
 
-type Theme = {
+type DataTableTheme = {
   colorText?: ThemeValue;
   colorTextDimmed?: ThemeValue;
   colorSurface?: ThemeValue;

@@ -27,12 +27,13 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - The runtime code of the former `contract/` is beside its feature: `dialogs/theme.ts`, `dialogs/texts.ts` (the
     defaults; `TextKey` stays internal there), `dialogs/form-data.ts`, `dialogs/view.ts` (the internal view types),
     `toasts/theme.ts`, `toasts/texts.ts`, `toasts/view.ts` (the policy helpers).
-  - Every entry exports the values flat and the types as the one type namespace `overlays`
-    (`import type { overlays } from "@local/overlays/react"`, `overlays.DialogTheme`, `overlays.OverlaysConfig`); the
-    names kept their prefixes (`Dialog…`, `Toast…`): both features share the namespace. Flat type exports before.
-  - Public since then too (all exports of `api/dialogs/dialog.ts`): `Aborted`, `Answered`, `Dismissed`,
-    `AnyDialogResult`, the parts of the result types.
-  - To discuss later: `overlays.OverlaysConfig` repeats itself (`Config`, `ProviderConfig`).
+  - Every entry exports values and types flat (`import type { DialogTheme } from "@local/overlays/react"`; the type
+    namespace `overlays` for two days until 2026-10-14). Renamed then (`typescript.md`, two words): `Placement` →
+    `ToastPlacement`, `OverflowMode` → `ToastOverflow`, `Renderable` → `OverlayContent`, `Themes` → `OverlayThemes`,
+    `Child`, `Attrs` → `DomChild`, `DomAttrs`.
+  - Public since 2026-10-12 too (all exports of `api/dialogs/dialog.ts`): `DialogAborted`, `DialogAnswered`,
+    `DialogDismissed`, `AnyDialogResult`, the parts of the result types.
+  - `OverlaysConfig` keeps its name (2026-10-13, the user's decision).
 - Not yet following the conventions (older than them; to be discussed, not changed on the side):
   - Exports on the declarations (`export function …`) and TypeScript `private` in places (`typescript.md`).
   - i18n through picolingo namespaces (`createNamespace()`), not the `I18nAdapter` of `i18n.md`.

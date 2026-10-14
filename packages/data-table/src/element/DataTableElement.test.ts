@@ -20,7 +20,7 @@ const people: readonly Person[] = Array.from({ length: 30 }, (_, index) => ({
 }));
 
 function createSource() {
-  return vi.fn(async (query: DataTable.Query): Promise<DataTable.Result<Person>> => ({
+  return vi.fn(async (query: DataTable.RowQuery): Promise<DataTable.RowPage<Person>> => ({
     rows: people.slice((query.page - 1) * query.pageSize, query.page * query.pageSize),
     total: people.length,
   }));
@@ -259,7 +259,9 @@ describe('content', () => {
   it('throws a TypeError for an unknown i18n type (e.g. an adapter given directly)', () => {
     const i18n = { currentLocale: () => 'en-US', resolveText: () => '' };
 
-    expect(() => setupDataTable({ i18n: i18n as unknown as DataTable.SetupConfig['i18n'] })).toThrow(TypeError);
+    expect(() => setupDataTable({ i18n: i18n as unknown as DataTable.DataTableSetupConfig['i18n'] })).toThrow(
+      TypeError,
+    );
   });
 
   it('renders action icons and tips, and a tip may be a function', async () => {

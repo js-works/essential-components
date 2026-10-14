@@ -3,7 +3,15 @@ import type { EditorProps } from './editors.js';
 import type { FilterProps } from './filters.js';
 import type { ColumnAlign } from './settings.js';
 
-export type { BuiltInColumnEditor, BuiltInColumnFilter, Column, ColumnEditor, ColumnFilter, ColumnGroup, EditField };
+export type {
+  BuiltInColumnEditor,
+  BuiltInColumnFilter,
+  ColumnEditor,
+  ColumnFilter,
+  ColumnGroup,
+  EditField,
+  TableColumn,
+};
 
 declare const builtInFilter: unique symbol;
 
@@ -23,7 +31,7 @@ type EditField<Row, C> = {
   edit: ColumnEditor<Row, C>;
 };
 
-type Column<Row, C> = {
+type TableColumn<Row, C> = {
   key: keyof Row & string;
   header: TextContent<C>;
   width?: number | string;
@@ -40,5 +48,5 @@ type Column<Row, C> = {
 
 type ColumnGroup<Row, C> = {
   header: TextContent<C>;
-  columns: readonly Column<Row, C>[];
+  columns: readonly TableColumn<Row, C>[];
 };

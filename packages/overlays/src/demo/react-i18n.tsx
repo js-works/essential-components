@@ -33,12 +33,12 @@ import { createContext, use, useState } from "react";
 import { createRoot } from "react-dom/client";
 
 import { OverlaysProvider, useDialogs } from "../main/bindings/react/index.js";
-import type { overlays } from "../main/index.js";
+import type { DialogTexts } from "../main/index.js";
 
 type Lang = "en" | "de";
 
 /** What the library asks for. Missing keys fall back to the built-in English. */
-const CHROME: Record<Lang, Partial<overlays.DialogTexts>> = {
+const CHROME: Record<Lang, Partial<DialogTexts>> = {
   en: {},
   de: {
     buttonOk: "Ok",

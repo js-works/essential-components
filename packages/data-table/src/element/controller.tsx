@@ -12,8 +12,8 @@ export type { ElementSettings };
 
 // What the element adds to the controller's options: the settings that do not depend on the row type.
 type ElementSettings = {
-  density: DataTable.Density;
-  layout: DataTable.Layout | undefined;
+  density: DataTable.TableDensity;
+  layout: DataTable.TableLayout | undefined;
   footer: DataTable.FooterMode;
   striped: boolean;
   searchable: boolean;
@@ -123,10 +123,10 @@ function renderController(controller: object, settings: ElementSettings, content
 function propsOf<Row, C>(
   options: DataTable.ControllerOptions<Row, C>,
   content: ContentRenderer,
-): Spec.Props<Row> {
+): Spec.DataTableProps<Row> {
   const { renderDetail, renderGroup } = options;
 
-  const columnOf = (column: DataTable.Column<Row, C>): Spec.Column<Row> => {
+  const columnOf = (column: DataTable.TableColumn<Row, C>): Spec.TableColumn<Row> => {
     const { render } = column;
 
     return {
@@ -204,7 +204,7 @@ function lookOf<C>(look: DataTable.ActionLook<C>, content: ContentRenderer): Spe
   };
 }
 
-function actionOf<Row, C>(action: DataTable.Action<Row, C>, content: ContentRenderer): Spec.Action<Row> {
+function actionOf<Row, C>(action: DataTable.TableAction<Row, C>, content: ContentRenderer): Spec.TableAction<Row> {
   switch (action.type) {
     case 'general':
       return {

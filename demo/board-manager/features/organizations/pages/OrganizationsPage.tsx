@@ -7,7 +7,7 @@ import {
   textColumnFilter,
   useDataTableController,
 } from '../../../../../packages/data-table/src/react/index.js';
-import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import type { SavedFilter, TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
 import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
 import {
   createOrganization,
@@ -103,7 +103,7 @@ function WebsiteLink({ url }: { url: string }): ReactElement | null {
 }
 
 // The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
-const COLLEAGUES_FILTERS: readonly dataTable.SavedFilter[] = [
+const COLLEAGUES_FILTERS: readonly SavedFilter[] = [
   sharedBy('Maria Keller', 'Stuttgart', { city: { text: 'Stuttgart', match: 'contains' } }),
   sharedBy('Lena Hoffmann', 'Investors', { name: ['Nordic Capital Partners', 'Gulf Invest', 'Stein Family Office'] }),
 ];
@@ -119,7 +119,7 @@ function OrganizationsPage(): ReactElement {
   const navigate = useNavigate();
   const organizations = useDb((state) => state.organizations);
 
-  const columns = useMemo<readonly dataTable.Column<OrganizationRow>[]>(() => [
+  const columns = useMemo<readonly TableColumn<OrganizationRow>[]>(() => [
     {
       key: 'name',
       header: t('organizations.columns.organization'),
@@ -175,7 +175,7 @@ function OrganizationsPage(): ReactElement {
     },
   ], [t, organizations]);
 
-  const actions = useMemo<readonly dataTable.Action<OrganizationRow>[]>(() => {
+  const actions = useMemo<readonly TableAction<OrganizationRow>[]>(() => {
     const create = async () => {
       let created = '';
       const saved = !(await dialogs.form({

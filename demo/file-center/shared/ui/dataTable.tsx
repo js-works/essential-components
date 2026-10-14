@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { i18n as tableI18n } from '../../../../packages/data-table/demo/i18n.js';
 import { createDataTableComponent } from '../../../../packages/data-table/src/react/index.js';
-import type { dataTable } from '../../../../packages/data-table/src/react/index.js';
+import type { DataTableProps } from '../../../../packages/data-table/src/react/index.js';
 import { mantineTheme } from '../../../../packages/data-table/src/themes/index.js';
 
 export { DataTable };
@@ -14,7 +14,7 @@ const BaseDataTable = createDataTableComponent({ i18n: tableI18n, theme: mantine
 // fill the height below the app header (`file-center.css`), like the Board Manager's. The footer only when there is
 // something to page, and the number of rows after the title (2026-10-07, the user's wish, like the Time Tracker's). 50
 // rows a page (2026-10-08, the user's wish, in every app), unless a table says otherwise.
-function DataTable<Row>(props: dataTable.Props<Row>): ReactElement {
+function DataTable<Row>(props: DataTableProps<Row>): ReactElement {
   return (
     <div className="file-center__table">
       <BaseDataTable density="compact" footer="auto" showTotal pageSize={50} {...props} />

@@ -96,7 +96,7 @@ const LAYOUT_MODES: readonly LayoutMode[] = ['auto', 'table', 'cards'];
 // The whole data table: the toolbar (with the filter button and the pills), the grid, the header rows, the data
 // rows, the detail rows and the empty state, or the filter view in place of the grid and the footer. The root carries
 // the id of its theme (`data-data-table-theme`), which its stylesheet is scoped to (see stylesheet.ts).
-function DataTableView<Row>(props: Spec.Props<Row>): ReactElement {
+function DataTableView<Row>(props: Spec.DataTableProps<Row>): ReactElement {
   const { title, subtitle, empty } = props;
   const { stylesheet, onRoot } = useContext(ConfigContext);
   const nav = useDataTable<Row>(props);

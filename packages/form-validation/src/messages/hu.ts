@@ -1,8 +1,8 @@
-import type { LibCatalog } from '../api/texts.js';
+import type { BuiltInCatalog } from '../api/texts.js';
 
 export { hu };
 
-const hu: LibCatalog = {
+const hu: BuiltInCatalog = {
   required: 'Kérjük, töltse ki ezt a mezőt.',
   invalid: 'Kérjük, ellenőrizze a megadott adatot.',
   submitFailed: 'Hiba történt a küldés során. Kérjük, próbálja újra.',

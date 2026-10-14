@@ -2,7 +2,7 @@ import { Badge, SimpleGrid, Stack, Text } from '@mantine/core';
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
-import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import type { TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
 import { currentSalary, todayDate } from '../../../domain/index.js';
 import type { Employee, HrData, SalaryChange } from '../../../domain/index.js';
 import { formatDate, formatMoney, formatNumber } from '../../../shared/lib/format.js';
@@ -56,7 +56,7 @@ function SalaryTable({ data, employee }: { data: HrData; employee: Employee }): 
   const coming = rows.filter((row) => row.from > todayDate());
   const first = rows[0];
 
-  const columns = useMemo((): readonly dataTable.Column<SalaryRow>[] => [
+  const columns = useMemo((): readonly TableColumn<SalaryRow>[] => [
     {
       key: 'from',
       header: t('salary.from'),
@@ -102,7 +102,7 @@ function SalaryTable({ data, employee }: { data: HrData; employee: Employee }): 
     { key: 'note', header: t('salary.note'), width: 3 },
   ], [t]);
 
-  const actions = useMemo((): readonly dataTable.Action<SalaryRow>[] => [
+  const actions = useMemo((): readonly TableAction<SalaryRow>[] => [
     {
       type: 'general',
       key: 'new',

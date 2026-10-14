@@ -1,7 +1,7 @@
 import { Loader, Stack, Tabs } from '@mantine/core';
 import { useState } from 'react';
 import type { ReactElement } from 'react';
-import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import type { SavedFilter } from '../../../../../packages/data-table/src/react/index.js';
 import { membersOf, todayDate, vacationBalance } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { appIcons } from '../../../shared/ui/icons.js';
@@ -15,7 +15,7 @@ import { LeaveTable } from '../components/LeaveTable.js';
 export { LeavePage };
 
 // The colleagues' shared filters of the team's requests (2026-10-11, the user's wish: to show sharing).
-const COLLEAGUES_FILTERS: readonly dataTable.SavedFilter[] = [
+const COLLEAGUES_FILTERS: readonly SavedFilter[] = [
   sharedBy('Julia Wagner', 'Pending requests', { status: ['pending'] }),
   sharedBy('Felix Braun', 'Vacation', { type: ['vacation'] }),
 ];

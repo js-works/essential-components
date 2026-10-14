@@ -3,7 +3,7 @@
 import type { DialogTheme } from "./dialogs/theme.js";
 import type { ToastTheme } from "./toasts/theme.js";
 
-export type { ThemePalette, Themes };
+export type { ThemePalette, OverlayThemes };
 
 /**
  * The colours an application actually thinks in. Each is a CSS colour — a literal, or a
@@ -39,7 +39,7 @@ interface ThemePalette {
  * Named rather than a tuple: positions would have to be remembered, and these two have
  * obvious names. Dialogs first, as everywhere else in the package.
  */
-interface Themes {
+interface OverlayThemes {
   dialogTheme: DialogTheme;
   toastTheme: ToastTheme;
 }

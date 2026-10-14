@@ -12,8 +12,8 @@ import { HOST_ATTRIBUTE, provideStyles } from './styles.js';
 
 export { setupDataTable };
 
-const DENSITIES: readonly DataTable.Density[] = ['compact', 'normal', 'comfortable'];
-const LAYOUTS: readonly DataTable.Layout[] = ['auto', 'table', 'cards'];
+const DENSITIES: readonly DataTable.TableDensity[] = ['compact', 'normal', 'comfortable'];
+const LAYOUTS: readonly DataTable.TableLayout[] = ['auto', 'table', 'cards'];
 const FOOTER_MODES: readonly DataTable.FooterMode[] = ['always', 'auto', 'never'];
 const ROW_ACTION_LOOKS: readonly DataTable.RowActionLook[] = ['icon', 'label', 'iconAndLabel'];
 const SELECTION_APPEARANCES: readonly DataTable.SelectionAppearance[] = ['neutral', 'accent'];
@@ -43,8 +43,8 @@ const UPGRADED_PROPERTIES = [
 // registered: the app registers it under a tag name of its choice) and the factory of its controllers, both bound to
 // this configuration. The element wraps the React view, rendered into its light DOM.
 function setupDataTable<C = Node>(
-  config: DataTable.SetupConfig<C> = {},
-): readonly [DataTable.ElementClass<C>, DataTable.CreateTableController<C>] {
+  config: DataTable.DataTableSetupConfig<C> = {},
+): readonly [DataTable.DataTableClass<C>, DataTable.CreateTableController<C>] {
   checkI18nType(config.i18n, ['factory']);
 
   const resolved = resolveConfig(config.theme);
@@ -118,24 +118,24 @@ function setupDataTable<C = Node>(
       this.#render();
     }
 
-    get density(): DataTable.Density {
+    get density(): DataTable.TableDensity {
       const value = this.getAttribute('density');
 
       return DENSITIES.find((density) => density === value) ?? defaults.density ?? 'normal';
     }
 
-    set density(density: DataTable.Density) {
+    set density(density: DataTable.TableDensity) {
       this.setAttribute('density', density);
     }
 
     // The layout of the rows: fixed by the app (and no choice in the column menu), or not set (the user chooses).
-    get layout(): DataTable.Layout | undefined {
+    get layout(): DataTable.TableLayout | undefined {
       const value = this.getAttribute('layout');
 
       return LAYOUTS.find((layout) => layout === value) ?? defaults.layout;
     }
 
-    set layout(layout: DataTable.Layout | undefined) {
+    set layout(layout: DataTable.TableLayout | undefined) {
       if (layout === undefined) {
         this.removeAttribute('layout');
       } else {

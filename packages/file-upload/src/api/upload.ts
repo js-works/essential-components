@@ -1,22 +1,22 @@
-export type { FileItem, FileStatus, Rejection, Upload, UploadContext };
+export type { FileItem, FileRejection, FileStatus, UploadContext, UploadFn };
 
 type UploadContext = {
   signal: AbortSignal;
   onProgress: (fraction: number) => void;
 };
 
-type Upload = (file: File, context: UploadContext) => Promise<string | void>;
+type UploadFn = (file: File, context: UploadContext) => Promise<string | void>;
 
 type FileStatus = 'ready' | 'queued' | 'uploading' | 'done' | 'error' | 'aborted' | 'rejected';
 
-type Rejection = 'type' | 'size' | 'count';
+type FileRejection = 'type' | 'size' | 'count';
 
 type FileItem = {
   id: string;
   file: File;
   status: FileStatus;
   progress: number;
-  rejection?: Rejection;
+  rejection?: FileRejection;
   error?: unknown;
   result?: string;
 };

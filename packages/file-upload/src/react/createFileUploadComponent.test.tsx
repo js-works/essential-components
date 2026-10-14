@@ -136,7 +136,7 @@ describe('createFileUploadComponent', () => {
 
   it('passes the slots, the attributes and lang to the element', async () => {
     const Upload = createFileUploadComponent();
-    const props: ReactSpec.Props = {
+    const props: ReactSpec.FileUploadProps = {
       prompt: <b>Drop invoices</b>,
       label: (
         <>
@@ -223,7 +223,7 @@ describe('createFileUploadComponent', () => {
     // A cast config, as plain JavaScript would pass it.
     const config = {
       i18n: { type: 'other', useAdapter: () => adapterFor('en') },
-    } as unknown as ReactSpec.ComponentConfig;
+    } as unknown as ReactSpec.FileUploadComponentConfig;
 
     expect(() => createFileUploadComponent(config)).toThrow(TypeError);
   });

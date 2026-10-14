@@ -4,7 +4,12 @@ import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { selectColumnFilter, useDataTableController } from '../../../../packages/data-table/src/react/index.js';
-import type { dataTable } from '../../../../packages/data-table/src/react/index.js';
+import type {
+  RowQuery,
+  SavedFilter,
+  TableAction,
+  TableColumn,
+} from '../../../../packages/data-table/src/react/index.js';
 import { useToast } from '../../../../packages/overlays/src/main/bindings/react/index.js';
 import { ancestorsOf, FILE_KINDS } from '../../domain/index.js';
 import type { FileKind, FileSortKey, Folder } from '../../domain/index.js';
@@ -28,7 +33,7 @@ export { FavoritesPage };
 const SORT_KEYS: readonly FileSortKey[] = ['name', 'type', 'size', 'modified', 'owner'];
 
 // The table's state as the service's query: its search and filters, its sort, its page as a window.
-function toCriteria(query: dataTable.Query): EntryCriteria {
+function toCriteria(query: RowQuery): EntryCriteria {
   const { kind, owner } = query.filters as Record<string, unknown>;
 
   return {
@@ -38,7 +43,7 @@ function toCriteria(query: dataTable.Query): EntryCriteria {
   };
 }
 
-function toSort(query: dataTable.Query) {
+function toSort(query: RowQuery) {
   const key = query.sort?.key as FileSortKey | undefined;
 
   return query.sort !== undefined && key !== undefined && SORT_KEYS.includes(key)
@@ -46,13 +51,13 @@ function toSort(query: dataTable.Query) {
     : undefined;
 }
 
-const toPaging = (query: dataTable.Query) => ({
+const toPaging = (query: RowQuery) => ({
   offset: (query.page - 1) * query.pageSize,
   limit: query.pageSize,
 });
 
 // The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
-const COLLEAGUES_FILTERS: readonly dataTable.SavedFilter[] = [
+const COLLEAGUES_FILTERS: readonly SavedFilter[] = [
   sharedBy('Claire Dubois', 'Documents', { kind: ['document'] }),
   sharedBy('Ben Carter', 'From Anna', { owner: ['Anna Schröder'] }),
 ];
@@ -87,7 +92,7 @@ function FavoritesPage(): ReactElement {
     nav.reload,
   );
 
-  const columns = useMemo((): readonly dataTable.Column<EntryRow>[] => [
+  const columns = useMemo((): readonly TableColumn<EntryRow>[] => [
     {
       key: 'name',
       header: 'Name',
@@ -145,7 +150,7 @@ function FavoritesPage(): ReactElement {
     },
   ], [folders, owners, setFavorite]);
 
-  const actions = useMemo((): readonly dataTable.Action<EntryRow>[] => [
+  const actions = useMemo((): readonly TableAction<EntryRow>[] => [
     // The default action (a double click): a folder opens, a file shows its details.
     {
       type: 'singleRow',

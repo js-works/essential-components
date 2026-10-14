@@ -1,14 +1,14 @@
 import type { ReactNode } from 'react';
-import type { Texts } from './texts.js';
+import type { LoginTexts } from './texts.js';
 
-export type { Credentials, PasswordReset, Props, Provider, Registration };
+export type { AccountRegistration, Credentials, LoginProvider, LoginScreenProps, PasswordReset };
 
 type Credentials = {
   username: string;
   password: string;
 };
 
-type Registration = {
+type AccountRegistration = {
   username: string;
   email: string;
   password: string;
@@ -18,22 +18,22 @@ type PasswordReset = {
   account: string;
 };
 
-type Provider = {
+type LoginProvider = {
   id: string;
   label: string;
   icon?: ReactNode | string;
 };
 
-type Props = {
+type LoginScreenProps = {
   title: string;
   subtitle?: string;
   logo?: ReactNode | string;
   hint?: ReactNode | string;
-  texts?: Partial<Texts>;
+  texts?: Partial<LoginTexts>;
   onLogin: (credentials: Credentials) => void | Promise<void>;
   onForgotPassword?: (reset: PasswordReset) => void | Promise<void>;
-  onRegister?: (registration: Registration) => void | Promise<void>;
-  providers?: readonly Provider[];
+  onRegister?: (registration: AccountRegistration) => void | Promise<void>;
+  providers?: readonly LoginProvider[];
   onProvider?: (id: string) => void | Promise<void>;
   passwordLogin?: boolean;
 };

@@ -8,7 +8,7 @@ import { PageButton, PagerButton, PageSizeField } from './widgets.js';
 export { Footer };
 
 type FooterProps = {
-  texts: Spec.Texts;
+  texts: Spec.DataTableTexts;
   total: number;
   page: number;
   pageCount: number;

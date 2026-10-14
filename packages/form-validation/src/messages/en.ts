@@ -1,10 +1,10 @@
-import type { LibCatalog } from '../api/texts.js';
+import type { BuiltInCatalog } from '../api/texts.js';
 
 export { en };
 
 const chars = { one: '# character', other: '# characters' };
 
-const en: LibCatalog = {
+const en: BuiltInCatalog = {
   required: 'Please fill out this field.',
   invalid: 'Please check your input.',
   submitFailed: 'Something went wrong while submitting. Please try again.',

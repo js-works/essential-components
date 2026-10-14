@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { useDataTableController } from '../../../../packages/data-table/src/react/index.js';
-import type { dataTable } from '../../../../packages/data-table/src/react/index.js';
+import type { RowQuery, TableAction, TableColumn } from '../../../../packages/data-table/src/react/index.js';
 import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react/index.js';
 import { countText, formatDateTime, formatSize } from '../../shared/lib/format.js';
 import { useQuerySource } from '../../shared/lib/useQuerySource.js';
@@ -16,7 +16,7 @@ export { TrashPage };
 
 const SORT_KEYS: readonly TrashSortKey[] = ['name', 'size', 'from', 'deletedAt', 'owner'];
 
-function toSort(query: dataTable.Query) {
+function toSort(query: RowQuery) {
   const key = query.sort?.key as TrashSortKey | undefined;
 
   return query.sort !== undefined && key !== undefined && SORT_KEYS.includes(key)
@@ -24,7 +24,7 @@ function toSort(query: dataTable.Query) {
     : undefined;
 }
 
-const toPaging = (query: dataTable.Query) => ({
+const toPaging = (query: RowQuery) => ({
   offset: (query.page - 1) * query.pageSize,
   limit: query.pageSize,
 });
@@ -52,7 +52,7 @@ function TrashPage(): ReactElement {
     nav.reload,
   );
 
-  const columns = useMemo((): readonly dataTable.Column<TrashRow>[] => [
+  const columns = useMemo((): readonly TableColumn<TrashRow>[] => [
     {
       key: 'name',
       header: 'Name',
@@ -100,7 +100,7 @@ function TrashPage(): ReactElement {
     { key: 'owner', header: 'Owner', width: 2, sortable: true, hideable: true },
   ], []);
 
-  const actions = useMemo((): readonly dataTable.Action<TrashRow>[] => {
+  const actions = useMemo((): readonly TableAction<TrashRow>[] => {
     const changed = () => queryClient.invalidateQueries({ queryKey: browserKeys.all });
 
     const restore = async (rows: readonly TrashRow[]) => {

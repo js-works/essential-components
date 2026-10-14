@@ -1,5 +1,5 @@
 import { autocompleteColumnFilter, selectColumnFilter, setupDataTable, textColumnFilter } from '../src/index.js';
-import type { dataTable } from '../src/index.js';
+import type { TableDensity } from '../src/index.js';
 import { defaultTheme } from '../src/themes/index.js';
 import { countries, fetchUsers, roles, suggestEmails } from './data.js';
 import type { User } from './data.js';
@@ -112,7 +112,7 @@ function createController(onRemove: (users: readonly User[]) => void) {
   });
 }
 
-const DENSITIES: readonly dataTable.Density[] = ['compact', 'normal', 'comfortable'];
+const DENSITIES: readonly TableDensity[] = ['compact', 'normal', 'comfortable'];
 
 // Renders the tab into the container and returns its cleanup.
 function mountElementDemo(container: HTMLElement): () => void {

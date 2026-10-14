@@ -10,9 +10,9 @@ import {
   userMenu,
 } from '../packages/cockpit/demo/footer.js';
 import { createCockpitClass } from '../packages/cockpit/src/index.js';
-import type { cockpit } from '../packages/cockpit/src/index.js';
+import type { CockpitFooter, MenuSection } from '../packages/cockpit/src/index.js';
 import { mountLoginScreen } from '../packages/login/src/index.js';
-import type { login } from '../packages/login/src/index.js';
+import type { MountedLoginScreen } from '../packages/login/src/index.js';
 
 // The page: an app cockpit, with every demo as one of its mini-apps. The page's settings (in the cockpit's footer) set
 // `<html lang>` and the color scheme for every demo. Each demo is a light DOM custom element of its project, loaded
@@ -43,7 +43,7 @@ try {
   document.documentElement.setAttribute(FILTER_DRAWER, '');
 }
 
-const prototypesSection: cockpit.MenuSection = {
+const prototypesSection: MenuSection = {
   label: 'Prototypes',
   items: [{
     id: 'filter-drawer',
@@ -62,7 +62,7 @@ const prototypesSection: cockpit.MenuSection = {
 };
 
 // The made-up kebab menu of the cockpit's demo, with the prototypes before its last section ("Reset demo").
-const menu: cockpit.Footer['menu'] = MENU === undefined
+const menu: CockpitFooter['menu'] = MENU === undefined
   ? [prototypesSection]
   : [...MENU.slice(0, -1), prototypesSection, ...MENU.slice(-1)];
 
@@ -286,7 +286,7 @@ customElements.define(
 // sign in again (a demo: it is about the look). Signed out is remembered per browser, so a reload stays there.
 const cockpitElement = document.querySelector<HTMLElement>('app-cockpit')!;
 const loginHost = document.createElement('div');
-let loginScreen: login.Mounted | undefined;
+let loginScreen: MountedLoginScreen | undefined;
 
 const LOGO =
   '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2" opacity="0.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2" opacity="0.6"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></svg>';

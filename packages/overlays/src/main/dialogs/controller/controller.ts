@@ -33,7 +33,7 @@ import type {
   DialogSlots,
   DialogSpec,
 } from "../../api/dialogs/adapter.js";
-import type { Renderable } from "../../api/dialogs/content.js";
+import type { OverlayContent } from "../../api/dialogs/content.js";
 import type { TextKey } from "../texts.js";
 import type {
   DialogButtonView,
@@ -373,8 +373,8 @@ function createDialogScope<C extends object>(
   // `undefined` -> not decided here (the caller of this defers to the next level).
   function resolveIcon(
     dialogType: DialogType,
-    value: Renderable<any> | boolean | undefined,
-  ): Renderable<any> | undefined {
+    value: OverlayContent<any> | boolean | undefined,
+  ): OverlayContent<any> | undefined {
     if (value === true) return defaultDialogIcon(dialogType);
     if (value === false) return null;
     return value;
@@ -385,7 +385,7 @@ function createDialogScope<C extends object>(
   function iconFor(
     dialogType: DialogType,
     dialogConfig: DialogConfig<any>,
-  ): Renderable<any> {
+  ): OverlayContent<any> {
     const perDialog = resolveIcon(dialogType, dialogConfig.icon);
     if (perDialog !== undefined) return perDialog;
 
@@ -819,14 +819,14 @@ function createDialogScope<C extends object>(
     // The built-in icons are fresh nodes per call, so resolving on every render would
     // hand the adapter a different value each time and defeat its identity check. Cache
     // against the config field the resolution actually depends on.
-    let iconCache: { key: unknown; value: Renderable<any> } | null = null;
+    let iconCache: { key: unknown; value: OverlayContent<any> } | null = null;
     // Same reasoning as the icon cache below, for the same reason: buildSpec runs on every
     // update, and a wrapper that returns a fresh value each time would break the adapters'
     // identity check on the content slot (see dom/dialog-adapter.ts) - rebuilding the
     // caller's content, and whatever the user had typed into it, on every re-render.
     // Keyed on the config value being wrapped, so a patched `content` still gets a new one.
-    let contentCache: { key: unknown; value: Renderable<any> } | null = null;
-    const resolveContent = (): Renderable<any> => {
+    let contentCache: { key: unknown; value: OverlayContent<any> } | null = null;
+    const resolveContent = (): OverlayContent<any> => {
       const raw = spec.config.content;
       if (raw == null || !config.wrapContent) {
         return raw;
@@ -844,7 +844,7 @@ function createDialogScope<C extends object>(
       return contentCache.value;
     };
 
-    const resolveIcon = (): Renderable<any> => {
+    const resolveIcon = (): OverlayContent<any> => {
       const key = spec.config.icon;
       if (!iconCache || iconCache.key !== key) {
         iconCache = { key, value: iconFor(spec.dialogType, spec.config) };

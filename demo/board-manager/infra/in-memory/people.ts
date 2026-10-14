@@ -1,4 +1,4 @@
-import type { dataTable } from '../../../../packages/data-table/src/react/index.js';
+import type { RowSource } from '../../../../packages/data-table/src/react/index.js';
 import type { Person } from '../../domain/index.js';
 import { getBoard, organizationOf } from './lookups.js';
 import { oneOf, runQuery } from './query.js';
@@ -31,7 +31,7 @@ async function suggestPeople(
 }
 
 // All people, or those of one organization (`organizationId`).
-function fetchPeople(organizationId?: string): dataTable.Source<PersonRow> {
+function fetchPeople(organizationId?: string): RowSource<PersonRow> {
   return async (query, signal) => {
     await wait(LOADING_TIME, signal);
 

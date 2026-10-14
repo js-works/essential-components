@@ -1,7 +1,7 @@
 import type { CSSVariablesResolver, MantineThemeOverride } from '@mantine/core';
 import type { colorSetups } from '../color-setups.js';
 
-export type { ColorName, ColorSetup, Options, Size, ThemeBundle, Variant };
+export type { ColorSetup, ColorSetupName, ThemeBundle, ThemeOptions, ThemeSize, ThemeVariant };
 
 // A color as a hex string (`#0ea5e9`, or `#09f`).
 type ColorSetup = {
@@ -11,16 +11,16 @@ type ColorSetup = {
   danger?: string;
 };
 
-type ColorName = keyof typeof colorSetups;
+type ColorSetupName = keyof typeof colorSetups;
 
-type Size = 'default' | 'compact';
+type ThemeSize = 'default' | 'compact';
 
-type Variant = 'default' | 'modern';
+type ThemeVariant = 'default' | 'modern';
 
-type Options = {
-  colors?: ColorName | ColorSetup;
-  size?: Size;
-  variant?: Variant;
+type ThemeOptions = {
+  colors?: ColorSetupName | ColorSetup;
+  size?: ThemeSize;
+  variant?: ThemeVariant;
   accentProperty?: string;
 };
 

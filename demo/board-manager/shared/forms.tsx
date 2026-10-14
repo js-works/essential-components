@@ -3,7 +3,7 @@ import { DatePickerInput } from '@mantine/dates';
 import { useRef } from 'react';
 import type { FocusEvent, ReactElement } from 'react';
 import { z } from 'zod';
-import type { fileUpload } from '../../../packages/file-upload/src/index.js';
+import type { FileItem, UploadFn } from '../../../packages/file-upload/src/index.js';
 import { binding } from '../../../packages/form-validation/src/index.js';
 import { normalizeWebsite, ROLES } from '../domain/index.js';
 import type {
@@ -76,7 +76,7 @@ const uploadSchema = z.object({
 });
 
 const uploadFiles = binding({
-  fromComponent: (items: readonly fileUpload.FileItem[]) => {
+  fromComponent: (items: readonly FileItem[]) => {
     const files = items
       .filter((item) => item.status !== 'rejected')
       .map(({ status, result }) => ({ status, result }));
@@ -90,9 +90,9 @@ function UploadForm({
   save,
   onChange,
 }: {
-  upload: fileUpload.Upload;
+  upload: UploadFn;
   save: Save<typeof uploadSchema>;
-  onChange?: (items: readonly fileUpload.FileItem[]) => void;
+  onChange?: (items: readonly FileItem[]) => void;
 }): ReactElement {
   const { DialogForm, field } = useForm(uploadSchema, {
     labels: 'upload',

@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
-import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import type { TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
 import type { AccessData, Role } from '../../../domain/index.js';
 import { DataTable } from '../../../shared/ui/dataTable.js';
 import { appIcons } from '../../../shared/ui/icons.js';
@@ -31,7 +31,7 @@ function RolesPage(): ReactElement {
   const flows = useRoleFlows();
   const source = useTableSource<RoleRow>('roles', roleRows, { search: ['name', 'description'] }, nav.reload);
 
-  const columns = useMemo((): readonly dataTable.Column<RoleRow>[] => [
+  const columns = useMemo((): readonly TableColumn<RoleRow>[] => [
     {
       key: 'name',
       header: 'Name',
@@ -55,7 +55,7 @@ function RolesPage(): ReactElement {
     { key: 'grants', header: 'Granted', width: 1.2, sortable: true, align: 'end', hideable: true },
   ], []);
 
-  const actions = useMemo((): readonly dataTable.Action<RoleRow>[] => [
+  const actions = useMemo((): readonly TableAction<RoleRow>[] => [
     {
       type: 'general',
       key: 'new',

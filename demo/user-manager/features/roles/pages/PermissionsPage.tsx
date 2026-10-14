@@ -2,7 +2,7 @@ import { Stack, Text } from '@mantine/core';
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { selectColumnFilter, useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
-import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import type { TableColumn } from '../../../../../packages/data-table/src/react/index.js';
 import { permissionParts } from '../../../domain/index.js';
 import type { AccessData } from '../../../domain/index.js';
 import { oneOf } from '../../../shared/lib/localQuery.js';
@@ -38,7 +38,7 @@ function PermissionsPage(): ReactElement {
     data?.scopes.find((scope) => scope.id === `s-${app}`)?.name ?? app
   );
 
-  const columns = useMemo((): readonly dataTable.Column<PermissionRow>[] => [
+  const columns = useMemo((): readonly TableColumn<PermissionRow>[] => [
     {
       key: 'id',
       header: 'Permission',

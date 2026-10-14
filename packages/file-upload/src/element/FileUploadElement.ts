@@ -11,7 +11,7 @@ import { createIcon } from './icons.js';
 export { FileUploadElement, setElementI18nAdapter };
 export type { GetI18nAdapter };
 
-type GetI18nAdapter = NonNullable<Spec.Config['i18n']>['getAdapter'];
+type GetI18nAdapter = NonNullable<Spec.FileUploadClassConfig['i18n']>['getAdapter'];
 
 type Row = {
   readonly li: HTMLLIElement;
@@ -73,7 +73,7 @@ class FileUploadElement extends HTMLElement implements Spec.FileUploadElement {
     'error',
   ] as const;
 
-  #upload: Spec.Upload | undefined;
+  #upload: Spec.UploadFn | undefined;
   readonly #getI18nAdapter: GetI18nAdapter | undefined;
   // The adapter of the class config: asked for once, on the first connect.
   #classI18n: Spec.I18nAdapter | undefined;
@@ -216,11 +216,11 @@ class FileUploadElement extends HTMLElement implements Spec.FileUploadElement {
     this.#optionsChanged();
   }
 
-  get upload(): Spec.Upload | undefined {
+  get upload(): Spec.UploadFn | undefined {
     return this.#upload;
   }
 
-  set upload(value: Spec.Upload | undefined) {
+  set upload(value: Spec.UploadFn | undefined) {
     this.#upload = value;
     this.#optionsChanged();
   }
@@ -284,13 +284,13 @@ class FileUploadElement extends HTMLElement implements Spec.FileUploadElement {
   }
 
   // Missing or unknown: `normal`.
-  get density(): Spec.Density {
+  get density(): Spec.UploadDensity {
     const value = this.getAttribute('density');
 
     return value === 'compact' || value === 'comfortable' ? value : 'normal';
   }
 
-  set density(value: Spec.Density) {
+  set density(value: Spec.UploadDensity) {
     this.setAttribute('density', value);
   }
 

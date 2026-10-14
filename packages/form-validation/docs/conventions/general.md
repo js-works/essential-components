@@ -20,7 +20,6 @@ copied into a customer's monorepo. A change is made in the master, then copied i
       `n` the first number not registered yet (e.g. the cockpit's taskbar, `internal-cockpit-taskbar-1`; 2026-10-11).
   - the BEM block: `data-table`, `data-table__cell` (see `css.md`)
   - the i18n namespace: `'dataTable'` (see `i18n.md`)
-  - the type namespace: `dataTable` (2026-10-12, see `typescript.md`)
 - Decisions (also small ones) go into the package's docs, in the same step as the code.
 - No history in code (2026-10-13, the user's rule): comments in `.ts` and `.tsx` files say what the code is and does
   now, never how it came to be (no dates, no "… before", "renamed from", "until"). The history goes into the docs

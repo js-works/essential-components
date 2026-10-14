@@ -5,7 +5,7 @@ export { antdTheme };
 // The Ant Design theme: maps the design values onto the CSS variables of antd 6.
 // antd does not set its variables on :root, but on a class of its own (`css-var-root` by default), which only its own
 // components carry. So the table must sit inside an element with that class, or the variables are not there.
-const antdTheme: Required<DataTable.Theme> = {
+const antdTheme: Required<DataTable.DataTableTheme> = {
   colorText: 'var(--ant-color-text)',
   colorTextDimmed: 'var(--ant-color-text-secondary)',
   colorSurface: 'var(--ant-color-bg-container)',

@@ -7,7 +7,7 @@ import {
   textColumnFilter,
   useDataTableController,
 } from '../../../../../packages/data-table/src/react/index.js';
-import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import type { SavedFilter, TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
 import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
 import { createBoard, fetchBoards } from '../../../infra/in-memory/index.js';
 import type { BoardRow } from '../../../infra/in-memory/index.js';
@@ -21,7 +21,7 @@ import { deleteBoardsFlow, editBoard } from '../components/boardFlows.js';
 export { BoardsPage };
 
 // The columns, with their headers in the current language.
-const columnsOf = (t: Translate): readonly dataTable.Column<BoardRow>[] => [
+const columnsOf = (t: Translate): readonly TableColumn<BoardRow>[] => [
   {
     key: 'name',
     header: t('boards.columns.board'),
@@ -46,7 +46,7 @@ const columnsOf = (t: Translate): readonly dataTable.Column<BoardRow>[] => [
 ];
 
 // The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
-const COLLEAGUES_FILTERS: readonly dataTable.SavedFilter[] = [
+const COLLEAGUES_FILTERS: readonly SavedFilter[] = [
   sharedBy('Maria Keller', 'Committees', { name: { text: 'Committee', match: 'contains' } }),
   sharedBy('Jonas Weber', 'Meeting in the next 30 days', {
     nextMeeting: { from: daysFromToday(0), to: daysFromToday(30) },
@@ -63,7 +63,7 @@ function BoardsPage(): ReactElement {
   const toasts = useToast();
   const navigate = useNavigate();
 
-  const actions = useMemo<readonly dataTable.Action<BoardRow>[]>(() => {
+  const actions = useMemo<readonly TableAction<BoardRow>[]>(() => {
     const create = async () => {
       let created = '';
       const saved = !(await dialogs.form({

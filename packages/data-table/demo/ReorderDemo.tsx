@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import { createDataTableComponent, selectColumnFilter } from '../src/react/index.js';
-import type { dataTable } from '../src/react/index.js';
+import type { RowMove, TableAction, TableColumn } from '../src/react/index.js';
 import { defaultTheme } from '../src/themes/index.js';
 import { badge, fixedHeight, note, selectedLine } from './Demo.module.css';
 import { i18n } from './i18n.js';
@@ -15,7 +15,7 @@ export { ReorderDemo };
 const DataTable = createDataTableComponent({ i18n, theme: defaultTheme });
 
 // No column is `sortable`: the order of the rows is the one they are moved to.
-const columns: readonly dataTable.Column<Task>[] = [
+const columns: readonly TableColumn<Task>[] = [
   { key: 'title', header: 'Task', width: 5 },
   {
     key: 'status',
@@ -41,7 +41,7 @@ function ReorderDemo(): ReactElement {
 
   savingRef.current = saving;
 
-  const reorder = async (move: dataTable.Move<Task>) => {
+  const reorder = async (move: RowMove<Task>) => {
     const place = move.after !== undefined
       ? `after "${move.after.title}"`
       : move.before !== undefined
@@ -52,7 +52,7 @@ function ReorderDemo(): ReactElement {
     await reorderTasks(move, savingRef.current === 'fails');
   };
 
-  const actions: readonly dataTable.Action<Task>[] = [
+  const actions: readonly TableAction<Task>[] = [
     {
       type: 'multiRow',
       key: 'done',

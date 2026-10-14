@@ -14,5 +14,5 @@
 export { OverlaysProvider, useDialogs, useToast } from "./provider.js";
 export { Form } from "./dialog-adapter.js";
 
-// The types (with all of the main entry's): `import type { overlays } from "@local/overlays/react"`.
-export type * as overlays from "../../api/react/index.js";
+// The types, with all of the main entry's.
+export type * from "../../api/react/index.js";

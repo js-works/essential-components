@@ -1,4 +1,8 @@
 import { createCockpitClass } from './element/createCockpitClass.js';
 
 export { createCockpitClass };
-export type * as cockpit from './api/index.js';
+export type * from './api/config.js';
+export type * from './api/element.js';
+export type * from './api/menus.js';
+export type * from './api/navigation.js';
+export type * from './api/theme.js';

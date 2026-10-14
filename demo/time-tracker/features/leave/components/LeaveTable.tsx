@@ -2,7 +2,7 @@ import { Badge, Stack, Text } from '@mantine/core';
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { selectColumnFilter, useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
-import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import type { SavedFilters, TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
 import { useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
 import { leaveDays, todayDate } from '../../../domain/index.js';
 import type { Employee, LeaveRequest, TimeData } from '../../../domain/index.js';
@@ -20,7 +20,7 @@ export { LeaveTable };
 type LeaveRow = LeaveRequest & { employee: Employee | undefined; employeeName: string; days: number };
 
 // The employee of a request, with a link to their page (only in the team's table).
-function employeeColumn(header: string): dataTable.Column<LeaveRow> {
+function employeeColumn(header: string): TableColumn<LeaveRow> {
   return {
     key: 'employeeName',
     header,
@@ -41,7 +41,7 @@ function LeaveTable({ data, employees, mine, pendingOnly = false, title, subtitl
   pendingOnly?: boolean;
   title: string;
   subtitle?: string;
-  savedFilters?: dataTable.SavedFilters;
+  savedFilters?: SavedFilters;
 }): ReactElement {
   const t = useTranslate();
   const nav = useDataTableController<LeaveRow>();
@@ -72,7 +72,7 @@ function LeaveTable({ data, employees, mine, pendingOnly = false, title, subtitl
 
   const nameOf = (id: string) => data.employees.find((employee) => employee.id === id)?.name ?? '';
 
-  const columns = useMemo((): readonly dataTable.Column<LeaveRow>[] => [
+  const columns = useMemo((): readonly TableColumn<LeaveRow>[] => [
     ...(mine ? [] : [employeeColumn(t('leave.employee'))]),
     {
       key: 'type',
@@ -144,7 +144,7 @@ function LeaveTable({ data, employees, mine, pendingOnly = false, title, subtitl
     },
   ], [mine, t]);
 
-  const actions = useMemo((): readonly dataTable.Action<LeaveRow>[] => {
+  const actions = useMemo((): readonly TableAction<LeaveRow>[] => {
     // The rows an action applies to; a toast when none of the selected does.
     const only = (rows: readonly LeaveRow[], fits: (row: LeaveRow) => boolean, act: (rows: LeaveRow[]) => void) => {
       const fitting = rows.filter(fits);

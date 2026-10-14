@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router';
 import { selectColumnFilter, useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
-import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import type { SavedFilter, TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
 import { todayDate, todayStatus, vacationBalance } from '../../../domain/index.js';
 import type { Employee, TimeData, TodayStatus } from '../../../domain/index.js';
 import { formatDays } from '../../../shared/lib/format.js';
@@ -46,7 +46,7 @@ function employeeRows(data: TimeData): EmployeeRow[] {
 }
 
 // The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
-const COLLEAGUES_FILTERS: readonly dataTable.SavedFilter[] = [
+const COLLEAGUES_FILTERS: readonly SavedFilter[] = [
   sharedBy('Julia Wagner', 'Absent today', { todayKey: ['vacation', 'special', 'unpaid', 'sick', 'holiday'] }),
   sharedBy('Felix Braun', 'Engineering', { team: ['Engineering'] }),
 ];
@@ -70,7 +70,7 @@ function EmployeesPage(): ReactElement {
     },
   }, nav.reload);
 
-  const columns = useMemo((): readonly dataTable.Column<EmployeeRow>[] => [
+  const columns = useMemo((): readonly TableColumn<EmployeeRow>[] => [
     {
       key: 'name',
       header: t('employees.name'),
@@ -139,7 +139,7 @@ function EmployeesPage(): ReactElement {
     },
   ], [t, teams]);
 
-  const actions = useMemo((): readonly dataTable.Action<EmployeeRow>[] => [
+  const actions = useMemo((): readonly TableAction<EmployeeRow>[] => [
     {
       type: 'general',
       key: 'new',

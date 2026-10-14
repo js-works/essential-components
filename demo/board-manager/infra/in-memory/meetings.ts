@@ -1,4 +1,4 @@
-import type { dataTable } from '../../../../packages/data-table/src/react/index.js';
+import type { RowSource } from '../../../../packages/data-table/src/react/index.js';
 import type { AgendaItem, Meeting, MeetingStatus } from '../../domain/index.js';
 import { boardIdsOf, getBoard } from './lookups.js';
 import { matches, oneOf, runQuery, within } from './query.js';
@@ -25,7 +25,7 @@ function meetingRows(state: Db): MeetingRow[] {
 // The meetings of one board (`boardId`), of the boards of one person (`personId`), or of all boards (neither).
 function fetchMeetings(
   { boardId, personId }: { boardId?: string; personId?: string } = {},
-): dataTable.Source<MeetingRow> {
+): RowSource<MeetingRow> {
   return async (query, signal) => {
     await wait(LOADING_TIME, signal);
 

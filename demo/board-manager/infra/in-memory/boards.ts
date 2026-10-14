@@ -1,4 +1,4 @@
-import type { dataTable } from '../../../../packages/data-table/src/react/index.js';
+import type { RowPage, RowQuery } from '../../../../packages/data-table/src/react/index.js';
 import type { Board } from '../../domain/index.js';
 import { localDateTime } from './helpers.js';
 import { getPerson } from './lookups.js';
@@ -39,9 +39,9 @@ function getBoardRow(state: Db, id: string): BoardRow | undefined {
 }
 
 async function fetchBoards(
-  query: dataTable.Query,
+  query: RowQuery,
   signal: AbortSignal,
-): Promise<dataTable.Result<BoardRow>> {
+): Promise<RowPage<BoardRow>> {
   await wait(LOADING_TIME, signal);
 
   return runQuery(boardRows(db.getState()), query, {

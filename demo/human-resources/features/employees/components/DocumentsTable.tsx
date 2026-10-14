@@ -6,7 +6,7 @@ import {
   selectColumnFilter,
   useDataTableController,
 } from '../../../../../packages/data-table/src/react/index.js';
-import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import type { TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
 import { useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
 import { DOCUMENT_CATEGORIES } from '../../../domain/index.js';
 import type { Employee, EmployeeDocument } from '../../../domain/index.js';
@@ -39,7 +39,7 @@ function DocumentsTable({ employee }: { employee: Employee }): ReactElement {
     nav.reload,
   );
 
-  const columns = useMemo((): readonly dataTable.Column<EmployeeDocument>[] => [
+  const columns = useMemo((): readonly TableColumn<EmployeeDocument>[] => [
     {
       key: 'name',
       header: t('documents.name'),
@@ -81,7 +81,7 @@ function DocumentsTable({ employee }: { employee: Employee }): ReactElement {
     },
   ], [t]);
 
-  const actions = useMemo((): readonly dataTable.Action<EmployeeDocument>[] => [
+  const actions = useMemo((): readonly TableAction<EmployeeDocument>[] => [
     {
       type: 'general',
       key: 'upload',

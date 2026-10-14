@@ -4,7 +4,7 @@
 
 import { parseSvg } from "../../internal/dom.js";
 import { infoIconSvg, successIconSvg } from "../../internal/icons.js";
-import type { Renderable } from "../../api/dialogs/content.js";
+import type { OverlayContent } from "../../api/dialogs/content.js";
 import type { DialogType } from "../../api/dialogs/dialog.js";
 
 export const closeIconSvg = `
@@ -63,7 +63,7 @@ export const noteIconSvg = `
   </svg>
 `;
 
-export function defaultDialogIcon(dialogType: DialogType): Renderable<any> {
+export function defaultDialogIcon(dialogType: DialogType): OverlayContent<any> {
   switch (dialogType) {
     case "info":
       return parseSvg(infoIconSvg);

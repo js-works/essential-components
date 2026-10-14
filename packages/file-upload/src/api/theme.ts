@@ -1,8 +1,8 @@
-export type { Theme, ThemeColor };
+export type { FileUploadTheme, ThemeColor };
 
 type ThemeColor = string | { light: string; dark: string };
 
-type Theme = {
+type FileUploadTheme = {
   accentColor?: ThemeColor;
   accentTextColor?: ThemeColor;
   textColor?: ThemeColor;

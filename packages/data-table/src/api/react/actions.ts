@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { RowGroup } from '../query.js';
 import type { ActionSeparator, ActionVariant } from '../settings.js';
 
-export type { Action, ActionLook, ActionMenu, GeneralAction, GroupAction, RowAction, RowsAction };
+export type { ActionLook, ActionMenu, GeneralAction, GroupAction, RowAction, RowsAction, TableAction };
 
 type ActionLook =
   | { label: ReactNode; icon?: ReactNode; tip?: string }
@@ -44,12 +44,12 @@ type GroupAction<Row> = {
   onClick: (group: RowGroup<Row>) => void;
 } & ActionLook;
 
-type Action<Row> = GeneralAction | RowAction<Row> | RowsAction<Row> | GroupAction<Row>;
+type TableAction<Row> = GeneralAction | RowAction<Row> | RowsAction<Row> | GroupAction<Row>;
 
 type ActionMenu<Row> = {
   type: 'menu';
   key: string;
   variant?: ActionVariant;
   chevron?: boolean;
-  actions: readonly (Action<Row> | ActionSeparator)[];
+  actions: readonly (TableAction<Row> | ActionSeparator)[];
 } & ActionLook;

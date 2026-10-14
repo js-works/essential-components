@@ -1,4 +1,4 @@
-import type { dataTable } from '../../../../packages/data-table/src/react/index.js';
+import type { GroupTotal, RowMove, RowSource } from '../../../../packages/data-table/src/react/index.js';
 import { agendaNumbers, agendaOf, arranged, blockEnd, idOf, newPlace } from '../../domain/index.js';
 import type { AgendaEntry, AgendaItem } from '../../domain/index.js';
 import { getPerson } from './lookups.js';
@@ -29,7 +29,7 @@ type SectionDraft = readonly { id: string; title: string }[];
 // totals, then "Other" (`''`, only with items). One page holds the whole agenda (a search, no filters). An empty
 // section is a group with `total: 0`, so the table shows it. A search looks in the title, the description, the presenter
 // and the decision (not the minutes: they are a JSON document), and then only the sections with a match are shown.
-function fetchAgenda(meetingId: string): dataTable.Source<AgendaRow> {
+function fetchAgenda(meetingId: string): RowSource<AgendaRow> {
   return async (query, signal) => {
     await wait(LOADING_TIME, signal);
 
@@ -49,7 +49,7 @@ function fetchAgenda(meetingId: string): dataTable.Source<AgendaRow> {
       ...agenda.flatMap((entry) => (entry.type === 'section' ? [entry.section.id] : [])),
       '',
     ]
-      .map((key): dataTable.ResultGroup => ({ key, total: totalOf(key) }))
+      .map((key): GroupTotal => ({ key, total: totalOf(key) }))
       // "Other" only with items.
       .filter((group) => group.total > 0 || group.key !== '');
 
@@ -130,7 +130,7 @@ async function deleteAgendaItems(ids: readonly string[]): Promise<void> {
 // A move of the agenda table (`reorder`): the item joins `move.group` (a section, or none) and goes after `move.after`
 // (a row on the page), or before `move.before`. In a section, it is placed among that section's items (at its start
 // when neither neighbor is in it). Saved at once (no spinner to show).
-async function reorderAgenda(move: dataTable.Move<AgendaRow>): Promise<void> {
+async function reorderAgenda(move: RowMove<AgendaRow>): Promise<void> {
   await wait(LOADING_TIME);
 
   const { meetingId } = move.row;

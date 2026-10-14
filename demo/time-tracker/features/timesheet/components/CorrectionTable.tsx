@@ -2,7 +2,7 @@ import { Text } from '@mantine/core';
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
-import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import type { TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
 import { minutesOf } from '../../../domain/index.js';
 import type { Correction, Employee, TimeData } from '../../../domain/index.js';
 import { formatDate, formatDuration, formatStamp, formatTime } from '../../../shared/lib/format.js';
@@ -51,7 +51,7 @@ function CorrectionTable({ data, employees, title, subtitle }: {
 
   const nameOf = (id: string) => data.employees.find((employee) => employee.id === id)?.name ?? '';
 
-  const columns = useMemo((): readonly dataTable.Column<CorrectionRow>[] => [
+  const columns = useMemo((): readonly TableColumn<CorrectionRow>[] => [
     {
       key: 'employeeName',
       header: t('correction.employee'),
@@ -81,7 +81,7 @@ function CorrectionTable({ data, employees, title, subtitle }: {
     },
   ], [t]);
 
-  const actions = useMemo((): readonly dataTable.Action<CorrectionRow>[] => [
+  const actions = useMemo((): readonly TableAction<CorrectionRow>[] => [
     {
       type: 'multiRow',
       key: 'approve',

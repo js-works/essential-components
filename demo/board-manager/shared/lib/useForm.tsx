@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import type { z } from 'zod';
 import { defineUseForm } from '../../../../packages/form-validation/src/index.js';
-import type { formValidation } from '../../../../packages/form-validation/src/index.js';
+import type { UseFormOptions } from '../../../../packages/form-validation/src/index.js';
 import { Form } from '../../../../packages/overlays/src/main/bindings/react/index.js';
 import { AppError } from '../../infra/in-memory/index.js';
 import { FieldError } from '../ui/FieldError.js';
@@ -33,7 +33,7 @@ function withFieldError<P>(props: P): P {
   return typeof error === 'string' ? { ...props, error: <FieldError message={error} /> } : props;
 }
 
-function useForm<S extends z.ZodObject<any>>(schema: S, options: formValidation.UseFormOptions<S>) {
+function useForm<S extends z.ZodObject<any>>(schema: S, options: UseFormOptions<S>) {
   const form = useValidatedForm(schema, options);
   const { requestSubmit, isDirty } = form;
   // A stable component (`requestSubmit` and `isDirty` are stable): a new one per render would remount the inputs and

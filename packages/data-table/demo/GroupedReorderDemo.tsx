@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { ReactElement } from 'react';
 import { createDataTableComponent, useDataTableController } from '../src/react/index.js';
-import type { dataTable } from '../src/react/index.js';
+import type { RowMove, TableAction, TableColumn } from '../src/react/index.js';
 import { defaultTheme } from '../src/themes/index.js';
 import { deleteSection, fetchAgenda, moveAgendaItem } from './agenda.js';
 import type { AgendaItem } from './agenda.js';
@@ -14,7 +14,7 @@ export { GroupedReorderDemo };
 
 const DataTable = createDataTableComponent({ i18n, theme: defaultTheme });
 
-const columns: readonly dataTable.Column<AgendaItem>[] = [
+const columns: readonly TableColumn<AgendaItem>[] = [
   { key: 'title', header: 'Item', width: 5 },
   // A fixed width (a CSS length); the item takes the rest.
   { key: 'duration', header: 'Duration', width: '7rem', align: 'end', render: (item) => `${item.duration} min` },
@@ -29,12 +29,12 @@ function GroupedReorderDemo(): ReactElement {
   const { show, toasts } = useToasts();
   const [lastMove, setLastMove] = useState('none');
 
-  const reorder = async (move: dataTable.Move<AgendaItem>) => {
+  const reorder = async (move: RowMove<AgendaItem>) => {
     setLastMove(`"${move.row.title}" into "${move.group ?? ''}"`);
     await moveAgendaItem(move);
   };
 
-  const actions: readonly dataTable.Action<AgendaItem>[] = [
+  const actions: readonly TableAction<AgendaItem>[] = [
     {
       type: 'group',
       key: 'delete',

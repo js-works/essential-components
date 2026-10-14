@@ -14,7 +14,7 @@ import {
 } from '@mantine/core';
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent, ReactElement, ReactNode } from 'react';
-import type * as Spec from './api/index.js';
+import type * as Spec from './index.js';
 import { useLang } from './page.js';
 import { textsFor } from './texts.js';
 
@@ -42,7 +42,7 @@ type View = 'login' | 'forgot' | 'register';
 //   promise is pending, the button shows a spinner and the fields are read-only. A rejected promise (or a thrown error)
 //   shows its message in a red alert above the button (else a text of the screen).
 // - Texts in English and German, by `<html lang>`; each can be replaced (`texts`).
-function LoginScreen(props: Spec.Props): ReactElement {
+function LoginScreen(props: Spec.LoginScreenProps): ReactElement {
   const { title, subtitle, logo, hint, texts: custom } = props;
   const texts = { ...textsFor(useLang()), ...custom };
   const [view, setView] = useState<View>('login');
@@ -173,12 +173,12 @@ function useAction(failed: string) {
   return { busy, error, run };
 }
 
-type FormProps = { texts: Spec.Texts };
+type FormProps = { texts: Spec.LoginTexts };
 
 function LoginForm(
   { texts, locked, onLogin, onForgot }: FormProps & {
     locked: boolean;
-    onLogin: Spec.Props['onLogin'];
+    onLogin: Spec.LoginScreenProps['onLogin'];
     onForgot: (() => void) | undefined;
   },
 ): ReactElement {
@@ -247,8 +247,8 @@ function LoginForm(
 // others are locked (`onBusy` locks the form too). A rejected promise shows its message.
 function Providers(
   { texts, providers, onProvider, onBusy }: FormProps & {
-    providers: readonly Spec.Provider[];
-    onProvider: NonNullable<Spec.Props['onProvider']>;
+    providers: readonly Spec.LoginProvider[];
+    onProvider: NonNullable<Spec.LoginScreenProps['onProvider']>;
     onBusy: (busy: boolean) => void;
   },
 ): ReactElement {
@@ -286,7 +286,7 @@ function Providers(
 
 function ForgotForm(
   { texts, onForgotPassword }: FormProps & {
-    onForgotPassword: NonNullable<Spec.Props['onForgotPassword']>;
+    onForgotPassword: NonNullable<Spec.LoginScreenProps['onForgotPassword']>;
   },
 ): ReactElement {
   const [account, setAccount] = useState('');
@@ -332,7 +332,7 @@ function ForgotForm(
 
 function RegisterForm(
   { texts, onRegister, onDone }: FormProps & {
-    onRegister: NonNullable<Spec.Props['onRegister']>;
+    onRegister: NonNullable<Spec.LoginScreenProps['onRegister']>;
     onDone: () => void;
   },
 ): ReactElement {

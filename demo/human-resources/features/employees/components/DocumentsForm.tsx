@@ -1,7 +1,7 @@
 import { Stack, Text } from '@mantine/core';
 import type { ReactElement } from 'react';
 import { z } from 'zod';
-import type { fileUpload } from '../../../../../packages/file-upload/src/index.js';
+import type { FileItem, UploadFn } from '../../../../../packages/file-upload/src/index.js';
 import { binding } from '../../../../../packages/form-validation/src/index.js';
 import { DOCUMENT_CATEGORIES } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
@@ -27,7 +27,7 @@ const documentsSchema = z.object({
 });
 
 const uploadFiles = binding({
-  fromComponent: (items: readonly fileUpload.FileItem[]) => {
+  fromComponent: (items: readonly FileItem[]) => {
     const files = items
       .filter((item) => item.status !== 'rejected')
       .map(({ status, result }) => ({ status, result }));
@@ -38,7 +38,7 @@ const uploadFiles = binding({
 
 function DocumentsForm({ name, upload, save }: {
   name: string;
-  upload: fileUpload.Upload;
+  upload: UploadFn;
   save: (values: z.output<typeof documentsSchema>) => Promise<void>;
 }): ReactElement {
   const t = useTranslate();

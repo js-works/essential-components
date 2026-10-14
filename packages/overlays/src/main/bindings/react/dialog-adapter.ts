@@ -17,7 +17,7 @@ import type {
   DialogProps,
   DialogSlots,
 } from "../../api/dialogs/adapter.js";
-import type { Renderable } from "../../api/dialogs/content.js";
+import type { OverlayContent } from "../../api/dialogs/content.js";
 import type { FormConfirm } from "../../api/dialogs/dialog.js";
 import type { FormProps, ReactContent } from "../../api/react/content.js";
 import type { PortalStore } from "./portals.js";
@@ -130,7 +130,7 @@ function RawNode({ node }: { node: Node }): ReactElement {
   return createElement("span", { ref: anchor, style: anchorStyle });
 }
 
-function content(value: Renderable<ReactContent>): ReactNode {
+function content(value: OverlayContent<ReactContent>): ReactNode {
   // `typeof Node` guarded so merely importing this module during an SSR pass is safe.
   if (typeof Node !== "undefined" && value instanceof Node) {
     return createElement(RawNode, { node: value });

@@ -1,4 +1,14 @@
-import type { cockpit } from '../src/index.js';
+import type {
+  CockpitClassConfig,
+  CockpitElement,
+  CockpitFooter,
+  FooterAction,
+  MenuSection,
+  NavDensity,
+  NavLayout,
+  NavScheme,
+  SignedInUser,
+} from '../src/index.js';
 
 export { accentSetting, MENU, navigationSetting, pageSettings, USER, userMenu };
 
@@ -13,7 +23,7 @@ const log = (label: string) => () => console.info(`cockpit demo: "${label}" chos
 // remembered per browser).
 function pageSettings(
   { schemes, scheme }: { schemes: readonly ('system' | 'light' | 'dark')[]; scheme: 'system' | 'light' | 'dark' },
-): cockpit.Action[] {
+): FooterAction[] {
   const root = document.documentElement;
   // Remembered per browser (a demo page may reload), if storage works.
   const stored = (key: string, fallback: string) => {
@@ -73,7 +83,7 @@ const ACCENTS = [
 // page uses indigo (2026-10-07). The cockpit's `theme` (2026-10-10; it reads no custom property of the page), and for
 // the page the custom property `--app-accent-color` on `<html>`, which the root page maps to the apps' own tokens
 // (its `demo/demo.css`).
-function accentSetting(initial = 'violet', selector = 'app-cockpit'): cockpit.Action {
+function accentSetting(initial = 'violet', selector = 'app-cockpit'): FooterAction {
   const root = document.documentElement;
   let accent = initial;
 
@@ -93,7 +103,7 @@ function accentSetting(initial = 'violet', selector = 'app-cockpit'): cockpit.Ac
     // Into the cockpit's theme (its other values kept): once the element is defined, so the first apply (from the config,
     // before) does not replace the config's theme.
     void customElements.whenDefined(selector).then(() => {
-      document.querySelectorAll<cockpit.CockpitElement>(selector).forEach((element) => {
+      document.querySelectorAll<CockpitElement>(selector).forEach((element) => {
         const { accent: _, ...rest } = element.theme;
         element.theme = color === '' ? rest : { ...rest, accent: color };
       });
@@ -133,7 +143,7 @@ function accentSetting(initial = 'violet', selector = 'app-cockpit'): cockpit.Ac
 // 2026-10-06; `top-compact` until 2026-10-08, when the topbar of two lines went and it became `top`) and its colors (`nav-scheme`: always dark, or like the
 // page), and its density (`density`: compact, normal, comfortable; 2026-10-05). Switched live, remembered per browser
 // (a value stored under an old name is the default).
-const NAVS: { value: cockpit.Nav; label: string }[] = [
+const NAVS: { value: NavLayout; label: string }[] = [
   { value: 'auto', label: 'Automatic' },
   { value: 'side', label: 'Sidebar' },
   { value: 'top', label: 'Topbar' },
@@ -141,7 +151,7 @@ const NAVS: { value: cockpit.Nav; label: string }[] = [
   { value: 'bottom', label: 'Bottom bar' },
 ];
 
-const DENSITIES: { value: cockpit.Density; label: string }[] = [
+const DENSITIES: { value: NavDensity; label: string }[] = [
   { value: 'compact', label: 'Compact' },
   { value: 'normal', label: 'Normal' },
   { value: 'comfortable', label: 'Comfortable' },
@@ -154,12 +164,12 @@ const DENSITIES: { value: cockpit.Density; label: string }[] = [
 function navigationSetting(
   selector = 'app-cockpit',
   { scheme: defaultScheme = 'page', nav: defaultNav = 'auto', startPage: defaultStartPage }: {
-    scheme?: cockpit.NavScheme;
-    nav?: cockpit.Nav;
+    scheme?: NavScheme;
+    nav?: NavLayout;
     startPage?: boolean;
   } = {},
-): cockpit.Action {
-  const cockpitElement = () => document.querySelector<cockpit.CockpitElement>(selector);
+): FooterAction {
+  const cockpitElement = () => document.querySelector<CockpitElement>(selector);
   const stored = (key: string) => {
     try {
       return localStorage.getItem(`demo-page:${key}`);
@@ -180,7 +190,7 @@ function navigationSetting(
   const nav = NAVS.find(({ value }) => value === stored('nav'))?.value ?? defaultNav;
   // The stored choice, else the default (`scheme`; like the page before 2026-10-08, everywhere).
   const storedScheme = stored('nav-scheme');
-  const scheme: cockpit.NavScheme = storedScheme === 'dark' || storedScheme === 'page'
+  const scheme: NavScheme = storedScheme === 'dark' || storedScheme === 'page'
     ? storedScheme
     : defaultScheme;
   const density = DENSITIES.find(({ value }) => value === stored('density'))?.value ?? 'normal';
@@ -262,7 +272,7 @@ function navigationSetting(
 // the footer before): the current one checked.
 const LANGUAGES = [{ value: 'en-US', label: 'English' }, { value: 'de-DE', label: 'Deutsch' }];
 
-const languageSection: cockpit.MenuSection = {
+const languageSection: MenuSection = {
   label: 'Language',
   items: LANGUAGES.map(({ value, label }) => ({
     id: `language:${value}`,
@@ -319,7 +329,7 @@ async function resetDemo(): Promise<void> {
   location.reload();
 }
 
-const MENU: cockpit.Footer['menu'] = [
+const MENU: CockpitFooter['menu'] = [
   [
     {
       id: 'shortcuts',
@@ -345,10 +355,10 @@ const MENU: cockpit.Footer['menu'] = [
 ];
 
 // The signed-in user of the demo pages (made up), and their menu (its items only log).
-const USER: cockpit.User = { name: 'Jane Doe', detail: 'jane.doe@acme.example' };
+const USER: SignedInUser = { name: 'Jane Doe', detail: 'jane.doe@acme.example' };
 
 // `signOut`: what "Sign out" does (the root page shows its login screen; else it only logs).
-const userMenu = (signOut: () => void = log('Sign out')): cockpit.Config['userMenu'] => [
+const userMenu = (signOut: () => void = log('Sign out')): CockpitClassConfig['userMenu'] => [
   [{
     id: 'profile',
     label: 'Profile',

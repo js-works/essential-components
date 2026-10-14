@@ -1,4 +1,4 @@
-import type { dataTable } from '../../../../packages/data-table/src/react/index.js';
+import type { RowPage, RowQuery } from '../../../../packages/data-table/src/react/index.js';
 
 export { matches, oneOf, runQuery, within };
 
@@ -49,9 +49,9 @@ type QueryOptions<Row> = {
 // Search, column filters, sorting and paging, the same for every table.
 function runQuery<Row>(
   rows: readonly Row[],
-  query: dataTable.Query,
+  query: RowQuery,
   options: QueryOptions<Row>,
-): dataTable.Result<Row> {
+): RowPage<Row> {
   const text = query.search.toLowerCase();
   const filtered = rows
     .filter((row) =>

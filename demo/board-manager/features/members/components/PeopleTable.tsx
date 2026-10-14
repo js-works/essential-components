@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { selectColumnFilter, useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
-import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import type { SavedFilter, TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
 import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
 import type { Role } from '../../../domain/index.js';
 import {
@@ -85,7 +85,7 @@ async function deletePeopleFlow(
 }
 
 // The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
-const COLLEAGUES_FILTERS: readonly dataTable.SavedFilter[] = [
+const COLLEAGUES_FILTERS: readonly SavedFilter[] = [
   sharedBy('Lena Hoffmann', 'Audit Committee', { boards: ['Audit Committee'] }),
   sharedBy('Jonas Weber', 'Works Council', { organization: ['Works Council'] }),
 ];
@@ -106,7 +106,7 @@ function PeopleTable(
   const boards = useDb((state) => state.boards);
   const source = useMemo(() => fetchPeople(organizationId), [organizationId]);
 
-  const columns = useMemo<readonly dataTable.Column<PersonRow>[]>(() => [
+  const columns = useMemo<readonly TableColumn<PersonRow>[]>(() => [
     {
       key: 'name',
       header: t('members.columns.person'),
@@ -144,7 +144,7 @@ function PeopleTable(
     },
   ], [t, boards, organizationId]);
 
-  const actions = useMemo<readonly dataTable.Action<PersonRow>[]>(() => {
+  const actions = useMemo<readonly TableAction<PersonRow>[]>(() => {
     const create = async () => {
       const saved = !(await dialogs.form({
         title: t('members.new'),

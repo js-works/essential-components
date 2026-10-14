@@ -2,7 +2,7 @@ import { Button, Loader, Stack, Tabs } from '@mantine/core';
 import { useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
 import { useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
-import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import type { TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
 import { departmentPath, todayDate } from '../../../domain/index.js';
 import type { Department, Employee, HrData } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
@@ -89,7 +89,7 @@ function DepartmentTable({ data }: { data: HrData }): ReactElement {
     search: ['name', 'path', 'headName', 'costCenter'],
   }, nav.reload);
 
-  const columns = useMemo((): readonly dataTable.Column<DepartmentRow>[] => [
+  const columns = useMemo((): readonly TableColumn<DepartmentRow>[] => [
     { key: 'name', header: t('departments.name'), width: 2, sortable: true },
     { key: 'parent', header: t('departments.parent'), width: 2, sortable: true },
     {
@@ -104,7 +104,7 @@ function DepartmentTable({ data }: { data: HrData }): ReactElement {
     { key: 'costCenter', header: t('departments.costCenter'), width: 1.2, sortable: true, hideable: true },
   ], [t]);
 
-  const actions = useMemo((): readonly dataTable.Action<DepartmentRow>[] => [
+  const actions = useMemo((): readonly TableAction<DepartmentRow>[] => [
     {
       type: 'singleRow',
       key: 'edit',

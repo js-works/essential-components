@@ -1,19 +1,19 @@
 import type { AriaAttributes, CSSProperties, ReactNode, Ref } from 'react';
-import type { Config } from '../config.js';
-import type { Density, FileUploadElement } from '../element.js';
+import type { FileUploadClassConfig } from '../config.js';
+import type { FileUploadElement, UploadDensity } from '../element.js';
 import type { I18nAdapter } from '../i18n.js';
-import type { FileItem, Upload } from '../upload.js';
+import type { FileItem, UploadFn } from '../upload.js';
 
-export type { ComponentConfig, Props };
+export type { FileUploadComponentConfig, FileUploadProps };
 
-type ComponentConfig = Omit<Config, 'i18n'> & {
+type FileUploadComponentConfig = Omit<FileUploadClassConfig, 'i18n'> & {
   tagName?: string;
-  i18n?: NonNullable<Config['i18n']> | { type: 'hook'; useAdapter: () => I18nAdapter };
+  i18n?: NonNullable<FileUploadClassConfig['i18n']> | { type: 'hook'; useAdapter: () => I18nAdapter };
 };
 
-type Props = AriaAttributes & {
+type FileUploadProps = AriaAttributes & {
   [key: `data-${string}`]: string | undefined;
-  upload?: Upload;
+  upload?: UploadFn;
   accept?: string;
   maxFiles?: number;
   maxFileSize?: number;
@@ -21,7 +21,7 @@ type Props = AriaAttributes & {
   multiple?: boolean;
   manualUpload?: boolean;
   previews?: boolean;
-  density?: Density;
+  density?: UploadDensity;
   disabled?: boolean;
   name?: string;
   required?: boolean;

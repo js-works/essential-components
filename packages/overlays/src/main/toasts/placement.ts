@@ -1,10 +1,10 @@
 // -------------------------------------------------------------------
-// Stack placement: split a Placement into axes and anchor the container's inline styles.
+// Stack placement: split a ToastPlacement into axes and anchor the container's inline styles.
 // -------------------------------------------------------------------
 
-import type { Placement } from "../api/toasts/toast.js";
+import type { ToastPlacement } from "../api/toasts/toast.js";
 
-export function splitPlacement(placement: Placement): {
+export function splitPlacement(placement: ToastPlacement): {
   vertical: "top" | "bottom";
   horizontal: "start" | "center" | "end";
 } {
@@ -18,7 +18,7 @@ export function splitPlacement(placement: Placement): {
 // Anchor the container. Applied as inline styles so two controllers can live in
 // different corners; the newest toast always sits nearest the anchored
 // edge (column for bottom, column-reverse for top).
-export function applyPlacement(container: HTMLElement, placement: Placement) {
+export function applyPlacement(container: HTMLElement, placement: ToastPlacement) {
   const { vertical, horizontal } = splitPlacement(placement);
   const s = container.style;
 

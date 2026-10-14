@@ -24,7 +24,7 @@ export {
   useDataTableController,
   useDataTableSelection,
 };
-export type * as dataTable from '../api/react/index.js';
+export type * from '../api/react/index.js';
 
 // The React entry, `@local/data-table/react`: everything a React app needs (with the app's React). The themes come
 // from `@local/data-table/themes`.

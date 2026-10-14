@@ -1,4 +1,4 @@
-import type { dataTable } from '../src/react/index.js';
+import type { GroupTotal, RowMove, RowPage, RowQuery } from '../src/react/index.js';
 
 export { deleteSection, fetchAgenda, moveAgendaItem };
 export type { AgendaItem };
@@ -44,13 +44,13 @@ function wait(time: number, signal?: AbortSignal): Promise<void> {
 
 // The source: the whole agenda on one page (it is short), sorted by section, with the totals of the sections.
 async function fetchAgenda(
-  _query: dataTable.Query,
+  _query: RowQuery,
   signal: AbortSignal,
-): Promise<dataTable.Result<AgendaItem>> {
+): Promise<RowPage<AgendaItem>> {
   await wait(LOADING_TIME, signal);
 
   const rows: AgendaItem[] = [];
-  const groups: dataTable.ResultGroup[] = [];
+  const groups: GroupTotal[] = [];
 
   for (const { name, items } of sections) {
     if (items.length > 0) {
@@ -63,7 +63,7 @@ async function fetchAgenda(
 }
 
 // Saves a move: into its section, after `after` or before `before` when they are in it, else at its start.
-async function moveAgendaItem(move: dataTable.Move<AgendaItem>): Promise<void> {
+async function moveAgendaItem(move: RowMove<AgendaItem>): Promise<void> {
   await wait(SAVING_TIME);
 
   const moved: AgendaItem = { ...move.row, section: move.group ?? '' };

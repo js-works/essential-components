@@ -2,7 +2,7 @@
 import './ui/ui.css';
 import './demo.css';
 import { createCockpitClass } from '../src/index.js';
-import type { cockpit } from '../src/index.js';
+import type { FooterAction } from '../src/index.js';
 import { FEW, GROUPS, MANY, SOME } from './apps.js';
 import { DemoApp } from './DemoApp.js';
 import { accentSetting, MENU, navigationSetting, pageSettings, USER, userMenu } from './footer.js';
@@ -13,7 +13,7 @@ const SETS = { few: FEW, some: SOME, many: MANY } as const;
 const param = new URLSearchParams(location.search).get('apps');
 const set: keyof typeof SETS = param === 'some' || param === 'many' ? param : 'few';
 
-const appsAction: cockpit.Action = {
+const appsAction: FooterAction = {
   id: 'apps',
   label: 'Apps',
   icon:

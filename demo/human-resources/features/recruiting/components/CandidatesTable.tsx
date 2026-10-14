@@ -6,7 +6,7 @@ import {
   selectColumnFilter,
   useDataTableController,
 } from '../../../../../packages/data-table/src/react/index.js';
-import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import type { ActionMenu, TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
 import { CANDIDATE_SOURCES, STAGES } from '../../../domain/index.js';
 import type { Candidate, HrData, Opening, Stage } from '../../../domain/index.js';
 import { formatDate } from '../../../shared/lib/format.js';
@@ -46,7 +46,7 @@ function CandidatesTable({ data, opening }: { data: HrData; opening: Opening }):
     nav.reload,
   );
 
-  const columns = useMemo((): readonly dataTable.Column<Candidate>[] => [
+  const columns = useMemo((): readonly TableColumn<Candidate>[] => [
     {
       key: 'name',
       header: t('candidates.name'),
@@ -101,8 +101,8 @@ function CandidatesTable({ data, opening }: { data: HrData; opening: Opening }):
   ], [t]);
 
   const actions = useMemo((): readonly (
-    | dataTable.Action<Candidate>
-    | dataTable.ActionMenu<Candidate>
+    | TableAction<Candidate>
+    | ActionMenu<Candidate>
   )[] => [
     {
       type: 'general',

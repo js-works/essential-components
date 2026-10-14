@@ -14,7 +14,15 @@ import {
   useDataTableController,
   useDataTableSelection,
 } from '../src/react/index.js';
-import type { dataTable } from '../src/react/index.js';
+import type {
+  ColumnFilter,
+  ColumnGroup,
+  DataTableComponent,
+  EditField,
+  SavedFilter,
+  SavedFilters,
+  TableColumn,
+} from '../src/react/index.js';
 import { antdTheme, defaultTheme, mantineTheme, softTheme } from '../src/themes/index.js';
 import type { Controls, DemoTheme } from './controls.js';
 import { countries, createUser, fetchNothing, fetchUsers, newUser, roles, saveUser, suggestEmails } from './data.js';
@@ -32,7 +40,7 @@ export { Demo };
 
 // An app creates its data table once, with its configuration. The demo creates one per theme, all with the same
 // I18nAdapter, and shows the one of the chosen theme.
-const tables: Record<DemoTheme, dataTable.Component> = {
+const tables: Record<DemoTheme, DataTableComponent> = {
   default: createDataTableComponent({ i18n, theme: defaultTheme }),
   soft: createDataTableComponent({ i18n, theme: softTheme }),
   mantine: createDataTableComponent({ i18n, theme: mantineTheme }),
@@ -48,11 +56,11 @@ const libraryVariables: Record<DemoTheme, string> = {
   antd: antdVariables,
 };
 
-type UserColumn = dataTable.Column<User>;
+type UserColumn = TableColumn<User>;
 
 // The edit form ("Edit", a double click; "Add user" for a new row): a field for every column with an editor (`edit`,
 // also a hidden one), then the extra fields, values that are no column (`editFields`).
-const editFields: readonly dataTable.EditField<User>[] = [
+const editFields: readonly EditField<User>[] = [
   { key: 'city', label: 'City', edit: textColumnEditor() },
   { key: 'notes', label: 'Notes', edit: textColumnEditor({ placeholder: 'A note about the user' }) },
 ];
@@ -133,7 +141,7 @@ const active: UserColumn = {
   render: (user) => (user.active ? 'Yes' : 'No'),
 };
 
-const filterOf: Record<string, dataTable.ColumnFilter> = {
+const filterOf: Record<string, ColumnFilter> = {
   // With the select of how the text must match (contains, starts with, ends with); the other text filters are plain.
   firstName: textColumnFilter({ matchModes: true }),
   lastName: textColumnFilter({ matchModes: true }),
@@ -161,7 +169,7 @@ const filterOf: Record<string, dataTable.ColumnFilter> = {
 function createColumns(
   grouped: boolean,
   filtered: boolean,
-): readonly (UserColumn | dataTable.ColumnGroup<User>)[] {
+): readonly (UserColumn | ColumnGroup<User>)[] {
   const filter = (column: UserColumn): UserColumn => {
     const columnFilter = filterOf[column.key];
 
@@ -206,8 +214,8 @@ function Demo({ controls }: { controls: Controls }): ReactElement {
   });
   // Saved filters (in the filter view and the drawer), kept in memory: a name saved again replaces the
   // filter of that name. With sharing (the demo has one user: shared ones are only marked).
-  const [saved, setSaved] = useState<readonly dataTable.SavedFilter[]>([]);
-  const savedFilters: dataTable.SavedFilters = {
+  const [saved, setSaved] = useState<readonly SavedFilter[]>([]);
+  const savedFilters: SavedFilters = {
     items: saved,
     sharing: true,
     save: (name, filters, { shared }) => {

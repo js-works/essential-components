@@ -1,4 +1,4 @@
-import type { NavItem } from '../api/index.js';
+import type { NavItem } from '../index.js';
 
 export { groupsOf, search, subgroupsOf };
 export type { Group, Match };

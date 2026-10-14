@@ -1,23 +1,23 @@
-export type { Action, Choice, Choices, Footer, MenuItem, MenuSection, User };
+export type { ActionChoice, ActionChoices, CockpitFooter, FooterAction, MenuItem, MenuSection, SignedInUser };
 
-type Choice = {
+type ActionChoice = {
   value: string;
   label: string;
 };
 
-type Choices = {
-  options: readonly Choice[];
+type ActionChoices = {
+  options: readonly ActionChoice[];
   value: () => string;
   onChange: (value: string) => void;
 };
 
-type Action = {
+type FooterAction = {
   id: string;
   label: string;
   icon: string;
   badge?: boolean;
   onSelect?: () => void;
-  choices?: Choices;
+  choices?: ActionChoices;
   // A menu of sections (with labels and checked items), e.g. several settings behind one button.
   menu?: readonly MenuSection[];
 };
@@ -35,13 +35,13 @@ type MenuItem = {
 // A section of a menu (separated by lines): its items, or with a label on top.
 type MenuSection = readonly MenuItem[] | { label?: string; items: readonly MenuItem[] };
 
-type User = {
+type SignedInUser = {
   name: string;
   detail?: string;
   avatar?: string;
 };
 
-type Footer = {
-  actions?: readonly Action[];
+type CockpitFooter = {
+  actions?: readonly FooterAction[];
   menu?: readonly MenuSection[];
 };

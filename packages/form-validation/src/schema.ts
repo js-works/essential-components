@@ -1,5 +1,5 @@
 import type { z } from 'zod';
-import type { FormMeta } from './api/index.js';
+import type { FormMeta } from './index.js';
 import { formRegistry } from './meta.js';
 
 export { collectFields, getPath, setPath, unwrap };

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { Binding, BindingConfig, FormMeta } from './api/index.js';
+import type { FieldBinding, FieldBindingConfig, FormMeta } from './index.js';
 
 export { binding, formMeta, formRegistry, isBinding };
 
@@ -19,10 +19,10 @@ function formMeta<T extends z.ZodType>(schema: T, meta: FormMeta): T {
 const BINDING = Symbol.for('@local/form-validation.binding');
 
 /** A reusable binding for components with different conventions. */
-function binding(config: BindingConfig): Binding {
-  return Object.freeze({ ...config, [BINDING]: true }) as unknown as Binding;
+function binding(config: FieldBindingConfig): FieldBinding {
+  return Object.freeze({ ...config, [BINDING]: true }) as unknown as FieldBinding;
 }
 
-function isBinding(value: unknown): value is Binding {
+function isBinding(value: unknown): value is FieldBinding {
   return typeof value === 'object' && value !== null && (value as any)[BINDING] === true;
 }

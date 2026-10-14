@@ -25,9 +25,9 @@ const states = new WeakMap<object, ControllerState>();
 
 // The framework-free core of a controller (the React hook only keeps one stable, the custom element will use it too).
 // Without a connected table, the calls do nothing and there are no selected rows.
-function createDataTableController<Row>(): Spec.Controller<Row> {
+function createDataTableController<Row>(): Spec.TableController<Row> {
   const state: ControllerState = { target: undefined, listeners: new Set() };
-  const controller: Spec.Controller<Row> = {
+  const controller: Spec.TableController<Row> = {
     reload: () => state.target?.reload(),
     clearRowSelection: () => state.target?.clearRowSelection(),
     // The target hands out the rows of the table, whose row type is the controller's.

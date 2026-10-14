@@ -23,7 +23,7 @@ import {
 import { StrictMode, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { colorSetups, createMantineTheme } from '../src/index.js';
-import type { mantineThemes } from '../src/index.js';
+import type { ColorSetupName, ThemeSize, ThemeVariant } from '../src/index.js';
 
 // The demo: the themes of `createMantineTheme()` on a page of Mantine's components, with the choices on top: the color
 // setup, the size, the variant, the color scheme, and a live accent (a color input that sets the custom property
@@ -32,15 +32,15 @@ const ACCENT_PROPERTY = '--demo-accent-color';
 
 function App() {
   const [colors, setColors] = useState<string>('mantine');
-  const [size, setSize] = useState<mantineThemes.Size>('default');
-  const [variant, setVariant] = useState<mantineThemes.Variant>('default');
+  const [size, setSize] = useState<ThemeSize>('default');
+  const [variant, setVariant] = useState<ThemeVariant>('default');
   const [scheme, setScheme] = useState<'light' | 'dark'>('light');
   const [live, setLive] = useState(false);
   const [liveColor, setLiveColor] = useState('#e64980');
   const kit = useMemo(
     () =>
       createMantineTheme({
-        colors: colors === 'mantine' ? undefined : colors as mantineThemes.ColorName,
+        colors: colors === 'mantine' ? undefined : colors as ColorSetupName,
         size,
         variant,
         accentProperty: ACCENT_PROPERTY,
@@ -73,7 +73,7 @@ function App() {
               <SegmentedControl
                 data={['default', 'compact']}
                 value={size}
-                onChange={(value) => setSize(value as mantineThemes.Size)}
+                onChange={(value) => setSize(value as ThemeSize)}
               />
             </Stack>
             <Stack gap={4}>
@@ -81,7 +81,7 @@ function App() {
               <SegmentedControl
                 data={['default', 'modern']}
                 value={variant}
-                onChange={(value) => setVariant(value as mantineThemes.Variant)}
+                onChange={(value) => setVariant(value as ThemeVariant)}
               />
             </Stack>
             <Stack gap={4}>

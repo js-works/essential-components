@@ -1,31 +1,31 @@
-export type { FilterValue, GroupBy, Query, Result, ResultGroup, RowGroup, Sort, SortDirection, Source };
+export type { ColumnSort, FilterValue, GroupBy, GroupTotal, RowGroup, RowPage, RowQuery, RowSource, SortDirection };
 
 type SortDirection = 'asc' | 'desc';
 
-type Sort = { key: string; direction: SortDirection };
+type ColumnSort = { key: string; direction: SortDirection };
 
 type FilterValue = string | number | boolean | null | readonly FilterValue[] | {
   readonly [key: string]: FilterValue;
 };
 
-type Query = {
+type RowQuery = {
   page: number;
   pageSize: number;
-  sort?: Sort;
+  sort?: ColumnSort;
   search: string;
   filters: Record<string, FilterValue>;
 };
 
-type Result<Row> = {
+type RowPage<Row> = {
   rows: readonly Row[];
   total: number;
-  groups?: readonly ResultGroup[];
+  groups?: readonly GroupTotal[];
 };
 
-type ResultGroup = { key: string; total: number };
+type GroupTotal = { key: string; total: number };
 
 type GroupBy<Row> = (keyof Row & string) | ((row: Row) => string);
 
 type RowGroup<Row> = { key: string; rows: readonly Row[]; total: number | undefined };
 
-type Source<Row> = (query: Query, signal: AbortSignal) => Promise<Result<Row>>;
+type RowSource<Row> = (query: RowQuery, signal: AbortSignal) => Promise<RowPage<Row>>;

@@ -15,7 +15,7 @@ export {
 export type { ActionInput, ActionItem, ContextMenuItem };
 
 // The actions and menus as the app gives them.
-type ActionInput<Row> = Spec.Action<Row> | Spec.ActionMenu<Row>;
+type ActionInput<Row> = Spec.TableAction<Row> | Spec.ActionMenu<Row>;
 
 // A separator as it is rendered: it has a key, made from its position in the list of the app (the app gives none).
 type KeyedSeparator = Spec.ActionSeparator & { key: string };
@@ -25,24 +25,24 @@ type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K>
 
 type MenuView<Row> =
   & DistributiveOmit<Spec.ActionMenu<Row>, 'actions'>
-  & { actions: readonly (Spec.Action<Row> | KeyedSeparator)[] };
+  & { actions: readonly (Spec.TableAction<Row> | KeyedSeparator)[] };
 
 // The actions and menus as they are rendered (filtered by what is visible now).
-type ActionItem<Row> = Spec.Action<Row> | MenuView<Row>;
+type ActionItem<Row> = Spec.TableAction<Row> | MenuView<Row>;
 
 // The entries of the context menu of a row: actions, menus (as submenus) and the separators between the groups.
 type ContextMenuItem<Row> = ActionItem<Row> | KeyedSeparator;
 
 function filterItems<Row>(
   items: readonly ActionInput<Row>[],
-  visible: (action: Spec.Action<Row>) => boolean,
+  visible: (action: Spec.TableAction<Row>) => boolean,
 ): readonly ActionItem<Row>[] {
   return items.flatMap((item): ActionItem<Row>[] => {
     if (item.type !== 'menu') {
       return visible(item) ? [item] : [];
     }
 
-    const children = item.actions.map((child, index): Spec.Action<Row> | KeyedSeparator =>
+    const children = item.actions.map((child, index): Spec.TableAction<Row> | KeyedSeparator =>
       child.type === 'separator' ? { ...child, key: `separator-${index}` } : child
     );
     const actions = withoutUselessSeparators(children.filter((child) => child.type === 'separator' || visible(child)));
@@ -146,14 +146,14 @@ function contextMenuItems<Row>(
   row?: Row,
 ): readonly ContextMenuItem<Row>[] {
   // An action with `contextMenu: false` is never there (also not inside a menu), e.g. one that does the same as another.
-  const applies = (action: Spec.Action<Row>) =>
+  const applies = (action: Spec.TableAction<Row>) =>
     action.contextMenu !== false
     && action.type !== 'group'
     && (action.type === 'general'
       || (action.type === 'singleRow'
         ? oneRow && (row === undefined || visibleFor(action, row))
         : selection === 'multi'));
-  const plain = items.filter((item): item is Spec.Action<Row> => item.type !== 'menu' && applies(item));
+  const plain = items.filter((item): item is Spec.TableAction<Row> => item.type !== 'menu' && applies(item));
   const menus = filterItems(items.filter((item) => item.type === 'menu'), applies);
   const groups: readonly (readonly ActionItem<Row>[])[] = [
     plain.filter((action) => action.type === 'singleRow'),

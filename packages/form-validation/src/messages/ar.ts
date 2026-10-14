@@ -1,8 +1,8 @@
-import type { LibCatalog } from '../api/texts.js';
+import type { BuiltInCatalog } from '../api/texts.js';
 
 export { ar };
 
-const ar: LibCatalog = {
+const ar: BuiltInCatalog = {
   required: 'يرجى ملء هذا الحقل.',
   invalid: 'يرجى التحقق من الإدخال.',
   submitFailed: 'حدث خطأ أثناء الإرسال. يرجى المحاولة مرة أخرى.',

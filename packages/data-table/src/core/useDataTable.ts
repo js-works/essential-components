@@ -36,7 +36,7 @@ const DEFAULT_PAGE_SIZE = 25;
 const DEFAULT_PAGE_SIZE_OPTIONS: readonly number[] = [10, 25, 50, 100];
 const SPINNER_DELAY = 200;
 
-const EMPTY_RESULT: Spec.Result<never> = { rows: [], total: 0 };
+const EMPTY_RESULT: Spec.RowPage<never> = { rows: [], total: 0 };
 const EMPTY_KEYS: ReadonlySet<string> = new Set();
 const EMPTY_FILTERS: Readonly<Record<string, Spec.FilterValue>> = {};
 
@@ -105,7 +105,7 @@ function withRows<Row>(selection: Selection<Row>, entries: readonly (readonly [s
 // and said so while developing.
 function initialFilters<Row>(
   defaults: Readonly<Record<string, Spec.FilterValue>> | undefined,
-  columns: readonly (Spec.Column<Row> | Spec.ColumnGroup<Row>)[],
+  columns: readonly (Spec.TableColumn<Row> | Spec.ColumnGroup<Row>)[],
 ): Readonly<Record<string, Spec.FilterValue>> {
   if (defaults === undefined) {
     return EMPTY_FILTERS;
@@ -129,7 +129,7 @@ function initialFilters<Row>(
 
 // The state and behavior of the data table, independent of any UI library.
 // An implementation renders what this hook returns with the controls of its UI library.
-function useDataTable<Row>(props: Spec.Props<Row>) {
+function useDataTable<Row>(props: Spec.DataTableProps<Row>) {
   const {
     source,
     rowKey,
@@ -147,7 +147,7 @@ function useDataTable<Row>(props: Spec.Props<Row>) {
   // A table whose rows can be moved (`reorder`) has no column sorting: the moved order is the order. With `groupBy`,
   // a row may be moved into another group (or out of every group).
   const reorderable = props.reorder !== undefined;
-  const [sort, setSort] = useState<Spec.Sort | undefined>(reorderable ? undefined : props.defaultSort);
+  const [sort, setSort] = useState<Spec.ColumnSort | undefined>(reorderable ? undefined : props.defaultSort);
   const searchable = props.searchable === true;
   const [searchText, setSearchText] = useState('');
   const [search, setSearch] = useState('');
@@ -155,7 +155,7 @@ function useDataTable<Row>(props: Spec.Props<Row>) {
   const idBase = useId();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(props.pageSize ?? DEFAULT_PAGE_SIZE);
-  const [result, setResult] = useState<Spec.Result<Row>>(EMPTY_RESULT);
+  const [result, setResult] = useState<Spec.RowPage<Row>>(EMPTY_RESULT);
   // The page and the page size of the rows shown (of the last finished load): the footer shows them, not the requested
   // ones, so it changes together with the rows (2026-10-05).
   const [shown, setShown] = useState(() => ({ page: 1, pageSize: props.pageSize ?? DEFAULT_PAGE_SIZE }));
@@ -765,7 +765,7 @@ function useDataTable<Row>(props: Spec.Props<Row>) {
     return true;
   };
 
-  const invokeFromContextMenu = (action: Spec.Action<Row>) => {
+  const invokeFromContextMenu = (action: Spec.TableAction<Row>) => {
     if (action.type === 'group') {
       if (contextGroup !== undefined) {
         action.onClick(contextGroup);
@@ -790,7 +790,7 @@ function useDataTable<Row>(props: Spec.Props<Row>) {
     }
   };
 
-  const invokeFromToolbar = (action: Spec.Action<Row>) => {
+  const invokeFromToolbar = (action: Spec.TableAction<Row>) => {
     switch (action.type) {
       case 'general':
         action.onClick();
@@ -808,13 +808,13 @@ function useDataTable<Row>(props: Spec.Props<Row>) {
     }
   };
 
-  const invokeForRow = (row: Row, action: Spec.Action<Row>) => {
+  const invokeForRow = (row: Row, action: Spec.TableAction<Row>) => {
     if (action.type === 'singleRow') {
       action.onClick(row);
     }
   };
 
-  const invokeForGroup = (group: RowGroupEntry<Row>, action: Spec.Action<Row>) => {
+  const invokeForGroup = (group: RowGroupEntry<Row>, action: Spec.TableAction<Row>) => {
     if (action.type === 'group') {
       action.onClick(group);
     }

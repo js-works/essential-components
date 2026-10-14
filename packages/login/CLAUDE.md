@@ -14,11 +14,12 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 
 ## Working rules
 
-- `src/api/` holds the API types (2026-10-12; `src/api.ts` with the namespace `Login` before): `props.ts` (`Props`,
-  `Credentials`, `Registration`, `PasswordReset`, `Provider`), `texts.ts`, `mount.ts` (`MountOptions`, `Mounted`);
-  no theme of its own (a Mantine override) and no `I18nAdapter` (the texts are props). `src/index.ts` exports them as
-  the type namespace `login` (`import type { login } from '@local/login'`, `login.Props`); the demos' variable of the
-  mounted screen is `loginScreen` (`login` would hide the namespace).
+- `src/api/` holds the API types (2026-10-12; `src/api.ts` with the namespace `Login` before, the namespace `login`
+  for two days): `props.ts` (`LoginScreenProps`, `Credentials`, `AccountRegistration`, `PasswordReset`,
+  `LoginProvider`), `texts.ts` (`LoginTexts`), `mount.ts` (`MountOptions`, `MountedLoginScreen`); no theme of its own
+  (a Mantine override) and no `I18nAdapter` (the texts are props). `src/index.ts` exports them flat (2026-10-14,
+  `typescript.md`): `import type { LoginScreenProps } from '@local/login'`. The demos' variable of the mounted screen
+  is `loginScreen`.
 - Always add the decisions (also small ones) to this file, in the same step as the code.
 
 ## Decided (2026-10-03)
@@ -29,7 +30,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 - `LoginScreen` (a React component, needs a `MantineProvider` above it) and `mountLoginScreen(element, props)` for a
   host without React: its own Mantine scope (`.login`, Mantine's variables on it, not on `:root`; Mantine's
   layered styles), returns `{ update(props), unmount() }`.
-- Props (`login.Props`): `title`, `subtitle?`, `logo?` (a React node, or a string of markup, e.g. an SVG in
+- Props (`LoginScreenProps`): `title`, `subtitle?`, `logo?` (a React node, or a string of markup, e.g. an SVG in
   `currentColor`, drawn in the accent), `hint?` (a small note below the card, e.g. "A demo: any username and
   password"), `texts?` (each text can be replaced), `onLogin({ username, password })` (may return a promise).
 - Forgot password and registration (2026-10-04, "as you like it"): two optional host functions; each switches on its
@@ -63,7 +64,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 - The page's color scheme (`<html>`: its computed `color-scheme`) and language (`<html lang>`: English, German) are
   followed live.
 - The look with `mountLoginScreen()` (2026-10-10, Claude's choice, the user left it open for later): the option
-  `theme` (`login.MountOptions`, a Mantine theme override, e.g. `{ primaryColor: 'teal' }`), merged over the login's
+  `theme` (`MountOptions`, a Mantine theme override, e.g. `{ primaryColor: 'teal' }`), merged over the login's
   own (Mantine's indigo, a small radius); `update(props, options)` changes it. Before: the accent from the page's
   custom property `--app-login-accent-color` (Mantine's ten shades as `color-mix()` of it), gone with the rule
   "no custom properties in the packages". `LoginScreen` inside an app's own `MantineProvider` uses that app's theme.

@@ -1,6 +1,6 @@
 import type * as React from 'react';
 import type { z } from 'zod';
-import type { Binding, Fields, PropNames } from './fields.js';
+import type { FieldBinding, FieldPropNames, FormFields } from './fields.js';
 import type { I18nConfig } from './i18n.js';
 import type { MessageCatalog } from './texts.js';
 
@@ -53,9 +53,9 @@ interface FormProps {
   [prop: string]: any;
 }
 
-interface UseFormReturn<S extends z.ZodObject<any>, P extends PropNames> {
+interface UseFormReturn<S extends z.ZodObject<any>, P extends FieldPropNames> {
   form(...args: Array<Record<string, unknown> | false | null | undefined>): FormProps;
-  field: Fields<S['shape'], P>;
+  field: FormFields<S['shape'], P>;
   submitting: boolean;
   /** `true` if the schema currently reports no errors (regardless of user interaction). */
   valid: boolean;
@@ -81,7 +81,7 @@ type SubmitOutcome = { ok: true } | { ok: false; error?: string };
 
 /* ---------------------------------------------------------------- Config */
 
-interface FormConfig<P extends PropNames = PropNames> {
+interface FormConfig<P extends FieldPropNames = FieldPropNames> {
   i18n?: I18nConfig;
   /** The namespace of the app's keys (labels, messages of the schema or the server) for the adapter (default: "app"). */
   appNamespace?: string;
@@ -92,7 +92,7 @@ interface FormConfig<P extends PropNames = PropNames> {
   errorMessage?: (error: unknown) => string | undefined;
   props?: P;
   /** Bindings per semantic field type ("date", "email", "number", ... or set with formMeta). */
-  bindings?: Record<string, Binding>;
+  bindings?: Record<string, FieldBinding>;
   /** Additional or overriding messages per locale. */
   messages?: Record<string, MessageCatalog>;
   /** The locale used when nothing is found for the current one (default: "en"). */

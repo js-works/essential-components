@@ -35,8 +35,8 @@ function valueOf(value: Spec.ThemeValue): string {
 
 // Missing theme values come from the default theme, so the table always has its look. The i18n adapter is added per
 // data table (it may come from a factory or a hook).
-function resolveConfig(configTheme: Spec.Theme | undefined): ResolvedConfig {
-  const theme: Spec.Theme = { ...defaultTheme, ...configTheme };
+function resolveConfig(configTheme: Spec.DataTableTheme | undefined): ResolvedConfig {
+  const theme: Spec.DataTableTheme = { ...defaultTheme, ...configTheme };
   const values = Object.fromEntries(
     Object.entries(theme).flatMap(([key, value]: [string, Spec.ThemeValue | undefined]) =>
       value === undefined ? [] : [[key, valueOf(value)]]

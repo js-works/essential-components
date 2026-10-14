@@ -8,9 +8,15 @@ import {
   selectColumnFilter,
   useDataTableController,
 } from '../../../../../packages/data-table/src/react/index.js';
-import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import type {
+  ActionMenu,
+  RowQuery,
+  SavedFilter,
+  TableAction,
+  TableColumn,
+} from '../../../../../packages/data-table/src/react/index.js';
 import { createDemoI18n } from '../../../../../packages/file-upload/demo/i18n.js';
-import type { fileUpload } from '../../../../../packages/file-upload/src/index.js';
+import type { FileItem, FileUploadTheme } from '../../../../../packages/file-upload/src/index.js';
 import { createFileUploadComponent } from '../../../../../packages/file-upload/src/react/index.js';
 import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
 import { FILE_KINDS, ROOT_ID } from '../../../domain/index.js';
@@ -36,7 +42,7 @@ const uploadI18n = createDemoI18n();
 
 // The file upload in Mantine's look: its theme values are Mantine's variables (inherited into its shadow DOM from the
 // scope), like the data table's `mantineTheme`.
-const MANTINE_UPLOAD_THEME: fileUpload.Theme = {
+const MANTINE_UPLOAD_THEME: FileUploadTheme = {
   accentColor: 'var(--mantine-primary-color-filled)',
   accentTextColor: 'var(--mantine-primary-color-contrast)',
   textColor: 'var(--mantine-color-text)',
@@ -59,7 +65,7 @@ const MediaUpload = createFileUploadComponent({
 const SORT_KEYS: readonly FileSortKey[] = ['name', 'type', 'size', 'modified', 'owner'];
 
 // The table's state as the service's query: its search and filters as file criteria, its sort, its page as a window.
-function toCriteria(query: dataTable.Query): EntryCriteria {
+function toCriteria(query: RowQuery): EntryCriteria {
   const { kind, owner, modified } = query.filters as Record<string, unknown>;
   const range = modified as { from?: string; to?: string } | undefined;
 
@@ -73,7 +79,7 @@ function toCriteria(query: dataTable.Query): EntryCriteria {
   };
 }
 
-function toSort(query: dataTable.Query) {
+function toSort(query: RowQuery) {
   const key = query.sort?.key as FileSortKey | undefined;
 
   return query.sort !== undefined && key !== undefined && SORT_KEYS.includes(key)
@@ -81,7 +87,7 @@ function toSort(query: dataTable.Query) {
     : undefined;
 }
 
-const toPaging = (query: dataTable.Query) => ({
+const toPaging = (query: RowQuery) => ({
   offset: (query.page - 1) * query.pageSize,
   limit: query.pageSize,
 });
@@ -119,7 +125,7 @@ function FolderPage(): ReactElement {
 }
 
 // The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
-const COLLEAGUES_FILTERS: readonly dataTable.SavedFilter[] = [
+const COLLEAGUES_FILTERS: readonly SavedFilter[] = [
   sharedBy('Anna Schröder', 'Images', { kind: ['image'] }),
   sharedBy('Ben Carter', 'Office documents', { kind: ['document', 'spreadsheet', 'presentation'] }),
   sharedBy('Claire Dubois', 'My files', { owner: ['Claire Dubois'] }),
@@ -150,7 +156,7 @@ function FolderTable({ folder, folders, owners }: {
     nav.reload,
   );
 
-  const columns = useMemo((): readonly dataTable.Column<EntryRow>[] => [
+  const columns = useMemo((): readonly TableColumn<EntryRow>[] => [
     {
       key: 'name',
       header: 'Name',
@@ -339,7 +345,7 @@ function FolderTable({ folder, folders, owners }: {
     // files to the folder, "Cancel" discards them. The native validation blocks "Apply" while a file is unfinished or
     // failed, and while there is none (`required`).
     const upload = async () => {
-      let items: readonly fileUpload.FileItem[] = [];
+      let items: readonly FileItem[] = [];
       let committed: readonly MediaFile[] = [];
       const drawer = dialogs.form({
         surface: 'drawer',
@@ -382,7 +388,7 @@ function FolderTable({ folder, folders, owners }: {
 
     const parent = folders.find((candidate) => candidate.id === folder.parentId);
 
-    const list: readonly (dataTable.Action<EntryRow> | dataTable.ActionMenu<EntryRow>)[] = [
+    const list: readonly (TableAction<EntryRow> | ActionMenu<EntryRow>)[] = [
       // To the parent folder (2026-10-07, the user's wish; in place of a ".." row): not in the root. Pinned (2026-10-10,
       // the user's wish): at the start of the bar, and still there while files are selected.
       ...(parent === undefined ? [] : [

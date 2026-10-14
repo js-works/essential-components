@@ -15,7 +15,7 @@ type RowContextMenuProps<Row> = {
   items: readonly ContextMenuItem<Row>[];
   available: (target: ContextTarget) => boolean;
   prepare: (target: ContextTarget) => boolean;
-  invoke: (action: Spec.Action<Row>) => void;
+  invoke: (action: Spec.TableAction<Row>) => void;
   className: string;
   style?: CSSProperties;
   // The role of the trigger: the grid (`table`), or the list of cards in a narrow table (`list`).

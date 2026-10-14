@@ -1,19 +1,19 @@
 import type * as React from 'react';
 import { useEffect, useId, useReducer, useRef, useState } from 'react';
 import type { z } from 'zod';
+import { checkI18nType, createTranslator, documentLocale, type ErrorData, warnOnce } from './i18n.js';
 import type {
-  BindingConfig,
   FieldArg,
+  FieldBindingConfig,
+  FieldPropNames,
   FormConfig,
   I18nAdapter,
-  PropNames,
   SubmitContext,
   SubmitOutcome,
   UseFormOptions,
   UseFormReturn,
   ValidateOn,
-} from './api/index.js';
-import { checkI18nType, createTranslator, documentLocale, type ErrorData, warnOnce } from './i18n.js';
+} from './index.js';
 import { DEFAULT_MESSAGE, issueToError } from './issues.js';
 import { mergeProps } from './merge.js';
 import { formRegistry, isBinding } from './meta.js';
@@ -179,10 +179,10 @@ const noAdapter = (): I18nAdapter | undefined => undefined;
 
 const OPTION_KEYS = new Set(['label', 'labelKey', 'validateOn']);
 
-function defineUseForm<const P extends PropNames = { label: 'label'; error: 'error' }>(
+function defineUseForm<const P extends FieldPropNames = { label: 'label'; error: 'error' }>(
   config: FormConfig<P> = {},
 ) {
-  const names: PropNames = { label: 'label', error: 'error', ...config.props };
+  const names: FieldPropNames = { label: 'label', error: 'error', ...config.props };
   const { i18n } = config;
   checkI18nType(i18n);
   const t = createTranslator(config);
@@ -346,7 +346,7 @@ function defineUseForm<const P extends PropNames = { label: 'label'; error: 'err
 
     runRef.current = () => runSubmit();
 
-    /* -------------------------------------------------------------- Fields */
+    /* --------------------------------------------------------------- Fields */
 
     function refFor(path: string) {
       let ref = store.refs.get(path);
@@ -361,7 +361,7 @@ function defineUseForm<const P extends PropNames = { label: 'label'; error: 'err
       const path = info.path;
       store.rendered.add(path);
 
-      const bind: BindingConfig = {};
+      const bind: FieldBindingConfig = {};
       const opts: { label?: string; labelKey?: string; validateOn?: ValidateOn } = {};
       let extra: Record<string, unknown> = {};
       for (const arg of [config.bindings?.[info.type], ...args]) {

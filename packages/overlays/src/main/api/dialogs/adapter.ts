@@ -24,7 +24,7 @@ import type {
   DialogWidth,
   FormConfirm,
 } from "./dialog.js";
-import type { Renderable } from "./content.js";
+import type { OverlayContent } from "./content.js";
 import type { DialogTheme } from "./theme.js";
 
 /**
@@ -117,12 +117,12 @@ export interface DialogProps<C extends object> {
  * diff their contents.
  */
 export interface DialogSlots<C extends object> {
-  icon: Renderable<C>;
-  title: Renderable<C>;
-  subtitle: Renderable<C>;
-  intro: Renderable<C>;
-  content: Renderable<C>;
-  outro: Renderable<C>;
+  icon: OverlayContent<C>;
+  title: OverlayContent<C>;
+  subtitle: OverlayContent<C>;
+  intro: OverlayContent<C>;
+  content: OverlayContent<C>;
+  outro: OverlayContent<C>;
   /**
    * A caller-supplied replacement for the note box (see DialogRenderOverrides.note), or
    * null when the library renders its own from {@link DialogProps.note}.

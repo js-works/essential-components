@@ -26,5 +26,5 @@ export { domToastAdapter } from "./toast-adapter.js";
 //   const form = h("div", null, h("label", null, "Email"), email);
 export { h } from "../../internal/dom.js";
 
-// The types (with all of the main entry's): `import type { overlays } from "@local/overlays/dom"`.
-export type * as overlays from "../../api/dom/index.js";
+// The types, with all of the main entry's.
+export type * from "../../api/dom/index.js";

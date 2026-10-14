@@ -21,7 +21,7 @@ export {
   textColumnEditor,
   textColumnFilter,
 };
-export type * as dataTable from './api/index.js';
+export type * from './api/index.js';
 
 // The main entry, `@local/data-table`: the custom element. React is bundled into its build, so an app needs none.
 // React apps use `@local/data-table/react` instead.

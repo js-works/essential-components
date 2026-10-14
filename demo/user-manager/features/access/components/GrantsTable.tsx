@@ -7,7 +7,7 @@ import {
   selectColumnFilter,
   useDataTableController,
 } from '../../../../../packages/data-table/src/react/index.js';
-import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import type { SavedFilter, TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
 import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
 import { scopeLabel } from '../../../domain/index.js';
 import type { AccessData, Grant, PrincipalRef } from '../../../domain/index.js';
@@ -87,7 +87,7 @@ function useGrantAccess(): (preset?: { principal?: PrincipalRef; roleId?: string
 }
 
 // The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
-const COLLEAGUES_FILTERS: readonly dataTable.SavedFilter[] = [
+const COLLEAGUES_FILTERS: readonly SavedFilter[] = [
   sharedBy('Laura Schmidt', 'Group grants', { type: ['Group'] }),
   sharedBy('Max Müller', 'Owners', { role: ['Owner'] }),
   sharedBy('Laura Schmidt', 'Granted this month', { created: { from: daysFromToday(-30), to: daysFromToday(0) } }),
@@ -127,7 +127,7 @@ function GrantsTable({ name, filter = () => true, preset, hide = [], title, subt
     nav.reload,
   );
 
-  const columns = useMemo((): readonly dataTable.Column<GrantRow>[] => [
+  const columns = useMemo((): readonly TableColumn<GrantRow>[] => [
     ...(hide.includes('who') ? [] : [
       {
         key: 'who' as const,
@@ -177,7 +177,7 @@ function GrantsTable({ name, filter = () => true, preset, hide = [], title, subt
     { key: 'grantedBy', header: 'By', width: 1.2, hideable: true, hidden: true },
   ], [data, hide]);
 
-  const actions = useMemo((): readonly dataTable.Action<GrantRow>[] => {
+  const actions = useMemo((): readonly TableAction<GrantRow>[] => {
     const revoke = async (rows: readonly GrantRow[]) => {
       const scope = dialogs.open();
 

@@ -1,5 +1,5 @@
-import type { dataTable } from '../../../../packages/data-table/src/react/index.js';
-import type { fileUpload } from '../../../../packages/file-upload/src/index.js';
+import type { RowSource } from '../../../../packages/data-table/src/react/index.js';
+import type { UploadFn } from '../../../../packages/file-upload/src/index.js';
 import type { MeetingDocument } from '../../domain/index.js';
 import { AppError } from './errors.js';
 import { CURRENT_USER, localDateTime, typeOf } from './helpers.js';
@@ -8,7 +8,7 @@ import { db, LOADING_TIME, newId, save, wait } from './store.js';
 
 export { commitDocuments, deleteDocuments, discardDocuments, fetchDocuments, renameDocument, uploadDocument };
 
-function fetchDocuments(meetingId: string): dataTable.Source<MeetingDocument> {
+function fetchDocuments(meetingId: string): RowSource<MeetingDocument> {
   return async (query, signal) => {
     await wait(LOADING_TIME, signal);
 
@@ -31,7 +31,7 @@ function fetchDocuments(meetingId: string): dataTable.Source<MeetingDocument> {
 // `commitDocuments` adds staged files ("Apply" of the upload drawer), `discardDocuments` drops them ("Cancel").
 const staged = new Map<string, MeetingDocument>();
 
-function uploadDocument(meetingId: string): fileUpload.Upload {
+function uploadDocument(meetingId: string): UploadFn {
   return async (file, { signal, onProgress }) => {
     const duration = Math.min(4000, 800 + file.size / 1000);
     const steps = 10;

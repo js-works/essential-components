@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { selectColumnFilter, useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
-import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import type { SavedFilter, TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
 import { groupsOf } from '../../../domain/index.js';
 import type { AccessData, User } from '../../../domain/index.js';
 import { formatDateTime } from '../../../shared/lib/format.js';
@@ -36,7 +36,7 @@ function userRows(data: AccessData): UserRow[] {
 }
 
 // The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
-const COLLEAGUES_FILTERS: readonly dataTable.SavedFilter[] = [
+const COLLEAGUES_FILTERS: readonly SavedFilter[] = [
   sharedBy('Laura Schmidt', 'Disabled users', { status: ['Disabled'] }),
   sharedBy('Max Müller', 'IT and Finance', { department: ['IT', 'Finance'] }),
 ];
@@ -56,7 +56,7 @@ function UsersPage(): ReactElement {
     },
   }, nav.reload);
 
-  const columns = useMemo((): readonly dataTable.Column<UserRow>[] => [
+  const columns = useMemo((): readonly TableColumn<UserRow>[] => [
     {
       key: 'name',
       header: 'Name',
@@ -110,7 +110,7 @@ function UsersPage(): ReactElement {
     },
   ], []);
 
-  const actions = useMemo((): readonly dataTable.Action<UserRow>[] => [
+  const actions = useMemo((): readonly TableAction<UserRow>[] => [
     {
       type: 'general',
       key: 'new',

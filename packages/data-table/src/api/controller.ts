@@ -1,22 +1,22 @@
-import type { Action, ActionMenu } from './actions.js';
-import type { Column, ColumnGroup, EditField } from './columns.js';
+import type { ActionMenu, TableAction } from './actions.js';
+import type { ColumnGroup, EditField, TableColumn } from './columns.js';
 import type { TextContent } from './content.js';
-import type { FilterValue, GroupBy, RowGroup, SortDirection, Source } from './query.js';
-import type { CreateRow, Reorder, SaveRow } from './rows.js';
+import type { FilterValue, GroupBy, RowGroup, RowSource, SortDirection } from './query.js';
+import type { CreateRow, ReorderRows, SaveRow } from './rows.js';
 
 export type { ControllerOptions, CreateTableController, TableController };
 
 declare const contentType: unique symbol;
 
 type ControllerOptions<Row, C> = {
-  source: Source<Row>;
-  reorder?: Reorder<Row>;
+  source: RowSource<Row>;
+  reorder?: ReorderRows<Row>;
   saveRow?: SaveRow<Row>;
   createRow?: CreateRow<Row>;
   editFields?: readonly EditField<Row, C>[];
   rowKey: keyof Row & string;
-  columns: readonly (Column<Row, C> | ColumnGroup<Row, C>)[];
-  actions?: readonly (Action<Row, C> | ActionMenu<Row, C>)[];
+  columns: readonly (TableColumn<Row, C> | ColumnGroup<Row, C>)[];
+  actions?: readonly (TableAction<Row, C> | ActionMenu<Row, C>)[];
   renderDetail?: (row: Row) => string | C;
   groupBy?: GroupBy<Row>;
   renderGroup?: (group: RowGroup<Row>) => string | C;

@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createContext, useCallback, useContext } from 'react';
-import type { dataTable } from '../../../../packages/data-table/src/react/index.js';
+import type { RowSource } from '../../../../packages/data-table/src/react/index.js';
 import type { HrData } from '../../domain/index.js';
 import { runLocalQuery } from '../../shared/lib/localQuery.js';
 import type { LocalQueryOptions } from '../../shared/lib/localQuery.js';
@@ -47,7 +47,7 @@ function useTableSource<Row>(
   rows: (data: HrData) => readonly Row[],
   options: LocalQueryOptions<Row>,
   reload: () => void,
-): dataTable.Source<Row> {
+): RowSource<Row> {
   const service = useHrService();
   const queryClient = useQueryClient();
 

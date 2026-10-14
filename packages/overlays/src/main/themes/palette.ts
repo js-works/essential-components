@@ -11,7 +11,7 @@
 // palette of one colour changes one colour.
 
 import type { DialogTheme } from "../api/dialogs/theme.js";
-import type { ThemePalette, Themes } from "../api/theme.js";
+import type { ThemePalette, OverlayThemes } from "../api/theme.js";
 import { createDialogTheme } from "../dialogs/theme.js";
 import type { ToastTheme } from "../api/toasts/theme.js";
 import { createToastTheme } from "../toasts/theme.js";
@@ -31,7 +31,7 @@ import { createToastTheme } from "../toasts/theme.js";
  * For anything the palette does not cover, keep using {@link createToastTheme} and
  * {@link createDialogTheme} — spread a generated theme and override single tokens.
  */
-export function createThemes(palette: ThemePalette = {}): Themes {
+export function createThemes(palette: ThemePalette = {}): OverlayThemes {
   const { primary, success, warning, danger, surface, text, onAccent, radius } =
     palette;
 

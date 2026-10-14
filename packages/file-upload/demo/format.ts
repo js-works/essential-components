@@ -1,14 +1,14 @@
-import type { fileUpload } from '../src/index.js';
+import type { FileItem, FileStatus } from '../src/index.js';
 
 export { submitted, summarize };
 
 // The state of the list, as the `change` event reports it.
-function summarize(items: readonly fileUpload.FileItem[]): string {
+function summarize(items: readonly FileItem[]): string {
   if (items.length === 0) {
     return 'No files yet';
   }
 
-  const counts = new Map<fileUpload.FileStatus, number>();
+  const counts = new Map<FileStatus, number>();
 
   for (const { status } of items) {
     counts.set(status, (counts.get(status) ?? 0) + 1);

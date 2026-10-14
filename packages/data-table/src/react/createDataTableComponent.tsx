@@ -10,7 +10,7 @@ export { createDataTableComponent };
 // Creates the data table component with its configuration: the i18n adapter (from a factory or a hook) and the
 // theme. Call it once, at module level, and use the result everywhere (a new component per render would remount the
 // table).
-function createDataTableComponent(config: Spec.Config = {}): Spec.Component {
+function createDataTableComponent(config: Spec.DataTableComponentConfig = {}): Spec.DataTableComponent {
   const { i18n } = config;
 
   checkI18nType(i18n, ['factory', 'hook']);
@@ -23,7 +23,7 @@ function createDataTableComponent(config: Spec.Config = {}): Spec.Component {
     ? factoryI18n(i18n.getAdapter)
     : useNoI18n;
 
-  function DataTable<Row>(props: Spec.Props<Row>): ReactElement {
+  function DataTable<Row>(props: Spec.DataTableProps<Row>): ReactElement {
     const { adapter, onRoot } = useI18n();
     const value = useMemo<ResolvedConfig>(() => ({ ...resolved, i18n: adapter, onRoot }), [adapter, onRoot]);
 

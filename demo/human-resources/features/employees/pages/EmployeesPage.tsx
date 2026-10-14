@@ -7,7 +7,7 @@ import {
   selectColumnFilter,
   useDataTableController,
 } from '../../../../../packages/data-table/src/react/index.js';
-import type { dataTable } from '../../../../../packages/data-table/src/react/index.js';
+import type { SavedFilter, TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
 import { EMPLOYEE_STATUSES, EMPLOYMENT_TYPES, statusOf, todayDate } from '../../../domain/index.js';
 import type { Employee, EmployeeStatus, HrData } from '../../../domain/index.js';
 import { formatDate } from '../../../shared/lib/format.js';
@@ -43,7 +43,7 @@ function employeeRows(data: HrData): EmployeeRow[] {
 const STATUS_ORDER: Readonly<Record<EmployeeStatus, number>> = { upcoming: 0, active: 1, leaving: 2, former: 3 };
 
 // The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
-const COLLEAGUES_FILTERS: readonly dataTable.SavedFilter[] = [
+const COLLEAGUES_FILTERS: readonly SavedFilter[] = [
   sharedBy('Sophie Brandt', 'Engineering, full time', { department: ['Engineering'], employmentType: ['fullTime'] }),
   sharedBy('Tom Becker', 'Starting soon', { status: ['upcoming'] }),
   sharedBy('Sophie Brandt', 'Berlin office', { location: ['Berlin'] }),
@@ -76,7 +76,7 @@ function EmployeesPage(): ReactElement {
     [data],
   );
 
-  const columns = useMemo((): readonly dataTable.Column<EmployeeRow>[] => [
+  const columns = useMemo((): readonly TableColumn<EmployeeRow>[] => [
     {
       key: 'name',
       header: t('employees.name'),
@@ -145,7 +145,7 @@ function EmployeesPage(): ReactElement {
     },
   ], [t, departments, locations]);
 
-  const actions = useMemo((): readonly dataTable.Action<EmployeeRow>[] => [
+  const actions = useMemo((): readonly TableAction<EmployeeRow>[] => [
     {
       type: 'general',
       key: 'new',

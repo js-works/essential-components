@@ -98,7 +98,7 @@ const defaultTexts = {
   privateFilter: 'Private',
   filterOwner: 'by {name}',
   shareSavedFilter: 'Share {name}',
-} as const satisfies Record<keyof Spec.Texts, string>;
+} as const satisfies Record<keyof Spec.DataTableTexts, string>;
 
 function createNumberFormat(locale: string): Intl.NumberFormat {
   try {
@@ -123,7 +123,7 @@ function useLocale(): string {
 // The texts come from the `I18nAdapter` of the configuration (namespace "dataTable"): it gets the key, the raw params
 // and the English text, already filled in, and returns the translation (or that English text). Without an adapter, the
 // English texts are used. The component re-renders when the adapter reports a change of the language.
-function useTexts(): Spec.Texts {
+function useTexts(): Spec.DataTableTexts {
   const { i18n } = useContext(ConfigContext);
   const [version, setVersion] = useState(0);
 

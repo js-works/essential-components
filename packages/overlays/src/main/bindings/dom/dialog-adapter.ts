@@ -17,7 +17,7 @@ import type {
   DialogProps,
   DialogSlots,
 } from "../../api/dialogs/adapter.js";
-import type { Renderable } from "../../api/dialogs/content.js";
+import type { OverlayContent } from "../../api/dialogs/content.js";
 import type { DomDialogContent } from "../../api/dom/content.js";
 
 /** Wrapper element per slot, matching what the dialog element's shadow chrome expects. */
@@ -51,7 +51,7 @@ export const domDialogAdapter: DialogAdapterFactory<DomDialogContent> = ({
   let host: HTMLElement | null = null;
   let hasForm: boolean | null = null;
   const wrappers = new Map<string, HTMLElement>();
-  const rendered = new Map<string, Renderable<DomDialogContent>>();
+  const rendered = new Map<string, OverlayContent<DomDialogContent>>();
 
   // The content slot is the one that changes element type: a <form> when the dialog takes
   // input, a <div> otherwise. It must stay in light DOM — form association does not cross
@@ -137,11 +137,11 @@ export const domDialogAdapter: DialogAdapterFactory<DomDialogContent> = ({
   };
 };
 
-// The one place a Renderable becomes DOM in this adapter. An object that isn't a Node can
+// The one place an OverlayContent becomes DOM in this adapter. An object that isn't a Node can
 // only get here through an untyped (`as any`) bypass of the public API, and rendering it
 // would produce "[object Object]" on screen — the class of bug the typed `C` exists to
 // prevent — so fail loudly instead.
-function toNodes(value: Renderable<DomDialogContent>): Node[] {
+function toNodes(value: OverlayContent<DomDialogContent>): Node[] {
   if (value == null) return [];
   if (value instanceof Node) return [value];
   if (typeof value === "object") {

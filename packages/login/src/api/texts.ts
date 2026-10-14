@@ -1,6 +1,6 @@
-export type { Texts };
+export type { LoginTexts };
 
-type Texts = {
+type LoginTexts = {
   heading: string;
   username: string;
   password: string;

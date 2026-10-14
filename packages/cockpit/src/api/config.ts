@@ -1,22 +1,22 @@
-import type { Footer, MenuSection, User } from './menus.js';
-import type { Group, NavItem } from './navigation.js';
-import type { Theme } from './theme.js';
+import type { CockpitFooter, MenuSection, SignedInUser } from './menus.js';
+import type { NavGroup, NavItem } from './navigation.js';
+import type { CockpitTheme } from './theme.js';
 
-export type { Config };
+export type { CockpitClassConfig };
 
-type Config = {
+type CockpitClassConfig = {
   title?: string;
   subtitle?: string;
   search?: boolean;
   items: readonly NavItem[];
-  groups?: readonly Group[];
+  groups?: readonly NavGroup[];
   groupDisplay?: 'sections' | 'select';
   // `false`: no "Recent" section in the sidebar and the search panel (default: shown with more than a few items).
   recent?: boolean;
   // `false`: the groups are plain headings, not collapsible, also with many items (default: collapsible with many items).
   collapsibleGroups?: boolean;
-  footer?: Footer;
-  user?: User;
+  footer?: CockpitFooter;
+  user?: SignedInUser;
   userMenu?: readonly MenuSection[];
   // The item opened without a hash (without a start page: else the first item; with one: else the start page).
   defaultItem?: string;
@@ -29,5 +29,5 @@ type Config = {
   // between them, close them. Not with the bottom bar.
   taskbar?: boolean;
   // The first value of the element's `theme`.
-  theme?: Theme;
+  theme?: CockpitTheme;
 };

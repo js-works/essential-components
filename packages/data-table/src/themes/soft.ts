@@ -5,7 +5,7 @@ export { softTheme };
 // The soft theme: the look of the design spec of the filter popup and the selection bar (2026-09-28). Lighter lines,
 // rounder corners, a brighter blue as the one accent, a smaller font and a medium instead of a bold weight. Like the
 // default theme, it has hard-coded values, with a light and a dark value for every color (`light-dark()`).
-const softTheme: Required<DataTable.Theme> = {
+const softTheme: Required<DataTable.DataTableTheme> = {
   colorText: { light: '#1f1f1f', dark: '#ececec' },
   colorTextDimmed: { light: '#666', dark: '#a6a6a6' },
   colorSurface: { light: '#fff', dark: '#161616' },

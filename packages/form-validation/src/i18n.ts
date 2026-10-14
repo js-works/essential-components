@@ -1,4 +1,4 @@
-import type { FormConfig, I18nAdapter, Message, MessageContext, PropNames } from './api/index.js';
+import type { FieldPropNames, FormConfig, I18nAdapter, MessageContext, ValidationMessage } from './index.js';
 import { catalogs, localeCandidates } from './messages/index.js';
 
 export { checkI18nType, createTranslator, documentLocale, humanize, isDev, LIBRARY_NAMESPACE, warnOnce };
@@ -52,7 +52,7 @@ function formatParams(params: Record<string, unknown>, locale: string): Record<s
   return out;
 }
 
-function render(msg: Message, params: Record<string, unknown>, locale: string): string {
+function render(msg: ValidationMessage, params: Record<string, unknown>, locale: string): string {
   if (typeof msg === 'string') return msg;
   const formatted = formatParams(params, locale);
   const rules = new Intl.PluralRules(locale);
@@ -67,7 +67,7 @@ function render(msg: Message, params: Record<string, unknown>, locale: string): 
   return msg(formatted, ctx);
 }
 
-function createTranslator<P extends PropNames>(config: FormConfig<P>) {
+function createTranslator<P extends FieldPropNames>(config: FormConfig<P>) {
   const fallback = config.fallbackLocale ?? 'en';
   const appNamespace = config.appNamespace ?? 'app';
 

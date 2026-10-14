@@ -5,7 +5,7 @@ import { createTheme, MantineProvider, mergeThemeOverrides } from '@mantine/core
 import { StrictMode } from 'react';
 import type { ReactElement } from 'react';
 import { createRoot } from 'react-dom/client';
-import type * as Spec from './api/index.js';
+import type * as Spec from './index.js';
 import { LoginScreen } from './LoginScreen.js';
 import { useScheme } from './page.js';
 
@@ -24,7 +24,7 @@ const THEME = createTheme({
 
 // Mantine follows the page's color scheme (`<html>`). It does not set the scheme on `<html>` (`getRootElement`): the
 // scope sets it on itself.
-function Frame({ options, ...props }: Spec.Props & { options: Spec.MountOptions }): ReactElement {
+function Frame({ options, ...props }: Spec.LoginScreenProps & { options: Spec.MountOptions }): ReactElement {
   const scheme = useScheme();
 
   return (
@@ -44,7 +44,11 @@ function Frame({ options, ...props }: Spec.Props & { options: Spec.MountOptions 
 
 // The login screen in `element`, for a host without React (or without Mantine): with its own Mantine scope and theme
 // (`options.theme` over the login's own). `update()` changes some props (and the options), `unmount()` removes it.
-function mountLoginScreen(element: HTMLElement, props: Spec.Props, options: Spec.MountOptions = {}): Spec.Mounted {
+function mountLoginScreen(
+  element: HTMLElement,
+  props: Spec.LoginScreenProps,
+  options: Spec.MountOptions = {},
+): Spec.MountedLoginScreen {
   const root = createRoot(element);
   let current = props;
   let currentOptions = options;

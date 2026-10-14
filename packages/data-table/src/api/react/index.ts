@@ -1,4 +1,4 @@
-// The types of the React entry: the shared ones of the main entry, and its own Column, Action and so on, with
+// The types of the React entry: the shared ones of the main entry, and its own TableColumn, TableAction and so on, with
 // ReactNode content (they replace the element's of the same name).
 export type * from '../editors.js';
 export type * from '../filters.js';

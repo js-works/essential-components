@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { ReactElement } from 'react';
 import { createDataTableComponent, selectColumnFilter, textColumnFilter } from '../src/react/index.js';
-import type { dataTable } from '../src/react/index.js';
+import type { RowSource, TableAction, TableColumn } from '../src/react/index.js';
 import { defaultTheme } from '../src/themes/index.js';
 import { fetchUsersByCountry, roles } from './data.js';
 import type { User } from './data.js';
@@ -16,7 +16,7 @@ export { GroupingDemo };
 const DataTable = createDataTableComponent({ i18n, theme: defaultTheme });
 
 // The country is the group, so it has no column of its own.
-const columns: readonly dataTable.Column<User>[] = [
+const columns: readonly TableColumn<User>[] = [
   { key: 'firstName', header: 'First name', width: 2, sortable: true, filter: textColumnFilter() },
   { key: 'lastName', header: 'Last name', width: 2, sortable: true, filter: textColumnFilter() },
   { key: 'email', header: 'Email', width: 4, sortable: true },
@@ -35,7 +35,7 @@ type Totals = 'source' | 'page';
 type Header = 'default' | 'custom';
 
 // Without the totals of the source, a group counts only its rows on the page.
-const fetchWithoutTotals: dataTable.Source<User> = async (query, signal) => {
+const fetchWithoutTotals: RowSource<User> = async (query, signal) => {
   const { rows, total } = await fetchUsersByCountry(query, signal);
 
   return { rows, total };
@@ -49,7 +49,7 @@ function GroupingDemo(): ReactElement {
   const [totals, setTotals] = useState<Totals>('source');
   const [header, setHeader] = useState<Header>('default');
 
-  const actions: readonly dataTable.Action<User>[] = [
+  const actions: readonly TableAction<User>[] = [
     {
       type: 'multiRow',
       key: 'message',

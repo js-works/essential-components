@@ -1,11 +1,11 @@
-import type * as Spec from '../api/index.js';
+import type * as Spec from '../index.js';
 
 export { layoutStyles, styles, themeValues };
 
 // The theme's defaults (2026-10-10): the design language's values (plain values; never its `--ui-*` tokens, which are
 // for demos only). The base size of the cockpit's text and icons is 14px, the size of the apps' normal text (Mantine's
 // sm).
-const DEFAULT_THEME: Required<Spec.Theme> = {
+const DEFAULT_THEME: Required<Spec.CockpitTheme> = {
   accent: 'light-dark(#0a5cc2, #78b0ff)',
   fontSize: '14px',
   fontFamily: 'system-ui, sans-serif',
@@ -20,7 +20,7 @@ const DEFAULT_THEME: Required<Spec.Theme> = {
 // would inherit into the mini-apps, its light DOM children). Every `font-size` is a multiple of the theme's `fontSize`
 // (`calc(${v.fontSize} * N / 14)`, N the size in px at 14). No rem anywhere (2026-10-04, the user's rule): a page's root
 // font size must not change the cockpit.
-function styles(theme: Spec.Theme): string {
+function styles(theme: Spec.CockpitTheme): string {
   const v = themeValues(theme);
 
   return /* css */ `
@@ -2881,7 +2881,7 @@ function layoutStyles(sidebarWidth: number | undefined, switcherLeft: number | u
 
 // The values of the stylesheets (the cockpit's and the taskbar's): the theme's, over the defaults, and the fixed ones
 // of the design language.
-function themeValues(theme: Spec.Theme) {
+function themeValues(theme: Spec.CockpitTheme) {
   const t = { ...DEFAULT_THEME, ...withoutUndefined(theme) };
   // The accent: one color, lighter in a dark scheme (e.g. the sidebar) by a mix with white; the default has both.
   const accent = theme.accent === undefined
@@ -2928,6 +2928,6 @@ function themeValues(theme: Spec.Theme) {
 }
 
 // A theme's keys that are set (an `undefined` must not hide a default).
-function withoutUndefined(theme: Spec.Theme): Spec.Theme {
+function withoutUndefined(theme: Spec.CockpitTheme): Spec.CockpitTheme {
   return Object.fromEntries(Object.entries(theme).filter(([, value]) => value !== undefined));
 }

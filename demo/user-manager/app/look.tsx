@@ -14,7 +14,7 @@ import {
 import type { CSSVariablesResolver, MantineColorsTuple, MantineThemeOverride } from '@mantine/core';
 import { TbMaximize, TbMinimize } from 'react-icons/tb';
 import { combineCssVariables, modernTheme } from '../../../packages/mantine-themes/src/index.js';
-import type { overlays } from '../../../packages/overlays/src/main/bindings/react/index.js';
+import type { OverlaysConfig } from '../../../packages/overlays/src/main/bindings/react/index.js';
 import { createDialogTheme } from '../../../packages/overlays/src/main/dialogs/dialogs.js';
 import { createToastTheme } from '../../../packages/overlays/src/main/toasts/toasts.js';
 import { Scope } from '../shared/ui/scope.js';
@@ -33,7 +33,7 @@ export type { Look };
 type Look = {
   theme: MantineThemeOverride;
   cssVariablesResolver: CSSVariablesResolver;
-  overlaysConfig: overlays.OverlaysConfig;
+  overlaysConfig: OverlaysConfig;
 };
 
 // The font of the app: `--user-manager-font-family`, else the modern theme's (Inter, 2026-10-09; Mantine's before).
@@ -197,7 +197,7 @@ function createLook(
   // app's element). Their buttons and close button are Mantine's (each in a scope too): the primary one filled, a
   // danger one filled in the danger color, the others `default`; the spinner is Mantine's `loading`. The toasts medium
   // and stacked in the bottom right corner, in Mantine's palette.
-  const overlaysConfig: overlays.OverlaysConfig = {
+  const overlaysConfig: OverlaysConfig = {
     dialogs: {
       icons: true,
       // The dialogs' own text (title, message) in the app's size and font, like the Mantine inputs in their content:

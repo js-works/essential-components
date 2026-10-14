@@ -1,10 +1,20 @@
 import type { z } from 'zod';
 
-export type { Binding, BindingConfig, FieldArg, FieldFn, FieldOptions, FieldProps, Fields, PropNames, ValidateOn };
+export type {
+  FieldArg,
+  FieldBinding,
+  FieldBindingConfig,
+  FieldFn,
+  FieldOptions,
+  FieldPropNames,
+  FieldProps,
+  FormFields,
+  ValidateOn,
+};
 
 /* ------------------------------------------------------------- Bindings */
 
-interface BindingConfig {
+interface FieldBindingConfig {
   /** Name of the value prop. If set, the field is controlled. */
   valueProp?: string;
   /** Name of the initial value prop when uncontrolled (default: defaultValue or defaultChecked). */
@@ -26,9 +36,9 @@ interface BindingConfig {
 }
 
 declare const bindingBrand: unique symbol;
-type Binding = Readonly<BindingConfig> & { readonly [bindingBrand]: true };
+type FieldBinding = Readonly<FieldBindingConfig> & { readonly [bindingBrand]: true };
 
-/* --------------------------------------------------------------- Fields */
+/* ---------------------------------------------------------------- Fields */
 
 type ValidateOn = 'blur' | 'change';
 
@@ -43,9 +53,9 @@ interface FieldOptions {
   [prop: string]: unknown;
 }
 
-type FieldArg = Binding | FieldOptions | false | null | undefined;
+type FieldArg = FieldBinding | FieldOptions | false | null | undefined;
 
-interface PropNames {
+interface FieldPropNames {
   label: string;
   /** Gets the message, only while it is visible. */
   error: string;
@@ -57,12 +67,12 @@ interface PropNames {
 }
 
 /** The error prop gets the visible message; the invalid prop (if configured) `true`, or both in one prop. */
-type ErrorProps<P extends PropNames> = P extends { invalid: infer I extends string }
+type ErrorProps<P extends FieldPropNames> = P extends { invalid: infer I extends string }
   ? I extends P['error'] ? { [K in I]?: string | true }
   : { [K in P['error']]?: string } & { [K in I]?: true }
   : { [K in P['error']]?: string };
 
-type FieldProps<P extends PropNames> =
+type FieldProps<P extends FieldPropNames> =
   & {
     name: string;
     id: string;
@@ -83,8 +93,8 @@ type Unwrap<T> = T extends z.ZodOptional<infer I> ? Unwrap<I>
   : T extends z.ZodDefault<infer I> ? Unwrap<I>
   : T;
 
-type FieldFn<P extends PropNames> = (...args: FieldArg[]) => FieldProps<P>;
+type FieldFn<P extends FieldPropNames> = (...args: FieldArg[]) => FieldProps<P>;
 
-type Fields<Shape, P extends PropNames> = {
-  [K in keyof Shape]: Unwrap<Shape[K]> extends z.ZodObject<infer S> ? Fields<S, P> : FieldFn<P>;
+type FormFields<Shape, P extends FieldPropNames> = {
+  [K in keyof Shape]: Unwrap<Shape[K]> extends z.ZodObject<infer S> ? FormFields<S, P> : FieldFn<P>;
 };

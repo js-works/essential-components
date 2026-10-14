@@ -4,7 +4,7 @@ export { defaultTheme };
 
 // The default theme: the neutral look, for apps without a UI library that has a theme here. Pure grays with a high
 // contrast. Colors have a light and a dark value, which follow the color scheme of the page (`light-dark()`).
-const defaultTheme: Required<DataTable.Theme> = {
+const defaultTheme: Required<DataTable.DataTableTheme> = {
   colorText: { light: '#111', dark: '#f5f5f5' },
   colorTextDimmed: { light: '#555', dark: '#bbb' },
   colorSurface: { light: '#fff', dark: '#111' },

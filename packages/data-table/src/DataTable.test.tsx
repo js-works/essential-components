@@ -32,13 +32,13 @@ const people: readonly Person[] = Array.from({ length: 60 }, (_, index) => ({
   city: index % 2 === 0 ? 'Vienna' : 'Berlin',
 }));
 
-const columns: readonly Spec.Column<Person>[] = [
+const columns: readonly Spec.TableColumn<Person>[] = [
   { key: 'name', header: 'Name', sortable: true },
   { key: 'city', header: 'City' },
 ];
 
 function createSource() {
-  return vi.fn(async (query: Spec.Query): Promise<Spec.Result<Person>> => {
+  return vi.fn(async (query: Spec.RowQuery): Promise<Spec.RowPage<Person>> => {
     const text = query.search.toLowerCase();
     const { name: nameFilter, city: cityFilter } = query.filters;
     const sorted = people
@@ -109,9 +109,9 @@ function declarationsOf(selector: string): string {
 const selectionActions = {
   multi: { type: 'multiRow', key: 'test-selection-multi', label: 'Rows action', onClick: () => {} },
   single: { type: 'singleRow', key: 'test-selection-single', label: 'Row action', show: 'toolbar', onClick: () => {} },
-} as const satisfies Record<'multi' | 'single', Spec.Action<Person>>;
+} as const satisfies Record<'multi' | 'single', Spec.TableAction<Person>>;
 
-type NavProps = Partial<Spec.Props<Person>> & { selection?: keyof typeof selectionActions };
+type NavProps = Partial<Spec.DataTableProps<Person>> & { selection?: keyof typeof selectionActions };
 
 // The selectors of all style rules inside a media query with the given condition.
 function selectorsInMedia(condition: RegExp): string[] {
@@ -455,9 +455,9 @@ describe('DataTable', () => {
   });
 
   // A source whose load of `slow` (a page, or a page size) waits until `finish` is called.
-  const slowSource = (slow: (query: Spec.Query) => boolean) => {
+  const slowSource = (slow: (query: Spec.RowQuery) => boolean) => {
     let finish = () => {};
-    const source = vi.fn(async (query: Spec.Query): Promise<Spec.Result<Person>> => {
+    const source = vi.fn(async (query: Spec.RowQuery): Promise<Spec.RowPage<Person>> => {
       if (slow(query)) {
         await new Promise<void>((resolve) => {
           finish = resolve;
@@ -552,7 +552,7 @@ describe('DataTable', () => {
 
   describe('footer', () => {
     // A source with `count` rows.
-    const sourceOf = (count: number) => async (query: Spec.Query): Promise<Spec.Result<Person>> => ({
+    const sourceOf = (count: number) => async (query: Spec.RowQuery): Promise<Spec.RowPage<Person>> => ({
       rows: people.slice(0, count).slice((query.page - 1) * query.pageSize, query.page * query.pageSize),
       total: count,
     });
@@ -625,8 +625,8 @@ describe('DataTable', () => {
 
   it('keeps the footer while the rows of a page are replaced by a new load', async () => {
     let calls = 0;
-    const source = (query: Spec.Query) =>
-      ++calls === 1 ? createSource()(query) : new Promise<Spec.Result<Person>>(() => {});
+    const source = (query: Spec.RowQuery) =>
+      ++calls === 1 ? createSource()(query) : new Promise<Spec.RowPage<Person>>(() => {});
 
     renderNav({ source });
     await loaded();
@@ -728,7 +728,7 @@ describe('DataTable', () => {
   });
 
   describe('column filters', () => {
-    const filteredColumns: readonly Spec.Column<Person>[] = [
+    const filteredColumns: readonly Spec.TableColumn<Person>[] = [
       { key: 'name', header: 'Name', filter: textColumnFilter() },
       { key: 'city', header: 'City', filter: selectColumnFilter({ options: ['Vienna', 'Berlin'] }) },
     ];
@@ -752,7 +752,7 @@ describe('DataTable', () => {
       expect(baseStylesheet).toMatch(/\.data-table__filter-view \{[^}]*justify-self: end;/);
     });
 
-    const filteredWith = (source: ReturnType<typeof createSource>, filters: Spec.Query['filters'], timeout = 1000) =>
+    const filteredWith = (source: ReturnType<typeof createSource>, filters: Spec.RowQuery['filters'], timeout = 1000) =>
       waitFor(
         () => expect(source).toHaveBeenLastCalledWith(expect.objectContaining({ filters }), expect.any(AbortSignal)),
         { timeout },
@@ -1107,7 +1107,7 @@ describe('DataTable', () => {
     });
 
     it('gives a multiple select filter an array of strings, and summarizes a long list in its pill', async () => {
-      const columns: readonly Spec.Column<Person>[] = [
+      const columns: readonly Spec.TableColumn<Person>[] = [
         {
           key: 'city',
           header: 'City',
@@ -1150,7 +1150,7 @@ describe('DataTable', () => {
 
       it('loads its options while typing, from the minimum length on, and gives the chosen values', async () => {
         const load = createLoad();
-        const columns: readonly Spec.Column<Person>[] = [
+        const columns: readonly Spec.TableColumn<Person>[] = [
           { key: 'city', header: 'City', filter: autocompleteColumnFilter({ load, multiple: true }) },
         ];
         const { source } = renderNav({ columns });
@@ -1172,7 +1172,7 @@ describe('DataTable', () => {
           await typeInto(header, query);
           fireEvent.click(await screen.findByRole('option', { name: option }, { timeout: 1000 }));
         };
-        const columns: readonly Spec.Column<Person>[] = [
+        const columns: readonly Spec.TableColumn<Person>[] = [
           { key: 'city', header: 'City', filter: autocompleteColumnFilter({ load: createLoad(), multiple: true }) },
           {
             key: 'name',
@@ -1207,7 +1207,7 @@ describe('DataTable', () => {
 
       it('does not load below the minimum length, and says why', async () => {
         const load = createLoad();
-        const columns: readonly Spec.Column<Person>[] = [
+        const columns: readonly Spec.TableColumn<Person>[] = [
           { key: 'city', header: 'City', filter: autocompleteColumnFilter({ load, minQueryLength: 2 }) },
         ];
 
@@ -1232,7 +1232,7 @@ describe('DataTable', () => {
 
           return [];
         });
-        const columns: readonly Spec.Column<Person>[] = [
+        const columns: readonly Spec.TableColumn<Person>[] = [
           { key: 'city', header: 'City', filter: autocompleteColumnFilter({ load }) },
         ];
 
@@ -1249,7 +1249,7 @@ describe('DataTable', () => {
 
       it('shows the label of a single value in its input, and Enter there chooses instead of applying', async () => {
         const load = createLoad();
-        const columns: readonly Spec.Column<Person>[] = [
+        const columns: readonly Spec.TableColumn<Person>[] = [
           { key: 'city', header: 'City', filter: autocompleteColumnFilter({ load }) },
         ];
         const { source } = renderNav({ columns });
@@ -1269,7 +1269,7 @@ describe('DataTable', () => {
     });
 
     it('shows the placeholder of a select filter only while nothing is selected', async () => {
-      const columns: readonly Spec.Column<Person>[] = [
+      const columns: readonly Spec.TableColumn<Person>[] = [
         { key: 'city', header: 'City', filter: selectColumnFilter({ options: ['Vienna', 'Berlin'] }) },
         { key: 'name', header: 'Name', filter: selectColumnFilter({ options: ['Ann', 'Bob'], multiple: true }) },
       ];
@@ -1287,12 +1287,12 @@ describe('DataTable', () => {
     });
 
     it('gives a number range filter `{ from?, to? }`, inclusive, with an open side when one is empty', async () => {
-      const columns: readonly Spec.Column<Person>[] = [
+      const columns: readonly Spec.TableColumn<Person>[] = [
         { key: 'id', header: 'Id', filter: numberRangeColumnFilter() },
       ];
       const { source } = renderNav({ columns });
       const side = (name: 'From' | 'To') => screen.getByRole('spinbutton', { name: `Id ${name}` });
-      const apply = async (from: string, to: string, filters: Spec.Query['filters'], pill: string) => {
+      const apply = async (from: string, to: string, filters: Spec.RowQuery['filters'], pill: string) => {
         await openFilters();
         fireEvent.change(side('From'), { target: { value: from } });
         fireEvent.change(side('To'), { target: { value: to } });
@@ -1310,7 +1310,7 @@ describe('DataTable', () => {
     });
 
     it('gives a boolean filter true or false, and All removes it', async () => {
-      const columns: readonly Spec.Column<Person>[] = [
+      const columns: readonly Spec.TableColumn<Person>[] = [
         { key: 'id', header: 'Paid', filter: booleanColumnFilter() },
       ];
       const { source } = renderNav({ columns });
@@ -1331,7 +1331,7 @@ describe('DataTable', () => {
     });
 
     it('gives a date range filter the range picked in its two calendars, shows it formatted, and clears it', async () => {
-      const columns: readonly Spec.Column<Person>[] = [
+      const columns: readonly Spec.TableColumn<Person>[] = [
         { key: 'city', header: 'Moved in', filter: dateRangeColumnFilter() },
       ];
 
@@ -1477,8 +1477,8 @@ describe('DataTable', () => {
     it('keeps the filter button usable while loading and blocks the rest of the table', async () => {
       let calls = 0;
 
-      const source = (query: Spec.Query) =>
-        ++calls === 1 ? createSource()(query) : new Promise<Spec.Result<Person>>(() => {});
+      const source = (query: Spec.RowQuery) =>
+        ++calls === 1 ? createSource()(query) : new Promise<Spec.RowPage<Person>>(() => {});
 
       renderNav({ columns: filteredColumns, source });
 
@@ -2024,8 +2024,8 @@ describe('DataTable', () => {
 
     it('keeps the search box usable while loading and blocks everything else', async () => {
       let calls = 0;
-      const source = (query: Spec.Query) =>
-        ++calls === 1 ? createSource()(query) : new Promise<Spec.Result<Person>>(() => {});
+      const source = (query: Spec.RowQuery) =>
+        ++calls === 1 ? createSource()(query) : new Promise<Spec.RowPage<Person>>(() => {});
 
       renderNav({
         searchable: true,
@@ -3281,7 +3281,7 @@ describe('DataTable', () => {
   describe('menu separators', () => {
     const noop = () => {};
 
-    const general = (key: string, label: string): Spec.Action<Person> => ({
+    const general = (key: string, label: string): Spec.TableAction<Person> => ({
       type: 'general',
       key,
       label,
@@ -3290,7 +3290,7 @@ describe('DataTable', () => {
 
     const separator = (): Spec.ActionSeparator => ({ type: 'separator' });
 
-    const menu = (...actions: (Spec.Action<Person> | Spec.ActionSeparator)[]): Spec.ActionMenu<Person> => ({
+    const menu = (...actions: (Spec.TableAction<Person> | Spec.ActionSeparator)[]): Spec.ActionMenu<Person> => ({
       type: 'menu',
 
       key: 'menu',
@@ -3317,7 +3317,7 @@ describe('DataTable', () => {
     });
 
     it('shows a separator only if a visible action follows it (a rows action is not visible without a selection)', async () => {
-      const rowsAction: Spec.Action<Person> = { type: 'multiRow', key: 'r', label: 'Action R', onClick: noop };
+      const rowsAction: Spec.TableAction<Person> = { type: 'multiRow', key: 'r', label: 'Action R', onClick: noop };
 
       const first = renderNav({ actions: [menu(general('a', 'Action A'), separator(), rowsAction)] });
 
@@ -3334,7 +3334,12 @@ describe('DataTable', () => {
       first.unmount();
 
       // (the selection bar has no general actions, so the menu starts with another rows action here)
-      const otherRowsAction: Spec.Action<Person> = { type: 'multiRow', key: 'q', label: 'Action Q', onClick: noop };
+      const otherRowsAction: Spec.TableAction<Person> = {
+        type: 'multiRow',
+        key: 'q',
+        label: 'Action Q',
+        onClick: noop,
+      };
 
       renderNav({ actions: [menu(otherRowsAction, separator(), rowsAction)] });
 
@@ -3374,7 +3379,7 @@ describe('DataTable', () => {
     });
 
     it('hides a menu that has no visible action, separators do not count', async () => {
-      const rowsAction: Spec.Action<Person> = { type: 'multiRow', key: 'r', label: 'Action R', onClick: noop };
+      const rowsAction: Spec.TableAction<Person> = { type: 'multiRow', key: 'r', label: 'Action R', onClick: noop };
 
       renderNav({ actions: [menu(separator(), rowsAction)] });
 
@@ -3465,7 +3470,7 @@ describe('DataTable', () => {
   });
 
   describe('context menu', () => {
-    const contextActions = (calls: string[]): readonly (Spec.Action<Person> | Spec.ActionMenu<Person>)[] => [
+    const contextActions = (calls: string[]): readonly (Spec.TableAction<Person> | Spec.ActionMenu<Person>)[] => [
       { type: 'general', key: 'add', label: 'Add', onClick: () => calls.push('add') },
       {
         type: 'multiRow',
@@ -3601,7 +3606,7 @@ describe('DataTable', () => {
     const onEdit = vi.fn();
     const onDelete = vi.fn();
 
-    const actions: readonly Spec.Action<Person>[] = [
+    const actions: readonly Spec.TableAction<Person>[] = [
       { type: 'general', key: 'add', label: 'Add', onClick: onAdd },
       { type: 'singleRow', key: 'edit', label: 'Edit', show: 'both', onClick: onEdit },
       { type: 'multiRow', key: 'delete', label: 'Delete', onClick: onDelete },
@@ -3648,7 +3653,7 @@ describe('DataTable', () => {
     it('shows a row action only for the rows it is visible for (visible), everywhere', async () => {
       const visit = vi.fn();
       const details = vi.fn();
-      const actions: readonly Spec.Action<Person>[] = [
+      const actions: readonly Spec.TableAction<Person>[] = [
         {
           type: 'singleRow',
           key: 'visit',
@@ -4205,8 +4210,8 @@ describe('DataTable', () => {
     it('blocks all interaction while loading and shows the spinner only after a delay', async () => {
       vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
 
-      let resolve: (result: Spec.Result<Person>) => void = () => {};
-      const source = () => new Promise<Spec.Result<Person>>((done) => (resolve = done));
+      let resolve: (result: Spec.RowPage<Person>) => void = () => {};
+      const source = () => new Promise<Spec.RowPage<Person>>((done) => (resolve = done));
       const { container } = renderNav({ source });
 
       expect(container.querySelector('[inert]')).not.toBeNull();
@@ -4233,8 +4238,8 @@ describe('DataTable', () => {
     it('places the loading overlay below the header and dims only the rows', async () => {
       vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
 
-      let resolve: (result: Spec.Result<Person>) => void = () => {};
-      const source = () => new Promise<Spec.Result<Person>>((done) => (resolve = done));
+      let resolve: (result: Spec.RowPage<Person>) => void = () => {};
+      const source = () => new Promise<Spec.RowPage<Person>>((done) => (resolve = done));
       const { container } = renderNav({ source });
       const root = container.querySelector('[aria-busy]')!;
 
@@ -4267,7 +4272,7 @@ describe('DataTable', () => {
     it('gives the rows area a minimum height, and shows a thin gray bar at its top instead of a spinner', async () => {
       vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
 
-      const { container } = renderNav({ source: () => new Promise<Spec.Result<Person>>(() => {}) });
+      const { container } = renderNav({ source: () => new Promise<Spec.RowPage<Person>>(() => {}) });
 
       // no rows yet (first load): the table must not collapse to the header alone
       expect(container.querySelectorAll('[role="row"]')).toHaveLength(1);
@@ -4294,7 +4299,7 @@ describe('DataTable', () => {
       try {
         vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
 
-        const { container } = renderNav({ source: () => new Promise<Spec.Result<Person>>(() => {}) });
+        const { container } = renderNav({ source: () => new Promise<Spec.RowPage<Person>>(() => {}) });
 
         act(() => {
           vi.advanceTimersByTime(250);
@@ -4308,10 +4313,10 @@ describe('DataTable', () => {
 
     it('aborts the running load when a newer one starts', async () => {
       const signals: AbortSignal[] = [];
-      const source = (_query: Spec.Query, signal: AbortSignal) => {
+      const source = (_query: Spec.RowQuery, signal: AbortSignal) => {
         signals.push(signal);
 
-        return new Promise<Spec.Result<Person>>(() => {});
+        return new Promise<Spec.RowPage<Person>>(() => {});
       };
 
       renderNav({ source });
@@ -4328,10 +4333,10 @@ describe('DataTable', () => {
 
     it('aborts the running load on unmount', () => {
       const signals: AbortSignal[] = [];
-      const source = (_query: Spec.Query, signal: AbortSignal) => {
+      const source = (_query: Spec.RowQuery, signal: AbortSignal) => {
         signals.push(signal);
 
-        return new Promise<Spec.Result<Person>>(() => {});
+        return new Promise<Spec.RowPage<Person>>(() => {});
       };
 
       const { unmount } = renderNav({ source });
@@ -4347,8 +4352,8 @@ describe('DataTable', () => {
       const error = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       try {
-        const source = (_query: Spec.Query, signal: AbortSignal) =>
-          new Promise<Spec.Result<Person>>((_resolve, reject) => {
+        const source = (_query: Spec.RowQuery, signal: AbortSignal) =>
+          new Promise<Spec.RowPage<Person>>((_resolve, reject) => {
             signal.addEventListener('abort', () => reject(signal.reason), { once: true });
           });
 
@@ -4370,9 +4375,9 @@ describe('DataTable', () => {
     });
 
     it('ignores the response of an outdated request', async () => {
-      const resolvers: ((result: Spec.Result<Person>) => void)[] = [];
-      const source = () => new Promise<Spec.Result<Person>>((done) => resolvers.push(done));
-      const rowOf = (name: string): Spec.Result<Person> => ({ rows: [{ id: 1, name, city: '-' }], total: 1 });
+      const resolvers: ((result: Spec.RowPage<Person>) => void)[] = [];
+      const source = () => new Promise<Spec.RowPage<Person>>((done) => resolvers.push(done));
+      const rowOf = (name: string): Spec.RowPage<Person> => ({ rows: [{ id: 1, name, city: '-' }], total: 1 });
 
       renderNav({ source });
       fireEvent.click(screen.getByRole('button', { name: 'Name' }));
@@ -4429,7 +4434,7 @@ describe('DataTable', () => {
 
     it('translates the default placeholder of a text filter', async () => {
       const German = createDataTableComponent({ i18n: shared(adapterOf({ filterPlaceholder: 'Filtern' })) });
-      const filtered: readonly Spec.Column<Person>[] = [
+      const filtered: readonly Spec.TableColumn<Person>[] = [
         { key: 'name', header: 'Name', filter: textColumnFilter() },
       ];
 
@@ -4442,7 +4447,7 @@ describe('DataTable', () => {
 
     it('formats numbers in the locale of the adapter', async () => {
       const German = createDataTableComponent({ i18n: shared(adapterOf({}, 'de-DE')) });
-      const many = async (query: Spec.Query) => ({ ...(await createSource()(query)), total: 12345 });
+      const many = async (query: Spec.RowQuery) => ({ ...(await createSource()(query)), total: 12345 });
 
       render(<German source={many} rowKey="id" columns={columns} pageSize={10} />);
 
@@ -4508,9 +4513,10 @@ describe('DataTable', () => {
     it('throws a TypeError for an unknown i18n type (e.g. an adapter given directly)', () => {
       const adapter = adapterOf({});
 
-      expect(() => createDataTableComponent({ i18n: adapter as unknown as Spec.Config['i18n'] })).toThrow(
-        TypeError,
-      );
+      expect(() => createDataTableComponent({ i18n: adapter as unknown as Spec.DataTableComponentConfig['i18n'] }))
+        .toThrow(
+          TypeError,
+        );
     });
   });
 });
@@ -4870,7 +4876,7 @@ describe('toolbar', () => {
   });
 
   it('puts Reload and the search box on the left, then the free space, the filter button, a divider and the actions', async () => {
-    const filtered: readonly Spec.Column<Person>[] = [
+    const filtered: readonly Spec.TableColumn<Person>[] = [
       { key: 'name', header: 'Name', filter: textColumnFilter() },
     ];
     const { container } = render(
@@ -5164,7 +5170,7 @@ describe('column toggle menu', () => {
   });
 
   it('shows and hides the hideable columns, starts with `hidden`, and never hides the last shown column', async () => {
-    const toggled: readonly Spec.Column<Person>[] = [
+    const toggled: readonly Spec.TableColumn<Person>[] = [
       { key: 'name', header: 'Name' },
       { key: 'city', header: 'City', hideable: true },
       { key: 'id', header: 'Id', hideable: true, hidden: true },
@@ -5191,7 +5197,7 @@ describe('column toggle menu', () => {
   });
 
   it('keeps the last shown column: its item is disabled', async () => {
-    const toggled: readonly Spec.Column<Person>[] = [
+    const toggled: readonly Spec.TableColumn<Person>[] = [
       { key: 'name', header: 'Name', hideable: true },
       { key: 'city', header: 'City', hideable: true, hidden: true },
     ];
@@ -5398,7 +5404,7 @@ describe('row hover', () => {
 
 describe('controller', () => {
   // A table with a controller, and buttons outside of it that use the controller, like an app would.
-  function Controlled(props: { source: Spec.Source<Person> }): ReactElement {
+  function Controlled(props: { source: Spec.RowSource<Person> }): ReactElement {
     const nav = useDataTableController<Person>();
     const selected = useDataTableSelection(nav);
 
@@ -5443,7 +5449,7 @@ describe('controller', () => {
 
   it('goes to the last page that still exists when a reload returns fewer rows', async () => {
     let total = 60;
-    const source = vi.fn(async (query: Spec.Query): Promise<Spec.Result<Person>> => ({
+    const source = vi.fn(async (query: Spec.RowQuery): Promise<Spec.RowPage<Person>> => ({
       rows: people.slice((query.page - 1) * query.pageSize, Math.min(query.page * query.pageSize, total)),
       total,
     }));
@@ -5613,7 +5619,7 @@ describe('row grouping', () => {
   const dataRows = () => document.querySelectorAll('[role="row"][data-row-key]');
 
   // The source with the totals of the groups on the page.
-  function withTotals(source: ReturnType<typeof createSource>): Spec.Source<Person> {
+  function withTotals(source: ReturnType<typeof createSource>): Spec.RowSource<Person> {
     return async (query) => {
       const result = await source(query);
       const keys = [...new Set(result.rows.map(groupOf))];
@@ -5727,7 +5733,7 @@ describe('row grouping', () => {
   });
 
   describe('group actions', () => {
-    const groupActions = (calls: string[]): readonly Spec.Action<Person>[] => [
+    const groupActions = (calls: string[]): readonly Spec.TableAction<Person>[] => [
       {
         type: 'group',
         key: 'rename',
@@ -5792,7 +5798,7 @@ describe('row grouping', () => {
   describe('with reorder', () => {
     // Persons 1 and 2 are in A, 3 in B, 4 has an empty group (the blank group).
     const sectionOf = (person: Person) => ({ 1: 'A', 2: 'A', 3: 'B' })[person.id] ?? '';
-    const source = async (): Promise<Spec.Result<Person>> => ({
+    const source = async (): Promise<Spec.RowPage<Person>> => ({
       rows: people.slice(0, 4),
       total: 4,
       groups: [{ key: 'A', total: 2 }, { key: 'B', total: 1 }, { key: '', total: 1 }],
@@ -5856,7 +5862,7 @@ describe('row grouping', () => {
     it('shows the empty groups of the source, and moves a row into one', async () => {
       const reorder = vi.fn();
       // E has no rows: its header comes where `groups` puts it, between A and B.
-      const withEmpty = async (): Promise<Spec.Result<Person>> => ({
+      const withEmpty = async (): Promise<Spec.RowPage<Person>> => ({
         ...(await source()),
         groups: [{ key: 'A', total: 2 }, { key: 'E', total: 0 }, { key: 'B', total: 1 }, { key: '', total: 1 }],
       });
@@ -5893,7 +5899,7 @@ describe('row grouping', () => {
     });
 
     it('expands a collapsed empty group a row is moved into, and keeps a collapsed group with rows collapsed', async () => {
-      const withEmpty = async (): Promise<Spec.Result<Person>> => ({
+      const withEmpty = async (): Promise<Spec.RowPage<Person>> => ({
         ...(await source()),
         groups: [{ key: 'A', total: 2 }, { key: 'E', total: 0 }, { key: 'B', total: 1 }, { key: '', total: 1 }],
       });
@@ -5921,7 +5927,7 @@ describe('row grouping', () => {
 });
 
 describe('row editing', () => {
-  const editColumns: readonly Spec.Column<Person>[] = [
+  const editColumns: readonly Spec.TableColumn<Person>[] = [
     { key: 'name', header: 'Name', edit: textColumnEditor() },
     { key: 'city', header: 'City', edit: selectColumnEditor({ options: ['Vienna', 'Berlin'] }) },
   ];
@@ -5929,9 +5935,9 @@ describe('row editing', () => {
   type EditableProps = {
     saveRow?: Spec.SaveRow<Person>;
     createRow?: Spec.CreateRow<Person>;
-    columns?: readonly Spec.Column<Person>[];
+    columns?: readonly Spec.TableColumn<Person>[];
     editFields?: readonly Spec.EditField<Person>[];
-    source?: Spec.Source<Person>;
+    source?: Spec.RowSource<Person>;
   };
 
   // A table whose "Edit" (a row action, the default one) opens the edit form through the controller, and whose "Add"

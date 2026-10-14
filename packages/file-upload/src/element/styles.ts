@@ -2,7 +2,7 @@ import type * as Spec from '../api/index.js';
 
 export { createStyleSheet, DEFAULT_THEME, DENSITY_PADDING };
 
-type ResolvedTheme = Required<Spec.Theme>;
+type ResolvedTheme = Required<Spec.FileUploadTheme>;
 
 // The vertical padding (in em) of the rows of the list and of the drop line, per density. Only these change. The rows
 // match the data table's (4px, 8px, 16px at 14px).
@@ -10,7 +10,7 @@ const DENSITY_PADDING = {
   compact: { row: 0.286, drop: 0.571 },
   normal: { row: 0.571, drop: 0.857 },
   comfortable: { row: 1.143, drop: 1.429 },
-} as const satisfies Record<Spec.Density, { row: number; drop: number }>;
+} as const satisfies Record<Spec.UploadDensity, { row: number; drop: number }>;
 
 const DEFAULT_THEME = {
   accentColor: { light: '#228be6', dark: '#1c7ed6' },
@@ -30,7 +30,7 @@ const DEFAULT_THEME = {
 // The stylesheet of one element class: our CSS with the values of the theme put in, followed by the extra `styles`.
 // With `adoptedStyleSheets` it is shared by all elements of the class; where that is missing, each element gets a copy
 // in a `<style>`.
-function createStyleSheet(config: Spec.Config): CSSStyleSheet | string {
+function createStyleSheet(config: Spec.FileUploadClassConfig): CSSStyleSheet | string {
   const css = `${createCss({ ...DEFAULT_THEME, ...config.theme })}\n${config.styles ?? ''}`;
 
   if (typeof CSSStyleSheet === 'function' && 'replaceSync' in CSSStyleSheet.prototype) {

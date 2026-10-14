@@ -20,8 +20,8 @@ type ToolbarProps<Row> = {
   // The pinned general actions: at the start of the bar and of the selection bar.
   pinnedActions: readonly ActionItem<Row>[];
   selectionActions: readonly ActionItem<Row>[];
-  invoke: (action: Spec.Action<Row>) => void;
-  texts: Spec.Texts;
+  invoke: (action: Spec.TableAction<Row>) => void;
+  texts: Spec.DataTableTexts;
   search: SearchBox | undefined;
   reload: (() => void) | undefined;
   // The filter button with its popup, when a column has a filter.
@@ -207,7 +207,7 @@ function Toolbar<Row>(props: ToolbarProps<Row>): ReactElement | null {
 // The pinned actions: ghost buttons like the view controls (navigation, e.g. "Up"), unless the app gives one a
 // `primary` or `danger` variant: then it is the filled button of that variant, like the other actions (2026-10-10).
 function PinnedActions<Row>(
-  { items, invoke }: { items: readonly ActionItem<Row>[]; invoke: (action: Spec.Action<Row>) => void },
+  { items, invoke }: { items: readonly ActionItem<Row>[]; invoke: (action: Spec.TableAction<Row>) => void },
 ): ReactElement {
   return (
     <>

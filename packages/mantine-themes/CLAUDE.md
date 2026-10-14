@@ -17,8 +17,9 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 - This package knows nothing of the root's design language (`ui.css`, its `--ui-*` tokens): it depends only on
   Mantine (an exception to the design language rule of `css.md`).
 - `src/api/theme.ts` holds the API types (2026-10-12; `src/api.ts` with the namespace `MantineThemes` before): all
-  of them are about the theme, so one file; `src/api/index.ts` re-exports it. `src/index.ts` exports them as the type
-  namespace `mantineThemes` (`import type { mantineThemes } from '@local/mantine-themes'`, `mantineThemes.Options`).
+  of them are about the theme, so one file (no barrel since 2026-10-14). `src/index.ts` exports them flat
+  (2026-10-14; the namespace `mantineThemes` for two days): `ThemeOptions`, `ThemeSize`, `ThemeVariant`,
+  `ColorSetupName` (`Options`, `Size`, `Variant`, `ColorName` before), `ColorSetup`, `ThemeBundle`.
 - Always add the decisions (also small ones) to this file, in the same step as the code.
 
 ## Decided (2026-10-04)
