@@ -18,6 +18,11 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 - Its own code style: double quotes, no dprint (the `.js` suffixes on relative imports are the rule of every package
   since 2026-10-13, `typescript.md`).
 - The demo rules are in the comment of `src/demo/OverlaysDemo.ts`.
+- `exports` in `package.json` (2026-10-15, the user's choice; proposed at about 70%, over an alias per package and
+  entry in the root): the entries `.` and `./react` have a `source` condition first, their files in `src/`, then
+  the built files in `dist/`. The root's demo resolves the package by name (`@local/…`) to its sources by that
+  condition (its `vite.config.ts` and `tsconfig.json`); everywhere else, a customer's copy too, the condition is
+  ignored and `dist/` counts.
 - The API types live in `src/main/api/` (2026-10-12, `typescript.md`; `dialogs/contract/` and `toasts/contract/`
   before, types and runtime code mixed):
   - `dialogs/` (`dialog.ts`, `adapter.ts`, `content.ts`, `theme.ts`, `texts.ts`), `toasts/` (`toast.ts`, `adapter.ts`,

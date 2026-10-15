@@ -7,15 +7,17 @@ import type * as Spec from './api/react/index.js';
 import { useDataTableController, useDataTableSelection } from './core/controllerHooks.js';
 import { dateColumnEditor, selectColumnEditor, textColumnEditor } from './core/view/ColumnEditors.js';
 import {
-  autocompleteColumnFilter,
-  booleanColumnFilter,
-  dateRangeColumnFilter,
-  numberRangeColumnFilter,
-  selectColumnFilter,
-  textColumnFilter,
+  autocompleteFilter,
+  booleanFilter,
+  dateRangeFilter,
+  numberRangeFilter,
+  selectFilter,
+  textFilter,
 } from './core/view/ColumnFilters.js';
 import baseStylesheet from './core/view/DataTable.css?raw';
+import { generalAction, groupAction, multiRowAction, singleRowAction } from './react/actionBuilders.js';
 import { createDataTableComponent } from './react/createDataTableComponent.js';
+import { defineActions, defineColumns, defineFilters } from './react/definitions.js';
 import { antdTheme } from './themes/antd.js';
 import { defaultTheme } from './themes/default.js';
 import { mantineTheme } from './themes/mantine.js';
@@ -729,9 +731,10 @@ describe('DataTable', () => {
 
   describe('column filters', () => {
     const filteredColumns: readonly Spec.TableColumn<Person>[] = [
-      { key: 'name', header: 'Name', filter: textColumnFilter() },
-      { key: 'city', header: 'City', filter: selectColumnFilter({ options: ['Vienna', 'Berlin'] }) },
+      { key: 'name', header: 'Name' },
+      { key: 'city', header: 'City' },
     ];
+    const filteredFilters = { name: textFilter(), city: selectFilter({ options: ['Vienna', 'Berlin'] }) };
 
     const nameBox = () => screen.getByRole('textbox', { name: 'Name' });
 
@@ -740,7 +743,7 @@ describe('DataTable', () => {
     // Skipped while the filter drawer prototype replaces the filter view (2026-10-09, `FILTER_SIDEBAR` in
     // DataTableView.tsx): it tests the filter view.
     it.skip('makes the filter view only as wide as its filters, ending at the filter button', async () => {
-      render(<Nav source={createSource()} rowKey="id" columns={filteredColumns} />);
+      render(<Nav source={createSource()} rowKey="id" columns={filteredColumns} filters={filteredFilters} />);
       await loaded();
 
       const view = await openFilters();
@@ -773,7 +776,10 @@ describe('DataTable', () => {
     // Skipped while the filter drawer prototype replaces the filter view (2026-10-09, `FILTER_SIDEBAR` in
     // DataTableView.tsx): it tests the filter view.
     it.skip('shows the filter view in place of the rows, with one row per filter and the header as its label', async () => {
-      const { container } = renderNav({ columns: [...filteredColumns, { key: 'id', header: 'Id' }] });
+      const { container } = renderNav({
+        filters: filteredFilters,
+        columns: [...filteredColumns, { key: 'id', header: 'Id' }],
+      });
 
       await loaded();
 
@@ -815,12 +821,32 @@ describe('DataTable', () => {
       expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Filters' }));
     });
 
+    it('takes its filters from `filters`, in their order, each labeled by the header of its column, else by its key', async () => {
+      renderNav({
+        columns: [
+          { key: 'name', header: 'Name' },
+          { key: 'city', header: 'City' },
+        ],
+        filters: { city: selectFilter({ options: ['Vienna', 'Berlin'] }), nickname: textFilter() },
+      });
+
+      await loaded();
+      await openFilters();
+
+      expect([...document.querySelectorAll('.data-table__filter-panel-label')].map((label) => label.textContent))
+        .toEqual(['City', 'nickname']);
+      expect(screen.getByRole('textbox', { name: 'nickname' })).toBeTruthy();
+      // no filter for the name: its column has none
+      expect(screen.queryByRole('textbox', { name: 'Name' })).toBeNull();
+    });
+
     it('shows the localized default placeholder in a text filter, or the one of the app', async () => {
       renderNav({
         columns: [
-          { key: 'name', header: 'Name', filter: textColumnFilter() },
-          { key: 'city', header: 'City', filter: textColumnFilter({ placeholder: 'e.g. Vienna' }) },
+          { key: 'name', header: 'Name' },
+          { key: 'city', header: 'City' },
         ],
+        filters: { name: textFilter(), city: textFilter({ placeholder: 'e.g. Vienna' }) },
       });
 
       await loaded();
@@ -833,7 +859,7 @@ describe('DataTable', () => {
     // Skipped while the filter drawer prototype replaces the filter view (2026-10-09, `FILTER_SIDEBAR` in
     // DataTableView.tsx): it tests the filter view.
     it.skip('applies nothing before Apply, then all filters at once, on the first page', async () => {
-      const { source } = renderNav({ columns: filteredColumns });
+      const { source } = renderNav({ columns: filteredColumns, filters: filteredFilters });
 
       await loaded();
       click('Next page');
@@ -865,7 +891,7 @@ describe('DataTable', () => {
     });
 
     it('applies on Enter in a text input', async () => {
-      const { source } = renderNav({ columns: filteredColumns });
+      const { source } = renderNav({ columns: filteredColumns, filters: filteredFilters });
 
       await loaded();
       await openFilters();
@@ -876,7 +902,7 @@ describe('DataTable', () => {
     });
 
     it('throws the draft away when the popup is closed without Apply', async () => {
-      const { source } = renderNav({ columns: filteredColumns });
+      const { source } = renderNav({ columns: filteredColumns, filters: filteredFilters });
 
       await loaded();
 
@@ -894,7 +920,7 @@ describe('DataTable', () => {
 
     it('closes on a click outside while nothing was changed, and that click does nothing else', async () => {
       const onClick = vi.fn();
-      const { source } = renderNav({ columns: filteredColumns });
+      const { source } = renderNav({ columns: filteredColumns, filters: filteredFilters });
 
       await loaded();
       await openFilters();
@@ -909,7 +935,7 @@ describe('DataTable', () => {
     });
 
     it('stays open on a click outside once something was changed, and on a click inside', async () => {
-      renderNav({ columns: filteredColumns });
+      renderNav({ columns: filteredColumns, filters: filteredFilters });
 
       await loaded();
       await openFilters();
@@ -921,7 +947,7 @@ describe('DataTable', () => {
     });
 
     it('gives a plain text filter (no match select by default) `contains`', async () => {
-      const { source } = renderNav({ columns: filteredColumns });
+      const { source } = renderNav({ columns: filteredColumns, filters: filteredFilters });
 
       await loaded();
       await openFilters();
@@ -933,7 +959,8 @@ describe('DataTable', () => {
 
     it('lets a text filter with `matchModes` match the start or the end instead, and shows where other text may be', async () => {
       const { source } = renderNav({
-        columns: [{ key: 'name', header: 'Name', filter: textColumnFilter({ matchModes: true }) }, filteredColumns[1]!],
+        columns: [{ key: 'name', header: 'Name' }, filteredColumns[1]!],
+        filters: { name: textFilter({ matchModes: true }), city: filteredFilters.city },
       });
 
       await loaded();
@@ -971,7 +998,7 @@ describe('DataTable', () => {
     });
 
     it('puts the draft back to the applied filters with Reset, empties it with Clear; Apply applies it', async () => {
-      const { source } = renderNav({ columns: filteredColumns });
+      const { source } = renderNav({ columns: filteredColumns, filters: filteredFilters });
 
       await loaded();
       await openFilters();
@@ -1011,7 +1038,7 @@ describe('DataTable', () => {
     });
 
     it('does not load again for equal filters', async () => {
-      const { source } = renderNav({ columns: filteredColumns });
+      const { source } = renderNav({ columns: filteredColumns, filters: filteredFilters });
 
       await loaded();
       await openFilters();
@@ -1034,7 +1061,7 @@ describe('DataTable', () => {
     // Skipped while the filter drawer prototype replaces the filter view (2026-10-09, `FILTER_SIDEBAR` in
     // DataTableView.tsx): it tests the filter view.
     it.skip('shows a pill per active filter: its × removes the filter, Clear all removes them all', async () => {
-      const { source } = renderNav({ columns: filteredColumns });
+      const { source } = renderNav({ columns: filteredColumns, filters: filteredFilters });
 
       await loaded();
       expect(document.querySelector('.data-table__filter-pills')).toBeNull();
@@ -1071,6 +1098,7 @@ describe('DataTable', () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const { source } = renderNav({
         columns: filteredColumns,
+        filters: filteredFilters,
         defaultFilters: { city: 'Berlin', unknown: 'x' },
       });
 
@@ -1091,7 +1119,7 @@ describe('DataTable', () => {
     });
 
     it('opens the popup with the filter of a pill focused when the pill is clicked', async () => {
-      const { source } = renderNav({ columns: filteredColumns });
+      const { source } = renderNav({ columns: filteredColumns, filters: filteredFilters });
 
       await loaded();
       await openFilters();
@@ -1111,10 +1139,12 @@ describe('DataTable', () => {
         {
           key: 'city',
           header: 'City',
-          filter: selectColumnFilter({ options: ['Vienna', 'Berlin', 'Lisbon', 'Madrid'], multiple: true }),
         },
       ];
-      const { source } = renderNav({ columns });
+      const filters = {
+        city: selectFilter({ options: ['Vienna', 'Berlin', 'Lisbon', 'Madrid'], multiple: true }),
+      };
+      const { source } = renderNav({ columns, filters });
 
       await loaded();
       await openFilters();
@@ -1151,9 +1181,10 @@ describe('DataTable', () => {
       it('loads its options while typing, from the minimum length on, and gives the chosen values', async () => {
         const load = createLoad();
         const columns: readonly Spec.TableColumn<Person>[] = [
-          { key: 'city', header: 'City', filter: autocompleteColumnFilter({ load, multiple: true }) },
+          { key: 'city', header: 'City' },
         ];
-        const { source } = renderNav({ columns });
+        const filters = { city: autocompleteFilter({ load, multiple: true }) };
+        const { source } = renderNav({ columns, filters });
 
         await loaded();
         await openFilters();
@@ -1167,22 +1198,51 @@ describe('DataTable', () => {
         expect(pillTexts()).toEqual(['City:Berlin, Vienna']);
       });
 
+      it('keeps the labels of its pill when it is made anew on every render', async () => {
+        const load = createLoad();
+        const source = createSource();
+        // A new filter on every render (no `useMemo`): the table keeps the labels, not the filter.
+        const App = (_: { renders: number }) => (
+          <Nav
+            source={source}
+            rowKey="id"
+            pageSize={10}
+            columns={[{ key: 'city', header: 'City' }]}
+            filters={{ city: autocompleteFilter({ load }) }}
+          />
+        );
+        const { rerender } = render(<App renders={0} />);
+
+        await loaded();
+        await openFilters();
+        await typeInto('City', 'Ber');
+        fireEvent.click(await screen.findByRole('option', { name: 'Berlin' }, { timeout: 1000 }));
+        click('Apply');
+        await filteredWith(source, { city: 'berlin' }, 300);
+        rerender(<App renders={1} />);
+
+        expect(pillTexts()).toEqual(['City:Berlin']);
+      });
+
       it('shows the values as text by default, or up to `maxChips` chips and `+N`; Backspace removes the last one', async () => {
         const choose = async (header: string, query: string, option: string) => {
           await typeInto(header, query);
           fireEvent.click(await screen.findByRole('option', { name: option }, { timeout: 1000 }));
         };
         const columns: readonly Spec.TableColumn<Person>[] = [
-          { key: 'city', header: 'City', filter: autocompleteColumnFilter({ load: createLoad(), multiple: true }) },
+          { key: 'city', header: 'City' },
           {
             key: 'name',
             header: 'Name',
-            filter: autocompleteColumnFilter({ load: createLoad(), multiple: true, maxChips: 1 }),
           },
         ];
+        const filters = {
+          city: autocompleteFilter({ load: createLoad(), multiple: true }),
+          name: autocompleteFilter({ load: createLoad(), multiple: true, maxChips: 1 }),
+        };
         const fieldOf = (header: string) => filterField(header).parentElement!;
 
-        renderNav({ columns });
+        renderNav({ columns, filters });
 
         await loaded();
         await openFilters();
@@ -1208,10 +1268,11 @@ describe('DataTable', () => {
       it('does not load below the minimum length, and says why', async () => {
         const load = createLoad();
         const columns: readonly Spec.TableColumn<Person>[] = [
-          { key: 'city', header: 'City', filter: autocompleteColumnFilter({ load, minQueryLength: 2 }) },
+          { key: 'city', header: 'City' },
         ];
+        const filters = { city: autocompleteFilter({ load, minQueryLength: 2 }) };
 
-        renderNav({ columns });
+        renderNav({ columns, filters });
 
         await loaded();
         await openFilters();
@@ -1233,10 +1294,11 @@ describe('DataTable', () => {
           return [];
         });
         const columns: readonly Spec.TableColumn<Person>[] = [
-          { key: 'city', header: 'City', filter: autocompleteColumnFilter({ load }) },
+          { key: 'city', header: 'City' },
         ];
+        const filters = { city: autocompleteFilter({ load }) };
 
-        renderNav({ columns });
+        renderNav({ columns, filters });
 
         await loaded();
         await openFilters();
@@ -1250,9 +1312,10 @@ describe('DataTable', () => {
       it('shows the label of a single value in its input, and Enter there chooses instead of applying', async () => {
         const load = createLoad();
         const columns: readonly Spec.TableColumn<Person>[] = [
-          { key: 'city', header: 'City', filter: autocompleteColumnFilter({ load }) },
+          { key: 'city', header: 'City' },
         ];
-        const { source } = renderNav({ columns });
+        const filters = { city: autocompleteFilter({ load }) };
+        const { source } = renderNav({ columns, filters });
 
         await loaded();
         await openFilters();
@@ -1270,11 +1333,15 @@ describe('DataTable', () => {
 
     it('shows the placeholder of a select filter only while nothing is selected', async () => {
       const columns: readonly Spec.TableColumn<Person>[] = [
-        { key: 'city', header: 'City', filter: selectColumnFilter({ options: ['Vienna', 'Berlin'] }) },
-        { key: 'name', header: 'Name', filter: selectColumnFilter({ options: ['Ann', 'Bob'], multiple: true }) },
+        { key: 'city', header: 'City' },
+        { key: 'name', header: 'Name' },
       ];
+      const filters = {
+        city: selectFilter({ options: ['Vienna', 'Berlin'] }),
+        name: selectFilter({ options: ['Ann', 'Bob'], multiple: true }),
+      };
 
-      renderNav({ columns });
+      renderNav({ columns, filters });
 
       await loaded();
       await openFilters();
@@ -1288,9 +1355,10 @@ describe('DataTable', () => {
 
     it('gives a number range filter `{ from?, to? }`, inclusive, with an open side when one is empty', async () => {
       const columns: readonly Spec.TableColumn<Person>[] = [
-        { key: 'id', header: 'Id', filter: numberRangeColumnFilter() },
+        { key: 'id', header: 'Id' },
       ];
-      const { source } = renderNav({ columns });
+      const filters = { id: numberRangeFilter() };
+      const { source } = renderNav({ columns, filters });
       const side = (name: 'From' | 'To') => screen.getByRole('spinbutton', { name: `Id ${name}` });
       const apply = async (from: string, to: string, filters: Spec.RowQuery['filters'], pill: string) => {
         await openFilters();
@@ -1311,9 +1379,10 @@ describe('DataTable', () => {
 
     it('gives a boolean filter true or false, and All removes it', async () => {
       const columns: readonly Spec.TableColumn<Person>[] = [
-        { key: 'id', header: 'Paid', filter: booleanColumnFilter() },
+        { key: 'id', header: 'Paid' },
       ];
-      const { source } = renderNav({ columns });
+      const filters = { id: booleanFilter() };
+      const { source } = renderNav({ columns, filters });
 
       await loaded();
       await openFilters();
@@ -1332,10 +1401,11 @@ describe('DataTable', () => {
 
     it('gives a date range filter the range picked in its two calendars, shows it formatted, and clears it', async () => {
       const columns: readonly Spec.TableColumn<Person>[] = [
-        { key: 'city', header: 'Moved in', filter: dateRangeColumnFilter() },
+        { key: 'city', header: 'Moved in' },
       ];
+      const filters = { city: dateRangeFilter() };
 
-      const { source } = renderNav({ columns });
+      const { source } = renderNav({ columns, filters });
 
       await loaded();
 
@@ -1453,7 +1523,7 @@ describe('DataTable', () => {
     });
 
     it('clears the selection when filters are applied', async () => {
-      const { source } = renderNav({ columns: filteredColumns, selection: 'multi' });
+      const { source } = renderNav({ columns: filteredColumns, filters: filteredFilters, selection: 'multi' });
 
       await loaded();
       await openFilters();
@@ -1480,7 +1550,7 @@ describe('DataTable', () => {
       const source = (query: Spec.RowQuery) =>
         ++calls === 1 ? createSource()(query) : new Promise<Spec.RowPage<Person>>(() => {});
 
-      renderNav({ columns: filteredColumns, source });
+      renderNav({ columns: filteredColumns, filters: filteredFilters, source });
 
       await loaded();
       await openFilters();
@@ -1498,6 +1568,7 @@ describe('DataTable', () => {
     it.skip('disables everything of the bar but the filter button while the filter view is shown (the search stays apart)', async () => {
       renderNav({
         columns: [...filteredColumns, { key: 'id', header: 'Id', hideable: true }],
+        filters: filteredFilters,
         searchable: true,
         reloadable: true,
         actions: [{ type: 'general', key: 'add', label: 'Add', onClick: vi.fn() }],
@@ -1524,7 +1595,7 @@ describe('DataTable', () => {
     });
 
     it('says that no rows match the filters, with a way to clear them', async () => {
-      const { source } = renderNav({ columns: filteredColumns });
+      const { source } = renderNav({ columns: filteredColumns, filters: filteredFilters });
 
       await loaded();
       await openFilters();
@@ -1542,7 +1613,7 @@ describe('DataTable', () => {
     });
 
     it('joins a × to the filter button while filters are active: it removes all of them', async () => {
-      const { source } = renderNav({ columns: filteredColumns });
+      const { source } = renderNav({ columns: filteredColumns, filters: filteredFilters });
       const clear = () =>
         document.querySelector('.data-table__filter-button-group')?.querySelector<HTMLElement>(
           '[aria-label="Clear filters"]',
@@ -1566,7 +1637,7 @@ describe('DataTable', () => {
     });
 
     it('clears the filters with the × also while the filter view is shown, and closes the view', async () => {
-      const { source } = renderNav({ columns: filteredColumns });
+      const { source } = renderNav({ columns: filteredColumns, filters: filteredFilters });
       const clear = () =>
         document.querySelector('.data-table__filter-button-group')?.querySelector<HTMLElement>(
           '[aria-label="Clear filters"]',
@@ -1610,7 +1681,7 @@ describe('DataTable', () => {
 
       it('has no saved filters without `savedFilters`', async () => {
         withDrawer();
-        renderNav({ columns: filteredColumns });
+        renderNav({ columns: filteredColumns, filters: filteredFilters });
         await loaded();
 
         const drawer = await openFilters();
@@ -1623,7 +1694,7 @@ describe('DataTable', () => {
         withDrawer();
         const savedFilters = savedFiltersOf([]);
 
-        renderNav({ columns: filteredColumns, savedFilters });
+        renderNav({ columns: filteredColumns, filters: filteredFilters, savedFilters });
         await loaded();
 
         const drawer = await openFilters();
@@ -1657,7 +1728,7 @@ describe('DataTable', () => {
         const savedFilters = savedFiltersOf([]);
 
         savedFilters.save.mockRejectedValueOnce(new Error('Name taken'));
-        renderNav({ columns: filteredColumns, savedFilters });
+        renderNav({ columns: filteredColumns, filters: filteredFilters, savedFilters });
         await loaded();
 
         const drawer = await openFilters();
@@ -1673,7 +1744,11 @@ describe('DataTable', () => {
 
       it('loads a saved filter into the draft (Apply applies it), names the button after it, hides Save as…', async () => {
         withDrawer();
-        const { source } = renderNav({ columns: filteredColumns, savedFilters: savedFiltersOf() });
+        const { source } = renderNav({
+          columns: filteredColumns,
+          filters: filteredFilters,
+          savedFilters: savedFiltersOf(),
+        });
 
         await loaded();
 
@@ -1700,7 +1775,7 @@ describe('DataTable', () => {
           sharing: true,
         };
 
-        renderNav({ columns: filteredColumns, savedFilters });
+        renderNav({ columns: filteredColumns, filters: filteredFilters, savedFilters });
         await loaded();
 
         const drawer = await openFilters();
@@ -1737,7 +1812,7 @@ describe('DataTable', () => {
           setShared,
         };
 
-        renderNav({ columns: filteredColumns, savedFilters });
+        renderNav({ columns: filteredColumns, filters: filteredFilters, savedFilters });
         await loaded();
 
         const drawer = await openFilters();
@@ -1761,7 +1836,7 @@ describe('DataTable', () => {
       it('has them in the filter view too: loads one and saves the draft', async () => {
         // no drawer flag: the filter view
         const savedFilters = savedFiltersOf();
-        const { source } = renderNav({ columns: filteredColumns, savedFilters });
+        const { source } = renderNav({ columns: filteredColumns, filters: filteredFilters, savedFilters });
 
         await loaded();
 
@@ -1790,7 +1865,7 @@ describe('DataTable', () => {
 
       it('has no Share checkbox without `sharing`', async () => {
         withDrawer();
-        renderNav({ columns: filteredColumns, savedFilters: savedFiltersOf([]) });
+        renderNav({ columns: filteredColumns, filters: filteredFilters, savedFilters: savedFiltersOf([]) });
         await loaded();
 
         const drawer = await openFilters();
@@ -1804,7 +1879,7 @@ describe('DataTable', () => {
         withDrawer();
         const savedFilters = savedFiltersOf();
 
-        renderNav({ columns: filteredColumns, savedFilters });
+        renderNav({ columns: filteredColumns, filters: filteredFilters, savedFilters });
         await loaded();
 
         const drawer = await openFilters();
@@ -3967,10 +4042,11 @@ describe('DataTable', () => {
         renderDetail: () => <span>detail</span>,
         actions: [{ type: 'singleRow', key: 'edit', label: 'Edit', onClick: vi.fn() }],
         columns: [
-          { key: 'id', header: 'Id', filter: textColumnFilter() },
+          { key: 'id', header: 'Id' },
           { header: 'Group A', columns: [{ key: 'name', header: 'Name' }] },
           { header: 'Group B', columns: [{ key: 'city', header: 'City' }] },
         ],
+        filters: { id: textFilter() },
       });
       await loaded();
 
@@ -4435,10 +4511,11 @@ describe('DataTable', () => {
     it('translates the default placeholder of a text filter', async () => {
       const German = createDataTableComponent({ i18n: shared(adapterOf({ filterPlaceholder: 'Filtern' })) });
       const filtered: readonly Spec.TableColumn<Person>[] = [
-        { key: 'name', header: 'Name', filter: textColumnFilter() },
+        { key: 'name', header: 'Name' },
       ];
+      const filters = { name: textFilter() };
 
-      render(<German source={createSource()} rowKey="id" columns={filtered} pageSize={10} />);
+      render(<German source={createSource()} rowKey="id" columns={filtered} filters={filters} pageSize={10} />);
       await loaded();
       await openFilters();
 
@@ -4753,7 +4830,8 @@ describe('native widgets', () => {
       <Nav
         source={source}
         rowKey="id"
-        columns={[{ key: 'city', header: 'City', filter: selectColumnFilter({ options: ['Vienna', 'Berlin'] }) }]}
+        columns={[{ key: 'city', header: 'City' }]}
+        filters={{ city: selectFilter({ options: ['Vienna', 'Berlin'] }) }}
       />,
     );
     await loaded();
@@ -4798,9 +4876,9 @@ describe('native widgets', () => {
           {
             key: 'city',
             header: 'City',
-            filter: selectColumnFilter({ options: ['Vienna', 'Berlin'], multiple: true }),
           },
         ]}
+        filters={{ city: selectFilter({ options: ['Vienna', 'Berlin'], multiple: true }) }}
       />,
     );
     await loaded();
@@ -4877,10 +4955,19 @@ describe('toolbar', () => {
 
   it('puts Reload and the search box on the left, then the free space, the filter button, a divider and the actions', async () => {
     const filtered: readonly Spec.TableColumn<Person>[] = [
-      { key: 'name', header: 'Name', filter: textColumnFilter() },
+      { key: 'name', header: 'Name' },
     ];
+    const filters = { name: textFilter() };
     const { container } = render(
-      <Nav source={createSource()} rowKey="id" columns={filtered} searchable reloadable actions={[add]} />,
+      <Nav
+        source={createSource()}
+        rowKey="id"
+        columns={filtered}
+        filters={filters}
+        searchable
+        reloadable
+        actions={[add]}
+      />,
     );
     await loaded();
 
@@ -5056,6 +5143,77 @@ describe('toolbar', () => {
 
     expect(screen.getByRole('button', { name: 'Add' }).getAttribute('data-placement')).toBe('toolbar');
     expect(screen.getByRole('button', { name: 'Reload' }).getAttribute('data-placement')).toBe('tool');
+  });
+});
+
+describe('action builders', () => {
+  it('build the actions with their type filled in', () => {
+    const onClick = () => undefined;
+
+    expect(generalAction('add', onClick, { label: 'Add', variant: 'primary' })).toMatchObject({
+      type: 'general',
+      key: 'add',
+      label: 'Add',
+      variant: 'primary',
+    });
+    expect(singleRowAction('edit', onClick, { label: 'Edit', show: 'both' })).toMatchObject({
+      type: 'singleRow',
+      key: 'edit',
+      show: 'both',
+    });
+    expect(multiRowAction('delete', onClick, { label: 'Delete' })).toMatchObject({ type: 'multiRow', key: 'delete' });
+    expect(groupAction('open', onClick, { label: 'Open' })).toMatchObject({ type: 'group', key: 'open' });
+  });
+
+  it('run their handlers with the row or the selected rows, also handlers that return a promise', async () => {
+    const add = vi.fn(async () => undefined);
+    const edit = vi.fn(async (_person: Person) => undefined);
+    const remove = vi.fn((_people: readonly Person[]) => 'ignored');
+    const actions: readonly Spec.TableAction<Person>[] = [
+      generalAction('add', add, { label: 'Add' }),
+      singleRowAction('edit', edit, { label: 'Edit', show: 'column' }),
+      multiRowAction('delete', remove, { label: 'Delete' }),
+    ];
+
+    render(<Nav source={createSource()} rowKey="id" columns={columns} actions={actions} />);
+    await loaded();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Edit' })[0]!);
+    fireEvent.click(screen.getAllByRole('checkbox', { name: 'Select row' })[1]!);
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+
+    expect(add).toHaveBeenCalledTimes(1);
+    expect(edit).toHaveBeenCalledWith(people[0]);
+    expect(remove).toHaveBeenCalledWith([people[1]]);
+  });
+});
+
+describe('defineColumns, defineActions and defineFilters', () => {
+  it('return the columns and the actions as they are, typed by the rows', async () => {
+    const remove = vi.fn();
+    const defined = defineColumns<Person>([{ key: 'name', header: 'Name', render: (person) => person.name }]);
+    const actions = defineActions<Person>([multiRowAction('delete', remove, { label: 'Delete' })]);
+
+    render(<Nav source={createSource()} rowKey="id" columns={defined} actions={actions} />);
+    await loaded();
+
+    fireEvent.click(screen.getAllByRole('checkbox', { name: 'Select row' })[0]!);
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+
+    expect(defineColumns(columns)).toBe(columns);
+    expect(remove).toHaveBeenCalledWith([people[0]]);
+  });
+
+  it('returns the filters as they are', async () => {
+    const filters = defineFilters({ city: selectFilter({ options: ['Vienna', 'Berlin'] }) });
+
+    render(<Nav source={createSource()} rowKey="id" columns={columns} filters={filters} />);
+    await loaded();
+    await openFilters();
+
+    expect(defineFilters(filters)).toBe(filters);
+    expect(filterField('City')).toBeTruthy();
   });
 });
 
@@ -6408,5 +6566,53 @@ describe('cards in a narrow table', () => {
     fireEvent.click(await screen.findByRole('menuitemradio', { name: 'Table' }));
 
     expect(await screen.findByRole('table')).toBeTruthy();
+  });
+});
+
+describe('new props on every render', () => {
+  // An app without `useMemo`: new columns, actions and source functions on every render of its component (`renders`
+  // only makes the test render it again).
+  function App({ source }: { source: Spec.RowSource<Person>; renders: number }): ReactElement {
+    return (
+      <Nav
+        source={(query, signal) => source(query, signal)}
+        rowKey="id"
+        columns={[
+          { key: 'name', header: 'Name', sortable: true },
+          { key: 'city', header: 'City', hideable: true },
+        ]}
+        actions={[{ type: 'multiRow', key: 'rows', label: 'Rows action', onClick: () => {} }]}
+        pageSize={10}
+      />
+    );
+  }
+
+  it('keeps its state and loads nothing again', async () => {
+    const source = createSource();
+    const { rerender } = render(<App source={source} renders={0} />);
+
+    await loaded();
+    click('Name');
+    await loaded();
+    fireEvent.click(screen.getByRole('button', { name: 'Columns' }));
+    fireEvent.click(await screen.findByRole('menuitemcheckbox', { name: 'City' }));
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
+    fireEvent.click(screen.getAllByRole('checkbox', { name: 'Select row' })[0]!);
+
+    const calls = source.mock.calls.length;
+
+    for (let renders = 1; renders <= 3; renders++) {
+      rerender(<App source={source} renders={renders} />);
+    }
+
+    await loaded();
+
+    expect(source.mock.calls.length).toBe(calls);
+    expect(source).toHaveBeenLastCalledWith(
+      expect.objectContaining({ sort: { key: 'name', direction: 'asc' } }),
+      expect.any(AbortSignal),
+    );
+    expect(screen.getByText('1 selected')).toBeTruthy();
+    expect(screen.queryByRole('columnheader', { name: 'City' })).toBeNull();
   });
 });

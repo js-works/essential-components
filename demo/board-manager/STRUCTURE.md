@@ -27,8 +27,8 @@ files are moved to match them.
   │   │   ├── pages/          BoardsPage, BoardPage
   │   │   ├── components/     what only this feature needs (e.g. a table and its mapping to the criteria; boardFlows)
   │   │   └── index.ts        the only import path for other features
-  │   ├── meetings/           components/ MeetingsTable, Minutes; pdf/
-  │   ├── members/            components/ PeopleTable
+  │   ├── meetings/           components/ MeetingTable, Minutes; pdf/
+  │   ├── members/            components/ PersonTable
   │   ├── organizations/
   │   └── home/               the home page
   ├── infra/                  the implementations of the domain's interfaces; replaceable per subfolder
@@ -130,12 +130,21 @@ interface ProductRepository {
     directly (through its temporary `index.ts`), reads the store (`db`, `useDb`), and its fetch functions use the data
     table's types and return the row types. No repositories and services yet.
   - `shared/forms.tsx`: the forms of every feature (each belongs to its feature).
-  - `shared/shared.tsx`: a catch-all; partly not shared (`useDb`, the person and organization filters know the domain).
+  - `shared/shared.tsx`: a catch-all; partly not shared (`useDb` knows the domain). The person and organization
+    filters moved out (2026-10-15, the user's choice, proposed at about 65%; weighed: one `shared/ui/tableFilters.tsx`,
+    still domain in `shared/`), their two-line option to `shared/ui/suggestion.tsx` (no domain knowledge).
   - No feature has an `index.ts` yet; features import each other's files directly.
   - `features/home/`: the home page, a feature without its own data.
 
 ## Decisions
 
+- 2026-10-15 (the user's choice, proposed at about 70%; only the shared ones was weighed): a table filter of a domain
+  concept lives in the feature that owns the concept, in its `filters.tsx`, however many tables use it; generic ones
+  on plain fields (`textFilter()`, `dateRangeFilter()`) stay inline. One that needs texts or data is a function of
+  them, not a hook (hooks for a few hours: `useRoleFilter()`, …): it is called in a table's `filtersOf`, outside the
+  component. `members/` (`personFilter`, `roleFilter(t)`), `organizations/` (`organizationFilter`,
+  `countryFilter(organizations)`), `boards/` (`boardFilter(boards)`), `meetings/` (`meetingStatusFilter(t)`,
+  `minutesFilter(t)`, `documentTypeFilter`). The same rule in the other four apps (see the root's `CLAUDE.md`).
 - 2026-10-03: group by feature, with `app/` and `shared/` (not by layer).
 - 2026-10-03: a feature-based structure (not Feature-Sliced Design); every feature has its own `api/`, UI and
   `index.ts`. (Its `api/` became `service.ts`, see the services decision below.)

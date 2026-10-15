@@ -1,5 +1,5 @@
+import type { FilterValue, SavedFilter, SavedFilters } from '@local/data-table/react';
 import { useState } from 'react';
-import type { FilterValue, SavedFilter, SavedFilters } from '../../../../packages/data-table/src/react/index.js';
 
 export { daysFromToday, sharedBy, useSavedFilters };
 

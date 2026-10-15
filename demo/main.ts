@@ -1,6 +1,10 @@
 // The design language first, so the CSS of the demos comes after it.
 import './ui/ui.css';
 import './demo.css';
+import { createCockpitClass } from '@local/cockpit';
+import type { CockpitFooter, MenuSection } from '@local/cockpit';
+import { mountLoginScreen } from '@local/login';
+import type { MountedLoginScreen } from '@local/login';
 import {
   accentSetting,
   MENU,
@@ -9,10 +13,6 @@ import {
   USER,
   userMenu,
 } from '../packages/cockpit/demo/footer.js';
-import { createCockpitClass } from '../packages/cockpit/src/index.js';
-import type { CockpitFooter, MenuSection } from '../packages/cockpit/src/index.js';
-import { mountLoginScreen } from '../packages/login/src/index.js';
-import type { MountedLoginScreen } from '../packages/login/src/index.js';
 
 // The page: an app cockpit, with every demo as one of its mini-apps. The page's settings (in the cockpit's footer) set
 // `<html lang>` and the color scheme for every demo. Each demo is a light DOM custom element of its project, loaded

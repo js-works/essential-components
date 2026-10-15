@@ -5,7 +5,7 @@ import { effectivePermissions, groupsOf } from '../../../domain/index.js';
 import { formatDateTime } from '../../../shared/lib/format.js';
 import { appIcons } from '../../../shared/ui/icons.js';
 import { PageHeader, UserAvatar } from '../../../shared/ui/parts.js';
-import { EffectivePermissions, GrantsTable } from '../../access/index.js';
+import { EffectivePermissions, GrantTable } from '../../access/index.js';
 import { useAccessData } from '../../iam/index.js';
 import { useUserFlows } from '../flows.js';
 
@@ -123,7 +123,7 @@ function UserPage(): ReactElement {
           </SimpleGrid>
         </Tabs.Panel>
         <Tabs.Panel value="access" pt="md">
-          <GrantsTable
+          <GrantTable
             name={`user:${user.id}`}
             filter={(grant) => grant.principal.type === 'user' && grant.principal.id === user.id}
             preset={{ principal: { type: 'user', id: user.id } }}

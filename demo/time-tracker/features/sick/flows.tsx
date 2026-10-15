@@ -1,4 +1,4 @@
-import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react/index.js';
+import { useDialogs, useToast } from '@local/overlays/react';
 import { todayDate } from '../../domain/index.js';
 import type { Employee, SickNote } from '../../domain/index.js';
 import { translate } from '../../shared/lib/i18n/index.js';
@@ -6,6 +6,10 @@ import { useChanged, useTimeService } from '../tracker/index.js';
 import { CertificateForm, SickForm } from './components/SickForm.js';
 
 export { useSickFlows };
+export type { SickFlows };
+
+// What `useSickFlows()` gives: the flows, for the functions that build a table's actions.
+type SickFlows = ReturnType<typeof useSickFlows>;
 
 // The changes of sick calls: report one (from today), change its end or note, upload the doctor's note.
 function useSickFlows() {

@@ -89,6 +89,10 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 
 ## Layout and commands
 
+- `exports` in `package.json` (2026-10-15, the user's choice; proposed at about 70%, over an alias per package and
+  entry in the root): each entry has a `source` condition first, its file in `src/`, then its built file in `dist/`.
+  The root's demo resolves the package by name (`@local/…`) to its sources by that condition (its `vite.config.ts`
+  and `tsconfig.json`); everywhere else, a customer's copy too, the condition is ignored and `dist/` counts.
 - `src/api/theme.ts` (types), `src/create.ts` (`createMantineTheme()`), `src/colors.ts` (shades), `src/color-setups.ts`.
 - `demo/` (`npm run dev`): Mantine's components on a page, with the choices on top: the colors, the size, the variant,
   the color scheme, and a live accent (a color input that sets `--demo-accent-color`).

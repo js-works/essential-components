@@ -1,26 +1,35 @@
 import { useDataTableController, useDataTableSelection } from '../core/controllerHooks.js';
 import { dateColumnEditor, selectColumnEditor, textColumnEditor } from '../core/view/ColumnEditors.js';
 import {
-  autocompleteColumnFilter,
-  booleanColumnFilter,
-  dateRangeColumnFilter,
-  numberRangeColumnFilter,
-  selectColumnFilter,
-  textColumnFilter,
+  autocompleteFilter,
+  booleanFilter,
+  dateRangeFilter,
+  numberRangeFilter,
+  selectFilter,
+  textFilter,
 } from '../core/view/ColumnFilters.js';
+import { generalAction, groupAction, multiRowAction, singleRowAction } from './actionBuilders.js';
 import { createDataTableComponent } from './createDataTableComponent.js';
+import { defineActions, defineColumns, defineFilters } from './definitions.js';
 
 export {
-  autocompleteColumnFilter,
-  booleanColumnFilter,
+  autocompleteFilter,
+  booleanFilter,
   createDataTableComponent,
   dateColumnEditor,
-  dateRangeColumnFilter,
-  numberRangeColumnFilter,
+  dateRangeFilter,
+  defineActions,
+  defineColumns,
+  defineFilters,
+  generalAction,
+  groupAction,
+  multiRowAction,
+  numberRangeFilter,
   selectColumnEditor,
-  selectColumnFilter,
+  selectFilter,
+  singleRowAction,
   textColumnEditor,
-  textColumnFilter,
+  textFilter,
   useDataTableController,
   useDataTableSelection,
 };

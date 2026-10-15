@@ -1,5 +1,5 @@
+import { useToast } from '@local/overlays/react';
 import { useState } from 'react';
-import { useToast } from '../../../../packages/overlays/src/main/bindings/react/index.js';
 import type { ClockAction } from '../../domain/index.js';
 import { errorText } from '../../shared/lib/errorText.js';
 import { translate } from '../../shared/lib/i18n/index.js';

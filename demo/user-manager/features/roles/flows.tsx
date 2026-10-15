@@ -1,11 +1,15 @@
+import { useDialogs, useToast } from '@local/overlays/react';
 import { useNavigate } from 'react-router';
-import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react/index.js';
 import type { Role } from '../../domain/index.js';
 import { countText } from '../../shared/lib/format.js';
 import { useChanged, useIamService } from '../iam/index.js';
 import { RoleForm } from './components/RoleForm.js';
 
 export { useRoleFlows };
+export type { RoleFlows };
+
+// What `useRoleFlows()` gives: the flows, for the functions that build a table's actions.
+type RoleFlows = ReturnType<typeof useRoleFlows>;
 
 // The changes of roles: new (empty, or a copy of a role's permissions), rename, delete (refused for built-in roles and
 // roles that are still granted: the dialog shows why).

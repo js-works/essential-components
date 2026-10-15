@@ -8,6 +8,9 @@
     ],
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "customConditions": [
+      "source"
+    ],
     "jsx": "react-jsx",
     "types": [
       "vite/client"

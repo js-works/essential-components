@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { generalAction, multiRowAction, singleRowAction } from '../src/react/index.js';
 import type { ActionMenu, ActionSeparator, TableAction } from '../src/react/index.js';
 import type { DemoActions } from './controls.js';
 import type { User } from './data.js';
@@ -31,83 +32,66 @@ function createActions(
   // The rarer actions as ghost buttons (2026-10-11, `tertiary`).
   const tertiary = variants ? 'tertiary' : 'secondary';
 
-  const add: Item = {
-    type: 'general',
-    key: 'add',
-    label: 'Add user',
-    icon: icons.add,
-    variant: primary,
-    onClick: rows.addRow,
-  };
+  // The actions are made by the builders (`generalAction`, `singleRowAction`, `multiRowAction`): the key, the handler,
+  // the other fields.
+  const add = generalAction('add', rows.addRow, { label: 'Add user', icon: icons.add, variant: primary });
 
   // The default action: a double click on the free space of a row runs it, as well as its button. It opens the edit
   // form below the row (see `saveRow` of the table).
-  const edit: Item = {
-    type: 'singleRow',
-    key: 'edit',
+  const edit = singleRowAction('edit', rows.editRow, {
     label: 'Edit',
     icon: icons.edit,
     tip: 'Edit user',
     default: true,
-    onClick: rows.editRow,
-  };
+  });
 
   // A danger action for a single row (how the action column shows it: the "Row actions" selector, `rowActionLook`; the
   // tip is its name there when only the icon is shown). In the action column of every row, and in single-row mode also in the
   // toolbar (for the selected row): that toolbar action is what needs the single selection.
-  const removeRow = (show: 'column' | 'both'): Item => ({
-    type: 'singleRow',
-    key: 'delete-user',
-    label: 'Delete',
-    icon: icons.remove,
-    tip: 'Delete user',
-    variant: danger,
-    show,
-    onClick: (user) => report(`Delete ${fullName(user)}`),
-  });
+  const removeRow = (show: 'column' | 'both') =>
+    singleRowAction('delete-user', (user: User) => report(`Delete ${fullName(user)}`), {
+      label: 'Delete',
+      icon: icons.remove,
+      tip: 'Delete user',
+      variant: danger,
+      show,
+    });
 
-  const remove: Item = {
-    type: 'multiRow',
-    key: 'delete',
-    label: 'Delete',
-    icon: icons.remove,
-    variant: danger,
-    onClick: (users) => report(`Delete ${users.map(fullName).join(', ')}`),
-  };
+  const remove = multiRowAction(
+    'delete',
+    (users: readonly User[]) => report(`Delete ${users.map(fullName).join(', ')}`),
+    {
+      label: 'Delete',
+      icon: icons.remove,
+      variant: danger,
+    },
+  );
 
   // "Export all" needs no selection (general actions). "Export selection" needs selected rows (rows actions): it only
   // exists in the multi-row set, and it is only visible while at least one row is selected.
   const exportMenu = (withSelection: boolean): Item => {
     const actions: (TableAction<User> | ActionSeparator)[] = [
-      {
-        type: 'general',
-        key: 'export-all-csv',
-        label: 'Export all to CSV',
-        onClick: () => report('Export all to CSV'),
-      },
-      {
-        type: 'general',
-        key: 'export-all-excel',
-        label: 'Export all to Excel',
-        onClick: () => report('Export all to Excel'),
-      },
+      generalAction('export-all-csv', () => report('Export all to CSV'), { label: 'Export all to CSV' }),
+      generalAction('export-all-excel', () => report('Export all to Excel'), { label: 'Export all to Excel' }),
     ];
 
     if (withSelection) {
       actions.push(
         { type: 'separator' },
-        {
-          type: 'multiRow',
-          key: 'export-selection-csv',
-          label: 'Export selection to CSV',
-          onClick: (users) => report(`Export ${users.length} selected user(s) to CSV`),
-        },
-        {
-          type: 'multiRow',
-          key: 'export-selection-excel',
-          label: 'Export selection to Excel',
-          onClick: (users) => report(`Export ${users.length} selected user(s) to Excel`),
-        },
+        multiRowAction(
+          'export-selection-csv',
+          (users: readonly User[]) => report(`Export ${users.length} selected user(s) to CSV`),
+          {
+            label: 'Export selection to CSV',
+          },
+        ),
+        multiRowAction(
+          'export-selection-excel',
+          (users: readonly User[]) => report(`Export ${users.length} selected user(s) to Excel`),
+          {
+            label: 'Export selection to Excel',
+          },
+        ),
       );
     }
 

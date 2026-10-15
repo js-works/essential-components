@@ -1,9 +1,16 @@
+import {
+  defineActions,
+  defineColumns,
+  defineFilters,
+  multiRowAction,
+  singleRowAction,
+  useDataTableController,
+} from '@local/data-table/react';
+import type { SavedFilter } from '@local/data-table/react';
 import { Anchor, Badge, Group, Stack, Text } from '@mantine/core';
-import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { selectColumnFilter, useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
-import type { SavedFilter, TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
+import type { NavigateFunction } from 'react-router';
 import { groupsOf } from '../../../domain/index.js';
 import type { AccessData, User } from '../../../domain/index.js';
 import { formatDateTime } from '../../../shared/lib/format.js';
@@ -12,10 +19,13 @@ import { DataTable } from '../../../shared/ui/dataTable.js';
 import { appIcons } from '../../../shared/ui/icons.js';
 import { PageHeader, UserAvatar } from '../../../shared/ui/parts.js';
 import { sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters.js';
-import { useGrantAccess } from '../../access/index.js';
+import { deleteAction, editAction, newAction, openAction } from '../../../shared/ui/tableActions.js';
+import { useGrantFlows } from '../../access/index.js';
+import type { GrantFlows } from '../../access/index.js';
 import { useTableSource } from '../../iam/index.js';
-import { DEPARTMENTS } from '../components/UserForm.js';
+import { departmentFilter, userStatusFilter } from '../filters.js';
 import { useUserFlows } from '../flows.js';
+import type { UserFlows } from '../flows.js';
 
 export { UsersPage };
 
@@ -41,13 +51,83 @@ const COLLEAGUES_FILTERS: readonly SavedFilter[] = [
   sharedBy('Max Müller', 'IT and Finance', { department: ['IT', 'Finance'] }),
 ];
 
+// The columns of the users list.
+const columns = defineColumns<UserRow>([
+  {
+    key: 'name',
+    header: 'Name',
+    width: 3,
+    sortable: true,
+    render: (row) => (
+      <Group gap={8} wrap="nowrap">
+        <UserAvatar name={row.name} />
+        <Stack gap={0} style={{ minWidth: 0 }}>
+          <Anchor component={Link} to={`/users/${row.id}`} size="sm" truncate>{row.name}</Anchor>
+          <Text size="xs" c="dimmed" truncate>{row.title}</Text>
+        </Stack>
+      </Group>
+    ),
+  },
+  { key: 'email', header: 'Email', width: 3, sortable: true, hideable: true },
+  {
+    key: 'department',
+    header: 'Department',
+    width: 2,
+    sortable: true,
+    hideable: true,
+  },
+  {
+    key: 'groups',
+    header: 'Groups',
+    width: 3,
+    hideable: true,
+    render: (row) => <Text size="sm" truncate>{row.groups}</Text>,
+  },
+  {
+    key: 'status',
+    header: 'Status',
+    width: 1.4,
+    sortable: true,
+    render: (row) => <Badge variant="light" color={row.active ? undefined : 'gray'}>{row.status}</Badge>,
+  },
+  {
+    key: 'created',
+    header: 'Created',
+    width: 2,
+    sortable: true,
+    hideable: true,
+    hidden: true,
+    render: (row) => formatDateTime(row.created),
+  },
+]);
+
+// The filters of the users list.
+const filters = defineFilters({ department: departmentFilter, status: userStatusFilter });
+
+// What the actions of the users list need: the flows of users and grants, and where a user opens.
+type UserListContext = { flows: UserFlows; grants: GrantFlows; navigate: NavigateFunction };
+
+// The actions of the users list: new, open (the default action), edit, grant access, enable, disable, delete.
+const actionsOf = ({ flows, grants, navigate }: UserListContext) =>
+  defineActions<UserRow>([
+    newAction('New user', () => flows.create()),
+    openAction((row) => navigate(`/users/${row.id}`)),
+    editAction((row) => flows.edit(row)),
+    singleRowAction('grant', (row) => grants.grant({ principal: { type: 'user', id: row.id } }), {
+      label: 'Grant access',
+      icon: appIcons.access,
+      show: 'toolbar',
+    }),
+    multiRowAction('enable', (rows) => flows.setActive(rows, true), { label: 'Enable', icon: appIcons.enable }),
+    multiRowAction('disable', (rows) => flows.setActive(rows, false), { label: 'Disable', icon: appIcons.disable }),
+    deleteAction((rows) => flows.remove(rows)),
+  ]);
+
 // All users: their department, groups and status. Open one for its details and access.
 function UsersPage(): ReactElement {
-  const savedFilters = useSavedFilters('user-manager:saved-filters:users', COLLEAGUES_FILTERS);
   const nav = useDataTableController<UserRow>();
-  const navigate = useNavigate();
-  const flows = useUserFlows();
-  const grantAccess = useGrantAccess();
+  const ctx = { flows: useUserFlows(), grants: useGrantFlows(), navigate: useNavigate() };
+  const savedFilters = useSavedFilters('user-manager:saved-filters:users', COLLEAGUES_FILTERS);
   const source = useTableSource<UserRow>('users', userRows, {
     search: ['name', 'email', 'title', 'department', 'groups'],
     filters: {
@@ -55,118 +135,6 @@ function UsersPage(): ReactElement {
       status: (row, value) => oneOf(row.status, value),
     },
   }, nav.reload);
-
-  const columns = useMemo((): readonly TableColumn<UserRow>[] => [
-    {
-      key: 'name',
-      header: 'Name',
-      width: 3,
-      sortable: true,
-      render: (row) => (
-        <Group gap={8} wrap="nowrap">
-          <UserAvatar name={row.name} />
-          <Stack gap={0} style={{ minWidth: 0 }}>
-            <Anchor component={Link} to={`/users/${row.id}`} size="sm" truncate>{row.name}</Anchor>
-            <Text size="xs" c="dimmed" truncate>{row.title}</Text>
-          </Stack>
-        </Group>
-      ),
-    },
-    { key: 'email', header: 'Email', width: 3, sortable: true, hideable: true },
-    {
-      key: 'department',
-      header: 'Department',
-      width: 2,
-      sortable: true,
-      hideable: true,
-      filter: selectColumnFilter({ options: DEPARTMENTS.map((value) => ({ value, label: value })), multiple: true }),
-    },
-    {
-      key: 'groups',
-      header: 'Groups',
-      width: 3,
-      hideable: true,
-      render: (row) => <Text size="sm" truncate>{row.groups}</Text>,
-    },
-    {
-      key: 'status',
-      header: 'Status',
-      width: 1.4,
-      sortable: true,
-      render: (row) => <Badge variant="light" color={row.active ? undefined : 'gray'}>{row.status}</Badge>,
-      filter: selectColumnFilter({
-        options: [{ value: 'Active', label: 'Active' }, { value: 'Disabled', label: 'Disabled' }],
-        multiple: true,
-      }),
-    },
-    {
-      key: 'created',
-      header: 'Created',
-      width: 2,
-      sortable: true,
-      hideable: true,
-      hidden: true,
-      render: (row) => formatDateTime(row.created),
-    },
-  ], []);
-
-  const actions = useMemo((): readonly TableAction<UserRow>[] => [
-    {
-      type: 'general',
-      key: 'new',
-      label: 'New user',
-      icon: appIcons.add,
-      variant: 'primary',
-      onClick: () => void flows.create(),
-    },
-    {
-      type: 'singleRow',
-      key: 'open',
-      icon: appIcons.open,
-      tip: 'Open',
-      show: 'column',
-      default: true,
-      onClick: (row) => void navigate(`/users/${row.id}`),
-    },
-    {
-      type: 'singleRow',
-      key: 'edit',
-      icon: appIcons.edit,
-      tip: 'Edit',
-      show: 'both',
-      onClick: (row) => void flows.edit(row),
-    },
-    {
-      type: 'singleRow',
-      key: 'grant',
-      label: 'Grant access',
-      icon: appIcons.access,
-      show: 'toolbar',
-      onClick: (row) => void grantAccess({ principal: { type: 'user', id: row.id } }),
-    },
-    {
-      type: 'multiRow',
-      key: 'enable',
-      label: 'Enable',
-      icon: appIcons.enable,
-      onClick: (rows) => void flows.setActive(rows, true),
-    },
-    {
-      type: 'multiRow',
-      key: 'disable',
-      label: 'Disable',
-      icon: appIcons.disable,
-      onClick: (rows) => void flows.setActive(rows, false),
-    },
-    {
-      type: 'multiRow',
-      key: 'delete',
-      label: 'Delete',
-      icon: appIcons.remove,
-      variant: 'danger',
-      onClick: (rows) => void flows.remove(rows),
-    },
-  ], [flows, navigate, grantAccess]);
 
   return (
     <Stack gap="md">
@@ -179,7 +147,8 @@ function UsersPage(): ReactElement {
         source={source}
         rowKey="id"
         columns={columns}
-        actions={actions}
+        filters={filters}
+        actions={actionsOf(ctx)}
         searchable
         reloadable
         pageSizeOptions={[25, 50, 100]}

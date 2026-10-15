@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import type { ReactElement } from 'react';
-import { createDataTableComponent, selectColumnFilter } from '../src/react/index.js';
+import { createDataTableComponent, defineFilters, selectFilter } from '../src/react/index.js';
 import type { RowMove, TableAction, TableColumn } from '../src/react/index.js';
 import { defaultTheme } from '../src/themes/index.js';
 import { badge, fixedHeight, note, selectedLine } from './Demo.module.css';
@@ -23,9 +23,12 @@ const columns: readonly TableColumn<Task>[] = [
     width: 1.5,
     align: 'center',
     render: (task) => <span className={badge}>{task.status}</span>,
-    filter: selectColumnFilter({ options: statuses }),
   },
 ];
+
+const filters = defineFilters({
+  status: selectFilter({ options: statuses }),
+});
 
 type Saving = 'succeeds' | 'fails';
 
@@ -87,6 +90,7 @@ function ReorderDemo(): ReactElement {
           reorder={reorder}
           rowKey="id"
           columns={columns}
+          filters={filters}
           actions={actions}
           striped
           pageSize={10}

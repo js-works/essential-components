@@ -17,7 +17,7 @@ import {
 } from '../../../shared/ui/parts.js';
 import { useChecklistFlows } from '../../checklists/index.js';
 import { departmentName, employeeOf, useHrData } from '../../hr/index.js';
-import { DocumentsTable } from '../components/DocumentsTable.js';
+import { DocumentTable } from '../components/DocumentTable.js';
 import { SalaryTable } from '../components/SalaryTable.js';
 import { useEmployeeFlows } from '../flows.js';
 
@@ -120,7 +120,7 @@ function EmployeePage(): ReactElement {
           <SalaryTable data={data} employee={employee} />
         </Tabs.Panel>
         <Tabs.Panel value="documents">
-          <DocumentsTable employee={employee} />
+          <DocumentTable employee={employee} />
         </Tabs.Panel>
       </Tabs>
     </Stack>

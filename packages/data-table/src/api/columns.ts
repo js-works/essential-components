@@ -5,21 +5,24 @@ import type { ColumnAlign } from './settings.js';
 
 export type {
   BuiltInColumnEditor,
-  BuiltInColumnFilter,
+  BuiltInFilter,
   ColumnEditor,
-  ColumnFilter,
   ColumnGroup,
   EditField,
   TableColumn,
+  TableFilter,
+  TableFilters,
 };
 
 declare const builtInFilter: unique symbol;
 
 declare const builtInEditor: unique symbol;
 
-type BuiltInColumnFilter = { readonly [builtInFilter]: true };
+type BuiltInFilter = { readonly [builtInFilter]: true };
 
-type ColumnFilter<C> = BuiltInColumnFilter | ((props: FilterProps) => string | C);
+type TableFilter<C> = BuiltInFilter | ((props: FilterProps) => string | C);
+
+type TableFilters<C> = Readonly<Record<string, TableFilter<C>>>;
 
 type BuiltInColumnEditor = { readonly [builtInEditor]: true };
 
@@ -39,7 +42,6 @@ type TableColumn<Row, C> = {
   resizable?: boolean;
   align?: ColumnAlign;
   render?: (row: Row) => string | C;
-  filter?: ColumnFilter<C>;
   edit?: ColumnEditor<Row, C>;
   wrap?: boolean;
   hideable?: boolean;

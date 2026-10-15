@@ -60,7 +60,7 @@ Started 2026-10-03.
 
 ## App
 
-- Saved filters (2026-10-11, the user's wish) in Users and Access (`GrantsTable` with `name="all"` only), with
+- Saved filters (2026-10-11, the user's wish) in Users and Access (`GrantTable` with `name="all"` only), with
   colleagues' shared filters: see "Saved filters in the root's apps" in the root's `CLAUDE.md`
   (`shared/ui/savedFilters.ts`).
 - The full-height layout of the Board Manager (2026-10-08, the user's wish): the app fills its element (the root

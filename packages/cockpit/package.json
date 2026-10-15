@@ -5,7 +5,10 @@
   "description": "An admin panel shell: a navigation on the left, the chosen mini-app (a custom element) on the right.",
   "type": "module",
   "exports": {
-    ".": "./dist/index.js"
+    ".": {
+      "source": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
   },
   "scripts": {
     "dev": "vite",

@@ -1,11 +1,11 @@
+import { useToast } from '@local/overlays/react';
 import { Alert, Anchor, Badge, Button, Group, Stack, Tabs, Text } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import type { ReactElement } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
 import { appIcons } from '../../../shared/ui/icons.js';
 import { PageHeader } from '../../../shared/ui/parts.js';
-import { GrantsTable } from '../../access/index.js';
+import { GrantTable } from '../../access/index.js';
 import { useAccessData, useChanged, useIamService } from '../../iam/index.js';
 import { PermissionMatrix } from '../components/PermissionMatrix.js';
 import { useRoleFlows } from '../flows.js';
@@ -143,7 +143,7 @@ function RolePage(): ReactElement {
           </Stack>
         </Tabs.Panel>
         <Tabs.Panel value="granted" pt="md">
-          <GrantsTable
+          <GrantTable
             name={`role:${role.id}`}
             filter={(grant) => grant.roleId === role.id}
             preset={{ roleId: role.id }}

@@ -3,9 +3,11 @@ import type { EditorProps } from '../editors.js';
 import type { FilterProps } from '../filters.js';
 import type { ColumnAlign } from '../settings.js';
 
-export type { ColumnEditor, ColumnFilter, ColumnGroup, EditField, TableColumn };
+export type { ColumnEditor, ColumnGroup, EditField, TableColumn, TableFilter, TableFilters };
 
-type ColumnFilter = (props: FilterProps) => ReactNode;
+type TableFilter = (props: FilterProps) => ReactNode;
+
+type TableFilters = Readonly<Record<string, TableFilter>>;
 
 type ColumnEditor<Row> = (props: EditorProps<Row>) => ReactNode;
 
@@ -23,7 +25,6 @@ type TableColumn<Row> = {
   resizable?: boolean;
   align?: ColumnAlign;
   render?: (row: Row) => ReactNode;
-  filter?: ColumnFilter;
   edit?: ColumnEditor<Row>;
   wrap?: boolean;
   hideable?: boolean;

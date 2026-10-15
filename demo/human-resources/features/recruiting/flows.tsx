@@ -1,5 +1,5 @@
+import { useDialogs, useToast } from '@local/overlays/react';
 import { useNavigate } from 'react-router';
-import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react/index.js';
 import type { Candidate, Employee, HrData, Opening, Stage } from '../../domain/index.js';
 import { errorText } from '../../shared/lib/errorText.js';
 import { translate } from '../../shared/lib/i18n/index.js';
@@ -7,6 +7,10 @@ import { useChanged, useHrService } from '../hr/index.js';
 import { CandidateForm, HireForm, OpeningForm } from './components/forms.js';
 
 export { useRecruitingFlows };
+export type { RecruitingFlows };
+
+// What `useRecruitingFlows()` gives: the flows, for the functions that build a table's actions.
+type RecruitingFlows = ReturnType<typeof useRecruitingFlows>;
 
 // The changes of recruiting: openings (new, then its page; edit), candidates (add, edit, move to a stage, reject), and
 // the hire (the candidate becomes an employee: then their page).

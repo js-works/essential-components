@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { PeopleTable } from '../components/PeopleTable.js';
+import { PersonTable } from '../components/PersonTable.js';
 
 export { MembersPage };
 
@@ -8,5 +8,5 @@ export { MembersPage };
 function MembersPage(): ReactElement {
   const t = useTranslate();
 
-  return <PeopleTable title={t('modules.members')} subtitle={t('members.listSubtitle')} />;
+  return <PersonTable title={t('modules.members')} subtitle={t('members.listSubtitle')} />;
 }

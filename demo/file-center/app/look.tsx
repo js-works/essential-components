@@ -1,3 +1,6 @@
+import { combineCssVariables, modernTheme } from '@local/mantine-themes';
+import { createDialogTheme, createToastTheme } from '@local/overlays';
+import type { OverlaysConfig } from '@local/overlays/react';
 import {
   ActionIcon,
   Badge,
@@ -13,10 +16,6 @@ import {
 } from '@mantine/core';
 import type { CSSVariablesResolver, MantineColorsTuple, MantineThemeOverride } from '@mantine/core';
 import { TbMaximize, TbMinimize } from 'react-icons/tb';
-import { combineCssVariables, modernTheme } from '../../../packages/mantine-themes/src/index.js';
-import type { OverlaysConfig } from '../../../packages/overlays/src/main/bindings/react/index.js';
-import { createDialogTheme } from '../../../packages/overlays/src/main/dialogs/dialogs.js';
-import { createToastTheme } from '../../../packages/overlays/src/main/toasts/toasts.js';
 import { Scope } from '../shared/ui/scope.js';
 
 export { createLook };

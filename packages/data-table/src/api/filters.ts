@@ -5,9 +5,9 @@ export type {
   FilterOption,
   FilterProps,
   NumberRangeFilterValue,
-  SelectColumnFilterSettings,
-  TextColumnFilterSettings,
+  SelectFilterSettings,
   TextFilterMatch,
+  TextFilterSettings,
   TextFilterValue,
 };
 
@@ -19,13 +19,13 @@ type FilterProps = {
 
 type FilterOption = string | { value: string; label: string };
 
-type TextColumnFilterSettings = { placeholder?: string; matchModes?: boolean };
+type TextFilterSettings = { placeholder?: string; matchModes?: boolean };
 
 type TextFilterMatch = 'contains' | 'startsWith' | 'endsWith';
 
 type TextFilterValue = { text: string; match: TextFilterMatch };
 
-type SelectColumnFilterSettings = { options: readonly FilterOption[]; multiple?: boolean };
+type SelectFilterSettings = { options: readonly FilterOption[]; multiple?: boolean };
 
 type DateRangeFilterValue = { from: string; to: string };
 

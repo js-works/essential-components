@@ -5,9 +5,18 @@
   "description": "A React data table: a data table with sorting, filtering, pagination, selection and actions.",
   "type": "module",
   "exports": {
-    ".": "./dist/index.js",
-    "./react": "./dist/react.js",
-    "./themes": "./dist/themes.js"
+    ".": {
+      "source": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./react": {
+      "source": "./src/react/index.ts",
+      "default": "./dist/react.js"
+    },
+    "./themes": {
+      "source": "./src/themes/index.ts",
+      "default": "./dist/themes.js"
+    }
   },
   "scripts": {
     "dev": "vite",

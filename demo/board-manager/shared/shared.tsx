@@ -1,3 +1,6 @@
+import { createDataTableComponent } from '@local/data-table/react';
+import type { DataTableProps } from '@local/data-table/react';
+import { mantineTheme } from '@local/data-table/themes';
 import { Group, Stack, Text, Title } from '@mantine/core';
 import { useSyncExternalStore } from 'react';
 import type { ReactElement, ReactNode } from 'react';
@@ -26,10 +29,7 @@ import {
 } from 'react-icons/tb';
 import { useStore } from 'zustand';
 import { i18n as tableI18n } from '../../../packages/data-table/demo/i18n.js';
-import { autocompleteColumnFilter, createDataTableComponent } from '../../../packages/data-table/src/react/index.js';
-import type { DataTableProps } from '../../../packages/data-table/src/react/index.js';
-import { mantineTheme } from '../../../packages/data-table/src/themes/index.js';
-import { db, suggestOrganizations, suggestPeople } from '../infra/in-memory/index.js';
+import { db } from '../infra/in-memory/index.js';
 import type { Db } from '../infra/in-memory/index.js';
 
 export {
@@ -39,10 +39,8 @@ export {
   formatDateTime,
   formatSize,
   formatTime,
-  organizationFilter,
   PAGE_SIZE_OPTIONS,
   PageHeader,
-  personFilter,
   Scope,
   SCOPE_CLASS,
   setSchemeHost,
@@ -71,37 +69,6 @@ function DataTable<Row>(props: DataTableProps<Row>): ReactElement {
 
 // The page sizes of the paged tables (not the agenda and the sections, which show one page).
 const PAGE_SIZE_OPTIONS: readonly number[] = [10, 25, 50];
-
-// The filters of every column of an organization or a person (by name, the value is the name): autocompletes, all
-// options when the list opens (`minQueryLength: 0`), each with a second line (dimmed): the city of an organization,
-// the organization of a person.
-const suggestion = (label: string, second: string) => () => (
-  <span>
-    {label}
-    {second !== '' && <Text size="xs" c="dimmed">{second}</Text>}
-  </span>
-);
-
-const organizationFilter = autocompleteColumnFilter({
-  multiple: true,
-  minQueryLength: 0,
-  load: async (query, signal) =>
-    (await suggestOrganizations(query, signal)).map(({ city, ...option }) => ({
-      ...option,
-      content: suggestion(option.label, city),
-    })),
-});
-
-const personFilter = autocompleteColumnFilter({
-  multiple: true,
-  minQueryLength: 0,
-  load: async (query, signal) =>
-    (await suggestPeople(query, signal)).map(({ description, ...option }) => ({
-      ...option,
-      value: option.label,
-      content: suggestion(option.label, description),
-    })),
-});
 
 // The fake server's state, for a page that shows it (the breadcrumb, the home page, the headers).
 function useDb<T>(selector: (state: Db) => T): T {

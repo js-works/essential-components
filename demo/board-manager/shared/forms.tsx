@@ -1,10 +1,10 @@
+import type { FileItem, UploadFn } from '@local/file-upload';
+import { binding } from '@local/form-validation';
 import { Group, NativeSelect, Select, SimpleGrid, Stack, Textarea, TextInput } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { useRef } from 'react';
 import type { FocusEvent, ReactElement } from 'react';
 import { z } from 'zod';
-import type { FileItem, UploadFn } from '../../../packages/file-upload/src/index.js';
-import { binding } from '../../../packages/form-validation/src/index.js';
 import { normalizeWebsite, ROLES } from '../domain/index.js';
 import type {
   AgendaItem,

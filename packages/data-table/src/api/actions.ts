@@ -2,7 +2,7 @@ import type { TextContent } from './content.js';
 import type { RowGroup } from './query.js';
 import type { ActionSeparator, ActionVariant } from './settings.js';
 
-export type { ActionLook, ActionMenu, GeneralAction, GroupAction, RowAction, RowsAction, TableAction };
+export type { ActionFields, ActionLook, ActionMenu, GeneralAction, GroupAction, RowAction, RowsAction, TableAction };
 
 type ActionLook<C> =
   | { label: TextContent<C>; icon?: () => C; tip?: string | (() => string) }
@@ -53,3 +53,5 @@ type ActionMenu<Row, C> = {
   chevron?: boolean;
   actions: readonly (TableAction<Row, C> | ActionSeparator)[];
 } & ActionLook<C>;
+
+type ActionFields<A> = A extends unknown ? Omit<A, 'type' | 'key' | 'onClick'> : never;

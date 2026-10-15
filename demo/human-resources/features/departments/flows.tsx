@@ -1,4 +1,4 @@
-import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react/index.js';
+import { useDialogs, useToast } from '@local/overlays/react';
 import type { Department, HrData } from '../../domain/index.js';
 import { errorText } from '../../shared/lib/errorText.js';
 import { translate } from '../../shared/lib/i18n/index.js';
@@ -6,6 +6,10 @@ import { useChanged, useHrService } from '../hr/index.js';
 import { DepartmentForm } from './components/DepartmentForm.js';
 
 export { useDepartmentFlows };
+export type { DepartmentFlows };
+
+// What `useDepartmentFlows()` gives: the flows, for the functions that build a table's actions.
+type DepartmentFlows = ReturnType<typeof useDepartmentFlows>;
 
 // The changes of departments: a new one (below another, if given), edit one, delete an empty one (the server refuses
 // one with employees or departments below it: a warning says why).

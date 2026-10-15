@@ -1,6 +1,6 @@
+import type { FileUploadTheme } from '@local/file-upload';
+import { createFileUploadComponent } from '@local/file-upload/react';
 import { createDemoI18n } from '../../../../packages/file-upload/demo/i18n.js';
-import type { FileUploadTheme } from '../../../../packages/file-upload/src/index.js';
-import { createFileUploadComponent } from '../../../../packages/file-upload/src/react/index.js';
 
 export { CertificateUpload };
 

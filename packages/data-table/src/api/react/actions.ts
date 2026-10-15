@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { RowGroup } from '../query.js';
 import type { ActionSeparator, ActionVariant } from '../settings.js';
 
-export type { ActionLook, ActionMenu, GeneralAction, GroupAction, RowAction, RowsAction, TableAction };
+export type { ActionFields, ActionLook, ActionMenu, GeneralAction, GroupAction, RowAction, RowsAction, TableAction };
 
 type ActionLook =
   | { label: ReactNode; icon?: ReactNode; tip?: string }
@@ -53,3 +53,5 @@ type ActionMenu<Row> = {
   chevron?: boolean;
   actions: readonly (TableAction<Row> | ActionSeparator)[];
 } & ActionLook;
+
+type ActionFields<A> = A extends unknown ? Omit<A, 'type' | 'key' | 'onClick'> : never;

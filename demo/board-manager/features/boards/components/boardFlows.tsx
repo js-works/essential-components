@@ -1,13 +1,34 @@
-import type { useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
-import { db, deleteBoards, getBoard, updateBoard } from '../../../infra/in-memory/index.js';
+import type { NavigateFunction } from 'react-router';
+import { createBoard, db, deleteBoards, getBoard, updateBoard } from '../../../infra/in-memory/index.js';
 import { BoardForm } from '../../../shared/forms.js';
 import { confirmAndRun } from '../../../shared/lib/flows.js';
-import type { Dialogs } from '../../../shared/lib/flows.js';
+import type { Dialogs, Toasts } from '../../../shared/lib/flows.js';
 import { translate } from '../../../shared/lib/i18n/index.js';
 
-export { deleteBoardsFlow, editBoard };
+export { createBoardFlow, deleteBoardsFlow, editBoard };
 
-type Toasts = ReturnType<typeof useToast>;
+// "New board": the board form in a dialog, saved before it closes; then a toast, and the new board's page.
+async function createBoardFlow(
+  { dialogs, toasts, navigate }: { dialogs: Dialogs; toasts: Toasts; navigate: NavigateFunction },
+): Promise<void> {
+  let created = '';
+  const saved = !(await dialogs.form({
+    title: translate('boards.new'),
+    content: (
+      <BoardForm
+        save={async (values) => {
+          created = (await createBoard(values)).id;
+        }}
+      />
+    ),
+    buttons: { confirm: translate('common.create') },
+  })).canceled;
+
+  if (saved) {
+    toasts.success(translate('boards.created'));
+    void navigate(`/boards/${created}`);
+  }
+}
 
 // "Edit" of a board (in the boards list and on the board's overview): the board form in a dialog, saved before it
 // closes, then a toast. Resolves `true` when saved.

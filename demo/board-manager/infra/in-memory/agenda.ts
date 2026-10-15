@@ -1,4 +1,4 @@
-import type { GroupTotal, RowMove, RowSource } from '../../../../packages/data-table/src/react/index.js';
+import type { GroupTotal, RowMove, RowSource } from '@local/data-table/react';
 import { agendaNumbers, agendaOf, arranged, blockEnd, idOf, newPlace } from '../../domain/index.js';
 import type { AgendaEntry, AgendaItem } from '../../domain/index.js';
 import { getPerson } from './lookups.js';

@@ -1,47 +1,15 @@
 import { Button, Loader, Stack, Tabs } from '@mantine/core';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import type { ReactElement } from 'react';
-import { useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
-import type { TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
-import { departmentPath, todayDate } from '../../../domain/index.js';
-import type { Department, Employee, HrData } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { DataTable } from '../../../shared/ui/dataTable.js';
 import { appIcons } from '../../../shared/ui/icons.js';
-import { EmployeeLabel, PageHeader } from '../../../shared/ui/parts.js';
-import { employeeOf, useHrData, useTableSource } from '../../hr/index.js';
+import { PageHeader } from '../../../shared/ui/parts.js';
+import { useHrData } from '../../hr/index.js';
+import { DepartmentTable } from '../components/DepartmentTable.js';
 import { OrgChart } from '../components/OrgChart.js';
 import { useDepartmentFlows } from '../flows.js';
-import { headcount } from '../headcount.js';
 
 export { DepartmentsPage };
-
-type DepartmentRow = Department & {
-  path: string;
-  parent: string;
-  head: Employee | undefined;
-  headName: string;
-  people: number;
-  total: number;
-};
-
-function departmentRows(data: HrData): DepartmentRow[] {
-  const today = todayDate();
-
-  return data.departments.map((department) => {
-    const head = employeeOf(data, department.headId);
-
-    return {
-      ...department,
-      path: departmentPath(data.departments, department.id).join(' › '),
-      parent: data.departments.find((candidate) => candidate.id === department.parentId)?.name ?? '',
-      head,
-      headName: head?.name ?? '',
-      people: headcount(data, department.id, today),
-      total: headcount(data, department.id, today, true),
-    };
-  });
-}
 
 // The departments: an org chart (the tree from the top down), and a list. New, edit, delete.
 function DepartmentsPage(): ReactElement {
@@ -78,62 +46,5 @@ function DepartmentsPage(): ReactElement {
         </Tabs.Panel>
       </Tabs>
     </Stack>
-  );
-}
-
-function DepartmentTable({ data }: { data: HrData }): ReactElement {
-  const t = useTranslate();
-  const nav = useDataTableController<DepartmentRow>();
-  const flows = useDepartmentFlows();
-  const source = useTableSource<DepartmentRow>('departments', departmentRows, {
-    search: ['name', 'path', 'headName', 'costCenter'],
-  }, nav.reload);
-
-  const columns = useMemo((): readonly TableColumn<DepartmentRow>[] => [
-    { key: 'name', header: t('departments.name'), width: 2, sortable: true },
-    { key: 'parent', header: t('departments.parent'), width: 2, sortable: true },
-    {
-      key: 'headName',
-      header: t('departments.head'),
-      width: 2.6,
-      sortable: true,
-      render: (row) => row.head === undefined ? '' : <EmployeeLabel employee={row.head} title />,
-    },
-    { key: 'people', header: t('departments.peopleColumn'), width: 1, align: 'end', sortable: true },
-    { key: 'total', header: t('departments.totalColumn'), width: 1.2, align: 'end', sortable: true, hideable: true },
-    { key: 'costCenter', header: t('departments.costCenter'), width: 1.2, sortable: true, hideable: true },
-  ], [t]);
-
-  const actions = useMemo((): readonly TableAction<DepartmentRow>[] => [
-    {
-      type: 'singleRow',
-      key: 'edit',
-      icon: appIcons.edit,
-      tip: t('common.edit'),
-      show: 'both',
-      default: true,
-      onClick: (row) => void flows.edit(row, data),
-    },
-    {
-      type: 'singleRow',
-      key: 'delete',
-      label: t('common.delete'),
-      icon: appIcons.remove,
-      variant: 'danger',
-      show: 'toolbar',
-      onClick: (row) => void flows.remove(row),
-    },
-  ], [t, flows, data]);
-
-  return (
-    <DataTable
-      controller={nav}
-      source={source}
-      rowKey="id"
-      columns={columns}
-      actions={actions}
-      searchable
-      defaultSort={{ key: 'name', direction: 'asc' }}
-    />
   );
 }

@@ -1,7 +1,15 @@
 import { useState } from 'react';
 import type { ReactElement } from 'react';
-import { createDataTableComponent, selectColumnFilter, textColumnFilter } from '../src/react/index.js';
-import type { RowSource, TableAction, TableColumn } from '../src/react/index.js';
+import {
+  createDataTableComponent,
+  defineActions,
+  defineColumns,
+  defineFilters,
+  multiRowAction,
+  selectFilter,
+  textFilter,
+} from '../src/react/index.js';
+import type { RowSource } from '../src/react/index.js';
 import { defaultTheme } from '../src/themes/index.js';
 import { fetchUsersByCountry, roles } from './data.js';
 import type { User } from './data.js';
@@ -15,10 +23,11 @@ export { GroupingDemo };
 
 const DataTable = createDataTableComponent({ i18n, theme: defaultTheme });
 
-// The country is the group, so it has no column of its own.
-const columns: readonly TableColumn<User>[] = [
-  { key: 'firstName', header: 'First name', width: 2, sortable: true, filter: textColumnFilter() },
-  { key: 'lastName', header: 'Last name', width: 2, sortable: true, filter: textColumnFilter() },
+// The country is the group, so it has no column of its own. Typed by `defineColumns` (and the actions by
+// `defineActions`): no type annotation.
+const columns = defineColumns<User>([
+  { key: 'firstName', header: 'First name', width: 2, sortable: true },
+  { key: 'lastName', header: 'Last name', width: 2, sortable: true },
   { key: 'email', header: 'Email', width: 4, sortable: true },
   {
     key: 'role',
@@ -27,9 +36,14 @@ const columns: readonly TableColumn<User>[] = [
     align: 'center',
     sortable: true,
     render: (user) => <span className={badge}>{user.role}</span>,
-    filter: selectColumnFilter({ options: roles }),
   },
-];
+]);
+
+const filters = defineFilters({
+  firstName: textFilter(),
+  lastName: textFilter(),
+  role: selectFilter({ options: roles }),
+});
 
 type Totals = 'source' | 'page';
 type Header = 'default' | 'custom';
@@ -49,15 +63,12 @@ function GroupingDemo(): ReactElement {
   const [totals, setTotals] = useState<Totals>('source');
   const [header, setHeader] = useState<Header>('default');
 
-  const actions: readonly TableAction<User>[] = [
-    {
-      type: 'multiRow',
-      key: 'message',
+  const actions = defineActions<User>([
+    multiRowAction('message', (users) => show(`Message to ${users.map(fullName).join(', ')}`), {
       label: 'Send message',
       icon: icons.info,
-      onClick: (users) => show(`Message to ${users.map(fullName).join(', ')}`),
-    },
-  ];
+    }),
+  ]);
 
   return (
     <div className="ui-stack">
@@ -96,6 +107,7 @@ function GroupingDemo(): ReactElement {
           source={totals === 'source' ? fetchUsersByCountry : fetchWithoutTotals}
           rowKey="id"
           columns={columns}
+          filters={filters}
           actions={actions}
           groupBy="country"
           // A checkbox in every group header, for all its users on the page (opt-in).

@@ -33,6 +33,10 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 
 ## Project layout and commands
 
+- `exports` in `package.json` (2026-10-15, the user's choice; proposed at about 70%, over an alias per package and
+  entry in the root): each entry has a `source` condition first, its file in `src/`, then its built file in `dist/`.
+  The root's demo resolves the package by name (`@local/…`) to its sources by that condition (its `vite.config.ts`
+  and `tsconfig.json`); everywhere else, a customer's copy too, the condition is ignored and `dist/` counts.
 - `src/index.ts`: the public API (`defineUseForm`, `binding`, `formMeta`, `formRegistry`, `catalogs` and the types,
   all flat: `import type { UseFormOptions } from '@local/form-validation'`; the type namespace `formValidation` for
   two days until 2026-10-14). Renamed then (`typescript.md`, two words): `Binding` → `FieldBinding`, `BindingConfig`

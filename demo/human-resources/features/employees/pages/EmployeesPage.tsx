@@ -1,24 +1,30 @@
+import {
+  dateRangeFilter,
+  defineActions,
+  defineColumns,
+  defineFilters,
+  useDataTableController,
+} from '@local/data-table/react';
+import type { SavedFilter } from '@local/data-table/react';
 import { Loader } from '@mantine/core';
-import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router';
-import {
-  dateRangeColumnFilter,
-  selectColumnFilter,
-  useDataTableController,
-} from '../../../../../packages/data-table/src/react/index.js';
-import type { SavedFilter, TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
-import { EMPLOYEE_STATUSES, EMPLOYMENT_TYPES, statusOf, todayDate } from '../../../domain/index.js';
+import type { NavigateFunction } from 'react-router';
+import { statusOf, todayDate } from '../../../domain/index.js';
 import type { Employee, EmployeeStatus, HrData } from '../../../domain/index.js';
 import { formatDate } from '../../../shared/lib/format.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import type { Translate } from '../../../shared/lib/i18n/index.js';
 import { oneOf, within } from '../../../shared/lib/localQuery.js';
 import { DataTable } from '../../../shared/ui/dataTable.js';
-import { appIcons } from '../../../shared/ui/icons.js';
 import { EmployeeLabel, EmployeeStatusBadge } from '../../../shared/ui/parts.js';
 import { sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters.js';
+import { editAction, newAction, openAction } from '../../../shared/ui/tableActions.js';
+import { departmentFilter } from '../../departments/index.js';
 import { departmentName, employeeOf, useHrData, useTableSource } from '../../hr/index.js';
+import { employeeStatusFilter, employmentTypeFilter, locationFilter } from '../filters.js';
 import { useEmployeeFlows } from '../flows.js';
+import type { EmployeeFlows } from '../flows.js';
 
 export { EmployeesPage };
 
@@ -49,34 +55,9 @@ const COLLEAGUES_FILTERS: readonly SavedFilter[] = [
   sharedBy('Sophie Brandt', 'Berlin office', { location: ['Berlin'] }),
 ];
 
-// The directory: everyone with their job, manager, place, contract and status (former ones too: the status filter
-// narrows them). Open one for their page.
-function EmployeesPage(): ReactElement {
-  const savedFilters = useSavedFilters('human-resources:saved-filters:employees', COLLEAGUES_FILTERS);
-  const t = useTranslate();
-  const data = useHrData();
-  const nav = useDataTableController<EmployeeRow>();
-  const navigate = useNavigate();
-  const flows = useEmployeeFlows();
-  const source = useTableSource<EmployeeRow>('employees', employeeRows, {
-    search: ['name', 'email', 'title', 'department', 'manager', 'location'],
-    filters: {
-      department: (row, value) => oneOf(row.department, value),
-      employmentType: (row, value) => oneOf(row.employmentType, value),
-      location: (row, value) => oneOf(row.location, value),
-      status: (row, value) => oneOf(row.status, value),
-      startDate: (row, value) => within(row.startDate, value),
-    },
-    sortValue: { status: (row) => STATUS_ORDER[row.status] },
-  }, nav.reload);
-
-  const departments = data?.departments;
-  const locations = useMemo(
-    () => [...new Set(data?.employees.map((employee) => employee.location) ?? [])].sort(),
-    [data],
-  );
-
-  const columns = useMemo((): readonly TableColumn<EmployeeRow>[] => [
+// The columns of the directory, with their headers in the current language.
+const columnsOf = (t: Translate) =>
+  defineColumns<EmployeeRow>([
     {
       key: 'name',
       header: t('employees.name'),
@@ -89,12 +70,6 @@ function EmployeesPage(): ReactElement {
       header: t('employees.department'),
       width: 2,
       sortable: true,
-      filter: selectColumnFilter({
-        options: [...(departments ?? [])]
-          .sort((a, b) => a.name.localeCompare(b.name))
-          .map((department) => ({ value: department.name, label: department.name })),
-        multiple: true,
-      }),
     },
     { key: 'manager', header: t('employees.manager'), width: 2, sortable: true, hideable: true },
     {
@@ -103,10 +78,6 @@ function EmployeesPage(): ReactElement {
       width: 1.4,
       sortable: true,
       hideable: true,
-      filter: selectColumnFilter({
-        options: locations.map((location) => ({ value: location, label: location })),
-        multiple: true,
-      }),
     },
     {
       key: 'employmentType',
@@ -115,10 +86,6 @@ function EmployeesPage(): ReactElement {
       sortable: true,
       hideable: true,
       render: (row) => t(`employmentType.${row.employmentType}`),
-      filter: selectColumnFilter({
-        options: EMPLOYMENT_TYPES.map((value) => ({ value, label: t(`employmentType.${value}`) })),
-        multiple: true,
-      }),
     },
     {
       key: 'startDate',
@@ -127,7 +94,6 @@ function EmployeesPage(): ReactElement {
       sortable: true,
       hideable: true,
       render: (row) => formatDate(row.startDate),
-      filter: dateRangeColumnFilter(),
     },
     { key: 'email', header: t('employees.email'), width: 2.6, sortable: true, hideable: true, hidden: true },
     { key: 'phone', header: t('employees.phone'), width: 2, hideable: true, hidden: true },
@@ -138,40 +104,47 @@ function EmployeesPage(): ReactElement {
       sortable: true,
       hideable: true,
       render: (row) => <EmployeeStatusBadge status={row.status} />,
-      filter: selectColumnFilter({
-        options: EMPLOYEE_STATUSES.map((value) => ({ value, label: t(`employeeStatus.${value}`) })),
-        multiple: true,
-      }),
     },
-  ], [t, departments, locations]);
+  ]);
 
-  const actions = useMemo((): readonly TableAction<EmployeeRow>[] => [
-    {
-      type: 'general',
-      key: 'new',
-      label: t('employees.new'),
-      icon: appIcons.add,
-      variant: 'primary',
-      onClick: () => data !== undefined && void flows.create(data),
+// The filters of the directory (the departments and the places: those of the data).
+const filtersOf = (t: Translate, data: HrData) =>
+  defineFilters({
+    department: departmentFilter(data.departments),
+    location: locationFilter(data.employees),
+    employmentType: employmentTypeFilter(t),
+    startDate: dateRangeFilter(),
+    status: employeeStatusFilter(t),
+  });
+
+// The actions of the directory: new, open (the default action), edit.
+const actionsOf = (t: Translate, flows: EmployeeFlows, navigate: NavigateFunction, data: HrData) =>
+  defineActions<EmployeeRow>([
+    newAction(t('employees.new'), () => flows.create(data)),
+    openAction((row) => navigate(`/employees/${row.id}`)),
+    editAction((row) => flows.edit(row, data)),
+  ]);
+
+// The directory: everyone with their job, manager, place, contract and status (former ones too: the status filter
+// narrows them). Open one for their page.
+function EmployeesPage(): ReactElement {
+  const t = useTranslate();
+  const data = useHrData();
+  const nav = useDataTableController<EmployeeRow>();
+  const flows = useEmployeeFlows();
+  const navigate = useNavigate();
+  const savedFilters = useSavedFilters('human-resources:saved-filters:employees', COLLEAGUES_FILTERS);
+  const source = useTableSource<EmployeeRow>('employees', employeeRows, {
+    search: ['name', 'email', 'title', 'department', 'manager', 'location'],
+    filters: {
+      department: (row, value) => oneOf(row.department, value),
+      employmentType: (row, value) => oneOf(row.employmentType, value),
+      location: (row, value) => oneOf(row.location, value),
+      status: (row, value) => oneOf(row.status, value),
+      startDate: (row, value) => within(row.startDate, value),
     },
-    {
-      type: 'singleRow',
-      key: 'open',
-      icon: appIcons.open,
-      tip: t('common.open'),
-      show: 'column',
-      default: true,
-      onClick: (row) => void navigate(`/employees/${row.id}`),
-    },
-    {
-      type: 'singleRow',
-      key: 'edit',
-      icon: appIcons.edit,
-      tip: t('common.edit'),
-      show: 'both',
-      onClick: (row) => data !== undefined && void flows.edit(row, data),
-    },
-  ], [t, flows, navigate, data]);
+    sortValue: { status: (row) => STATUS_ORDER[row.status] },
+  }, nav.reload);
 
   if (data === undefined) {
     return <Loader size="sm" />;
@@ -184,8 +157,9 @@ function EmployeesPage(): ReactElement {
       subtitle={t('employees.subtitle')}
       source={source}
       rowKey="id"
-      columns={columns}
-      actions={actions}
+      columns={columnsOf(t)}
+      filters={filtersOf(t, data)}
+      actions={actionsOf(t, flows, navigate, data)}
       searchable
       reloadable
       pageSizeOptions={[25, 50, 100]}

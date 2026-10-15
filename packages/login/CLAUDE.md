@@ -117,6 +117,10 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 
 ## Layout and commands
 
+- `exports` in `package.json` (2026-10-15, the user's choice; proposed at about 70%, over an alias per package and
+  entry in the root): each entry has a `source` condition first, its file in `src/`, then its built file in `dist/`.
+  The root's demo resolves the package by name (`@local/…`) to its sources by that condition (its `vite.config.ts`
+  and `tsconfig.json`); everywhere else, a customer's copy too, the condition is ignored and `dist/` counts.
 - `src/api/` (types), `src/LoginScreen.tsx`, `src/mount.tsx`, `src/login.css`, `src/texts.ts`, `src/page.ts`
   (language and scheme of the page).
 - `demo/`: the package's demo (`npm run dev`): any username and password sign in after 600 ms, the password "wrong"

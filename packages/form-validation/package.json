@@ -5,7 +5,10 @@
   "description": "Form validation for React with Zod: the schema is the single source of truth.",
   "type": "module",
   "exports": {
-    ".": "./dist/index.js"
+    ".": {
+      "source": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
   },
   "scripts": {
     "dev": "vite",

@@ -140,7 +140,6 @@ function propsOf<Row, C>(
       hideable: column.hideable,
       hidden: column.hidden,
       render: render === undefined ? undefined : (row) => content(render(row)),
-      filter: filterOf(column.filter, content),
       edit: editorOf(column.edit, content),
     };
   };
@@ -156,6 +155,15 @@ function propsOf<Row, C>(
       return edit === undefined ? [] : [{ key: field.key, label: content(field.label), edit }];
     }),
     rowKey: options.rowKey,
+    filters: options.filters === undefined
+      ? undefined
+      : Object.fromEntries(
+        Object.entries(options.filters).flatMap(([key, filter]) => {
+          const reactFilter = filterOf(filter, content);
+
+          return reactFilter === undefined ? [] : [[key, reactFilter]];
+        }),
+      ),
     columns: options.columns.map((column) =>
       'columns' in column
         ? { header: content(column.header), columns: column.columns.map(columnOf) }
@@ -177,14 +185,7 @@ function propsOf<Row, C>(
 
 // A built-in filter becomes its React filter; an app's own filter function renders its content through the renderer
 // (called while rendering, so it follows the language like every other content).
-function filterOf<C>(
-  filter: DataTable.ColumnFilter<C> | undefined,
-  content: ContentRenderer,
-): Spec.ColumnFilter | undefined {
-  if (filter === undefined) {
-    return undefined;
-  }
-
+function filterOf<C>(filter: DataTable.TableFilter<C>, content: ContentRenderer): Spec.TableFilter | undefined {
   return reactFilterOf(filter)
     ?? (typeof filter === 'function'
       ? (props: Spec.FilterProps): ReactNode => content(() => filter(props))

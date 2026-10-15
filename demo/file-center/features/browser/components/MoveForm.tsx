@@ -1,9 +1,9 @@
+import { Form } from '@local/overlays/react';
 import { Group, Paper, Text, Tree, UnstyledButton, useTree } from '@mantine/core';
 import type { TreeNodeData } from '@mantine/core';
 import { useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
 import { TbChevronRight } from 'react-icons/tb';
-import { Form } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
 import { ancestorsOf, isInside, ROOT_ID } from '../../../domain/index.js';
 import type { Folder } from '../../../domain/index.js';
 import { folderIcon, toTreeData } from './FolderTree.js';

@@ -1,20 +1,24 @@
+import { defineActions, defineColumns, defineFilters, useDataTableController } from '@local/data-table/react';
+import type { SavedFilter } from '@local/data-table/react';
 import { Badge, Loader, Stack, Text } from '@mantine/core';
-import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router';
-import { selectColumnFilter, useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
-import type { SavedFilter, TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
-import { CHECKLIST_KINDS, checklistAnchor, isOverdue, nextTask, progressOf, todayDate } from '../../../domain/index.js';
+import type { NavigateFunction } from 'react-router';
+import { checklistAnchor, isOverdue, nextTask, progressOf, todayDate } from '../../../domain/index.js';
 import type { Checklist, Employee, HrData } from '../../../domain/index.js';
 import { formatDate } from '../../../shared/lib/format.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import type { Translate } from '../../../shared/lib/i18n/index.js';
 import { oneOf } from '../../../shared/lib/localQuery.js';
 import { DataTable } from '../../../shared/ui/dataTable.js';
 import { appIcons } from '../../../shared/ui/icons.js';
 import { EmployeeLabel, ProgressCell } from '../../../shared/ui/parts.js';
 import { sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters.js';
+import { deleteAction, newAction, openAction } from '../../../shared/ui/tableActions.js';
 import { employeeOf, useHrData, useTableSource } from '../../hr/index.js';
+import { checklistKindFilter, checklistStateFilter } from '../filters.js';
 import { useChecklistFlows } from '../flows.js';
+import type { ChecklistFlows } from '../flows.js';
 import { taskTitle } from '../taskTitle.js';
 
 export { ChecklistsPage };
@@ -56,24 +60,9 @@ const COLLEAGUES_FILTERS: readonly SavedFilter[] = [
   sharedBy('Tom Becker', 'Offboardings', { kind: ['offboarding'] }),
 ];
 
-// The checklists of joiners and leavers: whose, which kind, their day, how far, what comes next. The open ones first.
-function ChecklistsPage(): ReactElement {
-  const savedFilters = useSavedFilters('human-resources:saved-filters:checklists', COLLEAGUES_FILTERS);
-  const t = useTranslate();
-  const data = useHrData();
-  const nav = useDataTableController<ChecklistRow>();
-  const navigate = useNavigate();
-  const flows = useChecklistFlows();
-  const source = useTableSource<ChecklistRow>('checklists', checklistRows, {
-    search: ['name'],
-    filters: {
-      kind: (row, value) => oneOf(row.kind, value),
-      state: (row, value) => oneOf(row.state, value),
-    },
-    sortValue: { done: (row) => (row.total === 0 ? 0 : row.done / row.total) },
-  }, nav.reload);
-
-  const columns = useMemo((): readonly TableColumn<ChecklistRow>[] => [
+// The columns of the checklists, with their headers in the current language.
+const columnsOf = (t: Translate) =>
+  defineColumns<ChecklistRow>([
     {
       key: 'name',
       header: t('checklists.employee'),
@@ -91,10 +80,6 @@ function ChecklistsPage(): ReactElement {
           {t(`checklistKind.${row.kind}`)}
         </Badge>
       ),
-      filter: selectColumnFilter({
-        options: CHECKLIST_KINDS.map((value) => ({ value, label: t(`checklistKind.${value}`) })),
-        multiple: true,
-      }),
     },
     {
       key: 'anchor',
@@ -141,40 +126,36 @@ function ChecklistsPage(): ReactElement {
         row.state === 'complete'
           ? <Badge variant="light" color="gray">{t('checklistState.complete')}</Badge>
           : <Badge variant="outline">{t('checklistState.open')}</Badge>,
-      filter: selectColumnFilter({
-        options: (['open', 'complete'] as const).map((value) => ({ value, label: t(`checklistState.${value}`) })),
-        multiple: true,
-      }),
     },
-  ], [t]);
+  ]);
 
-  const actions = useMemo((): readonly TableAction<ChecklistRow>[] => [
-    {
-      type: 'general',
-      key: 'new',
-      label: t('checklists.new'),
-      icon: appIcons.add,
-      variant: 'primary',
-      onClick: () => data !== undefined && void flows.create(data),
+// The filters of the checklists.
+const filtersOf = (t: Translate) => defineFilters({ kind: checklistKindFilter(t), state: checklistStateFilter(t) });
+
+// The actions of the checklists: new, open (the default action), delete.
+const actionsOf = (t: Translate, flows: ChecklistFlows, navigate: NavigateFunction, data: HrData) =>
+  defineActions<ChecklistRow>([
+    newAction(t('checklists.new'), () => flows.create(data)),
+    openAction((row) => navigate(`/onboarding/${row.id}`)),
+    deleteAction((rows) => flows.remove(rows, data)),
+  ]);
+
+// The checklists of joiners and leavers: whose, which kind, their day, how far, what comes next. The open ones first.
+function ChecklistsPage(): ReactElement {
+  const t = useTranslate();
+  const data = useHrData();
+  const nav = useDataTableController<ChecklistRow>();
+  const flows = useChecklistFlows();
+  const navigate = useNavigate();
+  const savedFilters = useSavedFilters('human-resources:saved-filters:checklists', COLLEAGUES_FILTERS);
+  const source = useTableSource<ChecklistRow>('checklists', checklistRows, {
+    search: ['name'],
+    filters: {
+      kind: (row, value) => oneOf(row.kind, value),
+      state: (row, value) => oneOf(row.state, value),
     },
-    {
-      type: 'singleRow',
-      key: 'open',
-      icon: appIcons.open,
-      tip: t('common.open'),
-      show: 'column',
-      default: true,
-      onClick: (row) => void navigate(`/onboarding/${row.id}`),
-    },
-    {
-      type: 'multiRow',
-      key: 'delete',
-      label: t('common.delete'),
-      icon: appIcons.remove,
-      variant: 'danger',
-      onClick: (rows) => data !== undefined && void flows.remove(rows, data),
-    },
-  ], [t, flows, navigate, data]);
+    sortValue: { done: (row) => (row.total === 0 ? 0 : row.done / row.total) },
+  }, nav.reload);
 
   if (data === undefined) {
     return <Loader size="sm" />;
@@ -187,8 +168,9 @@ function ChecklistsPage(): ReactElement {
       subtitle={t('checklists.subtitle')}
       source={source}
       rowKey="id"
-      columns={columns}
-      actions={actions}
+      columns={columnsOf(t)}
+      filters={filtersOf(t)}
+      actions={actionsOf(t, flows, navigate, data)}
       searchable
       reloadable
       pageSizeOptions={[25, 50, 100]}

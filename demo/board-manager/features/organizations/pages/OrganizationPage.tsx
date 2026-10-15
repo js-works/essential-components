@@ -1,16 +1,17 @@
+import { useDialogs, useToast } from '@local/overlays/react';
 import { Button, Group, SimpleGrid, Stack, Tabs, Text } from '@mantine/core';
 import { Fragment, useState } from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
 import type { Organization } from '../../../domain/index.js';
 import { getOrganization } from '../../../infra/in-memory/index.js';
 import { countryName } from '../../../shared/lib/countries.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { appIcons, PageHeader, useDb } from '../../../shared/shared.js';
 import { NotFound } from '../../../shared/ui/NotFound.js';
-import { PeopleTable } from '../../members/components/PeopleTable.js';
-import { deleteOrganizationsFlow, editOrganization, WebsiteLink } from './OrganizationsPage.js';
+import { PersonTable } from '../../members/components/PersonTable.js';
+import { deleteOrganizationsFlow, editOrganization } from '../components/organizationFlows.js';
+import { WebsiteLink } from '../components/WebsiteLink.js';
 
 export { OrganizationPage };
 
@@ -40,7 +41,7 @@ function OrganizationPage(): ReactElement {
           <OrganizationOverview organization={organization} />
         </Tabs.Panel>
         <Tabs.Panel value="people" pt="md">
-          <PeopleTable
+          <PersonTable
             organizationId={organization.id}
             title={t('organizations.people')}
             subtitle={t('organizations.peopleSubtitle', { name: organization.name })}

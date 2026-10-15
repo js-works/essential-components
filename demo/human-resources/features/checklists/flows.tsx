@@ -1,5 +1,5 @@
+import { useDialogs, useToast } from '@local/overlays/react';
 import { useNavigate } from 'react-router';
-import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react/index.js';
 import { todayDate } from '../../domain/index.js';
 import type { Checklist, ChecklistKind, ChecklistTask, Employee, HrData } from '../../domain/index.js';
 import { errorText } from '../../shared/lib/errorText.js';
@@ -8,6 +8,10 @@ import { employeeOf, useChanged, useHrService } from '../hr/index.js';
 import { ChecklistForm, TaskForm } from './components/forms.js';
 
 export { useChecklistFlows };
+export type { ChecklistFlows };
+
+// What `useChecklistFlows()` gives: the flows, for the functions that build a table's actions.
+type ChecklistFlows = ReturnType<typeof useChecklistFlows>;
 
 // The changes of checklists: a new one (chosen, or started from an employee's page; then its page), delete, tick off
 // tasks, add and remove a task.

@@ -1,44 +1,16 @@
+import { useDialogs, useToast } from '@local/overlays/react';
 import { Button, Group, SimpleGrid, Stack, Tabs, Text } from '@mantine/core';
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useState } from 'react';
 import type { ReactElement } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useShallow } from 'zustand/react/shallow';
-import {
-  dateRangeColumnFilter,
-  selectColumnFilter,
-  useDataTableController,
-} from '../../../../../packages/data-table/src/react/index.js';
-import type { TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
-import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
-import { ROLES } from '../../../domain/index.js';
-import {
-  addMember,
-  changeRole,
-  db,
-  fetchBoardMembers,
-  getBoard,
-  getBoardRow,
-  removeMembers,
-} from '../../../infra/in-memory/index.js';
-import type { MemberRow } from '../../../infra/in-memory/index.js';
-import { MemberForm } from '../../../shared/forms.js';
-import { confirmAndRun } from '../../../shared/lib/flows.js';
+import { getBoard, getBoardRow } from '../../../infra/in-memory/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import type { Translate } from '../../../shared/lib/i18n/index.js';
-import {
-  appIcons,
-  DataTable,
-  formatDate,
-  formatDateTime,
-  organizationFilter,
-  PAGE_SIZE_OPTIONS,
-  PageHeader,
-  personFilter,
-  useDb,
-} from '../../../shared/shared.js';
+import { appIcons, formatDateTime, PageHeader, useDb } from '../../../shared/shared.js';
 import { NotFound } from '../../../shared/ui/NotFound.js';
-import { MeetingsTable } from '../../meetings/components/MeetingsTable.js';
+import { MeetingTable } from '../../meetings/components/MeetingTable.js';
 import { deleteBoardsFlow, editBoard } from '../components/boardFlows.js';
+import { MemberTable } from '../components/MemberTable.js';
 
 export { BoardPage };
 
@@ -69,7 +41,7 @@ function BoardPage(): ReactElement {
           <BoardOverview boardId={board.id} />
         </Tabs.Panel>
         <Tabs.Panel value="meetings" pt="md">
-          <MeetingsTable
+          <MeetingTable
             boardId={board.id}
             pathOf={meetingPath}
             title={t('modules.meetings')}
@@ -77,7 +49,7 @@ function BoardPage(): ReactElement {
           />
         </Tabs.Panel>
         <Tabs.Panel value="members" pt="md">
-          <MembersTable boardId={board.id} />
+          <MemberTable boardId={board.id} />
         </Tabs.Panel>
       </Tabs>
     </Stack>
@@ -147,156 +119,5 @@ function BoardOverview({ boardId }: { boardId: string }): ReactElement | null {
         ))}
       </SimpleGrid>
     </Stack>
-  );
-}
-
-// The columns, with their headers in the current language.
-const columnsOf = (t: Translate): readonly TableColumn<MemberRow>[] => [
-  { key: 'name', header: t('boards.columns.person'), width: 2.5, sortable: true, filter: personFilter },
-  {
-    key: 'role',
-    header: t('boards.columns.role'),
-    width: 1.5,
-    sortable: true,
-    filter: selectColumnFilter({
-      options: ROLES.map((value) => ({ value, label: t(`roles.${value}`) })),
-      multiple: true,
-    }),
-    render: (row) => t(`roles.${row.role}`),
-  },
-  {
-    key: 'organization',
-    header: t('boards.columns.organization'),
-    width: 2.5,
-    sortable: true,
-    hideable: true,
-    filter: organizationFilter,
-  },
-  { key: 'email', header: t('boards.columns.email'), width: 3, hideable: true, hidden: true },
-  {
-    key: 'since',
-    header: t('boards.columns.memberSince'),
-    width: 1.5,
-    sortable: true,
-    hideable: true,
-    filter: dateRangeColumnFilter(),
-    render: (row) => formatDate(row.since),
-  },
-];
-
-// The members of a board: add one (of the people who are not on it yet), change a role, remove.
-function MembersTable({ boardId }: { boardId: string }): ReactElement {
-  const t = useTranslate();
-  const columns = useMemo(() => columnsOf(t), [t]);
-  const nav = useDataTableController<MemberRow>();
-  const dialogs = useDialogs();
-  const toasts = useToast();
-  const source = useMemo(() => fetchBoardMembers(boardId), [boardId]);
-
-  const actions = useMemo<readonly TableAction<MemberRow>[]>(() => {
-    const add = async () => {
-      const state = db.getState();
-      const members = new Set(
-        state.memberships.filter((membership) => membership.boardId === boardId).map((membership) =>
-          membership.personId
-        ),
-      );
-      const people = state.people.filter((person) => !members.has(person.id));
-
-      if (people.length === 0) {
-        void dialogs.info({ title: t('boards.addMember'), content: t('boards.allAreMembers') });
-        return;
-      }
-
-      const saved = !(await dialogs.form({
-        title: t('boards.addMember'),
-        content: (
-          <MemberForm
-            people={people}
-            save={(values) => addMember(boardId, values.personId ?? '', values.role)}
-          />
-        ),
-        buttons: { confirm: t('common.add') },
-      })).canceled;
-
-      if (saved) {
-        nav.reload();
-        toasts.success(t('boards.memberAdded'));
-      }
-    };
-
-    const edit = async (row: MemberRow) => {
-      const saved = !(await dialogs.form({
-        title: t('boards.roleOf', { name: row.name }),
-        content: <MemberForm role={row.role} save={(values) => changeRole(row.id, values.role)} />,
-        buttons: { confirm: t('common.save') },
-      })).canceled;
-
-      if (saved) {
-        nav.reload();
-        toasts.success(t('boards.roleChanged'));
-      }
-    };
-
-    const remove = async (rows: readonly MemberRow[]) => {
-      const [first] = rows;
-      const board = getBoard(db.getState(), boardId)?.name ?? '';
-      const done = await confirmAndRun(
-        dialogs,
-        {
-          title: t('boards.removeTitle', { count: rows.length }),
-          content: t('boards.removeContent', { count: rows.length, name: first?.name ?? '', board }),
-          buttons: { confirm: t('common.remove') },
-        },
-        () => removeMembers(rows.map((row) => row.id)),
-      );
-
-      if (done) {
-        nav.reload();
-        toasts.success(t('boards.removed', { count: rows.length, name: first?.name ?? '' }));
-      }
-    };
-
-    return [
-      {
-        type: 'general',
-        key: 'add',
-        label: t('boards.addMember'),
-        icon: appIcons.add,
-        variant: 'primary',
-        onClick: () => void add(),
-      },
-      {
-        type: 'singleRow',
-        key: 'edit',
-        icon: appIcons.edit,
-        label: t('boards.changeRole'),
-        show: 'both',
-        default: true,
-        onClick: (row) => void edit(row),
-      },
-      {
-        type: 'multiRow',
-        key: 'remove',
-        label: t('common.remove'),
-        icon: appIcons.remove,
-        onClick: (rows) => void remove(rows),
-      },
-    ];
-  }, [t, nav, dialogs, toasts, boardId]);
-
-  return (
-    <DataTable
-      controller={nav}
-      title={t('modules.members')}
-      density="compact"
-      searchable
-      reloadable
-      source={source}
-      rowKey="id"
-      columns={columns}
-      actions={actions}
-      pageSizeOptions={PAGE_SIZE_OPTIONS}
-    />
   );
 }

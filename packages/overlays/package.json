@@ -10,6 +10,7 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "source": "./src/main/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
@@ -22,6 +23,7 @@
       "import": "./dist/bindings/lit/index.js"
     },
     "./react": {
+      "source": "./src/main/bindings/react/index.ts",
       "types": "./dist/bindings/react/index.d.ts",
       "import": "./dist/bindings/react/index.js"
     },

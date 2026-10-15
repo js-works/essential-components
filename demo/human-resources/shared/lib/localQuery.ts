@@ -1,4 +1,4 @@
-import type { RowPage, RowQuery } from '../../../../packages/data-table/src/react/index.js';
+import type { RowPage, RowQuery } from '@local/data-table/react';
 
 export { matchesText, oneOf, runLocalQuery, within };
 export type { LocalQueryOptions };

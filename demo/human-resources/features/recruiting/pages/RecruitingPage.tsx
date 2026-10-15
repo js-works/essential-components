@@ -1,24 +1,30 @@
+import {
+  dateRangeFilter,
+  defineActions,
+  defineColumns,
+  defineFilters,
+  useDataTableController,
+} from '@local/data-table/react';
+import type { SavedFilter } from '@local/data-table/react';
 import { Anchor, Loader, Text } from '@mantine/core';
-import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { Link, useNavigate } from 'react-router';
-import {
-  dateRangeColumnFilter,
-  selectColumnFilter,
-  useDataTableController,
-} from '../../../../../packages/data-table/src/react/index.js';
-import type { SavedFilter, TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
-import { isInProcess, OPENING_STATUSES } from '../../../domain/index.js';
+import type { NavigateFunction } from 'react-router';
+import { isInProcess } from '../../../domain/index.js';
 import type { HrData, Opening, OpeningStatus } from '../../../domain/index.js';
 import { formatDate } from '../../../shared/lib/format.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import type { Translate } from '../../../shared/lib/i18n/index.js';
 import { oneOf, within } from '../../../shared/lib/localQuery.js';
 import { DataTable } from '../../../shared/ui/dataTable.js';
-import { appIcons } from '../../../shared/ui/icons.js';
 import { OpeningStatusBadge } from '../../../shared/ui/parts.js';
 import { sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters.js';
+import { editAction, newAction, openAction } from '../../../shared/ui/tableActions.js';
+import { departmentFilter } from '../../departments/index.js';
 import { departmentName, employeeOf, useHrData, useTableSource } from '../../hr/index.js';
+import { openingStatusFilter } from '../filters.js';
 import { useRecruitingFlows } from '../flows.js';
+import type { RecruitingFlows } from '../flows.js';
 
 export { RecruitingPage };
 
@@ -54,26 +60,9 @@ const COLLEAGUES_FILTERS: readonly SavedFilter[] = [
   sharedBy('Sophie Brandt', 'Sales openings', { department: ['Sales', 'Sales DACH', 'International Sales'] }),
 ];
 
-// The job openings: their department, hiring manager, status and candidates. Open one for its pipeline.
-function RecruitingPage(): ReactElement {
-  const savedFilters = useSavedFilters('human-resources:saved-filters:openings', COLLEAGUES_FILTERS);
-  const t = useTranslate();
-  const data = useHrData();
-  const nav = useDataTableController<OpeningRow>();
-  const navigate = useNavigate();
-  const flows = useRecruitingFlows();
-  const source = useTableSource<OpeningRow>('openings', openingRows, {
-    search: ['title', 'department', 'manager', 'location'],
-    filters: {
-      department: (row, value) => oneOf(row.department, value),
-      status: (row, value) => oneOf(row.status, value),
-      opened: (row, value) => within(row.opened, value),
-    },
-    sortValue: { status: (row) => STATUS_ORDER[row.status] },
-  }, nav.reload);
-  const departments = data?.departments;
-
-  const columns = useMemo((): readonly TableColumn<OpeningRow>[] => [
+// The columns of the openings, with their headers in the current language.
+const columnsOf = (t: Translate) =>
+  defineColumns<OpeningRow>([
     {
       key: 'title',
       header: t('openings.position'),
@@ -93,12 +82,6 @@ function RecruitingPage(): ReactElement {
       header: t('openings.department'),
       width: 2,
       sortable: true,
-      filter: selectColumnFilter({
-        options: [...(departments ?? [])]
-          .sort((a, b) => a.name.localeCompare(b.name))
-          .map((department) => ({ value: department.name, label: department.name })),
-        multiple: true,
-      }),
     },
     { key: 'manager', header: t('openings.hiringManager'), width: 2, sortable: true, hideable: true },
     {
@@ -124,7 +107,6 @@ function RecruitingPage(): ReactElement {
       sortable: true,
       hideable: true,
       render: (row) => formatDate(row.opened),
-      filter: dateRangeColumnFilter(),
     },
     {
       key: 'status',
@@ -132,40 +114,42 @@ function RecruitingPage(): ReactElement {
       width: 1.3,
       sortable: true,
       render: (row) => <OpeningStatusBadge status={row.status} />,
-      filter: selectColumnFilter({
-        options: OPENING_STATUSES.map((value) => ({ value, label: t(`openingStatus.${value}`) })),
-        multiple: true,
-      }),
     },
-  ], [t, departments]);
+  ]);
 
-  const actions = useMemo((): readonly TableAction<OpeningRow>[] => [
-    {
-      type: 'general',
-      key: 'new',
-      label: t('openings.new'),
-      icon: appIcons.add,
-      variant: 'primary',
-      onClick: () => data !== undefined && void flows.createOpening(data),
+// The filters of the openings (the departments: those of the data).
+const filtersOf = (t: Translate, data: HrData) =>
+  defineFilters({
+    department: departmentFilter(data.departments),
+    opened: dateRangeFilter(),
+    status: openingStatusFilter(t),
+  });
+
+// The actions of the openings: new, open (the default action), edit.
+const actionsOf = (t: Translate, flows: RecruitingFlows, navigate: NavigateFunction, data: HrData) =>
+  defineActions<OpeningRow>([
+    newAction(t('openings.new'), () => flows.createOpening(data)),
+    openAction((row) => navigate(`/recruiting/${row.id}`)),
+    editAction((row) => flows.editOpening(row, data)),
+  ]);
+
+// The job openings: their department, hiring manager, status and candidates. Open one for its pipeline.
+function RecruitingPage(): ReactElement {
+  const t = useTranslate();
+  const data = useHrData();
+  const nav = useDataTableController<OpeningRow>();
+  const flows = useRecruitingFlows();
+  const navigate = useNavigate();
+  const savedFilters = useSavedFilters('human-resources:saved-filters:openings', COLLEAGUES_FILTERS);
+  const source = useTableSource<OpeningRow>('openings', openingRows, {
+    search: ['title', 'department', 'manager', 'location'],
+    filters: {
+      department: (row, value) => oneOf(row.department, value),
+      status: (row, value) => oneOf(row.status, value),
+      opened: (row, value) => within(row.opened, value),
     },
-    {
-      type: 'singleRow',
-      key: 'open',
-      icon: appIcons.open,
-      tip: t('common.open'),
-      show: 'column',
-      default: true,
-      onClick: (row) => void navigate(`/recruiting/${row.id}`),
-    },
-    {
-      type: 'singleRow',
-      key: 'edit',
-      icon: appIcons.edit,
-      tip: t('common.edit'),
-      show: 'both',
-      onClick: (row) => data !== undefined && void flows.editOpening(row, data),
-    },
-  ], [t, flows, navigate, data]);
+    sortValue: { status: (row) => STATUS_ORDER[row.status] },
+  }, nav.reload);
 
   if (data === undefined) {
     return <Loader size="sm" />;
@@ -178,8 +162,9 @@ function RecruitingPage(): ReactElement {
       subtitle={t('openings.subtitle')}
       source={source}
       rowKey="id"
-      columns={columns}
-      actions={actions}
+      columns={columnsOf(t)}
+      filters={filtersOf(t, data)}
+      actions={actionsOf(t, flows, navigate, data)}
       searchable
       reloadable
       pageSizeOptions={[25, 50, 100]}

@@ -19,7 +19,8 @@ type FilterSummary = {
 };
 
 // What a summary may need: the locale (numbers, dates) and the texts (Yes, No).
-type SummaryContext = { locale: string; texts: Spec.DataTableTexts };
+// `labels`: the labels of the values chosen in the column's filter (see filterLabels.ts).
+type SummaryContext = { locale: string; texts: Spec.DataTableTexts; labels: ReadonlyMap<string, string> };
 
 function optionsOf(options: readonly Spec.FilterOption[]): NormalizedOption[] {
   return options.map((option) => (typeof option === 'string' ? { value: option, label: option } : option));

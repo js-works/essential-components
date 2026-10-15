@@ -1,7 +1,7 @@
 import { Stack } from '@mantine/core';
 import type { ReactElement } from 'react';
 import { PageHeader } from '../../../shared/ui/parts.js';
-import { GrantsTable } from '../components/GrantsTable.js';
+import { GrantTable } from '../components/GrantTable.js';
 
 export { AccessPage };
 
@@ -13,7 +13,7 @@ function AccessPage(): ReactElement {
         title="Access"
         subtitle="Who has which role where. A role on a scope applies to everything below it; a group's access is its members' access."
       />
-      <GrantsTable name="all" />
+      <GrantTable name="all" />
     </Stack>
   );
 }

@@ -1,11 +1,15 @@
+import { useDialogs, useToast } from '@local/overlays/react';
 import { useNavigate } from 'react-router';
-import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react/index.js';
 import type { Employee, Team } from '../../domain/index.js';
 import { translate } from '../../shared/lib/i18n/index.js';
 import { useChanged, useTimeService } from '../tracker/index.js';
 import { EmployeeForm } from './components/EmployeeForm.js';
 
 export { useEmployeeFlows };
+export type { EmployeeFlows };
+
+// What `useEmployeeFlows()` gives: the flows, for the functions that build a table's actions.
+type EmployeeFlows = ReturnType<typeof useEmployeeFlows>;
 
 // The changes of employees (a team lead): a new one (then their page), edit one.
 function useEmployeeFlows() {

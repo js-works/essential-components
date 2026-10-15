@@ -2,6 +2,7 @@
 // restyle the other demos.
 import '@mantine/core/styles.layer.css';
 import './file-center.css';
+import { OverlaysProvider } from '@local/overlays/react';
 import { MantineProvider } from '@mantine/core';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StrictMode } from 'react';
@@ -9,7 +10,6 @@ import type { ReactElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
 import { RouterProvider } from 'react-router';
-import { OverlaysProvider } from '../../../packages/overlays/src/main/bindings/react/index.js';
 import { BrowserServiceContext, createBrowserService } from '../features/browser/index.js';
 import type { BrowserService } from '../features/browser/index.js';
 import { createInMemoryRepositories } from '../infra/in-memory/index.js';

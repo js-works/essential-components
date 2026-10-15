@@ -1,5 +1,5 @@
+import { useDialogs, useToast } from '@local/overlays/react';
 import { useNavigate } from 'react-router';
-import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react/index.js';
 import { addDays, currentSalary, todayDate } from '../../domain/index.js';
 import type { Employee, EmployeeDocument, HrData } from '../../domain/index.js';
 import { errorText } from '../../shared/lib/errorText.js';
@@ -11,6 +11,10 @@ import { EndForm } from './components/EndForm.js';
 import { SalaryForm } from './components/SalaryForm.js';
 
 export { useEmployeeFlows };
+export type { EmployeeFlows };
+
+// What `useEmployeeFlows()` gives: the flows, for the functions that build a table's actions.
+type EmployeeFlows = ReturnType<typeof useEmployeeFlows>;
 
 // The changes of employees: a new one (then their page), edit one, a new salary, the end of the employment (with the
 // offboarding, if wanted), documents (upload, delete).
@@ -166,5 +170,8 @@ function useEmployeeFlows() {
     }
   };
 
-  return { create, edit, changeSalary, end, uploadDocuments, removeDocuments };
+  // "Download" of a document: not in the demo, a toast says so.
+  const downloadDocument = () => toasts.warn(translate('documents.notInDemo'));
+
+  return { create, edit, changeSalary, end, uploadDocuments, downloadDocument, removeDocuments };
 }

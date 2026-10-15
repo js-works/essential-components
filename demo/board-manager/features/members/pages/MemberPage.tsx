@@ -1,19 +1,16 @@
+import { useDialogs, useToast } from '@local/overlays/react';
 import { Anchor, Button, Group, SimpleGrid, Stack, Tabs, Text } from '@mantine/core';
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useState } from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
-import type { TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
-import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
 import type { Person } from '../../../domain/index.js';
-import { boardIdsOf, fetchMemberships, getOrganization, getPerson } from '../../../infra/in-memory/index.js';
-import type { MembershipRow } from '../../../infra/in-memory/index.js';
+import { boardIdsOf, getOrganization, getPerson } from '../../../infra/in-memory/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import type { Translate } from '../../../shared/lib/i18n/index.js';
-import { appIcons, DataTable, formatDate, PAGE_SIZE_OPTIONS, PageHeader, useDb } from '../../../shared/shared.js';
+import { appIcons, PageHeader, useDb } from '../../../shared/shared.js';
 import { NotFound } from '../../../shared/ui/NotFound.js';
-import { MeetingsTable } from '../../meetings/components/MeetingsTable.js';
-import { deletePeopleFlow, editPerson } from '../components/PeopleTable.js';
+import { MeetingTable } from '../../meetings/components/MeetingTable.js';
+import { MembershipTable } from '../components/MembershipTable.js';
+import { deletePeopleFlow, editPerson } from '../components/personFlows.js';
 
 export { MemberPage };
 
@@ -45,10 +42,10 @@ function MemberPage(): ReactElement {
           <MemberOverview person={person} />
         </Tabs.Panel>
         <Tabs.Panel value="boards" pt="md">
-          <MembershipsTable personId={person.id} />
+          <MembershipTable personId={person.id} />
         </Tabs.Panel>
         <Tabs.Panel value="meetings" pt="md">
-          <MeetingsTable
+          <MeetingTable
             personId={person.id}
             pathOf={meetingPath}
             title={t('modules.meetings')}
@@ -125,66 +122,5 @@ function MemberOverview({ person }: { person: Person }): ReactElement {
         ))}
       </SimpleGrid>
     </Stack>
-  );
-}
-
-const membershipColumnsOf = (t: Translate): readonly TableColumn<MembershipRow>[] => [
-  {
-    key: 'board',
-    header: t('members.columns.board'),
-    width: 3,
-    sortable: true,
-    render: (row) => <Anchor component={Link} to={`/boards/${row.boardId}`} size="sm">{row.board}</Anchor>,
-  },
-  {
-    key: 'role',
-    header: t('members.columns.role'),
-    width: 2,
-    sortable: true,
-    render: (row) => t(`roles.${row.role}`),
-  },
-  {
-    key: 'since',
-    header: t('members.columns.since'),
-    width: 2,
-    sortable: true,
-    render: (row) => formatDate(row.since),
-  },
-];
-
-// The member's boards and roles, read-only: memberships are changed on the page of a board ("Open", also a double
-// click, or the name).
-function MembershipsTable({ personId }: { personId: string }): ReactElement {
-  const t = useTranslate();
-  const columns = useMemo(() => membershipColumnsOf(t), [t]);
-  const nav = useDataTableController<MembershipRow>();
-  const navigate = useNavigate();
-  const source = useMemo(() => fetchMemberships(personId), [personId]);
-  const actions = useMemo<readonly TableAction<MembershipRow>[]>(() => [
-    {
-      type: 'singleRow',
-      key: 'open',
-      icon: appIcons.open,
-      tip: t('members.openBoard'),
-      show: 'column',
-      default: true,
-      onClick: (row) => navigate(`/boards/${row.boardId}`),
-    },
-  ], [t, navigate]);
-
-  return (
-    <DataTable
-      controller={nav}
-      title={t('modules.boards')}
-      subtitle={t('members.boardsSubtitle')}
-      density="compact"
-      reloadable
-      source={source}
-      rowKey="id"
-      columns={columns}
-      actions={actions}
-      pageSizeOptions={PAGE_SIZE_OPTIONS}
-      footer="auto"
-    />
   );
 }

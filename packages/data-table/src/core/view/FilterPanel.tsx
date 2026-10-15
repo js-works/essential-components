@@ -8,6 +8,7 @@ import { useLocale } from '../texts.js';
 import { flag } from '../utils.js';
 import * as styles from './classes.js';
 import { summaryOf } from './ColumnFilters.js';
+import { ColumnLabelsContext, useLabelsOfColumn } from './filterLabels.js';
 import { icons } from './icons.js';
 import { LayerContext } from './layer.js';
 import { ActionButton, TextButton } from './widgets.js';
@@ -24,7 +25,7 @@ export {
 export type { FilterColumn };
 
 // A column as the filter view and the pills need it.
-type FilterColumn = { key: string; header: ReactNode; filter: Spec.ColumnFilter };
+type FilterColumn = { key: string; header: ReactNode; filter: Spec.TableFilter };
 
 type Filters = Readonly<Record<string, Spec.FilterValue>>;
 
@@ -119,6 +120,7 @@ function FilterView(props: FilterViewProps): ReactElement {
   const { columns, filters, texts, focusKey, closing = false, anchorRef, savedFilters, onApply, onCancel } = props;
   const id = useId();
   const layer = useContext(LayerContext);
+  const labelsOf = useLabelsOfColumn();
   const [draft, setDraft] = useState(filters);
   // Whether Reset and Clear would change something (else they are not shown).
   const changed = !sameValue(draft, filters);
@@ -377,14 +379,16 @@ function FilterView(props: FilterViewProps): ReactElement {
                   />
                 </span>
                 <div className={styles.filterPanelControl}>
-                  {column.filter({
-                    value: draft[column.key],
-                    onChange: (value) =>
-                      setDraft((current) =>
-                        value === undefined ? withoutKey(current, column.key) : { ...current, [column.key]: value }
-                      ),
-                    labelledBy: labelId,
-                  })}
+                  <ColumnLabelsContext value={labelsOf(column.key)}>
+                    {column.filter({
+                      value: draft[column.key],
+                      onChange: (value) =>
+                        setDraft((current) =>
+                          value === undefined ? withoutKey(current, column.key) : { ...current, [column.key]: value }
+                        ),
+                      labelledBy: labelId,
+                    })}
+                  </ColumnLabelsContext>
                 </div>
               </div>
             );
@@ -484,6 +488,7 @@ type FilterPillsProps = {
 function FilterPills(props: FilterPillsProps): ReactElement | null {
   const { columns, filters, texts, onOpen, onRemove, onClearAll, inactive = false, disabled = false } = props;
   const locale = useLocale();
+  const labelsOf = useLabelsOfColumn();
   const active = columns.filter((column) => filters[column.key] !== undefined);
 
   if (active.length === 0) {
@@ -493,7 +498,11 @@ function FilterPills(props: FilterPillsProps): ReactElement | null {
   return (
     <fieldset className={styles.filterPills} data-inactive={flag(inactive)} inert={inactive} disabled={disabled}>
       {active.map((column) => {
-        const summary = summaryOf(column.filter, filters[column.key] ?? null, { locale, texts });
+        const summary = summaryOf(column.filter, filters[column.key] ?? null, {
+          locale,
+          texts,
+          labels: labelsOf(column.key),
+        });
         const dots = <span className={styles.filterPillDots} aria-hidden>⋯</span>;
 
         const content = (
@@ -565,6 +574,7 @@ function FilterSidebar(props: FilterDrawerProps): ReactElement {
     props;
   const id = useId();
   const layer = useContext(LayerContext);
+  const labelsOf = useLabelsOfColumn();
   const ref = useRef<HTMLElement>(null);
   const [draft, setDraft] = useState(filters);
   const changed = !sameValue(draft, filters);
@@ -803,14 +813,16 @@ function FilterSidebar(props: FilterDrawerProps): ReactElement {
                 />
               </span>
               <div className={styles.filterPanelControl}>
-                {column.filter({
-                  value: draft[column.key],
-                  onChange: (value) =>
-                    setDraft((current) =>
-                      value === undefined ? withoutKey(current, column.key) : { ...current, [column.key]: value }
-                    ),
-                  labelledBy: labelId,
-                })}
+                <ColumnLabelsContext value={labelsOf(column.key)}>
+                  {column.filter({
+                    value: draft[column.key],
+                    onChange: (value) =>
+                      setDraft((current) =>
+                        value === undefined ? withoutKey(current, column.key) : { ...current, [column.key]: value }
+                      ),
+                    labelledBy: labelId,
+                  })}
+                </ColumnLabelsContext>
               </div>
             </div>
           );

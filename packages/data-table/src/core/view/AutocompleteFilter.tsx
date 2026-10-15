@@ -5,6 +5,7 @@ import type * as Spec from '../../api/react/index.js';
 import { useTexts } from '../texts.js';
 import { flag } from '../utils.js';
 import * as styles from './classes.js';
+import { useColumnLabels } from './filterLabels.js';
 import { icons } from './icons.js';
 import { LayerContext } from './layer.js';
 import { ClearButton } from './widgets.js';
@@ -13,10 +14,7 @@ export { AutocompleteFilterInput, autocompleteIdsOf, LOAD_DELAY };
 
 type Option = Spec.AutocompleteOption;
 
-type AutocompleteFilterProps = Spec.FilterProps & Spec.AutocompleteColumnFilterSettings & {
-  // The labels of the values chosen so far, by value (shared by all inputs of one filter, and read by its pill).
-  labels: Map<string, string>;
-};
+type AutocompleteFilterProps = Spec.FilterProps & Spec.AutocompleteFilterSettings;
 
 // How long typing must pause before `load` is called, in milliseconds.
 const LOAD_DELAY = 250;
@@ -39,7 +37,9 @@ function autocompleteIdsOf(value: Spec.FilterValue | undefined): string[] {
 // default), or as at most `maxChips` chips and a `+N` chip for the rest. Backspace in its empty input removes the last
 // value.
 function AutocompleteFilterInput(props: AutocompleteFilterProps): ReactElement {
-  const { value, onChange, labelledBy, load, multiple = false, minQueryLength = 1, maxChips = 0, labels } = props;
+  const { value, onChange, labelledBy, load, multiple = false, minQueryLength = 1, maxChips = 0 } = props;
+  // The labels of the values chosen so far, by value (kept by the table for the column, and read by the pill).
+  const labels = useColumnLabels();
   const texts = useTexts();
   const layer = useContext(LayerContext);
   const selected: Option[] = autocompleteIdsOf(value).map((id) => ({ value: id, label: labels.get(id) ?? id }));

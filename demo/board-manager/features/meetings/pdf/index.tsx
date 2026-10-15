@@ -1,4 +1,4 @@
-import type { useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
+import type { useToast } from '@local/overlays/react';
 import type { Meeting } from '../../../domain/index.js';
 import type { Dialogs } from '../../../shared/lib/flows.js';
 import { translate } from '../../../shared/lib/i18n/index.js';

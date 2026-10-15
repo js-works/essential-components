@@ -1,6 +1,6 @@
+import type { RowSource } from '@local/data-table/react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createContext, useCallback, useContext } from 'react';
-import type { RowSource } from '../../../../packages/data-table/src/react/index.js';
 import type { AccessData } from '../../domain/index.js';
 import { runLocalQuery } from '../../shared/lib/localQuery.js';
 import type { LocalQueryOptions } from '../../shared/lib/localQuery.js';

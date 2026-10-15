@@ -1,16 +1,18 @@
+import { defineActions, defineColumns, singleRowAction, useDataTableController } from '@local/data-table/react';
 import { Anchor, Group as MantineGroup, Stack, Text, ThemeIcon } from '@mantine/core';
-import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
-import type { TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
+import type { NavigateFunction } from 'react-router';
 import type { AccessData, Group } from '../../../domain/index.js';
 import { DataTable } from '../../../shared/ui/dataTable.js';
 import { appIcons } from '../../../shared/ui/icons.js';
 import { PageHeader } from '../../../shared/ui/parts.js';
-import { useGrantAccess } from '../../access/index.js';
+import { deleteAction, editAction, newAction, openAction } from '../../../shared/ui/tableActions.js';
+import { useGrantFlows } from '../../access/index.js';
+import type { GrantFlows } from '../../access/index.js';
 import { useTableSource } from '../../iam/index.js';
 import { useGroupFlows } from '../flows.js';
+import type { GroupFlows } from '../flows.js';
 
 export { GroupsPage };
 
@@ -24,81 +26,53 @@ function groupRows(data: AccessData): GroupRow[] {
   }));
 }
 
-// All groups: what a group is granted, its members get.
-function GroupsPage(): ReactElement {
-  const nav = useDataTableController<GroupRow>();
-  const navigate = useNavigate();
-  const flows = useGroupFlows();
-  const grantAccess = useGrantAccess();
-  const source = useTableSource<GroupRow>('groups', groupRows, { search: ['name', 'description'] }, nav.reload);
+// The columns of the groups list.
+const columns = defineColumns<GroupRow>([
+  {
+    key: 'name',
+    header: 'Name',
+    width: 2.5,
+    sortable: true,
+    render: (row) => (
+      <MantineGroup gap={8} wrap="nowrap">
+        <ThemeIcon size={24} radius="xl" variant="light" aria-hidden>{appIcons.groups}</ThemeIcon>
+        <Anchor component={Link} to={`/groups/${row.id}`} size="sm" truncate>{row.name}</Anchor>
+      </MantineGroup>
+    ),
+  },
+  {
+    key: 'description',
+    header: 'Description',
+    width: 4,
+    hideable: true,
+    render: (row) => <Text size="sm" truncate>{row.description}</Text>,
+  },
+  { key: 'members', header: 'Members', width: 1.2, sortable: true, align: 'end' },
+  { key: 'grants', header: 'Grants', width: 1.2, sortable: true, align: 'end', hideable: true },
+]);
 
-  const columns = useMemo((): readonly TableColumn<GroupRow>[] => [
-    {
-      key: 'name',
-      header: 'Name',
-      width: 2.5,
-      sortable: true,
-      render: (row) => (
-        <MantineGroup gap={8} wrap="nowrap">
-          <ThemeIcon size={24} radius="xl" variant="light" aria-hidden>{appIcons.groups}</ThemeIcon>
-          <Anchor component={Link} to={`/groups/${row.id}`} size="sm" truncate>{row.name}</Anchor>
-        </MantineGroup>
-      ),
-    },
-    {
-      key: 'description',
-      header: 'Description',
-      width: 4,
-      hideable: true,
-      render: (row) => <Text size="sm" truncate>{row.description}</Text>,
-    },
-    { key: 'members', header: 'Members', width: 1.2, sortable: true, align: 'end' },
-    { key: 'grants', header: 'Grants', width: 1.2, sortable: true, align: 'end', hideable: true },
-  ], []);
+// What the actions of the groups list need: the flows of groups and grants, and where a group opens.
+type GroupListContext = { flows: GroupFlows; grants: GrantFlows; navigate: NavigateFunction };
 
-  const actions = useMemo((): readonly TableAction<GroupRow>[] => [
-    {
-      type: 'general',
-      key: 'new',
-      label: 'New group',
-      icon: appIcons.add,
-      variant: 'primary',
-      onClick: () => void flows.create(),
-    },
-    {
-      type: 'singleRow',
-      key: 'open',
-      icon: appIcons.open,
-      tip: 'Open',
-      show: 'column',
-      default: true,
-      onClick: (row) => void navigate(`/groups/${row.id}`),
-    },
-    {
-      type: 'singleRow',
-      key: 'edit',
-      icon: appIcons.edit,
-      tip: 'Edit',
-      show: 'both',
-      onClick: (row) => void flows.edit(row),
-    },
-    {
-      type: 'singleRow',
-      key: 'grant',
+// The actions of the groups list: new, open (the default action), edit, grant access, delete.
+const actionsOf = ({ flows, grants, navigate }: GroupListContext) =>
+  defineActions<GroupRow>([
+    newAction('New group', () => flows.create()),
+    openAction((row) => navigate(`/groups/${row.id}`)),
+    editAction((row) => flows.edit(row)),
+    singleRowAction('grant', (row) => grants.grant({ principal: { type: 'group', id: row.id } }), {
       label: 'Grant access',
       icon: appIcons.access,
       show: 'toolbar',
-      onClick: (row) => void grantAccess({ principal: { type: 'group', id: row.id } }),
-    },
-    {
-      type: 'multiRow',
-      key: 'delete',
-      label: 'Delete',
-      icon: appIcons.remove,
-      variant: 'danger',
-      onClick: (rows) => void flows.remove(rows),
-    },
-  ], [flows, navigate, grantAccess]);
+    }),
+    deleteAction((rows) => flows.remove(rows)),
+  ]);
+
+// All groups: what a group is granted, its members get.
+function GroupsPage(): ReactElement {
+  const nav = useDataTableController<GroupRow>();
+  const ctx = { flows: useGroupFlows(), grants: useGrantFlows(), navigate: useNavigate() };
+  const source = useTableSource<GroupRow>('groups', groupRows, { search: ['name', 'description'] }, nav.reload);
 
   return (
     <Stack gap="md">
@@ -108,7 +82,7 @@ function GroupsPage(): ReactElement {
         source={source}
         rowKey="id"
         columns={columns}
-        actions={actions}
+        actions={actionsOf(ctx)}
         searchable
         defaultSort={{ key: 'name', direction: 'asc' }}
       />

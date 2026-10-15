@@ -1,8 +1,8 @@
-export type { AutocompleteColumnFilterSettings, AutocompleteOption };
+export type { AutocompleteFilterSettings, AutocompleteOption };
 
 type AutocompleteOption = { value: string; label: string; content?: () => string | Node };
 
-type AutocompleteColumnFilterSettings = {
+type AutocompleteFilterSettings = {
   load: (query: string, signal: AbortSignal) => Promise<readonly AutocompleteOption[]>;
   multiple?: boolean;
   minQueryLength?: number;

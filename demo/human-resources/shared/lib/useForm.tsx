@@ -1,9 +1,9 @@
+import { defineUseForm } from '@local/form-validation';
+import type { UseFormOptions } from '@local/form-validation';
+import { Form } from '@local/overlays/react';
 import { useMemo } from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import type { z } from 'zod';
-import { defineUseForm } from '../../../../packages/form-validation/src/index.js';
-import type { UseFormOptions } from '../../../../packages/form-validation/src/index.js';
-import { Form } from '../../../../packages/overlays/src/main/bindings/react/index.js';
 import { AppError } from '../../infra/in-memory/index.js';
 import { FieldError } from '../ui/FieldError.js';
 import { i18nAdapter, translateKey } from './i18n/index.js';

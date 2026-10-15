@@ -29,6 +29,8 @@ import { ActionList } from './Actions.js';
 import * as classes from './classes.js';
 import { ColumnResizer } from './ColumnResizer.js';
 import { EditForm } from './EditForm.js';
+import { FilterLabelsContext } from './filterLabels.js';
+import type { FilterLabels } from './filterLabels.js';
 import {
   FILTER_DRAWER_CLOSE_TIME,
   FILTER_VIEW_CLOSE_TIME,
@@ -102,6 +104,8 @@ function DataTableView<Row>(props: Spec.DataTableProps<Row>): ReactElement {
   const nav = useDataTable<Row>(props);
   // Where the widgets render their popups (see layer.ts).
   const [layer, setLayer] = useState<HTMLDivElement | null>(null);
+  // The labels of the values chosen in the filters (see filterLabels.ts).
+  const [filterLabels] = useState<FilterLabels>(() => new Map());
   const filterButtonRef = useRef<HTMLButtonElement>(null);
   const { texts, selection, rows, layout, sort } = nav;
   const drag = useRowDrag(nav.lines.length, nav.canReorder, nav.moveLine);
@@ -742,587 +746,593 @@ function DataTableView<Row>(props: Spec.DataTableProps<Row>): ReactElement {
       onKeyDown={(event) => nav.keyDownRoot(event, layer)}
     >
       <LayerContext value={layer}>
-        {/* Tooltips open after a short pause, and at once when moving from one trigger to the next. */}
-        <Tooltip.Provider delay={300}>
-          <div className={classes.content}>
-            {/* While a row is edited, the toolbar is blocked too (also the search box and the filter button). */}
-            <div className={classes.blocker} inert={nav.edit !== undefined} data-blocked={flag(nav.edit !== undefined)}>
-              <Toolbar
-                title={title}
-                subtitle={subtitle}
-                // The total of the last finished load (`showTotal`): not before the first one.
-                total={props.showTotal === true && nav.loaded ? texts.totalCount({ count: nav.total }) : undefined}
-                generalActions={nav.generalActions}
-                pinnedActions={nav.pinnedActions}
-                selectionActions={nav.selectionActions}
-                invoke={nav.invokeFromToolbar}
-                texts={texts}
-                search={nav.searchBox}
-                // While the filter view is shown, everything of the bar but the filter button is disabled.
-                filtering={nav.filterPanel.open}
-                disabled={sidebar.open}
-                reload={nav.reload}
-                filterButton={nav.filterColumns.length > 0 && (
-                  drawerFlag
-                    ? (
-                      <FilterButton
-                        count={Object.keys(nav.filters).length}
-                        open={sidebar.open}
-                        texts={texts}
-                        buttonRef={filterButtonRef}
-                        onToggle={() => (sidebar.open ? closeSidebar() : setSidebar({ open: true }))}
-                        onClear={() => {
-                          nav.clearFilters();
-                          if (sidebar.open) closeSidebar();
-                        }}
-                      />
-                    )
-                    : (
-                      <FilterButton
-                        count={Object.keys(nav.filters).length}
-                        open={nav.filterPanel.open}
-                        texts={texts}
-                        buttonRef={filterButtonRef}
-                        onToggle={() => (nav.filterPanel.open ? closeFilterView() : nav.openFilters())}
-                        onClear={() => {
-                          nav.clearFilters();
-                          if (nav.filterPanel.open) closeFilterView();
-                        }}
-                      />
-                    )
-                )}
-                columnMenu={
-                  <ToggleMenu
-                    icon={<icons.Columns />}
-                    label={texts.columns}
-                    choice={props.layout === undefined
-                      ? {
-                        label: texts.layout,
-                        value: layoutMode,
-                        options: [
-                          { value: 'auto', label: texts.layoutAuto },
-                          { value: 'table', label: texts.layoutTable },
-                          { value: 'cards', label: texts.layoutCards },
-                        ],
-                        onChange: (value) => setLayoutMode(LAYOUT_MODES.find((mode) => mode === value) ?? 'auto'),
-                      }
-                      : undefined}
-                    // The column widths are the table's: disabled while the rows are cards.
-                    actions={[{
-                      key: 'optimize-widths',
-                      label: texts.optimizeColumnWidths,
-                      icon: <icons.FitWidth size={16} />,
-                      disabled: cards,
-                      onSelect: nav.optimizeColumnWidths,
-                    }, {
-                      key: 'reset-widths',
-                      label: texts.resetColumnWidths,
-                      icon: <icons.ArrowBackUp size={16} />,
-                      disabled: cards || !nav.hasResizedColumns,
-                      onSelect: nav.resetColumnWidths,
-                    }]}
-                    entries={nav.columnToggles}
-                    onToggle={nav.toggleColumn}
-                  />
-                }
-                // Shown while the filter view is shown too, but disabled and a bit faded like the bar's other parts.
-                pills={
-                  <FilterPills
-                    columns={nav.filterColumns}
-                    filters={nav.filters}
-                    texts={texts}
-                    onOpen={nav.selectionActive
-                      ? undefined
-                      : drawerFlag
-                      ? (key) => setSidebar({ open: true, focusKey: key })
-                      : nav.openFilters}
-                    onRemove={nav.removeFilter}
-                    onClearAll={nav.clearFilters}
-                    inactive={nav.filterPanel.open}
-                    disabled={sidebar.open}
-                  />
-                }
-                selectable={selection !== 'none'}
-                selectedCount={nav.selectedRows.length}
-                onCancelSelection={nav.clearSelection}
-                loading={nav.loading}
-              />
-            </div>
-            {
-              /* The grid with the footer, and the filter view: stacked in one cell, so the height is the larger of the
-              two. While the view is shown, the grid and the footer stay (with their scroll position and state), faded
-              and inert below it: the table keeps its height, and nothing below it moves. */
-            }
-            <div className={classes.stack} data-filtering={flag(filtersOpen)}>
-              {/* One list, so the closed view keeps its instance (its key) while it rolls up. */}
-              {[
-                closingFilterViewKey !== undefined && filterView(closingFilterViewKey, true),
-                nav.filterPanel.open && filterView(filterViewKey, false),
-              ]}
-              <div className={classes.tableArea} inert={filtersOpen}>
-                <div className={classes.scrollArea}>
-                  <div
-                    ref={nav.scrollerRef}
-                    className={classes.scroller}
-                    data-overflow-start={flag(scrollEdges.start)}
-                    data-overflow-end={flag(scrollEdges.end)}
-                    onPointerDown={markSelectableCell}
-                  >
-                    {cards
+        <FilterLabelsContext value={filterLabels}>
+          {/* Tooltips open after a short pause, and at once when moving from one trigger to the next. */}
+          <Tooltip.Provider delay={300}>
+            <div className={classes.content}>
+              {/* While a row is edited, the toolbar is blocked too (also the search box and the filter button). */}
+              <div
+                className={classes.blocker}
+                inert={nav.edit !== undefined}
+                data-blocked={flag(nav.edit !== undefined)}
+              >
+                <Toolbar
+                  title={title}
+                  subtitle={subtitle}
+                  // The total of the last finished load (`showTotal`): not before the first one.
+                  total={props.showTotal === true && nav.loaded ? texts.totalCount({ count: nav.total }) : undefined}
+                  generalActions={nav.generalActions}
+                  pinnedActions={nav.pinnedActions}
+                  selectionActions={nav.selectionActions}
+                  invoke={nav.invokeFromToolbar}
+                  texts={texts}
+                  search={nav.searchBox}
+                  // While the filter view is shown, everything of the bar but the filter button is disabled.
+                  filtering={nav.filterPanel.open}
+                  disabled={sidebar.open}
+                  reload={nav.reload}
+                  filterButton={nav.filterColumns.length > 0 && (
+                    drawerFlag
                       ? (
-                        <RowContextMenu
-                          role="list"
-                          items={nav.contextActions}
-                          available={nav.hasContextMenu}
-                          prepare={nav.prepareContextMenu}
-                          invoke={nav.invokeFromContextMenu}
-                          className={classes.cards}
-                        >
-                          {nav.edit?.isNew === true && (
-                            <Fragment key={nav.edit.key}>{renderEditForm(nav.edit)}</Fragment>
-                          )}
-                          {nav.lines.map((line) => {
-                            if (line.type === 'group') {
-                              return line.group === undefined
-                                ? null
-                                : (
-                                  <Fragment key={`group:${line.group.key}:${line.segment}`}>
-                                    {renderCardGroup(line.group)}
-                                  </Fragment>
-                                );
-                            }
-
-                            const row = rows[line.index];
-
-                            return row === undefined
-                              ? null
-                              : <Fragment key={nav.keyOf(row)}>{renderCard(row, line.index)}</Fragment>;
-                          })}
-                          {nav.isEmpty && (
-                            <div role="listitem" className={classes.cardsEmpty} inert={nav.blocked}>
-                              {emptyContent}
-                            </div>
-                          )}
-                        </RowContextMenu>
+                        <FilterButton
+                          count={Object.keys(nav.filters).length}
+                          open={sidebar.open}
+                          texts={texts}
+                          buttonRef={filterButtonRef}
+                          onToggle={() => (sidebar.open ? closeSidebar() : setSidebar({ open: true }))}
+                          onClear={() => {
+                            nav.clearFilters();
+                            if (sidebar.open) closeSidebar();
+                          }}
+                        />
                       )
                       : (
-                        <RowContextMenu
-                          items={nav.contextActions}
-                          available={nav.hasContextMenu}
-                          prepare={nav.prepareContextMenu}
-                          invoke={nav.invokeFromContextMenu}
-                          className={classes.table}
-                          style={{ gridTemplateColumns: nav.gridTemplateColumns }}
-                        >
-                          <div
-                            role="row"
-                            ref={nav.headerRef}
-                            data-groups={flag(nav.headerRows === 2)}
-                            className={classes.headerRow}
+                        <FilterButton
+                          count={Object.keys(nav.filters).length}
+                          open={nav.filterPanel.open}
+                          texts={texts}
+                          buttonRef={filterButtonRef}
+                          onToggle={() => (nav.filterPanel.open ? closeFilterView() : nav.openFilters())}
+                          onClear={() => {
+                            nav.clearFilters();
+                            if (nav.filterPanel.open) closeFilterView();
+                          }}
+                        />
+                      )
+                  )}
+                  columnMenu={
+                    <ToggleMenu
+                      icon={<icons.Columns />}
+                      label={texts.columns}
+                      choice={props.layout === undefined
+                        ? {
+                          label: texts.layout,
+                          value: layoutMode,
+                          options: [
+                            { value: 'auto', label: texts.layoutAuto },
+                            { value: 'table', label: texts.layoutTable },
+                            { value: 'cards', label: texts.layoutCards },
+                          ],
+                          onChange: (value) => setLayoutMode(LAYOUT_MODES.find((mode) => mode === value) ?? 'auto'),
+                        }
+                        : undefined}
+                      // The column widths are the table's: disabled while the rows are cards.
+                      actions={[{
+                        key: 'optimize-widths',
+                        label: texts.optimizeColumnWidths,
+                        icon: <icons.FitWidth size={16} />,
+                        disabled: cards,
+                        onSelect: nav.optimizeColumnWidths,
+                      }, {
+                        key: 'reset-widths',
+                        label: texts.resetColumnWidths,
+                        icon: <icons.ArrowBackUp size={16} />,
+                        disabled: cards || !nav.hasResizedColumns,
+                        onSelect: nav.resetColumnWidths,
+                      }]}
+                      entries={nav.columnToggles}
+                      onToggle={nav.toggleColumn}
+                    />
+                  }
+                  // Shown while the filter view is shown too, but disabled and a bit faded like the bar's other parts.
+                  pills={
+                    <FilterPills
+                      columns={nav.filterColumns}
+                      filters={nav.filters}
+                      texts={texts}
+                      onOpen={nav.selectionActive
+                        ? undefined
+                        : drawerFlag
+                        ? (key) => setSidebar({ open: true, focusKey: key })
+                        : nav.openFilters}
+                      onRemove={nav.removeFilter}
+                      onClearAll={nav.clearFilters}
+                      inactive={nav.filterPanel.open}
+                      disabled={sidebar.open}
+                    />
+                  }
+                  selectable={selection !== 'none'}
+                  selectedCount={nav.selectedRows.length}
+                  onCancelSelection={nav.clearSelection}
+                  loading={nav.loading}
+                />
+              </div>
+              {
+                /* The grid with the footer, and the filter view: stacked in one cell, so the height is the larger of the
+              two. While the view is shown, the grid and the footer stay (with their scroll position and state), faded
+              and inert below it: the table keeps its height, and nothing below it moves. */
+              }
+              <div className={classes.stack} data-filtering={flag(filtersOpen)}>
+                {/* One list, so the closed view keeps its instance (its key) while it rolls up. */}
+                {[
+                  closingFilterViewKey !== undefined && filterView(closingFilterViewKey, true),
+                  nav.filterPanel.open && filterView(filterViewKey, false),
+                ]}
+                <div className={classes.tableArea} inert={filtersOpen}>
+                  <div className={classes.scrollArea}>
+                    <div
+                      ref={nav.scrollerRef}
+                      className={classes.scroller}
+                      data-overflow-start={flag(scrollEdges.start)}
+                      data-overflow-end={flag(scrollEdges.end)}
+                      onPointerDown={markSelectableCell}
+                    >
+                      {cards
+                        ? (
+                          <RowContextMenu
+                            role="list"
+                            items={nav.contextActions}
+                            available={nav.hasContextMenu}
+                            prepare={nav.prepareContextMenu}
+                            invoke={nav.invokeFromContextMenu}
+                            className={classes.cards}
                           >
-                            {nav.hasHandleColumn && (
-                              <div
-                                role="columnheader"
-                                className={classes.headerTall}
-                                style={stickyStyle('handle', {
-                                  gridColumn: nav.handleColumn,
-                                  gridRow: nav.headerRowSpan,
-                                })}
-                                {...stickyAttributes('handle')}
-                                data-meta={nav.metaEdges('handle')}
-                              />
+                            {nav.edit?.isNew === true && (
+                              <Fragment key={nav.edit.key}>{renderEditForm(nav.edit)}</Fragment>
                             )}
-                            {nav.hasSelectionColumn && (
-                              <div
-                                role="columnheader"
-                                inert={nav.blocked}
-                                className={classes.headerTall}
-                                style={stickyStyle('selection', {
-                                  gridColumn: nav.selectionColumn,
-                                  gridRow: nav.headerRowSpan,
-                                })}
-                                {...stickyAttributes('selection')}
-                                data-meta={nav.metaEdges('selection')}
-                                data-select={flag(rows.length > 0)}
-                                onClick={(event) => {
-                                  // The free space of the cell is a click on the select-all checkbox.
-                                  if (event.target === event.currentTarget && rows.length > 0) {
-                                    nav.selectAll(!nav.allSelected);
-                                  }
-                                }}
-                              >
-                                <Checkbox
-                                  label={nav.allSelected ? texts.deselectAll : texts.selectAll}
-                                  disabled={rows.length === 0}
-                                  checked={nav.allSelected}
-                                  indeterminate={nav.someSelected}
-                                  onChange={(checked) => nav.selectAll(checked)}
-                                />
-                              </div>
-                            )}
-                            {nav.hasDetails && (
-                              <div
-                                role="columnheader"
-                                inert={nav.blocked}
-                                className={classes.headerTall}
-                                style={stickyStyle('details', {
-                                  gridColumn: nav.detailsColumn,
-                                  gridRow: nav.headerRowSpan,
-                                })}
-                                {...stickyAttributes('details')}
-                                data-meta={nav.metaEdges('details')}
-                              >
-                                <ChevronButton
-                                  label={nav.allDetailsExpanded ? texts.collapseAllDetails : texts.expandAllDetails}
-                                  expanded={nav.allDetailsExpanded}
-                                  onClick={nav.toggleAllDetails}
-                                />
-                              </div>
-                            )}
-                            {layout.groups.map((group) => (
-                              <div
-                                key={group.start}
-                                role="columnheader"
-                                inert={nav.blocked}
-                                className={classes.groupHeader}
-                                style={{ gridColumn: nav.columnSpan(nav.firstLeafColumn + group.start, group.span) }}
-                              >
-                                <div className={classes.groupTitle}>{group.header}</div>
-                              </div>
-                            ))}
-                            {nav.headerRows === 2
-                              && layout.leaves.map(({ column, grouped }, index) =>
-                                grouped
+                            {nav.lines.map((line) => {
+                              if (line.type === 'group') {
+                                return line.group === undefined
                                   ? null
                                   : (
-                                    <div
-                                      key={`filler-${column.key}`}
-                                      role="presentation"
-                                      className={classes.headerFiller}
-                                      style={{ gridColumn: nav.firstLeafColumn + index }}
-                                    />
-                                  )
-                              )}
-                            {layout.leaves.map(({ column }, index) => {
-                              // A table whose rows are moved has no column sorting.
-                              const sortable = column.sortable === true && !nav.reorderable;
-                              const resizable = column.resizable !== false;
+                                    <Fragment key={`group:${line.group.key}:${line.segment}`}>
+                                      {renderCardGroup(line.group)}
+                                    </Fragment>
+                                  );
+                              }
 
-                              return (
+                              const row = rows[line.index];
+
+                              return row === undefined
+                                ? null
+                                : <Fragment key={nav.keyOf(row)}>{renderCard(row, line.index)}</Fragment>;
+                            })}
+                            {nav.isEmpty && (
+                              <div role="listitem" className={classes.cardsEmpty} inert={nav.blocked}>
+                                {emptyContent}
+                              </div>
+                            )}
+                          </RowContextMenu>
+                        )
+                        : (
+                          <RowContextMenu
+                            items={nav.contextActions}
+                            available={nav.hasContextMenu}
+                            prepare={nav.prepareContextMenu}
+                            invoke={nav.invokeFromContextMenu}
+                            className={classes.table}
+                            style={{ gridTemplateColumns: nav.gridTemplateColumns }}
+                          >
+                            <div
+                              role="row"
+                              ref={nav.headerRef}
+                              data-groups={flag(nav.headerRows === 2)}
+                              className={classes.headerRow}
+                            >
+                              {nav.hasHandleColumn && (
                                 <div
-                                  key={column.key}
+                                  role="columnheader"
+                                  className={classes.headerTall}
+                                  style={stickyStyle('handle', {
+                                    gridColumn: nav.handleColumn,
+                                    gridRow: nav.headerRowSpan,
+                                  })}
+                                  {...stickyAttributes('handle')}
+                                  data-meta={nav.metaEdges('handle')}
+                                />
+                              )}
+                              {nav.hasSelectionColumn && (
+                                <div
                                   role="columnheader"
                                   inert={nav.blocked}
-                                  id={nav.headerId(column.key)}
-                                  aria-sort={sortable ? nav.ariaSort(column.key) : undefined}
-                                  data-align={column.align}
-                                  data-sortable={flag(sortable)}
-                                  data-resizable={flag(resizable)}
-                                  data-sorted={flag(sort?.key === column.key)}
-                                  onClick={sortable ? () => nav.sortBy(column.key) : undefined}
-                                  className={nav.headerRows === 2 ? classes.headerSub : classes.headerTall}
-                                  style={{ gridColumn: nav.firstLeafColumn + index }}
+                                  className={classes.headerTall}
+                                  style={stickyStyle('selection', {
+                                    gridColumn: nav.selectionColumn,
+                                    gridRow: nav.headerRowSpan,
+                                  })}
+                                  {...stickyAttributes('selection')}
+                                  data-meta={nav.metaEdges('selection')}
+                                  data-select={flag(rows.length > 0)}
+                                  onClick={(event) => {
+                                    // The free space of the cell is a click on the select-all checkbox.
+                                    if (event.target === event.currentTarget && rows.length > 0) {
+                                      nav.selectAll(!nav.allSelected);
+                                    }
+                                  }}
                                 >
-                                  {sortable
-                                    ? (
-                                      <SortButton
-                                        tip={sort?.key === column.key && sort.direction === 'asc'
-                                          ? texts.sortDesc
-                                          : texts.sortAsc}
-                                        header={column.header}
-                                        direction={sort?.key === column.key ? sort.direction : undefined}
+                                  <Checkbox
+                                    label={nav.allSelected ? texts.deselectAll : texts.selectAll}
+                                    disabled={rows.length === 0}
+                                    checked={nav.allSelected}
+                                    indeterminate={nav.someSelected}
+                                    onChange={(checked) => nav.selectAll(checked)}
+                                  />
+                                </div>
+                              )}
+                              {nav.hasDetails && (
+                                <div
+                                  role="columnheader"
+                                  inert={nav.blocked}
+                                  className={classes.headerTall}
+                                  style={stickyStyle('details', {
+                                    gridColumn: nav.detailsColumn,
+                                    gridRow: nav.headerRowSpan,
+                                  })}
+                                  {...stickyAttributes('details')}
+                                  data-meta={nav.metaEdges('details')}
+                                >
+                                  <ChevronButton
+                                    label={nav.allDetailsExpanded ? texts.collapseAllDetails : texts.expandAllDetails}
+                                    expanded={nav.allDetailsExpanded}
+                                    onClick={nav.toggleAllDetails}
+                                  />
+                                </div>
+                              )}
+                              {layout.groups.map((group) => (
+                                <div
+                                  key={group.start}
+                                  role="columnheader"
+                                  inert={nav.blocked}
+                                  className={classes.groupHeader}
+                                  style={{ gridColumn: nav.columnSpan(nav.firstLeafColumn + group.start, group.span) }}
+                                >
+                                  <div className={classes.groupTitle}>{group.header}</div>
+                                </div>
+                              ))}
+                              {nav.headerRows === 2
+                                && layout.leaves.map(({ column, grouped }, index) =>
+                                  grouped
+                                    ? null
+                                    : (
+                                      <div
+                                        key={`filler-${column.key}`}
+                                        role="presentation"
+                                        className={classes.headerFiller}
+                                        style={{ gridColumn: nav.firstLeafColumn + index }}
                                       />
                                     )
-                                    : <span className={classes.headerText}>{column.header}</span>}
-                                  {resizable && (
-                                    <ColumnResizer
-                                      onStart={nav.freezeColumns}
-                                      onResize={(width) => nav.resizeColumn(column.key, width)}
-                                    />
-                                  )}
-                                </div>
-                              );
-                            })}
-                            {nav.hasActionColumn && (
-                              <div
-                                role="columnheader"
-                                inert={nav.blocked}
-                                className={classes.headerTall}
-                                style={stickyStyle('action', {
-                                  gridColumn: nav.actionColumn,
-                                  gridRow: nav.headerRowSpan,
-                                })}
-                                {...stickyAttributes('action')}
-                              />
-                            )}
-                          </div>
-                          {/* A new row (`addRow`) is only its form, at the top of the rows. */}
-                          {nav.edit?.isNew === true && (
-                            <Fragment key={nav.edit.key}>{renderEditForm(nav.edit)}</Fragment>
-                          )}
-                          {nav.lines.map((line, lineIndex) => {
-                            // The lines: group headers and rows (the rows of a collapsed group are left out). The stripes
-                            // start again in every group, and in every run of rows without a group.
-                            if (line.type === 'group') {
-                              return line.group === undefined
-                                ? null
-                                : (
-                                  <Fragment key={`group:${line.group.key}:${line.segment}`}>
-                                    {renderGroupRow(line.group, lineIndex)}
-                                  </Fragment>
-                                );
-                            }
+                                )}
+                              {layout.leaves.map(({ column }, index) => {
+                                // A table whose rows are moved has no column sorting.
+                                const sortable = column.sortable === true && !nav.reorderable;
+                                const resizable = column.resizable !== false;
 
-                            const { index } = line;
-
-                            if (index >= rows.length) {
-                              return null;
-                            }
-
-                            const row = rows[index] as Row;
-
-                            const key = nav.keyOf(row);
-                            const stripeIndex = line.local;
-                            const selected = nav.isSelected(key);
-                            const detail = nav.details[index];
-                            const expandable = hasContent(detail);
-                            const expanded = expandable && nav.isExpanded(key);
-                            // Every cell of the row and of its detail row: selected, and during a drag lifted and moved
-                            // with the pointer, or moved aside to make room (the transform).
-                            const look = drag.lookOf(lineIndex);
-                            const mark = {
-                              'data-selected': flag(selected),
-                              'data-drag': look.state,
-                              style: look.style,
-                            };
-                            // In edit mode, the edit form follows the row (after its detail row) and takes its place: the
-                            // row folds up (see above). While a row is edited, every row is blocked (the form is not); the
-                            // others are faded.
-                            const edit = nav.edit?.key === key ? nav.edit : undefined;
-                            const otherEdited = nav.edit !== undefined && edit === undefined;
-                            const rowInert = nav.blocked;
-
-                            return (
-                              <Fragment key={key}>
-                                <div
-                                  role="row"
-                                  className={classes.dataRow}
-                                  data-row-key={key}
-                                  data-line={lineIndex}
-                                  inert={rowInert}
-                                  data-blocked={flag(otherEdited)}
-                                  data-editing={flag(edit !== undefined)}
-                                  data-stripe={flag(nav.striped && stripeIndex % 2 === 0)}
-                                  aria-selected={selection !== 'none' ? selected : undefined}
-                                  {...rowHandlers(row, key)}
-                                >
-                                  {
-                                    /* The drag handle cell is a control cell (clicking it never selects). Its handle is only
-                          there while rows can be moved (no search, no filters); the cell stays, so nothing shifts. */
-                                  }
-                                  {nav.hasHandleColumn && (
-                                    <div
-                                      role="cell"
-                                      className={classes.cell}
-                                      {...mark}
-                                      style={stickyStyle('handle', mark.style)}
-                                      {...stickyAttributes('handle')}
-                                      data-meta={nav.metaEdges('handle')}
-                                      data-control
-                                    >
-                                      {nav.reorderable && (
-                                        <button
-                                          type="button"
-                                          className={classes.dragHandle}
-                                          aria-label={texts.moveRow}
-                                          aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
-                                          inert={!nav.canReorder}
-                                          data-inactive={flag(!nav.canReorder)}
-                                          {...drag.handleProps(lineIndex)}
-                                        >
-                                          <icons.Grip />
-                                        </button>
-                                      )}
-                                    </div>
-                                  )}
-                                  {
-                                    /* The free space of the selection cell is a click on its checkbox (a few pixels
-                          beside it still hit), with Shift for a range. The details toggle cell is not a control cell:
-                          clicking its free space selects the row, like a data cell. The checkbox and the chevron
-                          inside are their own targets, so each still does its own job exactly once. */
-                                  }
-                                  {nav.hasSelectionColumn && (
-                                    <div
-                                      role="cell"
-                                      className={classes.cell}
-                                      {...mark}
-                                      style={stickyStyle('selection', mark.style)}
-                                      {...stickyAttributes('selection')}
-                                      data-meta={nav.metaEdges('selection')}
-                                      data-select
-                                      onClick={(event) => {
-                                        if (event.target !== event.currentTarget) {
-                                          return;
-                                        }
-
-                                        nav.selectByClick(key, event.shiftKey);
-                                      }}
-                                    >
-                                      <Checkbox
-                                        label={selected ? texts.deselectRow : texts.selectRow}
-                                        checked={selected}
-                                        onChange={(_, shift) => nav.selectByClick(key, shift)}
+                                return (
+                                  <div
+                                    key={column.key}
+                                    role="columnheader"
+                                    inert={nav.blocked}
+                                    id={nav.headerId(column.key)}
+                                    aria-sort={sortable ? nav.ariaSort(column.key) : undefined}
+                                    data-align={column.align}
+                                    data-sortable={flag(sortable)}
+                                    data-resizable={flag(resizable)}
+                                    data-sorted={flag(sort?.key === column.key)}
+                                    onClick={sortable ? () => nav.sortBy(column.key) : undefined}
+                                    className={nav.headerRows === 2 ? classes.headerSub : classes.headerTall}
+                                    style={{ gridColumn: nav.firstLeafColumn + index }}
+                                  >
+                                    {sortable
+                                      ? (
+                                        <SortButton
+                                          tip={sort?.key === column.key && sort.direction === 'asc'
+                                            ? texts.sortDesc
+                                            : texts.sortAsc}
+                                          header={column.header}
+                                          direction={sort?.key === column.key ? sort.direction : undefined}
+                                        />
+                                      )
+                                      : <span className={classes.headerText}>{column.header}</span>}
+                                    {resizable && (
+                                      <ColumnResizer
+                                        onStart={nav.freezeColumns}
+                                        onResize={(width) => nav.resizeColumn(column.key, width)}
                                       />
-                                    </div>
-                                  )}
-                                  {nav.hasDetails && (
-                                    <div
-                                      role="cell"
-                                      className={classes.cell}
-                                      {...mark}
-                                      style={stickyStyle('details', mark.style)}
-                                      {...stickyAttributes('details')}
-                                      data-meta={nav.metaEdges('details')}
-                                    >
-                                      {expandable && (
-                                        <ChevronButton
-                                          label={expanded ? texts.collapseDetails : texts.expandDetails}
-                                          expanded={expanded}
-                                          onClick={() => nav.toggleDetails(key)}
-                                        />
-                                      )}
-                                    </div>
-                                  )}
-                                  {renderDataCells(row, mark)}
-                                  {nav.hasActionColumn && (
-                                    <div
-                                      role="cell"
-                                      className={classes.cell}
-                                      {...mark}
-                                      style={stickyStyle('action', mark.style)}
-                                      {...stickyAttributes('action')}
-                                      data-divider="start"
-                                      data-control
-                                    >
-                                      <div className={classes.rowActions} data-row-actions>
-                                        <ActionList
-                                          items={nav.rowActionsFor(row)}
-                                          placement="row"
-                                          rowActionLook={nav.rowActionLook}
-                                          invoke={(action) => nav.invokeForRow(row, action)}
-                                        />
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                                {expanded && (
+                                    )}
+                                  </div>
+                                );
+                              })}
+                              {nav.hasActionColumn && (
+                                <div
+                                  role="columnheader"
+                                  inert={nav.blocked}
+                                  className={classes.headerTall}
+                                  style={stickyStyle('action', {
+                                    gridColumn: nav.actionColumn,
+                                    gridRow: nav.headerRowSpan,
+                                  })}
+                                  {...stickyAttributes('action')}
+                                />
+                              )}
+                            </div>
+                            {/* A new row (`addRow`) is only its form, at the top of the rows. */}
+                            {nav.edit?.isNew === true && (
+                              <Fragment key={nav.edit.key}>{renderEditForm(nav.edit)}</Fragment>
+                            )}
+                            {nav.lines.map((line, lineIndex) => {
+                              // The lines: group headers and rows (the rows of a collapsed group are left out). The stripes
+                              // start again in every group, and in every run of rows without a group.
+                              if (line.type === 'group') {
+                                return line.group === undefined
+                                  ? null
+                                  : (
+                                    <Fragment key={`group:${line.group.key}:${line.segment}`}>
+                                      {renderGroupRow(line.group, lineIndex)}
+                                    </Fragment>
+                                  );
+                              }
+
+                              const { index } = line;
+
+                              if (index >= rows.length) {
+                                return null;
+                              }
+
+                              const row = rows[index] as Row;
+
+                              const key = nav.keyOf(row);
+                              const stripeIndex = line.local;
+                              const selected = nav.isSelected(key);
+                              const detail = nav.details[index];
+                              const expandable = hasContent(detail);
+                              const expanded = expandable && nav.isExpanded(key);
+                              // Every cell of the row and of its detail row: selected, and during a drag lifted and moved
+                              // with the pointer, or moved aside to make room (the transform).
+                              const look = drag.lookOf(lineIndex);
+                              const mark = {
+                                'data-selected': flag(selected),
+                                'data-drag': look.state,
+                                style: look.style,
+                              };
+                              // In edit mode, the edit form follows the row (after its detail row) and takes its place: the
+                              // row folds up (see above). While a row is edited, every row is blocked (the form is not); the
+                              // others are faded.
+                              const edit = nav.edit?.key === key ? nav.edit : undefined;
+                              const otherEdited = nav.edit !== undefined && edit === undefined;
+                              const rowInert = nav.blocked;
+
+                              return (
+                                <Fragment key={key}>
                                   <div
                                     role="row"
-                                    className={classes.detailRow}
+                                    className={classes.dataRow}
                                     data-row-key={key}
                                     data-line={lineIndex}
                                     inert={rowInert}
                                     data-blocked={flag(otherEdited)}
+                                    data-editing={flag(edit !== undefined)}
+                                    data-stripe={flag(nav.striped && stripeIndex % 2 === 0)}
+                                    aria-selected={selection !== 'none' ? selected : undefined}
                                     {...rowHandlers(row, key)}
                                   >
+                                    {
+                                      /* The drag handle cell is a control cell (clicking it never selects). Its handle is only
+                          there while rows can be moved (no search, no filters); the cell stays, so nothing shifts. */
+                                    }
                                     {nav.hasHandleColumn && (
                                       <div
-                                        role="presentation"
+                                        role="cell"
                                         className={classes.cell}
                                         {...mark}
+                                        style={stickyStyle('handle', mark.style)}
+                                        {...stickyAttributes('handle')}
                                         data-meta={nav.metaEdges('handle')}
-                                      />
+                                        data-control
+                                      >
+                                        {nav.reorderable && (
+                                          <button
+                                            type="button"
+                                            className={classes.dragHandle}
+                                            aria-label={texts.moveRow}
+                                            aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
+                                            inert={!nav.canReorder}
+                                            data-inactive={flag(!nav.canReorder)}
+                                            {...drag.handleProps(lineIndex)}
+                                          >
+                                            <icons.Grip />
+                                          </button>
+                                        )}
+                                      </div>
                                     )}
+                                    {
+                                      /* The free space of the selection cell is a click on its checkbox (a few pixels
+                          beside it still hit), with Shift for a range. The details toggle cell is not a control cell:
+                          clicking its free space selects the row, like a data cell. The checkbox and the chevron
+                          inside are their own targets, so each still does its own job exactly once. */
+                                    }
                                     {nav.hasSelectionColumn && (
                                       <div
-                                        role="presentation"
+                                        role="cell"
                                         className={classes.cell}
                                         {...mark}
+                                        style={stickyStyle('selection', mark.style)}
+                                        {...stickyAttributes('selection')}
                                         data-meta={nav.metaEdges('selection')}
-                                      />
+                                        data-select
+                                        onClick={(event) => {
+                                          if (event.target !== event.currentTarget) {
+                                            return;
+                                          }
+
+                                          nav.selectByClick(key, event.shiftKey);
+                                        }}
+                                      >
+                                        <Checkbox
+                                          label={selected ? texts.deselectRow : texts.selectRow}
+                                          checked={selected}
+                                          onChange={(_, shift) => nav.selectByClick(key, shift)}
+                                        />
+                                      </div>
                                     )}
                                     {nav.hasDetails && (
                                       <div
-                                        role="presentation"
+                                        role="cell"
                                         className={classes.cell}
                                         {...mark}
+                                        style={stickyStyle('details', mark.style)}
+                                        {...stickyAttributes('details')}
                                         data-meta={nav.metaEdges('details')}
-                                      />
+                                      >
+                                        {expandable && (
+                                          <ChevronButton
+                                            label={expanded ? texts.collapseDetails : texts.expandDetails}
+                                            expanded={expanded}
+                                            onClick={() => nav.toggleDetails(key)}
+                                          />
+                                        )}
+                                      </div>
                                     )}
-                                    <div
-                                      role="cell"
-                                      className={classes.detailCell}
-                                      data-detail
-                                      {...mark}
-                                      style={{
-                                        ...look.style,
-                                        gridColumn: nav.columnSpan(nav.firstLeafColumn, layout.leaves.length),
-                                      }}
-                                    >
-                                      {cellContent(detail)}
-                                    </div>
+                                    {renderDataCells(row, mark)}
                                     {nav.hasActionColumn && (
                                       <div
-                                        role="presentation"
+                                        role="cell"
                                         className={classes.cell}
                                         {...mark}
+                                        style={stickyStyle('action', mark.style)}
+                                        {...stickyAttributes('action')}
                                         data-divider="start"
-                                      />
+                                        data-control
+                                      >
+                                        <div className={classes.rowActions} data-row-actions>
+                                          <ActionList
+                                            items={nav.rowActionsFor(row)}
+                                            placement="row"
+                                            rowActionLook={nav.rowActionLook}
+                                            invoke={(action) => nav.invokeForRow(row, action)}
+                                          />
+                                        </div>
+                                      </div>
                                     )}
                                   </div>
-                                )}
-                                {edit !== undefined && renderEditForm(edit)}
-                              </Fragment>
-                            );
-                          })}
-                          {nav.isEmpty && (
-                            <div role="row" className={classes.row} inert={nav.blocked}>
-                              <div role="cell" className={classes.emptyCell}>
-                                {emptyContent}
+                                  {expanded && (
+                                    <div
+                                      role="row"
+                                      className={classes.detailRow}
+                                      data-row-key={key}
+                                      data-line={lineIndex}
+                                      inert={rowInert}
+                                      data-blocked={flag(otherEdited)}
+                                      {...rowHandlers(row, key)}
+                                    >
+                                      {nav.hasHandleColumn && (
+                                        <div
+                                          role="presentation"
+                                          className={classes.cell}
+                                          {...mark}
+                                          data-meta={nav.metaEdges('handle')}
+                                        />
+                                      )}
+                                      {nav.hasSelectionColumn && (
+                                        <div
+                                          role="presentation"
+                                          className={classes.cell}
+                                          {...mark}
+                                          data-meta={nav.metaEdges('selection')}
+                                        />
+                                      )}
+                                      {nav.hasDetails && (
+                                        <div
+                                          role="presentation"
+                                          className={classes.cell}
+                                          {...mark}
+                                          data-meta={nav.metaEdges('details')}
+                                        />
+                                      )}
+                                      <div
+                                        role="cell"
+                                        className={classes.detailCell}
+                                        data-detail
+                                        {...mark}
+                                        style={{
+                                          ...look.style,
+                                          gridColumn: nav.columnSpan(nav.firstLeafColumn, layout.leaves.length),
+                                        }}
+                                      >
+                                        {cellContent(detail)}
+                                      </div>
+                                      {nav.hasActionColumn && (
+                                        <div
+                                          role="presentation"
+                                          className={classes.cell}
+                                          {...mark}
+                                          data-divider="start"
+                                        />
+                                      )}
+                                    </div>
+                                  )}
+                                  {edit !== undefined && renderEditForm(edit)}
+                                </Fragment>
+                              );
+                            })}
+                            {nav.isEmpty && (
+                              <div role="row" className={classes.row} inert={nav.blocked}>
+                                <div role="cell" className={classes.emptyCell}>
+                                  {emptyContent}
+                                </div>
                               </div>
-                            </div>
-                          )}
-                        </RowContextMenu>
-                      )}
+                            )}
+                          </RowContextMenu>
+                        )}
+                    </div>
+                    {nav.spinnerVisible && (
+                      <div
+                        className={classes.overlay}
+                        style={{ top: cards ? 0 : nav.headerHeight, right: nav.scrollbarWidth }}
+                      >
+                        <LoadingBar label={texts.loading} />
+                      </div>
+                    )}
                   </div>
-                  {nav.spinnerVisible && (
-                    <div
-                      className={classes.overlay}
-                      style={{ top: cards ? 0 : nav.headerHeight, right: nav.scrollbarWidth }}
-                    >
-                      <LoadingBar label={texts.loading} />
+                  {nav.footerShown && (
+                    <div inert={nav.blocked} data-blocked={flag(nav.edit !== undefined)}>
+                      <Footer
+                        texts={texts}
+                        total={nav.total}
+                        page={nav.shownPage}
+                        pageCount={nav.shownPageCount}
+                        pageSize={nav.shownPageSize}
+                        // The indicators of what is loading: the page's ring after the delay of the loading bar, like it;
+                        // the page size's spinner at once (it replaces the chevron as the menu closes, which would else
+                        // turn back first).
+                        pendingPage={nav.spinnerVisible ? nav.pendingPage : undefined}
+                        pendingPageSize={nav.pendingPageSize}
+                        pageSizeOptions={nav.pageSizeOptions}
+                        onPage={nav.goToPage}
+                        onPageSize={nav.changePageSize}
+                      />
                     </div>
                   )}
                 </div>
-                {nav.footerShown && (
-                  <div inert={nav.blocked} data-blocked={flag(nav.edit !== undefined)}>
-                    <Footer
-                      texts={texts}
-                      total={nav.total}
-                      page={nav.shownPage}
-                      pageCount={nav.shownPageCount}
-                      pageSize={nav.shownPageSize}
-                      // The indicators of what is loading: the page's ring after the delay of the loading bar, like it;
-                      // the page size's spinner at once (it replaces the chevron as the menu closes, which would else
-                      // turn back first).
-                      pendingPage={nav.spinnerVisible ? nav.pendingPage : undefined}
-                      pendingPageSize={nav.pendingPageSize}
-                      pageSizeOptions={nav.pageSizeOptions}
-                      onPage={nav.goToPage}
-                      onPageSize={nav.changePageSize}
-                    />
-                  </div>
-                )}
+                {/* The filter drawer (a prototype): in the same cell, over the table area, at its end. */}
+                {/* One list, so the closed drawer keeps its instance (its key) while it is covered up. */}
+                {drawerFlag && [
+                  closingSidebarKey !== undefined && filterDrawer(closingSidebarKey, true),
+                  sidebar.open && filterDrawer(sidebarKey, false),
+                ]}
               </div>
-              {/* The filter drawer (a prototype): in the same cell, over the table area, at its end. */}
-              {/* One list, so the closed drawer keeps its instance (its key) while it is covered up. */}
-              {drawerFlag && [
-                closingSidebarKey !== undefined && filterDrawer(closingSidebarKey, true),
-                sidebar.open && filterDrawer(sidebarKey, false),
-              ]}
             </div>
-          </div>
-        </Tooltip.Provider>
+          </Tooltip.Provider>
+        </FilterLabelsContext>
       </LayerContext>
       {nav.hasHandleColumn && (
         <div role="status" className={classes.liveRegion}>

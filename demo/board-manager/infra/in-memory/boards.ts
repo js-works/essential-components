@@ -1,4 +1,4 @@
-import type { RowPage, RowQuery } from '../../../../packages/data-table/src/react/index.js';
+import type { RowPage, RowQuery } from '@local/data-table/react';
 import type { Board } from '../../domain/index.js';
 import { localDateTime } from './helpers.js';
 import { getPerson } from './lookups.js';

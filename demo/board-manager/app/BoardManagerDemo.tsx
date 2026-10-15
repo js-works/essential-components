@@ -4,6 +4,10 @@ import '@mantine/core/styles.layer.css';
 import '@mantine/charts/styles.layer.css';
 import '@mantine/dates/styles.layer.css';
 import './board-manager.css';
+import { combineCssVariables, modernTheme } from '@local/mantine-themes';
+import { createDialogTheme, createToastTheme } from '@local/overlays';
+import { OverlaysProvider } from '@local/overlays/react';
+import type { OverlaysConfig } from '@local/overlays/react';
 import {
   ActionIcon,
   Badge,
@@ -25,11 +29,6 @@ import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
 import { TbMaximize, TbMinimize } from 'react-icons/tb';
 import { RouterProvider } from 'react-router';
-import { combineCssVariables, modernTheme } from '../../../packages/mantine-themes/src/index.js';
-import { OverlaysProvider } from '../../../packages/overlays/src/main/bindings/react/index.js';
-import type { OverlaysConfig } from '../../../packages/overlays/src/main/bindings/react/index.js';
-import { createDialogTheme } from '../../../packages/overlays/src/main/dialogs/dialogs.js';
-import { createToastTheme } from '../../../packages/overlays/src/main/toasts/toasts.js';
 import { translate, useLanguage } from '../shared/lib/i18n/index.js';
 import { Scope, SCOPE_CLASS, useScheme } from '../shared/shared.js';
 import { createAppRouter } from './App.js';

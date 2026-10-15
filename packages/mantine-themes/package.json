@@ -5,7 +5,10 @@
   "description": "A few nicer Mantine themes, to be used easily.",
   "type": "module",
   "exports": {
-    ".": "./dist/index.js"
+    ".": {
+      "source": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
   },
   "scripts": {
     "dev": "vite",

@@ -7,7 +7,7 @@ import type { SavedFilters } from '../saved-filters.js';
 import type { FooterMode, RowActionLook, SelectionAppearance, TableDensity, TableLayout } from '../settings.js';
 import type { DataTableTheme } from '../theme.js';
 import type { ActionMenu, TableAction } from './actions.js';
-import type { ColumnGroup, EditField, TableColumn } from './columns.js';
+import type { ColumnGroup, EditField, TableColumn, TableFilters } from './columns.js';
 
 export type { DataTableComponent, DataTableComponentConfig, DataTableProps, TableController };
 
@@ -19,6 +19,7 @@ type DataTableProps<Row> = {
   editFields?: readonly EditField<Row>[];
   rowKey: keyof Row & string;
   columns: readonly (TableColumn<Row> | ColumnGroup<Row>)[];
+  filters?: TableFilters;
   title?: ReactNode;
   subtitle?: ReactNode;
   selectionAppearance?: SelectionAppearance;

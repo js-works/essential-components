@@ -1,7 +1,7 @@
+import type { RowPage, RowQuery, RowSource } from '@local/data-table/react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { QueryKey } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef } from 'react';
-import type { RowPage, RowQuery, RowSource } from '../../../../packages/data-table/src/react/index.js';
 
 export { useQuerySource };
 

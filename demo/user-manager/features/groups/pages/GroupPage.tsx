@@ -1,136 +1,14 @@
-import { Anchor, Badge, Button, Group as MantineGroup, Stack, Tabs, Text } from '@mantine/core';
-import { useMemo } from 'react';
+import { Anchor, Badge, Button, Stack, Tabs, Text } from '@mantine/core';
 import type { ReactElement } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
-import type { TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
-import { useDialogs, useToast } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
-import { membersOf } from '../../../domain/index.js';
-import type { Group, User } from '../../../domain/index.js';
-import { countText } from '../../../shared/lib/format.js';
-import { DataTable } from '../../../shared/ui/dataTable.js';
 import { appIcons } from '../../../shared/ui/icons.js';
-import { PageHeader, UserAvatar } from '../../../shared/ui/parts.js';
-import { GrantsTable } from '../../access/index.js';
-import { useAccessData, useChanged, useIamService, useTableSource } from '../../iam/index.js';
-import { AddMembersForm } from '../components/AddMembersForm.js';
+import { PageHeader } from '../../../shared/ui/parts.js';
+import { GrantTable } from '../../access/index.js';
+import { useAccessData } from '../../iam/index.js';
+import { MemberTable } from '../components/MemberTable.js';
 import { useGroupFlows } from '../flows.js';
 
 export { GroupPage };
-
-// The members of a group: add (a checklist of the others), remove.
-function MembersTable({ group }: { group: Group }): ReactElement {
-  const nav = useDataTableController<User>();
-  const data = useAccessData();
-  const service = useIamService();
-  const dialogs = useDialogs();
-  const toasts = useToast();
-  const changed = useChanged();
-  const source = useTableSource<User>(
-    `members:${group.id}`,
-    (all) => {
-      const current = all.groups.find((candidate) => candidate.id === group.id);
-
-      return current === undefined ? [] : membersOf(all.users, current);
-    },
-    { search: ['name', 'email', 'department', 'title'] },
-    nav.reload,
-  );
-
-  const columns = useMemo((): readonly TableColumn<User>[] => [
-    {
-      key: 'name',
-      header: 'Name',
-      width: 3,
-      sortable: true,
-      render: (row) => (
-        <MantineGroup gap={8} wrap="nowrap">
-          <UserAvatar name={row.name} size={22} />
-          <Anchor component={Link} to={`/users/${row.id}`} size="sm" truncate>{row.name}</Anchor>
-          {!row.active && <Badge size="xs" variant="light" color="gray">Disabled</Badge>}
-        </MantineGroup>
-      ),
-    },
-    { key: 'title', header: 'Title', width: 2.5, hideable: true },
-    { key: 'department', header: 'Department', width: 2, sortable: true, hideable: true },
-  ], []);
-
-  const actions = useMemo((): readonly TableAction<User>[] => {
-    const add = async () => {
-      if (data === undefined) {
-        return;
-      }
-
-      let added: readonly string[] = [];
-      const current = data.groups.find((candidate) => candidate.id === group.id) ?? group;
-      const result = await dialogs.form({
-        title: `Add members to "${group.name}"`,
-        content: (
-          <AddMembersForm
-            candidates={data.users.filter((user) => !current.memberIds.includes(user.id))}
-            save={async (userIds) => {
-              await service.addMembers(group.id, userIds);
-              added = userIds;
-            }}
-          />
-        ),
-        buttons: { confirm: 'Add' },
-      });
-
-      if (!result.canceled) {
-        await changed();
-        toasts.success(`${added.length === 1 ? '1 member' : `${added.length} members`} added`);
-      }
-    };
-
-    const remove = async (users: readonly User[]) => {
-      await service.removeMembers(group.id, users.map((user) => user.id));
-      await changed();
-      toasts.success(`${countText(users.map((user) => user.name), 'members')} removed from "${group.name}"`);
-    };
-
-    return [
-      {
-        type: 'general',
-        key: 'add',
-        label: 'Add members',
-        icon: appIcons.add,
-        variant: 'primary',
-        onClick: () => void add(),
-      },
-      {
-        type: 'singleRow',
-        key: 'remove-row',
-        icon: appIcons.removeUser,
-        tip: 'Remove from group',
-        show: 'column',
-        contextMenu: false,
-        onClick: (row) => void remove([row]),
-      },
-      {
-        type: 'multiRow',
-        key: 'remove',
-        label: 'Remove',
-        icon: appIcons.removeUser,
-        onClick: (rows) => void remove(rows),
-      },
-    ];
-  }, [data, group, dialogs, toasts, service, changed]);
-
-  return (
-    <DataTable
-      controller={nav}
-      source={source}
-      rowKey="id"
-      columns={columns}
-      actions={actions}
-      searchable
-      pageSizeOptions={[10, 25, 50]}
-      defaultSort={{ key: 'name', direction: 'asc' }}
-      empty="No members yet."
-    />
-  );
-}
 
 // One group: its members, and the access granted to it (its members' access).
 function GroupPage(): ReactElement {
@@ -187,10 +65,10 @@ function GroupPage(): ReactElement {
           <Tabs.Tab value="access">Granted access ({grants})</Tabs.Tab>
         </Tabs.List>
         <Tabs.Panel value="members" pt="md">
-          <MembersTable group={group} />
+          <MemberTable group={group} />
         </Tabs.Panel>
         <Tabs.Panel value="access" pt="md">
-          <GrantsTable
+          <GrantTable
             name={`group:${group.id}`}
             filter={(grant) => grant.principal.type === 'group' && grant.principal.id === group.id}
             preset={{ principal: { type: 'group', id: group.id } }}

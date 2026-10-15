@@ -1,5 +1,5 @@
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { defaultClientConditions, defineConfig } from 'vite';
 import type { Plugin } from 'vite';
 
 // `npm run build:board-manager`: the `<board-manager>` custom element (demo/board-manager/app/BoardManagerElement.tsx) as
@@ -74,6 +74,8 @@ const config = defineConfig({
   plugins: [react(), inlineStyles()],
   resolve: {
     dedupe: ['react', 'react-dom'],
+    // The packages from their sources (the `source` condition of their `exports`), like the demo page.
+    conditions: ['source', ...defaultClientConditions],
   },
   define: {
     // A library build does not replace it on its own, and React picks its development build by it.

@@ -1,14 +1,13 @@
+import { defineColumns, defineFilters, useDataTableController } from '@local/data-table/react';
 import { Stack, Text } from '@mantine/core';
-import { useMemo } from 'react';
 import type { ReactElement } from 'react';
-import { selectColumnFilter, useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
-import type { TableColumn } from '../../../../../packages/data-table/src/react/index.js';
 import { permissionParts } from '../../../domain/index.js';
 import type { AccessData } from '../../../domain/index.js';
 import { oneOf } from '../../../shared/lib/localQuery.js';
 import { DataTable } from '../../../shared/ui/dataTable.js';
 import { PageHeader } from '../../../shared/ui/parts.js';
 import { useAccessData, useTableSource } from '../../iam/index.js';
+import { appFilter } from '../filters.js';
 
 export { PermissionsPage };
 
@@ -24,6 +23,34 @@ function permissionRows(data: AccessData): PermissionRow[] {
   }));
 }
 
+// The columns of the permissions catalog.
+const columns = defineColumns<PermissionRow>([
+  {
+    key: 'id',
+    header: 'Permission',
+    width: 2.5,
+    sortable: true,
+    render: (row) => <Text size="sm" ff="monospace">{row.id}</Text>,
+  },
+  {
+    key: 'app',
+    header: 'App',
+    width: 1.6,
+    sortable: true,
+  },
+  { key: 'description', header: 'Allows', width: 3, hideable: true },
+  {
+    key: 'roles',
+    header: 'In roles',
+    width: 3,
+    hideable: true,
+    render: (row) => <Text size="sm" truncate>{row.roles}</Text>,
+  },
+]);
+
+// The filters of the permissions catalog (the apps: those that register permissions).
+const filtersOf = (data: AccessData | undefined) => defineFilters({ app: appFilter(data) });
+
 // The catalog: every permission the apps register, and the roles that give it. Read only.
 function PermissionsPage(): ReactElement {
   const nav = useDataTableController<PermissionRow>();
@@ -34,34 +61,6 @@ function PermissionsPage(): ReactElement {
     { search: ['id', 'description', 'roles'], filters: { app: (row, value) => oneOf(row.app, value) } },
     nav.reload,
   );
-  const apps = [...new Set((data?.permissions ?? []).map((permission) => permission.app))].map((app) =>
-    data?.scopes.find((scope) => scope.id === `s-${app}`)?.name ?? app
-  );
-
-  const columns = useMemo((): readonly TableColumn<PermissionRow>[] => [
-    {
-      key: 'id',
-      header: 'Permission',
-      width: 2.5,
-      sortable: true,
-      render: (row) => <Text size="sm" ff="monospace">{row.id}</Text>,
-    },
-    {
-      key: 'app',
-      header: 'App',
-      width: 1.6,
-      sortable: true,
-      filter: selectColumnFilter({ options: apps.map((app) => ({ value: app, label: app })), multiple: true }),
-    },
-    { key: 'description', header: 'Allows', width: 3, hideable: true },
-    {
-      key: 'roles',
-      header: 'In roles',
-      width: 3,
-      hideable: true,
-      render: (row) => <Text size="sm" truncate>{row.roles}</Text>,
-    },
-  ], [apps.join()]);
 
   return (
     <Stack gap="md">
@@ -74,6 +73,7 @@ function PermissionsPage(): ReactElement {
         source={source}
         rowKey="id"
         columns={columns}
+        filters={filtersOf(data)}
         searchable
         pageSizeOptions={[25, 50, 100]}
         defaultSort={{ key: 'id', direction: 'asc' }}

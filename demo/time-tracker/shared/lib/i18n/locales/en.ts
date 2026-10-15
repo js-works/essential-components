@@ -28,6 +28,7 @@ const en = {
   'nav.employees': 'Employees',
   'common.save': 'Save',
   'common.create': 'Create',
+  'common.delete': 'Delete',
   'common.edit': 'Edit',
   'common.open': 'Open',
   'common.keep': 'Keep',

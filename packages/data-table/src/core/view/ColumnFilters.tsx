@@ -9,36 +9,28 @@ import * as styles from './classes.js';
 import { DateRangeFilterInput, formatRange, rangeOf } from './DateRangeFilter.js';
 import { FilterSelectField, FilterTextField, PrefixedTextField, Segmented } from './widgets.js';
 
-export {
-  autocompleteColumnFilter,
-  booleanColumnFilter,
-  dateRangeColumnFilter,
-  numberRangeColumnFilter,
-  selectColumnFilter,
-  summaryOf,
-  textColumnFilter,
-};
+export { autocompleteFilter, booleanFilter, dateRangeFilter, numberRangeFilter, selectFilter, summaryOf, textFilter };
 
 // The filters live in the filter popup. Every change there is only a draft (`onChange` of a filter changes the draft),
 // which "Apply" applies, all filters at once. So no filter needs a draft of its own, and none waits for Enter.
 
-type TextFilterProps = Spec.FilterProps & Spec.TextColumnFilterSettings;
+type TextFilterProps = Spec.FilterProps & Spec.TextFilterSettings;
 
-type SelectFilterProps = Spec.FilterProps & Spec.SelectColumnFilterSettings;
+type SelectFilterProps = Spec.FilterProps & Spec.SelectFilterSettings;
 
 type Summarize = (value: Spec.FilterValue, context: SummaryContext) => FilterSummary | undefined;
 
 // The pill texts of the built-in filters, by their filter function. Any other filter (an app's own) gets the fallback.
-const summaries = new WeakMap<Spec.ColumnFilter, Summarize>();
+const summaries = new WeakMap<Spec.TableFilter, Summarize>();
 
-function withSummary(filter: Spec.ColumnFilter, summarize: Summarize): Spec.ColumnFilter {
+function withSummary(filter: Spec.TableFilter, summarize: Summarize): Spec.TableFilter {
   summaries.set(filter, summarize);
 
   return filter;
 }
 
 // What the pill of the filter shows for this value.
-function summaryOf(filter: Spec.ColumnFilter, value: Spec.FilterValue, context: SummaryContext): FilterSummary {
+function summaryOf(filter: Spec.TableFilter, value: Spec.FilterValue, context: SummaryContext): FilterSummary {
   return summaries.get(filter)?.(value, context) ?? fallbackSummary(value);
 }
 
@@ -261,7 +253,7 @@ const LONG_SUMMARY = 16;
 // The built-in column filters.
 // A text filter: `{ text, match }`, `match` always `contains` without `settings.matchModes` (no select then). Its
 // placeholder is `settings.placeholder`, or the localized `Texts.filterPlaceholder`.
-function textColumnFilter(settings: Spec.TextColumnFilterSettings = {}): Spec.ColumnFilter {
+function textFilter(settings: Spec.TextFilterSettings = {}): Spec.TableFilter {
   return withSummary(
     (props) => <TextFilterInput {...props} {...settings} />,
     (value) => {
@@ -279,7 +271,7 @@ function textColumnFilter(settings: Spec.TextColumnFilterSettings = {}): Spec.Co
 }
 
 // A select: the value of the chosen option, or with `multiple` a list of them.
-function selectColumnFilter(settings: Spec.SelectColumnFilterSettings): Spec.ColumnFilter {
+function selectFilter(settings: Spec.SelectFilterSettings): Spec.TableFilter {
   const options = optionsOf(settings.options);
   const labelOf = (item: Spec.FilterValue) => options.find((option) => option.value === item)?.label ?? String(item);
 
@@ -300,13 +292,11 @@ function listSummary(labels: readonly string[]): FilterSummary {
 
 // An autocomplete: its options come from `settings.load` while typing (see AutocompleteFilter.tsx). The value is the
 // value of the chosen option, or with `multiple` a list of them. The labels of the chosen options are kept by the
-// filter, for its pill (there are no initial filters, so every value was chosen in it).
-function autocompleteColumnFilter(settings: Spec.AutocompleteColumnFilterSettings): Spec.ColumnFilter {
-  const labels = new Map<string, string>();
-
+// table for the column, for its pill (see filterLabels.ts).
+function autocompleteFilter(settings: Spec.AutocompleteFilterSettings): Spec.TableFilter {
   return withSummary(
-    (props) => <AutocompleteFilterInput {...props} {...settings} labels={labels} />,
-    (value) => {
+    (props) => <AutocompleteFilterInput {...props} {...settings} />,
+    (value, { labels }) => {
       const ids = autocompleteIdsOf(value);
 
       return ids.length === 0 ? undefined : listSummary(ids.map((id) => labels.get(id) ?? id));
@@ -317,7 +307,7 @@ function autocompleteColumnFilter(settings: Spec.AutocompleteColumnFilterSetting
 // A date range: two calendars (vanillajs-datepicker, see dateRangePicker.ts) in a popover. The value is `{ from, to }`
 // (yyyy-mm-dd, both inclusive, see `DataTable.DateRangeFilterValue`). The placeholder is the localized
 // `Texts.filterAll`.
-function dateRangeColumnFilter(): Spec.ColumnFilter {
+function dateRangeFilter(): Spec.TableFilter {
   return withSummary(
     (props) => <DateRangeFilterInput {...props} />,
     (value, { locale }) => {
@@ -329,7 +319,7 @@ function dateRangeColumnFilter(): Spec.ColumnFilter {
 }
 
 // A number range: `{ from?, to? }`, both inclusive, at least one of them.
-function numberRangeColumnFilter(): Spec.ColumnFilter {
+function numberRangeFilter(): Spec.TableFilter {
   return withSummary(
     (props) => <NumberRangeFilterInput {...props} />,
     (value, { locale }) => {
@@ -356,7 +346,7 @@ function numberRangeColumnFilter(): Spec.ColumnFilter {
 }
 
 // Yes or no: `true` or `false`. "All" is no filter (and no pill).
-function booleanColumnFilter(): Spec.ColumnFilter {
+function booleanFilter(): Spec.TableFilter {
   return withSummary(
     (props) => <BooleanFilterInput {...props} />,
     (value, { texts }) =>

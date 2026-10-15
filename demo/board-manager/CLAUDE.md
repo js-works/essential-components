@@ -76,7 +76,9 @@ the root's `CLAUDE.md` apply.
 - The column of an entity's name is headed by the entity: "Board", "Meeting", "Organization", "Document", "Person"
   (2026-10-02; the people tables said "Name" before).
 - Every column of an organization or a person is filtered by an autocomplete (2026-10-02, the data table's
-  `autocompleteColumnFilter`; text filters before): `organizationFilter` and `personFilter` (`shared.tsx`), on the
+  `autocompleteFilter`; text filters before): `organizationFilter` (`features/organizations/filters.tsx`) and
+  `personFilter` (`features/members/filters.tsx`; both in `shared.tsx` until 2026-10-15; the other domain filters
+  are in their features' `filters.tsx` too, see `STRUCTURE.md`), on the
   organizations, the people tables (person, organization), a board's members (person, organization) and the boards
   (chair). Multiple, `minQueryLength: 0` (all options when the list opens, typing narrows them); each option has a
   second line (Mantine `Text`, `xs`, dimmed): the city of an organization, the organization of a person.
@@ -113,8 +115,18 @@ the root's `CLAUDE.md` apply.
   - The dialogs' own texts (buttons, titles, "Maximize") come from the overlays package, which has English and German
     and follows `<html lang>` itself; `OverlaysProvider` gets `refreshKey={useLanguage()}`, so a dialog that is open
     follows a switch. The close button's label is ours (`common.close`, `translate()`: a render function, no hook).
-  - The pages of a feature (the pattern of the boards): the columns are a function of `t` (`columnsOf(t)`, used with
-    `useMemo(() => columnsOf(t), [t])`), the actions and their dialogs use `t` and have it in their dependencies; the
+  - The pages of a feature: the tables follow "The structure of a table in the root's apps" in the root's `CLAUDE.md`
+    (2026-10-15; worked out on the board page's members table, `MemberTable`, then rolled out): `columnsOf(t)`,
+    `filtersOf(t, …)` and `actionsOf(t, ctx)` outside the component (with `useMemo(() => columnsOf(t), [t])` until
+    2026-10-14; defining them inline in the component, and the actions inline in the JSX, were proposed and dropped);
+    the actions call flows outside the component (`<x>Flows.tsx`, like `boardFlows.tsx`, the user's choice of files of
+    their own, proposed at about 60%; handlers in the component, with a `MemberHandlers` type for a few hours, before),
+    each with one context (`TableContext<Row>` of `shared/lib/flows.ts` and what else it needs: `MemberContext` adds
+    `boardId`). The components hold only their hooks and the table. The meeting page's tables are files of their own
+    (`AgendaTable`, `SectionTable`, `DocumentTable`, with `agendaFlows.tsx`, `documentFlows.tsx`; `MeetingPage.tsx` from
+    967 to 352 lines). The standard builders are plain functions (`newAction`, `openAction`, `editAction`,
+    `deleteAction` of `shared/ui/tableActions.ts`; their texts from `translate()` when called). A filter
+    in such a function cannot be a hook: it takes `t` (`roleFilter(t)`). The actions and their dialogs use `t`; the
     texts of a feature are under its key (`boards.*`), the words every feature shares under `common`. A sentence with a
     number or a name is one key with the plural forms (`_one`: a single one, with its name; `_other`: the number), not
     pieces glued together (`countText` is replaced where it is used, and removed with its last use). Outside
@@ -320,13 +332,14 @@ the root's `CLAUDE.md` apply.
 - A member's page (`MemberPage.tsx`, 2026-10-01; it replaced the "Information" drawer of the list): the name with the
   organization as subtitle, and three tabs:
   - "Overview": name, email (`mailto:`), organization (a link to its page), the number of boards; "Edit" and "Delete"
-    (then back to the list), the same flows as in the list (`editPerson()`, `deletePeopleFlow()` in `PeopleTable.tsx`).
+    (then back to the list), the same flows as in the list (`editPerson()`, `deletePeopleFlow()` in `personFlows.tsx`).
   - "Boards": the memberships, read-only (Board as a link, Role, Since; "Open board" the default action).
-  - "Meetings": `MeetingsTable` with `personId`, the meetings of the person's boards (`fetchMeetings({ personId })`),
+  - "Meetings": `MeetingTable` with `personId`, the meetings of the person's boards (`fetchMeetings({ personId })`),
     with the board column and the actions of the Meetings module; a new meeting chooses one of the person's boards. A
     meeting opens below its board.
 - In the people tables, the name is a link to the page, and "Open" (default, also a double click) opens it.
-- `PeopleTable.tsx`: the table of the people, for the Members page and the People tab of an organization.
+- `PersonTable.tsx` (`PeopleTable.tsx` until 2026-10-15): the table of the people, for the Members page and the People
+  tab of an organization.
 - A person's organization is a reference (`organizationId`, `''`: none), a select with "(none)" in the person form; the
   tables show its name.
 
@@ -352,7 +365,7 @@ the root's `CLAUDE.md` apply.
 
 ## Meetings
 
-- The filters of the meetings list (`MeetingsTable`): the date (a range), the meeting and the location (text), the
+- The filters of the meetings list (`MeetingTable`): the date (a range), the meeting and the location (text), the
   board and the status (multiple selects), the minutes (approved or draft, only held meetings have minutes; the
   location and the minutes since 2026-10-09). The in-memory source (`fetchMeetings`) applies them. (The items and the
   documents had number ranges for a few hours that day.)
@@ -368,7 +381,7 @@ the root's `CLAUDE.md` apply.
 - A meeting's page opens on "Overview" (`MeetingOverview`): its base information as labels and values (title, board,
   date and time with the end from the agenda's duration, location, status and minutes badges, the number of items and
   sections, documents), "Edit", the same meeting form dialog as "Edit" in the meetings list (`editMeeting()` in
-  `MeetingsTable.tsx`), and "Delete" (2026-10-01), the same confirmation (`deleteMeetingsFlow()`), then back to where
+  `MeetingTable.tsx`), and "Delete" (2026-10-01), the same confirmation (`deleteMeetingsFlow()`), then back to where
   it was opened (its board's page, or the meetings list). The status keeps its own buttons in the page header.
 - "PDF" (a menu on the overview, 2026-10-01): "Preview", "Print" and "Download" of the meeting's report (`pdf/`).
   - The menu has `floatingStrategy="fixed"` (2026-10-04): without a portal and without a positioned ancestor, Floating UI

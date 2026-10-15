@@ -1,21 +1,21 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import type { ReactElement } from 'react';
 import {
-  autocompleteColumnFilter,
-  booleanColumnFilter,
+  autocompleteFilter,
+  booleanFilter,
   createDataTableComponent,
   dateColumnEditor,
-  dateRangeColumnFilter,
-  numberRangeColumnFilter,
+  dateRangeFilter,
+  defineFilters,
+  numberRangeFilter,
   selectColumnEditor,
-  selectColumnFilter,
+  selectFilter,
   textColumnEditor,
-  textColumnFilter,
+  textFilter,
   useDataTableController,
   useDataTableSelection,
 } from '../src/react/index.js';
 import type {
-  ColumnFilter,
   ColumnGroup,
   DataTableComponent,
   EditField,
@@ -141,12 +141,15 @@ const active: UserColumn = {
   render: (user) => (user.active ? 'Yes' : 'No'),
 };
 
-const filterOf: Record<string, ColumnFilter> = {
+// The filters of the table (`filters`), in the order of the filter view; each is labeled by the header of the column
+// of its key.
+const filters = defineFilters({
   // With the select of how the text must match (contains, starts with, ends with); the other text filters are plain.
-  firstName: textColumnFilter({ matchModes: true }),
-  lastName: textColumnFilter({ matchModes: true }),
+  firstName: textFilter({ matchModes: true }),
+  lastName: textFilter({ matchModes: true }),
+  dateOfBirth: dateRangeFilter(),
   // An autocomplete: its options are loaded while typing, each with the user's name below the email.
-  email: autocompleteColumnFilter({
+  email: autocompleteFilter({
     multiple: true,
     load: async (query, signal) =>
       (await suggestEmails(query, signal)).map(({ name, ...option }) => ({
@@ -159,40 +162,21 @@ const filterOf: Record<string, ColumnFilter> = {
         ),
       })),
   }),
-  role: selectColumnFilter({ options: roles }),
-  country: selectColumnFilter({ options: countries, multiple: true }),
-  dateOfBirth: dateRangeColumnFilter(),
-  logins: numberRangeColumnFilter(),
-  active: booleanColumnFilter(),
-};
+  country: selectFilter({ options: countries, multiple: true }),
+  role: selectFilter({ options: roles }),
+  logins: numberRangeFilter(),
+  active: booleanFilter(),
+});
 
-function createColumns(
-  grouped: boolean,
-  filtered: boolean,
-): readonly (UserColumn | ColumnGroup<User>)[] {
-  const filter = (column: UserColumn): UserColumn => {
-    const columnFilter = filterOf[column.key];
-
-    return filtered && columnFilter ? { ...column, filter: columnFilter } : column;
-  };
-
+function createColumns(grouped: boolean): readonly (UserColumn | ColumnGroup<User>)[] {
   return grouped
     ? [
-      { header: 'Person', columns: [filter(firstName), filter(lastName), filter(dateOfBirth), filter(email)] },
-      { header: 'Location', columns: [filter(country)] },
-      filter(role),
-      { header: 'Account', columns: [filter(logins), filter(active)] },
+      { header: 'Person', columns: [firstName, lastName, dateOfBirth, email] },
+      { header: 'Location', columns: [country] },
+      role,
+      { header: 'Account', columns: [logins, active] },
     ]
-    : [
-      filter(firstName),
-      filter(lastName),
-      filter(dateOfBirth),
-      filter(email),
-      filter(country),
-      filter(role),
-      filter(logins),
-      filter(active),
-    ];
+    : [firstName, lastName, dateOfBirth, email, country, role, logins, active];
 }
 
 // The content of the demo element: plain elements only, no UI library. The page around it (title, language, color
@@ -204,10 +188,8 @@ function Demo({ controls }: { controls: Controls }): ReactElement {
   // users as they change.
   const nav = useDataTableController<User>();
   const selected = useDataTableSelection(nav);
-  const columns = useMemo(
-    () => createColumns(controls.columns === 'grouped', controls.filters === 'on'),
-    [controls.columns, controls.filters],
-  );
+  // New columns on every render: the table needs no `useMemo`.
+  const columns = createColumns(controls.columns === 'grouped');
   const actions = createActions(show, controls.actions, icons, controls.variants === 'on', {
     editRow: nav.editRow,
     addRow: () => nav.addRow(newUser()),
@@ -247,6 +229,7 @@ function Demo({ controls }: { controls: Controls }): ReactElement {
           empty={controls.data === 'custom' ? <p>Nobody here yet. Add the first user!</p> : undefined}
           rowKey="id"
           columns={columns}
+          filters={controls.filters === 'on' ? filters : undefined}
           selectionAppearance={controls.selectionAppearance}
           rowActionLook={controls.rowActionLook}
           density={controls.density}

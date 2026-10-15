@@ -1,4 +1,12 @@
-import { autocompleteColumnFilter, selectColumnFilter, setupDataTable, textColumnFilter } from '../src/index.js';
+import {
+  autocompleteFilter,
+  defineColumns,
+  defineFilters,
+  multiRowAction,
+  selectFilter,
+  setupDataTable,
+  textFilter,
+} from '../src/index.js';
 import type { TableDensity } from '../src/index.js';
 import { defaultTheme } from '../src/themes/index.js';
 import { countries, fetchUsers, roles, suggestEmails } from './data.js';
@@ -50,6 +58,53 @@ function suggestion(email: string, name: string): Node {
 
 const german = () => document.documentElement.lang.startsWith('de');
 
+// The columns, typed by `defineColumns`: no type annotation (the actions inline get theirs from
+// `createTableController`).
+const columns = defineColumns<User>([
+  {
+    key: 'firstName',
+    header: () => (german() ? 'Vorname' : 'First name'),
+    sortable: true,
+  },
+  {
+    key: 'lastName',
+    header: () => (german() ? 'Nachname' : 'Last name'),
+    sortable: true,
+  },
+  // The column toggle menu of the toolbar can hide it. Its filter is an autocomplete, with DOM nodes as options.
+  {
+    key: 'email',
+    header: 'Email',
+    width: 2,
+    hideable: true,
+  },
+  {
+    key: 'country',
+    header: () => (german() ? 'Land' : 'Country'),
+  },
+  {
+    key: 'role',
+    header: () => (german() ? 'Rolle' : 'Role'),
+    align: 'center',
+    render: (user) => roleBadge(user.role),
+  },
+]);
+
+const filters = defineFilters({
+  firstName: textFilter(),
+  lastName: textFilter(),
+  email: autocompleteFilter({
+    multiple: true,
+    load: async (query, signal) =>
+      (await suggestEmails(query, signal)).map(({ name, ...option }) => ({
+        ...option,
+        content: () => suggestion(option.label, name),
+      })),
+  }),
+  country: selectFilter({ options: countries, multiple: true }),
+  role: selectFilter({ options: roles }),
+});
+
 function createController(onRemove: (users: readonly User[]) => void) {
   return createTableController({
     source: fetchUsers,
@@ -58,55 +113,12 @@ function createController(onRemove: (users: readonly User[]) => void) {
     title: () => (german() ? 'Benutzer (Custom Element)' : 'Users (custom element)'),
     subtitle:
       () => (german() ? 'Einfaches TypeScript, DOM-Knoten als Inhalt' : 'Plain TypeScript, DOM nodes as content'),
-    columns: [
-      {
-        key: 'firstName',
-        header: () => (german() ? 'Vorname' : 'First name'),
-        sortable: true,
-        filter: textColumnFilter(),
-      },
-      {
-        key: 'lastName',
-        header: () => (german() ? 'Nachname' : 'Last name'),
-        sortable: true,
-        filter: textColumnFilter(),
-      },
-      // The column toggle menu of the toolbar can hide it. Its filter is an autocomplete, with DOM nodes as options.
-      {
-        key: 'email',
-        header: 'Email',
-        width: 2,
-        hideable: true,
-        filter: autocompleteColumnFilter({
-          multiple: true,
-          load: async (query, signal) =>
-            (await suggestEmails(query, signal)).map(({ name, ...option }) => ({
-              ...option,
-              content: () => suggestion(option.label, name),
-            })),
-        }),
-      },
-      {
-        key: 'country',
-        header: () => (german() ? 'Land' : 'Country'),
-        filter: selectColumnFilter({ options: countries, multiple: true }),
-      },
-      {
-        key: 'role',
-        header: () => (german() ? 'Rolle' : 'Role'),
-        align: 'center',
-        render: (user) => roleBadge(user.role),
-        filter: selectColumnFilter({ options: roles }),
-      },
-    ],
+    columns,
+    filters,
     actions: [
-      {
-        type: 'multiRow',
-        key: 'remove',
-        label: () => (german() ? 'Entfernen' : 'Remove'),
-        variant: 'danger',
-        onClick: onRemove,
-      },
+      // Made by a builder (`generalAction`, `singleRowAction`, `multiRowAction`, `groupAction`): the key, the handler,
+      // the other fields.
+      multiRowAction('remove', onRemove, { label: () => (german() ? 'Entfernen' : 'Remove'), variant: 'danger' }),
     ],
     defaultSort: { key: 'lastName', direction: 'asc' },
   });

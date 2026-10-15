@@ -1,4 +1,4 @@
-import type { RowQuery } from '../../../../packages/data-table/src/react/index.js';
+import type { RowQuery } from '@local/data-table/react';
 
 export { trackerKeys };
 

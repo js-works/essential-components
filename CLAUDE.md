@@ -164,6 +164,13 @@ and imports the files it needs from its `CLAUDE.md`.
   - The deploy workflow copies `old-demos/` into `dist/`: https://js-works.github.io/essential-components/old-demos/0.0.0/
 - `vite.config.ts`: `resolve.dedupe` makes all demos use one React, even where a package pins its own version (e.g.
   `overlays`, which gets a nested one in its `node_modules`).
+- The apps import the packages by name (2026-10-15, the user's choice, about 70%; relative paths into `packages/*/src/`
+  before): `@local/data-table/react`, `@local/overlays/react`, … The packages' `exports` have a `source` condition
+  (their files in `src/`) before `dist/`; `vite.config.ts` and `vite.board-manager.config.ts` resolve it
+  (`resolve.conditions: ['source', ...defaultClientConditions]`), `tsconfig.json` too (`customConditions`). So no
+  package needs a build for the demo. Weighed: an alias per package and entry in the Vite config and `paths` (two
+  places to keep in sync). The package demos (`packages/*/demo/…`, their `i18n.js` too) stay relative: they are no
+  entries.
 - `tsconfig.json`: `tsc` also checks the imported demo files, so the compiler options are the loosest common set: like
   `data-table`/`file-upload`, but with `experimentalDecorators`, `ES2025`/`ESNext`, and without
   `noUncheckedIndexedAccess` and `noImplicitOverride` (the `overlays` code is not written for them; each package still
@@ -190,6 +197,44 @@ and imports the files it needs from its `CLAUDE.md`.
   the default of each app's `DataTable` wrapper (`pageSize={50}` before the table's own props), and no table sets its
   own, except the two of the Board Manager's meeting page that show everything on one page (the agenda: 50, its
   sections: 100). The package's own default stays 25.
+- No `useMemo` around a table's `columns`, `actions` or `source` in the root's apps (2026-10-14, the user's rule: more
+  work in a package, no boilerplate in the apps): the data table takes new ones on every render (see "No `useMemo`
+  needed" in `packages/data-table/CLAUDE.md`). `useMemo` stays only for real computations (e.g. a list of options
+  from the data, the Board Manager's sections draft).
+- Names of table components in the root's apps (2026-10-15, the user's decision): the singular stem, like every other
+  name of the concept (`MemberTable` with `MemberRow`, `MemberForm`; an English compound: "member table"), not the
+  plural (`MembersTable`). Rolled out the same day: `MeetingTable`, `PersonTable`, `MembershipTable`,
+  `DocumentTable` (Board Manager, Human Resources), `GrantTable`, `CandidateTable`.
+- The structure of a table in the root's apps (2026-10-15, the user's wishes, step by step on the Board Manager's
+  members table, then rolled out to all five apps):
+  - A table is a component of its own file (`features/<x>/components/<Name>Table.tsx`), unless it is the whole page
+    (a module's list, e.g. `UsersPage`).
+  - Its columns, filters and actions are functions outside the component: `columnsOf(t)`, `filtersOf(t, data)`,
+    `actionsOf(t, ctx)`, passed straight to the table (`columns={columnsOf(t)}`); a plain constant when they depend on
+    nothing (`const columns = defineColumns<Row>([…])`, in the apps without texts). Dividing ranks above saving explicit
+    types (the user's rule): a context type for `actionsOf` is fine.
+  - What the actions do lives outside the component, in flows: the Board Manager's are plain functions with a context
+    (`shared/lib/flows.ts`: `TableContext<Row>`, the dialogs, toasts and the table to reload; `<x>Flows.tsx`, texts by
+    `translate()`); the other four apps keep their flow hooks (`useEmployeeFlows()` …, each with a type of what it
+    gives, `EmployeeFlows`), passed to `actionsOf` (plain functions would need the same context assembled in every
+    component).
+  - A filter of a domain concept lives in the feature that owns it (`features/<x>/filters.tsx`, through its `index.ts`
+    where the app has that rule), however many tables use it; generic ones (`textFilter()`, `dateRangeFilter()`) stay
+    inline. A filter that needs texts or data is a function of them (`roleFilter(t)`, `boardFilter(boards)`), not a
+    hook: it is called inside `filtersOf`.
+- The standard actions of a table in the root's apps (2026-10-14, the user's choice of three, proposed at about 70%):
+  builders from `<app>/shared/ui/tableActions.ts` (plain functions since 2026-10-15, the user's wish: the hook
+  `useTableActions()` before, only for `t`; their texts from `translate()` when called: `newAction(label, onClick)`,
+  `openAction(onClick)`, `editAction(onClick)`, `deleteAction(onClick)`, each with a few options: `key`, `label`, `tip`,
+  `show`, `default`, `contextMenu`, `visible`; a `label` replaces the standard tip, 2026-10-15), in the app's look and
+  texts; an `onClick` may return a promise (no `void`). The other actions use the data table's builders
+  (2026-10-15, the user's choice: `generalAction(key, onClick, fields)`, `singleRowAction`, `multiRowAction`,
+  `groupAction` of `@local/data-table/react`, on which the standard ones are built); menus stay plain objects. The
+  lists without a type annotation (2026-10-15, the user's wish): `defineColumns<Row>([…])`, `defineActions<Row>([…])`,
+  `defineFilters({…})` of the data table (a single column, e.g. one shared by two tables, keeps its `TableColumn<Row>`). The same
+  file in each of the five apps (a change goes into all five), except the texts (i18n or English) and the Board
+  Manager's look (Edit with its label, Delete not red, as before). Weighed: one `crudActions({ … })` call per table
+  (extra actions harder to fit in), presets in `@local/data-table` (the icons and rules are the apps').
 - Saved filters in the root's apps (2026-10-11, the user's wish; the data table's `savedFilters`): only in the main
   tables of the modules with at least two filters, never on a record's page (e.g. a meeting's documents, a board's
   meetings), nor in Trash. Board Manager: Boards, Meetings, Members, Organizations; File Center: Files, Recent,

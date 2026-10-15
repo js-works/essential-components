@@ -169,6 +169,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - Shared types (`Theme`, `I18nAdapter`, `Query`, ...) are in the `dataTable` of both entries (2026-10-12; only in
     the main entry's `DataTable` before), so a React app needs only `/react`.
   - Needs the built files (`exports` to `dist/`), else the app's bundler resolves `react` itself.
+    (Under the `source` condition, e.g. in the root's demo, it is the sources, with the app's React.)
 - `setupDataTable(config)` is called once per app with the config (theme, i18n factory, content adapter, and
   `defaults` (2026-10-09, the user's wish): the settings of every element where it has no attribute or property of its
   own, e.g. `{ selectionAppearance: 'neutral' }`; only those with values (density, layout, footer, rowActionLook,
@@ -227,9 +228,9 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   once, on its first connect, with itself (so an adapter can read e.g. the `lang` of the element or of an ancestor). It
   may return one shared adapter or a new one per element. Another `type` (e.g. an adapter given directly) makes
   `setupDataTable` throw a `TypeError`.
-- Column filters: the element's entry exports the same factories as the React entry (`textColumnFilter()`,
-  `selectColumnFilter({ options, multiple })`, `dateRangeColumnFilter()`, `numberRangeColumnFilter()`,
-  `booleanColumnFilter()`, `autocompleteColumnFilter()`); internally they use the React filters.
+- Column filters: the element's entry exports the same factories as the React entry (`textFilter()`,
+  `selectFilter({ options, multiple })`, `dateRangeFilter()`, `numberRangeFilter()`,
+  `booleanFilter()`, `autocompleteFilter()`); internally they use the React filters.
   - A custom filter is a function `(props: { value, onChange, labelledBy }) => C`, rendered by the content adapter.
 - Light DOM, no shadow root: the app's CSS reaches everything, also its own content in cells, details and filters.
   - No slots: the element owns its children (the app must not put anything inside it). `title`, `subtitle` and `empty`
@@ -362,8 +363,8 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - This reversed "Themes are CSS only: no theme prop, nothing in the API", decided at first.
 - The stylesheet itself (`data-table.css`) is still imported by the app.
 - The public API of the React entry (`@local/data-table/react`): `createDataTableComponent`,
-  `useDataTableController`, `useDataTableSelection`, `textColumnFilter`, `selectColumnFilter`,
-  `dateRangeColumnFilter`, `numberRangeColumnFilter`, `booleanColumnFilter`, `autocompleteColumnFilter`, `textColumnEditor`, `selectColumnEditor`,
+  `useDataTableController`, `useDataTableSelection`, `textFilter`, `selectFilter`,
+  `dateRangeFilter`, `numberRangeFilter`, `booleanFilter`, `autocompleteFilter`, `textColumnEditor`, `selectColumnEditor`,
   `dateColumnEditor`, and the types (`DataTableComponentConfig`, `DataTableTheme`, `I18nAdapter`, `DataTableComponent`,
   `.Controller`, `.Props`, ...). The themes (`defaultTheme`, `softTheme`, `mantineTheme`, `antdTheme`) come from
   `@local/data-table/themes`.
@@ -405,6 +406,10 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 
 ## Project layout and commands
 
+- `exports` in `package.json` (2026-10-15, the user's choice; proposed at about 70%, over an alias per package and
+  entry in the root): each entry has a `source` condition first, its file in `src/`, then its built file in `dist/`.
+  The root's demo resolves the package by name (`@local/…`) to its sources by that condition (its `vite.config.ts`
+  and `tsconfig.json`); everywhere else, a customer's copy too, the condition is ignored and `dist/` counts.
 - `src/api/` and `src/api/react/`: the spec (types only), see "Working rules".
   - The React code (`src/core/`, `src/react/`) imports `* as Spec` from `api/react/index.js`.
 - Three entries (`exports` in `package.json`, to `dist/`):
@@ -980,7 +985,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - Only the start: the first load asks with them, and they show like any active filter (pills, the filter button's
     count). "Clear all" and a pill's × remove them for good (not back to the defaults), like `defaultSort`, which is
     not restored either. A later change of the prop does nothing (like `pageSize`).
-  - A key without a column filter is ignored, and said so while developing (`console.warn`).
+  - A key without a filter (`filters`) is ignored, and said so while developing (`console.warn`).
   - With `reorder`, the handles are off from the start while a default filter is active (the rule of the filters).
   - The table must know the sort itself, to draw the sort indicator in the header.
   - There are no initial filters (no `defaultFilters`), and no initial search text either.
@@ -1301,8 +1306,8 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   look): the text input, `SelectField` for the single and the multiple select, the date range trigger with its two
   calendars. They moved from the filter row into the filter view.
   - The filter button (in the toolbar's bar, see the toolbar): a ghost button with a funnel (Tabler `filter`) and the
-    label `Texts.filters` ("Filters"; the label since 2026-09-29, it was icon-only with a tooltip), only when at least
-    one column has a `filter`. With active filters, its icon is in the primary color, and a small round badge
+    label `Texts.filters` ("Filters"; the label since 2026-09-29, it was icon-only with a tooltip), only when the
+    table has a filter (`filters`). With active filters, its icon is in the primary color, and a small round badge
     (`--param-color-primary`, text `--param-color-on-primary`) after the label shows their number (hidden from
     assistive technology). No tooltip; `Texts.activeFilters` ("{count} active") is its description.
     It stays usable while loading (like the search box). It shows and hides the filter view, and is pressed
@@ -1471,14 +1476,27 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       - A custom filter (the library does not know its value): strings, numbers and booleans as they are, a list by its
         values, anything else as JSON. A way for custom filters to give their own pill text may come later.
   - No filter icons in the column headers: the pills and the badge are the only filter indicators.
-  - The per-column API is unchanged: `Column.filter?: ColumnFilter`, a plain function
+  - The filters are a prop of the table, not of its columns (2026-10-15, the user's wish, "filters prop only"; the
+    user chose the object over an array with the key first, which was proposed at about 65%, to try it first;
+    `Column.filter` before, from the time of the filter row): `filters?: TableFilters`, an object of filters by key
+    (`Readonly<Record<string, TableFilter>>`; the element's `TableFilters<C>`, in the controller's options). The key
+    is the key in `Query.filters`; the order of the object is the order of the filter view. A filter's label is the
+    header of the column of its key (hidden columns too), else the key itself (a label of its own: the next step,
+    open). A filter needs no column, and a column no filter.
+  - The filter factories and types without "Column" (2026-10-15, the user's wish, once the filters were no longer on
+    the columns): `textFilter`, `selectFilter`, `autocompleteFilter`, `dateRangeFilter`, `numberRangeFilter`,
+    `booleanFilter`; the types `TableFilter`, `BuiltInFilter`, `TextFilterSettings`, `SelectFilterSettings`,
+    `AutocompleteFilterSettings` (`textColumnFilter`, `ColumnFilter`, `BuiltInColumnFilter`, … before; this file was
+    changed along, so older notes here use the new names too). The editors keep "Column" (`textColumnEditor`): they
+    are still on the columns. The internal files keep their names (`ColumnFilters.tsx`).
+  - A filter is a plain function
     `(props: FilterProps) => ReactNode`, `FilterProps = { value: FilterValue | undefined; onChange(value: FilterValue |
     undefined): void; labelledBy: string }`.
     - `value` is the value in the draft (`undefined` for none), `onChange` changes the draft, `labelledBy` is the id of
       the label of the filter in the filter view.
   - The built-in filters are factories, exported next to the component (and by the element's entry, as opaque
     markers):
-    - `textColumnFilter({ placeholder?, matchModes? })`: a plain text input (`FilterTextField`) by default, the value
+    - `textFilter({ placeholder?, matchModes? })`: a plain text input (`FilterTextField`) by default, the value
       always `{ text, match: 'contains' }` (decided 2026-10-02: the select is noise in most columns; the select was
       always there before). With `matchModes: true`, the input with the select described here (the React demo's first
       and last name keep it).
@@ -1496,26 +1514,26 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       `{ text, match }` (`TextFilterValue`, `match`: `'contains' | 'startsWith' | 'endsWith'`), the text
       trimmed; an empty text removes the filter. (It was a plain string, before the match modes.) The placeholder is
       `Texts.filterPlaceholder` ("Filter") or `placeholder`. Its clear button (`Texts.clearFilter`) empties it.
-    - `selectColumnFilter({ options, multiple? })`: unchanged (`SelectField`): the value of the chosen option, or a list
+    - `selectFilter({ options, multiple? })`: unchanged (`SelectField`): the value of the chosen option, or a list
       of them with `multiple`; "All" (`Texts.filterAll`, value `''`) as the first option of a single select; a clear
       button while something is chosen, before the chevron (2026-10-02; it took the chevron's place before), like the
       autocomplete (`.listField`).
-    - `dateRangeColumnFilter()`: unchanged (see below): `{ from, to }`. The second click sets the range in the draft and
+    - `dateRangeFilter()`: unchanged (see below): `{ from, to }`. The second click sets the range in the draft and
       closes the calendars (not the filter view); Clear removes it from the draft.
-    - `numberRangeColumnFilter()` (new): two number inputs in one row, `from – to` (placeholders and names
+    - `numberRangeFilter()` (new): two number inputs in one row, `from – to` (placeholders and names
       `Texts.rangeFrom` "From", `Texts.rangeTo` "To", each named with the label of the filter in front, e.g. "Logins
       From"). The value is `{ from?, to? }` (`NumberRangeFilterValue`), both inclusive; an empty side is
       open, both empty remove the filter. Native `<input type="number">`, without the spin buttons.
-    - `booleanColumnFilter()` (new): a segmented control `All` / `Yes` / `No` (`Texts.filterAll`, `filterYes`,
+    - `booleanFilter()` (new): a segmented control `All` / `Yes` / `No` (`Texts.filterAll`, `filterYes`,
       `filterNo`); the value is `true` or `false`, "All" removes the filter (and shows no pill).
-    - `autocompleteColumnFilter({ load, multiple?, minQueryLength?, maxChips? })` (decided 2026-10-02,
+    - `autocompleteFilter({ load, multiple?, minQueryLength?, maxChips? })` (decided 2026-10-02,
       `view/AutocompleteFilter.tsx`): a text input whose options are loaded while typing (Base UI's `Combobox`; its
       `Autocomplete` is for free text). The value is the `value` of the chosen option, or a list of them with
       `multiple`.
       - `load(query, signal)` returns `{ value, label, content? }[]` (`AutocompleteOption`). `label` is a string,
         always: the pill, the input text and the accessible name need one. `content` is only the look of the entry in
         the list (falls back to `label`).
-      - The types differ per entry (no generic, `BuiltInColumnFilter` stays as it is): React `content?: () =>
+      - The types differ per entry (no generic, `BuiltInFilter` stays as it is): React `content?: () =>
         ReactNode`, the element `content?: () => string | Node`. The element renders a `Node` itself (like the
         default content adapter), whatever the adapter of its setup, so it works with every setup (a Lit setup
         returns a node, not a template). Its factory wraps `load` and calls the React factory.
@@ -1540,8 +1558,9 @@ The general rules (copies of the repository's master, `docs/conventions/`):
         search icon): Base UI's `Combobox.Trigger`, a click opens or closes the list (a click on the input does not
         close it; the multiple select's whole field is its trigger, so it has this already). Not reachable with Tab
         and `aria-hidden` (the keyboard has the arrow keys and Escape). It turns while the list is open.
-      - The pill shows the labels (like the select: `Ann+2` when long). The filter keeps the labels of the options
-        chosen in it (there are no initial filters, so every value was chosen there).
+      - The pill shows the labels (like the select: `Ann+2` when long). The table keeps the labels of the options
+        chosen in it, per column key (`filterLabels.ts`, a private context; 2026-10-14: the filter kept them before, so a
+        filter made anew on every render lost them and its pill showed the values).
       - In the filter view, Enter and Escape in its input belong to the open list (choose, close): they apply or
         cancel the view only while the list is closed (`aria-expanded`).
     - Ranges are always inclusive on both ends. All filters are combined with AND (the source does that).
@@ -1553,7 +1572,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     (its smaller variant was for the match of the text filter, which is a select now).
   - The controls in the filter view are small (`0.8 * --param-control-height`), with a text size between the small and the
     normal size, like the filter row had them.
-  - `dateRangeColumnFilter()` (`view/DateRangeFilter.tsx`): a trigger in the look of the selects (`Texts.filterAll`
+  - `dateRangeFilter()` (`view/DateRangeFilter.tsx`): a trigger in the look of the selects (`Texts.filterAll`
     while empty, dimmed; else the range, formatted with `Intl.DateTimeFormat#formatRange` (`dateStyle: 'medium'`) in
     the adapter's locale, e.g. "Sep 12 – 20, 2026"), with a calendar icon at its end (Bootstrap's `BsCalendar4`, filled, 16×16, since 2026-10-01; Tabler's `calendar`
     before), or the clear button while set.
@@ -1734,6 +1753,26 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - The discriminator `type` of an action is `'general' | 'singleRow' | 'multiRow'` (renamed on 2026-09-29 from
     `'general' | 'row' | 'rows'`: `'row'` and `'rows'` differed by one letter, easy to misread). Only a single-row
     action has `show` and `default`. The TypeScript names of the types (`RowAction`, `RowsAction`) stay.
+  - Builders (2026-10-15, the user's choice; proposed at about 80%, in the package rather than in each app, since they
+    hold nothing of an app): `generalAction(key, onClick, fields)`, `singleRowAction(…)`, `multiRowAction(…)`,
+    `groupAction(…)` fill in `type`; `fields` is the rest of the action (`ActionFields<RowAction<Row>>`, the type
+    without `type`, `key` and `onClick`). The handler may return a value (a promise), which is ignored: no `void` in
+    the app. The key comes first, never derived from the label (it changes with the language). Menus stay plain
+    objects. In both entries (2026-10-15, the user's choice, proposed at about 80%; the React entry only for a few
+    hours): one implementation (`src/core/actionBuilders.ts`), typed per entry (`src/react/actionBuilders.ts`,
+    `src/element/actionBuilders.ts`, with `C = Node`; `C` is not inferred from the fields, `NoInfer`: a label
+    `() => string` made it `string`). The demos' actions use them (`demo/shared.ts`, `demo/ElementDemo.ts`). The
+    root's apps build their standard actions (New, Open, Edit, Delete) on them, in their own look and texts.
+  - `defineColumns<Row>([…])` and `defineActions<Row>([…])` (2026-10-15, the user's wish; leaving them out was
+    proposed at about 60%: they save only the type import and `readonly …[]`): typed by the rows, they return the
+    array as it is, so a table's columns and actions need no type annotation. `Row` is given (it cannot be inferred
+    from the columns: `render` and `visible` need it). In both entries (`src/react/definitions.ts`,
+    `src/element/definitions.ts`, there with `C = Node`). The arrays include column groups and action menus. Used in
+    `demo/GroupingDemo.tsx` and `demo/ElementDemo.ts`, and by every table of the root's apps.
+  - `defineFilters({…})` (2026-10-15, the user's wish): the same for the filters (`filters`), in both entries (the
+    element's with `C = Node`). No `Row`: a filter's key need not be a field of the row (a filter without a column).
+    Used by the demos and every filters object of the root's apps (not in the tests, nor in the apps' filter
+    hooks).
   - What the action column shows of an action is a setting of the table, not of the action (decided 2026-09-29):
     `rowActionLook?: 'icon' | 'label' | 'iconAndLabel'` (default `'icon'`; the element's attribute `row-action-look`,
     property `rowActionLook`). Actions describe their whole look (label, icon, tip); the table decides for the rows.
@@ -2205,6 +2244,12 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - Each load has its own `AbortController`. The effect cleanup (a newer load, or the unmount) aborts it and marks the
     load as outdated, so its response and its rejection are ignored.
   - A rejected `source` is only logged with `console.error` (see Todo: error state).
+- No `useMemo` needed in the app (2026-10-14, the user's rule: more work in the package, no boilerplate in the apps):
+  `columns`, `actions`, `source` and the other props may be new objects on every render, and nothing is reset or
+  loaded again (the sort, the selection, the hidden columns, the filters stay). A test renders a table with new props
+  three times ("new props on every render"). Filters too: the autocomplete's chosen labels are kept by the table (see the
+  autocomplete filter). The dev warning about `sortable` with `reorder` depends on a boolean,
+  so it is not repeated on every render. The apps' and the demo's `useMemo` around columns and actions are gone.
 - The current page, page size and sort live in the component. `source` is called when one of them changes.
   - A changed `source` function identity does not trigger a reload.
   - Changing the sort also goes back to page 1.
@@ -2234,6 +2279,10 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 
 ## Todo (later)
 
+- A label of a filter's own (2026-10-15, the user's wish: later): a filter without a column of its key shows the key
+  itself as its label (in the filter view and its pill). Proposed: a `label` option of the factories
+  (`textFilter({ label: t('people.nickname') })`); it would win over the column's header. Only for filters without a
+  column; every filter of the root's apps has one today.
 - Row actions that are not visible for a row (`visible`, 2026-10-10, the user's wish: later): keep their place in the
   action column (an empty slot as wide as the button, `visibility: hidden`: not focusable, not announced), so every
   action has its own column across the rows, whatever the order (proposed at about 55%; for now the column is

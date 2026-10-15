@@ -1,4 +1,4 @@
-import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react/index.js';
+import { useDialogs, useToast } from '@local/overlays/react';
 import { addDays, todayDate, vacationBalance, weekStart } from '../../domain/index.js';
 import type { Decision, Employee, LeaveRequest, TimeData } from '../../domain/index.js';
 import { errorText } from '../../shared/lib/errorText.js';
@@ -10,6 +10,10 @@ import { useViewer } from '../viewer/index.js';
 import { LeaveForm } from './components/LeaveForm.js';
 
 export { useLeaveFlows };
+export type { LeaveFlows };
+
+// What `useLeaveFlows()` gives: the flows, for the functions that build a table's actions.
+type LeaveFlows = ReturnType<typeof useLeaveFlows>;
 
 // The changes of leave requests: request (the viewer), cancel (the viewer, their own), decide (a team lead).
 function useLeaveFlows() {

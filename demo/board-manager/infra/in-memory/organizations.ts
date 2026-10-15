@@ -1,4 +1,4 @@
-import type { RowPage, RowQuery } from '../../../../packages/data-table/src/react/index.js';
+import type { RowPage, RowQuery } from '@local/data-table/react';
 import { normalizeWebsite } from '../../domain/index.js';
 import type { Organization } from '../../domain/index.js';
 import { countryName } from '../../shared/lib/countries.js';

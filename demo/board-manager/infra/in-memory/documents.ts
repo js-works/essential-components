@@ -1,5 +1,5 @@
-import type { RowSource } from '../../../../packages/data-table/src/react/index.js';
-import type { UploadFn } from '../../../../packages/file-upload/src/index.js';
+import type { RowSource } from '@local/data-table/react';
+import type { UploadFn } from '@local/file-upload';
 import type { MeetingDocument } from '../../domain/index.js';
 import { AppError } from './errors.js';
 import { CURRENT_USER, localDateTime, typeOf } from './helpers.js';

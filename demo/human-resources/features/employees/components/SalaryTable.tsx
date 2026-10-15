@@ -1,17 +1,17 @@
+import { defineActions, defineColumns, useDataTableController } from '@local/data-table/react';
 import { Badge, SimpleGrid, Stack, Text } from '@mantine/core';
-import { useMemo } from 'react';
 import type { ReactElement } from 'react';
-import { useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
-import type { TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
 import { currentSalary, todayDate } from '../../../domain/index.js';
 import type { Employee, HrData, SalaryChange } from '../../../domain/index.js';
 import { formatDate, formatMoney, formatNumber } from '../../../shared/lib/format.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import type { Translate } from '../../../shared/lib/i18n/index.js';
 import { DataTable } from '../../../shared/ui/dataTable.js';
-import { appIcons } from '../../../shared/ui/icons.js';
 import { StatCard } from '../../../shared/ui/parts.js';
+import { newAction } from '../../../shared/ui/tableActions.js';
 import { useTableSource } from '../../hr/index.js';
 import { useEmployeeFlows } from '../flows.js';
+import type { EmployeeFlows } from '../flows.js';
 
 export { SalaryTable };
 
@@ -39,24 +39,9 @@ function salaryRows(data: HrData, employeeId: string): SalaryRow[] {
   });
 }
 
-// The salary of an employee: today's (with the change to the one before), and its history, the latest first. A new
-// salary from a date on (a raise, a promotion).
-function SalaryTable({ data, employee }: { data: HrData; employee: Employee }): ReactElement {
-  const t = useTranslate();
-  const nav = useDataTableController<SalaryRow>();
-  const flows = useEmployeeFlows();
-  const source = useTableSource<SalaryRow>(
-    `salaries:${employee.id}`,
-    (all) => salaryRows(all, employee.id),
-    { search: ['note'] },
-    nav.reload,
-  );
-  const rows = salaryRows(data, employee.id);
-  const current = rows.find((row) => row.current);
-  const coming = rows.filter((row) => row.from > todayDate());
-  const first = rows[0];
-
-  const columns = useMemo((): readonly TableColumn<SalaryRow>[] => [
+// The columns of the salary history, with their headers in the current language.
+const columnsOf = (t: Translate) =>
+  defineColumns<SalaryRow>([
     {
       key: 'from',
       header: t('salary.from'),
@@ -100,18 +85,28 @@ function SalaryTable({ data, employee }: { data: HrData; employee: Employee }): 
       ),
     },
     { key: 'note', header: t('salary.note'), width: 3 },
-  ], [t]);
+  ]);
 
-  const actions = useMemo((): readonly TableAction<SalaryRow>[] => [
-    {
-      type: 'general',
-      key: 'new',
-      label: t('salary.new'),
-      icon: appIcons.add,
-      variant: 'primary',
-      onClick: () => void flows.changeSalary(employee, data),
-    },
-  ], [t, flows, employee, data]);
+// The actions of the salary history: a new salary.
+const actionsOf = (t: Translate, flows: EmployeeFlows, employee: Employee, data: HrData) =>
+  defineActions<SalaryRow>([newAction(t('salary.new'), () => flows.changeSalary(employee, data))]);
+
+// The salary of an employee: today's (with the change to the one before), and its history, the latest first. A new
+// salary from a date on (a raise, a promotion).
+function SalaryTable({ data, employee }: { data: HrData; employee: Employee }): ReactElement {
+  const t = useTranslate();
+  const nav = useDataTableController<SalaryRow>();
+  const flows = useEmployeeFlows();
+  const source = useTableSource<SalaryRow>(
+    `salaries:${employee.id}`,
+    (all) => salaryRows(all, employee.id),
+    { search: ['note'] },
+    nav.reload,
+  );
+  const rows = salaryRows(data, employee.id);
+  const current = rows.find((row) => row.current);
+  const coming = rows.filter((row) => row.from > todayDate());
+  const first = rows[0];
 
   const growth = current !== undefined && first !== undefined && first.id !== current.id
     ? ((current.amount - first.amount) / first.amount) * 100
@@ -145,8 +140,8 @@ function SalaryTable({ data, employee }: { data: HrData; employee: Employee }): 
         title={t('salary.history')}
         source={source}
         rowKey="id"
-        columns={columns}
-        actions={actions}
+        columns={columnsOf(t)}
+        actions={actionsOf(t, flows, employee, data)}
         defaultSort={{ key: 'from', direction: 'desc' }}
       />
       <Text size="xs" c="dimmed">{t('salary.footnote')}</Text>

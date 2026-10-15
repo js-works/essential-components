@@ -1,7 +1,7 @@
+import { Form } from '@local/overlays/react';
 import { TextInput } from '@mantine/core';
 import { useRef, useState } from 'react';
 import type { ReactElement } from 'react';
-import { Form } from '../../../../../packages/overlays/src/main/bindings/react/index.js';
 
 export { NameForm };
 

@@ -47,6 +47,7 @@ const appIcons = {
   upload: <TbUpload size={16} aria-hidden />,
   move: <TbFolderSymlink size={16} aria-hidden />,
   rename: <TbPencil size={16} aria-hidden />,
+  edit: <TbPencil size={16} aria-hidden />,
   remove: <TbTrash size={16} aria-hidden />,
   info: <TbInfoCircle size={16} aria-hidden />,
   download: <TbDownload size={16} aria-hidden />,

@@ -1,21 +1,24 @@
+import { defineActions, defineColumns, defineFilters, useDataTableController } from '@local/data-table/react';
+import type { SavedFilter } from '@local/data-table/react';
 import { Badge, Loader } from '@mantine/core';
-import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router';
-import { selectColumnFilter, useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
-import type { SavedFilter, TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
+import type { NavigateFunction } from 'react-router';
 import { todayDate, todayStatus, vacationBalance } from '../../../domain/index.js';
-import type { Employee, TimeData, TodayStatus } from '../../../domain/index.js';
+import type { Employee, Team, TimeData, TodayStatus } from '../../../domain/index.js';
 import { formatDays } from '../../../shared/lib/format.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import type { Translate } from '../../../shared/lib/i18n/index.js';
 import { oneOf } from '../../../shared/lib/localQuery.js';
 import { DataTable } from '../../../shared/ui/dataTable.js';
-import { appIcons } from '../../../shared/ui/icons.js';
 import { EmployeeLabel, LeadOnly, TodayBadge } from '../../../shared/ui/parts.js';
 import { sharedBy, useSavedFilters } from '../../../shared/ui/savedFilters.js';
+import { editAction, newAction, openAction } from '../../../shared/ui/tableActions.js';
 import { useTableSource, useTimeData } from '../../tracker/index.js';
 import { useViewer } from '../../viewer/index.js';
+import { employeeStatusFilter, teamFilter, todayFilter } from '../filters.js';
 import { useEmployeeFlows } from '../flows.js';
+import type { EmployeeFlows } from '../flows.js';
 
 export { EmployeesPage };
 
@@ -51,26 +54,9 @@ const COLLEAGUES_FILTERS: readonly SavedFilter[] = [
   sharedBy('Felix Braun', 'Engineering', { team: ['Engineering'] }),
 ];
 
-// All employees (a team lead): their team, hours, vacation left and where they are today. Open one for their page.
-function EmployeesPage(): ReactElement {
-  const savedFilters = useSavedFilters('time-tracker:saved-filters:employees', COLLEAGUES_FILTERS);
-  const t = useTranslate();
-  const data = useTimeData();
-  const viewer = useViewer();
-  const nav = useDataTableController<EmployeeRow>();
-  const navigate = useNavigate();
-  const flows = useEmployeeFlows();
-  const teams = data?.teams;
-  const source = useTableSource<EmployeeRow>('employees', employeeRows, {
-    search: ['name', 'email', 'title', 'team'],
-    filters: {
-      team: (row, value) => oneOf(row.team, value),
-      status: (row, value) => oneOf(row.status, value),
-      todayKey: (row, value) => oneOf(row.todayKey, value),
-    },
-  }, nav.reload);
-
-  const columns = useMemo((): readonly TableColumn<EmployeeRow>[] => [
+// The columns of the employees list, with their headers in the current language.
+const columnsOf = (t: Translate) =>
+  defineColumns<EmployeeRow>([
     {
       key: 'name',
       header: t('employees.name'),
@@ -83,10 +69,6 @@ function EmployeesPage(): ReactElement {
       header: t('employees.team'),
       width: 2,
       sortable: true,
-      filter: selectColumnFilter({
-        options: (teams ?? []).map((team) => ({ value: team.name, label: team.name })),
-        multiple: true,
-      }),
     },
     {
       key: 'todayKey',
@@ -94,16 +76,6 @@ function EmployeesPage(): ReactElement {
       width: 2,
       sortable: true,
       render: (row) => <TodayBadge status={row.today} />,
-      filter: selectColumnFilter({
-        options: [
-          ...(['working', 'break', 'out'] as const).map((value) => ({ value, label: t(`clockState.${value}`) })),
-          ...(['vacation', 'special', 'unpaid', 'sick', 'holiday'] as const).map((value) => ({
-            value,
-            label: t(`absence.${value}`),
-          })),
-        ],
-        multiple: true,
-      }),
     },
     {
       key: 'weeklyHours',
@@ -132,40 +104,38 @@ function EmployeesPage(): ReactElement {
       render: (row) => (
         <Badge variant="light" color={row.active ? undefined : 'gray'}>{t(`employees.${row.status}`)}</Badge>
       ),
-      filter: selectColumnFilter({
-        options: (['active', 'inactive'] as const).map((value) => ({ value, label: t(`employees.${value}`) })),
-        multiple: true,
-      }),
     },
-  ], [t, teams]);
+  ]);
 
-  const actions = useMemo((): readonly TableAction<EmployeeRow>[] => [
-    {
-      type: 'general',
-      key: 'new',
-      label: t('employees.new'),
-      icon: appIcons.add,
-      variant: 'primary',
-      onClick: () => teams !== undefined && void flows.create(teams),
+// The filters of the employees list.
+const filtersOf = (t: Translate, teams: readonly Team[]) =>
+  defineFilters({ team: teamFilter(teams), todayKey: todayFilter(t), status: employeeStatusFilter(t) });
+
+// The actions of the employees list: new, open (the default action), edit.
+const actionsOf = (t: Translate, flows: EmployeeFlows, navigate: NavigateFunction, teams: readonly Team[]) =>
+  defineActions<EmployeeRow>([
+    newAction(t('employees.new'), () => flows.create(teams)),
+    openAction((row) => navigate(`/employees/${row.id}`)),
+    editAction((row) => flows.edit(row, teams)),
+  ]);
+
+// All employees (a team lead): their team, hours, vacation left and where they are today. Open one for their page.
+function EmployeesPage(): ReactElement {
+  const t = useTranslate();
+  const data = useTimeData();
+  const viewer = useViewer();
+  const nav = useDataTableController<EmployeeRow>();
+  const flows = useEmployeeFlows();
+  const navigate = useNavigate();
+  const savedFilters = useSavedFilters('time-tracker:saved-filters:employees', COLLEAGUES_FILTERS);
+  const source = useTableSource<EmployeeRow>('employees', employeeRows, {
+    search: ['name', 'email', 'title', 'team'],
+    filters: {
+      team: (row, value) => oneOf(row.team, value),
+      status: (row, value) => oneOf(row.status, value),
+      todayKey: (row, value) => oneOf(row.todayKey, value),
     },
-    {
-      type: 'singleRow',
-      key: 'open',
-      icon: appIcons.open,
-      tip: t('common.open'),
-      show: 'column',
-      default: true,
-      onClick: (row) => void navigate(`/employees/${row.id}`),
-    },
-    {
-      type: 'singleRow',
-      key: 'edit',
-      icon: appIcons.edit,
-      tip: t('common.edit'),
-      show: 'both',
-      onClick: (row) => teams !== undefined && void flows.edit(row, teams),
-    },
-  ], [t, flows, navigate, teams]);
+  }, nav.reload);
 
   if (!viewer.isLead) {
     return <LeadOnly />;
@@ -182,8 +152,9 @@ function EmployeesPage(): ReactElement {
       subtitle={t('employees.subtitle')}
       source={source}
       rowKey="id"
-      columns={columns}
-      actions={actions}
+      columns={columnsOf(t)}
+      filters={filtersOf(t, data.teams)}
+      actions={actionsOf(t, flows, navigate, data.teams)}
       searchable
       reloadable
       pageSizeOptions={[25, 50, 100]}

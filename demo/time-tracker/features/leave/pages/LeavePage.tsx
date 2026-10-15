@@ -1,7 +1,7 @@
+import type { SavedFilter } from '@local/data-table/react';
 import { Loader, Stack, Tabs } from '@mantine/core';
 import { useState } from 'react';
 import type { ReactElement } from 'react';
-import type { SavedFilter } from '../../../../../packages/data-table/src/react/index.js';
 import { membersOf, todayDate, vacationBalance } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { appIcons } from '../../../shared/ui/icons.js';

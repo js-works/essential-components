@@ -1,15 +1,16 @@
+import { defineActions, defineColumns, singleRowAction, useDataTableController } from '@local/data-table/react';
 import { Anchor, Badge, Group, Stack, Text } from '@mantine/core';
-import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { useDataTableController } from '../../../../../packages/data-table/src/react/index.js';
-import type { TableAction, TableColumn } from '../../../../../packages/data-table/src/react/index.js';
+import type { NavigateFunction } from 'react-router';
 import type { AccessData, Role } from '../../../domain/index.js';
 import { DataTable } from '../../../shared/ui/dataTable.js';
 import { appIcons } from '../../../shared/ui/icons.js';
 import { PageHeader } from '../../../shared/ui/parts.js';
+import { deleteAction, newAction, openAction } from '../../../shared/ui/tableActions.js';
 import { useTableSource } from '../../iam/index.js';
 import { useRoleFlows } from '../flows.js';
+import type { RoleFlows } from '../flows.js';
 
 export { RolesPage };
 
@@ -24,72 +25,45 @@ function roleRows(data: AccessData): RoleRow[] {
   }));
 }
 
+// The columns of the roles list.
+const columns = defineColumns<RoleRow>([
+  {
+    key: 'name',
+    header: 'Name',
+    width: 2.5,
+    sortable: true,
+    render: (row) => (
+      <Group gap={8} wrap="nowrap">
+        <Anchor component={Link} to={`/roles/${row.id}`} size="sm" truncate>{row.name}</Anchor>
+        {row.builtIn && <Badge size="xs" variant="outline">Built-in</Badge>}
+      </Group>
+    ),
+  },
+  {
+    key: 'description',
+    header: 'Description',
+    width: 4,
+    hideable: true,
+    render: (row) => <Text size="sm" truncate>{row.description}</Text>,
+  },
+  { key: 'permissions', header: 'Permissions', width: 1.4, sortable: true, align: 'end' },
+  { key: 'grants', header: 'Granted', width: 1.2, sortable: true, align: 'end', hideable: true },
+]);
+
+// The actions of the roles list: new, open (the default action), duplicate, delete.
+const actionsOf = ({ flows, navigate }: { flows: RoleFlows; navigate: NavigateFunction }) =>
+  defineActions<RoleRow>([
+    newAction('New role', () => flows.create()),
+    openAction((row) => navigate(`/roles/${row.id}`)),
+    singleRowAction('duplicate', (row) => flows.create(row), { icon: appIcons.copy, tip: 'Duplicate', show: 'both' }),
+    deleteAction((rows) => flows.remove(rows)),
+  ]);
+
 // All roles: named sets of permissions, granted on scopes.
 function RolesPage(): ReactElement {
   const nav = useDataTableController<RoleRow>();
-  const navigate = useNavigate();
-  const flows = useRoleFlows();
+  const ctx = { flows: useRoleFlows(), navigate: useNavigate() };
   const source = useTableSource<RoleRow>('roles', roleRows, { search: ['name', 'description'] }, nav.reload);
-
-  const columns = useMemo((): readonly TableColumn<RoleRow>[] => [
-    {
-      key: 'name',
-      header: 'Name',
-      width: 2.5,
-      sortable: true,
-      render: (row) => (
-        <Group gap={8} wrap="nowrap">
-          <Anchor component={Link} to={`/roles/${row.id}`} size="sm" truncate>{row.name}</Anchor>
-          {row.builtIn && <Badge size="xs" variant="outline">Built-in</Badge>}
-        </Group>
-      ),
-    },
-    {
-      key: 'description',
-      header: 'Description',
-      width: 4,
-      hideable: true,
-      render: (row) => <Text size="sm" truncate>{row.description}</Text>,
-    },
-    { key: 'permissions', header: 'Permissions', width: 1.4, sortable: true, align: 'end' },
-    { key: 'grants', header: 'Granted', width: 1.2, sortable: true, align: 'end', hideable: true },
-  ], []);
-
-  const actions = useMemo((): readonly TableAction<RoleRow>[] => [
-    {
-      type: 'general',
-      key: 'new',
-      label: 'New role',
-      icon: appIcons.add,
-      variant: 'primary',
-      onClick: () => void flows.create(),
-    },
-    {
-      type: 'singleRow',
-      key: 'open',
-      icon: appIcons.open,
-      tip: 'Open',
-      show: 'column',
-      default: true,
-      onClick: (row) => void navigate(`/roles/${row.id}`),
-    },
-    {
-      type: 'singleRow',
-      key: 'duplicate',
-      icon: appIcons.copy,
-      tip: 'Duplicate',
-      show: 'both',
-      onClick: (row) => void flows.create(row),
-    },
-    {
-      type: 'multiRow',
-      key: 'delete',
-      label: 'Delete',
-      icon: appIcons.remove,
-      variant: 'danger',
-      onClick: (rows) => void flows.remove(rows),
-    },
-  ], [flows, navigate]);
 
   return (
     <Stack gap="md">
@@ -102,7 +76,7 @@ function RolesPage(): ReactElement {
         source={source}
         rowKey="id"
         columns={columns}
-        actions={actions}
+        actions={actionsOf(ctx)}
         searchable
         defaultSort={{ key: 'name', direction: 'asc' }}
       />

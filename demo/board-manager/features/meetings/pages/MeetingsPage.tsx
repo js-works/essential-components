@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { MeetingsTable } from '../components/MeetingsTable.js';
+import { MeetingTable } from '../components/MeetingTable.js';
 
 export { MeetingsPage };
 
@@ -11,5 +11,5 @@ const meetingPath = (meeting: { id: string }) => `/meetings/${meeting.id}`;
 function MeetingsPage(): ReactElement {
   const t = useTranslate();
 
-  return <MeetingsTable pathOf={meetingPath} title={t('modules.meetings')} subtitle={t('meetings.listSubtitle')} />;
+  return <MeetingTable pathOf={meetingPath} title={t('modules.meetings')} subtitle={t('meetings.listSubtitle')} />;
 }

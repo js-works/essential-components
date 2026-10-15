@@ -4,52 +4,52 @@ import * as reactFilters from '../core/view/ColumnFilters.js';
 import { contentRendererOf, nodeContent } from './content.js';
 
 export {
-  autocompleteColumnFilter,
-  booleanColumnFilter,
-  dateRangeColumnFilter,
-  numberRangeColumnFilter,
+  autocompleteFilter,
+  booleanFilter,
+  dateRangeFilter,
+  numberRangeFilter,
   reactFilterOf,
-  selectColumnFilter,
-  textColumnFilter,
+  selectFilter,
+  textFilter,
 };
 
 // The built-in filters of the element: opaque values for the app, and each one stands for a filter of the React
 // component, which renders it.
-const builtIns = new WeakMap<object, DataTableComponent.ColumnFilter>();
+const builtIns = new WeakMap<object, DataTableComponent.TableFilter>();
 
-function builtIn(filter: DataTableComponent.ColumnFilter): DataTable.BuiltInColumnFilter {
+function builtIn(filter: DataTableComponent.TableFilter): DataTable.BuiltInFilter {
   const marker = Object.freeze({});
 
   builtIns.set(marker, filter);
 
   // The type brand exists only for the compiler: the marker is the key of the filter it stands for.
-  return marker as DataTable.BuiltInColumnFilter;
+  return marker as DataTable.BuiltInFilter;
 }
 
 // The React filter of a built-in one, or undefined for anything else (e.g. an app's own filter function).
-function reactFilterOf(filter: unknown): DataTableComponent.ColumnFilter | undefined {
+function reactFilterOf(filter: unknown): DataTableComponent.TableFilter | undefined {
   return typeof filter === 'object' && filter !== null ? builtIns.get(filter) : undefined;
 }
 
 // The same built-in filters as in React (see ColumnFilters.tsx), with the same settings.
-function textColumnFilter(settings: DataTable.TextColumnFilterSettings = {}): DataTable.BuiltInColumnFilter {
-  return builtIn(reactFilters.textColumnFilter(settings));
+function textFilter(settings: DataTable.TextFilterSettings = {}): DataTable.BuiltInFilter {
+  return builtIn(reactFilters.textFilter(settings));
 }
 
-function selectColumnFilter(settings: DataTable.SelectColumnFilterSettings): DataTable.BuiltInColumnFilter {
-  return builtIn(reactFilters.selectColumnFilter(settings));
+function selectFilter(settings: DataTable.SelectFilterSettings): DataTable.BuiltInFilter {
+  return builtIn(reactFilters.selectFilter(settings));
 }
 
 // The `content` of an option (a string or a DOM node) is rendered like the default content adapter does, whatever the
 // adapter of the setup: so it works with every setup.
 const renderNode = contentRendererOf(nodeContent as DataTable.ContentAdapter<unknown>);
 
-function autocompleteColumnFilter(
-  settings: DataTable.AutocompleteColumnFilterSettings,
-): DataTable.BuiltInColumnFilter {
+function autocompleteFilter(
+  settings: DataTable.AutocompleteFilterSettings,
+): DataTable.BuiltInFilter {
   const { load, ...rest } = settings;
 
-  return builtIn(reactFilters.autocompleteColumnFilter({
+  return builtIn(reactFilters.autocompleteFilter({
     ...rest,
     load: async (query, signal) =>
       (await load(query, signal)).map(({ content, ...option }) =>
@@ -58,14 +58,14 @@ function autocompleteColumnFilter(
   }));
 }
 
-function dateRangeColumnFilter(): DataTable.BuiltInColumnFilter {
-  return builtIn(reactFilters.dateRangeColumnFilter());
+function dateRangeFilter(): DataTable.BuiltInFilter {
+  return builtIn(reactFilters.dateRangeFilter());
 }
 
-function numberRangeColumnFilter(): DataTable.BuiltInColumnFilter {
-  return builtIn(reactFilters.numberRangeColumnFilter());
+function numberRangeFilter(): DataTable.BuiltInFilter {
+  return builtIn(reactFilters.numberRangeFilter());
 }
 
-function booleanColumnFilter(): DataTable.BuiltInColumnFilter {
-  return builtIn(reactFilters.booleanColumnFilter());
+function booleanFilter(): DataTable.BuiltInFilter {
+  return builtIn(reactFilters.booleanFilter());
 }

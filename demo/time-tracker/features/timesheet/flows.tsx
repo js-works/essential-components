@@ -1,4 +1,4 @@
-import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react/index.js';
+import { useDialogs, useToast } from '@local/overlays/react';
 import type { Correction, Decision, Employee } from '../../domain/index.js';
 import { formatDate, formatTime } from '../../shared/lib/format.js';
 import { translate } from '../../shared/lib/i18n/index.js';
@@ -8,6 +8,10 @@ import { useViewer } from '../viewer/index.js';
 import { CorrectionForm } from './components/CorrectionForm.js';
 
 export { useCorrectionFlows };
+export type { CorrectionFlows };
+
+// What `useCorrectionFlows()` gives: the flows, for the functions that build a table's actions.
+type CorrectionFlows = ReturnType<typeof useCorrectionFlows>;
 
 // The corrections of the clock: request one (a forgotten stretch of a past day), and decide on them (a team lead).
 function useCorrectionFlows() {

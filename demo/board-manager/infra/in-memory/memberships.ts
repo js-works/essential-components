@@ -1,4 +1,4 @@
-import type { RowSource } from '../../../../packages/data-table/src/react/index.js';
+import type { RowSource } from '@local/data-table/react';
 import { ROLES } from '../../domain/index.js';
 import type { Membership, Role } from '../../domain/index.js';
 import { localDate } from './helpers.js';

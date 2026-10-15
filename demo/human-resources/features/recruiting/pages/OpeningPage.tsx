@@ -8,7 +8,7 @@ import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { appIcons } from '../../../shared/ui/icons.js';
 import { Detail, EmployeeLabel, OpeningStatusBadge, PageHeader } from '../../../shared/ui/parts.js';
 import { departmentName, employeeOf, useHrData } from '../../hr/index.js';
-import { CandidatesTable } from '../components/CandidatesTable.js';
+import { CandidateTable } from '../components/CandidateTable.js';
 import { PipelineBoard } from '../components/PipelineBoard.js';
 import { useRecruitingFlows } from '../flows.js';
 
@@ -93,7 +93,7 @@ function OpeningPage(): ReactElement {
           </Stack>
         </Tabs.Panel>
         <Tabs.Panel value="candidates">
-          <CandidatesTable data={data} opening={opening} />
+          <CandidateTable data={data} opening={opening} />
         </Tabs.Panel>
         <Tabs.Panel value="description">
           <Paper withBorder p="md" radius="sm" maw={720}>

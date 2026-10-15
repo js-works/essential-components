@@ -1,11 +1,15 @@
+import { useDialogs, useToast } from '@local/overlays/react';
 import { useNavigate } from 'react-router';
-import { useDialogs, useToast } from '../../../../packages/overlays/src/main/bindings/react/index.js';
 import type { User } from '../../domain/index.js';
 import { countText } from '../../shared/lib/format.js';
 import { useChanged, useIamService } from '../iam/index.js';
 import { UserForm } from './components/UserForm.js';
 
 export { useUserFlows };
+export type { UserFlows };
+
+// What `useUserFlows()` gives: the flows, for the functions that build a table's actions.
+type UserFlows = ReturnType<typeof useUserFlows>;
 
 // The changes of users, shared by the users table and a user's page: new, edit, enable or disable, delete.
 function useUserFlows() {

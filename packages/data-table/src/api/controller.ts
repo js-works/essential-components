@@ -1,5 +1,5 @@
 import type { ActionMenu, TableAction } from './actions.js';
-import type { ColumnGroup, EditField, TableColumn } from './columns.js';
+import type { ColumnGroup, EditField, TableColumn, TableFilters } from './columns.js';
 import type { TextContent } from './content.js';
 import type { FilterValue, GroupBy, RowGroup, RowSource, SortDirection } from './query.js';
 import type { CreateRow, ReorderRows, SaveRow } from './rows.js';
@@ -16,6 +16,7 @@ type ControllerOptions<Row, C> = {
   editFields?: readonly EditField<Row, C>[];
   rowKey: keyof Row & string;
   columns: readonly (TableColumn<Row, C> | ColumnGroup<Row, C>)[];
+  filters?: TableFilters<C>;
   actions?: readonly (TableAction<Row, C> | ActionMenu<Row, C>)[];
   renderDetail?: (row: Row) => string | C;
   groupBy?: GroupBy<Row>;

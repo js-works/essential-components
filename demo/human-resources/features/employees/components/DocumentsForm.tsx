@@ -1,8 +1,8 @@
+import type { FileItem, UploadFn } from '@local/file-upload';
+import { binding } from '@local/form-validation';
 import { Stack, Text } from '@mantine/core';
 import type { ReactElement } from 'react';
 import { z } from 'zod';
-import type { FileItem, UploadFn } from '../../../../../packages/file-upload/src/index.js';
-import { binding } from '../../../../../packages/form-validation/src/index.js';
 import { DOCUMENT_CATEGORIES } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { useForm } from '../../../shared/lib/useForm.js';

@@ -101,19 +101,17 @@ function withRows<Row>(selection: Selection<Row>, entries: readonly (readonly [s
   return next;
 }
 
-// The filters a table starts with (`defaultFilters`): only those of a column with a filter; the others are ignored,
-// and said so while developing.
-function initialFilters<Row>(
+// The filters a table starts with (`defaultFilters`): only those of a filter of the table (`filters`); the others are
+// ignored, and said so while developing.
+function initialFilters(
   defaults: Readonly<Record<string, Spec.FilterValue>> | undefined,
-  columns: readonly (Spec.TableColumn<Row> | Spec.ColumnGroup<Row>)[],
+  filterDefs: Spec.TableFilters | undefined,
 ): Readonly<Record<string, Spec.FilterValue>> {
   if (defaults === undefined) {
     return EMPTY_FILTERS;
   }
 
-  const keys = new Set<string>(
-    createLayout(columns).leaves.flatMap(({ column }) => (column.filter === undefined ? [] : [column.key])),
-  );
+  const keys = new Set(Object.keys(filterDefs ?? {}));
   const unknown = Object.keys(defaults).filter((key) => !keys.has(key));
 
   if (unknown.length === 0) {
@@ -121,7 +119,7 @@ function initialFilters<Row>(
   }
 
   if (import.meta.env.DEV) {
-    console.warn(`DataTable: \`defaultFilters\` without a column filter are ignored: ${unknown.join(', ')}.`);
+    console.warn(`DataTable: \`defaultFilters\` without a filter are ignored: ${unknown.join(', ')}.`);
   }
 
   return Object.fromEntries(Object.entries(defaults).filter(([key]) => keys.has(key)));
@@ -151,7 +149,7 @@ function useDataTable<Row>(props: Spec.DataTableProps<Row>) {
   const searchable = props.searchable === true;
   const [searchText, setSearchText] = useState('');
   const [search, setSearch] = useState('');
-  const [filters, setFilters] = useState(() => initialFilters(props.defaultFilters, columns));
+  const [filters, setFilters] = useState(() => initialFilters(props.defaultFilters, props.filters));
   const idBase = useId();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(props.pageSize ?? DEFAULT_PAGE_SIZE);
@@ -318,12 +316,15 @@ function useDataTable<Row>(props: Spec.DataTableProps<Row>) {
   const segments = moved?.segments ?? loadedSegments;
   const rows = useMemo(() => flatRows(segments), [segments]);
 
-  // Column sorting is off in a reorderable table: `sortable` is ignored, and said so while developing.
+  // Column sorting is off in a reorderable table: `sortable` is ignored, and said so while developing (once, not on
+  // every render: the columns may be a new array each time).
+  const ignoredSort = reorderable && allLayout.leaves.some(({ column }) => column.sortable);
+
   useEffect(() => {
-    if (reorderable && import.meta.env.DEV && createLayout(columns).leaves.some(({ column }) => column.sortable)) {
+    if (ignoredSort && import.meta.env.DEV) {
       console.warn('DataTable: `sortable` columns are ignored in a table with `reorder` (its rows are moved).');
     }
-  }, [reorderable, columns]);
+  }, [ignoredSort]);
 
   // The selected rows (all of the current page), in the order they were selected. The same array until the selection
   // changes:
@@ -1018,15 +1019,17 @@ function useDataTable<Row>(props: Spec.DataTableProps<Row>) {
     applyFilters,
     removeFilter,
     clearFilters: () => applyFilters(EMPTY_FILTERS),
-    // The columns with a filter, in their order. Only they are in the filter popup.
-    filterColumns: useMemo(
-      () =>
-        // Hidden columns keep their filters (and their pills).
-        allLayout.leaves.flatMap(({ column: { key, header, filter } }) =>
-          filter === undefined ? [] : [{ key, header, filter }]
-        ),
-      [allLayout],
-    ),
+    // The filters of the table (`filters`), in their order, each labeled by the header of the column of its key (hidden
+    // ones too), else by its key. Only they are in the filter popup.
+    filterColumns: useMemo(() => {
+      const headers = new Map(allLayout.leaves.map(({ column }) => [column.key as string, column.header]));
+
+      return Object.entries(props.filters ?? {}).map(([key, filter]) => ({
+        key,
+        header: headers.get(key) ?? key,
+        filter,
+      }));
+    }, [allLayout, props.filters]),
     columnToggles,
     toggleColumn,
     filterPanel,

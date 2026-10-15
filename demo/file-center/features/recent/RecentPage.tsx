@@ -1,20 +1,19 @@
+import {
+  dateRangeFilter,
+  defineActions,
+  defineColumns,
+  defineFilters,
+  singleRowAction,
+  useDataTableController,
+} from '@local/data-table/react';
+import type { RowQuery, SavedFilter } from '@local/data-table/react';
 import { Anchor, Group, Text } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import type { ReactElement } from 'react';
 import { Link, useNavigate } from 'react-router';
-import {
-  dateRangeColumnFilter,
-  selectColumnFilter,
-  useDataTableController,
-} from '../../../../packages/data-table/src/react/index.js';
-import type {
-  RowQuery,
-  SavedFilter,
-  TableAction,
-  TableColumn,
-} from '../../../../packages/data-table/src/react/index.js';
-import { ancestorsOf, FILE_KINDS } from '../../domain/index.js';
+import type { NavigateFunction } from 'react-router';
+import { ancestorsOf } from '../../domain/index.js';
 import type { FileCriteria, FileKind, FileSortKey, Folder, MediaFile } from '../../domain/index.js';
 import { formatDateTime, formatSize } from '../../shared/lib/format.js';
 import { useQuerySource } from '../../shared/lib/useQuerySource.js';
@@ -24,11 +23,14 @@ import { daysFromToday, sharedBy, useSavedFilters } from '../../shared/ui/savedF
 import {
   browserKeys,
   FavoriteStar,
+  fileKindFilter,
   folderPath,
   KIND_LABELS,
+  ownerFilter,
   useBrowserService,
   useEntryActions,
 } from '../browser/index.js';
+import type { EntryActions } from '../browser/index.js';
 
 export { RecentPage };
 
@@ -81,38 +83,9 @@ const COLLEAGUES_FILTERS: readonly SavedFilter[] = [
   sharedBy('Anna Schröder', 'Media', { kind: ['image', 'video', 'audio'] }),
 ];
 
-// The module "Recent" (2026-10-08): the files of all folders, the last modified first, from the last 30 days (a
-// default filter: changed or removed like any other). A double click (or the arrow) shows a file's details; its folder
-// is a link. Changes (rename, move, delete, upload) are made in Files.
-function RecentPage(): ReactElement {
-  const savedFilters = useSavedFilters('file-center:saved-filters:recent', COLLEAGUES_FILTERS);
-  const service = useBrowserService();
-  const navigate = useNavigate();
-  const nav = useDataTableController<MediaFile>();
-  const { data: folders = [] } = useQuery({
-    queryKey: browserKeys.folders(),
-    queryFn: ({ signal }) => service.folders(signal),
-  });
-  const { setFavorite, showFileDetails } = useEntryActions(folders);
-  const { data: owners = [] } = useQuery({
-    queryKey: browserKeys.owners(),
-    queryFn: ({ signal }) => service.owners(signal),
-  });
-  // The start of the table, fixed while it is shown (`defaultFilters` counts only at the start).
-  const [defaultFilters] = useState(() => ({ modified: { from: daysAgo(RECENT_DAYS), to: daysAgo(0) } }));
-
-  const source = useQuerySource<MediaFile>(
-    (query) => browserKeys.filePage(toCriteria(query), toSort(query), toPaging(query)),
-    async (query, signal) => {
-      const page = await service.findFiles(toCriteria(query), toSort(query), toPaging(query), signal);
-
-      return { rows: page.items, total: page.total };
-    },
-    browserKeys.files(),
-    nav.reload,
-  );
-
-  const columns = useMemo((): readonly TableColumn<MediaFile>[] => [
+// The columns of Recent (the folder of a file: from `folders`).
+const columnsOf = ({ setFavorite }: EntryActions, folders: readonly Folder[]) =>
+  defineColumns<MediaFile>([
     {
       key: 'name',
       header: 'Name',
@@ -142,10 +115,6 @@ function RecentPage(): ReactElement {
       width: 1.7,
       hideable: true,
       render: (file) => KIND_LABELS[file.kind],
-      filter: selectColumnFilter({
-        options: FILE_KINDS.map((kind) => ({ value: kind, label: KIND_LABELS[kind] })),
-        multiple: true,
-      }),
     },
     {
       key: 'size',
@@ -163,7 +132,6 @@ function RecentPage(): ReactElement {
       sortable: true,
       hideable: true,
       render: (file) => formatDateTime(file.modified),
-      filter: dateRangeColumnFilter(),
     },
     {
       key: 'owner',
@@ -171,32 +139,54 @@ function RecentPage(): ReactElement {
       width: 2,
       sortable: true,
       hideable: true,
-      filter: selectColumnFilter({ options: owners.map((owner) => ({ value: owner, label: owner })), multiple: true }),
     },
-  ], [folders, owners, setFavorite]);
+  ]);
 
-  const actions = useMemo((): readonly TableAction<MediaFile>[] => {
-    return [
-      // The default action (a double click): the file's details.
-      {
-        type: 'singleRow',
-        key: 'info',
-        icon: appIcons.info,
-        tip: 'Details',
-        show: 'both',
-        default: true,
-        onClick: (file) => void showFileDetails(file),
-      },
-      {
-        type: 'singleRow',
-        key: 'open-folder',
-        icon: appIcons.openFolder,
-        tip: 'Open folder',
-        show: 'both',
-        onClick: (file) => void navigate(folderPath(file.folderId)),
-      },
-    ];
-  }, [showFileDetails, navigate]);
+// The filters of Recent (the owners: those there are).
+const filtersOf = (owners: readonly string[]) =>
+  defineFilters({ kind: fileKindFilter, modified: dateRangeFilter(), owner: ownerFilter(owners) });
+
+// The actions of Recent: a file's details (the default action), open its folder.
+const actionsOf = ({ showFileDetails }: EntryActions, navigate: NavigateFunction) =>
+  defineActions<MediaFile>([
+    singleRowAction('info', showFileDetails, { icon: appIcons.info, tip: 'Details', show: 'both', default: true }),
+    singleRowAction('open-folder', (file) => navigate(folderPath(file.folderId)), {
+      icon: appIcons.openFolder,
+      tip: 'Open folder',
+      show: 'both',
+    }),
+  ]);
+
+// The module "Recent" (2026-10-08): the files of all folders, the last modified first, from the last 30 days (a
+// default filter: changed or removed like any other). A double click (or the arrow) shows a file's details; its folder
+// is a link. Changes (rename, move, delete, upload) are made in Files.
+function RecentPage(): ReactElement {
+  const service = useBrowserService();
+  const navigate = useNavigate();
+  const nav = useDataTableController<MediaFile>();
+  const savedFilters = useSavedFilters('file-center:saved-filters:recent', COLLEAGUES_FILTERS);
+  const { data: folders = [] } = useQuery({
+    queryKey: browserKeys.folders(),
+    queryFn: ({ signal }) => service.folders(signal),
+  });
+  const { data: owners = [] } = useQuery({
+    queryKey: browserKeys.owners(),
+    queryFn: ({ signal }) => service.owners(signal),
+  });
+  const entries = useEntryActions(folders);
+  // The start of the table, fixed while it is shown (`defaultFilters` counts only at the start).
+  const [defaultFilters] = useState(() => ({ modified: { from: daysAgo(RECENT_DAYS), to: daysAgo(0) } }));
+
+  const source = useQuerySource<MediaFile>(
+    (query) => browserKeys.filePage(toCriteria(query), toSort(query), toPaging(query)),
+    async (query, signal) => {
+      const page = await service.findFiles(toCriteria(query), toSort(query), toPaging(query), signal);
+
+      return { rows: page.items, total: page.total };
+    },
+    browserKeys.files(),
+    nav.reload,
+  );
 
   return (
     <DataTable
@@ -205,8 +195,9 @@ function RecentPage(): ReactElement {
       subtitle="The files of all folders, the last modified first. A double click shows a file's details."
       source={source}
       rowKey="id"
-      columns={columns}
-      actions={actions}
+      columns={columnsOf(entries, folders)}
+      filters={filtersOf(owners)}
+      actions={actionsOf(entries, navigate)}
       searchable
       reloadable
       pageSizeOptions={[25, 50, 100]}

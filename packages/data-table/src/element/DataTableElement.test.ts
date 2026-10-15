@@ -1,14 +1,10 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type * as DataTable from '../api/index.js';
+import { generalAction, multiRowAction, singleRowAction } from './actionBuilders.js';
+import { defineActions, defineColumns, defineFilters } from './definitions.js';
 import { textColumnEditor } from './editors.js';
-import {
-  booleanColumnFilter,
-  dateRangeColumnFilter,
-  numberRangeColumnFilter,
-  selectColumnFilter,
-  textColumnFilter,
-} from './filters.js';
+import { booleanFilter, dateRangeFilter, numberRangeFilter, selectFilter, textFilter } from './filters.js';
 import { setupDataTable } from './setupDataTable.js';
 
 type Person = { id: number; name: string; city: string };
@@ -303,21 +299,25 @@ describe('column filters', () => {
       source: createSource(),
       rowKey: 'id',
       columns: [
-        { key: 'name', header: 'Name', filter: textColumnFilter({ placeholder: 'Find a name' }) },
-        { key: 'city', header: 'City', filter: selectColumnFilter({ options: ['Vienna', 'Berlin'] }) },
+        { key: 'name', header: 'Name' },
+        { key: 'city', header: 'City' },
         {
           key: 'id',
           header: 'Id',
-          filter: ({ onChange }) => {
-            const button = document.createElement('button');
-
-            button.textContent = 'Only 1';
-            button.addEventListener('click', () => onChange('1'));
-
-            return button;
-          },
         },
       ],
+      filters: {
+        name: textFilter({ placeholder: 'Find a name' }),
+        city: selectFilter({ options: ['Vienna', 'Berlin'] }),
+        id: ({ onChange }) => {
+          const button = document.createElement('button');
+
+          button.textContent = 'Only 1';
+          button.addEventListener('click', () => onChange('1'));
+
+          return button;
+        },
+      },
     });
     await mount(element);
 
@@ -326,9 +326,9 @@ describe('column filters', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
     expect(await screen.findByPlaceholderText('Find a name')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Only 1' })).toBeTruthy();
-    expect(typeof dateRangeColumnFilter()).toBe('object');
-    expect(typeof numberRangeColumnFilter()).toBe('object');
-    expect(typeof booleanColumnFilter()).toBe('object');
+    expect(typeof dateRangeFilter()).toBe('object');
+    expect(typeof numberRangeFilter()).toBe('object');
+    expect(typeof booleanFilter()).toBe('object');
   });
 
   it('starts with the default filters of its controller', async () => {
@@ -341,8 +341,9 @@ describe('column filters', () => {
       rowKey: 'id',
       columns: [
         { key: 'name', header: 'Name' },
-        { key: 'city', header: 'City', filter: selectColumnFilter({ options: ['Vienna', 'Berlin'] }) },
+        { key: 'city', header: 'City' },
       ],
+      filters: { city: selectFilter({ options: ['Vienna', 'Berlin'] }) },
       defaultFilters: { city: 'Berlin' },
     });
     await mount(element);
@@ -410,7 +411,8 @@ describe('attributes', () => {
     element.controller = createController({
       source: createSource(),
       rowKey: 'id',
-      columns: [{ key: 'name', header: 'Name', filter: textColumnFilter() }],
+      columns: [{ key: 'name', header: 'Name' }],
+      filters: { name: textFilter() },
     });
     expect(element.savedFilters).toBeUndefined();
     element.savedFilters = savedFilters;
@@ -489,6 +491,73 @@ describe('attributes', () => {
     await waitFor(() =>
       expect(source).toHaveBeenCalledWith(expect.objectContaining({ pageSize: 10 }), expect.anything())
     );
+  });
+});
+
+describe('action builders', () => {
+  it('run their handlers with the row or the selected rows, also handlers that return a promise', async () => {
+    const [ElementClass, createController] = setupDataTable();
+    const add = vi.fn(async () => undefined);
+    const edit = vi.fn(async (_person: Person) => undefined);
+    const remove = vi.fn((_people: readonly Person[]) => 'ignored');
+    const controller = createController({
+      source: createSource(),
+      rowKey: 'id',
+      columns: [{ key: 'name', header: 'Name' }],
+      actions: [
+        generalAction('add', add, { label: 'Add' }),
+        singleRowAction('edit', edit, { label: () => 'Edit', show: 'column' }),
+        multiRowAction('remove', remove, { label: 'Remove', variant: 'danger' }),
+      ],
+    });
+    const element = create(ElementClass);
+
+    element.controller = controller;
+    await mount(element);
+    await waitFor(() => expect(screen.getByText('Person 01')).toBeTruthy());
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+      fireEvent.click(screen.getAllByRole('button', { name: 'Edit' })[0]!);
+      fireEvent.click(screen.getAllByRole('checkbox', { name: 'Select row' })[1]!);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+    });
+
+    expect(add).toHaveBeenCalledTimes(1);
+    expect(edit).toHaveBeenCalledWith(people[0]);
+    expect(remove).toHaveBeenCalledWith([people[1]]);
+  });
+});
+
+describe('defineColumns, defineActions and defineFilters', () => {
+  it('return the columns and the actions as they are, typed by the rows', async () => {
+    const [ElementClass, createController] = setupDataTable();
+    const remove = vi.fn();
+    const columns = defineColumns<Person>([{ key: 'name', header: 'Name', render: (person) => person.name }]);
+    const actions = defineActions<Person>([multiRowAction('remove', remove, { label: () => 'Remove' })]);
+    const element = create(ElementClass);
+
+    element.controller = createController({ source: createSource(), rowKey: 'id', columns, actions });
+    await mount(element);
+    await waitFor(() => expect(screen.getByText('Person 01')).toBeTruthy());
+
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole('checkbox', { name: 'Select row' })[0]!);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+    });
+
+    expect(defineActions(actions)).toBe(actions);
+    expect(remove).toHaveBeenCalledWith([people[0]]);
+  });
+
+  it('returns the filters as they are', () => {
+    const filters = defineFilters({ city: selectFilter({ options: ['Vienna', 'Berlin'] }) });
+
+    expect(defineFilters(filters)).toBe(filters);
   });
 });
 

@@ -30,6 +30,7 @@ const de: Record<keyof typeof en, string> = {
   'nav.employees': 'Mitarbeitende',
   'common.save': 'Speichern',
   'common.create': 'Anlegen',
+  'common.delete': 'Löschen',
   'common.edit': 'Bearbeiten',
   'common.open': 'Öffnen',
   'common.keep': 'Behalten',

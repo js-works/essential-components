@@ -1,4 +1,4 @@
-import type { RowSource } from '../../../../packages/data-table/src/react/index.js';
+import type { RowSource } from '@local/data-table/react';
 import type { AgendaItem, Meeting, MeetingStatus } from '../../domain/index.js';
 import { boardIdsOf, getBoard } from './lookups.js';
 import { matches, oneOf, runQuery, within } from './query.js';

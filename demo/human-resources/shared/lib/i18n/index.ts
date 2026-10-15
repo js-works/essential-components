@@ -1,6 +1,6 @@
+import type { I18nAdapter } from '@local/form-validation';
 import i18next from 'i18next';
 import { useTranslation } from 'react-i18next';
-import type { I18nAdapter } from '../../../../../packages/form-validation/src/index.js';
 import { de } from './locales/de.js';
 import { en } from './locales/en.js';
 
