@@ -16,9 +16,9 @@ import { useRef } from 'react';
 import type { ReactNode, Ref } from 'react';
 import { Link, useInRouterContext } from 'react-router';
 import type { Person } from '../../../domain/index.js';
-import { getPerson } from '../../../infra/in-memory/index.js';
 import { useLanguage, useTranslate } from '../../../shared/lib/i18n/index.js';
-import { useDb, useScheme } from '../../../shared/shared.js';
+import { useScheme } from '../../../shared/shared.js';
+import { usePersonList } from '../../members/reads.js';
 import { parseMinutes } from './minutes-format.js';
 
 export { MinutesEditor, MinutesText };
@@ -39,7 +39,7 @@ const Mention = createReactInlineContentSpec(
 );
 
 function MentionView({ personId, link }: { personId: string; link: boolean }) {
-  const name = useDb((state) => getPerson(state, personId)?.name);
+  const name = usePersonList().find((person) => person.id === personId)?.name;
   const inRouter = useInRouterContext();
   const t = useTranslate();
   const text = `@${name ?? t('meetings.minutesView.deleted')}`;

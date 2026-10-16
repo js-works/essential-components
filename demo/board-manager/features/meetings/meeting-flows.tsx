@@ -1,23 +1,15 @@
 import { useDialogs, useToast } from '@local/overlays/react';
 import { useNavigate } from 'react-router';
-import {
-  approveMinutes,
-  boardIdsOf,
-  createMeeting,
-  db,
-  deleteMeetings,
-  getMeeting,
-  setMeetingStatus,
-  updateMeeting,
-} from '../../infra/in-memory/index.js';
-
 import type { Meeting } from '../../domain/index.js';
-import type { MeetingRow } from '../../infra/in-memory/index.js';
 import { MeetingForm } from '../../shared/forms.js';
 import { confirmAndRun } from '../../shared/lib/flows.js';
 import type { Dialogs } from '../../shared/lib/flows.js';
 import { useTranslate } from '../../shared/lib/i18n/index.js';
+import { useChanged } from '../../shared/lib/use-changed.js';
 import { formatDateTime } from '../../shared/shared.js';
+import { useBoardList } from '../boards/reads.js';
+import { useMembershipList } from '../members/reads.js';
+import { useMeetingService } from './context.js';
 
 export {
   useApproveMinutesFlow,
@@ -28,8 +20,8 @@ export {
   useMarkHeldFlow,
 };
 
-// The flows of the meetings, one hook per use case (the agenda's and the documents' are in their own files). The
-// tables follow the data themselves.
+// The flows of the meetings, one hook per use case (the agenda's and the documents' are in their own files). A flow
+// changes the data through the service and says so (`changed()`); it knows no table.
 
 // Where a new meeting goes: the board of the list (none: it is chosen, of the person's boards with a person), and
 // where a meeting opens.
@@ -45,11 +37,16 @@ function useCreateMeetingFlow({ boardId, personId, pathOf }: NewMeetingPlace): (
   const toasts = useToast();
   const navigate = useNavigate();
   const t = useTranslate();
+  const service = useMeetingService();
+  const changed = useChanged();
+  const boards = useBoardList();
+  const memberships = useMembershipList();
 
   return async () => {
-    const state = db.getState();
-    const boardIds = personId === undefined ? undefined : boardIdsOf(state, personId);
-    const choices = state.boards.filter((board) => boardIds === undefined || boardIds.includes(board.id));
+    const choices = boards.filter((board) =>
+      personId === undefined
+      || memberships.some((membership) => membership.boardId === board.id && membership.personId === personId)
+    );
     let created: { id: string; boardId: string } | undefined;
     const result = await dialogs.form({
       title: t('meetings.new'),
@@ -57,7 +54,7 @@ function useCreateMeetingFlow({ boardId, personId, pathOf }: NewMeetingPlace): (
         <MeetingForm
           boards={boardId === undefined ? choices : undefined}
           save={async (values) => {
-            created = await createMeeting(boardId ?? values.boardId ?? '', values);
+            created = await service.create(boardId ?? values.boardId ?? '', values);
           }}
         />
       ),
@@ -68,6 +65,7 @@ function useCreateMeetingFlow({ boardId, personId, pathOf }: NewMeetingPlace): (
       return;
     }
 
+    void changed();
     toasts.success(t('meetings.created'));
     void navigate(pathOf(created));
   };
@@ -75,20 +73,17 @@ function useCreateMeetingFlow({ boardId, personId, pathOf }: NewMeetingPlace): (
 
 // "Edit" of a meeting (in the meetings list and on the meeting's overview): the meeting form in a dialog, saved before
 // it closes, then a toast. Resolves `true` when saved.
-function useEditMeetingFlow(): (meetingId: string) => Promise<boolean> {
+function useEditMeetingFlow(): (meeting: Meeting) => Promise<boolean> {
   const dialogs = useDialogs();
   const toasts = useToast();
   const t = useTranslate();
+  const service = useMeetingService();
+  const changed = useChanged();
 
-  return async (meetingId) => {
+  return async (meeting) => {
     const result = await dialogs.form({
       title: t('meetings.editTitle'),
-      content: (
-        <MeetingForm
-          meeting={getMeeting(db.getState(), meetingId)}
-          save={(values) => updateMeeting(meetingId, values)}
-        />
-      ),
+      content: <MeetingForm meeting={meeting} save={(values) => service.update(meeting.id, values)} />,
       buttons: { confirm: t('common.save') },
     });
 
@@ -96,6 +91,7 @@ function useEditMeetingFlow(): (meetingId: string) => Promise<boolean> {
       return false;
     }
 
+    void changed();
     toasts.success(t('meetings.saved'));
 
     return true;
@@ -104,10 +100,12 @@ function useEditMeetingFlow(): (meetingId: string) => Promise<boolean> {
 
 // "Cancel" of a meeting: only a planned one (else a note says why); a critical confirmation that cancels it before it
 // closes, then a toast.
-function useCancelMeetingFlow(): (meeting: MeetingRow) => Promise<void> {
+function useCancelMeetingFlow(): (meeting: Meeting) => Promise<void> {
   const dialogs = useDialogs();
   const toasts = useToast();
   const t = useTranslate();
+  const service = useMeetingService();
+  const changed = useChanged();
 
   return async (meeting) => {
     if (meeting.status !== 'Planned') {
@@ -129,13 +127,14 @@ function useCancelMeetingFlow(): (meeting: MeetingRow) => Promise<void> {
         content: t('meetings.cancelContent', { title: meeting.title, date: formatDateTime(meeting.start) }),
         buttons: { confirm: t('meetings.cancel'), cancel: t('meetings.keep') },
       },
-      () => setMeetingStatus(meeting.id, 'Cancelled'),
+      () => service.setStatus(meeting.id, 'Cancelled'),
     );
 
     if (!done) {
       return;
     }
 
+    void changed();
     toasts.success(t('meetings.cancelled', { title: meeting.title }));
   };
 }
@@ -146,6 +145,8 @@ function useDeleteMeetingsFlow(): (meetings: readonly { id: string; title: strin
   const dialogs = useDialogs();
   const toasts = useToast();
   const t = useTranslate();
+  const service = useMeetingService();
+  const changed = useChanged();
 
   return async (meetings) => {
     const [first] = meetings;
@@ -156,13 +157,14 @@ function useDeleteMeetingsFlow(): (meetings: readonly { id: string; title: strin
         content: t('meetings.deleteContent', { count: meetings.length, name: first?.title ?? '' }),
         buttons: { confirm: t('common.delete') },
       },
-      () => deleteMeetings(meetings.map((meeting) => meeting.id)),
+      () => service.delete(meetings.map((meeting) => meeting.id)),
     );
 
     if (!done) {
       return false;
     }
 
+    void changed();
     toasts.success(t('meetings.deleted', { count: meetings.length, name: first?.title ?? '' }));
 
     return true;
@@ -193,6 +195,8 @@ function useApproveMinutesFlow(): (meeting: Meeting) => Promise<void> {
   const dialogs = useDialogs();
   const toasts = useToast();
   const t = useTranslate();
+  const service = useMeetingService();
+  const changed = useChanged();
 
   return async (meeting) => {
     const done = await confirmChange(
@@ -202,13 +206,14 @@ function useApproveMinutesFlow(): (meeting: Meeting) => Promise<void> {
         content: t('meetings.approveContent', { title: meeting.title }),
         buttons: { confirm: t('meetings.approve') },
       },
-      () => approveMinutes(meeting.id),
+      () => service.approveMinutes(meeting.id),
     );
 
     if (!done) {
       return;
     }
 
+    void changed();
     toasts.success(t('meetings.minutesApproved'));
   };
 }
@@ -218,6 +223,8 @@ function useMarkHeldFlow(): (meeting: Meeting) => Promise<void> {
   const dialogs = useDialogs();
   const toasts = useToast();
   const t = useTranslate();
+  const service = useMeetingService();
+  const changed = useChanged();
 
   return async (meeting) => {
     const done = await confirmChange(
@@ -227,13 +234,14 @@ function useMarkHeldFlow(): (meeting: Meeting) => Promise<void> {
         content: t('meetings.markHeldContent', { title: meeting.title }),
         buttons: { confirm: t('meetings.markHeldTitle') },
       },
-      () => setMeetingStatus(meeting.id, 'Held'),
+      () => service.setStatus(meeting.id, 'Held'),
     );
 
     if (!done) {
       return;
     }
 
+    void changed();
     toasts.success(t('meetings.markHeldDone', { title: meeting.title }));
   };
 }

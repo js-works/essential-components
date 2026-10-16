@@ -15,19 +15,22 @@ import {
 } from 'react-router';
 
 import type { Params, RouteObject } from 'react-router';
+import { useBoard } from '../features/boards/index.js';
 import { BoardPage } from '../features/boards/pages/board-page.js';
 import { BoardsPage } from '../features/boards/pages/boards-page.js';
 import { HomePage } from '../features/home/pages/home-page.js';
+import { useMeeting } from '../features/meetings/index.js';
 import { MeetingPage } from '../features/meetings/pages/meeting-page.js';
 import { MeetingsPage } from '../features/meetings/pages/meetings-page.js';
+import { usePerson } from '../features/members/index.js';
 import { MemberPage } from '../features/members/pages/member-page.js';
 import { MembersPage } from '../features/members/pages/members-page.js';
+import { useOrganization } from '../features/organizations/index.js';
 import { OrganizationPage } from '../features/organizations/pages/organization-page.js';
 import { OrganizationsPage } from '../features/organizations/pages/organizations-page.js';
-import { getBoard, getMeeting, getOrganization, getPerson } from '../infra/in-memory/index.js';
 import { i18n, useTranslate } from '../shared/lib/i18n/index.js';
 import type { Translate } from '../shared/lib/i18n/index.js';
-import { appIcons, useDb } from '../shared/shared.js';
+import { appIcons } from '../shared/shared.js';
 import { NotFound } from '../shared/ui/not-found.js';
 import { mirrorInHash, pathFromHash } from './hash-history.js';
 
@@ -55,25 +58,25 @@ function hasCrumb(handle: unknown): handle is Crumb {
 function BoardCrumb({ id }: { id: string | undefined }): ReactNode {
   const t = useTranslate();
 
-  return useDb((state) => getBoard(state, id)?.name) ?? t('entities.board');
+  return useBoard(id ?? '').board?.name ?? t('entities.board');
 }
 
 function MemberCrumb({ id }: { id: string | undefined }): ReactNode {
   const t = useTranslate();
 
-  return useDb((state) => getPerson(state, id)?.name) ?? t('entities.member');
+  return usePerson(id ?? '').person?.name ?? t('entities.member');
 }
 
 function OrganizationCrumb({ id }: { id: string | undefined }): ReactNode {
   const t = useTranslate();
 
-  return useDb((state) => getOrganization(state, id)?.name) ?? t('entities.organization');
+  return useOrganization(id ?? '').organization?.name ?? t('entities.organization');
 }
 
 function MeetingCrumb({ id }: { id: string | undefined }): ReactNode {
   const t = useTranslate();
 
-  return useDb((state) => getMeeting(state, id)?.title) ?? t('entities.meeting');
+  return useMeeting(id ?? '').meeting?.title ?? t('entities.meeting');
 }
 
 // A meeting is below its board, and below "Meetings".

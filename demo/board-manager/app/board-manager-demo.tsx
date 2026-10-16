@@ -24,11 +24,18 @@ import {
 } from '@mantine/core';
 
 import type { CSSVariablesResolver, MantineColorsTuple, MantineThemeOverride } from '@mantine/core';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StrictMode } from 'react';
+import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
 import { TbMaximize, TbMinimize } from 'react-icons/tb';
 import { RouterProvider } from 'react-router';
+import { BoardServiceContext, createBoardService } from '../features/boards/index.js';
+import { createMeetingService, MeetingServiceContext } from '../features/meetings/index.js';
+import { createMemberService, MemberServiceContext } from '../features/members/index.js';
+import { createOrganizationService, OrganizationServiceContext } from '../features/organizations/index.js';
+import { createInMemoryRepositories } from '../infra/in-memory/index.js';
 import { translate, useLanguage } from '../shared/lib/i18n/index.js';
 import { Scope, SCOPE_CLASS, useScheme } from '../shared/shared.js';
 import { createAppRouter } from './app.js';
@@ -266,6 +273,33 @@ function createLook(
   return { theme, cssVariablesResolver, overlaysConfig };
 }
 
+// The services of the features, over the in-memory repositories (the only place that chooses the implementation).
+const repositories = createInMemoryRepositories();
+const services = {
+  boards: createBoardService(repositories),
+  members: createMemberService(repositories),
+  organizations: createOrganizationService(repositories),
+  meetings: createMeetingService(repositories),
+};
+
+// The reads of the app (TanStack Query), one cache for the app's data.
+const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30_000, retry: false } } });
+
+// The features' services and the query client, around everything (the dialogs' content too: it reads through them).
+function Services({ children }: { children: ReactNode }) {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <BoardServiceContext.Provider value={services.boards}>
+        <MemberServiceContext.Provider value={services.members}>
+          <OrganizationServiceContext.Provider value={services.organizations}>
+            <MeetingServiceContext.Provider value={services.meetings}>{children}</MeetingServiceContext.Provider>
+          </OrganizationServiceContext.Provider>
+        </MemberServiceContext.Provider>
+      </BoardServiceContext.Provider>
+    </QueryClientProvider>
+  );
+}
+
 const DEFAULT_LOOK = createLook();
 
 // Mantine follows the page's color scheme switch. It does not set the scheme on `<html>` (`getRootElement`): the
@@ -274,21 +308,23 @@ function App(
   { router, look = DEFAULT_LOOK }: { router: ReturnType<typeof createAppRouter>['router']; look?: Look },
 ) {
   return (
-    <MantineProvider
-      theme={look.theme}
-      cssVariablesResolver={look.cssVariablesResolver}
-      forceColorScheme={useScheme()}
-      cssVariablesSelector={`.${SCOPE_CLASS}`}
-      deduplicateCssVariables={false}
-      getRootElement={() => undefined}
-    >
-      {/* The language: a dialog that is open follows a switch (its buttons, which the package makes). */}
-      <OverlaysProvider config={look.overlaysConfig} refreshKey={useLanguage()}>
-        <Scope>
-          <RouterProvider router={router} />
-        </Scope>
-      </OverlaysProvider>
-    </MantineProvider>
+    <Services>
+      <MantineProvider
+        theme={look.theme}
+        cssVariablesResolver={look.cssVariablesResolver}
+        forceColorScheme={useScheme()}
+        cssVariablesSelector={`.${SCOPE_CLASS}`}
+        deduplicateCssVariables={false}
+        getRootElement={() => undefined}
+      >
+        {/* The language: a dialog that is open follows a switch (its buttons, which the package makes). */}
+        <OverlaysProvider config={look.overlaysConfig} refreshKey={useLanguage()}>
+          <Scope>
+            <RouterProvider router={router} />
+          </Scope>
+        </OverlaysProvider>
+      </MantineProvider>
+    </Services>
   );
 }
 

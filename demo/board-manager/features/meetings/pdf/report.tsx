@@ -1,18 +1,17 @@
 import { Document, Page, pdf, StyleSheet, Text, View } from '@react-pdf/renderer';
 import type { ReactNode } from 'react';
-import { agendaNumbers, agendaOf, ROLES } from '../../../domain/index.js';
-import type { AgendaEntry, Meeting, MeetingDocument } from '../../../domain/index.js';
-import { db, getBoard, getMeeting, getPerson } from '../../../infra/in-memory/index.js';
-import type { Db } from '../../../infra/in-memory/index.js';
+import { agendaNumbers } from '../../../domain/index.js';
+import type { AgendaEntry, MeetingDocument, Person } from '../../../domain/index.js';
 import { translate } from '../../../shared/lib/i18n/index.js';
 import { formatDateTime, formatSize, formatTime } from '../../../shared/shared.js';
 import { parseMinutes } from '../components/minutes-format.js';
+import type { MeetingReportData } from '../service.js';
 
 export { buildMeetingPdf };
 
 // The report of a meeting as a PDF (react-pdf, A4): its data, the attendees (the board's members), the agenda with the
 // minutes and the decision of every item, and the documents; "DRAFT" while the minutes are not approved, a footer
-// with the page number on every page. Built from the fake server's current state. Loaded on first use (a dynamic
+// with the page number on every page. Built from the data the service gives (`report()`). Loaded on first use (a dynamic
 // import, see `pdf/index.tsx`).
 
 // Black and white only (2026-10-01): text, accents and lines in black; set apart by weight, size and style instead.
@@ -83,33 +82,21 @@ const styles = StyleSheet.create({
 });
 
 // The meeting's report as a PDF file.
-async function buildMeetingPdf(meetingId: string): Promise<Blob> {
-  const state = db.getState();
-  const meeting = getMeeting(state, meetingId);
-
-  if (meeting === undefined) {
-    throw new Error('The meeting does not exist anymore.');
-  }
-
-  return pdf(<MeetingReport state={state} meeting={meeting} />).toBlob();
+async function buildMeetingPdf(data: MeetingReportData): Promise<Blob> {
+  return pdf(<MeetingReport data={data} />).toBlob();
 }
 
-function MeetingReport({ state, meeting }: { state: Db; meeting: Meeting }) {
-  const board = getBoard(state, meeting.boardId)?.name ?? '';
-  const agenda = agendaOf(state, meeting.id);
+// The name of a person (`undefined`: none, or gone).
+function nameOf(people: readonly Person[], id: string): string | undefined {
+  return people.find((person) => person.id === id)?.name;
+}
+
+function MeetingReport({ data: { meeting, agenda, attendees, documents, people } }: { data: MeetingReportData }) {
+  const { board } = meeting;
   const numbers = agendaNumbers(agenda);
   const items = agenda.flatMap((entry) => (entry.type === 'item' ? [entry.item] : []));
   const duration = items.reduce((sum, item) => sum + item.duration, 0);
   const end = new Date(new Date(meeting.start).getTime() + duration * 60_000);
-  const attendees = state.memberships
-    .filter((membership) => membership.boardId === meeting.boardId)
-    .sort((a, b) => ROLES.indexOf(a.role) - ROLES.indexOf(b.role))
-    .flatMap((membership) => {
-      const person = getPerson(state, membership.personId);
-
-      return person === undefined ? [] : [{ name: person.name, role: membership.role }];
-    });
-  const documents = state.documents.filter((document) => document.meetingId === meeting.id);
   const draft = meeting.status === 'Held' && !meeting.minutesApproved;
   const minutes = meeting.status === 'Cancelled'
     ? translate('pdf.minutesCancelled')
@@ -153,7 +140,7 @@ function MeetingReport({ state, meeting }: { state: Db; meeting: Meeting }) {
           {agenda.map((entry, index) => (
             <AgendaEntryView
               key={entry.type === 'section' ? entry.section.id : entry.item.id}
-              state={state}
+              people={people}
               entry={entry}
               previous={agenda[index - 1]}
               numbers={numbers}
@@ -190,8 +177,8 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
 
 // A section as a heading; an item with its presenter and duration, its minutes and its decision. "Other" (the items
 // without a section, with sections only) gets its heading before its first item, like in the minutes tab.
-function AgendaEntryView({ state, entry, previous, numbers }: {
-  state: Db;
+function AgendaEntryView({ people, entry, previous, numbers }: {
+  people: readonly Person[];
   entry: AgendaEntry;
   previous: AgendaEntry | undefined;
   numbers: Map<string, string>;
@@ -207,7 +194,7 @@ function AgendaEntryView({ state, entry, previous, numbers }: {
   const { item } = entry;
   const other = item.sectionId === '' && numbers.has('')
     && !(previous?.type === 'item' && previous.item.sectionId === '');
-  const presenter = getPerson(state, item.presenterId)?.name ?? translate('pdf.noPresenter');
+  const presenter = nameOf(people, item.presenterId) ?? translate('pdf.noPresenter');
   const blocks = parseMinutes(item.minutes) as Block[] | undefined;
   const [first, ...rest] = blocks ?? [];
 
@@ -229,12 +216,12 @@ function AgendaEntryView({ state, entry, previous, numbers }: {
           <View style={styles.body}>
             {first === undefined
               ? <Text style={styles.none}>{translate('pdf.noMinutes')}</Text>
-              : <BlockList state={state} blocks={[first]} />}
+              : <BlockList people={people} blocks={[first]} />}
           </View>
         </View>
         <View style={styles.body}>
           {/* A numbered list that starts in the first block counts on. */}
-          <BlockList state={state} blocks={rest} start={first?.type === 'numberedListItem' ? 1 : 0} />
+          <BlockList people={people} blocks={rest} start={first?.type === 'numberedListItem' ? 1 : 0} />
           {item.decision !== '' && (
             <View style={styles.decision}>
               <Text style={styles.text}>
@@ -281,7 +268,7 @@ type Block = {
 // Paragraphs, headings, lists (with their numbers), check lists, quotes and code; the other block types (tables,
 // images, ...) as their text. Nested blocks are indented. `start`: the number of the numbered list item before them.
 function BlockList(
-  { state, blocks, start = 0 }: { state: Db; blocks: readonly Block[]; start?: number },
+  { people, blocks, start = 0 }: { people: readonly Person[]; blocks: readonly Block[]; start?: number },
 ) {
   let number = start;
 
@@ -290,17 +277,17 @@ function BlockList(
       {blocks.map((block, index) => {
         number = block.type === 'numberedListItem' ? number + 1 : 0;
 
-        return <BlockView key={index} state={state} block={block} number={number} />;
+        return <BlockView key={index} people={people} block={block} number={number} />;
       })}
     </>
   );
 }
 
-function BlockView({ state, block, number }: { state: Db; block: Block; number: number }) {
-  const text = <InlineText state={state} content={block.content} />;
+function BlockView({ people, block, number }: { people: readonly Person[]; block: Block; number: number }) {
+  const text = <InlineText people={people} content={block.content} />;
   const children = (block.children?.length ?? 0) > 0 && (
     <View style={{ marginLeft: 12 }}>
-      <BlockList state={state} blocks={block.children as Block[]} />
+      <BlockList people={people} blocks={block.children as Block[]} />
     </View>
   );
   const marker = block.type === 'bulletListItem'
@@ -348,7 +335,7 @@ function BlockView({ state, block, number }: { state: Db; block: Block; number: 
 
 // The inline content of a block: a string (old plain text), or text runs with their styles, links and mentions (the
 // current name of the person).
-function InlineText({ state, content }: { state: Db; content: unknown }): ReactNode {
+function InlineText({ people, content }: { people: readonly Person[]; content: unknown }): ReactNode {
   if (typeof content === 'string') {
     return content;
   }
@@ -363,7 +350,7 @@ function InlineText({ state, content }: { state: Db; content: unknown }): ReactN
     }
 
     if (inline.type === 'mention') {
-      const name = getPerson(state, String(inline.props?.['personId'] ?? ''))?.name;
+      const name = nameOf(people, String(inline.props?.['personId'] ?? ''));
 
       return (
         <Text key={index} style={{ fontFamily: 'Helvetica-Bold' }}>
@@ -375,7 +362,7 @@ function InlineText({ state, content }: { state: Db; content: unknown }): ReactN
     if (inline.type === 'link') {
       return (
         <Text key={index} style={{ textDecoration: 'underline' }}>
-          <InlineText state={state} content={inline.content} />
+          <InlineText people={people} content={inline.content} />
         </Text>
       );
     }

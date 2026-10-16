@@ -1,19 +1,52 @@
 import { dateRangeFilter, textFilter, useDataTableController } from '@local/data-table/react';
-import type { SavedFilter, TableActions, TableColumns, TableFilters } from '@local/data-table/react';
+import type {
+  RowQuery,
+  RowSource,
+  SavedFilter,
+  TableActions,
+  TableColumns,
+  TableFilters,
+} from '@local/data-table/react';
+
 import { Anchor } from '@mantine/core';
 import { Link, useNavigate } from 'react-router';
-import { fetchBoards } from '../../../infra/in-memory/index.js';
-import type { BoardRow } from '../../../infra/in-memory/index.js';
+import type { BoardCriteria, BoardSortKey, BoardSummary, Range, TextMatch } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { DataTable, formatDateTime, PAGE_SIZE_OPTIONS, useReloadOnChange } from '../../../shared/shared.js';
+import { searchText, toPaging, toSort, usePageSource } from '../../../shared/lib/table-query.js';
+import { DataTable, formatDateTime, PAGE_SIZE_OPTIONS } from '../../../shared/shared.js';
 import { daysFromToday, sharedBy, useSavedFilters } from '../../../shared/ui/saved-filters.js';
 import { deleteAction, editAction, newAction, openAction } from '../../../shared/ui/table-actions.js';
+import { useMemberService } from '../../members/context.js';
 import { personFilter } from '../../members/member-filters.js';
+import { useBoardService } from '../context.js';
 import { useCreateBoardFlow, useDeleteBoardsFlow, useEditBoardFlow } from '../flows/board-flows.js';
+import { boardKeys } from '../keys.js';
 
 export { BoardsPage };
 
-function useColumns(): TableColumns<BoardRow> {
+const SORT_KEYS: readonly BoardSortKey[] = ['name', 'chair', 'members', 'meetings', 'nextMeeting'];
+
+function toCriteria(query: RowQuery): BoardCriteria {
+  const { name, chair, nextMeeting } = query.filters as {
+    name?: TextMatch;
+    chair?: string[];
+    nextMeeting?: Range<string>;
+  };
+
+  return { text: searchText(query), name, chairs: chair, nextMeeting };
+}
+
+function useSource(reload: () => void): RowSource<BoardSummary> {
+  const service = useBoardService();
+
+  return usePageSource(
+    boardKeys.all,
+    (query, signal) => service.find(toCriteria(query), toSort(query, SORT_KEYS), toPaging(query), signal),
+    reload,
+  );
+}
+
+function useColumns(): TableColumns<BoardSummary> {
   const t = useTranslate();
 
   return [
@@ -39,11 +72,15 @@ function useColumns(): TableColumns<BoardRow> {
   ];
 }
 
-const filters: TableFilters = {
-  name: textFilter(),
-  chair: personFilter,
-  nextMeeting: dateRangeFilter(),
-};
+function useFilters(): TableFilters {
+  const members = useMemberService();
+
+  return {
+    name: textFilter(),
+    chair: personFilter(members.suggest),
+    nextMeeting: dateRangeFilter(),
+  };
+}
 
 // The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
 const COLLEAGUES_FILTERS: readonly SavedFilter[] = [
@@ -53,7 +90,7 @@ const COLLEAGUES_FILTERS: readonly SavedFilter[] = [
   }),
 ];
 
-function useActions(): TableActions<BoardRow> {
+function useActions(): TableActions<BoardSummary> {
   const t = useTranslate();
   const navigate = useNavigate();
   const createBoard = useCreateBoardFlow();
@@ -63,7 +100,7 @@ function useActions(): TableActions<BoardRow> {
   return [
     newAction(t('boards.new'), createBoard),
     openAction((row) => navigate(`/boards/${row.id}`)),
-    editAction((row) => editBoard(row.id)),
+    editAction(editBoard),
     deleteAction(deleteBoards),
   ];
 }
@@ -71,12 +108,12 @@ function useActions(): TableActions<BoardRow> {
 // The "Boards" module: every board, with a new one, editing and deleting (with its meetings).
 function BoardsPage() {
   const t = useTranslate();
-  const tableCtrl = useDataTableController<BoardRow>();
+  const tableCtrl = useDataTableController<BoardSummary>();
   const columns = useColumns();
+  const filters = useFilters();
   const actions = useActions();
+  const source = useSource(tableCtrl.reload);
   const savedFilters = useSavedFilters('board-manager:saved-filters:boards', COLLEAGUES_FILTERS);
-
-  useReloadOnChange(tableCtrl);
 
   return (
     <DataTable
@@ -86,7 +123,7 @@ function BoardsPage() {
       density="compact"
       searchable
       reloadable
-      source={fetchBoards}
+      source={source}
       rowKey="id"
       columns={columns}
       filters={filters}

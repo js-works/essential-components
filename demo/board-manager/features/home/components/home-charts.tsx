@@ -4,7 +4,10 @@ import { useMemo } from 'react';
 import { MEETING_STATUSES, ROLES } from '../../../domain/index.js';
 import type { Meeting, MeetingStatus } from '../../../domain/index.js';
 import { useLanguage, useTranslate } from '../../../shared/lib/i18n/index.js';
-import { useDb } from '../../../shared/shared.js';
+import { useBoardList } from '../../boards/reads.js';
+import { useMeetingList } from '../../meetings/reads.js';
+import { useMembershipList, usePersonList } from '../../members/reads.js';
+import { useOrganizationList } from '../../organizations/reads.js';
 
 export { HomeCharts };
 
@@ -17,8 +20,8 @@ const MONTHS_AFTER = 5;
 function HomeCharts() {
   const t = useTranslate();
   const language = useLanguage();
-  const boards = useDb((state) => state.boards);
-  const meetings = useDb((state) => state.meetings);
+  const boards = useBoardList();
+  const meetings = useMeetingList();
 
   const { series, months, perBoard, byStatus } = useMemo(() => {
     const name = (status: MeetingStatus) => t(`statuses.${status}`);
@@ -85,10 +88,10 @@ function MoreCharts() {
   const t = useTranslate();
   const language = useLanguage();
   const { primaryColor } = useMantineTheme();
-  const meetings = useDb((state) => state.meetings);
-  const memberships = useDb((state) => state.memberships);
-  const people = useDb((state) => state.people);
-  const organizations = useDb((state) => state.organizations);
+  const meetings = useMeetingList();
+  const memberships = useMembershipList();
+  const people = usePersonList();
+  const organizations = useOrganizationList();
   const accent = `${primaryColor}.6`;
 
   const { roles, weekdays, perOrganization, held, approved } = useMemo(() => {

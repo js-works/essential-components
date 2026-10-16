@@ -1,15 +1,24 @@
-// The in-memory implementation of the board manager's data: the store, its seed, and per entity its queries and
-// changes. Temporary (phase 1 of the split): the UI imports these directly, until the repositories and services exist.
+// The in-memory implementation of the board manager's repositories (the fake server): one store in memory, seeded.
+// Only the app imports it, to wire the services.
 
-export * from './agenda.js';
-export * from './boards.js';
-export * from './documents.js';
-export * from './errors.js';
-export * from './helpers.js';
-export * from './lookups.js';
-export * from './meetings.js';
-export * from './memberships.js';
-export * from './organizations.js';
-export * from './people.js';
-export { db } from './store.js';
-export type { Db } from './store.js';
+import { createAgendaRepository } from './agenda-repository.js';
+import { createBoardRepository } from './board-repository.js';
+import { createDocumentRepository } from './document-repository.js';
+import { createMeetingRepository } from './meeting-repository.js';
+import { createMembershipRepository } from './membership-repository.js';
+import { createOrganizationRepository } from './organization-repository.js';
+import { createPersonRepository } from './person-repository.js';
+
+export { createInMemoryRepositories };
+
+function createInMemoryRepositories() {
+  return {
+    agenda: createAgendaRepository(),
+    boards: createBoardRepository(),
+    documents: createDocumentRepository(),
+    meetings: createMeetingRepository(),
+    memberships: createMembershipRepository(),
+    organizations: createOrganizationRepository(),
+    people: createPersonRepository(),
+  };
+}

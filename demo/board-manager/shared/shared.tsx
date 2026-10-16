@@ -2,7 +2,7 @@ import { createDataTableComponent } from '@local/data-table/react';
 import type { DataTableProps } from '@local/data-table/react';
 import { mantineTheme } from '@local/data-table/themes';
 import { Group, Stack, Text, Title } from '@mantine/core';
-import { useEffect, useSyncExternalStore } from 'react';
+import { useSyncExternalStore } from 'react';
 import type { ReactNode } from 'react';
 import { IoMdHome } from 'react-icons/io';
 import {
@@ -28,10 +28,7 @@ import {
   TbUsers,
 } from 'react-icons/tb';
 
-import { useStore } from 'zustand';
 import { i18n as tableI18n } from '../../../packages/data-table/demo/i18n.js';
-import { db } from '../infra/in-memory/index.js';
-import type { Db } from '../infra/in-memory/index.js';
 
 export {
   appIcons,
@@ -45,8 +42,6 @@ export {
   Scope,
   SCOPE_CLASS,
   setSchemeHost,
-  useDb,
-  useReloadOnChange,
   useScheme,
 };
 
@@ -71,17 +66,6 @@ function DataTable<Row>(props: DataTableProps<Row>) {
 
 // The page sizes of the paged tables (not the agenda and the sections, which show one page).
 const PAGE_SIZE_OPTIONS: readonly number[] = [10, 25, 50];
-
-// The fake server's state, for a page that shows it (the breadcrumb, the home page, the headers).
-function useDb<T>(selector: (state: Db) => T): T {
-  return useStore(db, selector);
-}
-
-// A table that follows the fake server's data: it loads its page again after every change (a flow saves, the table
-// shows it; the flows need not know the table).
-function useReloadOnChange(tableCtrl: { reload: () => void }): void {
-  useEffect(() => db.subscribe(() => tableCtrl.reload()), [tableCtrl]);
-}
 
 const locale = () => document.documentElement.lang || 'en-US';
 

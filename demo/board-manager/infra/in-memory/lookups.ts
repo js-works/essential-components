@@ -1,15 +1,11 @@
-import type { Board, Meeting, Organization, Person } from '../../domain/index.js';
+import type { Board, Organization, Person } from '../../domain/index.js';
 import type { Db } from './store.js';
 
-export { boardIdsOf, getBoard, getMeeting, getOrganization, getPerson, organizationOf };
+export { boardIdsOf, getBoard, getPerson, organizationOf };
 
-// Lookups, for the pages (e.g. the breadcrumb). They read the current state, so they also work outside React.
+// Lookups in the store's state, for the repositories.
 function getBoard(state: Pick<Db, 'boards'>, id: string | undefined): Board | undefined {
   return state.boards.find((board) => board.id === id);
-}
-
-function getMeeting(state: Pick<Db, 'meetings'>, id: string | undefined): Meeting | undefined {
-  return state.meetings.find((meeting) => meeting.id === id);
 }
 
 function getPerson(state: Pick<Db, 'people'>, id: string | undefined): Person | undefined {

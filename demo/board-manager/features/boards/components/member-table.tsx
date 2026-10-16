@@ -1,17 +1,52 @@
 import { dateRangeFilter, useDataTableController } from '@local/data-table/react';
-import type { TableActions, TableColumns, TableFilters } from '@local/data-table/react';
-import { fetchBoardMembers } from '../../../infra/in-memory/index.js';
-import type { MemberRow } from '../../../infra/in-memory/index.js';
+import type { RowQuery, RowSource, TableActions, TableColumns, TableFilters } from '@local/data-table/react';
+import type {
+  Board,
+  BoardMember,
+  BoardMemberCriteria,
+  BoardMemberSortKey,
+  Range,
+  Role,
+} from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { DataTable, formatDate, PAGE_SIZE_OPTIONS, useReloadOnChange } from '../../../shared/shared.js';
+import { searchText, toPaging, toSort, usePageSource } from '../../../shared/lib/table-query.js';
+import { DataTable, formatDate, PAGE_SIZE_OPTIONS } from '../../../shared/shared.js';
 import { deleteAction, editAction, newAction } from '../../../shared/ui/table-actions.js';
+import { useMemberService } from '../../members/context.js';
 import { personFilter, roleFilter } from '../../members/member-filters.js';
+import { useOrganizationService } from '../../organizations/context.js';
 import { organizationFilter } from '../../organizations/organization-filters.js';
+import { useBoardService } from '../context.js';
 import { useAddMemberFlow, useChangeRoleFlow, useRemoveMembersFlow } from '../flows/board-flows.js';
+import { boardKeys } from '../keys.js';
 
 export { MemberTable };
 
-function useColumns(): TableColumns<MemberRow> {
+const SORT_KEYS: readonly BoardMemberSortKey[] = ['name', 'role', 'organization', 'since'];
+
+function toCriteria(query: RowQuery): BoardMemberCriteria {
+  const { name, role, organization, since } = query.filters as {
+    name?: string[];
+    role?: Role[];
+    organization?: string[];
+    since?: Range<string>;
+  };
+
+  return { text: searchText(query), names: name, roles: role, organizations: organization, since };
+}
+
+function useSource(boardId: string, reload: () => void): RowSource<BoardMember> {
+  const service = useBoardService();
+
+  return usePageSource(
+    boardKeys.members(boardId),
+    (query, signal) =>
+      service.findMembers(boardId, toCriteria(query), toSort(query, SORT_KEYS), toPaging(query), signal),
+    reload,
+  );
+}
+
+function useColumns(): TableColumns<BoardMember> {
   const t = useTranslate();
 
   return [
@@ -44,20 +79,22 @@ function useColumns(): TableColumns<MemberRow> {
 
 function useFilters(): TableFilters {
   const t = useTranslate();
+  const members = useMemberService();
+  const organizations = useOrganizationService();
 
   return {
-    name: personFilter,
+    name: personFilter(members.suggest),
     role: roleFilter(t),
-    organization: organizationFilter,
+    organization: organizationFilter(organizations.suggest),
     since: dateRangeFilter(),
   };
 }
 
-function useActions(boardId: string): TableActions<MemberRow> {
+function useActions(board: Board): TableActions<BoardMember> {
   const t = useTranslate();
-  const addMember = useAddMemberFlow(boardId);
+  const addMember = useAddMemberFlow(board.id);
   const changeRole = useChangeRoleFlow();
-  const removeMembers = useRemoveMembersFlow(boardId);
+  const removeMembers = useRemoveMembersFlow(board.name);
 
   return [
     newAction(t('boards.addMember'), addMember, { key: 'add' }),
@@ -66,14 +103,13 @@ function useActions(boardId: string): TableActions<MemberRow> {
   ];
 }
 
-function MemberTable({ boardId }: { boardId: string }) {
+function MemberTable({ board }: { board: Board }) {
   const t = useTranslate();
-  const tableCtrl = useDataTableController<MemberRow>();
+  const tableCtrl = useDataTableController<BoardMember>();
   const columns = useColumns();
   const filters = useFilters();
-  const actions = useActions(boardId);
-
-  useReloadOnChange(tableCtrl);
+  const actions = useActions(board);
+  const source = useSource(board.id, tableCtrl.reload);
 
   return (
     <DataTable
@@ -82,7 +118,7 @@ function MemberTable({ boardId }: { boardId: string }) {
       density="compact"
       searchable
       reloadable
-      source={fetchBoardMembers(boardId)}
+      source={source}
       rowKey="id"
       columns={columns}
       filters={filters}

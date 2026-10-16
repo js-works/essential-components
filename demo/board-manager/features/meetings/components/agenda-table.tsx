@@ -1,13 +1,13 @@
 import { generalAction, singleRowAction, useDataTableController } from '@local/data-table/react';
-import type { RowGroup, RowMove, TableActions, TableColumns } from '@local/data-table/react';
+import type { RowGroup, RowMove, RowSource, TableActions, TableColumns } from '@local/data-table/react';
 import { Stack, Text } from '@mantine/core';
 import { useMemo } from 'react';
 import type { Meeting } from '../../../domain/index.js';
 import { agendaNumbers, agendaOf } from '../../../domain/index.js';
-import { fetchAgenda, reorderAgenda } from '../../../infra/in-memory/index.js';
-import type { AgendaRow } from '../../../infra/in-memory/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { appIcons, DataTable, useDb, useReloadOnChange } from '../../../shared/shared.js';
+import { useChanged } from '../../../shared/lib/use-changed.js';
+import { useQuerySource } from '../../../shared/lib/use-query-source.js';
+import { appIcons, DataTable } from '../../../shared/shared.js';
 import { deleteAction, editAction, newAction } from '../../../shared/ui/table-actions.js';
 import {
   useAddAgendaItemFlow,
@@ -17,7 +17,11 @@ import {
   useRecordMinutesFlow,
 } from '../agenda-flows.js';
 
-import { numbered } from './agenda.js';
+import { useMeetingService } from '../context.js';
+import { meetingKeys } from '../keys.js';
+import { useAgenda } from '../reads.js';
+import { agendaPage, numbered } from './agenda.js';
+import type { AgendaRow } from './agenda.js';
 import { MinutesText } from './minutes.js';
 
 export { AgendaTable };
@@ -59,10 +63,28 @@ function useColumns(): TableColumns<AgendaRow> {
       header: t('meetings.agenda.columns.minutes'),
       width: 1,
       align: 'center',
-      // The fake server says "Yes" or "No".
-      render: (row) => t(row.recorded === 'Yes' ? 'common.yes' : 'common.no'),
+      render: (row) => t(row.recorded ? 'common.yes' : 'common.no'),
     },
   ];
+}
+
+// The whole agenda as one page, through TanStack Query: the table reloads after a change.
+function useSource(meetingId: string, reload: () => void): RowSource<AgendaRow> {
+  const service = useMeetingService();
+
+  return useQuerySource<AgendaRow>(
+    (query) => [...meetingKeys.agenda(meetingId), 'rows', query.search],
+    async (query, signal) => {
+      const [{ items, sections }, people] = await Promise.all([
+        service.agenda(meetingId, signal),
+        service.people(signal),
+      ]);
+
+      return agendaPage(agendaOf({ agendaItems: items, agendaSections: sections }, meetingId), people, query.search);
+    },
+    meetingKeys.all,
+    reload,
+  );
 }
 
 function useActions(meeting: Meeting): TableActions<AgendaRow> {
@@ -97,25 +119,25 @@ function AgendaTable({ meeting }: { meeting: Meeting }) {
   const tableCtrl = useDataTableController<AgendaRow>();
   const columns = useColumns();
   const actions = useActions(meeting);
-  const agendaItems = useDb((state) => state.agendaItems);
-  const agendaSections = useDb((state) => state.agendaSections);
-  const numbers = useMemo(
-    () => agendaNumbers(agendaOf({ agendaItems, agendaSections }, meeting.id)),
-    [agendaItems, agendaSections, meeting.id],
-  );
-  const grouped = agendaSections.some((section) => section.meetingId === meeting.id);
-
-  useReloadOnChange(tableCtrl);
+  const service = useMeetingService();
+  const changed = useChanged();
+  const source = useSource(meeting.id, tableCtrl.reload);
+  const { entries, sections } = useAgenda(meeting.id);
+  const numbers = useMemo(() => agendaNumbers(entries), [entries]);
+  const grouped = sections.length > 0;
 
   // The positions (and the numbers) change with a move: saved, and the table follows the data.
-  const reorder = (move: RowMove<AgendaRow>) => reorderAgenda(move);
+  const reorder = async ({ row, group, after, before }: RowMove<AgendaRow>) => {
+    await service.moveItem({ meetingId: meeting.id, itemId: row.id, group, after, before });
+    void changed();
+  };
 
   // The header of a section: its number and name, and the duration of its items.
   // The items without a section are the table's blank group (`''`): "Other", always the last one.
   const renderGroup = (group: RowGroup<AgendaRow>) => {
-    const section = agendaSections.find((candidate) => candidate.id === group.key);
-    const duration = agendaItems
-      .filter((item) => item.meetingId === meeting.id && item.sectionId === group.key)
+    const section = sections.find((candidate) => candidate.id === group.key);
+    const duration = entries
+      .flatMap((entry) => (entry.type === 'item' && entry.item.sectionId === group.key ? [entry.item] : []))
       .reduce((sum, item) => sum + item.duration, 0);
 
     return (
@@ -138,7 +160,7 @@ function AgendaTable({ meeting }: { meeting: Meeting }) {
       footer="auto"
       searchable
       reloadable
-      source={fetchAgenda(meeting.id)}
+      source={source}
       reorder={reorder}
       groupBy={grouped ? 'sectionId' : undefined}
       renderGroup={grouped ? renderGroup : undefined}

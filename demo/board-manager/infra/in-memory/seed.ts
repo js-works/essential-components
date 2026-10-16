@@ -10,7 +10,8 @@ import type {
   Person,
 } from '../../domain/index.js';
 
-import { CURRENT_USER, localDate, localDateTime, typeOf } from './helpers.js';
+import { localDate, localDateTime } from '../../domain/index.js';
+import { CURRENT_USER, typeOf } from './helpers.js';
 import type { Db } from './store.js';
 
 export { seedDb };

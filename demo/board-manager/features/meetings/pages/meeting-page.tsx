@@ -3,19 +3,20 @@ import { Badge, Button, Group, Menu, Paper, SimpleGrid, Stack, Tabs, Text, Title
 import { Fragment, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
-import type { AgendaItem, AgendaSection, Meeting } from '../../../domain/index.js';
-import { agendaNumbers, agendaOf } from '../../../domain/index.js';
-import { getBoard, getMeeting } from '../../../infra/in-memory/index.js';
+import type { MeetingSummary } from '../../../domain/index.js';
+import { agendaNumbers } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { appIcons, formatDateTime, formatTime, PageHeader, useDb } from '../../../shared/shared.js';
+import { appIcons, formatDateTime, formatTime, PageHeader } from '../../../shared/shared.js';
 import { NotFound } from '../../../shared/ui/not-found.js';
 import { AgendaTable } from '../components/agenda-table.js';
-import { membersOf, numbered } from '../components/agenda.js';
+import { numbered } from '../components/agenda.js';
 import { DocumentTable } from '../components/document-table.js';
 import { MinutesBadge, StatusBadge } from '../components/meeting-badges.js';
 import { MinutesText } from '../components/minutes.js';
+import { useMeetingService } from '../context.js';
 import { useApproveMinutesFlow, useDeleteMeetingsFlow, useEditMeetingFlow, useMarkHeldFlow } from '../meeting-flows.js';
 import { downloadMeetingPdf, previewMeetingPdf, printMeetingPdf } from '../pdf/index.js';
+import { useAgenda, useBoardMembers, useMeeting } from '../reads.js';
 
 export { MeetingPage };
 
@@ -24,17 +25,16 @@ export { MeetingPage };
 function MeetingPage() {
   const t = useTranslate();
   const { meetingId = '' } = useParams();
-  const meeting = useDb((state) => getMeeting(state, meetingId));
-  const boardName = useDb((state) => getBoard(state, meeting?.boardId)?.name ?? '');
-  const agendaItems = useDb((state) => state.agendaItems);
-  const agendaSections = useDb((state) => state.agendaSections);
+  const { meeting, isPending } = useMeeting(meetingId);
+  const { entries } = useAgenda(meetingId);
   const approveMinutes = useApproveMinutesFlow();
   const markHeld = useMarkHeldFlow();
   const [tab, setTab] = useState<string | null>('overview');
-  const duration = useMemo(
-    () => agendaItems.filter((item) => item.meetingId === meetingId).reduce((sum, item) => sum + item.duration, 0),
-    [agendaItems, meetingId],
-  );
+  const duration = entries.reduce((sum, entry) => sum + (entry.type === 'item' ? entry.item.duration : 0), 0);
+
+  if (isPending) {
+    return null;
+  }
 
   if (meeting === undefined) {
     return <NotFound what="meeting" />;
@@ -53,7 +53,7 @@ function MeetingPage() {
     <Stack gap="md">
       <PageHeader
         title={meeting.title}
-        subtitle={`${boardName} · ${formatDateTime(meeting.start)} · ${meeting.location} · ${
+        subtitle={`${meeting.board} · ${formatDateTime(meeting.start)} · ${meeting.location} · ${
           t('meetings.durationMin', { count: duration })
         }`}
         badges={
@@ -81,18 +81,13 @@ function MeetingPage() {
           <Tabs.Tab value="documents">{t('meetings.tabs.documents')}</Tabs.Tab>
         </Tabs.List>
         <Tabs.Panel value="overview" pt="md">
-          <MeetingOverview meeting={meeting} boardName={boardName} duration={duration} />
+          <MeetingOverview meeting={meeting} duration={duration} />
         </Tabs.Panel>
         <Tabs.Panel value="agenda" pt="md">
           <AgendaTable meeting={meeting} />
         </Tabs.Panel>
         <Tabs.Panel value="minutes" pt="md">
-          <MinutesView
-            meeting={meeting}
-            agendaItems={agendaItems}
-            agendaSections={agendaSections}
-            boardName={boardName}
-          />
+          <MinutesView meeting={meeting} />
         </Tabs.Panel>
         <Tabs.Panel value="documents" pt="md">
           <DocumentTable meeting={meeting} />
@@ -105,11 +100,7 @@ function MeetingPage() {
 // The base information of a meeting, as a list of labels and values, with "Edit" (the meeting form in a dialog, like
 // "Edit" in the meetings list) and "Delete" (then back to where it was opened: its board, or the meetings list). The
 // end is the start plus the duration of the agenda.
-function MeetingOverview({ meeting, boardName, duration }: {
-  meeting: Meeting;
-  boardName: string;
-  duration: number;
-}) {
+function MeetingOverview({ meeting, duration }: { meeting: MeetingSummary; duration: number }) {
   const t = useTranslate();
   const dialogs = useDialogs();
   const toasts = useToast();
@@ -117,13 +108,12 @@ function MeetingOverview({ meeting, boardName, duration }: {
   const deleteMeetings = useDeleteMeetingsFlow();
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const items = useDb((state) => state.agendaItems.filter((item) => item.meetingId === meeting.id).length);
-  const sections = useDb((state) => state.agendaSections.filter((section) => section.meetingId === meeting.id).length);
-  const documents = useDb((state) => state.documents.filter((document) => document.meetingId === meeting.id).length);
+  const service = useMeetingService();
+  const { sections } = useAgenda(meeting.id);
   const end = new Date(new Date(meeting.start).getTime() + duration * 60_000);
   const fields: readonly (readonly [string, ReactNode])[] = [
     [t('meetings.overview.title'), meeting.title],
-    [t('meetings.overview.board'), boardName],
+    [t('meetings.overview.board'), meeting.board],
     [
       t('meetings.overview.dateTime'),
       `${formatDateTime(meeting.start)} – ${formatTime(end)} (${t('meetings.durationMin', { count: duration })})`,
@@ -138,11 +128,13 @@ function MeetingOverview({ meeting, boardName, duration }: {
     ],
     [
       t('meetings.overview.agenda'),
-      sections === 0
-        ? t('meetings.agendaItems', { count: items })
-        : `${t('meetings.agendaItems', { count: items })} ${t('meetings.inSections', { count: sections })}`,
+      sections.length === 0
+        ? t('meetings.agendaItems', { count: meeting.items })
+        : `${t('meetings.agendaItems', { count: meeting.items })} ${
+          t('meetings.inSections', { count: sections.length })
+        }`,
     ],
-    [t('meetings.overview.documents'), String(documents)],
+    [t('meetings.overview.documents'), String(meeting.documents)],
   ];
 
   const remove = async () => {
@@ -161,7 +153,7 @@ function MeetingOverview({ meeting, boardName, duration }: {
             size="xs"
             variant="default"
             leftSection={appIcons.edit}
-            onClick={() => void editMeeting(meeting.id)}
+            onClick={() => void editMeeting(meeting)}
           >
             {t('common.edit')}
           </Button>
@@ -183,16 +175,19 @@ function MeetingOverview({ meeting, boardName, duration }: {
             <Menu.Dropdown>
               <Menu.Item
                 leftSection={appIcons.preview}
-                onClick={() => void previewMeetingPdf(dialogs, toasts, meeting)}
+                onClick={() => void previewMeetingPdf(service, dialogs, toasts, meeting)}
               >
                 {t('meetings.pdf.preview')}
               </Menu.Item>
-              <Menu.Item leftSection={appIcons.print} onClick={() => void printMeetingPdf(dialogs, toasts, meeting)}>
+              <Menu.Item
+                leftSection={appIcons.print}
+                onClick={() => void printMeetingPdf(service, dialogs, toasts, meeting)}
+              >
                 {t('meetings.pdf.print')}
               </Menu.Item>
               <Menu.Item
                 leftSection={appIcons.download}
-                onClick={() => void downloadMeetingPdf(dialogs, toasts, meeting)}
+                onClick={() => void downloadMeetingPdf(service, dialogs, toasts, meeting)}
               >
                 {t('meetings.pdf.download')}
               </Menu.Item>
@@ -214,24 +209,11 @@ function MeetingOverview({ meeting, boardName, duration }: {
 
 // The minutes as one document: every item with its minutes and decision, in the order of the agenda; the sections as
 // headings, their items indented, and "Other" for the items without a section.
-function MinutesView({ meeting, agendaItems, agendaSections, boardName }: {
-  meeting: Meeting;
-  agendaItems: readonly AgendaItem[];
-  agendaSections: readonly AgendaSection[];
-  boardName: string;
-}) {
+function MinutesView({ meeting }: { meeting: MeetingSummary }) {
   const t = useTranslate();
-  const agenda = useMemo(
-    () => agendaOf({ agendaItems, agendaSections }, meeting.id),
-    [agendaItems, agendaSections, meeting.id],
-  );
+  const { entries: agenda } = useAgenda(meeting.id);
   const numbers = useMemo(() => agendaNumbers(agenda), [agenda]);
-  const memberships = useDb((state) => state.memberships);
-  const people = useDb((state) => state.people);
-  const attendees = useMemo(
-    () => membersOf({ memberships, people }, meeting.boardId).map((person) => person.name),
-    [memberships, people, meeting.boardId],
-  );
+  const attendees = useBoardMembers(meeting.boardId).map((person) => person.name);
 
   // Without minutes (planned, cancelled), the note is in the same frame as the minutes.
   if (meeting.status !== 'Held') {
@@ -249,7 +231,7 @@ function MinutesView({ meeting, agendaItems, agendaSections, boardName }: {
       <Stack gap="md">
         <Stack gap={2}>
           <Title order={3} size="h4">{t('meetings.minutesView.title', { title: meeting.title })}</Title>
-          <Text size="sm" c="dimmed">{boardName} · {formatDateTime(meeting.start)} · {meeting.location}</Text>
+          <Text size="sm" c="dimmed">{meeting.board} · {formatDateTime(meeting.start)} · {meeting.location}</Text>
           <Text size="sm" c="dimmed">{t('meetings.minutesView.members', { names: attendees.join(', ') })}</Text>
           <Group>
             <Badge size="sm" variant={meeting.minutesApproved ? 'filled' : 'outline'}>

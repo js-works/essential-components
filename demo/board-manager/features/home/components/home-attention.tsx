@@ -1,9 +1,11 @@
 import { Anchor, Avatar, Badge, Group, Paper, SimpleGrid, Stack, Text, useMantineTheme } from '@mantine/core';
 import { useMemo } from 'react';
 import { Link } from 'react-router';
-import { localDateTime } from '../../../infra/in-memory/index.js';
+import { localDateTime } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { useDb } from '../../../shared/shared.js';
+import { useBoardList } from '../../boards/reads.js';
+import { useMeetingList } from '../../meetings/reads.js';
+import { useMembershipList, usePersonList } from '../../members/reads.js';
 
 export { HomeAttention };
 
@@ -18,10 +20,10 @@ type Check = { key: 'overdue' | 'noUpcoming' | 'noChair' | 'noOrganization'; ent
 function HomeAttention() {
   const t = useTranslate();
   const { primaryColor } = useMantineTheme();
-  const boards = useDb((state) => state.boards);
-  const meetings = useDb((state) => state.meetings);
-  const people = useDb((state) => state.people);
-  const memberships = useDb((state) => state.memberships);
+  const boards = useBoardList();
+  const meetings = useMeetingList();
+  const people = usePersonList();
+  const memberships = useMembershipList();
 
   const checks = useMemo(() => {
     const now = localDateTime(new Date());

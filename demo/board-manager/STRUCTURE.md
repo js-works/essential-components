@@ -12,7 +12,7 @@ files are moved to match them.
   ├── app/                    the shell and the wiring: App, routes, providers, BoardManagerDemo, BoardManagerElement,
   │                           css; creates the repositories (from infra/) and the services, and provides the services
   ├── domain/                 the shared kernel: pure TypeScript, imports nothing from outside
-  │   ├── query.ts            Range, Sort, Paging, Page (later Filter): the vocabulary of the repositories
+  │   ├── query.ts            Range, Sort, Paging, Page, TextMatch (later Filter): the vocabulary of the repositories
   │   ├── board.ts            per entity: the type, its constants, values, criteria, sort keys, repository interface
   │   ├── organization.ts
   │   ├── person.ts
@@ -66,7 +66,7 @@ files are moved to match them.
 // domain/query.ts: generic building blocks of the repositories, no entity
 type Range<T> = { from?: T; to?: T }; // both inclusive
 type Sort<K extends string> = { key: K; direction: 'asc' | 'desc' };
-type Paging = { page: number; pageSize: number }; // page: 0-based
+type Paging = { offset: number; limit: number }; // a window of the results (the File Center's; page and page size before)
 type Page<T> = { items: readonly T[]; total: number };
 ```
 
@@ -121,22 +121,51 @@ interface ProductRepository {
 
 ## Open questions
 
-- Phase 2 of the data access, one topic at a time: how TanStack Query is used (query keys, the data table's
-  reload), repositories with domain criteria, row types in the features, services and wiring in `app/`.
+## The data access (done 2026-10-16)
+
+- The way (2026-10-16, the user's choice: one feature at a time, the boards first, then all at once ("go with all");
+  paging in the repository with the domain's criteria, the File Center's way, proposed at about 70% over loading
+  everything and filtering locally), in seven steps, all done:
+  - Step 1: the query vocabulary and the repositories' interfaces in `domain/` (one file per entity: `Board…`,
+    `Person…`, `Organization…`, `Membership` with `BoardMember` and `PersonMembership`, `Meeting…`, `Agenda…`,
+    `MeetingDocument…`; each with its summary, criteria, sort keys and repository; `dates.ts`).
+  - Step 2: the in-memory repositories in `infra/` (`<entity>-repository.ts` over the one store,
+    `createInMemoryRepositories()` in its `index.ts`; the old fetch functions with the data table's types are gone).
+  - Step 3: a service per feature, provided by a context from `app/` (`BoardService`, `MemberService`,
+    `OrganizationService`, `MeetingService`; each over the repositories it needs, e.g. the boards' with the
+    memberships, the meetings' with the agendas, documents and the report's data).
+  - Step 4: the rows in the features: a table maps its query to the criteria (`toCriteria` in its file; `searchText`,
+    `toSort`, `toPaging` and `usePageSource` of `shared/lib/table-query.ts`). Mostly the domain's summaries are the
+    rows; the meetings' `MeetingRow` adds the two look-only columns, the agenda's `AgendaRow` (`agenda.ts`) the number,
+    the presenter and `recorded`. The agenda is one page: its rows, groups and search are made in the feature
+    (`agendaPage`) from the repository's agenda.
+  - Step 5: the reads through TanStack Query: the tables' pages (`usePageSource`, `use-query-source.ts`), the records
+    and lists (`reads.ts` of each feature: `useBoard`, `usePerson`, `useOrganization`, `useMeeting`, `use…List`,
+    `useAgenda`, `useBoardMembers`; `shared/lib/queries.ts`: `useRead`, `useRecord`, a missing record is `null` in the
+    cache: TanStack Query takes no `undefined`). `useDb` and `useReloadOnChange` are gone.
+  - Step 6: the flows call the service, then `changed()` (`shared/lib/use-changed.ts`: every read again). An "Edit"
+    gets the record, not its id (no read before the dialog); the forms get their choices as props (`PersonForm`'s
+    organizations, `OrganizationForm`'s others for the unique name, `MemberForm`'s `suggest`); the PDF report is
+    built from `MeetingService.report()`.
+  - Step 7: only `app/` imports `infra/` (`app/board-manager-demo.tsx`). The query client and the services are around
+    everything, the dialogs' content too (`Services`). `AppError` moved to `shared/lib/app-error.ts` (the server throws
+    it, the UI translates it).
+  - A temporary bridge for a few hours the same day (the store's changes invalidated every read) is gone.
+- The UI knows only the services, never a repository, not even its types (2026-10-16, the user's rule; a service may
+  pass a repository's methods through). A function the UI is given has a named type in `domain/` (the user's choice,
+  proposed at about 70% over `MemberService['suggest']` and the whole service): `SuggestPeople`, `SuggestOrganizations`,
+  used by the repositories and by `personFilter`, `organizationFilter` and `MemberForm`.
+- Features import each other's files directly (e.g. a table of the boards uses `personFilter` of the members); the
+  app imports them through their `index.ts`.
 
 ## Not there yet
 
-- Step 1 (2026-10-03) moved the files only (same code, new import paths). Still against the rules:
-  - `infra/in-memory/` (phase 1 of the split, 2026-10-03: `db.ts` split into store, seed, query engine, lookups and
-    one file per entity; the pure agenda rules and `normalizeWebsite()` moved to `domain/`): the UI still imports it
-    directly (through its temporary `index.ts`), reads the store (`db`, `useDb`), and its fetch functions use the data
-    table's types and return the row types. No repositories and services yet.
-  - `shared/forms.tsx`: the forms of every feature (each belongs to its feature).
-  - `shared/shared.tsx`: a catch-all; partly not shared (`useDb` knows the domain). The person and organization
-    filters moved out (2026-10-15, the user's choice, proposed at about 65%; weighed: one `shared/ui/tableFilters.tsx`,
-    still domain in `shared/`), their two-line option to `shared/ui/suggestion.tsx` (no domain knowledge).
-  - No feature has an `index.ts` yet; features import each other's files directly.
-  - `features/home/`: the home page, a feature without its own data.
+- `shared/forms.tsx`: the forms of every feature (each belongs to its feature).
+- `shared/shared.tsx`: a catch-all. The person and organization filters moved out (2026-10-15, the user's choice,
+  proposed at about 65%; weighed: one `shared/ui/tableFilters.tsx`, still domain in `shared/`), their two-line option
+  to `shared/ui/suggestion.tsx` (no domain knowledge).
+- `features/home/`: the home page, a feature without its own data (it reads the other features' lists).
+- Checked with a script against the seed (the services' reads and changes), not yet in a browser.
 
 ## Decisions
 

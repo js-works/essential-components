@@ -1,20 +1,13 @@
 import { useDialogs, useToast } from '@local/overlays/react';
 import { useNavigate } from 'react-router';
-import {
-  addMember,
-  changeRole,
-  createBoard,
-  db,
-  deleteBoards,
-  getBoard,
-  removeMembers,
-  updateBoard,
-} from '../../../infra/in-memory/index.js';
-
-import type { MemberRow } from '../../../infra/in-memory/index.js';
+import type { Board, BoardMember } from '../../../domain/index.js';
 import { BoardForm, MemberForm } from '../../../shared/forms.js';
 import { confirmAndRun } from '../../../shared/lib/flows.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
+import { useRead } from '../../../shared/lib/queries.js';
+import { useChanged } from '../../../shared/lib/use-changed.js';
+import { useBoardService } from '../context.js';
+import { boardKeys } from '../keys.js';
 
 export {
   useAddMemberFlow,
@@ -26,7 +19,7 @@ export {
 };
 
 // The flows of the boards feature, one hook per use case: each gives the function an action or a button calls. A flow
-// changes the data and says so; the tables follow the data themselves (`useReloadOnChange`).
+// changes the data through the service and says so (`changed()`: the reads load again); it knows no table.
 
 // "New board": the board form in a dialog, saved before it closes; then a toast, and the new board's page.
 function useCreateBoardFlow(): () => Promise<void> {
@@ -34,6 +27,8 @@ function useCreateBoardFlow(): () => Promise<void> {
   const toasts = useToast();
   const navigate = useNavigate();
   const t = useTranslate();
+  const service = useBoardService();
+  const changed = useChanged();
 
   return async () => {
     let created = '';
@@ -42,7 +37,7 @@ function useCreateBoardFlow(): () => Promise<void> {
       content: (
         <BoardForm
           save={async (values) => {
-            created = (await createBoard(values)).id;
+            created = (await service.create(values)).id;
           }}
         />
       ),
@@ -53,6 +48,7 @@ function useCreateBoardFlow(): () => Promise<void> {
       return;
     }
 
+    void changed();
     toasts.success(t('boards.created'));
     void navigate(`/boards/${created}`);
   };
@@ -60,16 +56,26 @@ function useCreateBoardFlow(): () => Promise<void> {
 
 // "Edit" of a board (in the boards list and on the board's overview): the board form in a dialog, saved before it
 // closes, then a toast. Resolves `true` when saved.
-function useEditBoardFlow(): (boardId: string) => Promise<boolean> {
+function useEditBoardFlow(): (board: Board) => Promise<boolean> {
   const dialogs = useDialogs();
   const toasts = useToast();
   const t = useTranslate();
+  const service = useBoardService();
+  const changed = useChanged();
 
-  return async (boardId) => {
-    const board = getBoard(db.getState(), boardId);
+  return async (board) => {
+    let name = board.name;
     const result = await dialogs.form({
       title: t('boards.editTitle'),
-      content: <BoardForm board={board} save={(values) => updateBoard(boardId, values)} />,
+      content: (
+        <BoardForm
+          board={board}
+          save={async (values) => {
+            await service.update(board.id, values);
+            name = values.name;
+          }}
+        />
+      ),
       buttons: { confirm: t('common.save') },
     });
 
@@ -77,8 +83,8 @@ function useEditBoardFlow(): (boardId: string) => Promise<boolean> {
       return false;
     }
 
-    // the name after the save (the caller's row may still have the old one)
-    toasts.success(t('boards.saved', { name: getBoard(db.getState(), boardId)?.name ?? board?.name ?? '' }));
+    void changed();
+    toasts.success(t('boards.saved', { name }));
 
     return true;
   };
@@ -92,6 +98,8 @@ function useDeleteBoardsFlow(): (
   const dialogs = useDialogs();
   const toasts = useToast();
   const t = useTranslate();
+  const service = useBoardService();
+  const changed = useChanged();
 
   return async (boards) => {
     const [first] = boards;
@@ -103,13 +111,14 @@ function useDeleteBoardsFlow(): (
         content: t('boards.deleteContent', { count: boards.length, name: first?.name ?? '', meetings }),
         buttons: { confirm: t('common.delete') },
       },
-      () => deleteBoards(boards.map((board) => board.id)),
+      () => service.delete(boards.map((board) => board.id)),
     );
 
     if (!done) {
       return false;
     }
 
+    void changed();
     toasts.success(t('boards.deleted', { count: boards.length, name: first?.name ?? '' }));
 
     return true;
@@ -122,13 +131,12 @@ function useAddMemberFlow(boardId: string): () => Promise<void> {
   const dialogs = useDialogs();
   const toasts = useToast();
   const t = useTranslate();
+  const service = useBoardService();
+  const changed = useChanged();
+  const candidates = useRead(boardKeys.candidates(boardId), (signal) => service.candidates(boardId, signal));
 
   return async () => {
-    const state = db.getState();
-    const members = new Set(
-      state.memberships.filter((membership) => membership.boardId === boardId).map((membership) => membership.personId),
-    );
-    const people = state.people.filter((person) => !members.has(person.id));
+    const people = candidates ?? await service.candidates(boardId);
 
     if (people.length === 0) {
       void dialogs.info({ title: t('boards.addMember'), content: t('boards.allAreMembers') });
@@ -137,7 +145,13 @@ function useAddMemberFlow(boardId: string): () => Promise<void> {
 
     const result = await dialogs.form({
       title: t('boards.addMember'),
-      content: <MemberForm people={people} save={(values) => addMember(boardId, values.personId ?? '', values.role)} />,
+      content: (
+        <MemberForm
+          people={people}
+          suggest={service.suggestPeople}
+          save={(values) => service.addMember(boardId, values.personId ?? '', values.role)}
+        />
+      ),
       buttons: { confirm: t('common.add') },
     });
 
@@ -145,20 +159,23 @@ function useAddMemberFlow(boardId: string): () => Promise<void> {
       return;
     }
 
+    void changed();
     toasts.success(t('boards.memberAdded'));
   };
 }
 
 // "Change role" of a board's member, in a form dialog (saved before it closes), then a toast.
-function useChangeRoleFlow(): (member: MemberRow) => Promise<void> {
+function useChangeRoleFlow(): (member: BoardMember) => Promise<void> {
   const dialogs = useDialogs();
   const toasts = useToast();
   const t = useTranslate();
+  const service = useBoardService();
+  const changed = useChanged();
 
   return async (member) => {
     const result = await dialogs.form({
       title: t('boards.roleOf', { name: member.name }),
-      content: <MemberForm role={member.role} save={(values) => changeRole(member.id, values.role)} />,
+      content: <MemberForm role={member.role} save={(values) => service.changeRole(member.id, values.role)} />,
       buttons: { confirm: t('common.save') },
     });
 
@@ -166,19 +183,22 @@ function useChangeRoleFlow(): (member: MemberRow) => Promise<void> {
       return;
     }
 
+    void changed();
     toasts.success(t('boards.roleChanged'));
   };
 }
 
-// "Remove" of members from a board: a critical confirmation that removes them before it closes, then a toast.
-function useRemoveMembersFlow(boardId: string): (members: readonly MemberRow[]) => Promise<void> {
+// "Remove" of members from a board (`board`: its name): a critical confirmation that removes them before it closes,
+// then a toast.
+function useRemoveMembersFlow(board: string): (members: readonly BoardMember[]) => Promise<void> {
   const dialogs = useDialogs();
   const toasts = useToast();
   const t = useTranslate();
+  const service = useBoardService();
+  const changed = useChanged();
 
   return async (members) => {
     const [first] = members;
-    const board = getBoard(db.getState(), boardId)?.name ?? '';
     const done = await confirmAndRun(
       dialogs,
       {
@@ -186,13 +206,14 @@ function useRemoveMembersFlow(boardId: string): (members: readonly MemberRow[]) 
         content: t('boards.removeContent', { count: members.length, name: first?.name ?? '', board }),
         buttons: { confirm: t('common.remove') },
       },
-      () => removeMembers(members.map((member) => member.id)),
+      () => service.removeMembers(members.map((member) => member.id)),
     );
 
     if (!done) {
       return;
     }
 
+    void changed();
     toasts.success(t('boards.removed', { count: members.length, name: first?.name ?? '' }));
   };
 }

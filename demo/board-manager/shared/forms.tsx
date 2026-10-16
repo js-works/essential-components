@@ -15,10 +15,10 @@ import type {
   Organization,
   Person,
   Role,
+  SuggestPeople,
 } from '../domain/index.js';
 
 import { MinutesEditor } from '../features/meetings/components/minutes.js';
-import { db, suggestPeople } from '../infra/in-memory/index.js';
 import { countryOptions } from './lib/countries.js';
 import { useTranslate } from './lib/i18n/index.js';
 import { useForm } from './lib/use-form.js';
@@ -364,8 +364,8 @@ function DocumentForm({
   );
 }
 
-// A new person may get an organization preset (`organizationId`, on the page of an organization). The name is
-// required, the email required and valid.
+// A new person may get an organization preset (`organizationId`, on the page of an organization); `organizations` are
+// the choices, by name. The name is required, the email required and valid.
 const personSchema = z.object({
   name: z.string().trim().min(1),
   email: z.email(),
@@ -375,14 +375,15 @@ const personSchema = z.object({
 function PersonForm({
   person,
   organizationId,
+  organizations,
   save,
 }: {
   person?: Person;
   organizationId?: string;
+  organizations: readonly Organization[];
   save: Save<typeof personSchema>;
 }) {
   const t = useTranslate();
-  const organizations = [...db.getState().organizations].sort((a, b) => a.name.localeCompare(b.name));
   const { DialogForm, field } = useForm(personSchema, {
     labels: 'person',
     initial: person ?? { organizationId },
@@ -409,23 +410,16 @@ function PersonForm({
   );
 }
 
-// The name is required and unique (ignoring the case); the address and the website are optional. The website may be
-// given without `https://` (the fake server adds it).
-function organizationSchema(id: string | undefined) {
+// The name is required and unique (ignoring the case; `others`: the other organizations); the address and the website
+// are optional. The website may be given without `https://` (the fake server adds it).
+function organizationSchema(others: readonly Organization[]) {
   return z.object({
     name: z
       .string()
       .trim()
       .min(1)
       .refine(
-        (name) =>
-          !db
-            .getState()
-            .organizations.some(
-              (other) =>
-                other.id !== id
-                && other.name.toLowerCase() === name.toLowerCase(),
-            ),
+        (name) => !others.some((other) => other.name.toLowerCase() === name.toLowerCase()),
         'errors.organizationNameTaken',
       ),
     description: z.string().default(''),
@@ -445,13 +439,16 @@ function organizationSchema(id: string | undefined) {
 
 function OrganizationForm({
   organization,
+  organizations,
   save,
 }: {
   organization?: Organization;
+  organizations: readonly Organization[];
   save: Save<ReturnType<typeof organizationSchema>>;
 }) {
   const t = useTranslate();
-  const { DialogForm, field } = useForm(organizationSchema(organization?.id), {
+  const others = organizations.filter((other) => other.id !== organization?.id);
+  const { DialogForm, field } = useForm(organizationSchema(others), {
     labels: 'organization',
     initial: organization,
     submit: save,
@@ -481,8 +478,8 @@ function OrganizationForm({
   );
 }
 
-// A new member (`people`: those who are not on the board yet) or a new role of a member (`role`, no person to choose):
-// with people, the person is a field too (a second schema, so it is required only there).
+// A new member (`people`: those who are not on the board yet, found by `suggest`) or a new role of a member (`role`,
+// no person to choose): with people, the person is a field too (a second schema, so it is required only there).
 const memberSchema = z.object({
   personId: z.string().optional(),
   role: z.enum(ROLES),
@@ -491,10 +488,12 @@ const memberWithPersonSchema = memberSchema.extend({ personId: z.string() });
 
 function MemberForm({
   people,
+  suggest,
   role,
   save,
 }: {
   people?: readonly Person[];
+  suggest?: SuggestPeople;
   role?: Role;
   save: Save<typeof memberSchema>;
 }) {
@@ -511,17 +510,17 @@ function MemberForm({
   return (
     <DialogForm>
       <Stack gap="sm">
-        {people !== undefined && (
+        {people !== undefined && suggest !== undefined && (
           // Loaded while typing, like the data table's autocomplete filter: all candidates when the list opens.
           <AsyncSelect
             minQueryLength={0}
             placeholder={t('forms.memberSearch')}
-            load={(query, signal) =>
-              suggestPeople(
-                query,
-                signal,
-                people.map((person) => person.id),
-              )}
+            load={async (query, signal) =>
+              (await suggest(query, people.map((person) => person.id), signal)).map((option) => ({
+                value: option.id,
+                label: option.name,
+                description: option.organization,
+              }))}
             {...field.personId()}
           />
         )}

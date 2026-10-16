@@ -4,8 +4,8 @@ import { Form } from '@local/overlays/react';
 import { useMemo } from 'react';
 import type { ReactNode } from 'react';
 import type { z } from 'zod';
-import { AppError } from '../../infra/in-memory/index.js';
 import { FieldError } from '../ui/field-error.js';
+import { AppError } from './app-error.js';
 import { i18nAdapter, translateKey } from './i18n/index.js';
 
 export { useForm };

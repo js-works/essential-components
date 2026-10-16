@@ -1,27 +1,36 @@
 import { autocompleteFilter, selectFilter } from '@local/data-table/react';
 import type { TableFilter } from '@local/data-table/react';
-import type { Organization } from '../../domain/index.js';
-import { suggestOrganizations } from '../../infra/in-memory/index.js';
+import type { Organization, SuggestOrganizations } from '../../domain/index.js';
 import { countryName } from '../../shared/lib/countries.js';
 import { suggestion } from '../../shared/ui/suggestion.js';
 
 export { countryFilter, organizationFilter };
 
-// The filter of every column of an organization (by name, the value is the name): an autocomplete, all options when
-// the list opens (`minQueryLength: 0`), each with the organization's city as its second line.
-const organizationFilter = autocompleteFilter({
-  multiple: true,
-  minQueryLength: 0,
-  load: async (query, signal) =>
-    (await suggestOrganizations(query, signal)).map(({ city, ...option }) => ({
-      ...option,
-      content: suggestion(option.label, city),
-    })),
-});
+// The filter of every column of an organization (by name, the value is the name): an autocomplete of `suggest`'s
+// organizations, all options when the list opens (`minQueryLength: 0`), each with the organization's city as its
+// second line.
+function organizationFilter(suggest: SuggestOrganizations): TableFilter {
+  return autocompleteFilter({
+    multiple: true,
+    minQueryLength: 0,
+    load: async (query, signal) =>
+      (await suggest(query, signal)).map((option) => ({
+        value: option.name,
+        label: option.name,
+        content: suggestion(option.name, option.city),
+      })),
+  });
+}
 
-// The filter of the country of an organization (by its name): the countries the given organizations have, sorted.
+// The filter of the country of an organization (its ISO code, shown by its name): the countries the given
+// organizations have, by name.
 function countryFilter(organizations: readonly Organization[]): TableFilter {
-  const names = new Set(organizations.map((organization) => countryName(organization.country)));
+  const codes = new Set(organizations.map((organization) => organization.country).filter((code) => code !== ''));
 
-  return selectFilter({ options: [...names].filter((name) => name !== '').sort(), multiple: true });
+  return selectFilter({
+    options: [...codes]
+      .map((code) => ({ value: code, label: countryName(code) }))
+      .sort((a, b) => a.label.localeCompare(b.label)),
+    multiple: true,
+  });
 }

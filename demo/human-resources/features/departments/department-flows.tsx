@@ -95,8 +95,7 @@ function useDeleteDepartmentFlow() {
     try {
       await service.removeDepartment(department.id);
     } catch (cause) {
-      scope.dispose();
-      await dialogs.warn({ title: t('departments.notDeleted'), content: errorText(cause) });
+      await scope.warn({ title: t('departments.notDeleted'), content: errorText(cause) });
       return;
     }
 

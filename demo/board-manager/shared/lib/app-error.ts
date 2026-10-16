@@ -1,4 +1,4 @@
-import type { en } from '../../shared/lib/i18n/locales/en.js';
+import type { en } from './i18n/locales/en.js';
 
 export { AppError };
 export type { ErrorKey };

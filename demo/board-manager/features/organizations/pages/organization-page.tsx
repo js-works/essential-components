@@ -2,15 +2,15 @@ import { Button, Group, SimpleGrid, Stack, Tabs, Text } from '@mantine/core';
 import { Fragment, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import type { Organization } from '../../../domain/index.js';
-import { getOrganization } from '../../../infra/in-memory/index.js';
+import type { OrganizationSummary } from '../../../domain/index.js';
 import { countryName } from '../../../shared/lib/countries.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { appIcons, PageHeader, useDb } from '../../../shared/shared.js';
+import { appIcons, PageHeader } from '../../../shared/shared.js';
 import { NotFound } from '../../../shared/ui/not-found.js';
 import { PersonTable } from '../../members/components/person-table.js';
 import { WebsiteLink } from '../components/website-link.js';
 import { useDeleteOrganizationsFlow, useEditOrganizationFlow } from '../organization-flows.js';
+import { useOrganization } from '../reads.js';
 
 export { OrganizationPage };
 
@@ -18,8 +18,12 @@ export { OrganizationPage };
 function OrganizationPage() {
   const t = useTranslate();
   const { organizationId = '' } = useParams();
-  const organization = useDb((state) => getOrganization(state, organizationId));
+  const { organization, isPending } = useOrganization(organizationId);
   const [tab, setTab] = useState<string | null>('overview');
+
+  if (isPending) {
+    return null;
+  }
 
   if (organization === undefined) {
     return <NotFound what="organization" />;
@@ -53,12 +57,11 @@ function OrganizationPage() {
 
 // The address and the website, as labels and values, with "Edit" (the organization form in a dialog, like "Edit" in
 // the list) and "Delete" (then back to the list).
-function OrganizationOverview({ organization }: { organization: Organization }) {
+function OrganizationOverview({ organization }: { organization: OrganizationSummary }) {
   const t = useTranslate();
   const editOrganization = useEditOrganizationFlow();
   const deleteOrganizations = useDeleteOrganizationsFlow();
   const navigate = useNavigate();
-  const people = useDb((state) => state.people.filter((person) => person.organizationId === organization.id).length);
   const place = [organization.zipCode, organization.city].filter((part) => part !== '').join(' ');
   const fields: readonly (readonly [string, ReactNode])[] = [
     [t('organizations.overview.name'), organization.name],
@@ -69,7 +72,7 @@ function OrganizationOverview({ organization }: { organization: Organization }) 
       t('organization.website'),
       organization.website === '' ? '' : <WebsiteLink key="website" url={organization.website} />,
     ],
-    [t('organizations.overview.people'), String(people)],
+    [t('organizations.overview.people'), String(organization.people)],
   ];
 
   const remove = async () => {
@@ -88,7 +91,7 @@ function OrganizationOverview({ organization }: { organization: Organization }) 
             size="xs"
             variant="default"
             leftSection={appIcons.edit}
-            onClick={() => void editOrganization(organization.id)}
+            onClick={() => void editOrganization(organization)}
           >
             {t('common.edit')}
           </Button>

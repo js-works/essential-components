@@ -11,9 +11,8 @@ import type {
 import { Box, TextInput } from '@mantine/core';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
-import { agendaNumbers, agendaOf } from '../../../domain/index.js';
-import { db, newSectionId, withSectionDraft } from '../../../infra/in-memory/index.js';
-import type { SectionDraft } from '../../../infra/in-memory/index.js';
+import { agendaNumbers, withSections } from '../../../domain/index.js';
+import type { AgendaEntry, SectionDraft } from '../../../domain/index.js';
 import { translate, useTranslate } from '../../../shared/lib/i18n/index.js';
 import { appIcons, DataTable } from '../../../shared/shared.js';
 import { deleteAction, newAction } from '../../../shared/ui/table-actions.js';
@@ -37,6 +36,9 @@ function mantineTextEditor<Row>(): ColumnEditor<Row> {
     />
   );
 }
+
+// The id of a new section (the server keeps it).
+const newSectionId = () => `s-${crypto.randomUUID()}`;
 
 // The trimmed name of a section from the edit form; an empty one is refused (the form shows the message).
 function sectionTitleOf(draft: SectionRow): string {
@@ -85,8 +87,9 @@ function useActions(
 // the form only changes the draft. "Delete" (of a row, or of the selected ones) and moving a section by its handle
 // change the draft at once (no confirmation: "Cancel" of the drawer undoes everything). The list is as wide as the
 // drawer and fills its height.
-function SectionTable({ meetingId, initial, onChange }: {
+function SectionTable({ meetingId, agenda, initial, onChange }: {
   meetingId: string;
+  agenda: readonly AgendaEntry[];
   initial: SectionDraft;
   onChange: (draft: SectionDraft) => void;
 }) {
@@ -99,13 +102,11 @@ function SectionTable({ meetingId, initial, onChange }: {
 
   // The rows: the draft with the numbers of the agenda as it would be.
   const source = useMemo((): RowSource<SectionRow> => {
-    const numbers = agendaNumbers(
-      agendaOf({ ...db.getState(), ...withSectionDraft(db.getState(), meetingId, draft) }, meetingId),
-    );
+    const numbers = agendaNumbers(withSections(agenda, meetingId, draft));
     const rows = draft.map((section) => ({ ...section, number: numbers.get(section.id) ?? '' }));
 
     return async () => ({ rows, total: rows.length });
-  }, [draft, meetingId]);
+  }, [agenda, draft, meetingId]);
 
   // A new draft: the owner hears of it, and the list is loaded again (its source is new; the table's effect has taken it
   // over before this one runs), with the new numbers and a new section at its place at the end.

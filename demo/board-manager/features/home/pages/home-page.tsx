@@ -3,9 +3,13 @@ import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import type { Meeting } from '../../../domain/index.js';
-import { getBoard, localDateTime } from '../../../infra/in-memory/index.js';
+import { localDateTime } from '../../../domain/index.js';
 import { useLanguage, useTranslate } from '../../../shared/lib/i18n/index.js';
-import { appIcons, formatDateTime, useDb } from '../../../shared/shared.js';
+import { appIcons, formatDateTime } from '../../../shared/shared.js';
+import { useBoardList } from '../../boards/reads.js';
+import { useMeetingList } from '../../meetings/reads.js';
+import { usePersonList } from '../../members/reads.js';
+import { useOrganizationList } from '../../organizations/reads.js';
 import { HomeAttention } from '../components/home-attention.js';
 import { HomeCharts } from '../components/home-charts.js';
 
@@ -16,10 +20,10 @@ export { HomePage };
 function HomePage() {
   const t = useTranslate();
   const [tab, setTab] = useState<string | null>('overview');
-  const boards = useDb((state) => state.boards);
-  const meetings = useDb((state) => state.meetings);
-  const people = useDb((state) => state.people);
-  const organizations = useDb((state) => state.organizations);
+  const boards = useBoardList();
+  const meetings = useMeetingList();
+  const people = usePersonList();
+  const organizations = useOrganizationList();
   const { upcoming, awaiting } = useMemo(() => {
     const now = localDateTime(new Date());
 
@@ -115,7 +119,7 @@ function ModuleCard(
 function MeetingList(
   { title, meetings, empty }: { title: string; meetings: readonly Meeting[]; empty: string },
 ) {
-  const boards = useDb((state) => state.boards);
+  const boards = useBoardList();
   const language = useLanguage();
   const month = new Intl.DateTimeFormat(language, { month: 'short' });
   const relative = new Intl.RelativeTimeFormat(language, { numeric: 'auto' });
@@ -144,7 +148,7 @@ function MeetingList(
                   {meeting.title}
                 </Anchor>
                 <Text size="xs" c="dimmed" truncate>
-                  {getBoard({ boards }, meeting.boardId)?.name} · {formatDateTime(meeting.start)}
+                  {boards.find((board) => board.id === meeting.boardId)?.name} · {formatDateTime(meeting.start)}
                 </Text>
               </Stack>
               <Badge variant="light" color="gray" radius="sm">{relative.format(days, 'day')}</Badge>

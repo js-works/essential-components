@@ -1,14 +1,35 @@
 import { dateRangeFilter, singleRowAction, textFilter, useDataTableController } from '@local/data-table/react';
-import type { SavedFilter, TableActions, TableColumn, TableColumns, TableFilters } from '@local/data-table/react';
+import type {
+  RowQuery,
+  RowSource,
+  SavedFilter,
+  TableActions,
+  TableColumn,
+  TableColumns,
+  TableFilters,
+} from '@local/data-table/react';
+
 import { Anchor } from '@mantine/core';
 import { Link, useNavigate } from 'react-router';
-import { fetchMeetings } from '../../../infra/in-memory/index.js';
-import type { MeetingRow } from '../../../infra/in-memory/index.js';
+import type {
+  MeetingCriteria,
+  MeetingSortKey,
+  MeetingStatus,
+  MeetingSummary,
+  MinutesState,
+  Range,
+  TextMatch,
+} from '../../../domain/index.js';
+
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { DataTable, formatDateTime, PAGE_SIZE_OPTIONS, useDb, useReloadOnChange } from '../../../shared/shared.js';
+import { searchText, toPaging, toSort, usePageSource } from '../../../shared/lib/table-query.js';
+import { DataTable, formatDateTime, PAGE_SIZE_OPTIONS } from '../../../shared/shared.js';
 import { daysFromToday, sharedBy, useSavedFilters } from '../../../shared/ui/saved-filters.js';
 import { deleteAction, editAction, newAction, openAction } from '../../../shared/ui/table-actions.js';
 import { boardFilter } from '../../boards/filters/board-filters.js';
+import { useBoardList } from '../../boards/reads.js';
+import { useMeetingService } from '../context.js';
+import { meetingKeys } from '../keys.js';
 import { meetingStatusFilter, minutesFilter } from '../meeting-filters.js';
 import {
   useCancelMeetingFlow,
@@ -19,6 +40,59 @@ import {
 import { MinutesBadge, StatusBadge } from './meeting-badges.js';
 
 export { MeetingTable };
+
+// A meeting as a row: `chair` and `created` are always empty, their columns are there only for their filters, for the
+// look (2026-10-11).
+type MeetingRow = MeetingSummary & { chair: ''; created: '' };
+
+const SORT_KEYS: readonly MeetingSortKey[] = ['start', 'title', 'board', 'status', 'items', 'documents'];
+
+// The filters `chair` and `created` are not asked for (see `MeetingRow`).
+function toCriteria(query: RowQuery, boardId: string | undefined, personId: string | undefined): MeetingCriteria {
+  const { start, title, board, location, status, minutesApproved } = query.filters as {
+    start?: Range<string>;
+    title?: TextMatch;
+    board?: string[];
+    location?: TextMatch;
+    status?: MeetingStatus[];
+    minutesApproved?: MinutesState[];
+  };
+
+  return {
+    boardId,
+    personId,
+    text: searchText(query),
+    title,
+    location,
+    boards: board,
+    statuses: status,
+    minutes: minutesApproved,
+    start,
+  };
+}
+
+function useSource(
+  boardId: string | undefined,
+  personId: string | undefined,
+  reload: () => void,
+): RowSource<MeetingRow> {
+  const service = useMeetingService();
+
+  return usePageSource(
+    [...meetingKeys.all, 'meetings', boardId ?? '', personId ?? ''],
+    async (query, signal) => {
+      const page = await service.find(
+        toCriteria(query, boardId, personId),
+        toSort(query, SORT_KEYS),
+        toPaging(query),
+        signal,
+      );
+
+      return { ...page, items: page.items.map((meeting) => ({ ...meeting, chair: '', created: '' })) };
+    },
+    reload,
+  );
+}
 
 // The colleagues' shared filters of the meetings list (2026-10-11, the user's wish: to show sharing).
 const COLLEAGUES_FILTERS: readonly SavedFilter[] = [
@@ -127,7 +201,7 @@ function useColumns({ boardId, pathOf }: MeetingList): TableColumns<MeetingRow> 
 
 function useFilters(boardId: string | undefined): TableFilters {
   const t = useTranslate();
-  const boards = useDb((state) => state.boards);
+  const boards = useBoardList();
 
   return {
     start: dateRangeFilter(),
@@ -152,7 +226,7 @@ function useActions(list: MeetingList): TableActions<MeetingRow> {
   return [
     newAction(t('meetings.new'), createMeeting),
     openAction((row) => navigate(list.pathOf(row))),
-    editAction((row) => editMeeting(row.id)),
+    editAction(editMeeting),
     singleRowAction('cancel', cancelMeeting, { label: t('meetings.cancel'), show: 'toolbar' }),
     deleteAction(deleteMeetings),
   ];
@@ -178,8 +252,7 @@ function MeetingTable(
   // Saved filters only in the Meetings module (2026-10-11, the user's wish: not on a board's or a member's page).
   const savedFilters = useSavedFilters('board-manager:saved-filters:meetings', COLLEAGUES_FILTERS);
   const main = boardId === undefined && personId === undefined;
-
-  useReloadOnChange(tableCtrl);
+  const source = useSource(boardId, personId, tableCtrl.reload);
 
   return (
     <DataTable
@@ -189,7 +262,7 @@ function MeetingTable(
       density="compact"
       searchable
       reloadable
-      source={fetchMeetings({ boardId, personId })}
+      source={source}
       rowKey="id"
       columns={columns}
       filters={filters}

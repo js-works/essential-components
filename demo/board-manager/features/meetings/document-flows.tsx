@@ -1,21 +1,16 @@
 import type { FileItem } from '@local/file-upload';
 import { useDialogs, useToast } from '@local/overlays/react';
 import type { Meeting, MeetingDocument } from '../../domain/index.js';
-import {
-  commitDocuments,
-  deleteDocuments,
-  discardDocuments,
-  renameDocument,
-  uploadDocument,
-} from '../../infra/in-memory/index.js';
-
 import { DocumentForm, UploadForm } from '../../shared/forms.js';
 import { confirmAndRun } from '../../shared/lib/flows.js';
 import { useTranslate } from '../../shared/lib/i18n/index.js';
+import { useChanged } from '../../shared/lib/use-changed.js';
+import { useMeetingService } from './context.js';
 
 export { useDeleteDocumentsFlow, useDownloadDocumentFlow, useRenameDocumentFlow, useUploadDocumentsFlow };
 
-// The flows of a meeting's documents, one hook per use case. The documents table follows the data itself.
+// The flows of a meeting's documents, one hook per use case. A flow changes the data through the service and says so
+// (`changed()`); it knows no table.
 
 // "Upload": a drawer with the file upload. Every file is uploaded (staged) at once, "Apply" adds them, "Cancel"
 // discards them.
@@ -23,6 +18,8 @@ function useUploadDocumentsFlow(meeting: Meeting): () => Promise<void> {
   const dialogs = useDialogs();
   const toasts = useToast();
   const t = useTranslate();
+  const service = useMeetingService();
+  const changed = useChanged();
 
   return async () => {
     let items: readonly FileItem[] = [];
@@ -33,12 +30,14 @@ function useUploadDocumentsFlow(meeting: Meeting): () => Promise<void> {
       subtitle: meeting.title,
       content: (
         <UploadForm
-          upload={uploadDocument(meeting.id)}
+          upload={service.uploadDocument(meeting.id)}
           onChange={(next) => {
             items = next;
           }}
           save={async ({ files }) => {
-            committed = await commitDocuments(files.flatMap((file) => file.result === undefined ? [] : [file.result]));
+            committed = await service.commitDocuments(
+              files.flatMap((file) => file.result === undefined ? [] : [file.result]),
+            );
           }}
         />
       ),
@@ -46,10 +45,11 @@ function useUploadDocumentsFlow(meeting: Meeting): () => Promise<void> {
     });
 
     if (result.canceled) {
-      discardDocuments(items.flatMap((item) => (item.result === undefined ? [] : [item.result])));
+      service.discardDocuments(items.flatMap((item) => (item.result === undefined ? [] : [item.result])));
       return;
     }
 
+    void changed();
     toasts.success(t('meetings.documents.uploaded', { count: committed.length, name: committed[0]?.name ?? '' }));
   };
 }
@@ -70,6 +70,8 @@ function useRenameDocumentFlow(): (document: MeetingDocument) => Promise<void> {
   const dialogs = useDialogs();
   const toasts = useToast();
   const t = useTranslate();
+  const service = useMeetingService();
+  const changed = useChanged();
 
   return async (document) => {
     let renamed = document.name;
@@ -79,7 +81,7 @@ function useRenameDocumentFlow(): (document: MeetingDocument) => Promise<void> {
         <DocumentForm
           document={document}
           save={async (values) => {
-            renamed = (await renameDocument(document.id, values.name)).name;
+            renamed = (await service.renameDocument(document.id, values.name)).name;
           }}
         />
       ),
@@ -90,6 +92,7 @@ function useRenameDocumentFlow(): (document: MeetingDocument) => Promise<void> {
       return;
     }
 
+    void changed();
     toasts.success(t('meetings.documents.renamed', { name: renamed }));
   };
 }
@@ -99,6 +102,8 @@ function useDeleteDocumentsFlow(): (documents: readonly MeetingDocument[]) => Pr
   const dialogs = useDialogs();
   const toasts = useToast();
   const t = useTranslate();
+  const service = useMeetingService();
+  const changed = useChanged();
 
   return async (documents) => {
     const [first] = documents;
@@ -109,13 +114,14 @@ function useDeleteDocumentsFlow(): (documents: readonly MeetingDocument[]) => Pr
         content: t('meetings.documents.deleteContent', { count: documents.length, name: first?.name ?? '' }),
         buttons: { confirm: t('common.delete') },
       },
-      () => deleteDocuments(documents.map((document) => document.id)),
+      () => service.deleteDocuments(documents.map((document) => document.id)),
     );
 
     if (!done) {
       return;
     }
 
+    void changed();
     toasts.success(t('meetings.documents.deleted', { count: documents.length, name: first?.name ?? '' }));
   };
 }

@@ -82,7 +82,8 @@ the root's `CLAUDE.md` apply.
   organizations, the people tables (person, organization), a board's members (person, organization) and the boards
   (chair). Multiple, `minQueryLength: 0` (all options when the list opens, typing narrows them); each option has a
   second line (Mantine `Text`, `xs`, dimmed): the city of an organization, the organization of a person.
-  - The options: `suggestOrganizations()` and `suggestPeople()` (`infra/in-memory/`, `LOADING_TIME`), by name.
+  - The options: `suggest()` of the organizations' and of the people's repositories (through the features' services,
+    `LOADING_TIME`), by name; the filters are functions of it (`personFilter(members.suggest)`, 2026-10-16).
   - The value is the name, like the column's: the sources compare with `oneOf`. Two people of the same name would
     both match (accepted: the chair column has only the name, not the id).
 - "Delete" in the tables (decided 2026-10-01): a `multiRow` action everywhere (the selection, or a right-click on a
@@ -109,7 +110,7 @@ the root's `CLAUDE.md` apply.
     (`common.none`), the roles (`roles.<stored value>`: `t(`roles.${role}`)`, the stored English value is the key, so
     the filters and the server keep working on it; the same for `statuses`), the messages of the schemas (the key as
     the message: `.refine(fn, 'errors.urlInvalid')`, which form-validation gives to the adapter as an app key).
-  - The fake server does not know the language: it throws an `AppError` (`infra/in-memory/errors.ts`: a key of
+  - The fake server does not know the language: it throws an `AppError` (`shared/lib/app-error.ts` since 2026-10-16, `infra/in-memory/errors.ts` before: a key of
     `errors` and its values), and `use-form.tsx` makes the text (`errorMessage`, `translateKey`). The `ErrorKey` type
     is the keys of `en.errors` (the only import of infra from the UI, a type).
   - The dialogs' own texts (buttons, titles, "Maximize") come from the overlays package, which has English and German
@@ -118,7 +119,8 @@ the root's `CLAUDE.md` apply.
   - The pages of a feature: the tables follow "The structure of a table in the root's apps" in the root's `CLAUDE.md`
     (2026-10-15, worked out on the board page's members table, `MemberTable`, then rolled out): `useColumns()`,
     `useFilters()`, `useActions(…)` (hooks of the table's file), the flows one hook per use case in a feature's
-    `flows.tsx` (the meetings also `agenda-flows.tsx`, `document-flows.tsx`), `tableCtrl`, and `useReloadOnChange(tableCtrl)`
+    `flows.tsx` (the meetings also `agenda-flows.tsx`, `document-flows.tsx`), `tableCtrl`, and the table's source through
+    TanStack Query (`usePageSource`; `useReloadOnChange(tableCtrl)` until 2026-10-16)
     (the tables follow the store; the flows know no table). The way there, the same day: `columnsOf(t)` (with
     `useMemo(() => columnsOf(t), [t])` until 2026-10-14), `actionsOf(t, ctx)` with plain flows in `<x>Flows.tsx` and a
     `TableContext<Row>` (dialogs, toasts, the table), handlers in the component with a `MemberHandlers` type. The
@@ -247,7 +249,7 @@ the root's `CLAUDE.md` apply.
   - Each option shows the name, with the organization below it (dimmed, `xs`; `renderOption`, with Mantine's
     `CheckIcon` at the chosen one, which a `renderOption` has to draw itself). Its popup is in the dialog with a fixed
     position, like the date picker's.
-  - `suggestPeople(query, signal, among)` (`infra/in-memory/people.ts`, `LOADING_TIME`): of the candidates (the people who are not
+  - `suggest(query, among, signal)` of the people's repository (`MemberForm` gets it as `suggest`, `LOADING_TIME`): of the candidates (the people who are not
     members yet), those whose name or organization contains the query, by name; each option shows the organization
     as its second line (dimmed, `xs`).
   - It starts empty (the native select had the first person preselected): the person is required, so "OK" without one
@@ -321,9 +323,10 @@ the root's `CLAUDE.md` apply.
 
 - A board's page opens on "Overview" (`BoardOverview` in `board-page.tsx`, 2026-10-04): name, description, chair, the
   numbers of members and meetings, the next meeting; "Edit" and "Delete" (then back to the list), the same flows as
-  in the boards list (`useEditBoardFlow()`, `useDeleteBoardsFlow()` of `features/boards/board-flows.tsx`). Like the
+  in the boards list (`useEditBoardFlow()`, `useDeleteBoardsFlow()` of `features/boards/flows/board-flows.tsx`). Like the
   member's and the meeting's overview, in the same layout. Then "Meetings" and "Members".
-  - The board is read as a row (`getBoardRow()`, with `useShallow`: the selector returns a new object at every call).
+  - The board is read through the boards' service and TanStack Query (`useBoard()`, 2026-10-16; `getBoardRow()` of
+    the store with `useShallow` before), see `STRUCTURE.md`.
 
 ## Members
 
@@ -335,7 +338,7 @@ the root's `CLAUDE.md` apply.
     (then back to the list), the same flows as in the list (`useEditPersonFlow()`, `useDeletePeopleFlow()` of
     `features/members/member-flows.tsx`).
   - "Boards": the memberships, read-only (Board as a link, Role, Since; "Open board" the default action).
-  - "Meetings": `MeetingTable` with `personId`, the meetings of the person's boards (`fetchMeetings({ personId })`),
+  - "Meetings": `MeetingTable` with `personId`, the meetings of the person's boards (`MeetingCriteria.personId`),
     with the board column and the actions of the Meetings module; a new meeting chooses one of the person's boards. A
     meeting opens below its board.
 - In the people tables, the name is a link to the page, and "Open" (default, also a double click) opens it.
@@ -355,7 +358,8 @@ the root's `CLAUDE.md` apply.
   - A link that opens a new tab is marked: Tabler's `TbExternalLink` (an arrow out of a box) after the text, and
     "(opens in a new tab)" for screen readers (`WebsiteLink`, 2026-10-01). Not the `mailto:` links.
   - The form validates the name and the website; the fake server checks them again (`checkedOrganization()`).
-- The list (`organizations-page.tsx`): Organization (a link), City, Country (a select filter of the countries in use),
+- The list (`organizations-page.tsx`): Organization (a link), City, Country (a select filter of the countries in use; its value the ISO code since 2026-10-16, the name before: the
+  repository knows no language),
   Website, Members (the count); "New organization" (then its page), "Open" (default), "Edit", "Delete".
 - The page (`organization-page.tsx`): the name with the description as subtitle; "Overview" (labels and values, "Edit"
   and "Delete", then back to the list) and "People" (the people table of the organization: a new person belongs to it,
@@ -368,7 +372,7 @@ the root's `CLAUDE.md` apply.
 
 - The filters of the meetings list (`MeetingTable`): the date (a range), the meeting and the location (text), the
   board and the status (multiple selects), the minutes (approved or draft, only held meetings have minutes; the
-  location and the minutes since 2026-10-09). The in-memory source (`fetchMeetings`) applies them. (The items and the
+  location and the minutes since 2026-10-09). The meetings' repository applies them (`MeetingCriteria`). (The items and the
   documents had number ranges for a few hours that day.)
   - Only for the look (2026-10-11, the user's wish: enough filters for the data table's filter drawer in two
     columns): two hidden columns without data, "Chair" (text) and "Created" (a date range), with their filters (`chair`
@@ -453,7 +457,7 @@ the root's `CLAUDE.md` apply.
   demo), "Delete" (the selected ones, and in each row), and "Rename" (a row action in each row and in the context menu,
   a pencil, tip "Rename document"): a form dialog "Rename document" (2026-10-01; before, the data table's edit form
   in the place of the row) with one field, "Name" (`DocumentForm`, required). On its first focus only the name without
-  the extension is selected, like in a file manager. "Save" saves it (`renameDocument()` in `infra/in-memory/documents.ts`: trimmed, an empty
+  the extension is selected, like in a file manager. "Save" saves it (`rename()` of the documents' repository: trimmed, an empty
   name refused; the type follows the new extension, like for an upload) and shows `"<name>" renamed`.
 - The editor of a text in an edit form (a section's name) is Mantine's `TextInput`
   (`mantineTextEditor()` in `meeting-page.tsx`, for the column it is in).
@@ -492,7 +496,7 @@ the root's `CLAUDE.md` apply.
     cell), which had replaced a "Rename" row action with a dialog.
   - "Apply" saves the whole draft at once (`saveSectionDraft`, the button shows a spinner), reloads the agenda and shows
     "Sections saved"; "Cancel" (also Escape, the close button) drops it, without asking.
-  - `withSectionDraft()` (pure, in `infra/in-memory/agenda.ts`) applies a draft: the sections in the draft's order, each with its items; a
+  - `withSections()` (pure, in `domain/agenda.ts`; `withSectionDraft()` of the infra before 2026-10-16) applies a draft: the sections in the draft's order, each with its items; a
     missing section is deleted, its items go to the start of "Other".
 - The item form has a "Section" select (only while the meeting has sections): another section moves the item to its
   end, "(none)" moves it to "Other" (before "Any other business").

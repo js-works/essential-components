@@ -225,8 +225,9 @@ and imports the files it needs from its `CLAUDE.md`.
       hook, not a plain function with a context (that was the state for a few hours: plain flows in `<x>Flows.tsx` with
       `TableContext<Row>` of `shared/lib/flows.ts`): it takes the dialogs, toasts and `t` itself.
     - Early returns: `const result = await dialogs.form(…); if (result.canceled) { return; }`.
-    - A flow does not know a table: the table follows the data itself (the Board Manager: `useReloadOnChange(tableCtrl)`
-      of `shared.tsx`, a subscription to the store; the other apps: their queries, `changed()`), so a flow can be used
+    - A flow does not know a table: the table follows the data itself (its queries through TanStack Query: a flow calls `changed()`, the
+      tables reload; the Board Manager's `useReloadOnChange(tableCtrl)`, a subscription to its store, until 2026-10-16),
+      so a flow can be used
       anywhere (a button on an overview).
     - The table's controller is `tableCtrl` (`nav` before, from the package's old name, the data navigator).
     - No comments above `useColumns`, `useFilters` and `useActions`, nor above a table's `const columns`, `const filters`

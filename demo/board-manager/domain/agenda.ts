@@ -1,5 +1,14 @@
-export { agendaNumbers, agendaOf, arranged, blockEnd, idOf, newPlace };
-export type { AgendaEntry, AgendaItem, AgendaSection };
+export { agendaNumbers, agendaOf, arranged, blockEnd, idOf, newPlace, withSections };
+export type {
+  Agenda,
+  AgendaEntry,
+  AgendaItem,
+  AgendaItemValues,
+  AgendaMove,
+  AgendaRepository,
+  AgendaSection,
+  SectionDraft,
+};
 
 // `presenterId` is a person; `minutes` and `decision` are empty until they are recorded. `sectionId`: the section the
 // item is in, or `''`.
@@ -19,6 +28,37 @@ type AgendaItem = {
 // A section of an agenda: it groups items (one level). Sections and items share one order (`position`) per meeting, and
 // the items of a section always follow it (`arranged()`).
 type AgendaSection = { id: string; meetingId: string; position: number; title: string };
+
+// What a new item or a change of one gives.
+type AgendaItemValues = Pick<AgendaItem, 'sectionId' | 'title' | 'presenterId' | 'duration' | 'description'>;
+
+// The items and the sections of one meeting (in no particular order: `agendaOf()` arranges them).
+type Agenda = { items: readonly AgendaItem[]; sections: readonly AgendaSection[] };
+
+// The sections of a meeting as the "Sections" drawer changes them, until "Apply": their order and names. A section of
+// the meeting that is missing is deleted; one with a new id is added.
+type SectionDraft = readonly { id: string; title: string }[];
+
+// A move of an item (dragged in the agenda): into the section `group` (`''`: none; `undefined`: an agenda without
+// sections), after the item `after` or before the item `before` (its neighbors where it was dropped).
+type AgendaMove = {
+  meetingId: string;
+  itemId: string;
+  group: string | undefined;
+  after?: { id: string; sectionId: string };
+  before?: { id: string; sectionId: string };
+};
+
+// What can be done with the agendas. An item in a section goes to its end, one without a section before "Any other
+// business"; another section moves an item to its end, none to "Other". Every change numbers the positions again.
+interface AgendaRepository {
+  agenda(meetingId: string, signal?: AbortSignal): Promise<Agenda>;
+  createItem(meetingId: string, values: AgendaItemValues): Promise<void>;
+  updateItem(id: string, values: Partial<Omit<AgendaItem, 'id' | 'meetingId'>>): Promise<void>;
+  deleteItems(ids: readonly string[]): Promise<void>;
+  move(move: AgendaMove): Promise<void>;
+  saveSections(meetingId: string, draft: SectionDraft): Promise<void>;
+}
 
 // An agenda in its order: sections and items.
 type AgendaEntry = { type: 'section'; section: AgendaSection } | { type: 'item'; item: AgendaItem };
@@ -109,4 +149,17 @@ function newPlace(agenda: readonly AgendaEntry[]): number {
   return last?.type === 'item' && last.item.sectionId === '' && last.item.title === 'Any other business'
     ? agenda.length - 1
     : agenda.length;
+}
+
+// A draft of the sections applied to a meeting's agenda: the sections of the draft, in its order and with its names,
+// each with its items. A section that is missing from the draft is gone; its items go to "Other", at its start (before
+// the items that were there already).
+function withSections(agenda: readonly AgendaEntry[], meetingId: string, draft: SectionDraft): AgendaEntry[] {
+  const items = agenda.filter((entry) => entry.type === 'item');
+  const sections = draft.map((section): AgendaEntry => ({
+    type: 'section',
+    section: { id: section.id, meetingId, position: 0, title: section.title },
+  }));
+
+  return arranged([...sections, ...items]);
 }

@@ -1,78 +1,59 @@
-import type { RowPage, RowQuery } from '@local/data-table/react';
+import type { Page, Paging, Range, Sort, TextMatch } from '../../domain/index.js';
 
-export { matches, oneOf, runQuery, within };
+export { containsText, inList, inRange, matchesText, pageOf, sorted };
 
-// The filters of the columns: a select filter is a list (one of), a text filter `{ text, match }`, a date range
-// `{ from, to }` (yyyy-mm-dd, both inclusive).
-function oneOf(value: string, filter: unknown): boolean {
-  return !Array.isArray(filter) || filter.length === 0 || filter.includes(value);
+// The domain's criteria (the repositories): one of a list (none or an empty one: any), a text in one of the values
+// (ignoring the case), a text match, a range of days (yyyy-mm-dd, both inclusive), sorting and paging.
+
+function inList<T>(value: T, list: readonly T[] | undefined): boolean {
+  return list === undefined || list.length === 0 || list.includes(value);
 }
 
-function within(date: string, filter: unknown): boolean {
-  if (filter === null || typeof filter !== 'object' || Array.isArray(filter)) {
-    return true;
-  }
+function containsText(values: readonly string[], text: string | undefined): boolean {
+  const needle = text?.trim().toLowerCase() ?? '';
 
-  const { from, to } = filter as { from?: unknown; to?: unknown };
-  const day = date.slice(0, 10);
-
-  return (typeof from !== 'string' || day >= from) && (typeof to !== 'string' || day <= to);
+  return needle === '' || values.some((value) => value.toLowerCase().includes(needle));
 }
 
-function matches(value: string, filter: unknown): boolean {
-  if (filter === null || typeof filter !== 'object' || Array.isArray(filter)) {
+function matchesText(value: string, match: TextMatch | undefined): boolean {
+  if (match === undefined) {
     return true;
   }
 
-  const { text, match } = filter as { text?: unknown; match?: unknown };
+  const [haystack, needle] = [value.toLowerCase(), match.text.toLowerCase()];
 
-  if (typeof text !== 'string') {
-    return true;
-  }
-
-  const [haystack, needle] = [value.toLowerCase(), text.toLowerCase()];
-
-  return match === 'startsWith'
+  return match.match === 'startsWith'
     ? haystack.startsWith(needle)
-    : match === 'endsWith'
+    : match.match === 'endsWith'
     ? haystack.endsWith(needle)
     : haystack.includes(needle);
 }
 
-type QueryOptions<Row> = {
-  // The fields the search looks in.
-  search: readonly (keyof Row & string)[];
-  // One predicate per filterable column, called with the column's filter value.
-  filters?: Partial<Record<string, (row: Row, value: unknown) => boolean>>;
-};
+// `day` may be a date and a time: its date counts.
+function inRange(day: string, range: Range<string> | undefined): boolean {
+  const date = day.slice(0, 10);
 
-// Search, column filters, sorting and paging, the same for every table.
-function runQuery<Row>(
-  rows: readonly Row[],
-  query: RowQuery,
-  options: QueryOptions<Row>,
-): RowPage<Row> {
-  const text = query.search.toLowerCase();
-  const filtered = rows
-    .filter((row) =>
-      Object.entries(query.filters).every(([key, value]) => options.filters?.[key]?.(row, value) ?? true)
-    )
-    .filter((row) => text === '' || options.search.some((key) => String(row[key] ?? '').toLowerCase().includes(text)));
+  return range === undefined
+    || ((range.from === undefined || date >= range.from) && (range.to === undefined || date <= range.to));
+}
 
-  if (query.sort) {
-    const key = query.sort.key as keyof Row;
-    const factor = query.sort.direction === 'asc' ? 1 : -1;
-
-    filtered.sort((a, b) => {
-      const [left, right] = [a[key], b[key]];
-
-      return factor * (typeof left === 'number' && typeof right === 'number'
-        ? left - right
-        : String(left ?? '').localeCompare(String(right ?? ''), 'en', { numeric: true }));
-    });
+// The items sorted by a key (numbers as numbers, texts in a natural order), or as they are without a sort.
+function sorted<T, K extends keyof T & string>(items: readonly T[], sort: Sort<K> | undefined): T[] {
+  if (sort === undefined) {
+    return [...items];
   }
 
-  const { page, pageSize } = query;
+  const factor = sort.direction === 'asc' ? 1 : -1;
 
-  return { rows: filtered.slice((page - 1) * pageSize, page * pageSize), total: filtered.length };
+  return [...items].sort((a, b) => {
+    const [left, right] = [a[sort.key], b[sort.key]];
+
+    return factor * (typeof left === 'number' && typeof right === 'number'
+      ? left - right
+      : String(left ?? '').localeCompare(String(right ?? ''), 'en', { numeric: true }));
+  });
+}
+
+function pageOf<T>(items: readonly T[], { offset, limit }: Paging): Page<T> {
+  return { items: items.slice(offset, offset + limit), total: items.length };
 }

@@ -1,15 +1,31 @@
 import { textFilter, useDataTableController } from '@local/data-table/react';
-import type { SavedFilter, TableActions, TableColumns, TableFilters } from '@local/data-table/react';
+import type {
+  RowQuery,
+  RowSource,
+  SavedFilter,
+  TableActions,
+  TableColumns,
+  TableFilters,
+} from '@local/data-table/react';
+
 import { Anchor } from '@mantine/core';
 import { Link, useNavigate } from 'react-router';
-import { fetchOrganizations } from '../../../infra/in-memory/index.js';
-import type { OrganizationRow } from '../../../infra/in-memory/index.js';
+import type {
+  OrganizationCriteria,
+  OrganizationSortKey,
+  OrganizationSummary,
+  TextMatch,
+} from '../../../domain/index.js';
+
 import { countryName } from '../../../shared/lib/countries.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { DataTable, PAGE_SIZE_OPTIONS, useDb, useReloadOnChange } from '../../../shared/shared.js';
+import { searchText, toPaging, toSort, usePageSource } from '../../../shared/lib/table-query.js';
+import { DataTable, PAGE_SIZE_OPTIONS } from '../../../shared/shared.js';
 import { sharedBy, useSavedFilters } from '../../../shared/ui/saved-filters.js';
 import { deleteAction, editAction, newAction, openAction } from '../../../shared/ui/table-actions.js';
 import { WebsiteLink } from '../components/website-link.js';
+import { useOrganizationService } from '../context.js';
+import { organizationKeys } from '../keys.js';
 import { countryFilter, organizationFilter } from '../organization-filters.js';
 import {
   useCreateOrganizationFlow,
@@ -17,7 +33,27 @@ import {
   useEditOrganizationFlow,
 } from '../organization-flows.js';
 
+import { useOrganizationList } from '../reads.js';
+
 export { OrganizationsPage };
+
+const SORT_KEYS: readonly OrganizationSortKey[] = ['name', 'city', 'country', 'people'];
+
+function toCriteria(query: RowQuery): OrganizationCriteria {
+  const { name, city, country } = query.filters as { name?: string[]; city?: TextMatch; country?: string[] };
+
+  return { text: searchText(query), names: name, city, countries: country };
+}
+
+function useSource(reload: () => void): RowSource<OrganizationSummary> {
+  const service = useOrganizationService();
+
+  return usePageSource(
+    organizationKeys.all,
+    (query, signal) => service.find(toCriteria(query), toSort(query, SORT_KEYS), toPaging(query), signal),
+    reload,
+  );
+}
 
 // The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
 const COLLEAGUES_FILTERS: readonly SavedFilter[] = [
@@ -25,7 +61,7 @@ const COLLEAGUES_FILTERS: readonly SavedFilter[] = [
   sharedBy('Lena Hoffmann', 'Investors', { name: ['Nordic Capital Partners', 'Gulf Invest', 'Stein Family Office'] }),
 ];
 
-function useColumns(): TableColumns<OrganizationRow> {
+function useColumns(): TableColumns<OrganizationSummary> {
   const t = useTranslate();
 
   return [
@@ -52,7 +88,7 @@ function useColumns(): TableColumns<OrganizationRow> {
       hideable: true,
     },
     {
-      key: 'countryName',
+      key: 'country',
       header: t('organizations.columns.country'),
       render: (row) => countryName(row.country),
       width: 2,
@@ -78,16 +114,17 @@ function useColumns(): TableColumns<OrganizationRow> {
 }
 
 function useFilters(): TableFilters {
-  const organizations = useDb((state) => state.organizations);
+  const service = useOrganizationService();
+  const organizations = useOrganizationList();
 
   return {
-    name: organizationFilter,
+    name: organizationFilter(service.suggest),
     city: textFilter(),
-    countryName: countryFilter(organizations),
+    country: countryFilter(organizations),
   };
 }
 
-function useActions(): TableActions<OrganizationRow> {
+function useActions(): TableActions<OrganizationSummary> {
   const t = useTranslate();
   const navigate = useNavigate();
   const createOrganization = useCreateOrganizationFlow();
@@ -97,7 +134,7 @@ function useActions(): TableActions<OrganizationRow> {
   return [
     newAction(t('organizations.new'), createOrganization),
     openAction((row) => navigate(`/organizations/${row.id}`)),
-    editAction((row) => editOrganization(row.id)),
+    editAction(editOrganization),
     deleteAction(deleteOrganizations),
   ];
 }
@@ -106,13 +143,12 @@ function useActions(): TableActions<OrganizationRow> {
 // organization). One opens on its own page, with its people.
 function OrganizationsPage() {
   const t = useTranslate();
-  const tableCtrl = useDataTableController<OrganizationRow>();
+  const tableCtrl = useDataTableController<OrganizationSummary>();
   const columns = useColumns();
   const filters = useFilters();
   const actions = useActions();
   const savedFilters = useSavedFilters('board-manager:saved-filters:organizations', COLLEAGUES_FILTERS);
-
-  useReloadOnChange(tableCtrl);
+  const source = useSource(tableCtrl.reload);
 
   return (
     <DataTable
@@ -122,7 +158,7 @@ function OrganizationsPage() {
       density="compact"
       searchable
       reloadable
-      source={fetchOrganizations}
+      source={source}
       rowKey="id"
       columns={columns}
       filters={filters}

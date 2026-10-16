@@ -1,20 +1,17 @@
 import { useDialogs, useToast } from '@local/overlays/react';
 import { useNavigate } from 'react-router';
-import {
-  createOrganization,
-  db,
-  deleteOrganizations,
-  getOrganization,
-  updateOrganization,
-} from '../../infra/in-memory/index.js';
-
+import type { Organization } from '../../domain/index.js';
 import { OrganizationForm } from '../../shared/forms.js';
 import { confirmAndRun } from '../../shared/lib/flows.js';
 import { useTranslate } from '../../shared/lib/i18n/index.js';
+import { useChanged } from '../../shared/lib/use-changed.js';
+import { useOrganizationService } from './context.js';
+import { useOrganizationList } from './reads.js';
 
 export { useCreateOrganizationFlow, useDeleteOrganizationsFlow, useEditOrganizationFlow };
 
-// The flows of the organizations feature, one hook per use case. The tables follow the data themselves.
+// The flows of the organizations feature, one hook per use case. A flow changes the data through the service and says
+// so (`changed()`); it knows no table.
 
 // "New organization": the organization form in a dialog, saved before it closes; then a toast, and the new
 // organization's page.
@@ -23,6 +20,9 @@ function useCreateOrganizationFlow(): () => Promise<void> {
   const toasts = useToast();
   const navigate = useNavigate();
   const t = useTranslate();
+  const service = useOrganizationService();
+  const changed = useChanged();
+  const organizations = useOrganizationList();
 
   return async () => {
     let created = '';
@@ -30,8 +30,9 @@ function useCreateOrganizationFlow(): () => Promise<void> {
       title: t('organizations.new'),
       content: (
         <OrganizationForm
+          organizations={organizations}
           save={async (values) => {
-            created = (await createOrganization(values)).id;
+            created = (await service.create(values)).id;
           }}
         />
       ),
@@ -42,6 +43,7 @@ function useCreateOrganizationFlow(): () => Promise<void> {
       return;
     }
 
+    void changed();
     toasts.success(t('organizations.created'));
     void navigate(`/organizations/${created}`);
   };
@@ -49,18 +51,26 @@ function useCreateOrganizationFlow(): () => Promise<void> {
 
 // "Edit" of an organization (in the list and on its overview): the organization form in a dialog, saved before it
 // closes, then a toast. Resolves `true` when saved.
-function useEditOrganizationFlow(): (organizationId: string) => Promise<boolean> {
+function useEditOrganizationFlow(): (organization: Organization) => Promise<boolean> {
   const dialogs = useDialogs();
   const toasts = useToast();
   const t = useTranslate();
+  const service = useOrganizationService();
+  const changed = useChanged();
+  const organizations = useOrganizationList();
 
-  return async (organizationId) => {
+  return async (organization) => {
+    let name = organization.name;
     const result = await dialogs.form({
       title: t('organizations.editTitle'),
       content: (
         <OrganizationForm
-          organization={getOrganization(db.getState(), organizationId)}
-          save={(values) => updateOrganization(organizationId, values)}
+          organization={organization}
+          organizations={organizations}
+          save={async (values) => {
+            await service.update(organization.id, values);
+            name = values.name.trim();
+          }}
         />
       ),
       buttons: { confirm: t('common.save') },
@@ -70,7 +80,8 @@ function useEditOrganizationFlow(): (organizationId: string) => Promise<boolean>
       return false;
     }
 
-    toasts.success(t('organizations.saved', { name: getOrganization(db.getState(), organizationId)?.name ?? '' }));
+    void changed();
+    toasts.success(t('organizations.saved', { name }));
 
     return true;
   };
@@ -78,15 +89,18 @@ function useEditOrganizationFlow(): (organizationId: string) => Promise<boolean>
 
 // "Delete" of organizations (in the list and on an overview): a critical confirmation that says how many people lose
 // their organization, then a toast. Resolves `true` when deleted.
-function useDeleteOrganizationsFlow(): (organizations: readonly { id: string; name: string }[]) => Promise<boolean> {
+function useDeleteOrganizationsFlow(): (
+  organizations: readonly { id: string; name: string; people: number }[],
+) => Promise<boolean> {
   const dialogs = useDialogs();
   const toasts = useToast();
   const t = useTranslate();
+  const service = useOrganizationService();
+  const changed = useChanged();
 
   return async (organizations) => {
     const [first] = organizations;
-    const ids = organizations.map((organization) => organization.id);
-    const people = db.getState().people.filter((person) => ids.includes(person.organizationId)).length;
+    const people = organizations.reduce((sum, organization) => sum + organization.people, 0);
     const question = t('organizations.deleteQuestion', { count: organizations.length, name: first?.name ?? '' });
     const belong = people === 0 ? '' : `\n${t('organizations.leaves', { count: people })}`;
     const done = await confirmAndRun(
@@ -96,13 +110,14 @@ function useDeleteOrganizationsFlow(): (organizations: readonly { id: string; na
         content: `${question}${belong}\n${t('common.cannotBeUndone')}`,
         buttons: { confirm: t('common.delete') },
       },
-      () => deleteOrganizations(ids),
+      () => service.delete(organizations.map((organization) => organization.id)),
     );
 
     if (!done) {
       return false;
     }
 
+    void changed();
     toasts.success(t('organizations.deleted', { count: organizations.length, name: first?.name ?? '' }));
 
     return true;

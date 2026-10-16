@@ -99,8 +99,7 @@ function useDeleteRolesFlow() {
     try {
       await service.deleteRoles(roles.map((role) => role.id));
     } catch (cause) {
-      scope.dispose();
-      await dialogs.warn({ title: 'Not deleted', content: cause instanceof Error ? cause.message : String(cause) });
+      await scope.warn({ title: 'Not deleted', content: cause instanceof Error ? cause.message : String(cause) });
       return false;
     }
 

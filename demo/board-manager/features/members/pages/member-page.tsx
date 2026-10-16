@@ -2,14 +2,14 @@ import { Anchor, Button, Group, SimpleGrid, Stack, Tabs, Text } from '@mantine/c
 import { Fragment, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import type { Person } from '../../../domain/index.js';
-import { boardIdsOf, getOrganization, getPerson } from '../../../infra/in-memory/index.js';
+import type { PersonSummary } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { appIcons, PageHeader, useDb } from '../../../shared/shared.js';
+import { appIcons, PageHeader } from '../../../shared/shared.js';
 import { NotFound } from '../../../shared/ui/not-found.js';
 import { MeetingTable } from '../../meetings/components/meeting-table.js';
 import { MembershipTable } from '../components/membership-table.js';
 import { useDeletePeopleFlow, useEditPersonFlow } from '../member-flows.js';
+import { usePerson } from '../reads.js';
 
 export { MemberPage };
 
@@ -20,9 +20,12 @@ const meetingPath = (meeting: { id: string; boardId: string }) => `/boards/${mee
 function MemberPage() {
   const t = useTranslate();
   const { personId = '' } = useParams();
-  const person = useDb((state) => getPerson(state, personId));
-  const organization = useDb((state) => getOrganization(state, person?.organizationId));
+  const { person, isPending } = usePerson(personId);
   const [tab, setTab] = useState<string | null>('overview');
+
+  if (isPending) {
+    return null;
+  }
 
   if (person === undefined) {
     return <NotFound what="member" />;
@@ -30,7 +33,7 @@ function MemberPage() {
 
   return (
     <Stack gap="md">
-      <PageHeader title={person.name} subtitle={organization?.name} />
+      <PageHeader title={person.name} subtitle={person.organization === '' ? undefined : person.organization} />
       <Tabs value={tab} onChange={setTab} keepMounted={false}>
         <Tabs.List>
           <Tabs.Tab value="overview">{t('common.overview')}</Tabs.Tab>
@@ -58,27 +61,25 @@ function MemberPage() {
 
 // The contact and the organization, as labels and values, with "Edit" (the person form in a dialog, like "Edit" in the
 // list) and "Delete" (then back to the list).
-function MemberOverview({ person }: { person: Person }) {
+function MemberOverview({ person }: { person: PersonSummary }) {
   const t = useTranslate();
   const editPerson = useEditPersonFlow();
   const deletePeople = useDeletePeopleFlow();
   const navigate = useNavigate();
-  const organization = useDb((state) => getOrganization(state, person.organizationId));
-  const boards = useDb((state) => boardIdsOf(state, person.id).length);
   const fields: readonly (readonly [string, ReactNode])[] = [
     [t('members.columns.name'), person.name],
     [t('members.columns.email'), <Anchor key="email" href={`mailto:${person.email}`} size="sm">{person.email}</Anchor>],
     [
       t('members.columns.organization'),
-      organization === undefined
+      person.organizationId === ''
         ? ''
         : (
-          <Anchor key="organization" component={Link} to={`/organizations/${organization.id}`} size="sm">
-            {organization.name}
+          <Anchor key="organization" component={Link} to={`/organizations/${person.organizationId}`} size="sm">
+            {person.organization}
           </Anchor>
         ),
     ],
-    [t('members.columns.boards'), String(boards)],
+    [t('members.columns.boards'), String(person.boardIds.length)],
   ];
 
   const remove = async () => {
@@ -97,7 +98,7 @@ function MemberOverview({ person }: { person: Person }) {
             size="xs"
             variant="default"
             leftSection={appIcons.edit}
-            onClick={() => void editPerson(person.id)}
+            onClick={() => void editPerson(person)}
           >
             {t('common.edit')}
           </Button>

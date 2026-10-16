@@ -2,6 +2,7 @@ import type { useToast } from '@local/overlays/react';
 import type { Meeting } from '../../../domain/index.js';
 import type { Dialogs } from '../../../shared/lib/flows.js';
 import { translate } from '../../../shared/lib/i18n/index.js';
+import type { MeetingService } from '../service.js';
 
 export { downloadMeetingPdf, previewMeetingPdf, printMeetingPdf };
 
@@ -10,7 +11,16 @@ export { downloadMeetingPdf, previewMeetingPdf, printMeetingPdf };
 
 type Toasts = ReturnType<typeof useToast>;
 
-const build = async (meeting: Meeting): Promise<Blob> => (await import('./report.js')).buildMeetingPdf(meeting.id);
+// The report of the meeting as it is now on the server.
+async function build(service: MeetingService, meeting: Meeting): Promise<Blob> {
+  const [data, { buildMeetingPdf }] = await Promise.all([service.report(meeting.id), import('./report.js')]);
+
+  if (data === undefined) {
+    throw new Error('The meeting does not exist anymore.');
+  }
+
+  return buildMeetingPdf(data);
+}
 
 // `Annual review – 2026-09-15.pdf`: the title (without characters a file name may not have) and the date.
 function fileName(meeting: Meeting): string {
@@ -32,8 +42,11 @@ const CREATE_TIME = 1200;
 
 // The PDF, built in a scope of the dialogs: until it is ready, the scope shows its spinner placeholder (after a short
 // delay), which the next dialog of the scope (the preview) replaces.
-async function create(meeting: Meeting): Promise<Blob> {
-  const [file] = await Promise.all([build(meeting), new Promise((resolve) => setTimeout(resolve, CREATE_TIME))]);
+async function create(service: MeetingService, meeting: Meeting): Promise<Blob> {
+  const [file] = await Promise.all([
+    build(service, meeting),
+    new Promise((resolve) => setTimeout(resolve, CREATE_TIME)),
+  ]);
 
   return file;
 }
@@ -70,11 +83,16 @@ function print(blob: Blob): Promise<void> {
 }
 
 // "Print": the PDF is built (with the spinner), then the browser's print dialog.
-async function printMeetingPdf(dialogs: Dialogs, toasts: Toasts, meeting: Meeting): Promise<void> {
+async function printMeetingPdf(
+  service: MeetingService,
+  dialogs: Dialogs,
+  toasts: Toasts,
+  meeting: Meeting,
+): Promise<void> {
   using scope = dialogs.open();
 
   try {
-    const file = await create(meeting);
+    const file = await create(service, meeting);
 
     scope.dispose();
     await print(file);
@@ -85,11 +103,16 @@ async function printMeetingPdf(dialogs: Dialogs, toasts: Toasts, meeting: Meetin
 }
 
 // "Download": the PDF is built (with the spinner) and saved (no toast: the browser shows the download).
-async function downloadMeetingPdf(dialogs: Dialogs, toasts: Toasts, meeting: Meeting): Promise<void> {
+async function downloadMeetingPdf(
+  service: MeetingService,
+  dialogs: Dialogs,
+  toasts: Toasts,
+  meeting: Meeting,
+): Promise<void> {
   using _spinner = dialogs.open();
 
   try {
-    save(await create(meeting), fileName(meeting));
+    save(await create(service, meeting), fileName(meeting));
   } catch (error) {
     console.error(error);
     toasts.error(translate('pdf.couldNotCreate'));
@@ -98,12 +121,17 @@ async function downloadMeetingPdf(dialogs: Dialogs, toasts: Toasts, meeting: Mee
 
 // "Preview": the PDF is built (with the spinner), then an extra wide, maximizable dialog with its pages, "Download"
 // (saves the same file) and "Close".
-async function previewMeetingPdf(dialogs: Dialogs, toasts: Toasts, meeting: Meeting): Promise<void> {
+async function previewMeetingPdf(
+  service: MeetingService,
+  dialogs: Dialogs,
+  toasts: Toasts,
+  meeting: Meeting,
+): Promise<void> {
   using scope = dialogs.open();
 
   try {
     // The pages are drawn (pdfjs) before the dialog opens, still under the spinner: it opens at its final size.
-    const [file, { PdfPages, renderPages }] = await Promise.all([create(meeting), import('./preview.js')]);
+    const [file, { PdfPages, renderPages }] = await Promise.all([create(service, meeting), import('./preview.js')]);
     const pages = await renderPages(file);
     const result = await scope.confirm({
       width: 'extraWide',

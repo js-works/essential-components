@@ -1,14 +1,13 @@
 import { Button, Group, SimpleGrid, Stack, Tabs, Text } from '@mantine/core';
 import { Fragment, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { useShallow } from 'zustand/react/shallow';
-import { getBoard, getBoardRow } from '../../../infra/in-memory/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { appIcons, formatDateTime, PageHeader, useDb } from '../../../shared/shared.js';
+import { appIcons, formatDateTime, PageHeader } from '../../../shared/shared.js';
 import { NotFound } from '../../../shared/ui/not-found.js';
 import { MeetingTable } from '../../meetings/components/meeting-table.js';
 import { MemberTable } from '../components/member-table.js';
 import { useDeleteBoardsFlow, useEditBoardFlow } from '../flows/board-flows.js';
+import { useBoard } from '../reads.js';
 
 export { BoardPage };
 
@@ -19,8 +18,12 @@ const meetingPath = (meeting: { id: string; boardId: string }) => `/boards/${mee
 function BoardPage() {
   const t = useTranslate();
   const { boardId = '' } = useParams();
-  const board = useDb((state) => getBoard(state, boardId));
+  const { board, isPending } = useBoard(boardId);
   const [tab, setTab] = useState<string | null>('overview');
+
+  if (isPending) {
+    return null;
+  }
 
   if (board === undefined) {
     return <NotFound what="board" />;
@@ -47,7 +50,7 @@ function BoardPage() {
           />
         </Tabs.Panel>
         <Tabs.Panel value="members" pt="md">
-          <MemberTable boardId={board.id} />
+          <MemberTable board={board} />
         </Tabs.Panel>
       </Tabs>
     </Stack>
@@ -61,8 +64,7 @@ function BoardOverview({ boardId }: { boardId: string }) {
   const editBoard = useEditBoardFlow();
   const deleteBoards = useDeleteBoardsFlow();
   const navigate = useNavigate();
-  // a new row object on every call: compared shallowly, else the store would see a change at every read
-  const board = useDb(useShallow((state) => getBoardRow(state, boardId)));
+  const { board } = useBoard(boardId);
 
   if (board === undefined) {
     return null;
@@ -93,7 +95,7 @@ function BoardOverview({ boardId }: { boardId: string }) {
             size="xs"
             variant="default"
             leftSection={appIcons.edit}
-            onClick={() => void editBoard(board.id)}
+            onClick={() => void editBoard(board)}
           >
             {t('common.edit')}
           </Button>

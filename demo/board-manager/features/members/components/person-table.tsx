@@ -1,20 +1,54 @@
 import { useDataTableController } from '@local/data-table/react';
-import type { SavedFilter, TableActions, TableColumns, TableFilters } from '@local/data-table/react';
+import type {
+  RowQuery,
+  RowSource,
+  SavedFilter,
+  TableActions,
+  TableColumns,
+  TableFilters,
+} from '@local/data-table/react';
+
 import { Anchor } from '@mantine/core';
 import { Link, useNavigate } from 'react-router';
-import type { Role } from '../../../domain/index.js';
-import { fetchPeople } from '../../../infra/in-memory/index.js';
-import type { PersonRow } from '../../../infra/in-memory/index.js';
+import type { PersonCriteria, PersonSortKey, PersonSummary } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { DataTable, PAGE_SIZE_OPTIONS, useDb, useReloadOnChange } from '../../../shared/shared.js';
+import { searchText, toPaging, toSort, usePageSource } from '../../../shared/lib/table-query.js';
+import { DataTable, PAGE_SIZE_OPTIONS } from '../../../shared/shared.js';
 import { sharedBy, useSavedFilters } from '../../../shared/ui/saved-filters.js';
 import { deleteAction, editAction, newAction, openAction } from '../../../shared/ui/table-actions.js';
 import { boardFilter } from '../../boards/filters/board-filters.js';
+import { useBoardList } from '../../boards/reads.js';
+import { useOrganizationService } from '../../organizations/context.js';
 import { organizationFilter } from '../../organizations/organization-filters.js';
+import { useMemberService } from '../context.js';
+import { memberKeys } from '../keys.js';
 import { personFilter } from '../member-filters.js';
 import { useCreatePersonFlow, useDeletePeopleFlow, useEditPersonFlow } from '../member-flows.js';
 
 export { memberPath, PersonTable };
+
+const SORT_KEYS: readonly PersonSortKey[] = ['name', 'organization'];
+
+function toCriteria(query: RowQuery, organizationId: string | undefined): PersonCriteria {
+  const { name, organization, boards } = query.filters as {
+    name?: string[];
+    organization?: string[];
+    boards?: string[];
+  };
+
+  return { text: searchText(query), names: name, organizations: organization, boards, organizationId };
+}
+
+function useSource(organizationId: string | undefined, reload: () => void): RowSource<PersonSummary> {
+  const service = useMemberService();
+
+  return usePageSource(
+    [...memberKeys.all, 'people', organizationId ?? ''],
+    (query, signal) =>
+      service.find(toCriteria(query, organizationId), toSort(query, SORT_KEYS), toPaging(query), signal),
+    reload,
+  );
+}
 
 // A member's page.
 const memberPath = (person: { id: string }) => `/members/${person.id}`;
@@ -25,7 +59,7 @@ const COLLEAGUES_FILTERS: readonly SavedFilter[] = [
   sharedBy('Jonas Weber', 'Works Council', { organization: ['Works Council'] }),
 ];
 
-function useColumns(organizationId: string | undefined): TableColumns<PersonRow> {
+function useColumns(organizationId: string | undefined): TableColumns<PersonSummary> {
   const t = useTranslate();
 
   return [
@@ -51,6 +85,7 @@ function useColumns(organizationId: string | undefined): TableColumns<PersonRow>
       width: 4,
       hideable: true,
       wrap: true,
+      render: (row) => row.boards.join(', '),
     },
     {
       key: 'roles',
@@ -58,23 +93,24 @@ function useColumns(organizationId: string | undefined): TableColumns<PersonRow>
       width: 2,
       hideable: true,
       // The stored roles ("Chair, Member") in the current language.
-      render: (row) =>
-        row.roles === '' ? '' : row.roles.split(', ').map((role) => t(`roles.${role as Role}`)).join(', '),
+      render: (row) => row.roles.map((role) => t(`roles.${role}`)).join(', '),
     },
   ];
 }
 
 function useFilters(): TableFilters {
-  const boards = useDb((state) => state.boards);
+  const boards = useBoardList();
+  const members = useMemberService();
+  const organizations = useOrganizationService();
 
   return {
-    name: personFilter,
-    organization: organizationFilter,
+    name: personFilter(members.suggest),
+    organization: organizationFilter(organizations.suggest),
     boards: boardFilter(boards),
   };
 }
 
-function useActions(organizationId: string | undefined): TableActions<PersonRow> {
+function useActions(organizationId: string | undefined): TableActions<PersonSummary> {
   const t = useTranslate();
   const navigate = useNavigate();
   const createPerson = useCreatePersonFlow(organizationId);
@@ -84,7 +120,7 @@ function useActions(organizationId: string | undefined): TableActions<PersonRow>
   return [
     newAction(t('members.new'), createPerson),
     openAction((row) => navigate(memberPath(row))),
-    editAction((row) => editPerson(row.id)),
+    editAction(editPerson),
     deleteAction(deletePeople),
   ];
 }
@@ -96,13 +132,12 @@ function useActions(organizationId: string | undefined): TableActions<PersonRow>
 function PersonTable(
   { organizationId, title, subtitle }: { organizationId?: string; title: string; subtitle: string },
 ) {
-  const tableCtrl = useDataTableController<PersonRow>();
+  const tableCtrl = useDataTableController<PersonSummary>();
   const columns = useColumns(organizationId);
   const filters = useFilters();
   const actions = useActions(organizationId);
   const savedFilters = useSavedFilters('board-manager:saved-filters:members', COLLEAGUES_FILTERS);
-
-  useReloadOnChange(tableCtrl);
+  const source = useSource(organizationId, tableCtrl.reload);
 
   return (
     <DataTable
@@ -112,7 +147,7 @@ function PersonTable(
       density="compact"
       searchable
       reloadable
-      source={fetchPeople(organizationId)}
+      source={source}
       rowKey="id"
       columns={columns}
       filters={filters}
