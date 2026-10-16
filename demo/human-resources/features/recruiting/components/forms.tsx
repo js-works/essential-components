@@ -1,12 +1,11 @@
 import { NumberInput, SimpleGrid, Stack, Switch, Text, Textarea, TextInput } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
-import type { ReactElement } from 'react';
 import { z } from 'zod';
 import { addDays, CANDIDATE_SOURCES, EMPLOYMENT_TYPES, OPENING_STATUSES, todayDate } from '../../../domain/index.js';
 import type { Candidate, HrData, Opening } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { useForm } from '../../../shared/lib/useForm.js';
-import { FormSelect } from '../../../shared/ui/FormSelect.js';
+import { useForm } from '../../../shared/lib/use-form.js';
+import { FormSelect } from '../../../shared/ui/form-select.js';
 import { departmentOptions, managerOptions } from '../../hr/index.js';
 
 export { CandidateForm, candidateSchema, HireForm, hireSchema, OpeningForm, openingSchema };
@@ -31,7 +30,7 @@ function OpeningForm({ data, opening, save }: {
   data: HrData;
   opening?: Opening;
   save: (values: z.output<typeof openingSchema>) => Promise<void>;
-}): ReactElement {
+}) {
   const t = useTranslate();
   const { DialogForm, field } = useForm(openingSchema, {
     labels: 'openingForm',
@@ -86,7 +85,7 @@ const candidateSchema = z.object({
 function CandidateForm({ candidate, save }: {
   candidate?: Candidate;
   save: (values: z.output<typeof candidateSchema>) => Promise<void>;
-}): ReactElement {
+}) {
   const t = useTranslate();
   const { DialogForm, field } = useForm(candidateSchema, {
     labels: 'candidateForm',
@@ -139,7 +138,7 @@ function HireForm({ data, candidate, opening, save }: {
   candidate: Candidate;
   opening: Opening;
   save: (values: z.output<typeof hireSchema>) => Promise<void>;
-}): ReactElement {
+}) {
   const t = useTranslate();
   const today = todayDate();
   const { DialogForm, field } = useForm(hireSchema, {

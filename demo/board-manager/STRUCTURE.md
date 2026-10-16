@@ -25,7 +25,9 @@ files are moved to match them.
   │   ├── boards/
   │   │   ├── service.ts      what the UI calls; without logic just the repository (`(repo) => repo`)
   │   │   ├── pages/          BoardsPage, BoardPage
-  │   │   ├── components/     what only this feature needs (e.g. a table and its mapping to the criteria; boardFlows)
+  │   │   ├── components/     what only this feature needs (e.g. a table and its mapping to the criteria)
+  │   │   ├── flows/          the feature's flows, one hook per use case (board-flows.tsx)
+  │   │   ├── filters/        its domain filters (board-filters.ts)
   │   │   └── index.ts        the only import path for other features
   │   ├── meetings/           components/ MeetingTable, Minutes; pdf/
   │   ├── members/            components/ PersonTable
@@ -139,12 +141,14 @@ interface ProductRepository {
 ## Decisions
 
 - 2026-10-15 (the user's choice, proposed at about 70%; only the shared ones was weighed): a table filter of a domain
-  concept lives in the feature that owns the concept, in its `filters.tsx`, however many tables use it; generic ones
+  concept lives in the feature that owns the concept, in its `<subject>-filters.ts`, however many tables use it; generic ones
   on plain fields (`textFilter()`, `dateRangeFilter()`) stay inline. One that needs texts or data is a function of
   them, not a hook (hooks for a few hours: `useRoleFilter()`, …): it is called in a table's `filtersOf`, outside the
   component. `members/` (`personFilter`, `roleFilter(t)`), `organizations/` (`organizationFilter`,
   `countryFilter(organizations)`), `boards/` (`boardFilter(boards)`), `meetings/` (`meetingStatusFilter(t)`,
   `minutesFilter(t)`, `documentTypeFilter`). The same rule in the other four apps (see the root's `CLAUDE.md`).
+- 2026-10-16 (the user's decision; a folder for one file was proposed against, at about 60%): a feature's flows and
+  filters are in folders of their own, `flows/` and `filters/`, even with one file; the boards feature first.
 - 2026-10-03: group by feature, with `app/` and `shared/` (not by layer).
 - 2026-10-03: a feature-based structure (not Feature-Sliced Design); every feature has its own `api/`, UI and
   `index.ts`. (Its `api/` became `service.ts`, see the services decision below.)

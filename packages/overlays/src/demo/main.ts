@@ -1,6 +1,6 @@
 // The design language first, so the demo's own CSS comes after it.
 import "./ui/ui.css";
-import { OverlaysDemo } from "./OverlaysDemo.js";
+import { OverlaysDemo } from "./overlays-demo.js";
 
 // The page around the demo: its global switch sets the color scheme for everything on the
 // page. (No language switch: nothing in this demo follows `<html lang>`; the React i18n demo

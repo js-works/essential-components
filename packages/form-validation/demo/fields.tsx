@@ -1,5 +1,5 @@
-import type { InputHTMLAttributes, ReactElement, SelectHTMLAttributes } from 'react';
-import { FieldMessage } from './FieldMessage.js';
+import type { InputHTMLAttributes, SelectHTMLAttributes } from 'react';
+import { FieldMessage } from './field-message.js';
 
 export { CheckboxField, SelectField, TextField };
 
@@ -7,7 +7,7 @@ export { CheckboxField, SelectField, TextField };
 // element (what `field.x()` hands over: name, id, ref, required, onChange, onBlur, `aria-invalid`, ...).
 type Common = { label: string; errorText?: string };
 
-function Label({ label, id, required }: { label: string; id: string; required: boolean }): ReactElement {
+function Label({ label, id, required }: { label: string; id: string; required: boolean }) {
   return (
     <label className="ui-label" htmlFor={id}>
       {label}
@@ -16,11 +16,11 @@ function Label({ label, id, required }: { label: string; id: string; required: b
   );
 }
 
-function Message({ id, message }: { id: string; message?: string }): ReactElement | null {
+function Message({ id, message }: { id: string; message?: string }) {
   return message === undefined ? null : <FieldMessage id={id} message={message} />;
 }
 
-function TextField({ label, errorText, ...rest }: Common & InputHTMLAttributes<HTMLInputElement>): ReactElement {
+function TextField({ label, errorText, ...rest }: Common & InputHTMLAttributes<HTMLInputElement>) {
   const errorId = `${rest.id}-error`;
 
   return (
@@ -38,7 +38,7 @@ function TextField({ label, errorText, ...rest }: Common & InputHTMLAttributes<H
 
 function SelectField(
   { label, errorText, children, ...rest }: Common & SelectHTMLAttributes<HTMLSelectElement>,
-): ReactElement {
+) {
   const errorId = `${rest.id}-error`;
 
   return (
@@ -56,7 +56,7 @@ function SelectField(
   );
 }
 
-function CheckboxField({ label, errorText, ...rest }: Common & InputHTMLAttributes<HTMLInputElement>): ReactElement {
+function CheckboxField({ label, errorText, ...rest }: Common & InputHTMLAttributes<HTMLInputElement>) {
   const errorId = `${rest.id}-error`;
 
   return (

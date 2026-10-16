@@ -17,6 +17,7 @@ import type {
   DialogProps,
   DialogSlots,
 } from "../../api/dialogs/adapter.js";
+
 import type { OverlayContent } from "../../api/dialogs/content.js";
 import type { FormConfirm } from "../../api/dialogs/dialog.js";
 import type { FormProps, ReactContent } from "../../api/react/content.js";

@@ -1,4 +1,4 @@
-import { defineUseForm } from './defineUseForm.js';
+import { defineUseForm } from './define-use-form.js';
 import { catalogs } from './messages/index.js';
 import { binding, formMeta, formRegistry } from './meta.js';
 

@@ -76,7 +76,7 @@ and imports the files it needs from its `CLAUDE.md`.
       decided 2026-10-03.
     - "Internals": the folders
       "Components" ("Data table", "File upload", "Dialogs + Toasts", "Form validation" (2026-10-07; a "Planned"
-      placeholder before)) and "Planned" ("Autocomplete"; placeholders of `demo/planned/PlannedDemo.ts` (`planned-demo`): what it will be, and that there is
+      placeholder before)) and "Planned" ("Autocomplete"; placeholders of `demo/planned/planned-demo.ts` (`planned-demo`): what it will be, and that there is
       no demo yet, in a light gray box with rounded corners, `demo.css`).
     - The apps of "Apps" are pinned (`placement: 'pinned'`, 2026-10-08, the user's wish; File Center and User Manager
       too for a few hours): entries of
@@ -107,13 +107,13 @@ and imports the files it needs from its `CLAUDE.md`.
       `#dialogs-toasts/react-i18n`, `#board-manager/boards/b1`. No hash: Human Resources (the cockpit's `defaultItem`, 2026-10-08, the user's wish; the start page for a few hours that day, Human Resources before, the Board Manager since 2026-10-03 before that). The cockpit's start page (the attribute `start-page`, set by the footer's "Navigation" menu, "Start page": On by default, Off switchable; 2026-10-08, the user's wish: the title, the filter, the apps as cards by folder) shows when every app is closed, and by the logo.
       - The browser's Back and Forward (2026-10-07, the user's wish; before, the apps only replaced the hash): opening a
         cockpit app is a new history entry (the cockpit's `pushState`), and so is every new page inside the root's five
-        apps (`app/hashHistory.ts`, the same file in each: a change goes into all five). Their memory routers follow the
+        apps (`app/hash-history.ts`, the same file in each: a change goes into all five). Their memory routers follow the
         browser's Back and Forward, and their own Back and Forward buttons move the browser too (unless another app was
         used in between: then they replace the entry). The package demos' tabs (`ui.ts`) still only replace the hash.
   - `demo/main.ts`: creates the cockpit (`createCockpitClass`, title "Back Office", subtitle "Acme Corporate" (2026-10-03; "App Center" without a subtitle before), with the search, a made-up
     signed-in user) with
     the demos. Each is loaded when it is opened
-    the first time (`load`: a dynamic `import()` by a relative path, e.g. `../packages/file-upload/demo/FileUploadDemo.js`)
+    the first time (`load`: a dynamic `import()` by a relative path, e.g. `../packages/file-upload/demo/file-upload-demo.js`)
     and registered then (`data-table-demo`, `file-upload-demo`, `overlays-demo`; the root's own `file-center-demo`,
     `board-manager-demo`, `user-manager-demo`, `time-tracker-demo` and `human-resources-demo`). Each demo element is a light DOM custom element of its package (see "Demo element" in
     the package's `CLAUDE.md`), exported and not registered.
@@ -206,24 +206,43 @@ and imports the files it needs from its `CLAUDE.md`.
   plural (`MembersTable`). Rolled out the same day: `MeetingTable`, `PersonTable`, `MembershipTable`,
   `DocumentTable` (Board Manager, Human Resources), `GrantTable`, `CandidateTable`.
 - The structure of a table in the root's apps (2026-10-15, the user's wishes, step by step on the Board Manager's
-  members table, then rolled out to all five apps):
+  members table, then rolled out to all five apps; target rewritten the same day):
   - A table is a component of its own file (`features/<x>/components/<Name>Table.tsx`), unless it is the whole page
     (a module's list, e.g. `UsersPage`).
-  - Its columns, filters and actions are functions outside the component: `columnsOf(t)`, `filtersOf(t, data)`,
-    `actionsOf(t, ctx)`, passed straight to the table (`columns={columnsOf(t)}`); a plain constant when they depend on
-    nothing (`const columns = defineColumns<Row>([…])`, in the apps without texts). Dividing ranks above saving explicit
-    types (the user's rule): a context type for `actionsOf` is fine.
-  - What the actions do lives outside the component, in flows: the Board Manager's are plain functions with a context
-    (`shared/lib/flows.ts`: `TableContext<Row>`, the dialogs, toasts and the table to reload; `<x>Flows.tsx`, texts by
-    `translate()`); the other four apps keep their flow hooks (`useEmployeeFlows()` …, each with a type of what it
-    gives, `EmployeeFlows`), passed to `actionsOf` (plain functions would need the same context assembled in every
-    component).
-  - A filter of a domain concept lives in the feature that owns it (`features/<x>/filters.tsx`, through its `index.ts`
+  - Its columns, filters and actions are hooks of its file, outside the component (2026-10-15, the user's choice,
+    proposed at about 70%, like MUI: React does the wiring, nothing is passed by hand): `useColumns()`, `useFilters()`,
+    `useActions(boardId)` (function declarations; the same names in every table file, a convention), each taking what
+    it needs itself (`t`, a service, the flow hooks), called at the top of the component (`const columns =
+    useColumns();`, not inside the JSX: the rules of hooks, the linters). The way there, the same day: `columnsOf(t)`,
+    `filtersOf(t)`, `actionsOf(t, ctx)` (then `createColumns(t)` and `createFilters(t)`, the actions in the component);
+    a context of the package (`context` in the config, `columns={createColumns}`, AG Grid's way) was weighed and dropped
+    (a second mechanism for little: `(t)` per table). A plain constant when the columns depend on nothing (the apps
+    without texts).
+  - What the actions do lives outside the component, in flows. The target (2026-10-15, the user's decisions, worked out
+    on the Board Manager's `MemberTable`, the rollout to the other tables later):
+    - One hook per flow, a use case each (separation of concerns; a hook per subject, `useMemberFlows`, was proposed and
+      dropped): `useAddMemberFlow(boardId)` gives the function the action calls (`features/<x>/flows/use…Flow.tsx`). A
+      hook, not a plain function with a context (that was the state for a few hours: plain flows in `<x>Flows.tsx` with
+      `TableContext<Row>` of `shared/lib/flows.ts`): it takes the dialogs, toasts and `t` itself.
+    - Early returns: `const result = await dialogs.form(…); if (result.canceled) { return; }`.
+    - A flow does not know a table: the table follows the data itself (the Board Manager: `useReloadOnChange(tableCtrl)`
+      of `shared.tsx`, a subscription to the store; the other apps: their queries, `changed()`), so a flow can be used
+      anywhere (a button on an overview).
+    - The table's controller is `tableCtrl` (`nav` before, from the package's old name, the data navigator).
+    - No comments above `useColumns`, `useFilters` and `useActions`, nor above a table's `const columns`, `const filters`
+      (2026-10-16, the user's wish: they repeat the name and do not help); what a table does that is not obvious goes into the app's `CLAUDE.md`.
+    - Explicit types, not the data table's `defineColumns`, `defineFilters`, `defineActions` (2026-10-15, the user's
+      wish: they were not the best idea): `useColumns(): TableColumns<Row>`, `useFilters(): TableFilters`,
+      `useActions(…): TableActions<Row>` (the list types of the data table, 2026-10-15).
+    - Rolled out to every table of the five apps (2026-10-15/16). The other four apps' flow hooks per subject
+      (`useEmployeeFlows()` …) were split, one hook per use case, in the features' `flows.tsx`; the File Center's
+      `useEntryActions` became `entry-flows.tsx`. Tables there follow the data by their queries (`changed()`).
+  - A filter of a domain concept lives in the feature that owns it (`features/<x>/<subject>-filters.ts`, through its `index.ts`
     where the app has that rule), however many tables use it; generic ones (`textFilter()`, `dateRangeFilter()`) stay
     inline. A filter that needs texts or data is a function of them (`roleFilter(t)`, `boardFilter(boards)`), not a
     hook: it is called inside `filtersOf`.
 - The standard actions of a table in the root's apps (2026-10-14, the user's choice of three, proposed at about 70%):
-  builders from `<app>/shared/ui/tableActions.ts` (plain functions since 2026-10-15, the user's wish: the hook
+  builders from `<app>/shared/ui/table-actions.ts` (plain functions since 2026-10-15, the user's wish: the hook
   `useTableActions()` before, only for `t`; their texts from `translate()` when called: `newAction(label, onClick)`,
   `openAction(onClick)`, `editAction(onClick)`, `deleteAction(onClick)`, each with a few options: `key`, `label`, `tip`,
   `show`, `default`, `contextMenu`, `visible`; a `label` replaces the standard tip, 2026-10-15), in the app's look and
@@ -242,7 +261,7 @@ and imports the files it needs from its `CLAUDE.md`.
   Manager: Users, Access. Each with 2 or 3 made-up colleagues' shared filters (`sharedBy(owner, name, filters)`, first in
   the list, not removable; date ranges relative to today, `daysFromToday`) and its own `localStorage` key
   (`<app>:saved-filters:<table>`), with sharing (one user here: own shared ones are only marked).
-  `<app>/shared/ui/savedFilters.ts` (`useSavedFilters`), the same file in each of the five apps: a change goes into all
+  `<app>/shared/ui/saved-filters.ts` (`useSavedFilters`), the same file in each of the five apps: a change goes into all
   five.
 - The toolbar of a table in the root's apps (2026-10-09, the user's wish): one action in the accent
   (`variant: 'primary'`), normally the "New …" or "Add …" one, else the main one (an upload, "Report sick"); the
@@ -259,7 +278,7 @@ and imports the files it needs from its `CLAUDE.md`.
   calendar, a select's list, `floatingStrategy: 'fixed'`), so the open dialog does not clip (2026-10-10, `overflow:
   visible`; `hidden` before, which cut off the calendar in the Board Manager's "Edit meeting"): its body scrolls.
 - Browsers (2026-10-03): see `docs/conventions/general.md`; the root's and the Board Manager's Vite configs build
-  with `esnext` too. The default target lowered `light-dark()` into variables that follow the page's color scheme, not
+  the same way (`es2024` for the JavaScript, `esnext` for the CSS, since 2026-10-16; `esnext` for both before). The default target lowered `light-dark()` into variables that follow the page's color scheme, not
   the element's `color-scheme`: on the published page the cockpit's dark sidebar and menus got light colors.
 - `.npmrc` (the root one counts in a workspace; npm ignores those of the packages): `ignore-scripts=true`,
   `min-release-age=7`.
@@ -281,6 +300,11 @@ and imports the files it needs from its `CLAUDE.md`.
 
 ## TODO
 
+- Decide about the name `TFunction` (2026-10-15, the user's wish; later): i18next's type of its `t`, which the apps'
+  translation function has (the Board Manager's `Translate = ReturnType<typeof useTranslate>`, a
+  `TFunction<'app', undefined>`). It is no name of ours (none of our files mentions it), but it shows on hover and in
+  errors. Open: whether the apps keep their own name for it (`Translate`), name it more plainly (e.g.
+  `TranslateFunction`), or use i18next's directly.
 - Review the overlays' `attempt.askDiscard()` (2026-10-09, later): the shortcut for the discard question
   (`ask()` with the library's texts, critical, title "Unsaved changes"). Open: is it the right name
   (alternatives: `confirmDiscard()`, `guardUnsaved()`); whether a second shortcut is worth it (e.g. Save / Discard / Keep

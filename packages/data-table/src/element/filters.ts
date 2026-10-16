@@ -1,6 +1,6 @@
 import type * as DataTable from '../api/index.js';
 import type * as DataTableComponent from '../api/react/index.js';
-import * as reactFilters from '../core/view/ColumnFilters.js';
+import * as reactFilters from '../core/view/column-filters.js';
 import { contentRendererOf, nodeContent } from './content.js';
 
 export {
@@ -31,7 +31,7 @@ function reactFilterOf(filter: unknown): DataTableComponent.TableFilter | undefi
   return typeof filter === 'object' && filter !== null ? builtIns.get(filter) : undefined;
 }
 
-// The same built-in filters as in React (see ColumnFilters.tsx), with the same settings.
+// The same built-in filters as in React (see column-filters.tsx), with the same settings.
 function textFilter(settings: DataTable.TextFilterSettings = {}): DataTable.BuiltInFilter {
   return builtIn(reactFilters.textFilter(settings));
 }

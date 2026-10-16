@@ -19,6 +19,7 @@ import {
   noteIconSvg,
   restoreIconSvg,
 } from "./icons.js";
+
 import {
   CLOSE_ANIMATION_FALLBACK_MS,
   DIALOG_GROW_ANIM_MS,
@@ -29,12 +30,14 @@ import {
   SPINNER_SWAP_OUT_MS,
   SWAP_OUT_MS,
 } from "./styles.js";
+
 import type {
   DialogAdapter,
   DialogAdapterFactory,
   DialogProps,
   DialogSpec,
 } from "../../api/dialogs/adapter.js";
+
 import { defaultDialogTheme } from "../theme.js";
 import type { DialogTheme } from "../../api/dialogs/theme.js";
 import type { DialogButtonView, DialogMount } from "../view.js";

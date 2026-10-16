@@ -1,6 +1,14 @@
 // The checklists of joiners and leavers (onboarding, offboarding): the list, a checklist's page, new, delete.
 
-export { useChecklistFlows } from './flows.js';
-export { ChecklistPage } from './pages/ChecklistPage.js';
-export { ChecklistsPage } from './pages/ChecklistsPage.js';
-export { taskTitle } from './taskTitle.js';
+export {
+  useAddTaskFlow,
+  useCreateChecklistFlow,
+  useDeleteChecklistsFlow,
+  useRemoveTaskFlow,
+  useSetTaskDoneFlow,
+  useStartChecklistFlow,
+} from './checklist-flows.js';
+
+export { ChecklistPage } from './pages/checklist-page.js';
+export { ChecklistsPage } from './pages/checklists-page.js';
+export { taskTitle } from './task-title.js';

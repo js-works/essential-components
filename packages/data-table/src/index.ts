@@ -1,4 +1,4 @@
-import { generalAction, groupAction, multiRowAction, singleRowAction } from './element/actionBuilders.js';
+import { generalAction, groupAction, multiRowAction, singleRowAction } from './element/action-builders.js';
 import { defineActions, defineColumns, defineFilters } from './element/definitions.js';
 import { dateColumnEditor, selectColumnEditor, textColumnEditor } from './element/editors.js';
 import {
@@ -9,7 +9,8 @@ import {
   selectFilter,
   textFilter,
 } from './element/filters.js';
-import { setupDataTable } from './element/setupDataTable.js';
+
+import { setupDataTable } from './element/setup-data-table.js';
 
 export {
   autocompleteFilter,
@@ -30,6 +31,7 @@ export {
   textColumnEditor,
   textFilter,
 };
+
 export type * from './api/index.js';
 
 // The main entry, `@local/data-table`: the custom element. React is bundled into its build, so an app needs none.

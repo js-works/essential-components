@@ -1,5 +1,5 @@
 import { Document, Page, pdf, StyleSheet, Text, View } from '@react-pdf/renderer';
-import type { ReactElement, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { agendaNumbers, agendaOf, ROLES } from '../../../domain/index.js';
 import type { AgendaEntry, Meeting, MeetingDocument } from '../../../domain/index.js';
 import { db, getBoard, getMeeting, getPerson } from '../../../infra/in-memory/index.js';
@@ -94,7 +94,7 @@ async function buildMeetingPdf(meetingId: string): Promise<Blob> {
   return pdf(<MeetingReport state={state} meeting={meeting} />).toBlob();
 }
 
-function MeetingReport({ state, meeting }: { state: Db; meeting: Meeting }): ReactElement {
+function MeetingReport({ state, meeting }: { state: Db; meeting: Meeting }) {
   const board = getBoard(state, meeting.boardId)?.name ?? '';
   const agenda = agendaOf(state, meeting.id);
   const numbers = agendaNumbers(agenda);
@@ -179,7 +179,7 @@ function MeetingReport({ state, meeting }: { state: Db; meeting: Meeting }): Rea
   );
 }
 
-function Fact({ label, children }: { label: string; children: ReactNode }): ReactElement {
+function Fact({ label, children }: { label: string; children: ReactNode }) {
   return (
     <View style={styles.fact}>
       <Text style={styles.label}>{label}</Text>
@@ -195,7 +195,7 @@ function AgendaEntryView({ state, entry, previous, numbers }: {
   entry: AgendaEntry;
   previous: AgendaEntry | undefined;
   numbers: Map<string, string>;
-}): ReactElement {
+}) {
   if (entry.type === 'section') {
     return (
       <Text style={styles.section} minPresenceAhead={40}>
@@ -249,7 +249,7 @@ function AgendaEntryView({ state, entry, previous, numbers }: {
   );
 }
 
-function DocumentLine({ document }: { document: MeetingDocument }): ReactElement {
+function DocumentLine({ document }: { document: MeetingDocument }) {
   return (
     <View style={styles.document}>
       <Text style={styles.documentName}>{document.name}</Text>
@@ -282,7 +282,7 @@ type Block = {
 // images, ...) as their text. Nested blocks are indented. `start`: the number of the numbered list item before them.
 function BlockList(
   { state, blocks, start = 0 }: { state: Db; blocks: readonly Block[]; start?: number },
-): ReactElement {
+) {
   let number = start;
 
   return (
@@ -296,7 +296,7 @@ function BlockList(
   );
 }
 
-function BlockView({ state, block, number }: { state: Db; block: Block; number: number }): ReactElement {
+function BlockView({ state, block, number }: { state: Db; block: Block; number: number }) {
   const text = <InlineText state={state} content={block.content} />;
   const children = (block.children?.length ?? 0) > 0 && (
     <View style={{ marginLeft: 12 }}>

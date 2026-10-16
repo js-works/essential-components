@@ -41,21 +41,22 @@ structure completely (`demo/board-manager/STRUCTURE.md`): a reference for its ph
     `size` is its number of entries), `move()` and `remove()` for a mix of folders and files, `overview()` (the start
     page's numbers). `EntryRow`: the table's row type (built here, not in the domain).
   - `labels.ts`: the names of the kinds of file (`KIND_LABELS`).
-  - `useEntryActions.tsx`: what the three tables share: `setFavorite`, and the drawers of details (`showDetails`,
-    `showFileDetails`). The drawers' contents get their callbacks as props (no hooks inside them).
-  - `components/`: also `EntryName` (the name with its icon and star), `Favorite.tsx` (`FavoriteStar`,
+  - `entry-flows.tsx`: what the three tables share, one hook per use case (2026-10-15; `useEntryActions.tsx`, one hook
+    for all, before): `useSetFavoriteFlow`, and the drawers of details (`useShowDetailsFlow`, `useShowFileDetailsFlow`);
+    `flows.tsx`: the flows of a folder's contents (`useNewFolderFlow`, `useUploadFilesFlow`, …). The drawers' contents get their callbacks as props (no hooks inside them).
+  - `components/`: also `EntryName` (the name with its icon and star), `favorite.tsx` (`FavoriteStar`,
     `FavoriteButton`), `FolderDetails`.
   - `keys.ts`: the query keys (TanStack Query), all under `['media']`; a change invalidates them all.
-  - `context.tsx`: the service's React context (`useBrowserService`), and `folderPath()` (the route of a folder).
-  - `components/`: `FolderTree`, `NameForm`, `MoveForm`, `FileDetails`; `pages/FolderPage.tsx`: the table and its
+  - `context.ts`: the service's React context (`useBrowserService`), and `folderPath()` (the route of a folder).
+  - `components/`: `FolderTree`, `NameForm`, `MoveForm`, `FileDetails`; `pages/folder-page.tsx`: the table and its
     actions.
   - `index.ts`: the only import path for the app.
 - `shared/`: no domain knowledge except icons per kind: `ui/scope.tsx` (Mantine's scope, `.file-center`, and the
-  page's color scheme), `ui/dataTable.tsx` (the data table in Mantine's look), `ui/icons.tsx`, `lib/format.ts`,
-  `lib/useQuerySource.ts`.
-- `app/`: the wiring and the frame: `FileCenterDemo.tsx` (the element, light DOM, registered as
+  page's color scheme), `ui/data-table.tsx` (the data table in Mantine's look), `ui/icons.tsx`, `lib/format.ts`,
+  `lib/use-query-source.ts`.
+- `app/`: the wiring and the frame: `file-center-demo.tsx` (the element, light DOM, registered as
   `file-center-demo`; it creates the repositories, the service and the query client, and provides them),
-  `App.tsx` (routes, layout, app header, history, the hash), `look.tsx` (Mantine's theme and the overlays' config, taken
+  `app.tsx` (routes, layout, app header, history, the hash), `look.tsx` (Mantine's theme and the overlays' config, taken
   from the Board Manager), `file-center.css`.
   - The theme (2026-10-04): `modernTheme` of `packages/mantine-themes` merged with the app's own, like the Board Manager's:
     smaller corners and a bit more contrast (see its `CLAUDE.md`).
@@ -75,7 +76,7 @@ structure completely (`demo/board-manager/STRUCTURE.md`): a reference for its ph
 ## App
 
 - Saved filters (2026-10-11, the user's wish) in Files (a folder's list), Recent and Favorites, with colleagues' shared
-  filters: see "Saved filters in the root's apps" in the root's `CLAUDE.md` (`shared/ui/savedFilters.ts`).
+  filters: see "Saved filters in the root's apps" in the root's `CLAUDE.md` (`shared/ui/saved-filters.ts`).
 - Modules (2026-10-08, the user's wish, built one by one): Overview, Files, Recent, Favorites, Trash. Done so far:
   all five.
 - Trash (2026-10-08; `/trash`, `features/trash/`):
@@ -130,7 +131,7 @@ structure completely (`demo/board-manager/STRUCTURE.md`): a reference for its ph
 - Routes: `/` (the start page), `/files` (the root, "Files") and `/files/<id>` (`/folders/<id>` before 2026-10-08), in
   a memory router, mirrored in the hash after `#file-center` (`#file-center/files/logos`): a reload or a link opens the same folder. Written only while the element is shown;
   again when the cockpit shows it (it observes the closest `[data-hash-segment]` or `.ui-tabs__panel`). The browser's
-  Back and Forward step through the folders (`app/hashHistory.ts`, see the root's `CLAUDE.md`).
+  Back and Forward step through the folders (`app/hash-history.ts`, see the root's `CLAUDE.md`).
 
 ## Storages
 
@@ -158,7 +159,7 @@ structure completely (`demo/board-manager/STRUCTURE.md`): a reference for its ph
 
 ## Table
 
-- Compact (2026-10-07, the user's wish; `density="compact"` in `shared/ui/dataTable.tsx`, like the User Manager's).
+- Compact (2026-10-07, the user's wish; `density="compact"` in `shared/ui/data-table.tsx`, like the User Manager's).
   The footer only when there is something to page (`footer="auto"`), the number of rows after the title
   (`showTotal`), like the Time Tracker's (2026-10-07).
 - A folder's contents: subfolders first (a folder icon in the accent color, its name a link that opens it), then files

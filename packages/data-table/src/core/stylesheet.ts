@@ -1,10 +1,10 @@
-import css from './view/DataTable.css?inline';
+import css from './view/data-table.css?inline';
 
 export { provideStylesheet, resolveTheme, themeStylesheet };
 export type { ThemeStylesheet };
 
 // The stylesheet of one theme: no custom properties of our own (2026-10-09, the user's wish: they inherit into
-// everything inside the table, custom cell content too, and fill the dev tools). The source (`DataTable.css`)
+// everything inside the table, custom cell content too, and fill the dev tools). The source (`data-table.css`)
 // reads the theme as `var(--param-…)` placeholders; each is replaced by the theme's value here, once per theme (a
 // `createDataTableComponent` or `setupDataTable` call). The rules are scoped to the roots of that theme
 // (`data-data-table-theme`, `@scope`), so tables of different themes can share a page. The keyframes stay outside the

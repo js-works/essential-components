@@ -6,8 +6,8 @@ import type { CreateRow, ReorderRows, SaveRow } from '../rows.js';
 import type { SavedFilters } from '../saved-filters.js';
 import type { FooterMode, RowActionLook, SelectionAppearance, TableDensity, TableLayout } from '../settings.js';
 import type { DataTableTheme } from '../theme.js';
-import type { ActionMenu, TableAction } from './actions.js';
-import type { ColumnGroup, EditField, TableColumn, TableFilters } from './columns.js';
+import type { TableActions } from './actions.js';
+import type { EditField, TableColumns, TableFilters } from './columns.js';
 
 export type { DataTableComponent, DataTableComponentConfig, DataTableProps, TableController };
 
@@ -18,7 +18,7 @@ type DataTableProps<Row> = {
   createRow?: CreateRow<Row>;
   editFields?: readonly EditField<Row>[];
   rowKey: keyof Row & string;
-  columns: readonly (TableColumn<Row> | ColumnGroup<Row>)[];
+  columns: TableColumns<Row>;
   filters?: TableFilters;
   title?: ReactNode;
   subtitle?: ReactNode;
@@ -31,7 +31,7 @@ type DataTableProps<Row> = {
   groupBy?: GroupBy<Row>;
   renderGroup?: (group: RowGroup<Row>) => ReactNode;
   empty?: ReactNode;
-  actions?: readonly (TableAction<Row> | ActionMenu<Row>)[];
+  actions?: TableActions<Row>;
   pageSize?: number;
   pageSizeOptions?: readonly number[];
   defaultSort?: ColumnSort;

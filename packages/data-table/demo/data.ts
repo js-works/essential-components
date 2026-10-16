@@ -12,6 +12,7 @@ export {
   saveUser,
   suggestEmails,
 };
+
 export type { EmailSuggestion, User };
 
 type User = {

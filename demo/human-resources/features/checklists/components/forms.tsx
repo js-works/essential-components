@@ -1,12 +1,11 @@
 import { Group, Stack, Text, TextInput } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
-import type { ReactElement } from 'react';
 import { z } from 'zod';
 import { CHECKLIST_KINDS, statusOf, TASK_OWNERS, todayDate } from '../../../domain/index.js';
 import type { HrData } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { useForm } from '../../../shared/lib/useForm.js';
-import { FormSelect } from '../../../shared/ui/FormSelect.js';
+import { useForm } from '../../../shared/lib/use-form.js';
+import { FormSelect } from '../../../shared/ui/form-select.js';
 
 export { ChecklistForm, checklistSchema, TaskForm, taskSchema };
 
@@ -20,7 +19,7 @@ const checklistSchema = z.object({
 function ChecklistForm({ data, save }: {
   data: HrData;
   save: (values: z.output<typeof checklistSchema>) => Promise<void>;
-}): ReactElement {
+}) {
   const t = useTranslate();
   const today = todayDate();
   const employees = data.employees
@@ -61,7 +60,7 @@ const taskSchema = z.object({
 function TaskForm({ due, save }: {
   due: string;
   save: (values: z.output<typeof taskSchema>) => Promise<void>;
-}): ReactElement {
+}) {
   const t = useTranslate();
   const { DialogForm, field } = useForm(taskSchema, {
     labels: 'taskForm',

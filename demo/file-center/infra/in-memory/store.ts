@@ -11,6 +11,7 @@ export {
   withFavorite,
   withoutDeletedAt,
 };
+
 export type { Store };
 
 // The fake server's data: every folder and file, in memory for as long as the page is open. Both repositories share

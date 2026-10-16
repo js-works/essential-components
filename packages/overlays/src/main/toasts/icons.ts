@@ -12,6 +12,7 @@ import {
   successIconSvg,
   warnIconSvg,
 } from "../internal/icons.js";
+
 import type { ToastType } from "../api/toasts/toast.js";
 
 // A single arc that spins via CSS (see :host([type="loading"]) .icon svg).

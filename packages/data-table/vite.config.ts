@@ -29,10 +29,11 @@ const config = defineConfig(({ mode }) => ({
   resolve: mode === 'element' || mode === 'preact' ? { alias: PREACT_ALIASES } : {},
   // Only the latest Chrome, Edge, Firefox and Safari: modern CSS (e.g. `light-dark()`) stays as it is.
   build: mode === 'demo'
-    ? { target: 'esnext', outDir: 'demo-dist', emptyOutDir: true }
+    ? { target: 'es2024', cssTarget: 'esnext', outDir: 'demo-dist', emptyOutDir: true }
     : mode === 'element'
     ? {
-      target: 'esnext',
+      target: 'es2024',
+      cssTarget: 'esnext',
       // After the first step, into the same directory.
       emptyOutDir: false,
       // The licenses of everything bundled in (Preact, Base UI, vanillajs-datepicker, ...).
@@ -44,7 +45,8 @@ const config = defineConfig(({ mode }) => ({
       },
     }
     : {
-      target: 'esnext',
+      target: 'es2024',
+      cssTarget: 'esnext',
       // The licenses of what is bundled into the React entry (vanillajs-datepicker).
       license: { fileName: 'third-party-licenses-react.md' },
       lib: {

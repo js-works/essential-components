@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { ReactElement, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 export { useViewerId, ViewerProvider };
 
@@ -7,7 +7,7 @@ export { useViewerId, ViewerProvider };
 // would take them from the sign-in.
 const ViewerContext = createContext<string | null>(null);
 
-function ViewerProvider({ employeeId, children }: { employeeId: string; children: ReactNode }): ReactElement {
+function ViewerProvider({ employeeId, children }: { employeeId: string; children: ReactNode }) {
   return <ViewerContext.Provider value={employeeId}>{children}</ViewerContext.Provider>;
 }
 

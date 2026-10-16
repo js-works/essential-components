@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { ReactElement, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 export { Scope, SCOPE_CLASS, useScheme };
 
@@ -40,7 +40,7 @@ function useScheme(): 'light' | 'dark' {
 // demos. The app is one scope, the content of each dialog another (the dialogs are not inside the app's element).
 const SCOPE_CLASS = 'time-tracker';
 
-function Scope({ children }: { children: ReactNode }): ReactElement {
+function Scope({ children }: { children: ReactNode }) {
   return (
     <div className={SCOPE_CLASS} data-mantine-color-scheme={useScheme()}>
       {children}

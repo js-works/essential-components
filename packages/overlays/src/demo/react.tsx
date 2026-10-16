@@ -48,13 +48,14 @@ import {
   Select,
   TextInput,
 } from "@mantine/core";
+
 import { DateInput } from "@mantine/dates";
 import { schemaResolver, useForm } from "@mantine/form";
 import type { UseFormReturnType } from "@mantine/form";
 import { z } from "zod";
 
 // The layered variants (`@layer mantine`): the same rules, but below every unlayered rule of
-// the page. This demo shares its page with other demos (see OverlaysDemo.ts), and Mantine's
+// the page. This demo shares its page with other demos (see overlays-demo.ts), and Mantine's
 // global rules must not restyle them.
 import "@mantine/core/styles.layer.css";
 import "@mantine/dates/styles.layer.css";
@@ -417,7 +418,7 @@ function App() {
   );
 }
 
-// Renders the demo into the container (a tab panel of OverlaysDemo.ts). Returns the unmount.
+// Renders the demo into the container (a tab panel of overlays-demo.ts). Returns the unmount.
 export function mountReactFormDemo(container: Element): () => void {
   const root = createRoot(container);
   root.render(<App />);

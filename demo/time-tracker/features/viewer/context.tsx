@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, useState } from 'react';
-import type { ReactElement, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 export { useViewer, ViewerProvider };
 export type { Role, Viewer };
@@ -29,7 +29,7 @@ function storedRole(): Role {
 }
 
 // The role is remembered per browser; a team lead by default (the demo shows more that way).
-function ViewerProvider({ employeeId, children }: { employeeId: string; children: ReactNode }): ReactElement {
+function ViewerProvider({ employeeId, children }: { employeeId: string; children: ReactNode }) {
   const [role, setRoleState] = useState<Role>(storedRole);
   const viewer = useMemo((): Viewer => ({
     employeeId,

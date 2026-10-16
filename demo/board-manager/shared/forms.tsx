@@ -3,7 +3,7 @@ import { binding } from '@local/form-validation';
 import { Group, NativeSelect, Select, SimpleGrid, Stack, Textarea, TextInput } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { useRef } from 'react';
-import type { FocusEvent, ReactElement } from 'react';
+import type { FocusEvent } from 'react';
 import { z } from 'zod';
 import { normalizeWebsite, ROLES } from '../domain/index.js';
 import type {
@@ -16,13 +16,14 @@ import type {
   Person,
   Role,
 } from '../domain/index.js';
+
 import { MinutesEditor } from '../features/meetings/components/minutes.js';
 import { db, suggestPeople } from '../infra/in-memory/index.js';
 import { countryOptions } from './lib/countries.js';
 import { useTranslate } from './lib/i18n/index.js';
-import { useForm } from './lib/useForm.js';
-import { AsyncSelect } from './ui/AsyncSelect.js';
-import { DocumentUpload } from './ui/DocumentUpload.js';
+import { useForm } from './lib/use-form.js';
+import { AsyncSelect } from './ui/async-select.js';
+import { DocumentUpload } from './ui/document-upload.js';
 
 export {
   AgendaItemForm,
@@ -37,7 +38,7 @@ export {
 };
 
 // The contents of the form dialogs (`dialogs.form`), validated by form-validation (`useForm`, a Zod schema per form),
-// not by the browser. Each form is the dialog's form (`DialogForm` of `useForm.tsx`: the overlays' `<Form>`): "OK" runs
+// not by the browser. Each form is the dialog's form (`DialogForm` of `use-form.tsx`: the overlays' `<Form>`): "OK" runs
 // `requestSubmit`, which validates, shows the errors on the inputs and calls `save` (a prop) with the schema's typed
 // output; the dialog closes when it is saved, and shows a failed save as its note (the server's message,
 // `errorMessage`). The schema gives the rules and the required marks; optional strings default to `''`, so the output
@@ -46,7 +47,7 @@ export {
 // the form's own for a factory), the messages from form-validation's catalogs. Mantine's `error` gets the message, or
 // `true` (red, without a text) for a field that turned invalid while being edited.
 // Selects are native (a Mantine select would open outside the modal dialog), except the person of a new member: an
-// `AsyncSelect` (`AsyncSelect.tsx`), its popup in the dialog like the date picker's, and the time of a meeting. The
+// `AsyncSelect` (`async-select.tsx`), its popup in the dialog like the date picker's, and the time of a meeting. The
 // date is Mantine's `DatePickerInput`, no native picker: its popup stays in the dialog (no portal, see the theme), and a
 // fixed position keeps the dialog's scrolling body from clipping it. A field only some dialogs show (the board of a new
 // meeting, the person of a new member) gets a second schema, so it is required only there.
@@ -93,7 +94,7 @@ function UploadForm({
   upload: UploadFn;
   save: Save<typeof uploadSchema>;
   onChange?: (items: readonly FileItem[]) => void;
-}): ReactElement {
+}) {
   const { DialogForm, field } = useForm(uploadSchema, {
     labels: 'upload',
     submit: save,
@@ -123,7 +124,7 @@ function BoardForm({
 }: {
   board?: Board;
   save: Save<typeof boardSchema>;
-}): ReactElement {
+}) {
   const { DialogForm, field } = useForm(boardSchema, {
     labels: 'board',
     initial: board,
@@ -151,6 +152,7 @@ const meetingSchema = z.object({
   time: z.string().min(1),
   location: z.string().default(''),
 });
+
 const meetingWithBoardSchema = meetingSchema.extend({ boardId: z.string() });
 
 // What the form saves: the date and the time joined into the fake server's `start`.
@@ -174,7 +176,7 @@ function MeetingForm({
   meeting?: Meeting;
   boards?: readonly Board[];
   save: (values: MeetingValues) => Promise<void>;
-}): ReactElement {
+}) {
   const t = useTranslate();
   const { DialogForm, field } = useForm(
     boards !== undefined ? meetingWithBoardSchema : meetingSchema,
@@ -244,7 +246,7 @@ function AgendaItemForm({
   members: readonly Person[];
   sections: readonly AgendaSection[];
   save: Save<typeof agendaItemSchema>;
-}): ReactElement {
+}) {
   const t = useTranslate();
   const { DialogForm, field } = useForm(agendaItemSchema, {
     labels: 'agendaItem',
@@ -297,7 +299,7 @@ function MinutesForm({
   item: AgendaItem;
   members: readonly Person[];
   save: Save<typeof minutesSchema>;
-}): ReactElement {
+}) {
   const t = useTranslate();
   const { DialogForm, field } = useForm(minutesSchema, {
     labels: 'minutes',
@@ -334,7 +336,7 @@ function DocumentForm({
 }: {
   document: MeetingDocument;
   save: Save<typeof documentSchema>;
-}): ReactElement {
+}) {
   const { DialogForm, field } = useForm(documentSchema, {
     labels: 'document',
     initial: document,
@@ -378,7 +380,7 @@ function PersonForm({
   person?: Person;
   organizationId?: string;
   save: Save<typeof personSchema>;
-}): ReactElement {
+}) {
   const t = useTranslate();
   const organizations = [...db.getState().organizations].sort((a, b) => a.name.localeCompare(b.name));
   const { DialogForm, field } = useForm(personSchema, {
@@ -447,7 +449,7 @@ function OrganizationForm({
 }: {
   organization?: Organization;
   save: Save<ReturnType<typeof organizationSchema>>;
-}): ReactElement {
+}) {
   const t = useTranslate();
   const { DialogForm, field } = useForm(organizationSchema(organization?.id), {
     labels: 'organization',
@@ -495,7 +497,7 @@ function MemberForm({
   people?: readonly Person[];
   role?: Role;
   save: Save<typeof memberSchema>;
-}): ReactElement {
+}) {
   const t = useTranslate();
   const { DialogForm, field } = useForm(
     people !== undefined ? memberWithPersonSchema : memberSchema,

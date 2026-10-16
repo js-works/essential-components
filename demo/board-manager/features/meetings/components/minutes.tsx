@@ -9,10 +9,11 @@ import {
   SuggestionMenuController,
   useCreateBlockNote,
 } from '@blocknote/react';
+
 import type { DefaultReactSuggestionItem } from '@blocknote/react';
 import { Anchor, Input, Text } from '@mantine/core';
 import { useRef } from 'react';
-import type { ReactElement, ReactNode, Ref } from 'react';
+import type { ReactNode, Ref } from 'react';
 import { Link, useInRouterContext } from 'react-router';
 import type { Person } from '../../../domain/index.js';
 import { getPerson } from '../../../infra/in-memory/index.js';
@@ -37,7 +38,7 @@ const Mention = createReactInlineContentSpec(
   },
 );
 
-function MentionView({ personId, link }: { personId: string; link: boolean }): ReactElement {
+function MentionView({ personId, link }: { personId: string; link: boolean }) {
   const name = useDb((state) => getPerson(state, personId)?.name);
   const inRouter = useInRouterContext();
   const t = useTranslate();
@@ -85,7 +86,7 @@ const MANTINE_LOOK: Theme = {
 };
 
 // With a theme object, BlockNote takes the scheme from its context (else from the system): the app's.
-function SchemeContext({ children }: { children: ReactNode }): ReactElement {
+function SchemeContext({ children }: { children: ReactNode }) {
   return (
     <BlockNoteContext.Provider value={{ colorSchemePreference: useScheme() }}>{children}</BlockNoteContext.Provider>
   );
@@ -127,7 +128,7 @@ function MinutesEditor({ label, description, error, defaultValue = '', onChange,
   onBlur?: () => void;
   ref?: Ref<HTMLDivElement>;
   people: readonly Person[];
-}): ReactElement {
+}) {
   const language = useLanguage();
   // The value as it is now: a new editor (another language) starts with it, nothing typed is lost.
   const valueRef = useRef(defaultValue);
@@ -166,7 +167,7 @@ function MinutesEditor({ label, description, error, defaultValue = '', onChange,
 }
 
 // The minutes, read-only (the minutes tab, an item's detail row); `empty` when there are none.
-function MinutesText({ minutes, empty }: { minutes: string; empty: string }): ReactElement {
+function MinutesText({ minutes, empty }: { minutes: string; empty: string }) {
   const blocks = toBlocks(minutes);
 
   return blocks === undefined
@@ -174,7 +175,7 @@ function MinutesText({ minutes, empty }: { minutes: string; empty: string }): Re
     : <MinutesDocument key={minutes} blocks={blocks} />;
 }
 
-function MinutesDocument({ blocks }: { blocks: MinutesBlock[] }): ReactElement {
+function MinutesDocument({ blocks }: { blocks: MinutesBlock[] }) {
   const language = useLanguage();
   const editor = useCreateBlockNote({ schema, dictionary: dictionaryOf(language), initialContent: blocks }, [language]);
 

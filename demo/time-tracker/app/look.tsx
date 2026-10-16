@@ -14,6 +14,7 @@ import {
   Popover,
   Tooltip,
 } from '@mantine/core';
+
 import type { CSSVariablesResolver, MantineColorsTuple, MantineThemeOverride } from '@mantine/core';
 import { TbMaximize, TbMinimize } from 'react-icons/tb';
 import { Scope } from '../shared/ui/scope.js';

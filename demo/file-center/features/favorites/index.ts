@@ -1,3 +1,3 @@
 // The module "Favorites": the only import path for the app.
 
-export { FavoritesPage } from './FavoritesPage.js';
+export { FavoritesPage } from './favorites-page.js';

@@ -11,6 +11,7 @@ import {
   withFavorite,
   withoutDeletedAt,
 } from './store.js';
+
 import type { Store } from './store.js';
 
 export { createFileRepository };

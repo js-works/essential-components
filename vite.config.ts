@@ -10,9 +10,10 @@ import { defaultClientConditions, defineConfig } from 'vite';
 // `vite build --mode pages` builds for GitHub Pages (js-works.github.io/essential-components), which serves the site
 // under a subpath.
 //
-// Only the latest Chrome, Edge, Firefox and Safari are supported: `esnext` (also for the CSS, `cssTarget` follows
-// `target`), so modern CSS stays as it is. Else the minifier lowers `light-dark()` into variables that follow the
-// page's color scheme, not the `color-scheme` of the element (the cockpit's dark sidebar got light colors).
+// Only the latest Chrome, Edge, Firefox and Safari are supported. The CSS is built for `esnext`, so modern CSS stays as
+// it is (else the minifier lowers `light-dark()` into variables that follow the page's color scheme, not the
+// `color-scheme` of the element). The JavaScript for `es2024`: newer syntax that not every one of them has yet (`using`)
+// is lowered.
 const config = defineConfig(({ mode }) => ({
   plugins: [react()],
   base: mode === 'pages' ? '/essential-components/' : '/',
@@ -21,7 +22,8 @@ const config = defineConfig(({ mode }) => ({
     conditions: ['source', ...defaultClientConditions],
   },
   build: {
-    target: 'esnext',
+    target: 'es2024',
+    cssTarget: 'esnext',
   },
 }));
 

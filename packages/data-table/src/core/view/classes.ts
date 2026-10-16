@@ -1,4 +1,4 @@
-// The class names of the stylesheet (`DataTable.css`): fixed BEM names, the block `data-table` (the root) and its
+// The class names of the stylesheet (`data-table.css`): fixed BEM names, the block `data-table` (the root) and its
 // elements `data-table__…`. A name that builds on another one (a data row is a row) carries both.
 export {
   adapterContent,

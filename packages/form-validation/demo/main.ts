@@ -1,6 +1,6 @@
 // The design language first, so the demo's own CSS comes after it.
 import './ui/ui.css';
-import { FormValidationDemo } from './FormValidationDemo.js';
+import { FormValidationDemo } from './form-validation-demo.js';
 
 // The page around the demo: its global switches set `<html lang>` and the color scheme for everything on the page.
 const switches = document.querySelector<HTMLFormElement>('#page-switches');

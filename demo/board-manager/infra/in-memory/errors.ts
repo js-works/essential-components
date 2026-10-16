@@ -7,7 +7,7 @@ export type { ErrorKey };
 type ErrorKey = keyof typeof en.errors;
 
 // An error meant for the user, as a key with its values: the server does not know the user's language, the UI makes
-// the text (`useForm.tsx`). The message is the key, for a log.
+// the text (`use-form.tsx`). The message is the key, for a log.
 class AppError extends Error {
   readonly key: ErrorKey;
   readonly params: Readonly<Record<string, string | number>> | undefined;

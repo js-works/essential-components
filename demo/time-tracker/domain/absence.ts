@@ -13,6 +13,7 @@ export {
   vacationBalance,
   workingDays,
 };
+
 export type {
   Absence,
   AbsenceKind,

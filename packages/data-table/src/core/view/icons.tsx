@@ -1,5 +1,3 @@
-import type { ReactElement } from 'react';
-
 export { icons };
 
 // The paths of the Tabler icons (MIT), drawn in the current text color.
@@ -106,7 +104,7 @@ type IconName = keyof typeof paths;
 type IconProps = { size?: number; className?: string };
 
 function icon(name: IconName) {
-  return function Icon({ size = 16, className }: IconProps): ReactElement {
+  return function Icon({ size = 16, className }: IconProps) {
     return (
       <svg
         className={className}
@@ -129,7 +127,7 @@ function icon(name: IconName) {
 
 // A filled icon: the paths on a square grid of `grid` units, with their fill rule.
 function filledIcon(paths: readonly string[], grid: number, fillRule: 'evenodd' | 'nonzero') {
-  return function Icon({ size = 16, className }: IconProps): ReactElement {
+  return function Icon({ size = 16, className }: IconProps) {
     return (
       <svg
         className={className}

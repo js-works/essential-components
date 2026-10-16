@@ -1,5 +1,5 @@
 // Sick calls and their doctor's notes.
 
-export { SickTable } from './components/SickTable.js';
-export { useSickFlows } from './flows.js';
-export { SickPage } from './pages/SickPage.js';
+export { SickTable } from './components/sick-table.js';
+export { SickPage } from './pages/sick-page.js';
+export { useEditSickNoteFlow, useReportSickFlow, useUploadCertificateFlow } from './sick-flows.js';

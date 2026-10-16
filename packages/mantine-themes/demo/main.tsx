@@ -20,6 +20,7 @@ import {
   TextInput,
   Title,
 } from '@mantine/core';
+
 import { StrictMode, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { colorSetups, createMantineTheme } from '../src/index.js';

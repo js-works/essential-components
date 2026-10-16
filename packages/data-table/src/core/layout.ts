@@ -20,7 +20,7 @@ type Layout<Row> = {
   groups: readonly Group[];
 };
 
-function createLayout<Row>(columns: readonly (Spec.TableColumn<Row> | Spec.ColumnGroup<Row>)[]): Layout<Row> {
+function createLayout<Row>(columns: Spec.TableColumns<Row>): Layout<Row> {
   const leaves: Leaf<Row>[] = [];
   const groups: Group[] = [];
 
@@ -46,9 +46,9 @@ function createLayout<Row>(columns: readonly (Spec.TableColumn<Row> | Spec.Colum
 
 // The columns without the hidden ones (the column toggle menu). A group without a visible column is left out too.
 function withoutHidden<Row>(
-  columns: readonly (Spec.TableColumn<Row> | Spec.ColumnGroup<Row>)[],
+  columns: Spec.TableColumns<Row>,
   hidden: ReadonlySet<string>,
-): readonly (Spec.TableColumn<Row> | Spec.ColumnGroup<Row>)[] {
+): Spec.TableColumns<Row> {
   if (hidden.size === 0) {
     return columns;
   }

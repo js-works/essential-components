@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import type { ReactElement, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import type * as DataTable from '../api/index.js';
 import type * as DataTableComponent from '../api/react/index.js';
-import * as reactEditors from '../core/view/ColumnEditors.js';
+import * as reactEditors from '../core/view/column-editors.js';
 import type { ContentRenderer } from './content.js';
 
 export { dateColumnEditor, editorOf, selectColumnEditor, textColumnEditor };
@@ -57,7 +57,7 @@ type OwnEditorProps<Row, C> = {
   content: ContentRenderer;
 };
 
-function OwnEditor<Row, C>({ props, editor, content }: OwnEditorProps<Row, C>): ReactElement {
+function OwnEditor<Row, C>({ props, editor, content }: OwnEditorProps<Row, C>) {
   // The latest props: `change` and `draft` of the first call must stay current for the content made then.
   const latest = useRef(props);
 

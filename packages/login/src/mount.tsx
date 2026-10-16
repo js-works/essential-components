@@ -3,10 +3,9 @@
 import '@mantine/core/styles.layer.css';
 import { createTheme, MantineProvider, mergeThemeOverrides } from '@mantine/core';
 import { StrictMode } from 'react';
-import type { ReactElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import type * as Spec from './index.js';
-import { LoginScreen } from './LoginScreen.js';
+import { LoginScreen } from './login-screen.js';
 import { useScheme } from './page.js';
 
 export { mountLoginScreen };
@@ -24,7 +23,7 @@ const THEME = createTheme({
 
 // Mantine follows the page's color scheme (`<html>`). It does not set the scheme on `<html>` (`getRootElement`): the
 // scope sets it on itself.
-function Frame({ options, ...props }: Spec.LoginScreenProps & { options: Spec.MountOptions }): ReactElement {
+function Frame({ options, ...props }: Spec.LoginScreenProps & { options: Spec.MountOptions }) {
   const scheme = useScheme();
 
   return (

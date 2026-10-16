@@ -280,7 +280,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     2026-09-30 (see "Row editing and new rows"). The `controller` prop is optional: without it the table works as
     before.
 - The framework-free core is `createDataTableController()` (`src/core/controller.ts`, no React). The hooks only
-  wrap it (`src/core/controllerHooks.ts`): `useDataTableController` keeps one stable, `useDataTableSelection`
+  wrap it (`src/core/controller-hooks.ts`): `useDataTableController` keeps one stable, `useDataTableSelection`
   subscribes with `useSyncExternalStore`. The custom element's controller (see "Custom element") will build on the
   same core (`reload()`, `clearRowSelection()`, `getSelectedRows()`, `onSelectionChange()`).
 - One controller serves one table: a mounted table connects in an effect and disconnects when it unmounts. A second
@@ -346,7 +346,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     the default theme puts `light-dark()` into the color of its shadow.
   - No custom properties of our own (2026-10-09, the user's wish; before, the root had them inline, `--datnav-*`: they
     inherited into everything inside the table, custom cell content too, and filled the dev tools).
-    - The source (`src/core/view/DataTable.css`, imported with `?inline`) reads the values as `var(--param-…)`
+    - The source (`src/core/view/data-table.css`, imported with `?inline`) reads the values as `var(--param-…)`
       placeholders. `themeStylesheet` (`src/core/stylesheet.ts`) replaces each by the theme's value, once per
       theme (a `createDataTableComponent` or `setupDataTable` call), without the comments.
     - The rules are scoped to the roots of that theme: the root has `data-data-table-theme` (the theme's id), the
@@ -419,39 +419,39 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     (`src/api/react/index.ts`).
   - `src/themes/index.ts` (`@local/data-table/themes`): the three themes.
 - `src/element/`: the custom element, a wrapper of the React view:
-  - `setupDataTable.tsx`: the setup and the element class (attributes, properties, the React root in the light
+  - `setup-data-table.tsx`: the setup and the element class (attributes, properties, the React root in the light
     DOM, the i18n subscription).
   - `controller.tsx`: the controller factory, the one-element guard, and the controller's options as the props of the
     React view.
   - `content.tsx`: strings as text, everything else through the content adapter (the default one for `Node`).
   - `filters.ts`: the element's built-in filters. `styles.ts`: the stylesheet in the document or shadow root.
-  - `DataTableElement.test.ts`: its tests (jsdom).
-- `src/react/createDataTableComponent.tsx`: the factory. It resolves the configuration once and returns the
+  - `data-table-element.test.ts`: its tests (jsdom).
+- `src/react/create-data-table-component.tsx`: the factory. It resolves the configuration once and returns the
   component, which provides it (private `ConfigContext`) and renders `DataTableView`.
 - `src/core/`: the state and the logic.
-  - `useDataTable.ts`: the headless hook with all state and behavior (source calls, paging, sorting, selection,
+  - `use-data-table.ts`: the headless hook with all state and behavior (source calls, paging, sorting, selection,
     block selection, row details, actions, loading). The view only renders what it returns.
   - `controller.ts`: the framework-free core of the controller (`createDataTableController`, connecting, the
-    one-table guard, the selection listeners), with its unit test `controller.test.ts`. `controllerHooks.ts`: the two
+    one-table guard, the selection listeners), with its unit test `controller.test.ts`. `controller-hooks.ts`: the two
     React hooks around it.
   - `config.ts`: the private `ConfigContext` and `resolveConfig` (the i18n adapter, and the theme turned into its
     stylesheet), and `useThemed`. `stylesheet.ts`: the stylesheet of a theme, and adding it where a table is.
   - `actions.ts` (which actions are visible where), `layout.ts` (column groups), `grouping.ts` (row groups: the page
     as runs and lines, and the moves between groups; with `grouping.test.ts`), `texts.ts` (`useTexts`: texts via the
     adapter, en-US defaults), `filters.ts`, `hooks.ts`, `utils.ts`.
-  - `view/`: the whole rendering. `DataTableView.tsx` (grid, header rows, data rows, detail rows, empty state),
-    `Toolbar.tsx` (the bar and the selection bar), `FilterPanel.tsx` (the filter button, the filter view, the pills),
-    `Footer.tsx`, `Actions.tsx`, `ColumnFilters.tsx` (the built-in filters and the summaries for their pills).
+  - `view/`: the whole rendering. `data-table-view.tsx` (grid, header rows, data rows, detail rows, empty state),
+    `toolbar.tsx` (the bar and the selection bar), `filter-panel.tsx` (the filter button, the filter view, the pills),
+    `footer.tsx`, `actions.tsx`, `column-filters.tsx` (the built-in filters and the summaries for their pills).
     - `widgets.tsx`: the leaves (checkbox, radio, buttons, menu, fields, selects, tooltip, loading bar, pill). They never
       know about rows, queries, selection or loading.
     - `icons.tsx` (inline SVGs).
     - `layer.ts`: the context with the layer element inside the root, where the popups of Base UI are rendered.
-    - `DataTable.css`: the one stylesheet (all rules, no values of its own: the theme's placeholders), and
+    - `data-table.css`: the one stylesheet (all rules, no values of its own: the theme's placeholders), and
       `classes.ts`, its class names.
 - `src/themes/`: the theme objects: `default.ts` (the neutral look, with hard-coded values, light and dark), `soft.ts`
   (the look of the design spec, hard-coded too) and one per
   UI library (`mantine.ts`, `antd.ts`).
-- `src/DataTable.test.tsx`: the test suite of the component (it was the conformance suite of the old
+- `src/data-table.test.tsx`: the test suite of the component (it was the conformance suite of the old
   implementations), plus the theming tests (every theme has every value, they end up in the stylesheet of the theme,
   the stylesheet reads only known ones) and the i18n tests (with small adapters).
 - `demo/` + `index.html`: the demo app (`npm run dev`): 245 users, 1 second loading time, en/de, all selection modes
@@ -468,34 +468,34 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - `index.html` + `main.ts`: the page, a shell around the demo element: a header with the title and, top right, the
     global switches (language, color scheme), which change `<html>` (`lang`, `data-scheme`). It registers the demo
     element as `data-table-demo`.
-  - `DataTableDemo.tsx`: the whole demo as a light DOM custom element (see "Demo element" below), with tabs:
+  - `data-table-demo.tsx`: the whole demo as a light DOM custom element (see "Demo element" below), with tabs:
     "React component", "Custom element", and further examples of the React component, one per tab (a new example may
     get a tab of its own, one more entry in `EXAMPLES`): "Row reordering", "Row grouping", "Grouped reordering". On connect it renders `App`
     into the first panel (React, `StrictMode`), mounts the element demo into the second one, each further example
     into its panel (a React root each), and calls `setupUi(this)`; on disconnect it cleans up.
-  - `GroupingDemo.tsx` (the "Row grouping" tab): the users grouped by country (`groupBy="country"`, no country
+  - `grouping-demo.tsx` (the "Row grouping" tab): the users grouped by country (`groupBy="country"`, no country
     column), 25 per page (page sizes 10, 25, 50, 100, 250), sorted by last name within the countries, searchable, text and role filters, a multi-row
     action ("Send message", a toast), striped, `selectableGroups` (a checkbox in every group header). The source is
     `fetchUsersByCountry` (`data.ts`: sorted by country
     first, with the totals of the groups). Selectors: "Group totals" (from the source, or page only) and "Group
     header" (default, or a custom `renderGroup`).
-  - `ReorderDemo.tsx` + `tasks.ts` (the "Row reordering" tab): a backlog of 24 tasks in the order of their priority,
+  - `reorder-demo.tsx` + `tasks.ts` (the "Row reordering" tab): a backlog of 24 tasks in the order of their priority,
     kept in memory (`tasks.ts`: the source, 500ms, and the save of a move, 300ms), 10 per page, searchable, a status
     filter, a multi-row action ("Mark as done", a toast), striped, row details for 10 of the tasks (a note each; the
     others have none). A "Saving" selector (`succeeds`, `fails`: the save
     rejects, and the page is loaded again), and a line with the last move.
-  - `GroupedReorderDemo.tsx` + `agenda.ts` (the "Grouped reordering" tab): an agenda whose items are all in sections
+  - `grouped-reorder-demo.tsx` + `agenda.ts` (the "Grouped reordering" tab): an agenda whose items are all in sections
     (`groupBy="section"`, `reorder`), kept in memory (`agenda.ts`: the sections with their items; the source, 400ms,
     with the totals of the sections; the saves, 300ms): "Opening", "Reports", "Proposals for decision", "Closing"; one
     page. Items are moved within a section or into another one. "Delete section" (a group action, a trash icon)
     deletes one, its items go to the blank group (section `''`, "(Blank)", at the end); a line with the last move.
-  - `ElementDemo.ts` (+ `element-demo.css`): the custom element tab, plain TypeScript with DOM nodes as content: the
+  - `element-demo.ts` (+ `element-demo.css`): the custom element tab, plain TypeScript with DOM nodes as content: the
     same users, `setupDataTable` with the demo's i18n factory, text, select and autocomplete filters, a role badge (a node per
     row, styled by the demo's global CSS), a rows action, switches for density, striped and searchable, and reload,
     clear selection and the selected rows (`onSelectionChange`). Titles, headers and labels are functions, so they
     follow the language.
-  - One plain demo (`Demo.tsx`) for all themes, with no UI library: plain elements, a small toast for the actions
-    (`Toasts.tsx`) and inline SVG icons (`icons.tsx`, Tabler paths).
+  - One plain demo (`demo.tsx`) for all themes, with no UI library: plain elements, a small toast for the actions
+    (`toasts.tsx`) and inline SVG icons (`icons.tsx`, Tabler paths).
   - The Theme selector at the top switches between Default, Soft, Mantine and Ant Design. It starts with Default.
     - The demo creates one data table per theme at module level (`createDataTableComponent({ i18n, theme })`,
       all with the same adapter: `demo/i18n.ts` exports `i18n` as `{ type: 'factory', getAdapter: () => adapter }`) and
@@ -510,17 +510,17 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       - So `@mantine/*` and `antd` are only needed to regenerate the snapshots. No demo code imports them.
       - Their dark values apply with the system's dark scheme (unless the page chose light, `data-scheme='light'` on
         `<html>`) and when the page chose dark (`data-scheme='dark'`), so they follow the color scheme switch.
-  - The settings of the component are plain native `<select>` elements with a label (`DemoControls.tsx`).
+  - The settings of the component are plain native `<select>` elements with a label (`demo-controls.tsx`).
     - They are not part of the component and do not follow the theme: they, the buttons below the table and the page
       are styled by the design language in `demo/ui/` (`ui-toolbar`, `ui-field`, `ui-select`, `ui-button`,
-      `ui-note`). `Demo.module.css` has only what is specific to this demo. The demo imports nothing from `src/core`.
+      `ui-note`). `demo.module.css` has only what is specific to this demo. The demo imports nothing from `src/core`.
   - Below the table: a Reload and a Clear selection button and a line with the selected users, through a controller
     (`useDataTableController`, `useDataTableSelection`).
   - The Row actions selector (`rowActionLook`: Icon, the default, Label, Icon and label): how the action column shows
     the row actions "Edit" and "Delete" (both have a label, an icon and a tip).
   - The Action variants selector (default off): off shows every action secondary, on makes "Add user" primary and
     both deletes (toolbar and row) danger. So both looks can be compared.
-  - `App.tsx` keeps the settings.
+  - `app.tsx` keeps the settings.
   - Custom cell content of the demo has fixed colors of its own (the theme's values are not available to it): the
     role badge is a gray pill with a darker gray border, the detail text is small.
   - The language switch of the page sets `<html lang>`. The demo's `I18nAdapter` (`demo/i18n.ts`, no i18n library, the same idea
@@ -579,7 +579,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 ## CSS guidelines
 
 - No inline styles (`style={{ ... }}`) if at all possible.
-  - Styles live in the one stylesheet, `src/core/view/DataTable.css` (the demo: `Demo.module.css`).
+  - Styles live in the one stylesheet, `src/core/view/data-table.css` (the demo: `demo.module.css`).
   - Exception: values that are only known at runtime (the grid template from the column width ratios, the grid
     placement of a cell, a measured height).
     - Set the real CSS property inline (`style={{ gridColumn: '3 / span 2' }}`), never a custom property of our own
@@ -594,7 +594,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     `composes` before).
   - Change the CSS and `classes.ts` together, in the same step.
   - The keyframes and container names are prefixed too (`data-table-spin`, `data-table-edit-form`).
-  - The demo still has a CSS module (`Demo.module.css`, with its declaration file `Demo.module.d.css.ts`).
+  - The demo still has a CSS module (`demo.module.css`, with its declaration file `demo.module.d.css.ts`).
 - Use native CSS nesting where reasonable (no Sass or other preprocessors).
   - Nest states, pseudo-classes, pseudo-elements and media queries: `&:hover`, `&::before`, `@media`.
   - Keep it shallow: at most two or three levels.
@@ -1031,7 +1031,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     - At least 64px; a double click gives the column its own `width` back. The widths are not kept after a remount
       (like the hidden columns).
     - "Reset column widths" in the column menu gives all columns their own `width` back (`Texts.resetColumnWidths`).
-      "Optimize column widths" (`optimizeColumnWidths` in `useDataTable.ts`) sets every resizable column to the width
+      "Optimize column widths" (`optimizeColumnWidths` in `use-data-table.ts`) sets every resizable column to the width
       its content needs now: the table is laid out once with `max-content` tracks (the rows of the page and the
       headers count), the header cells' widths are read, and the template is put back at once (no paint between). At
       least 64px, at most 480px (`MIN_COLUMN_WIDTH`, `MAX_OPTIMAL_COLUMN_WIDTH` in `utils.ts`): a column with long
@@ -1318,7 +1318,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       purpose (decided 2026-09-29): the × is where the filters are opened, "Clear all" where they are read.
       - While the view is shown, the × also closes it (its draft is dropped) and gives the focus to the filter button
         (2026-09-29; hidden while the view was shown before, so clearing there took "Clear" and "Apply").
-  - The filter view (`FilterView` in `view/FilterPanel.tsx`, decided 2026-09-29): it takes the place of the column
+  - The filter view (`FilterView` in `view/filter-panel.tsx`, decided 2026-09-29): it takes the place of the column
     headers, the rows and the footer while it is shown; the toolbar stays above it, with the pill row too
     (2026-10-04, the user's wish: it was not rendered while the view was shown, as the view shows the same filters, as a
     draft): disabled (`inert`) and a bit faded (`opacity: 0.8`, like the bar's other parts), so the toolbar keeps its height. It has at most as much room as the table, and works the same on a page, in
@@ -1369,7 +1369,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       unknown height in every browser), so its lower edge, shadow and buttons move down with it; meanwhile
       `data-animating` lifts its min height, keeps its body from scrolling and from shrinking (2026-10-04: the buttons showed first, then the fields) and cuts off what does not fit yet. Closing
       during the opening starts from the height reached. The times are `FILTER_VIEW_OPEN_TIME` and
-      `FILTER_VIEW_CLOSE_TIME` (`FilterPanel.tsx`), the table's fade in the stylesheet (`.stack`): the view rolls up and the table fades
+      `FILTER_VIEW_CLOSE_TIME` (`filter-panel.tsx`), the table's fade in the stylesheet (`.stack`): the view rolls up and the table fades
       back. Everything else is back at once (the toolbar, the pills, the focus on the filter button); the closed view
       stays only for its animation (`inert`, `aria-hidden`, then removed), and one opened meanwhile is a new one. No
       animation with reduced motion (the view goes at once). (Before, it filled the whole
@@ -1464,7 +1464,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     - While the selection bar is shown, a pill cannot open the filter view (the filter button is not there either);
       its × and "Clear all" still work.
     - The text of a pill: the column header, then the summary of the value, which the built-in filters provide (a
-      `WeakMap` from the filter function to its summary, in `ColumnFilters.tsx`):
+      `WeakMap` from the filter function to its summary, in `column-filters.tsx`):
       - text: `Name: ⋯[ber]⋯` (contains), `Name: [ber]⋯` (starts with), `Name: ⋯[ber]` (ends with): the text in a small
         outlined box, the faded `⋯` where other text may be (display only).
       - select: `Role: Admin`; multiple: `Country: Austria, Spain`, or the first and the number of the others
@@ -1488,7 +1488,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     `booleanFilter`; the types `TableFilter`, `BuiltInFilter`, `TextFilterSettings`, `SelectFilterSettings`,
     `AutocompleteFilterSettings` (`textColumnFilter`, `ColumnFilter`, `BuiltInColumnFilter`, … before; this file was
     changed along, so older notes here use the new names too). The editors keep "Column" (`textColumnEditor`): they
-    are still on the columns. The internal files keep their names (`ColumnFilters.tsx`).
+    are still on the columns. The internal files keep their names (`column-filters.tsx`).
   - A filter is a plain function
     `(props: FilterProps) => ReactNode`, `FilterProps = { value: FilterValue | undefined; onChange(value: FilterValue |
     undefined): void; labelledBy: string }`.
@@ -1527,7 +1527,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     - `booleanFilter()` (new): a segmented control `All` / `Yes` / `No` (`Texts.filterAll`, `filterYes`,
       `filterNo`); the value is `true` or `false`, "All" removes the filter (and shows no pill).
     - `autocompleteFilter({ load, multiple?, minQueryLength?, maxChips? })` (decided 2026-10-02,
-      `view/AutocompleteFilter.tsx`): a text input whose options are loaded while typing (Base UI's `Combobox`; its
+      `view/autocomplete-filter.tsx`): a text input whose options are loaded while typing (Base UI's `Combobox`; its
       `Autocomplete` is for free text). The value is the `value` of the chosen option, or a list of them with
       `multiple`.
       - `load(query, signal)` returns `{ value, label, content? }[]` (`AutocompleteOption`). `label` is a string,
@@ -1559,7 +1559,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
         close it; the multiple select's whole field is its trigger, so it has this already). Not reachable with Tab
         and `aria-hidden` (the keyboard has the arrow keys and Escape). It turns while the list is open.
       - The pill shows the labels (like the select: `Ann+2` when long). The table keeps the labels of the options
-        chosen in it, per column key (`filterLabels.ts`, a private context; 2026-10-14: the filter kept them before, so a
+        chosen in it, per column key (`filter-labels.ts`, a private context; 2026-10-14: the filter kept them before, so a
         filter made anew on every render lost them and its pill showed the values).
       - In the filter view, Enter and Escape in its input belong to the open list (choose, close): they apply or
         cancel the view only while the list is closed (`aria-expanded`).
@@ -1572,12 +1572,12 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     (its smaller variant was for the match of the text filter, which is a select now).
   - The controls in the filter view are small (`0.8 * --param-control-height`), with a text size between the small and the
     normal size, like the filter row had them.
-  - `dateRangeFilter()` (`view/DateRangeFilter.tsx`): a trigger in the look of the selects (`Texts.filterAll`
+  - `dateRangeFilter()` (`view/date-range-filter.tsx`): a trigger in the look of the selects (`Texts.filterAll`
     while empty, dimmed; else the range, formatted with `Intl.DateTimeFormat#formatRange` (`dateStyle: 'medium'`) in
     the adapter's locale, e.g. "Sep 12 – 20, 2026"), with a calendar icon at its end (Bootstrap's `BsCalendar4`, filled, 16×16, since 2026-10-01; Tabler's `calendar`
     before), or the clear button while set.
     It opens a Base UI `Popover` (in the layer of the root, not modal, below the trigger) with two inline calendars
-    of vanillajs-datepicker (`view/dateRangePicker.ts`), side by side, that act as one calendar of two months, with
+    of vanillajs-datepicker (`view/date-range-picker.ts`), side by side, that act as one calendar of two months, with
     the range highlighted in both and today marked.
     - The first click (in either calendar) sets the start; nothing changes yet. Until the second click, the range is
       shown up to the day under the mouse (or the keyboard position), in the look of a picked range, and goes when the
@@ -1759,16 +1759,20 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     without `type`, `key` and `onClick`). The handler may return a value (a promise), which is ignored: no `void` in
     the app. The key comes first, never derived from the label (it changes with the language). Menus stay plain
     objects. In both entries (2026-10-15, the user's choice, proposed at about 80%; the React entry only for a few
-    hours): one implementation (`src/core/actionBuilders.ts`), typed per entry (`src/react/actionBuilders.ts`,
-    `src/element/actionBuilders.ts`, with `C = Node`; `C` is not inferred from the fields, `NoInfer`: a label
-    `() => string` made it `string`). The demos' actions use them (`demo/shared.ts`, `demo/ElementDemo.ts`). The
+    hours): one implementation (`src/core/action-builders.ts`), typed per entry (`src/react/action-builders.ts`,
+    `src/element/action-builders.ts`, with `C = Node`; `C` is not inferred from the fields, `NoInfer`: a label
+    `() => string` made it `string`). The demos' actions use them (`demo/shared.ts`, `demo/element-demo.ts`). The
     root's apps build their standard actions (New, Open, Edit, Delete) on them, in their own look and texts.
   - `defineColumns<Row>([…])` and `defineActions<Row>([…])` (2026-10-15, the user's wish; leaving them out was
     proposed at about 60%: they save only the type import and `readonly …[]`): typed by the rows, they return the
     array as it is, so a table's columns and actions need no type annotation. `Row` is given (it cannot be inferred
     from the columns: `render` and `visible` need it). In both entries (`src/react/definitions.ts`,
     `src/element/definitions.ts`, there with `C = Node`). The arrays include column groups and action menus. Used in
-    `demo/GroupingDemo.tsx` and `demo/ElementDemo.ts`, and by every table of the root's apps.
+    `demo/grouping-demo.tsx` and `demo/element-demo.ts`, and by every table of the root's apps.
+  - The list types (2026-10-15, the user's wish, proposed at about 75%): `TableColumns<Row>` (`readonly (TableColumn<Row>
+    | ColumnGroup<Row>)[]`) and `TableActions<Row>` (`readonly (TableAction<Row> | ActionMenu<Row>)[]`), like
+    `TableFilters`: a whole list, with its groups and menus, as the props take it (the props use them too). In both
+    entries (the element's with `C`). The root's apps type their lists with them, in place of the `define…` helpers.
   - `defineFilters({…})` (2026-10-15, the user's wish): the same for the filters (`filters`), in both entries (the
     element's with `C = Node`). No `Row`: a filter's key need not be a field of the row (a filter without a column).
     Used by the demos and every filters object of the root's apps (not in the tests, nor in the apps' filter
@@ -1916,7 +1920,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     - Multi-row actions: at least one row selected.
 
 - Context menu of the rows: Base UI's `ContextMenu` (right-click, long press, the context menu key and Shift+F10),
-  with the actions' texts and icons. `view/RowContextMenu.tsx`; its entries: `contextMenuItems` in `actions.ts`.
+  with the actions' texts and icons. `view/row-context-menu.tsx`; its entries: `contextMenuItems` in `actions.ts`.
   - Icons, in the context menu and in the toolbar's menus: when at least one entry of a menu (or submenu) has an icon,
     the menu is a grid (icon, text, submenu arrow; `.menuWithIcons`) and every entry takes its columns over (subgrid),
     so all texts start at the same place, also next to an entry without icon. Without any icon, no icon column. No
@@ -1967,7 +1971,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     `Texts.moveRow` ("Move row"), no tooltip. Its hover background is the gray of the row buttons
     (`--param-color-surface-strong`), and with `selectionAppearance="accent"` (where the row hovers in the accent tint)
     `--param-color-selected-border`, a darker shade of that tint (2026-09-29), like the other row buttons.
-  - Pointer (mouse, touch, pen; `view/rowDrag.ts`): pressing the handle starts a drag (the pointer is captured, no
+  - Pointer (mouse, touch, pen; `view/row-drag.ts`): pressing the handle starts a drag (the pointer is captured, no
     scrolling on touch, `touch-action: none`). The row itself moves (decided 2026-09-29; a faded row with a 2px drop
     line in the primary color was the first version): it follows the pointer (an inline `translateY` on its cells and
     those of its detail row, `data-drag="dragged"`), lifted above the others (`z-index: 2`, opaque: above the fixed columns of the other rows too,
@@ -2014,7 +2018,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     (below its header). `segmentsOf` in `grouping.ts`. (A first version, with `ResultGroup.at`, the place of an empty
     group's header, was dropped: the order of `groups` gives the place.)
   - Moving a row between groups changes the caret of the groups involved (2026-10-04, the user's wish; `moveLine` in
-    `useDataTable.ts`, also for the keyboard move):
+    `use-data-table.ts`, also for the keyboard move):
     - A group whose last row is moved out collapses (nothing left to show).
     - A collapsed empty group a row is moved into expands (the row is its only content).
     - A collapsed group that has rows stays collapsed when a row is moved into it (the row lands at its end; its count
@@ -2110,10 +2114,10 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       that is up to `saveRow`), `selectColumnEditor({ options })` (a single select that always has a value,
       `SelectInput` in `widgets.tsx`), `dateColumnEditor({ placeholder? })` (see below). Small, like the controls of
       the filter view.
-    - `dateColumnEditor()` (`DateInput` in `view/DateRangeFilter.tsx`, decided 2026-09-30, instead of a text input or
+    - `dateColumnEditor()` (`DateInput` in `view/date-range-filter.tsx`, decided 2026-09-30, instead of a text input or
       a native `<input type="date">`): a trigger in the look of the date range filter (the date in the medium format of
       the locale, "Apr 6, 1953", or the placeholder, dimmed; a calendar icon, or the clear button while set). It opens
-      a popover with one calendar of the same library (`createDatePicker` in `dateRangePicker.ts`, next to
+      a popover with one calendar of the same library (`createDatePicker` in `date-range-picker.ts`, next to
       `createRangePicker`): at the month of the date (else of today), the date selected, both ‹ and › shown
       (`data-single`), the month title up to the decades (`maxView: 3`, quick for a date of birth). A click on a day,
       or Enter on the keyboard position, sets it and closes the popover. The value is `yyyy-mm-dd`, `''` when cleared;
@@ -2128,7 +2132,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     while loading, while the filter view is shown, or while a form is open.
     - `addRow` takes a full row as the template (the start values), so the editors always get a complete `draft: Row`.
       Its key does not count: the new row has a key of its own until it is saved.
-  - The form (`view/EditForm.tsx`, a row of the grid with one cell over all columns, `data-edit-form`; a `group` named
+  - The form (`view/edit-form.tsx`, a row of the grid with one cell over all columns, `data-edit-form`; a `group` named
     `Texts.editRow` "Edit row" or `Texts.newRow` "New row"): the fields, in as many columns as fit (a column: the
     widest label, the gap and an editor of at least 12rem); below them, on the right, "Cancel" (`Texts.cancelEdit`, a
     ghost button) and "OK" (`Texts.confirmEdit`, outlined, like "Apply" of the filter view; it was "Save",
@@ -2259,7 +2263,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   `suppressesWordSelection` for the second mouse down of a double click (a word). Neither applies inside a text
   input, and the word one only where a double click runs the default action.
 - Block selection: the anchor is the key of the last clicked row (kept in a ref, no re-render). `applyRowClick` in
-  `useDataTable.ts` picks: a plain click `selectOnly`, Ctrl/Cmd or Shift `selectByClick` (toggles a row or sets
+  `use-data-table.ts` picks: a plain click `selectOnly`, Ctrl/Cmd or Shift `selectByClick` (toggles a row or sets
   a range). The `Checkbox` widget reads `shiftKey` from the native change
   event and passes it on. Text selection is prevented with `preventDefault` on shift + mouse down
   (`suppressesTextSelection` in `utils.ts`).
@@ -2299,7 +2303,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   draft, so the drawer's main advantage, the results beside it, does not count; two columns show more at once; the nose
   ties it to the filter button; in narrow places it becomes one column. The drawer stays switchable for now). Both
   are in the code: the filter view (`FilterView`, the sheet below the toolbar, see Filtering) and the drawer, a prototype
-  (`FilterSidebar` in `FilterPanel.tsx`: at the right edge over the rows, its buttons at the top: `⟲ | [✓ Apply] [×]`, Cancel an icon-only × at the very end, tipped "Cancel" (2026-10-11,
+  (`FilterSidebar` in `filter-panel.tsx`: at the right edge over the rows, its buttons at the top: `⟲ | [✓ Apply] [×]`, Cancel an icon-only × at the very end, tipped "Cancel" (2026-10-11,
   the user's wish: where a drawer's close button is; before, "Cancel" as a ghost button before Apply, with Tabler's
   thin `arrow-left` until the same day), the title with the count and Clear as Tabler's `eraser` (the same day; the ×
   before); animated (2026-10-11, the user's wish, tried again; off from 2026-10-09): uncovered from the right edge to
@@ -2309,7 +2313,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   first paint (no switch while it is open; a resize counts at the next opening), the drawer `min(52rem, 100%)` wide (`28rem` with one), the filters down the first
   column, then the second, each column lining up its labels; one column again below 40rem of the drawer, a container
   query). A page flag switches every table, live: the attribute
-  `data-data-table-filter-drawer` on `<html>` (`useFilterDrawerFlag` in `DataTableView.tsx`, a `MutationObserver`;
+  `data-data-table-filter-drawer` on `<html>` (`useFilterDrawerFlag` in `data-table-view.tsx`, a `MutationObserver`;
   not an API; 2026-10-09, the user's wish: a check item "Filter drawer" in the section "Prototypes" of the root page's
   kebab menu, remembered per browser, on by default since 2026-10-11 (the user's wish; off before); the constant `FILTER_SIDEBAR` before). A switch closes what is
   open, its draft dropped. Then remove the other one and the flag, or make it a prop.
@@ -2327,7 +2331,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       the title for a few hours the same day, where the button's text went for lack of room when the count came); while the name field of "Save as…" is open, the row is that field).
     - The saved filters, only while there are some: a ghost button with the name of the saved filter the draft
       equals (`sameValue`), else "Saved filters" (`Texts.savedFilters`; with a name, that is its description), cut off
-      when long, and a chevron; its menu (opens upwards) (`SavedFilterMenu` in `FilterPanel.tsx`, `.saved-filter-menu`): per saved
+      when long, and a chevron; its menu (opens upwards) (`SavedFilterMenu` in `filter-panel.tsx`, `.saved-filter-menu`): per saved
       filter two items on one line, the name (a check at the current one; a click loads it into the draft, Apply
       applies it as always) and an × (`Texts.deleteSavedFilter`, "Delete {name}"; calls `remove`, the menu stays
       open; a rejection is only logged).
@@ -2359,7 +2363,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       those lines; another user's keeps the mark. (Weighed: "Save as…" for a saved filter again, replacing it by name.)
       Not done: sorting the menu into own and shared ones.
     - Demo: the React tab, in memory, with sharing (a name saved again replaces that one); the Board Manager's
-      meetings tables in `localStorage`, with sharing and a made-up colleague's shared filter. Tests: `DataTable.test.tsx` ("saved filters (the filter drawer)"), the element's property.
+      meetings tables in `localStorage`, with sharing and a made-up colleague's shared filter. Tests: `data-table.test.tsx` ("saved filters (the filter drawer)"), the element's property.
 
 - Cards in a narrow table (2026-10-05, the first step is done, see "Cards in a narrow table"). TBD:
   - Sorting: there are no column headers; e.g. a sort menu in the toolbar (the sortable columns, ascending or

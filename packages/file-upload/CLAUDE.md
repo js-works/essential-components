@@ -68,29 +68,29 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     `I18nAdapter` and sizes formatted in its locale), `view.ts` (hints, status text,
     actions per status), `preview.ts` (object URL for image previews), `utils.ts`.
 - `src/element/`: the custom element.
-  - `createFileUploadClass.ts`: the factory (the public entry).
-  - `FileUploadElement.ts`: the internal base class (attributes, properties, shadow DOM, rendering of the list,
+  - `create-file-upload-class.ts`: the factory (the public entry).
+  - `file-upload-element.ts`: the internal base class (attributes, properties, shadow DOM, rendering of the list,
     tooltip, preview dialog, focus).
   - `styles.ts`: the CSS (a template string with the theme values put in) and the shared stylesheet.
   - `icons.ts`: the SVG icons (Tabler, with the license notice, including Tabler's `upload` for the drop area).
-  - `FileUploadElement.test.ts`: the tests of the element. `FileUploadElement.browser.test.ts`: form association.
+  - `file-upload-element.test.ts`: the tests of the element. `file-upload-element.browser.test.ts`: form association.
 - `src/index.ts`: the public API (`createFileUploadClass` and the types, flat).
 - `src/react/`: the React wrapper, the subpath `@local/file-upload/react` (built as `dist/react.js`, the main entry as `dist/index.js`).
   - `index.ts` exports `createFileUploadComponent` and the types (`src/api/react/`), flat.
-  - `createFileUploadComponent.tsx`: the factory. `client.ts`: the DOM part (the element class, the internal adapter
+  - `create-file-upload-component.tsx`: the factory. `client.ts`: the DOM part (the element class, the internal adapter
     setter), loaded with `import()` on the first mount, so the wrapper can be imported on the server.
-  - Tests: `createFileUploadComponent.test.tsx` (jsdom), `createFileUploadComponent.server.test.tsx` (Node).
+  - Tests: `create-file-upload-component.test.tsx` (jsdom), `create-file-upload-component.server.test.tsx` (Node).
 - `demo/` + `index.html`: the demo (`npm run dev`).
   - `index.html` + `main.ts`: the page, a shell around the demo element: a header with the title and, top right, the
     global switches (language, color scheme), which change `<html>`. It registers the demo element as `file-upload-demo`.
-  - `FileUploadDemo.ts`: the whole demo as a light DOM custom element (see "Demo element" below), with two tabs:
+  - `file-upload-demo.ts`: the whole demo as a light DOM custom element (see "Demo element" below), with two tabs:
     "Custom element" and "React". The custom element tab, plain HTML and TypeScript: the switches of the component
     (the behavior of the fake server, accept, max. file size, max. files, parallel uploads, multiple, manual upload,
     previews, density, required, disabled), below them two elements side by side (default look with a `<label for>` of the
     page, and `acme-upload` with its own theme, styles, a `::part()` rule, a `prompt` slot and its own label), each in
     a `<form>` (`name="attachments"`) with a line with the state of its list and a submit that shows what the form
     sends. The fake server (`upload.ts`) answers with an id. `format.ts`: the state line and the sent values.
-  - `react/ReactDemo.tsx`: the React tab (`mountReactDemo(container)`, returns the unmount). Two columns, each with its
+  - `react/react-demo.tsx`: the React tab (`mountReactDemo(container)`, returns the unmount). Two columns, each with its
     own language (a React context read by the `hook` of `i18n`, adapter `createLocaleI18n`), a `required` switch and a
     `<form>` whose submit shows the `FormData`. The second one has a JSX label and fills the `prompt` slot.
   - `demo.css`: only what is specific to this demo.
@@ -363,7 +363,7 @@ These are the first proposals behind `src/api/` and the element. Each one can be
   - Text buttons ("Browse", "Clear", "Upload all", decided): all in the same neutral style (border, no fill, the
     `surfaceColor` on hover), none in the accent color. Their text has the size of the prompt next to them (`1em`;
     it was `0.857em` until 2026-09-29, too small). The empty element's height follows (the React placeholder:
-    content 1.806em, see `createFileUploadComponent.tsx`). They look as harmless as possible, because they will rarely
+    content 1.806em, see `create-file-upload-component.tsx`). They look as harmless as possible, because they will rarely
     match the buttons of the app's component library exactly, and the element is a form field, not the page's main
     action. "Upload all" keeps its icon and its place at the end. An app that wants a prominent button styles it with
     `::part()`.

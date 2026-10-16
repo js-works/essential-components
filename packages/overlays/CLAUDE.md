@@ -17,7 +17,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 
 - Its own code style: double quotes, no dprint (the `.js` suffixes on relative imports are the rule of every package
   since 2026-10-13, `typescript.md`).
-- The demo rules are in the comment of `src/demo/OverlaysDemo.ts`.
+- The demo rules are in the comment of `src/demo/overlays-demo.ts`.
 - `exports` in `package.json` (2026-10-15, the user's choice; proposed at about 70%, over an alias per package and
   entry in the root): the entries `.` and `./react` have a `source` condition first, their files in `src/`, then
   the built files in `dist/`. The root's demo resolves the package by name (`@local/…`) to its sources by that

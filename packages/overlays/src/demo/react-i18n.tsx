@@ -151,7 +151,7 @@ function App() {
   );
 }
 
-// Renders the demo into the container (a tab panel of OverlaysDemo.ts). Returns the unmount.
+// Renders the demo into the container (a tab panel of overlays-demo.ts). Returns the unmount.
 export function mountReactI18nDemo(container: Element): () => void {
   const root = createRoot(container);
   root.render(<App />);

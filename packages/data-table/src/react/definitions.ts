@@ -1,19 +1,15 @@
-import type { ActionMenu, ColumnGroup, TableAction, TableColumn, TableFilters } from '../api/react/index.js';
+import type { TableActions, TableColumns, TableFilters } from '../api/react/index.js';
 
 export { defineActions, defineColumns, defineFilters };
 
 // The columns of a table, typed by its rows: `defineColumns<User>([…])`, no type annotation needed. Returns them as
 // they are.
-function defineColumns<Row>(
-  columns: readonly (TableColumn<Row> | ColumnGroup<Row>)[],
-): readonly (TableColumn<Row> | ColumnGroup<Row>)[] {
+function defineColumns<Row>(columns: TableColumns<Row>): TableColumns<Row> {
   return columns;
 }
 
 // The actions of a table, typed by its rows: `defineActions<User>([…])`. Returns them as they are.
-function defineActions<Row>(
-  actions: readonly (TableAction<Row> | ActionMenu<Row>)[],
-): readonly (TableAction<Row> | ActionMenu<Row>)[] {
+function defineActions<Row>(actions: TableActions<Row>): TableActions<Row> {
   return actions;
 }
 

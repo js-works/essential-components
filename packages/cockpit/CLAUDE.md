@@ -167,7 +167,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   "Try again"), then kept: the others get `hidden`, so each keeps its state. Its element gets `data-hash-segment` (its
   id): `ui.ts` counts it as a level of the hash, so tabs inside it write `#app/tab`, and restore that when it is shown
   again.
-- The sidebar adapts to the number of apps (`FEW` = 8 since 2026-10-07 (12 before: the root page has 9 apps and wanted "Recent" and folders), `MANY` = 30 in `CockpitElement.ts`):
+- The sidebar adapts to the number of apps (`FEW` = 8 since 2026-10-07 (12 before: the root page has 9 apps and wanted "Recent" and folders), `MANY` = 30 in `cockpit-element.ts`):
   - Up to 8: every app listed, the groups as plain headings; no search, no "Recent".
   - More: a search button (2026-10-03: an icon-only button with the tooltip "Search (Ctrl K)", in the title row,
     at its right end, vertically centered on title and subtitle; in the rail below the logo; also Ctrl+K / ⌘K: a command palette, a modal `<dialog>`; ranked: title starts with the
@@ -398,7 +398,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   icons for hundreds of apps help nobody), except in the rail, where the icon is all there is: its initials (framed
   in the rail, 2026-10-09, and in its flyouts).
 - The taskbar (2026-10-07, the user's wish: the split proposed, the rest as proposed, without discussing each step):
-  - An internal Lit element (`TaskbarElement.ts`, its CSS `taskbarStyles.ts`), without state: the cockpit sets
+  - An internal Lit element (`taskbar-element.ts`, its CSS `taskbar-styles.ts`), without state: the cockpit sets
     `tasks` (`Task`: `{ id, title, icon?, closable? }`, in the order to show) and `active`, and gets `task-select` and
     `task-close` (`CustomEvent<{ id }>`, bubbling, not composed), and `task-move` (below).
   - Private since 2026-10-11 (the user's rule: a package never takes a tag name of its own): the tag
@@ -509,9 +509,9 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   entry in the root): each entry has a `source` condition first, its file in `src/`, then its built file in `dist/`.
   The root's demo resolves the package by name (`@local/…`) to its sources by that condition (its `vite.config.ts`
   and `tsconfig.json`); everywhere else, a customer's copy too, the condition is ignored and `dist/` counts.
-- `src/api/`: the types (by topic); `src/element/`: the custom element (`CockpitElement.ts`, Lit: shadow root, light-DOM apps,
-  routing, the whole UI; `createCockpitClass.ts`), `menu.ts` (the menus), `icons.ts`, its CSS (`styles.ts`); the
-  taskbar (`TaskbarElement.ts`, `taskbarStyles.ts`); `src/core/`: search, texts, storage.
+- `src/api/`: the types (by topic); `src/element/`: the custom element (`cockpit-element.ts`, Lit: shadow root, light-DOM apps,
+  routing, the whole UI; `create-cockpit-class.ts`), `menu.ts` (the menus), `icons.ts`, its CSS (`styles.ts`); the
+  taskbar (`taskbar-element.ts`, `taskbar-styles.ts`); `src/core/`: search, texts, storage.
 - `demo/`: the package's demo (`npm run dev`), with 3, 30 or 100 apps (the "Apps" choice in the footer; `?apps=some`, `?apps=many`); the 100 apps with `groupDisplay: 'select'`; in the 30 and 100 apps every app has a group and a
   subgroup (no "Other"); `demo/ui/`: the
   design language (a copy, like in every package).

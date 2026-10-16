@@ -1,6 +1,6 @@
 // The design language first, so the demo's own CSS comes after it.
 import './ui/ui.css';
-import { DataTableDemo } from './DataTableDemo.js';
+import { DataTableDemo } from './data-table-demo.js';
 
 // The page around the demo: its global switches set `<html lang>` and the color scheme for everything on the page. The
 // demo's I18nAdapter follows `<html lang>` (texts and numbers), and so does the hyphenation of long words in the cells.

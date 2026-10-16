@@ -966,7 +966,7 @@ async function runMaximizable(surface: "dialog" | "drawer"): Promise<void> {
 
 // -------------------------------------------------------------------
 // The two Lit panels (Toasts, Dialogs), each next to the result log. The demo element
-// (OverlaysDemo.ts) renders them into its tab panels.
+// (overlays-demo.ts) renders them into its tab panels.
 // -------------------------------------------------------------------
 
 const resultLog = html`

@@ -16,6 +16,7 @@ export {
   updateAgendaItem,
   withSectionDraft,
 };
+
 export type { AgendaRow, SectionDraft };
 
 // `number`: `2` for an item without a section, `2.1` for an item in a section.

@@ -20,6 +20,7 @@ import {
   yesBtn,
   yesBtnDanger,
 } from "./buttons.js";
+
 import type { ButtonConfig } from "./buttons.js";
 import { mountDialog } from "../element/element.js";
 import { FormDialogData } from "../form-data.js";
@@ -33,6 +34,7 @@ import type {
   DialogSlots,
   DialogSpec,
 } from "../../api/dialogs/adapter.js";
+
 import type { OverlayContent } from "../../api/dialogs/content.js";
 import type { TextKey } from "../texts.js";
 import type {
@@ -40,6 +42,7 @@ import type {
   DialogMount,
   ResolvedNote,
 } from "../view.js";
+
 import type { DialogViewConfig } from "../../api/dialogs/dialog.js";
 import type {
   AnyDialogResult,

@@ -25,7 +25,7 @@ function define(tag: string, element: CustomElementConstructor): void {
 
 // The placeholder of the planned components (one element for all, told apart by its attributes).
 const planned = async () => {
-  define('planned-demo', (await import('./planned/PlannedDemo.js')).PlannedDemo);
+  define('planned-demo', (await import('./planned/planned-demo.js')).PlannedDemo);
 };
 
 // Prototypes to try out, in a section of the kebab menu (2026-10-09, the user's wish), before "Reset demo": a check
@@ -154,7 +154,7 @@ customElements.define(
         load: async () => {
           define(
             'human-resources-demo',
-            (await import('./human-resources/app/HumanResourcesDemo.js')).HumanResourcesDemo,
+            (await import('./human-resources/app/human-resources-demo.js')).HumanResourcesDemo,
           );
         },
       },
@@ -168,7 +168,7 @@ customElements.define(
         icon: icon('<path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/><path d="M12 7v5l3 3"/>'),
         element: 'time-tracker-demo',
         load: async () => {
-          define('time-tracker-demo', (await import('./time-tracker/app/TimeTrackerDemo.js')).TimeTrackerDemo);
+          define('time-tracker-demo', (await import('./time-tracker/app/time-tracker-demo.js')).TimeTrackerDemo);
         },
       },
       {
@@ -183,7 +183,7 @@ customElements.define(
         ),
         element: 'board-manager-demo',
         load: async () => {
-          define('board-manager-demo', (await import('./board-manager/app/BoardManagerDemo.js')).BoardManagerDemo);
+          define('board-manager-demo', (await import('./board-manager/app/board-manager-demo.js')).BoardManagerDemo);
         },
       },
       {
@@ -197,7 +197,7 @@ customElements.define(
         ),
         element: 'file-center-demo',
         load: async () => {
-          define('file-center-demo', (await import('./file-center/app/FileCenterDemo.js')).FileCenterDemo);
+          define('file-center-demo', (await import('./file-center/app/file-center-demo.js')).FileCenterDemo);
         },
       },
       {
@@ -211,7 +211,7 @@ customElements.define(
         ),
         element: 'user-manager-demo',
         load: async () => {
-          define('user-manager-demo', (await import('./user-manager/app/UserManagerDemo.js')).UserManagerDemo);
+          define('user-manager-demo', (await import('./user-manager/app/user-manager-demo.js')).UserManagerDemo);
         },
       },
       {
@@ -224,7 +224,7 @@ customElements.define(
         load: async () => {
           define(
             'data-table-demo',
-            (await import('../packages/data-table/demo/DataTableDemo.js')).DataTableDemo,
+            (await import('../packages/data-table/demo/data-table-demo.js')).DataTableDemo,
           );
         },
       },
@@ -236,7 +236,7 @@ customElements.define(
         subgroup: 'Components',
         element: 'file-upload-demo',
         load: async () => {
-          define('file-upload-demo', (await import('../packages/file-upload/demo/FileUploadDemo.js')).FileUploadDemo);
+          define('file-upload-demo', (await import('../packages/file-upload/demo/file-upload-demo.js')).FileUploadDemo);
         },
       },
       {
@@ -247,7 +247,7 @@ customElements.define(
         subgroup: 'Components',
         element: 'overlays-demo',
         load: async () => {
-          define('overlays-demo', (await import('../packages/overlays/src/demo/OverlaysDemo.js')).OverlaysDemo);
+          define('overlays-demo', (await import('../packages/overlays/src/demo/overlays-demo.js')).OverlaysDemo);
         },
       },
       {
@@ -260,7 +260,7 @@ customElements.define(
         load: async () => {
           define(
             'form-validation-demo',
-            (await import('../packages/form-validation/demo/FormValidationDemo.js')).FormValidationDemo,
+            (await import('../packages/form-validation/demo/form-validation-demo.js')).FormValidationDemo,
           );
         },
       },

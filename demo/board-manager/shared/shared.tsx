@@ -2,8 +2,8 @@ import { createDataTableComponent } from '@local/data-table/react';
 import type { DataTableProps } from '@local/data-table/react';
 import { mantineTheme } from '@local/data-table/themes';
 import { Group, Stack, Text, Title } from '@mantine/core';
-import { useSyncExternalStore } from 'react';
-import type { ReactElement, ReactNode } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
+import type { ReactNode } from 'react';
 import { IoMdHome } from 'react-icons/io';
 import {
   TbArrowLeft,
@@ -27,6 +27,7 @@ import {
   TbUpload,
   TbUsers,
 } from 'react-icons/tb';
+
 import { useStore } from 'zustand';
 import { i18n as tableI18n } from '../../../packages/data-table/demo/i18n.js';
 import { db } from '../infra/in-memory/index.js';
@@ -45,6 +46,7 @@ export {
   SCOPE_CLASS,
   setSchemeHost,
   useDb,
+  useReloadOnChange,
   useScheme,
 };
 
@@ -59,7 +61,7 @@ const BaseDataTable = createDataTableComponent({ i18n: tableI18n, theme: mantine
 // something to page (`footer="auto"`, 2026-10-06), and the number of rows after the title (`showTotal`, so a short
 // list without a footer still tells it), and 50 rows a page (2026-10-08, the user's wish, in every app), unless a table
 // says otherwise.
-function DataTable<Row>(props: DataTableProps<Row>): ReactElement {
+function DataTable<Row>(props: DataTableProps<Row>) {
   return (
     <div className="board-manager__table">
       <BaseDataTable footer="auto" showTotal pageSize={50} {...props} />
@@ -73,6 +75,12 @@ const PAGE_SIZE_OPTIONS: readonly number[] = [10, 25, 50];
 // The fake server's state, for a page that shows it (the breadcrumb, the home page, the headers).
 function useDb<T>(selector: (state: Db) => T): T {
   return useStore(db, selector);
+}
+
+// A table that follows the fake server's data: it loads its page again after every change (a flow saves, the table
+// shows it; the flows need not know the table).
+function useReloadOnChange(tableCtrl: { reload: () => void }): void {
+  useEffect(() => db.subscribe(() => tableCtrl.reload()), [tableCtrl]);
 }
 
 const locale = () => document.documentElement.lang || 'en-US';
@@ -164,7 +172,7 @@ function useScheme(): 'light' | 'dark' {
 // not inside the app's element).
 const SCOPE_CLASS = 'board-manager';
 
-function Scope({ children }: { children: ReactNode }): ReactElement {
+function Scope({ children }: { children: ReactNode }) {
   return (
     <div className={SCOPE_CLASS} data-mantine-color-scheme={useScheme()}>
       {children}
@@ -180,7 +188,7 @@ function PageHeader(
     badges?: ReactNode;
     actions?: ReactNode;
   },
-): ReactElement {
+) {
   return (
     <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
       <Stack gap={4}>

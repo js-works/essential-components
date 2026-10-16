@@ -12,6 +12,7 @@ export {
   statusOf,
   upcomingEvents,
 };
+
 export type {
   DocumentCategory,
   DocumentRepository,

@@ -2,7 +2,17 @@ import type { ReactNode } from 'react';
 import type { RowGroup } from '../query.js';
 import type { ActionSeparator, ActionVariant } from '../settings.js';
 
-export type { ActionFields, ActionLook, ActionMenu, GeneralAction, GroupAction, RowAction, RowsAction, TableAction };
+export type {
+  ActionFields,
+  ActionLook,
+  ActionMenu,
+  GeneralAction,
+  GroupAction,
+  RowAction,
+  RowsAction,
+  TableAction,
+  TableActions,
+};
 
 type ActionLook =
   | { label: ReactNode; icon?: ReactNode; tip?: string }
@@ -45,6 +55,8 @@ type GroupAction<Row> = {
 } & ActionLook;
 
 type TableAction<Row> = GeneralAction | RowAction<Row> | RowsAction<Row> | GroupAction<Row>;
+
+type TableActions<Row> = readonly (TableAction<Row> | ActionMenu<Row>)[];
 
 type ActionMenu<Row> = {
   type: 'menu';

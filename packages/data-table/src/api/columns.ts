@@ -10,6 +10,7 @@ export type {
   ColumnGroup,
   EditField,
   TableColumn,
+  TableColumns,
   TableFilter,
   TableFilters,
 };
@@ -47,6 +48,8 @@ type TableColumn<Row, C> = {
   hideable?: boolean;
   hidden?: boolean;
 };
+
+type TableColumns<Row, C> = readonly (TableColumn<Row, C> | ColumnGroup<Row, C>)[];
 
 type ColumnGroup<Row, C> = {
   header: TextContent<C>;

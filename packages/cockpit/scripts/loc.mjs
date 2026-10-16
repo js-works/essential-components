@@ -1,6 +1,6 @@
 // The lines of the package, by kind and by folder: `npm run loc` (src), `npm run loc:all` (also the demo).
 // sloc counts each file; the kind comes from the file's name, as the CSS and the SVG icons live in TypeScript files
-// (`styles.ts`, `taskbarStyles.ts`, `icons.ts`).
+// (`styles.ts`, `taskbar-styles.ts`, `icons.ts`).
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, extname, join } from 'node:path';
 import sloc from 'sloc';

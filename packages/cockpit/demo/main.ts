@@ -4,7 +4,7 @@ import './demo.css';
 import { createCockpitClass } from '../src/index.js';
 import type { FooterAction } from '../src/index.js';
 import { FEW, GROUPS, MANY, SOME } from './apps.js';
-import { DemoApp } from './DemoApp.js';
+import { DemoApp } from './demo-app.js';
 import { accentSetting, MENU, navigationSetting, pageSettings, USER, userMenu } from './footer.js';
 
 // The page: a cockpit with 3, 30 or 100 apps (kept in the query string: the apps of a cockpit are fixed, so a change

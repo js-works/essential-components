@@ -1,5 +1,5 @@
 import { Alert, Anchor, Avatar, Badge, Group, Paper, Stack, Text, Title } from '@mantine/core';
-import type { ReactElement, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import type { Absence, AbsenceKind, ClockState, Employee, RequestStatus, TodayStatus } from '../../domain/index.js';
 import { useTranslate } from '../lib/i18n/index.js';
@@ -29,7 +29,7 @@ function PageHeader({ title, subtitle, badges, actions }: {
   subtitle?: ReactNode;
   badges?: ReactNode;
   actions?: ReactNode;
-}): ReactElement {
+}) {
   return (
     <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm" className="time-tracker__page-header">
       <Stack gap={4}>
@@ -45,12 +45,12 @@ function PageHeader({ title, subtitle, badges, actions }: {
 }
 
 // An employee's initials in a circle, in a color from their name.
-function EmployeeAvatar({ name, size = 26 }: { name: string; size?: number }): ReactElement {
+function EmployeeAvatar({ name, size = 26 }: { name: string; size?: number }) {
   return <Avatar name={name} color="initials" size={size} radius="xl" />;
 }
 
 // An employee (avatar) with their name as a link to their page, and their title below it (`title`).
-function EmployeeLabel({ employee, title = false }: { employee: Employee; title?: boolean }): ReactElement {
+function EmployeeLabel({ employee, title = false }: { employee: Employee; title?: boolean }) {
   return (
     <Group gap={8} wrap="nowrap">
       <EmployeeAvatar name={employee.name} size={title ? 26 : 22} />
@@ -99,7 +99,7 @@ function absenceText(t: ReturnType<typeof useTranslate>, absence: Pick<Absence, 
 type Pill = { variant: 'filled' | 'light' | 'outline'; color?: 'gray' };
 
 // A kind of absence; a pending one outlined (it does not count yet).
-function AbsenceBadge({ absence }: { absence: Pick<Absence, 'kind' | 'halfDay' | 'pending'> }): ReactElement {
+function AbsenceBadge({ absence }: { absence: Pick<Absence, 'kind' | 'halfDay' | 'pending'> }) {
   const t = useTranslate();
 
   return (
@@ -117,7 +117,7 @@ const STATUS_PILLS: Readonly<Record<RequestStatus, Pill>> = {
   cancelled: { variant: 'light', color: 'gray' },
 };
 
-function RequestStatusBadge({ status }: { status: RequestStatus }): ReactElement {
+function RequestStatusBadge({ status }: { status: RequestStatus }) {
   const t = useTranslate();
 
   return <Badge {...STATUS_PILLS[status]}>{t(`status.${status}`)}</Badge>;
@@ -129,19 +129,19 @@ const CLOCK_PILLS: Readonly<Record<ClockState, Pill>> = {
   out: { variant: 'light', color: 'gray' },
 };
 
-function ClockBadge({ state }: { state: ClockState }): ReactElement {
+function ClockBadge({ state }: { state: ClockState }) {
   const t = useTranslate();
 
   return <Badge {...CLOCK_PILLS[state]}>{t(`clockState.${state}`)}</Badge>;
 }
 
 // Where someone is today: the clock, or their absence.
-function TodayBadge({ status }: { status: TodayStatus }): ReactElement {
+function TodayBadge({ status }: { status: TodayStatus }) {
   return status.kind === 'clock' ? <ClockBadge state={status.state} /> : <AbsenceBadge absence={status.absence} />;
 }
 
 // A page only for a team lead, opened as an employee (e.g. by its link): what it is, and how to see it.
-function LeadOnly(): ReactElement {
+function LeadOnly() {
   const t = useTranslate();
 
   return (
@@ -159,7 +159,7 @@ function StatCard({ label, value, detail, to, toLabel }: {
   to?: string;
   // The name of the page the card opens, shown at its top right.
   toLabel?: string;
-}): ReactElement {
+}) {
   const content = (
     <Stack gap={4}>
       <Group justify="space-between" wrap="nowrap" gap="xs">

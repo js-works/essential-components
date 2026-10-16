@@ -9,6 +9,7 @@ import type {
   Organization,
   Person,
 } from '../../domain/index.js';
+
 import { seedDb } from './seed.js';
 
 export { db, LOADING_TIME, newId, save, SAVE_TIME, wait };

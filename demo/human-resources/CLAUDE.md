@@ -46,8 +46,8 @@ Started 2026-10-08.
   a `human-resources__table`, `footer="auto"` and `showTotal`; all compact, `density="compact"`, 2026-10-08, the user's
   wish, like the User Manager's), `DocumentUpload`, icons, page parts (header, avatar, labels, the pills, the stat card, `Detail`, the
   rating, a progress cell), `FieldError`, the translations, formatting, `useForm`.
-- `app/`: `HumanResourcesDemo.tsx` (the element `human-resources-demo`), `App.tsx`, `look.tsx` (the Time Tracker's),
-  `hashHistory.ts` (the same file in all five apps), `human-resources.css`.
+- `app/`: `human-resources-demo.tsx` (the element `human-resources-demo`), `app.tsx`, `look.tsx` (the Time Tracker's),
+  `hash-history.ts` (the same file in all five apps), `human-resources.css`.
 
 ## Look
 
@@ -64,7 +64,7 @@ Started 2026-10-08.
 ## App
 
 - Saved filters (2026-10-11, the user's wish) in Employees, Recruiting (the openings) and Checklists, with colleagues'
-  shared filters: see "Saved filters in the root's apps" in the root's `CLAUDE.md` (`shared/ui/savedFilters.ts`).
+  shared filters: see "Saved filters in the root's apps" in the root's `CLAUDE.md` (`shared/ui/saved-filters.ts`).
 - App header (`AppHeader`, 2026-10-08; "top bar" before): the app icon (`TbUsersGroup`; the cockpit's the same Tabler icon), "Human Resources" ("Personal" in German),
   the user menu (the viewer's avatar and title, "My page"), Back and Forward.
   - The modules as tabs (2026-10-08, the user's wish: tried here first, then rolled out to the Board Manager, the User
@@ -94,7 +94,7 @@ Started 2026-10-08.
 - English and German (i18next, like the Time Tracker's: flat keys typed by `en.ts`).
 - Unsaved changes (2026-10-09, the user's wish; the pilot, then the Board Manager, the Time Tracker and the User
   Manager; not the File Center, whose dialogs have one field or a tree): `DialogForm`
-  (`useForm.tsx`) passes form-validation's `isDirty` to the overlays' `<Form dirty>`. Cancel, Escape and the close
+  (`use-form.tsx`) passes form-validation's `isDirty` to the overlays' `<Form dirty>`. Cancel, Escape and the close
   button of a form dialog then ask in place of the dialog's content, "Discard your changes?" (Discard, Keep editing; the overlays'
   own texts, English and German), when a value differs from its initial one; without changes they close at once. Escape there answers Discard (2026-10-09, the user's wish: Escape, Escape leaves a changed form), said in a line below the question ("Press Esc to discard them.", the overlays' text; only with a keyboard).
   (An `openForm` helper with a `guardClose` loop per call was tried first and dropped the same day: the library does

@@ -12,6 +12,7 @@ export {
   weekdayOf,
   weekStart,
 };
+
 export type { Holiday, HolidayName };
 
 // Dates are local calendar days as `yyyy-mm-dd` strings, times local `HH:mm` strings: no time zones, and they compare

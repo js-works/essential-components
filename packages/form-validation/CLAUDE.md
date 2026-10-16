@@ -42,7 +42,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   two days until 2026-10-14). Renamed then (`typescript.md`, two words): `Binding` → `FieldBinding`, `BindingConfig`
   → `FieldBindingConfig`, `PropNames` → `FieldPropNames`, `Fields` → `FormFields`, `Message` → `ValidationMessage`,
   `LibCatalog` → `BuiltInCatalog`.
-- `src/defineUseForm.ts`: the hook factory: the store (values, errors, dirty and shown fields), events, submit and
+- `src/define-use-form.ts`: the hook factory: the store (values, errors, dirty and shown fields), events, submit and
   the props of `form()` and `field.x()`.
 - `src/api/`: the public types (2026-10-12; `src/types.ts` before): `fields.ts` (bindings, field options and props),
   `form.ts` (`UseFormOptions`, `UseFormReturn`, the submit, `FormConfig`, `FormMeta`), `texts.ts` (the messages,
@@ -54,13 +54,13 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 - `src/messages/`: the bundled catalogs (de, en, fr, es, ru, hu, ar, zh-CN, zh-TW) and `localeCandidates`.
 - `src/meta.ts`: `formMeta` (an own Zod registry) and `binding`. `src/merge.ts`: `mergeProps` (chained handlers,
   combined refs).
-- `src/defineUseForm.test.tsx`: the tests.
-- `demo/`: the demo (not part of the library; typechecked with it). `FormValidationDemo.ts`: the whole demo as a light DOM
+- `src/define-use-form.test.tsx`: the tests.
+- `demo/`: the demo (not part of the library; typechecked with it). `form-validation-demo.ts`: the whole demo as a light DOM
   custom element (exported, not registered; see "Demo element" in the `CLAUDE.md` of the file upload; the root page
-  registers it as `form-validation-demo`). `FormDemo.tsx`: the form and the schema. `fields.tsx`: text, select and
-  checkbox field components. `FieldMessage.tsx`: the message of a field as a popover (2026-10-07, the user's wish; a copy of
+  registers it as `form-validation-demo`). `form-demo.tsx`: the form and the schema. `fields.tsx`: text, select and
+  checkbox field components. `field-message.tsx`: the message of a field as a popover (2026-10-07, the user's wish; a copy of
   the Board Manager's `FieldError` of the root page, for a plain input: in the top layer, shown while the field has the
-  focus, placed by script below the control, the arrow up or down; its CSS in `demo.css`). `useForm.ts`: `defineUseForm` once. `i18n.ts`: texts and adapter. `demo.css`, `ui/` (the
+  focus, placed by script below the control, the arrow up or down; its CSS in `demo.css`). `use-form.ts`: `defineUseForm` once. `i18n.ts`: texts and adapter. `demo.css`, `ui/` (the
   design language, a copy of `packages/ui-theme/src`), `main.ts` + `index.html` (the standalone page).
 - Commands:
   - `npm run dev`: the demo

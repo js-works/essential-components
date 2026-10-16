@@ -16,7 +16,7 @@ const patterns = [
 const publicApi = [
   'src/index.ts',
   'src/react/index.ts',
-  'src/react/createDataTableComponent.tsx',
+  'src/react/create-data-table-component.tsx',
   'src/themes/index.ts',
 ];
 

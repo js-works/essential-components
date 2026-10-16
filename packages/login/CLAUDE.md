@@ -100,7 +100,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     input with a smaller text), the link buttons with room above and below (bigger targets).
   - The safe areas of the screen (`env(safe-area-inset-*)`) are kept as padding.
 - Three views in the one card, the heading and the fields change, the logo and the title stay (`LoginForm`,
-  `ForgotForm`, `RegisterForm` in `LoginScreen.tsx`): "Sign in", "Reset password", "Create account". Each but the first
+  `ForgotForm`, `RegisterForm` in `login-screen.tsx`): "Sign in", "Reset password", "Create account". Each but the first
   has a link "Back to sign in".
   - Reset password: one field (username or email), the intro text, "Send instructions". After it succeeded, only the
     message "If an account exists for this entry, instructions … have been sent." (always the same: it must not tell
@@ -121,7 +121,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   entry in the root): each entry has a `source` condition first, its file in `src/`, then its built file in `dist/`.
   The root's demo resolves the package by name (`@local/…`) to its sources by that condition (its `vite.config.ts`
   and `tsconfig.json`); everywhere else, a customer's copy too, the condition is ignored and `dist/` counts.
-- `src/api/` (types), `src/LoginScreen.tsx`, `src/mount.tsx`, `src/login.css`, `src/texts.ts`, `src/page.ts`
+- `src/api/` (types), `src/login-screen.tsx`, `src/mount.tsx`, `src/login.css`, `src/texts.ts`, `src/page.ts`
   (language and scheme of the page).
 - `demo/`: the package's demo (`npm run dev`): any username and password sign in after 600 ms, the password "wrong"
   fails; the account "taken" exists already (registering it fails); reset and register answer after 600 ms; three made-up providers

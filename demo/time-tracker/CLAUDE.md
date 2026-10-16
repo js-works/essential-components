@@ -61,8 +61,8 @@ Started 2026-10-06.
   icons, page parts (header, an employee's avatar and link, the badges of absences, requests and the clock, the cards,
   the notice of a page only for team leads), the decision dialog of a team lead, the translations, formatting,
   `useForm` (form-validation plus the overlays' dialog form), `useNow`, `errorText`.
-- `app/`: `TimeTrackerDemo.tsx` (the element `time-tracker-demo`; the wiring, Mantine's `DatesProvider` in the page's
-  language with Monday first), `App.tsx` (routes, app header, breadcrumb, user menu, history, the hash), `look.tsx` (the
+- `app/`: `time-tracker-demo.tsx` (the element `time-tracker-demo`; the wiring, Mantine's `DatesProvider` in the page's
+  language with Monday first), `app.tsx` (routes, app header, breadcrumb, user menu, history, the hash), `look.tsx` (the
   User Manager's, i.e. the Board Manager's look), `time-tracker.css`.
 
 ## Look
@@ -104,7 +104,7 @@ Started 2026-10-06.
 
 - Saved filters (2026-10-11, the user's wish) in Employees and in the team's tab of Leave (`LeaveTable`'s
   `savedFilters`, given by `LeavePage`), with colleagues' shared filters: see "Saved filters in the root's apps" in
-  the root's `CLAUDE.md` (`shared/ui/savedFilters.ts`).
+  the root's `CLAUDE.md` (`shared/ui/saved-filters.ts`).
 - App header (`AppHeader`, 2026-10-08; "top bar" before) like the Board Manager's, two lines (2026-10-08, the Human Resources' trial, rolled out; a menu of the modules
   on the title, the breadcrumb in the same line before): the app icon (`TbClock`, also the cockpit's), "Time Tracker",
   the modules as tabs (Overview, Time clock, Timesheet, Leave, Sick calls, Team calendar; for a team lead also Approvals
@@ -113,7 +113,7 @@ Started 2026-10-06.
   role switch), Back and Forward; below them the breadcrumb (a house icon with "Home", a link to the start page; then
   module › employee). The role and the history go when the bar is narrow.
 - Routes: `/`, `/clock`, `/timesheet`, `/leave`, `/sick`, `/calendar`, `/approvals`, `/employees`,
-  `/employees/:employeeId`; mirrored in the hash after `#time-tracker`, with the browser's Back and Forward (`app/hashHistory.ts`, see the
+  `/employees/:employeeId`; mirrored in the hash after `#time-tracker`, with the browser's Back and Forward (`app/hash-history.ts`, see the
   root's `CLAUDE.md`). A page only for team leads (Approvals,
   Employees, another's page) shows a notice to an employee.
 - Overview (the start page): the clock, four cards (vacation left, my open requests (side by side: both open Leave),

@@ -1,5 +1,5 @@
 import { Anchor, Avatar, Group, Stack, Text, ThemeIcon, Title } from '@mantine/core';
-import type { ReactElement, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import type { AccessData, PrincipalRef } from '../../domain/index.js';
 import { appIcons } from './icons.js';
@@ -12,7 +12,7 @@ function PageHeader({ title, subtitle, badges, actions }: {
   subtitle?: ReactNode;
   badges?: ReactNode;
   actions?: ReactNode;
-}): ReactElement {
+}) {
   return (
     <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm" className="user-manager__page-header">
       <Stack gap={4}>
@@ -28,7 +28,7 @@ function PageHeader({ title, subtitle, badges, actions }: {
 }
 
 // A user's initials in a circle, in a color from their name.
-function UserAvatar({ name, size = 26 }: { name: string; size?: number }): ReactElement {
+function UserAvatar({ name, size = 26 }: { name: string; size?: number }) {
   return <Avatar name={name} color="initials" size={size} radius="xl" />;
 }
 
@@ -43,7 +43,7 @@ function principalPath(principal: PrincipalRef): string {
 }
 
 // A user (avatar) or a group (group icon) with its name as a link to its page.
-function PrincipalLabel({ data, principal }: { data: AccessData; principal: PrincipalRef }): ReactElement {
+function PrincipalLabel({ data, principal }: { data: AccessData; principal: PrincipalRef }) {
   const name = principalName(data, principal);
 
   return (

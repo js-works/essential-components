@@ -31,6 +31,7 @@ export {
   ToggleMenu,
   WithTip,
 };
+
 export type { ButtonPlacement, MenuEntry, Option, ToggleEntry };
 
 // The widgets of the data table: native elements with the classes of our stylesheet. They know nothing about rows,
@@ -74,7 +75,7 @@ type WithTipProps = {
   children: ReactElement;
 };
 
-function WithTip({ tip, describe, disabled = false, offset = 4, children }: WithTipProps): ReactElement {
+function WithTip({ tip, describe, disabled = false, offset = 4, children }: WithTipProps) {
   const layer = useContext(LayerContext);
 
   if (tip === undefined) {
@@ -98,12 +99,12 @@ function WithTip({ tip, describe, disabled = false, offset = 4, children }: With
   );
 }
 
-function Pill({ children }: { children: ReactNode }): ReactElement {
+function Pill({ children }: { children: ReactNode }) {
   return <span className={styles.pill}>{children}</span>;
 }
 
 // A quiet button that looks like a link: Reset, Clear all, Cancel.
-function TextButton(props: { children: ReactNode; muted?: boolean; onClick: () => void }): ReactElement {
+function TextButton(props: { children: ReactNode; muted?: boolean; onClick: () => void }) {
   const { children, muted = false, onClick } = props;
 
   return (
@@ -124,7 +125,7 @@ type SegmentedProps<V extends string> = {
 };
 
 // A row of connected buttons of which exactly one is chosen (a radio group).
-function Segmented<V extends string>(props: SegmentedProps<V>): ReactElement {
+function Segmented<V extends string>(props: SegmentedProps<V>) {
   const { value, options, label, labelledBy, small = false, onChange } = props;
 
   return (
@@ -152,7 +153,7 @@ function Segmented<V extends string>(props: SegmentedProps<V>): ReactElement {
 }
 
 // The loading indicator: a thin gray bar with a sliding segment (no spinner).
-function LoadingBar({ label }: { label: string }): ReactElement {
+function LoadingBar({ label }: { label: string }) {
   return <span role="status" aria-label={label} className={styles.loadingBar} />;
 }
 
@@ -165,7 +166,7 @@ type CheckboxProps = {
   onChange: (checked: boolean, shift: boolean) => void;
 };
 
-function Checkbox({ label, checked, indeterminate = false, disabled, onChange }: CheckboxProps): ReactElement {
+function Checkbox({ label, checked, indeterminate = false, disabled, onChange }: CheckboxProps) {
   const ref = useRef<HTMLInputElement>(null);
 
   // `indeterminate` is a property only, there is no attribute for it.
@@ -189,7 +190,7 @@ function Checkbox({ label, checked, indeterminate = false, disabled, onChange }:
 }
 
 // The details toggle. The chevron points right when collapsed and turns down (animated) when expanded.
-function ChevronButton(props: { label: string; expanded: boolean; onClick: () => void }): ReactElement {
+function ChevronButton(props: { label: string; expanded: boolean; onClick: () => void }) {
   const { label, expanded, onClick } = props;
 
   return (
@@ -208,7 +209,7 @@ type PagerButtonProps = {
   onClick: () => void;
 };
 
-function PagerButton({ icon, label, disabled, onClick }: PagerButtonProps): ReactElement {
+function PagerButton({ icon, label, disabled, onClick }: PagerButtonProps) {
   const Icon = pagerIcons[icon];
 
   return (
@@ -236,7 +237,7 @@ function PageButton(
     width: string;
     onClick: () => void;
   },
-): ReactElement {
+) {
   return (
     <button
       type="button"
@@ -256,7 +257,7 @@ function PageButton(
 // Without a direction the column is not sorted, and its icon is faint (the stylesheet does that).
 function SortButton(
   props: { tip: string; header: ReactNode; direction: Spec.SortDirection | undefined },
-): ReactElement {
+) {
   const { tip, header, direction } = props;
   const icon = direction === undefined
     ? <icons.SortHeads size={14} className={styles.unsortedIcon} />
@@ -312,7 +313,7 @@ function buttonAttributes(look: Spec.ActionLook, variant: Spec.ActionVariant, pl
 // `busy`: something is running (the Reload button while loading): its icon turns.
 function ActionButton(
   { look, variant, placement, busy = false, disabled = false, onClick }: ActionButtonProps,
-): ReactElement {
+) {
   return (
     <WithTip tip={look.tip} describe={look.label !== undefined}>
       <button
@@ -338,7 +339,7 @@ type ActionMenuProps = Omit<ActionButtonProps, 'onClick' | 'busy' | 'disabled'> 
 // the button, aligned to its end (the actions of the toolbar and the action column both sit at the right), so it does
 // not reach past the table. It is rendered in the layer of the root (so it gets the tokens of the theme). It is not modal. The
 // tooltip of the button is disabled while the menu is open.
-function ActionMenu({ look, variant, placement, chevron, entries }: ActionMenuProps): ReactElement {
+function ActionMenu({ look, variant, placement, chevron, entries }: ActionMenuProps) {
   const layer = useContext(LayerContext);
   const [open, setOpen] = useState(false);
   const withIcons = entries.some((entry) => entry.type !== 'separator' && hasContent(entry.icon));
@@ -413,7 +414,7 @@ type ToggleMenuProps = {
 // checkbox in front, only as a picture of its state (like the options of a multiple select). It opens below the button,
 // aligned to its end. A choice (radio items with a check at the chosen one, under its label) comes first, then the
 // actions (plain items), then the entries, with separators between them.
-function ToggleMenu({ icon, label, choice, actions = [], entries, onToggle }: ToggleMenuProps): ReactElement {
+function ToggleMenu({ icon, label, choice, actions = [], entries, onToggle }: ToggleMenuProps) {
   const layer = useContext(LayerContext);
   const [open, setOpen] = useState(false);
   const look: Spec.ActionLook = { icon, tip: label };
@@ -506,7 +507,7 @@ function ToggleMenu({ icon, label, choice, actions = [], entries, onToggle }: To
   );
 }
 
-function ClearButton({ label, onClick }: { label: string; onClick: () => void }): ReactElement {
+function ClearButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button type="button" className={styles.clearButton} aria-label={label} onClick={onClick}>
       <icons.Close size={14} />
@@ -526,7 +527,7 @@ type SearchFieldProps = {
   inert?: boolean;
 };
 
-function SearchField(props: SearchFieldProps): ReactElement {
+function SearchField(props: SearchFieldProps) {
   const { value, label, clearLabel, onChange, onClear, onKeyDown, inert = false } = props;
 
   return (
@@ -565,7 +566,7 @@ type PageSizeFieldProps = {
 // the column menu's layout): the sizes one below the other, a check at the current one (Base UI's `Menu` with radio
 // items). Above the button (the footer is at the bottom), aligned to its end; another size closes it, the current one
 // changes nothing and keeps it open.
-function PageSizeField({ value, label, text, pending = false, options, onChange }: PageSizeFieldProps): ReactElement {
+function PageSizeField({ value, label, text, pending = false, options, onChange }: PageSizeFieldProps) {
   const layer = useContext(LayerContext);
 
   return (
@@ -627,7 +628,7 @@ type PrefixedTextFieldProps = FilterTextFieldProps & {
 
 // A text field with a small select inside it, at its start, as a chip (e.g. how a text filter matches: contains,
 // starts with, ends with). The select is one of ours (`SelectField`), with its chevron.
-function PrefixedTextField({ prefix, ...field }: PrefixedTextFieldProps): ReactElement {
+function PrefixedTextField({ prefix, ...field }: PrefixedTextFieldProps) {
   return (
     <div className={styles.prefixedField}>
       <div className={styles.prefixSelect}>
@@ -657,7 +658,7 @@ type FilterTextFieldProps = {
   onKeyDown?: KeyboardEventHandler;
 };
 
-function FilterTextField(props: FilterTextFieldProps): ReactElement {
+function FilterTextField(props: FilterTextFieldProps) {
   const { value, placeholder, labelledBy, clearLabel, onChange, onClear, onKeyDown } = props;
 
   return (
@@ -691,7 +692,7 @@ type FilterSelectFieldProps = {
 // values, whatever the mode. Both show a clear button while something is selected, before their arrow (which is always
 // there, and turns while the list is open). A single select also has an option for "nothing" (the placeholder, value
 // ''), so it can be cleared from its list as well.
-function FilterSelectField(props: FilterSelectFieldProps): ReactElement {
+function FilterSelectField(props: FilterSelectFieldProps) {
   const { value, placeholder, labelledBy, clearLabel, multiple, options, onChange } = props;
 
   return (
@@ -721,7 +722,7 @@ type SelectInputProps = {
 
 // A single select that always has a value (e.g. an editor of a row): the look of the other selects, with its chevron,
 // and no clear button.
-function SelectInput({ value, options, labelledBy, onChange }: SelectInputProps): ReactElement {
+function SelectInput({ value, options, labelledBy, onChange }: SelectInputProps) {
   return (
     <div className={styles.field}>
       <SelectField
@@ -752,7 +753,7 @@ type SelectFieldProps = {
 // look of our menus: a single select with a checkmark in front of the chosen option, a multiple select with a checkbox
 // in front of every option. It is rendered into the layer of the root, so it gets the
 // tokens of the theme. It is not modal: the page stays usable while it is open.
-function SelectField({ value, multiple, options, placeholder, naming, onChange }: SelectFieldProps): ReactElement {
+function SelectField({ value, multiple, options, placeholder, naming, onChange }: SelectFieldProps) {
   const layer = useContext(LayerContext);
   const chosen = value.filter((item) => item !== '');
   const labelOf = (item: string) => options.find((option) => option.value === item)?.label ?? item;
@@ -801,7 +802,7 @@ function SelectField({ value, multiple, options, placeholder, naming, onChange }
 // What an option shows in front of its label. A multiple select shows a checkbox, but only as a picture of the state:
 // the option is the control, so the checkbox is hidden from assistive technology and takes no clicks or focus. A
 // single select shows a checkmark at the chosen option, and keeps its room on every option, so the labels line up.
-function OptionMark({ multiple, checked }: { multiple: boolean; checked: boolean }): ReactElement {
+function OptionMark({ multiple, checked }: { multiple: boolean; checked: boolean }) {
   return multiple
     ? <input type="checkbox" className={styles.check} checked={checked} readOnly tabIndex={-1} aria-hidden />
     : (

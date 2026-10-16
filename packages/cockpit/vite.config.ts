@@ -5,7 +5,8 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   build: {
     // Only the latest Chrome, Edge, Firefox and Safari: modern CSS (e.g. `light-dark()`) stays as it is.
-    target: 'esnext',
+    target: 'es2024',
+    cssTarget: 'esnext',
     lib: {
       entry: { index: 'src/index.ts' },
       formats: ['es'],

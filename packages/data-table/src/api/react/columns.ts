@@ -3,7 +3,7 @@ import type { EditorProps } from '../editors.js';
 import type { FilterProps } from '../filters.js';
 import type { ColumnAlign } from '../settings.js';
 
-export type { ColumnEditor, ColumnGroup, EditField, TableColumn, TableFilter, TableFilters };
+export type { ColumnEditor, ColumnGroup, EditField, TableColumn, TableColumns, TableFilter, TableFilters };
 
 type TableFilter = (props: FilterProps) => ReactNode;
 
@@ -30,6 +30,8 @@ type TableColumn<Row> = {
   hideable?: boolean;
   hidden?: boolean;
 };
+
+type TableColumns<Row> = readonly (TableColumn<Row> | ColumnGroup<Row>)[];
 
 type ColumnGroup<Row> = {
   header: ReactNode;

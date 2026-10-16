@@ -71,7 +71,7 @@ function print(blob: Blob): Promise<void> {
 
 // "Print": the PDF is built (with the spinner), then the browser's print dialog.
 async function printMeetingPdf(dialogs: Dialogs, toasts: Toasts, meeting: Meeting): Promise<void> {
-  const scope = dialogs.open();
+  using scope = dialogs.open();
 
   try {
     const file = await create(meeting);
@@ -81,29 +81,25 @@ async function printMeetingPdf(dialogs: Dialogs, toasts: Toasts, meeting: Meetin
   } catch (error) {
     console.error(error);
     toasts.error(translate('pdf.couldNotPrint'));
-  } finally {
-    scope.dispose();
   }
 }
 
 // "Download": the PDF is built (with the spinner) and saved (no toast: the browser shows the download).
 async function downloadMeetingPdf(dialogs: Dialogs, toasts: Toasts, meeting: Meeting): Promise<void> {
-  const scope = dialogs.open();
+  using _spinner = dialogs.open();
 
   try {
     save(await create(meeting), fileName(meeting));
   } catch (error) {
     console.error(error);
     toasts.error(translate('pdf.couldNotCreate'));
-  } finally {
-    scope.dispose();
   }
 }
 
 // "Preview": the PDF is built (with the spinner), then an extra wide, maximizable dialog with its pages, "Download"
 // (saves the same file) and "Close".
 async function previewMeetingPdf(dialogs: Dialogs, toasts: Toasts, meeting: Meeting): Promise<void> {
-  const scope = dialogs.open();
+  using scope = dialogs.open();
 
   try {
     // The pages are drawn (pdfjs) before the dialog opens, still under the spinner: it opens at its final size.
@@ -125,7 +121,5 @@ async function previewMeetingPdf(dialogs: Dialogs, toasts: Toasts, meeting: Meet
   } catch (error) {
     console.error(error);
     toasts.error(translate('pdf.couldNotCreate'));
-  } finally {
-    scope.dispose();
   }
 }

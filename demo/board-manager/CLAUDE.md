@@ -48,15 +48,15 @@ the root's `CLAUDE.md` apply.
   - Each line without a wrap: the icon and the title keep their size; the breadcrumb's crumbs
     end with an ellipsis when it is too short (Home and the separators keep their size). Back and Forward are hidden while the app header is narrower
     than 40rem (a container query, 2026-10-01).
-  - Back and Forward at its right end (2026-10-01; `HistoryButtons` in `App.tsx`): through the memory router's history,
+  - Back and Forward at its right end (2026-10-01; `HistoryButtons` in `app.tsx`): through the memory router's history,
     like the browser's buttons (which step through the app too while the route is mirrored in the hash, 2026-10-07,
-    the user's wish: `app/hashHistory.ts`, see "The URL hash" in the root's `CLAUDE.md`; the element without `hash`
+    the user's wish: `app/hash-history.ts`, see "The URL hash" in the root's `CLAUDE.md`; the element without `hash`
     has only these). Disabled at either end: `useHistoryPosition()` keeps the keys of the entries (push, replace,
     pop). No keyboard shortcuts (Alt+arrows belong to the browser and the host page). Tooltips say where they go
     ("Back to Boards"; Mantine's, `fz="xs"`, after 400ms; none while disabled): the history keeps each entry's path, and the name
     is the last crumb of its routes (`matchRoutes`, the breadcrumb's `handle.crumb`), so it follows renames and new
     pages need nothing; `/` is "Overview", a path without a crumb only "Back"/"Forward".
-- Routes (`App.tsx`, a memory router): `/`, `/boards`, `/boards/:boardId` (tabs Overview, Meetings, Members),
+- Routes (`app.tsx`, a memory router): `/`, `/boards`, `/boards/:boardId` (tabs Overview, Meetings, Members),
   `/boards/:boardId/meetings/:meetingId` and `/meetings/:meetingId` (tabs Overview, Agenda, Minutes, Documents),
   `/members`, `/members/:personId` (tabs Overview, Boards, Meetings), `/organizations`, `/organizations/:organizationId` (tabs Overview, People).
   - The route is mirrored in the hash after the tab's segment (`#board-manager/boards/b1`), only while the tab is shown.
@@ -76,9 +76,9 @@ the root's `CLAUDE.md` apply.
 - The column of an entity's name is headed by the entity: "Board", "Meeting", "Organization", "Document", "Person"
   (2026-10-02; the people tables said "Name" before).
 - Every column of an organization or a person is filtered by an autocomplete (2026-10-02, the data table's
-  `autocompleteFilter`; text filters before): `organizationFilter` (`features/organizations/filters.tsx`) and
-  `personFilter` (`features/members/filters.tsx`; both in `shared.tsx` until 2026-10-15; the other domain filters
-  are in their features' `filters.tsx` too, see `STRUCTURE.md`), on the
+  `autocompleteFilter`; text filters before): `organizationFilter` (`features/organizations/organization-filters.ts`) and
+  `personFilter` (`features/members/member-filters.ts`; both in `shared.tsx` until 2026-10-15; the other domain filters
+  are in their features' `<subject>-filters.ts` too, see `STRUCTURE.md`), on the
   organizations, the people tables (person, organization), a board's members (person, organization) and the boards
   (chair). Multiple, `minQueryLength: 0` (all options when the list opens, typing narrows them); each option has a
   second line (Mantine `Text`, `xs`, dimmed): the city of an organization, the organization of a person.
@@ -110,23 +110,23 @@ the root's `CLAUDE.md` apply.
     the filters and the server keep working on it; the same for `statuses`), the messages of the schemas (the key as
     the message: `.refine(fn, 'errors.urlInvalid')`, which form-validation gives to the adapter as an app key).
   - The fake server does not know the language: it throws an `AppError` (`infra/in-memory/errors.ts`: a key of
-    `errors` and its values), and `useForm.tsx` makes the text (`errorMessage`, `translateKey`). The `ErrorKey` type
+    `errors` and its values), and `use-form.tsx` makes the text (`errorMessage`, `translateKey`). The `ErrorKey` type
     is the keys of `en.errors` (the only import of infra from the UI, a type).
   - The dialogs' own texts (buttons, titles, "Maximize") come from the overlays package, which has English and German
     and follows `<html lang>` itself; `OverlaysProvider` gets `refreshKey={useLanguage()}`, so a dialog that is open
     follows a switch. The close button's label is ours (`common.close`, `translate()`: a render function, no hook).
   - The pages of a feature: the tables follow "The structure of a table in the root's apps" in the root's `CLAUDE.md`
-    (2026-10-15; worked out on the board page's members table, `MemberTable`, then rolled out): `columnsOf(t)`,
-    `filtersOf(t, …)` and `actionsOf(t, ctx)` outside the component (with `useMemo(() => columnsOf(t), [t])` until
-    2026-10-14; defining them inline in the component, and the actions inline in the JSX, were proposed and dropped);
-    the actions call flows outside the component (`<x>Flows.tsx`, like `boardFlows.tsx`, the user's choice of files of
-    their own, proposed at about 60%; handlers in the component, with a `MemberHandlers` type for a few hours, before),
-    each with one context (`TableContext<Row>` of `shared/lib/flows.ts` and what else it needs: `MemberContext` adds
-    `boardId`). The components hold only their hooks and the table. The meeting page's tables are files of their own
-    (`AgendaTable`, `SectionTable`, `DocumentTable`, with `agendaFlows.tsx`, `documentFlows.tsx`; `MeetingPage.tsx` from
-    967 to 352 lines). The standard builders are plain functions (`newAction`, `openAction`, `editAction`,
-    `deleteAction` of `shared/ui/tableActions.ts`; their texts from `translate()` when called). A filter
-    in such a function cannot be a hook: it takes `t` (`roleFilter(t)`). The actions and their dialogs use `t`; the
+    (2026-10-15, worked out on the board page's members table, `MemberTable`, then rolled out): `useColumns()`,
+    `useFilters()`, `useActions(…)` (hooks of the table's file), the flows one hook per use case in a feature's
+    `flows.tsx` (the meetings also `agenda-flows.tsx`, `document-flows.tsx`), `tableCtrl`, and `useReloadOnChange(tableCtrl)`
+    (the tables follow the store; the flows know no table). The way there, the same day: `columnsOf(t)` (with
+    `useMemo(() => columnsOf(t), [t])` until 2026-10-14), `actionsOf(t, ctx)` with plain flows in `<x>Flows.tsx` and a
+    `TableContext<Row>` (dialogs, toasts, the table), handlers in the component with a `MemberHandlers` type. The
+    meeting page's tables are files of their own (`AgendaTable`, `SectionTable`, `DocumentTable`; `meeting-page.tsx`
+    from 967 to 297 lines), and its "Approve minutes" and "Mark as held" are flows too. `MemberTable` has no
+    comments (2026-10-16, the user's wish: they were not useful). The standard builders are plain functions
+    (`newAction`, `openAction`, `editAction`, `deleteAction` of `shared/ui/table-actions.ts`; their texts from
+    `translate()` when called). A filter of a feature's `<subject>-filters.ts` is a function of `t` or of data (`roleFilter(t)`), called in `useFilters()`. The actions and their dialogs use `t`; the
     texts of a feature are under its key (`boards.*`), the words every feature shares under `common`. A sentence with a
     number or a name is one key with the plural forms (`_one`: a single one, with its name; `_other`: the number), not
     pieces glued together (`countText` is replaced where it is used, and removed with its last use). Outside
@@ -152,11 +152,11 @@ the root's `CLAUDE.md` apply.
 - Mantine is scoped: its layered CSS, its variables and color scheme on `.board-manager` (the app, and the content of
   each dialog through `wrapContent`), following the CSS `color-scheme` (see the element); its popups without portal.
 - The components' themes follow Mantine as closely as possible (their values are Mantine's variables): the data
-  table's `mantineTheme`, the file upload's `MANTINE_UPLOAD_THEME` (`shared/ui/DocumentUpload.tsx`, kept in the app: a theme in
+  table's `mantineTheme`, the file upload's `MANTINE_UPLOAD_THEME` (`shared/ui/document-upload.ts`, kept in the app: a theme in
   the package would need its own test and demo). More contrast comes from the app's Mantine theme instead
   (`cssVariablesResolver`, 2026-09-30): `dimmed` `gray.7` (dark `dark.1`) and `placeholder` `gray.6` (dark `dark.2`),
   one step darker than Mantine's (lighter in dark mode); the text and the lines stay Mantine's.
-- The look is made per element (`createLook()` in `BoardManagerDemo.tsx`, 2026-10-01): the theme, the CSS variables
+- The look is made per element (`createLook()` in `board-manager-demo.tsx`, 2026-10-01): the theme, the CSS variables
   and the overlays' config. Two colors of ten shades: `accent` (the primary color) and `danger` (danger buttons, the
   error toasts, `--mantine-color-error`: shade 6, dark 8); by default Mantine's `indigo` and `red`. Danger buttons in
   the pages use `color="danger"`, never `red`. `autoContrast` (black text on a light accent).
@@ -184,7 +184,7 @@ the root's `CLAUDE.md` apply.
     app; Mantine's `green` before): only the icon differs, so a toast from a spinner to success changes only its icon.
     Warnings orange, errors the danger color.
 - Forms (`forms.tsx`) are validated by the root's `form-validation` package (2026-10-02; Mantine's `@mantine/form`
-  before), not by the browser. Each form is the dialog's form: `<DialogForm>` of the app's `useForm` (`useForm.tsx`:
+  before), not by the browser. Each form is the dialog's form: `<DialogForm>` of the app's `useForm` (`use-form.tsx`:
   form-validation's hook, `defineUseForm` once, plus the overlays' React `Form` bound to its `requestSubmit`, a stable
   component); "OK" runs `requestSubmit`, which validates, shows the errors on the inputs and calls the form's `save` prop
   with the schema's typed output; the dialog closes when it is saved and shows a failed save as its note (the library's
@@ -202,7 +202,7 @@ the root's `CLAUDE.md` apply.
     messages `errors.uploadFailed` and `errors.uploadPending`; the upload shows them itself (its `error` prop, display
     only), on "Apply", not while a file is uploading. "Apply" saves the ids of the done files; cancelling discards the
     uploaded ones. No native validation, no browser bubble.
-  - A failed save shows the fake server's message (`errorMessage` in `useForm.tsx`: its errors are meant for the
+  - A failed save shows the fake server's message (`errorMessage` in `use-form.tsx`: its errors are meant for the
     user), else form-validation's generic one.
   - Unsaved changes (2026-10-09, the user's wish; the same in the Time Tracker, the User Manager and Human
     Resources): `DialogForm` passes form-validation's `isDirty` to the overlays' `<Form dirty>`, so Cancel, Escape
@@ -234,7 +234,7 @@ the root's `CLAUDE.md` apply.
   object, no `transform`). Before, one `DateTimePicker` (`DD.MM.YYYY HH:mm`): its time's list (`timePickerProps`,
   `withDropdown`) lay on its calendar or beside its popup, and the chosen hour and minute were not highlighted until
   BlockNote's copy of Mantine's styles was dropped (see "Mantine").
-- The person of a new member ("Add member" on a board) is an `AsyncSelect` (`AsyncSelect.tsx`, 2026-10-02; a
+- The person of a new member ("Add member" on a board) is an `AsyncSelect` (`async-select.tsx`, 2026-10-02; a
   `NativeSelect` of all candidates, "Name (Organization)", before): Mantine's own `Select` (`searchable`, `clearable`),
   only fed asynchronously, so it looks and behaves like a Mantine select (popup, scroll area, keyboard, clear button and
   chevron). (A `Combobox` of our own came first, the same day: not Mantine enough, the user's wish.)
@@ -255,7 +255,7 @@ the root's `CLAUDE.md` apply.
 
 ## The `<board-manager>` element
 
-- `BoardManagerElement.tsx`: the whole app in a shadow root, for a host page (e.g. XWiki). `npm run build:board-manager`
+- `board-manager-element.tsx`: the whole app in a shadow root, for a host page (e.g. XWiki). `npm run build:board-manager`
   (`vite.board-manager.config.ts`) bundles it with everything (React, Mantine, the packages) into one ES module,
   `dist-board-manager/board-manager.js`, with an example `index.html` beside it.
   - Its CSS is put into the module by the build (in place of the marker `__BOARD_MANAGER_STYLES__`) and added to the
@@ -319,9 +319,9 @@ the root's `CLAUDE.md` apply.
 
 ## Boards
 
-- A board's page opens on "Overview" (`BoardOverview` in `BoardPage.tsx`, 2026-10-04): name, description, chair, the
+- A board's page opens on "Overview" (`BoardOverview` in `board-page.tsx`, 2026-10-04): name, description, chair, the
   numbers of members and meetings, the next meeting; "Edit" and "Delete" (then back to the list), the same flows as
-  in the boards list (`editBoard()`, `deleteBoardsFlow()` in `features/boards/components/boardFlows.tsx`). Like the
+  in the boards list (`useEditBoardFlow()`, `useDeleteBoardsFlow()` of `features/boards/board-flows.tsx`). Like the
   member's and the meeting's overview, in the same layout. Then "Meetings" and "Members".
   - The board is read as a row (`getBoardRow()`, with `useShallow`: the selector returns a new object at every call).
 
@@ -329,16 +329,17 @@ the root's `CLAUDE.md` apply.
 
 - The people, with create, edit and delete. Deleting also removes their memberships, and their agenda items keep no
   presenter (the confirmation says from how many boards). Memberships are changed on a board's page.
-- A member's page (`MemberPage.tsx`, 2026-10-01; it replaced the "Information" drawer of the list): the name with the
+- A member's page (`member-page.tsx`, 2026-10-01; it replaced the "Information" drawer of the list): the name with the
   organization as subtitle, and three tabs:
   - "Overview": name, email (`mailto:`), organization (a link to its page), the number of boards; "Edit" and "Delete"
-    (then back to the list), the same flows as in the list (`editPerson()`, `deletePeopleFlow()` in `personFlows.tsx`).
+    (then back to the list), the same flows as in the list (`useEditPersonFlow()`, `useDeletePeopleFlow()` of
+    `features/members/member-flows.tsx`).
   - "Boards": the memberships, read-only (Board as a link, Role, Since; "Open board" the default action).
   - "Meetings": `MeetingTable` with `personId`, the meetings of the person's boards (`fetchMeetings({ personId })`),
     with the board column and the actions of the Meetings module; a new meeting chooses one of the person's boards. A
     meeting opens below its board.
 - In the people tables, the name is a link to the page, and "Open" (default, also a double click) opens it.
-- `PersonTable.tsx` (`PeopleTable.tsx` until 2026-10-15): the table of the people, for the Members page and the People
+- `person-table.tsx` (`PeopleTable.tsx` until 2026-10-15): the table of the people, for the Members page and the People
   tab of an organization.
 - A person's organization is a reference (`organizationId`, `''`: none), a select with "(none)" in the person form; the
   tables show its name.
@@ -354,9 +355,9 @@ the root's `CLAUDE.md` apply.
   - A link that opens a new tab is marked: Tabler's `TbExternalLink` (an arrow out of a box) after the text, and
     "(opens in a new tab)" for screen readers (`WebsiteLink`, 2026-10-01). Not the `mailto:` links.
   - The form validates the name and the website; the fake server checks them again (`checkedOrganization()`).
-- The list (`OrganizationsPage.tsx`): Organization (a link), City, Country (a select filter of the countries in use),
+- The list (`organizations-page.tsx`): Organization (a link), City, Country (a select filter of the countries in use),
   Website, Members (the count); "New organization" (then its page), "Open" (default), "Edit", "Delete".
-- The page (`OrganizationPage.tsx`): the name with the description as subtitle; "Overview" (labels and values, "Edit"
+- The page (`organization-page.tsx`): the name with the description as subtitle; "Overview" (labels and values, "Edit"
   and "Delete", then back to the list) and "People" (the people table of the organization: a new person belongs to it,
   no organization column).
 - Deleting keeps the people, without an organization; the confirmation says how many (`deleteOrganizationsFlow()`).
@@ -376,12 +377,12 @@ the root's `CLAUDE.md` apply.
   - Saved filters (2026-10-11, the user's wish; the data table's `savedFilters`, in its filter view and drawer):
     only in the Meetings module (not on a board's or a member's page, 2026-10-11, the user's wish), with the
     colleagues' "Minutes to approve" (Maria Keller), "Planned, next 90 days" (Jonas Weber) and "Supervisory Board"
-    (Lena Hoffmann); see "Saved filters in the root's apps" in the root's `CLAUDE.md` (`shared/ui/savedFilters.ts`).
+    (Lena Hoffmann); see "Saved filters in the root's apps" in the root's `CLAUDE.md` (`shared/ui/saved-filters.ts`).
     Also in Boards, Members (not an organization's People tab) and Organizations, with colleagues' filters too.
 - A meeting's page opens on "Overview" (`MeetingOverview`): its base information as labels and values (title, board,
   date and time with the end from the agenda's duration, location, status and minutes badges, the number of items and
   sections, documents), "Edit", the same meeting form dialog as "Edit" in the meetings list (`editMeeting()` in
-  `MeetingTable.tsx`), and "Delete" (2026-10-01), the same confirmation (`deleteMeetingsFlow()`), then back to where
+  `meeting-table.tsx`), and "Delete" (2026-10-01), the same confirmation (`deleteMeetingsFlow()`), then back to where
   it was opened (its board's page, or the meetings list). The status keeps its own buttons in the page header.
 - "PDF" (a menu on the overview, 2026-10-01): "Preview", "Print" and "Download" of the meeting's report (`pdf/`).
   - The menu has `floatingStrategy="fixed"` (2026-10-04): without a portal and without a positioned ancestor, Floating UI
@@ -455,7 +456,7 @@ the root's `CLAUDE.md` apply.
   the extension is selected, like in a file manager. "Save" saves it (`renameDocument()` in `infra/in-memory/documents.ts`: trimmed, an empty
   name refused; the type follows the new extension, like for an upload) and shows `"<name>" renamed`.
 - The editor of a text in an edit form (a section's name) is Mantine's `TextInput`
-  (`mantineTextEditor()` in `MeetingPage.tsx`, for the column it is in).
+  (`mantineTextEditor()` in `meeting-page.tsx`, for the column it is in).
 
 ## Agenda sections
 
@@ -521,5 +522,5 @@ the root's `CLAUDE.md` apply.
 - The color custom properties are read once (2026-10-02): a token that differs in dark mode (e.g. `light-dark()`, or a
   value set under a dark scheme selector) is not followed. That would need a new look on every change of the scheme.
 
-- The start page's charts (`features/home/components/HomeCharts.tsx`, 2026-10-09, the user's wish): `@mantine/charts` (9.5.1, with `recharts` 3.10.1, root dependencies; its layered CSS is imported in `BoardManagerDemo.tsx`): meetings per month (6 months back, 5 ahead) and per board (top 6), stacked by status, a donut of the status shares, and in the accent color (`MoreCharts`): a donut of the roles, the share of approved minutes (a ring), meetings by weekday and people per organization (top 6). Layout in the block `board-manager-home-charts`; no new custom property.
-- The start page (`HomePage.tsx`, 2026-10-09, the user's wishes): the four module tiles (icon, name and a count line; links to the modules, as before 2026-10-09), then three tabs (local state, not in the route): "Up next" (the next meetings and the minutes to approve, as rows with a date block and a relative badge) "Insights" (the charts) and "Attention" (`HomeAttention.tsx`: overdue planned meetings, boards without a planned meeting or a chair, people without an organization; each with its count and the first five as links).
+- The start page's charts (`features/home/components/home-charts.tsx`, 2026-10-09, the user's wish): `@mantine/charts` (9.5.1, with `recharts` 3.10.1, root dependencies; its layered CSS is imported in `board-manager-demo.tsx`): meetings per month (6 months back, 5 ahead) and per board (top 6), stacked by status, a donut of the status shares, and in the accent color (`MoreCharts`): a donut of the roles, the share of approved minutes (a ring), meetings by weekday and people per organization (top 6). Layout in the block `board-manager-home-charts`; no new custom property.
+- The start page (`home-page.tsx`, 2026-10-09, the user's wishes): the four module tiles (icon, name and a count line; links to the modules, as before 2026-10-09), then three tabs (local state, not in the route): "Up next" (the next meetings and the minutes to approve, as rows with a date block and a relative badge) "Insights" (the charts) and "Attention" (`home-attention.tsx`: overdue planned meetings, boards without a planned meeting or a chair, people without an organization; each with its count and the first five as links).

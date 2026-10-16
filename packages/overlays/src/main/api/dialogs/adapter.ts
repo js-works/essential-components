@@ -24,6 +24,7 @@ import type {
   DialogWidth,
   FormConfirm,
 } from "./dialog.js";
+
 import type { OverlayContent } from "./content.js";
 import type { DialogTheme } from "./theme.js";
 

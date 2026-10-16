@@ -36,7 +36,7 @@ Started 2026-10-03.
   - `iam/`: the service (`createIamService`: the repositories' methods, and `data()`: everything access depends on, in
     one read), its context, the query keys, `useAccessData()`, `useChanged()` (invalidates every read after a change),
     `useTableSource()` (a data table's source over rows made from the access data, searched, filtered, sorted and
-    paged locally, `shared/lib/localQuery.ts`; each page is a TanStack query).
+    paged locally, `shared/lib/local-query.ts`; each page is a TanStack query).
   - `users/`, `groups/`, `roles/` (with the permission catalog), `access/` (grants, "Grant access", the effective
     permissions, the check), `home/`. Each with an `index.ts`; they import each other only through it.
 - `shared/`: the Mantine scope (`.user-manager`), the data table in Mantine's look (`DataTable`: `density="compact"`
@@ -44,7 +44,7 @@ Started 2026-10-03.
   `useForm` (form-validation plus the overlays' dialog form, like the Board Manager's and the Time Tracker's;
   `useDialogSave`, the app's own check, is gone), `FieldError` (the message of an invalid field as a popover),
   `useQuerySource`.
-- `app/`: `UserManagerDemo.tsx` (the element `user-manager-demo`; the wiring), `App.tsx` (routes, app header, breadcrumb,
+- `app/`: `user-manager-demo.tsx` (the element `user-manager-demo`; the wiring), `app.tsx` (routes, app header, breadcrumb,
   history, the hash), `look.tsx` (taken from the File Center, i.e. the Board Manager's look), `user-manager.css`.
   - The theme (2026-10-04): `modernTheme` of `packages/mantine-themes` merged with the app's own, like the Board Manager's:
     smaller corners and a bit more contrast (see its `CLAUDE.md`).
@@ -62,7 +62,7 @@ Started 2026-10-03.
 
 - Saved filters (2026-10-11, the user's wish) in Users and Access (`GrantTable` with `name="all"` only), with
   colleagues' shared filters: see "Saved filters in the root's apps" in the root's `CLAUDE.md`
-  (`shared/ui/savedFilters.ts`).
+  (`shared/ui/saved-filters.ts`).
 - The full-height layout of the Board Manager (2026-10-08, the user's wish): the app fills its element (the root
   page: `user-manager-demo { height: 100% }` in `demo/demo.css`), the app header stays, `.user-manager__main` scrolls
   below it, and a page's table takes the rest of the height (its rows scroll, its toolbar, header and footer stay;
@@ -77,7 +77,7 @@ Started 2026-10-03.
   the app icon is no link, 2026-10-04).
 - Routes: `/`, `/users`, `/users/:userId`, `/groups`, `/groups/:groupId`, `/roles`, `/roles/:roleId`, `/access`,
   `/check`, `/permissions`; mirrored in the hash after `#user-manager`, with the browser's Back and Forward
-  (`app/hashHistory.ts`, see the root's `CLAUDE.md`).
+  (`app/hash-history.ts`, see the root's `CLAUDE.md`).
 - Overview (the start page, titled "Overview" since 2026-10-08, the user's wish, like the Board Manager's; "Main"
   before; also its menu entry and the history's tooltips): six cards (counts) and a short explanation of the model.
 - Users: a table (avatar, name with title, email, department and status filters, groups); New user, Edit, Grant access
@@ -100,7 +100,7 @@ Started 2026-10-03.
 - Forms: Mantine inputs in the overlays' form dialogs, validated by form-validation (2026-10-06, the user's wish; a
   Zod schema each: the user, the group, the role, "Grant access", "Add members"); a refusal of the server (its `Error`'s
   message) is the dialog's note; native selects in dialogs (a Mantine select would open outside the modal dialog).
-  - The app is English only: its adapter (`useForm.tsx`) keeps form-validation's messages English whatever
+  - The app is English only: its adapter (`use-form.tsx`) keeps form-validation's messages English whatever
     `<html lang>` says; the forms give their labels (`field.name({ label: 'Name' })`).
   - The scope tree of "Grant access" is a field of its own (`ScopeField`: Mantine's `Input.Wrapper` with the label, the
     hint below the tree and the error; a controlled binding), the checklist of "Add members" Mantine's

@@ -27,6 +27,11 @@
   `export type * from './api/columns.js'` (or a barrel), used as
   `import type { TableColumn } from '@local/data-table/react'`.
   - No type namespaces, no runtime (value) namespaces, no `declare namespace`.
+- `.tsx` only for a file with JSX, else `.ts` (2026-10-16, the user's choice): `board-filters.ts` (factory calls only),
+  `board-flows.tsx` (forms in dialogs). The imports do not change: they end in `.js` either way.
+- Something to dispose (a dialog scope of the overlays) with `using` (2026-10-16, the user's wish), not `try` and
+  `finally` with `dispose()`: `using scope = dialogs.open();`, disposed at the end of the block. The builds lower it
+  (`build.target: 'es2024'`, see `general.md`).
 - Relative imports end in `.js` (2026-10-13), also for `.ts` and `.tsx` files: `from './theme.js'`; a folder by its
   index, `from './api/index.js'`. It works with every setup a customer's copy may have (a bundler, `tsc` emitting
   files, Node's ESM, `moduleResolution: nodenext`); without an extension only with a bundler. Not for imports with
@@ -44,3 +49,18 @@
     values and at most one `export type { … }` for types.
   - Never `export` on the declarations themselves.
   - The public API is exactly what the package's entries export. Everything else is internal.
+- An empty line after every import or export statement that spans several lines (2026-10-15, the user's rule), so it
+  stands apart from the next one:
+  ```ts
+  import {
+    dateRangeFilter,
+    defineActions,
+    defineColumns,
+    defineFilters,
+    selectFilter,
+    textFilter,
+    useDataTableController,
+  } from '@local/data-table/react';
+
+  import { useDialogs } from '@local/overlays/react';
+  ```

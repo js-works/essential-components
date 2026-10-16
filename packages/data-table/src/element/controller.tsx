@@ -2,7 +2,7 @@ import type { ReactElement, ReactNode } from 'react';
 import type * as DataTable from '../api/index.js';
 import type * as Spec from '../api/react/index.js';
 import { createDataTableController, subscribeToSelection } from '../core/controller.js';
-import { DataTableView } from '../core/view/DataTableView.js';
+import { DataTableView } from '../core/view/data-table-view.js';
 import type { ContentRenderer } from './content.js';
 import { editorOf } from './editors.js';
 import { reactFilterOf } from './filters.js';

@@ -1,10 +1,8 @@
-import type { ReactElement } from 'react';
-
 export { icons };
 
 // The icons of the demo actions: inline SVGs with the paths of the Tabler icons (MIT), in the current text color.
 function icon(paths: readonly string[]) {
-  return function Icon(): ReactElement {
+  return function Icon() {
     return (
       <svg
         width={16}

@@ -1,15 +1,14 @@
 // The browser feature (folders and files): the only import path for the app and other features.
 
-export { EntryName } from './components/EntryName.js';
-export { FavoriteStar } from './components/Favorite.js';
-export { FolderTree } from './components/FolderTree.js';
-export { confirmAndRun } from './confirmAndRun.js';
+export { EntryName } from './components/entry-name.js';
+export { FavoriteStar } from './components/favorite.js';
+export { FolderTree } from './components/folder-tree.js';
+export { confirmAndRun } from './confirm-and-run.js';
 export { BrowserServiceContext, folderPath, useBrowserService } from './context.js';
-export { fileKindFilter, ownerFilter } from './filters.js';
+export { useSetFavoriteFlow, useShowDetailsFlow, useShowFileDetailsFlow } from './entry-flows.js';
+export { fileKindFilter, ownerFilter } from './folder-filters.js';
 export { browserKeys } from './keys.js';
 export { KIND_LABELS } from './labels.js';
-export { FolderPage } from './pages/FolderPage.js';
+export { FolderPage } from './pages/folder-page.js';
 export { createBrowserService } from './service.js';
 export type { BrowserService, EntryCriteria, EntryRow, Overview, TrashRow, TrashSortKey } from './service.js';
-export { useEntryActions } from './useEntryActions.js';
-export type { EntryActions } from './useEntryActions.js';

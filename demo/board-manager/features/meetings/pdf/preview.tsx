@@ -1,7 +1,6 @@
 import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
 import PdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?worker&inline';
 import { useEffect, useRef } from 'react';
-import type { ReactElement } from 'react';
 
 export { PdfPages, renderPages };
 
@@ -45,7 +44,7 @@ async function renderPages(file: Blob): Promise<HTMLCanvasElement[]> {
 }
 
 // The drawn pages, one below the other.
-function PdfPages({ pages }: { pages: readonly HTMLCanvasElement[] }): ReactElement {
+function PdfPages({ pages }: { pages: readonly HTMLCanvasElement[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

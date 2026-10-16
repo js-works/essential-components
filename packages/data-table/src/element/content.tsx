@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef } from 'react';
-import type { ReactElement, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import type * as DataTable from '../api/index.js';
 import * as classes from '../core/view/classes.js';
 
@@ -17,7 +17,7 @@ const nodeContent: DataTable.ContentAdapter<Node> = {
 
 function contentRendererOf(adapter: DataTable.ContentAdapter<unknown>): ContentRenderer {
   // An empty container that React creates and never touches again: the adapter fills it after every render.
-  function AdapterContent({ content }: { content: unknown }): ReactElement {
+  function AdapterContent({ content }: { content: unknown }) {
     const ref = useRef<HTMLSpanElement>(null);
 
     useLayoutEffect(() => {
