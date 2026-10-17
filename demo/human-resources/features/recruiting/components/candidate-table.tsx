@@ -2,15 +2,14 @@ import { Text } from '@mantine/core';
 
 import type { TableActions, TableColumns, TableFilters } from '@local/data-table/react';
 import { dateRangeFilter, multiRowAction, singleRowAction } from '@local/data-table/react';
+import { DataTable, useTableActions } from '@local/micro-app';
 
 import type { Candidate, HrData, Opening, Stage } from '../../../domain/index.js';
 import { STAGES } from '../../../domain/index.js';
 import { formatDate } from '../../../shared/lib/format.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { DataTable } from '../../../shared/ui/data-table.js';
 import { appIcons } from '../../../shared/ui/icons.js';
 import { Rating, StageBadge } from '../../../shared/ui/parts.js';
-import { editAction, newAction } from '../../../shared/ui/table-actions.js';
 import { useTableSource } from '../../hr/index.js';
 import { candidateSourceFilter, stageFilter } from '../recruiting-filters.js';
 import { useAddCandidateFlow, useEditCandidateFlow, useHireFlow, useMoveCandidatesFlow } from '../recruiting-flows.js';
@@ -78,6 +77,7 @@ function useFilters(): TableFilters {
 }
 
 function useActions(opening: Opening, data: HrData): TableActions<Candidate> {
+  const { editAction, newAction } = useTableActions();
   const t = useTranslate();
   const addCandidate = useAddCandidateFlow();
   const editCandidate = useEditCandidateFlow();
@@ -111,8 +111,6 @@ function useActions(opening: Opening, data: HrData): TableActions<Candidate> {
   ];
 }
 
-// The candidates of an opening as a table: searched, filtered, sorted; the selected ones moved to a stage or rejected
-// at once.
 function CandidateTable({ data, opening }: { data: HrData; opening: Opening }) {
   const columns = useColumns();
   const filters = useFilters();

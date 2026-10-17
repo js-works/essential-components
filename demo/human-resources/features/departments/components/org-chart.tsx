@@ -1,6 +1,7 @@
-import { ActionIcon, Anchor, Badge, Group, Menu, Stack, Text } from '@mantine/core';
+import { ActionIcon, Badge, Group, Menu, Stack, Text } from '@mantine/core';
 import { useLayoutEffect, useRef } from 'react';
-import { Link } from 'react-router';
+
+import { AnchorLink } from '@local/micro-app';
 
 import type { Department, HrData } from '../../../domain/index.js';
 import { childrenOf, todayDate } from '../../../domain/index.js';
@@ -98,7 +99,9 @@ function OrgCard({ data, department }: { data: HrData; department: Department })
           <Group gap={6} wrap="nowrap" mb={6}>
             <EmployeeAvatar name={head.name} size={24} />
             <Stack gap={0} style={{ minWidth: 0 }}>
-              <Anchor component={Link} to={`/employees/${head.id}`} size="xs" truncate>{head.name}</Anchor>
+              <AnchorLink to="/employees/$employeeId" params={{ employeeId: head.id }} size="xs" truncate>
+                {head.name}
+              </AnchorLink>
               <Text size="xs" c="dimmed" truncate>{head.title}</Text>
             </Stack>
           </Group>

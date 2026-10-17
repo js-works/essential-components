@@ -1,6 +1,6 @@
 import { Button, Group, Loader, Paper, SimpleGrid, Stack, Tabs, Text } from '@mantine/core';
+import { useParams } from '@tanstack/react-router';
 import { useState } from 'react';
-import { useParams } from 'react-router';
 
 import { daysBetween, isInProcess, todayDate } from '../../../domain/index.js';
 import { formatDate } from '../../../shared/lib/format.js';
@@ -17,7 +17,7 @@ export { OpeningPage };
 // An opening: its facts, then its candidates as a board (Pipeline) or a table (Candidates), and its description.
 function OpeningPage() {
   const t = useTranslate();
-  const { openingId } = useParams();
+  const { openingId } = useParams({ from: '/recruiting/$openingId' });
   const data = useHrData();
   const editOpening = useEditOpeningFlow();
   const addCandidate = useAddCandidateFlow();

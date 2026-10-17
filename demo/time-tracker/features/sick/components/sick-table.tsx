@@ -2,16 +2,15 @@ import { Badge, Group, Text } from '@mantine/core';
 
 import type { TableActions, TableColumn, TableColumns, TableFilters } from '@local/data-table/react';
 import { generalAction, singleRowAction } from '@local/data-table/react';
+import { DataTable, useTableActions } from '@local/micro-app';
 
 import type { Employee, SickNote } from '../../../domain/index.js';
 import { certificateRequired, sickDays, todayDate } from '../../../domain/index.js';
 import { formatDateRange, formatStamp } from '../../../shared/lib/format.js';
 import type { Translate } from '../../../shared/lib/i18n/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { DataTable } from '../../../shared/ui/data-table.js';
 import { appIcons } from '../../../shared/ui/icons.js';
 import { EmployeeLabel } from '../../../shared/ui/parts.js';
-import { editAction } from '../../../shared/ui/table-actions.js';
 import { useTableSource } from '../../tracker/index.js';
 import { certificateFilter } from '../sick-filters.js';
 import { useEditSickNoteFlow, useReportSickFlow, useUploadCertificateFlow } from '../sick-flows.js';
@@ -101,6 +100,7 @@ function useFilters(): TableFilters {
 }
 
 function useActions(mine: boolean, self: Employee | undefined): TableActions<SickRow> {
+  const { editAction } = useTableActions();
   const t = useTranslate();
   const reportSick = useReportSickFlow();
   const editSickNote = useEditSickNoteFlow();
@@ -123,8 +123,6 @@ function useActions(mine: boolean, self: Employee | undefined): TableActions<Sic
     : [];
 }
 
-// Sick calls as a table: the viewer's own (`mine`: report, change, upload the doctor's note) or those of employees (a
-// team lead: to see who is sick and whose doctor's note is missing).
 function SickTable({ employees, mine, title, subtitle }: {
   employees: readonly Employee[];
   mine: boolean;

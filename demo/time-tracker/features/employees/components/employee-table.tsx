@@ -1,16 +1,14 @@
 import { Badge, Loader } from '@mantine/core';
-import { useNavigate } from 'react-router';
+import { useNavigate } from '@tanstack/react-router';
 
 import type { TableActions, TableColumns, TableFilters } from '@local/data-table/react';
+import { DataTable, useSavedTableFilters, useTableActions } from '@local/micro-app';
 
 import type { Employee, TimeData, TodayStatus } from '../../../domain/index.js';
 import { todayDate, todayStatus, vacationBalance } from '../../../domain/index.js';
 import { formatDays } from '../../../shared/lib/format.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { DataTable } from '../../../shared/ui/data-table.js';
 import { EmployeeLabel, LeadOnly, TodayBadge } from '../../../shared/ui/parts.js';
-import { useSavedFilters } from '../../../shared/ui/saved-filters.js';
-import { editAction, newAction, openAction } from '../../../shared/ui/table-actions.js';
 import { useTableSource, useTimeData } from '../../tracker/index.js';
 import { useViewer } from '../../viewer/index.js';
 import { employeeStatusFilter, teamFilter, todayFilter } from '../employee-filters.js';
@@ -107,6 +105,7 @@ function useFilters(): TableFilters {
 }
 
 function useActions(): TableActions<EmployeeRow> {
+  const { editAction, newAction, openAction } = useTableActions();
   const t = useTranslate();
   const navigate = useNavigate();
   const teams = useTimeData()?.teams ?? [];
@@ -115,12 +114,11 @@ function useActions(): TableActions<EmployeeRow> {
 
   return [
     newAction(t('employees.new'), () => createEmployee(teams)),
-    openAction((row) => navigate(`/employees/${row.id}`)),
+    openAction((row) => navigate({ to: '/employees/$employeeId', params: { employeeId: row.id } })),
     editAction((row) => editEmployee(row, teams)),
   ];
 }
 
-// All employees (a team lead): their team, hours, vacation left and where they are today. Open one for their page.
 function EmployeeTable() {
   const t = useTranslate();
   const data = useTimeData();
@@ -128,7 +126,7 @@ function EmployeeTable() {
   const columns = useColumns();
   const filters = useFilters();
   const actions = useActions();
-  const savedFilters = useSavedFilters('employees');
+  const savedFilters = useSavedTableFilters('employees');
   const source = useTableSource<EmployeeRow>('employees', employeeRows, {
     search: ['name', 'email', 'title', 'team'],
   });

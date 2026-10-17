@@ -59,6 +59,13 @@ and imports the files it needs from its `CLAUDE.md`.
     `createMantineTheme({ colors, size, variant })` gives the theme and the CSS variables resolver for a
     `MantineProvider`; named color setups; `modernTheme` (small corners, a bit more contrast), which the root's three
     apps use (2026-10-04, merged into their own themes); a demo.
+  - `rich-text` (`@local/rich-text`, 2026-10-17): a rich-text editor for Mantine apps (React), built on BlockNote:
+    `RichTextEditor` (a Mantine field) and `RichText` (read-only); values as BlockNote's JSON, HTML or Markdown;
+    generic mentions. A demo (`npm run dev` inside it). The Board Manager's minutes use it (2026-10-17).
+  - `micro-app` (`@local/micro-app`, 2026-10-17): opinionated building blocks for the cockpit's micro-apps (Mantine,
+    TanStack Router, react-i18next): the header, the look, the scope, the hash history, the table with its actions and
+    saved filters, the form hook (see its `CLAUDE.md`). All five root apps are built on it (2026-10-17). A demo
+    (`npm run dev` inside it). See the TODO.
   - `ui-theme` (`@local/ui-theme`, 2026-10-06): the master of the design language (`ui.css`, `ui.ts`) in `src/`. No
     package depends on it (nothing is imported from it): the copies stay in each project (see `demo/ui/` below). No
     demo page yet (see the TODO).
@@ -76,7 +83,8 @@ and imports the files it needs from its `CLAUDE.md`.
       decided 2026-10-03.
     - "Internals": the folders
       "Components" ("Data table", "File upload", "Dialogs + Toasts", "Form validation" (2026-10-07; a "Planned"
-      placeholder before)) and "Planned" ("Autocomplete"; placeholders of `demo/planned/planned-demo.ts` (`planned-demo`): what it will be, and that there is
+      placeholder before), "Rich text" (2026-10-17, `packages/rich-text/demo/rich-text-demo.tsx`), "Micro-app" (2026-10-17,
+      `packages/micro-app/demo/micro-app-demo.tsx`)) and "Planned" ("Autocomplete"; placeholders of `demo/planned/planned-demo.ts` (`planned-demo`): what it will be, and that there is
       no demo yet, in a light gray box with rounded corners, `demo.css`).
     - The apps of "Apps" are pinned (`placement: 'pinned'`, 2026-10-08, the user's wish; File Center and User Manager
       too for a few hours): entries of
@@ -107,7 +115,7 @@ and imports the files it needs from its `CLAUDE.md`.
       `#dialogs-toasts/react-i18n`, `#board-manager/boards/b1`. No hash: Human Resources (the cockpit's `defaultItem`, 2026-10-08, the user's wish; the start page for a few hours that day, Human Resources before, the Board Manager since 2026-10-03 before that). The cockpit's start page (the attribute `start-page`, set by the footer's "Navigation" menu, "Start page": On by default, Off switchable; 2026-10-08, the user's wish: the title, the filter, the apps as cards by folder) shows when every app is closed, and by the logo.
       - The browser's Back and Forward (2026-10-07, the user's wish; before, the apps only replaced the hash): opening a
         cockpit app is a new history entry (the cockpit's `pushState`), and so is every new page inside the root's five
-        apps (`app/hash-history.ts`, the same file in each: a change goes into all five). Their memory routers follow the
+        apps (`mirrorInHash` of `@local/micro-app` since 2026-10-17; `app/hash-history.ts`, the same file in each, before). Their memory routers follow the
         browser's Back and Forward, and their own Back and Forward buttons move the browser too (unless another app was
         used in between: then they replace the entry). The package demos' tabs (`ui.ts`) still only replace the hash.
   - `demo/main.ts`: creates the cockpit (`createCockpitClass`, title "Back Office", subtitle "Acme Corporate" (2026-10-03; "App Center" without a subtitle before), with the search, a made-up
@@ -140,7 +148,7 @@ and imports the files it needs from its `CLAUDE.md`.
     full-height layout) and texts (i18next, en/de), the User Manager's architecture; data tables, overlays,
     form-validation and the file upload. Details: `demo/time-tracker/CLAUDE.md`.
   - `demo/board-manager/`: the "Board Manager" app, a demo of the root (a small app, not a product): boards and
-    committees, their meetings, agendas, minutes and documents, with Mantine, React Router, Zustand and all three
+    committees, their meetings, agendas, minutes and documents, with Mantine, TanStack Router, Zustand and all three
     packages; also as a `<board-manager>` element for a host page (`npm run build:board-manager`). Details:
     `demo/board-manager/CLAUDE.md`.
   - `demo/demo.css`: (2026-10-04: the apps' own text size, `--board-manager-font-size` and the like, the same `14px` as the cockpit's `theme.fontSize` in `demo/main.ts`: one text size for the shell and the apps; it read the cockpit's `--app-cockpit-font-size` until 2026-10-10) only what is specific to this page: the cockpit fills the window (`100dvh`). (Its frame is not
@@ -174,7 +182,10 @@ and imports the files it needs from its `CLAUDE.md`.
 - `tsconfig.json`: `tsc` also checks the imported demo files, so the compiler options are the loosest common set: like
   `data-table`/`file-upload`, but with `experimentalDecorators`, `ES2025`/`ESNext`, and without
   `noUncheckedIndexedAccess` and `noImplicitOverride` (the `overlays` code is not written for them; each package still
-  checks its own code strictly).
+  checks its own code strictly). It excludes the apps' `app/router-types.ts`: each of the five apps has a
+  `tsconfig.json` of its own (`"exclude": []`) that registers its TanStack router (`Register`), so its links and params
+  are type-checked; `npm run typecheck` runs the root's check, then each app's (2026-10-17, the user's choice: a
+  registration is global, one per TypeScript program).
 
 - `.github/workflows/deploy-demo.yml`: on every push to `main` (and by hand), runs `npm ci`, the tests of
   `data-table` and `file-upload` (without its browser-mode project, which needs Chromium), builds the page
@@ -187,7 +198,8 @@ and imports the files it needs from its `CLAUDE.md`.
 
 - TypeScript (strict), Vite, npm workspaces. The root has dev dependencies (`vite`, `typescript`,
   `@vitejs/plugin-react`, `react`, `react-dom`, their types, `dprint`, `@biomejs/biome` (only its organize imports, 2026-10-17); for the board manager `@mantine/core`,
-  `@mantine/hooks`, `react-router`) and `zustand`, `react-icons` (the board manager's icons: its Tabler set, `tb`),
+  `@mantine/hooks`, `react-router` (no longer imported since 2026-10-17: to be removed)) and `@tanstack/react-router` (the
+  apps' routing, 2026-10-17), and `zustand`, `react-icons` (the board manager's icons: its Tabler set, `tb`),
   `@mantine/dates` with `dayjs` (pinned to the versions the workspace has from `overlays`: `9.5.1`, `1.11.23`),
   `i18next` (the board manager's translations), `zod` (the schemas of `form-validation` in the board manager),
   `@tanstack/react-query` (the reads and changes of the board manager, the file center and the user manager).
@@ -264,8 +276,11 @@ and imports the files it needs from its `CLAUDE.md`.
       so a flow can be used
       anywhere (a button on an overview).
     - The table's controller is `tableCtrl` (`nav` before, from the package's old name, the data navigator).
-    - No comments above `useColumns`, `useFilters` and `useActions`, nor above a table's `const columns`, `const filters`
-      (2026-10-16, the user's wish: they repeat the name and do not help); what a table does that is not obvious goes into the app's `CLAUDE.md`.
+    - No comments in a table's file that do not help (2026-10-17, the user's wish; 2026-10-16 only above `useColumns`,
+      `useFilters`, `useActions` and a table's `const columns`, `const filters`): none above the table component (what
+      the table is), none that repeat a name, none with history (the code rule). Only what the code does not show
+      stays: why (a column without data, a value fixed with `useState`), an order, the meaning of a field. What a table
+      does that is not obvious goes into the app's `CLAUDE.md`. Applied to every table of the five apps the same day.
     - Explicit types, not the data table's `defineColumns`, `defineFilters`, `defineActions` (2026-10-15, the user's
       wish: they were not the best idea): `useColumns(): TableColumns<Row>`, `useFilters(): TableFilters`,
       `useActions(…): TableActions<Row>` (the list types of the data table, 2026-10-15).
@@ -277,7 +292,7 @@ and imports the files it needs from its `CLAUDE.md`.
     inline. A filter that needs texts or data is a function of them (`roleFilter(t)`, `boardFilter(boards)`), not a
     hook: it is called inside `filtersOf`.
 - The standard actions of a table in the root's apps (2026-10-14, the user's choice of three, proposed at about 70%):
-  builders from `<app>/shared/ui/table-actions.ts` (plain functions since 2026-10-15, the user's wish: the hook
+  builders of `useTableActions()` of `@local/micro-app` (2026-10-17; `<app>/shared/ui/table-actions.ts` before, plain functions since 2026-10-15, the user's wish: the hook
   `useTableActions()` before, only for `t`; their texts from `translate()` when called: `newAction(label, onClick)`,
   `openAction(onClick)`, `editAction(onClick)`, `deleteAction(onClick)`, each with a few options: `key`, `label`, `tip`,
   `show`, `default`, `contextMenu`, `visible`; a `label` replaces the standard tip, 2026-10-15), in the app's look and
@@ -299,10 +314,11 @@ and imports the files it needs from its `CLAUDE.md`.
     the table components, and each table chose its `localStorage` key): the domain's `SavedFilterRepository` (`list`,
     `save`, `remove`, `setShared` by the table's name, e.g. `boards`, `team-leave`; `domain/saved-filter.ts`), the
     in-memory one (`infra/in-memory/saved-filter-repository.ts`: the others' filters given to it, the user's own per
-    browser in `localStorage` under `<app>:saved-filters:<table>`, the keys of before), and `useSavedFilters(table)` of
-    `shared/ui/saved-filters.ts` over TanStack Query, its `SavedFilterServiceContext` given by the app. These three
-    files are the same in each of the five apps (a change goes into all five); the colleagues' filters are each app's
-    (`infra/in-memory/saved-filter-seed.ts`). A table only calls `useSavedFilters('boards')`.
+    browser in `localStorage` under `<app>:saved-filters:<table>`, the keys of before), and `useSavedTableFilters(table)` of
+    `@local/micro-app` (2026-10-17; `useSavedFilters(table)` of `shared/ui/saved-filters.ts` before), the data table's `useSavedFilters(store, table)` over the app's repository (over
+    TanStack Query in the app for a few hours the same day), the repository given by the app (`MicroAppProvider`'s `savedFilters`). These
+    three files are the same in each of the five apps (a change goes into all five); the colleagues' filters are each
+    app's (`infra/in-memory/saved-filter-seed.ts`). A table only calls `useSavedFilters('boards')`.
 - The toolbar of a table in the root's apps (2026-10-09, the user's wish): one action in the accent
   (`variant: 'primary'`), normally the "New …" or "Add …" one, else the main one (an upload, "Report sick"); the
   others secondary (a danger one stays danger; File Center's Files: `tertiary`, ghost buttons, 2026-10-11, the user's
@@ -338,8 +354,8 @@ and imports the files it needs from its `CLAUDE.md`.
 - `npm run format`: Biome's organize imports (`biome check --write`; its formatter and linter off, `biome.json`), then
   dprint. `npm run format:check`: both checks. Biome only sorts and groups the imports (see
   `docs/conventions/typescript.md`); dprint formats and leaves the imports' order and their names' order to it
-  (`module.sortImportDeclarations`, `importDeclaration.sortNamedImports`, `exportDeclaration.sortNamedExports`:
-  `maintain`). Biome covers the packages too (2026-10-17, the user's wish; their own dprint configs got the same
+  (`module.sortImportDeclarations`, `importDeclaration.sortNamedImports`, `exportDeclaration.sortNamedExports`,
+  `module.sortExportDeclarations` since 2026-10-17: `maintain`). Biome covers the packages too (2026-10-17, the user's wish; their own dprint configs got the same
   three `maintain`), the root's dprint does not (each package runs its own). (2026-10-17, the user's choice of Biome over ESLint with
   `simple-import-sort`, proposed at about 60%: one dependency with no transitive ones, and the linter question stays
   open; our own script `scripts/import-spacing.mjs` for a few hours before.)
@@ -347,6 +363,37 @@ and imports the files it needs from its `CLAUDE.md`.
 
 ## TODO
 
+- `@local/micro-app` (2026-10-17, the user's decision; to be discussed step by step): a tier-2 package of highly
+  opinionated building blocks for the cockpit's apps (micro-apps, as in micro frontends), built on Mantine and
+  react-i18next. A micro-app has the header of the root's apps (the app icon, the title, the modules as tabs, the
+  breadcrumb, Back and Forward); embeddable where possible (not a high priority). The name in every form: BEM
+  `micro-app__…`, the i18n namespace `'microApp'`, components `MicroAppHeader`, `MicroAppPage`, … (weighed: `mini-app`,
+  which sounds odd, `app-kit`, whose generic BEM block `app__` and namespace `'app'` would collide in customers' code,
+  `app-blocks`, `office-kit`, `admin-kit`, `app-shell`, Mantine's `AppShell`). The idea behind it: the cockpit with a
+  few ready micro-apps (the File Center, the User Manager) and the ones a customer needs developed on these building
+  blocks, together a full app. The router: TanStack Router (2026-10-17, the user's decision, after weighing
+  React Router 8, which the root's apps use: React Router's params and links are untyped strings in the mode the apps
+  use, typed routes only in its framework mode; TanStack Router's params, search params and links are type-checked, it
+  has a memory history for embedded apps, preloading on intent and a typed router context; its code is about the same,
+  the routes file about 1.5 times as long), code-based (routes as objects, `createRoute({ getParentRoute, path })`),
+  not file-based (that would dictate the files and folders). Links of Mantine through `createLink(Anchor)`.
+  `MicroAppHeader` (the first building block): `icon`, `title`, `modules` (the tabs, router links; the start page's
+  tab first; a menu when narrow), the breadcrumb from the current route's matches (each route's crumb in its
+  `staticData`, "Home" first), Back and Forward through the router's history (disabled at either end; tooltips "Back
+  to <page>" from the crumbs). The root's apps would move from React Router to it. The package's own texts ("Home",
+  "Back", "Forward", "Back to {page}", the modules menu): English and German in its i18next namespace `'microApp'`,
+  exported as resources the app adds to its i18next instance; the building blocks read them with
+  `useTranslation('microApp')` (2026-10-17, the user's choice, proposed at about 60%; texts as props weighed).
+  The header's look (2026-10-17, the user's choice of the three proposals): two lines (the icon, the title, the tabs
+  and Back and Forward on top, the breadcrumb below: it needs the width); narrow, the tabs become a menu (the current
+  module and a chevron) and Back and Forward hide (container queries on the header's own width, so it works embedded
+  too); sticky at the top while the page scrolls below it.
+  Built 2026-10-17: the package with `MicroAppHeader`, then everything the five apps had as copies (the hash history,
+  the look, the scope, the form field's error popover, `useForm`, the table actions, the saved filters, the
+  `DataTable` wrapper; see its `CLAUDE.md`), and all five apps moved to it and to TanStack Router the same day (the
+  user's wish). Open: the contract with
+  the cockpit (the signed-in user and the permissions, deep links between micro-apps), and the ready micro-apps as
+  packages.
 - Decide about the name `TFunction` (2026-10-15, the user's wish; later): i18next's type of its `t`, which the apps'
   translation function has (the Board Manager's `Translate = ReturnType<typeof useTranslate>`, a
   `TFunction<'app', undefined>`). It is no name of ours (none of our files mentions it), but it shows on hover and in

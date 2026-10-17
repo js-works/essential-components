@@ -1,0 +1,8 @@
+/* What is specific to this demo: the element is a block, as high as its page, and the page below the header has room. */
+micro-app-demo {
+  display: block;
+}
+
+.micro-app-demo__page {
+  padding: var(--mantine-spacing-md);
+}

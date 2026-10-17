@@ -1,6 +1,5 @@
 import {
   ActionIcon,
-  Anchor,
   Badge,
   Button,
   Checkbox,
@@ -14,7 +13,9 @@ import {
   Title,
   Tooltip,
 } from '@mantine/core';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useNavigate, useParams } from '@tanstack/react-router';
+
+import { AnchorLink } from '@local/micro-app';
 
 import type { Checklist, ChecklistTask, HrData, TaskOwner } from '../../../domain/index.js';
 import { checklistAnchor, daysBetween, isOverdue, progressOf, TASK_OWNERS, todayDate } from '../../../domain/index.js';
@@ -32,7 +33,7 @@ export { ChecklistPage };
 // with a click, in the order they are due; an overdue one says so. Tasks can be added and removed.
 function ChecklistPage() {
   const t = useTranslate();
-  const { checklistId } = useParams();
+  const { checklistId } = useParams({ from: '/onboarding/$checklistId' });
   const data = useHrData();
   const deleteChecklists = useDeleteChecklistsFlow();
   const addTask = useAddTaskFlow();
@@ -71,7 +72,13 @@ function ChecklistPage() {
         subtitle={[employee.title, departmentName(data, employee.departmentId)].filter(Boolean).join(' · ')}
         actions={
           <>
-            <Button variant="default" size="xs" component={Link} to={`/employees/${employee.id}`}>
+            <Button
+              variant="default"
+              size="xs"
+              renderRoot={(props) => (
+                <Link to="/employees/$employeeId" params={{ employeeId: employee.id }} {...props} />
+              )}
+            >
               {t('checklists.openEmployee')}
             </Button>
             <Button size="xs" leftSection={appIcons.add} onClick={() => void addTask(checklist)}>
@@ -84,7 +91,7 @@ function ChecklistPage() {
                 aria-label={t('checklists.deleteTitle')}
                 onClick={async () => {
                   if (await deleteChecklists([checklist], data)) {
-                    void navigate('/onboarding');
+                    void navigate({ to: '/onboarding' });
                   }
                 }}
               >
@@ -145,7 +152,9 @@ function OwnerTasks({ data, checklist, owner, today }: {
         <Group gap="xs" wrap="nowrap">
           <Title order={3} size="h5">{t(`taskOwner.${owner}`)}</Title>
           {owner === 'manager' && manager !== undefined && (
-            <Anchor component={Link} to={`/employees/${manager.id}`} size="xs">{manager.name}</Anchor>
+            <AnchorLink to="/employees/$employeeId" params={{ employeeId: manager.id }} size="xs">
+              {manager.name}
+            </AnchorLink>
           )}
         </Group>
         <Text size="xs" c="dimmed" className="human-resources__figures">{`${done} / ${tasks.length}`}</Text>

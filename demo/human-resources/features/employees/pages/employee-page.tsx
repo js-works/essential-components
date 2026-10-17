@@ -1,6 +1,8 @@
 import { Anchor, Button, Grid, Group, Loader, Menu, Paper, SimpleGrid, Stack, Tabs, Text, Title } from '@mantine/core';
+import { useParams } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Link, useParams } from 'react-router';
+
+import { AnchorLink } from '@local/micro-app';
 
 import type { Employee, HrData } from '../../../domain/index.js';
 import { progressOf, reportsOf, statusOf, todayDate, yearsBetween } from '../../../domain/index.js';
@@ -31,7 +33,7 @@ export { EmployeePage };
 // An employee: their person, job and team, their checklists (Overview), their salary (Compensation), their documents.
 function EmployeePage() {
   const t = useTranslate();
-  const { employeeId } = useParams();
+  const { employeeId } = useParams({ from: '/employees/$employeeId' });
   const data = useHrData();
   const editEmployee = useEditEmployeeFlow();
   const changeSalary = useChangeSalaryFlow();
@@ -182,9 +184,9 @@ function EmployeeOverview({ data, employee }: { data: HrData; employee: Employee
           <SimpleGrid cols={2} spacing="sm">
             <Detail label={t('employeeForm.title')}>{employee.title}</Detail>
             <Detail label={t('employeeForm.departmentId')}>
-              <Anchor component={Link} to="/departments" size="sm">
+              <AnchorLink to="/departments" size="sm">
                 {departmentName(data, employee.departmentId)}
-              </Anchor>
+              </AnchorLink>
             </Detail>
             <Detail label={t('employeeForm.employmentType')}>
               {`${t(`employmentType.${employee.employmentType}`)}, ${employee.weeklyHours} ${t('common.hoursUnit')}`}
@@ -233,9 +235,14 @@ function EmployeeOverview({ data, employee }: { data: HrData; employee: Employee
 
                   return (
                     <Group key={checklist.id} gap="md" wrap="nowrap">
-                      <Anchor component={Link} to={`/onboarding/${checklist.id}`} size="sm" w={140}>
+                      <AnchorLink
+                        to="/onboarding/$checklistId"
+                        params={{ checklistId: checklist.id }}
+                        size="sm"
+                        w={140}
+                      >
                         {t(`checklistKind.${checklist.kind}`)}
-                      </Anchor>
+                      </AnchorLink>
                       <ProgressCell done={progress.done} total={progress.total} />
                     </Group>
                   );

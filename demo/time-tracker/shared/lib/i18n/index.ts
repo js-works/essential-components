@@ -2,12 +2,13 @@ import i18next from 'i18next';
 import { useTranslation } from 'react-i18next';
 
 import type { I18nAdapter } from '@local/form-validation';
+import { microAppResources } from '@local/micro-app';
 
 import { de } from './locales/de.js';
 import { en } from './locales/en.js';
 
 export type { TextKey, Translate };
-export { i18nAdapter, translate, translateKey, useLanguage, useTranslate };
+export { i18n, i18nAdapter, translate, translateKey, useLanguage, useTranslate };
 
 // The app's own translations, with i18next (its own instance, not the global one) and react-i18next: English and
 // German, English is the default and the fallback. The texts are in the bundle (`locales/`), so the first render is
@@ -36,10 +37,10 @@ void i18n.init({
   fallbackLng: 'en',
   supportedLngs: ['en', 'de'],
   nonExplicitSupportedLngs: true,
-  ns: ['app'],
+  ns: ['app', 'microApp', 'dataTable'],
   defaultNS: 'app',
   keySeparator: false,
-  resources: { en: { app: en }, de: { app: de } },
+  resources: { en: { ...microAppResources.en, app: en }, de: { ...microAppResources.de, app: de } },
   interpolation: { escapeValue: false }, // React escapes
 });
 

@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router';
+import { useNavigate } from '@tanstack/react-router';
 
 import { useDialogs, useToast } from '@local/overlays/react';
 
@@ -40,7 +40,7 @@ function useCreateEmployeeFlow() {
 
     await changed();
     toasts.success(t('employees.created', { name: created.name }));
-    void navigate(`/employees/${created.id}`);
+    void navigate({ to: '/employees/$employeeId', params: { employeeId: created.id } });
   };
 }
 

@@ -1,5 +1,7 @@
-import { Anchor, Badge, Button, Stack, Tabs, Text } from '@mantine/core';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Badge, Button, Stack, Tabs, Text } from '@mantine/core';
+import { useNavigate, useParams } from '@tanstack/react-router';
+
+import { AnchorLink } from '@local/micro-app';
 
 import { appIcons } from '../../../shared/ui/icons.js';
 import { PageHeader } from '../../../shared/ui/parts.js';
@@ -12,7 +14,7 @@ export { GroupPage };
 
 // One group: its members, and the access granted to it (its members' access).
 function GroupPage() {
-  const { groupId = '' } = useParams();
+  const { groupId } = useParams({ from: '/groups/$groupId' });
   const data = useAccessData();
   const editGroup = useEditGroupFlow();
   const deleteGroups = useDeleteGroupsFlow();
@@ -26,7 +28,7 @@ function GroupPage() {
   if (group === undefined) {
     return (
       <Text p="md">
-        This group does not exist (anymore). <Anchor component={Link} to="/groups">All groups</Anchor>
+        This group does not exist (anymore). <AnchorLink to="/groups">All groups</AnchorLink>
       </Text>
     );
   }
@@ -51,7 +53,7 @@ function GroupPage() {
               leftSection={appIcons.remove}
               onClick={async () => {
                 if (await deleteGroups([group])) {
-                  void navigate('/groups');
+                  void navigate({ to: '/groups' });
                 }
               }}
             >

@@ -1,12 +1,12 @@
 import type { RowSource, TableActions, TableColumns, TableFilters } from '@local/data-table/react';
 import { criteriaOf, dateRangeFilter } from '@local/data-table/react';
 import { useFindSource } from '@local/data-table/react-query';
+import { DataTable, useTableActions } from '@local/micro-app';
 
 import type { Board, BoardMember, BoardMemberCriteria } from '../../../domain/index.js';
 import { BOARD_MEMBER_SORT_KEYS } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { DataTable, formatDate, PAGE_SIZE_OPTIONS } from '../../../shared/shared.js';
-import { deleteAction, editAction, newAction } from '../../../shared/ui/table-actions.js';
+import { formatDate, PAGE_SIZE_OPTIONS } from '../../../shared/shared.js';
 import { useMemberService } from '../../members/context.js';
 import { personFilter, roleFilter } from '../../members/member-filters.js';
 import { useOrganizationService } from '../../organizations/context.js';
@@ -73,6 +73,7 @@ function useFilters(): TableFilters {
 }
 
 function useActions(board: Board): TableActions<BoardMember> {
+  const { deleteAction, editAction, newAction } = useTableActions();
   const t = useTranslate();
   const addMember = useAddMemberFlow(board.id);
   const changeRole = useChangeRoleFlow();

@@ -267,6 +267,28 @@ customElements.define(
         },
       },
       {
+        id: 'rich-text',
+        title: 'Rich text',
+        description: 'A rich-text editor for Mantine apps, built on BlockNote',
+        group: 'Internals',
+        subgroup: 'Components',
+        element: 'rich-text-demo',
+        load: async () => {
+          define('rich-text-demo', (await import('../packages/rich-text/demo/rich-text-demo.js')).RichTextDemo);
+        },
+      },
+      {
+        id: 'micro-app',
+        title: 'Micro-app',
+        description: 'The building blocks of the cockpit\'s apps: the header, with modules and breadcrumb',
+        group: 'Internals',
+        subgroup: 'Components',
+        element: 'micro-app-demo',
+        load: async () => {
+          define('micro-app-demo', (await import('../packages/micro-app/demo/micro-app-demo.js')).MicroAppDemo);
+        },
+      },
+      {
         id: 'autocomplete',
         title: 'Autocomplete',
         description: 'A text input that suggests as you type',

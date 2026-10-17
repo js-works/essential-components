@@ -1,8 +1,9 @@
-import { Anchor, Group, Text } from '@mantine/core';
-import { Link } from 'react-router';
+import { Group, Text } from '@mantine/core';
+
+import { AnchorLink } from '@local/micro-app';
 
 import { appIcons, kindIcon } from '../../../shared/ui/icons.js';
-import { folderPath } from '../context.js';
+import { folderLink } from '../context.js';
 import type { EntryRow } from '../service.js';
 import { FavoriteStar } from './favorite.js';
 
@@ -23,7 +24,7 @@ function EntryName({ row, onFavorite }: {
         <Text component="span" c="var(--mantine-primary-color-filled)" display="inline-flex">
           {row.folder.storage === true ? appIcons.storage : appIcons.folder}
         </Text>
-        <Anchor component={Link} to={folderPath(row.id)} size="sm" fw={500} truncate>{row.name}</Anchor>
+        <AnchorLink {...folderLink(row.id)} size="sm" fw={500} truncate>{row.name}</AnchorLink>
         {star}
       </Group>
     )

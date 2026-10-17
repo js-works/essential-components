@@ -40,18 +40,23 @@ Started 2026-10-03.
     TanStack query).
   - `users/`, `groups/`, `roles/` (with the permission catalog), `access/` (grants, "Grant access", the effective
     permissions, the check), `home/`. Each with an `index.ts`; they import each other only through it.
-- `shared/`: the Mantine scope (`.user-manager`), the data table in Mantine's look (`DataTable`: `density="compact"`
-  by default, 2026-10-06, the user's wish), icons, page parts (header, avatar, a user's or group's label), formatting,
-  `useForm` (form-validation plus the overlays' dialog form, like the Board Manager's and the Time Tracker's;
-  `useDialogSave`, the app's own check, is gone), `FieldError` (the message of an invalid field as a popover); the
-  tables' source through `useQuerySource` of `@local/data-table/react-query` (2026-10-17; a copy in `shared/` before).
-- `app/`: `user-manager-demo.tsx` (the element `user-manager-demo`; the wiring), `app.tsx` (routes, app header, breadcrumb,
-  history, the hash), `look.tsx` (taken from the File Center, i.e. the Board Manager's look), `user-manager.css`.
+- Built on `@local/micro-app` (2026-10-17, the user's wish; the app's own copies before: the app header, the look, the
+  Mantine scope, the hash history, the data table's wrapper, the table actions, the saved filters' hook, `FieldError`
+  and the form hook): `MicroAppHeader`, `createLook`, `MantineScope`, `mirrorInHash`, `DataTable`,
+  `useTableActions`, `useSavedTableFilters`, `defineForm`, `AnchorLink`, inside a `MicroAppProvider`. Routing
+  with TanStack Router (React Router before), its routes typed: `app/router-types.ts` registers the app's router, only
+  in the app's own check (`demo/user-manager/tsconfig.json`, `npm run typecheck` runs it), so a misspelled route or a
+  missing param is a type error.
+- `shared/`: icons, page parts (header, avatar, a user's or group's label), formatting, `lib/i18n.ts` (the app's
+  i18next instance, English only, with the building blocks' texts), `lib/use-form.tsx` (`defineForm()`); the
+  tables' source through `useQuerySource` of `@local/data-table/react-query`.
+- `app/`: `user-manager-demo.tsx` (the element `user-manager-demo`; the wiring, the look), `app.tsx` (the routes, the
+  header, the hash), `router-types.ts`, `user-manager.css`.
   - The theme (2026-10-04): `modernTheme` of `packages/mantine-themes` merged with the app's own, like the Board Manager's:
     smaller corners and a bit more contrast (see its `CLAUDE.md`).
   - The accent (2026-10-03): `--user-manager-accent-color` (any CSS color, set by the host page's CSS; the root page
-    maps its `--app-accent-color` to it), live in CSS like the Board Manager's (`accentVariables()` in `look.tsx`);
-    without it, Mantine's indigo.
+    maps its `--app-accent-color` to it), live in CSS (the `tokens` of `createLook`, also the font size, the
+    font family and the scale); without it, Mantine's indigo.
 
 ## Data access
 
@@ -63,22 +68,19 @@ Started 2026-10-03.
 
 - Saved filters (2026-10-11, the user's wish) in Users and Access (`GrantTable` with `name="all"` only), with
   colleagues' shared filters: see "Saved filters in the root's apps" in the root's `CLAUDE.md`
-  (`shared/ui/saved-filters.ts`).
+  (`useSavedTableFilters` of `@local/micro-app`).
 - The full-height layout of the Board Manager (2026-10-08, the user's wish): the app fills its element (the root
   page: `user-manager-demo { height: 100% }` in `demo/demo.css`), the app header stays, `.user-manager__main` scrolls
   below it, and a page's table takes the rest of the height (its rows scroll, its toolbar, header and footer stay;
-  `DataTable` wraps every table in a `user-manager__table` without a box, the layout's hook). Without a height (a host
+  `DataTable` wraps every table in a `micro-app__table` without a box, the layout's hook). Without a height (a host
   page that scrolls) the app header is sticky.
-- App header (`AppHeader`, 2026-10-08; "top bar" before) like the Board Manager's, two lines (2026-10-08, the Human Resources' trial, rolled out; a menu of the modules
-  on the title, the breadcrumb in the same line before): the app icon (`TbShieldLock`, also the cockpit's), "User
-  Manager", the modules as tabs (Overview, Users, Groups, Roles, Access, Check access, Permissions; the current one,
-  also on its records' pages, in the accent's light ground; below 60rem of the bar a menu in their place: the current
-  module and a chevron), Back and Forward; below them the breadcrumb (a house icon with the label "Home" (2026-10-04),
-  a link to the start page, like the Board Manager's; then module › name; on the start page only "Home", not a link;
-  the app icon is no link, 2026-10-04).
-- Routes: `/`, `/users`, `/users/:userId`, `/groups`, `/groups/:groupId`, `/roles`, `/roles/:roleId`, `/access`,
-  `/check`, `/permissions`; mirrored in the hash after `#user-manager`, with the browser's Back and Forward
-  (`app/hash-history.ts`, see the root's `CLAUDE.md`).
+- The header (`MicroAppHeader`; the app's own `AppHeader` from 2026-10-08 to 2026-10-17): the app icon
+  (`TbShieldLock`, also the cockpit's), "User Manager", the modules as tabs (Overview, Users, Groups, Roles, Access,
+  Check access, Permissions), Back and Forward; below them the breadcrumb (Home › module › name). See the package's
+  `CLAUDE.md`; it switches to a menu below 56rem (60rem with the app's own header, for its seven tabs).
+- Routes: `/`, `/users`, `/users/$userId`, `/groups`, `/groups/$groupId`, `/roles`, `/roles/$roleId`, `/access`,
+  `/check`, `/permissions` (an unknown path shows the start page, `notFoundComponent`); mirrored in the hash after
+  `#user-manager`, with the browser's Back and Forward (`mirrorInHash` of `@local/micro-app`).
 - Overview (the start page, titled "Overview" since 2026-10-08, the user's wish, like the Board Manager's; "Main"
   before; also its menu entry and the history's tooltips): six cards (counts) and a short explanation of the model.
 - Users: a table (avatar, name with title, email, department and status filters, groups); New user, Edit, Grant access
@@ -101,13 +103,12 @@ Started 2026-10-03.
 - Forms: Mantine inputs in the overlays' form dialogs, validated by form-validation (2026-10-06, the user's wish; a
   Zod schema each: the user, the group, the role, "Grant access", "Add members"); a refusal of the server (its `Error`'s
   message) is the dialog's note; native selects in dialogs (a Mantine select would open outside the modal dialog).
-  - The app is English only: its adapter (`use-form.tsx`) keeps form-validation's messages English whatever
-    `<html lang>` says; the forms give their labels (`field.name({ label: 'Name' })`).
+  - The app is English only: its i18next instance stays English whatever `<html lang>` says, so do form-validation's
+    messages and the building blocks' texts; the forms give their labels (`field.name({ label: 'Name' })`).
   - The scope tree of "Grant access" is a field of its own (`ScopeField`: Mantine's `Input.Wrapper` with the label, the
     hint below the tree and the error; a controlled binding), the checklist of "Add members" Mantine's
     `Checkbox.Group` (controlled; at least one user; the filter only hides users, a chosen one stays chosen).
-  - The message of an invalid field is a popover, like in the Board Manager and the Time Tracker (`FieldError`, see
-    the Board Manager's `CLAUDE.md`).
+  - The message of an invalid field is a popover (`FieldError` of `@local/micro-app`).
   - Unsaved changes (2026-10-09, the user's wish, like the Board Manager's): `DialogForm` passes form-validation's
     `isDirty` to the overlays' `<Form dirty>`: after a change, closing a form dialog asks first, in place of the dialog's content
     ("Discard your changes?"). Escape there answers Discard (2026-10-09, the user's wish: Escape, Escape leaves a changed form), said in a line below the question ("Press Esc to discard them.", the overlays' text; only with a keyboard).

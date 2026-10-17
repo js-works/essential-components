@@ -1,6 +1,9 @@
-import { Anchor, Avatar, Badge, Group, Paper, Progress, Stack, Text, Title } from '@mantine/core';
+import { Avatar, Badge, Group, Paper, Progress, Stack, Text, Title } from '@mantine/core';
+import type { LinkProps } from '@tanstack/react-router';
+import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
-import { Link } from 'react-router';
+
+import { AnchorLink } from '@local/micro-app';
 
 import type { Employee, EmployeeStatus, OpeningStatus, Stage } from '../../domain/index.js';
 import { useTranslate } from '../lib/i18n/index.js';
@@ -53,7 +56,9 @@ function EmployeeLabel({ employee, title = false }: { employee: Employee; title?
     <Group gap={8} wrap="nowrap" style={{ minWidth: 0 }}>
       <EmployeeAvatar name={employee.name} size={title ? 26 : 22} />
       <Stack gap={0} style={{ minWidth: 0 }}>
-        <Anchor component={Link} to={`/employees/${employee.id}`} size="sm" truncate>{employee.name}</Anchor>
+        <AnchorLink to="/employees/$employeeId" params={{ employeeId: employee.id }} size="sm" truncate>
+          {employee.name}
+        </AnchorLink>
         {title && <Text size="xs" c="dimmed" truncate>{employee.title}</Text>}
       </Stack>
     </Group>
@@ -147,7 +152,7 @@ function StatCard({ label, value, detail, to, toLabel }: {
   label: string;
   value: ReactNode;
   detail?: ReactNode;
-  to?: string;
+  to?: LinkProps['to'];
   // The name of the page the card opens, shown at its top right.
   toLabel?: string;
 }) {
@@ -170,7 +175,14 @@ function StatCard({ label, value, detail, to, toLabel }: {
   return to === undefined
     ? <Paper withBorder p="md" radius="sm" className="human-resources__card">{content}</Paper>
     : (
-      <Paper withBorder p="md" radius="sm" component={Link} to={to} className="human-resources__card" data-link>
+      <Paper
+        withBorder
+        p="md"
+        radius="sm"
+        renderRoot={(props) => <Link to={to} {...props} />}
+        className="human-resources__card"
+        data-link
+      >
         {content}
       </Paper>
     );

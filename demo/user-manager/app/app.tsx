@@ -1,9 +1,7 @@
-import { ActionIcon, Anchor, Breadcrumbs, Group, Menu, Text, ThemeIcon, Tooltip, UnstyledButton } from '@mantine/core';
-import { useEffect, useRef, useState } from 'react';
-import type { RouteObject } from 'react-router';
-import { createMemoryRouter, Link, NavLink, Outlet, useLocation, useNavigate, useNavigationType } from 'react-router';
+import { createMemoryHistory, createRootRoute, createRoute, createRouter, Outlet } from '@tanstack/react-router';
 
-import type { AccessData } from '../domain/index.js';
+import { MicroAppHeader, mirrorInHash, pathFromHash } from '@local/micro-app';
+
 import { AccessPage, CheckAccessPage } from '../features/access/index.js';
 import { GroupPage, GroupsPage } from '../features/groups/index.js';
 import { HomePage } from '../features/home/index.js';
@@ -11,73 +9,31 @@ import { useAccessData } from '../features/iam/index.js';
 import { PermissionsPage, RolePage, RolesPage } from '../features/roles/index.js';
 import { UserPage, UsersPage } from '../features/users/index.js';
 import { appIcons } from '../shared/ui/icons.js';
-import { mirrorInHash, pathFromHash } from './hash-history.js';
 
 export { createAppRouter };
 
-// The app: an app header (the app icon, the title, the modules as tabs, Back and Forward; the breadcrumb below them), then
-// the page of the route. Like the Board Manager.
-
 const MODULES = [
-  { path: '/users', label: 'Users', icon: appIcons.users },
-  { path: '/groups', label: 'Groups', icon: appIcons.groups },
-  { path: '/roles', label: 'Roles', icon: appIcons.roles },
-  { path: '/access', label: 'Access', icon: appIcons.access },
-  { path: '/check', label: 'Check access', icon: appIcons.check },
-  { path: '/permissions', label: 'Permissions', icon: appIcons.roles },
-] as const;
-
-const routes: RouteObject[] = [
-  {
-    path: '/',
-    element: <Layout />,
-    children: [
-      { index: true, element: <HomePage /> },
-      { path: 'users', element: <UsersPage /> },
-      { path: 'users/:userId', element: <UserPage /> },
-      { path: 'groups', element: <GroupsPage /> },
-      { path: 'groups/:groupId', element: <GroupPage /> },
-      { path: 'roles', element: <RolesPage /> },
-      { path: 'roles/:roleId', element: <RolePage /> },
-      { path: 'access', element: <AccessPage /> },
-      { path: 'check', element: <CheckAccessPage /> },
-      { path: 'permissions', element: <PermissionsPage /> },
-      { path: '*', element: <HomePage /> },
-    ],
-  },
+  { to: '/', label: 'Overview', exact: true },
+  { to: '/users', label: 'Users' },
+  { to: '/groups', label: 'Groups' },
+  { to: '/roles', label: 'Roles' },
+  { to: '/access', label: 'Access' },
+  { to: '/check', label: 'Check access' },
+  { to: '/permissions', label: 'Permissions' },
 ];
 
-// The crumbs of a path: the module, then the user, group or role by name.
-function crumbsOf(data: AccessData | undefined, path: string): { to: string; label: string }[] {
-  const [module = '', id] = path.split('/').filter(Boolean);
-  const found = MODULES.find((candidate) => candidate.path === `/${module}`);
+// The name of a user, group or role in the breadcrumb (its id while the data loads or for one that is gone).
+function NameCrumb({ kind, id }: { kind: 'users' | 'groups' | 'roles'; id: string }) {
+  const data = useAccessData();
+  const items: readonly { id: string; name: string }[] = data?.[kind] ?? [];
 
-  if (found === undefined) {
-    return [];
-  }
-
-  const crumbs = [{ to: found.path, label: found.label }];
-  const name = id === undefined || data === undefined
-    ? undefined
-    : module === 'users'
-    ? data.users.find((user) => user.id === id)?.name
-    : module === 'groups'
-    ? data.groups.find((group) => group.id === id)?.name
-    : module === 'roles'
-    ? data.roles.find((role) => role.id === id)?.name
-    : undefined;
-
-  return id === undefined ? crumbs : [...crumbs, { to: path, label: name ?? id }];
-}
-
-function pageName(data: AccessData, path: string): string {
-  return path === '/' ? 'Overview' : crumbsOf(data, path).at(-1)?.label ?? path;
+  return items.find((item) => item.id === id)?.name ?? id;
 }
 
 function Layout() {
   return (
     <div className="user-manager__app">
-      <AppHeader />
+      <MicroAppHeader icon={appIcons.app} title="User Manager" modules={MODULES} />
       <main className="user-manager__main">
         <Outlet />
       </main>
@@ -85,201 +41,87 @@ function Layout() {
   );
 }
 
-// Two lines (2026-10-08, the Human Resources' trial, rolled out): the app icon, the title, the modules as tabs (a menu
-// when the bar is narrow), Back and Forward; below them the breadcrumb. The app icon is only an icon, not a link (the
-// first crumb, "Home", leads to the start page).
-function AppHeader() {
-  const appIcon = (
-    <ThemeIcon variant="filled" size="lg" radius="sm" aria-hidden>
-      {appIcons.app}
-    </ThemeIcon>
-  );
+const rootRoute = createRootRoute({ component: Layout, notFoundComponent: HomePage });
 
-  return (
-    <header className="user-manager__app-header">
-      <div className="user-manager__app-header-row">
-        <Group gap="xs" wrap="nowrap" flex="none">
-          <span className="user-manager__app-icon">{appIcon}</span>
-          <Text fw={700} size="md" className="user-manager__title">User Manager</Text>
-        </Group>
-        <ModuleTabs />
-        <ModuleMenu />
-        <HistoryButtons />
-      </div>
-      <Crumbs />
-    </header>
-  );
-}
+const homeRoute = createRoute({ getParentRoute: () => rootRoute, path: '/', component: HomePage });
 
-// The start page and the modules, as tabs: the one of the current page is marked (also on its records' pages).
-function ModuleTabs() {
-  return (
-    <nav className="user-manager__modules" aria-label="User Manager: modules">
-      <NavLink to="/" end className="user-manager__module">Overview</NavLink>
-      {MODULES.map((module) => (
-        <NavLink key={module.path} to={module.path} className="user-manager__module">{module.label}</NavLink>
-      ))}
-    </nav>
-  );
-}
+const usersRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/users',
+  staticData: { crumb: () => 'Users' },
+});
+const userListRoute = createRoute({ getParentRoute: () => usersRoute, path: '/', component: UsersPage });
+const userRoute = createRoute({
+  getParentRoute: () => usersRoute,
+  path: '$userId',
+  staticData: { crumb: (params) => <NameCrumb kind="users" id={params['userId'] ?? ''} /> },
+  component: UserPage,
+});
 
-// The tabs as a menu, while the app header is too narrow for them (CSS): the current module and a chevron.
-function ModuleMenu() {
-  const { pathname } = useLocation();
-  const current = MODULES.find((module) => pathname === module.path || pathname.startsWith(`${module.path}/`));
+const groupsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/groups',
+  staticData: { crumb: () => 'Groups' },
+});
+const groupListRoute = createRoute({ getParentRoute: () => groupsRoute, path: '/', component: GroupsPage });
+const groupRoute = createRoute({
+  getParentRoute: () => groupsRoute,
+  path: '$groupId',
+  staticData: { crumb: (params) => <NameCrumb kind="groups" id={params['groupId'] ?? ''} /> },
+  component: GroupPage,
+});
 
-  return (
-    <Menu position="bottom-start" shadow="md" width={200}>
-      <Menu.Target>
-        <UnstyledButton className="user-manager__module-menu" aria-label="User Manager: modules">
-          <Group gap={4} wrap="nowrap">
-            <Text size="sm" fw={500}>{current?.label ?? 'Overview'}</Text>
-            {appIcons.chevronDown}
-          </Group>
-        </UnstyledButton>
-      </Menu.Target>
-      <Menu.Dropdown>
-        <Menu.Item component={Link} to="/" leftSection={appIcons.home}>Overview</Menu.Item>
-        <Menu.Divider />
-        {MODULES.map((module) => (
-          <Menu.Item key={module.path} component={Link} to={module.path} leftSection={module.icon}>
-            {module.label}
-          </Menu.Item>
-        ))}
-      </Menu.Dropdown>
-    </Menu>
-  );
-}
+const rolesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/roles',
+  staticData: { crumb: () => 'Roles' },
+});
+const roleListRoute = createRoute({ getParentRoute: () => rolesRoute, path: '/', component: RolesPage });
+const roleRoute = createRoute({
+  getParentRoute: () => rolesRoute,
+  path: '$roleId',
+  staticData: { crumb: (params) => <NameCrumb kind="roles" id={params['roleId'] ?? ''} /> },
+  component: RolePage,
+});
 
-// "Home" (a house icon, and the text as the link: the start page, "Overview"), then the module and the user, group or role; the last crumb is the
-// current page (not a link).
-function Crumbs() {
-  const { pathname } = useLocation();
-  const data = useAccessData();
-  const crumbs = crumbsOf(data, pathname);
+const accessRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/access',
+  staticData: { crumb: () => 'Access' },
+  component: AccessPage,
+});
+const checkRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/check',
+  staticData: { crumb: () => 'Check access' },
+  component: CheckAccessPage,
+});
+const permissionsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/permissions',
+  staticData: { crumb: () => 'Permissions' },
+  component: PermissionsPage,
+});
 
-  // On the start page, "Home" is the current page: not a link.
-  if (crumbs.length === 0) {
-    return (
-      <Breadcrumbs separator="›" separatorMargin={6} className="user-manager__crumbs">
-        <span className="user-manager__home" aria-current="page">
-          {appIcons.home}
-          <span>Home</span>
-        </span>
-      </Breadcrumbs>
-    );
-  }
+const routeTree = rootRoute.addChildren([
+  homeRoute,
+  usersRoute.addChildren([userListRoute, userRoute]),
+  groupsRoute.addChildren([groupListRoute, groupRoute]),
+  rolesRoute.addChildren([roleListRoute, roleRoute]),
+  accessRoute,
+  checkRoute,
+  permissionsRoute,
+]);
 
-  return (
-    <Breadcrumbs separator="›" separatorMargin={6} className="user-manager__crumbs">
-      <Anchor component={Link} to="/" className="user-manager__home">
-        {appIcons.home}
-        <span>Home</span>
-      </Anchor>
-      {crumbs.map((crumb, index) =>
-        index === crumbs.length - 1
-          ? <Text key={crumb.to} size="sm" fw={500} aria-current="page">{crumb.label}</Text>
-          : <Anchor key={crumb.to} component={Link} to={crumb.to} size="sm">{crumb.label}</Anchor>
-      )}
-    </Breadcrumbs>
-  );
-}
+const createUserManagerRouter = (path: string) =>
+  createRouter({ routeTree, history: createMemoryHistory({ initialEntries: [path] }) });
 
-// Back and Forward through the app's own history (the routes live in memory; the browser's history follows it), with
-// tooltips that say where they go ("Back to Users").
-function HistoryButtons() {
-  const navigate = useNavigate();
-  const { back, forward } = useHistoryPosition();
-  const data = useAccessData();
-  const tip = (text: string, path: string | undefined) => {
-    const name = path === undefined || data === undefined ? undefined : pageName(data, path);
-
-    return name === undefined ? text : `${text} to ${name}`;
-  };
-
-  return (
-    <Group gap={4} ml="auto" wrap="nowrap" className="user-manager__history">
-      <Tooltip label={tip('Back', back)} openDelay={400} fz="xs">
-        <ActionIcon
-          variant="subtle"
-          color="gray"
-          disabled={back === undefined}
-          onClick={() => void navigate(-1)}
-          aria-label="Back"
-        >
-          {appIcons.back}
-        </ActionIcon>
-      </Tooltip>
-      <Tooltip label={tip('Forward', forward)} openDelay={400} fz="xs">
-        <ActionIcon
-          variant="subtle"
-          color="gray"
-          disabled={forward === undefined}
-          onClick={() => void navigate(1)}
-          aria-label="Forward"
-        >
-          {appIcons.forward}
-        </ActionIcon>
-      </Tooltip>
-    </Group>
-  );
-}
-
-// Where the current location is in the memory router's history (React Router does not tell): its entries, kept like
-// the history itself (a push drops the entries after the current one, a replace changes it, a pop moves to its key).
-function useHistoryPosition(): { back: string | undefined; forward: string | undefined } {
-  const { key, pathname } = useLocation();
-  const action = useNavigationType();
-  const historyRef = useRef<{ entries: { key: string; path: string }[]; index: number }>({
-    entries: [{ key, path: pathname }],
-    index: 0,
-  });
-  const [position, setPosition] = useState<{ back: string | undefined; forward: string | undefined }>({
-    back: undefined,
-    forward: undefined,
-  });
-
-  useEffect(() => {
-    const history = historyRef.current;
-    const entry = { key, path: pathname };
-
-    if (history.entries[history.index]?.key !== key) {
-      if (action === 'PUSH') {
-        history.entries = [...history.entries.slice(0, history.index + 1), entry];
-        history.index = history.entries.length - 1;
-      } else if (action === 'REPLACE') {
-        history.entries[history.index] = entry;
-      } else {
-        const index = history.entries.findIndex((candidate) => candidate.key === key);
-
-        history.index = index === -1 ? history.index : index;
-      }
-    }
-
-    setPosition({
-      back: history.entries[history.index - 1]?.path,
-      forward: history.entries[history.index + 1]?.path,
-    });
-  }, [key, pathname, action]);
-
-  return position;
-}
-
-// The routes live in memory and are mirrored in the URL hash after a prefix: `#user-manager/users/u3`, so a
-// reload (or a shared link) opens the same page; the browser's Back and Forward step through them (`hash-history.ts`).
-function createAppRouter(
-  element: HTMLElement,
-  hashPrefix: string,
-): { router: ReturnType<typeof createMemoryRouter>; dispose: () => void } {
+// The routes live in memory and are mirrored in the URL hash after a prefix: `#user-manager/users/u3`, so a reload (or
+// a shared link) opens the same page; the browser's Back and Forward step through them.
+function createAppRouter(element: HTMLElement, hashPrefix: string) {
   const prefix = `#${hashPrefix}`;
-  const router = createMemoryRouter(routes, { initialEntries: [pathFromHash(prefix) ?? '/'] });
+  const router = createUserManagerRouter(pathFromHash(prefix) ?? '/');
   const stopMirror = mirrorInHash(router, element, prefix);
 
-  return {
-    router,
-    dispose: () => {
-      stopMirror();
-      router.dispose();
-    },
-  };
+  return { router, dispose: stopMirror };
 }

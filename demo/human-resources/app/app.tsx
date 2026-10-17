@@ -1,8 +1,7 @@
-import { ActionIcon, Anchor, Breadcrumbs, Group, Menu, Text, ThemeIcon, Tooltip, UnstyledButton } from '@mantine/core';
-import type { ReactElement } from 'react';
-import { useEffect, useRef, useState } from 'react';
-import type { RouteObject } from 'react-router';
-import { createMemoryRouter, Link, NavLink, Outlet, useLocation, useNavigate, useNavigationType } from 'react-router';
+import { Group, Menu, Text, UnstyledButton } from '@mantine/core';
+import { createMemoryHistory, createRootRoute, createRoute, createRouter, Link, Outlet } from '@tanstack/react-router';
+
+import { MicroAppHeader, mirrorInHash, pathFromHash } from '@local/micro-app';
 
 import type { HrData } from '../domain/index.js';
 import { ChecklistPage, ChecklistsPage } from '../features/checklists/index.js';
@@ -16,36 +15,14 @@ import type { TextKey, Translate } from '../shared/lib/i18n/index.js';
 import { useTranslate } from '../shared/lib/i18n/index.js';
 import { appIcons } from '../shared/ui/icons.js';
 import { EmployeeAvatar } from '../shared/ui/parts.js';
-import { mirrorInHash, pathFromHash } from './hash-history.js';
 
 export { createAppRouter };
 
-// The app: an app header (the app icon, the title, the modules as tabs, the user, Back and Forward; the breadcrumb below
-// them), then the page of the route.
-
-const MODULES: readonly { path: string; label: TextKey; icon: ReactElement }[] = [
-  { path: '/employees', label: 'nav.employees', icon: appIcons.employees },
-  { path: '/departments', label: 'nav.departments', icon: appIcons.departments },
-  { path: '/recruiting', label: 'nav.recruiting', icon: appIcons.recruiting },
-  { path: '/onboarding', label: 'nav.checklists', icon: appIcons.checklists },
-];
-
-const routes: RouteObject[] = [
-  {
-    path: '/',
-    element: <Layout />,
-    children: [
-      { index: true, element: <OverviewPage /> },
-      { path: 'employees', element: <EmployeesPage /> },
-      { path: 'employees/:employeeId', element: <EmployeePage /> },
-      { path: 'departments', element: <DepartmentsPage /> },
-      { path: 'recruiting', element: <RecruitingPage /> },
-      { path: 'recruiting/:openingId', element: <OpeningPage /> },
-      { path: 'onboarding', element: <ChecklistsPage /> },
-      { path: 'onboarding/:checklistId', element: <ChecklistPage /> },
-      { path: '*', element: <OverviewPage /> },
-    ],
-  },
+const MODULES: readonly { to: string; label: TextKey }[] = [
+  { to: '/employees', label: 'nav.employees' },
+  { to: '/departments', label: 'nav.departments' },
+  { to: '/recruiting', label: 'nav.recruiting' },
+  { to: '/onboarding', label: 'nav.checklists' },
 ];
 
 // The name of a module's record: an employee, an opening, a checklist (its employee and kind).
@@ -67,111 +44,19 @@ function recordName(t: Translate, data: HrData, module: string, id: string): str
   }
 }
 
-// The crumbs of a path: the module, then its record by name.
-function crumbsOf(t: Translate, data: HrData | undefined, path: string): { to: string; label: string }[] {
-  const [module = '', id] = path.split('/').filter(Boolean);
-  const found = MODULES.find((candidate) => candidate.path === `/${module}`);
-
-  if (found === undefined) {
-    return [];
-  }
-
-  const crumbs = [{ to: found.path, label: t(found.label) }];
-  const name = id === undefined || data === undefined ? undefined : recordName(t, data, module, id);
-
-  return id === undefined ? crumbs : [...crumbs, { to: path, label: name ?? id }];
+// A crumb of a module: its name in the current language.
+function TextCrumb({ label }: { label: TextKey }) {
+  return useTranslate()(label);
 }
 
-function pageName(t: Translate, data: HrData | undefined, path: string): string {
-  return path === '/' ? t('nav.overview') : crumbsOf(t, data, path).at(-1)?.label ?? path;
-}
-
-function Layout() {
-  return (
-    <div className="human-resources__app">
-      <AppHeader />
-      <main className="human-resources__main">
-        <Outlet />
-      </main>
-    </div>
-  );
-}
-
-// Two lines (2026-10-08, a trial: the modules as tabs, then rolled out to the other apps or reverted): the app icon,
-// the title, the modules as tabs (a menu when the bar is narrow), the user, Back and Forward; below them the
-// breadcrumb. The app icon is only an icon, not a link (the first crumb, "Home", leads to the start page).
-function AppHeader() {
+// The name of a module's record in the breadcrumb (the id while the data loads or for one that is gone).
+function RecordCrumb({ module, id }: { module: string; id: string }) {
   const t = useTranslate();
+  const data = useHrData();
 
-  return (
-    <header className="human-resources__app-header">
-      <div className="human-resources__app-header-row">
-        <Group gap="xs" wrap="nowrap" flex="none">
-          <span className="human-resources__app-icon">
-            <ThemeIcon variant="filled" size="lg" radius="sm" aria-hidden>
-              {appIcons.app}
-            </ThemeIcon>
-          </span>
-          <Text fw={700} size="md" className="human-resources__title">{t('shell.appName')}</Text>
-        </Group>
-        <ModuleTabs />
-        <ModuleMenu />
-        <Group gap="xs" ml="auto" wrap="nowrap" flex="none">
-          <UserMenu />
-          <HistoryButtons />
-        </Group>
-      </div>
-      <Crumbs />
-    </header>
-  );
+  return (data === undefined ? undefined : recordName(t, data, module, id)) ?? id;
 }
 
-// The start page and the modules, as tabs: the one of the current page is marked (also on its records' pages).
-function ModuleTabs() {
-  const t = useTranslate();
-
-  return (
-    <nav className="human-resources__modules" aria-label={t('shell.modules')}>
-      <NavLink to="/" end className="human-resources__module">{t('nav.overview')}</NavLink>
-      {MODULES.map((module) => (
-        <NavLink key={module.path} to={module.path} className="human-resources__module">
-          {t(module.label)}
-        </NavLink>
-      ))}
-    </nav>
-  );
-}
-
-// The tabs as a menu, while the app header is too narrow for them (CSS): the current module and a chevron.
-function ModuleMenu() {
-  const t = useTranslate();
-  const { pathname } = useLocation();
-  const current = MODULES.find((module) => pathname === module.path || pathname.startsWith(`${module.path}/`));
-
-  return (
-    <Menu position="bottom-start" shadow="md" width={220}>
-      <Menu.Target>
-        <UnstyledButton className="human-resources__module-menu" aria-label={t('shell.modules')}>
-          <Group gap={4} wrap="nowrap">
-            <Text size="sm" fw={500}>{t(current?.label ?? 'nav.overview')}</Text>
-            {appIcons.chevronDown}
-          </Group>
-        </UnstyledButton>
-      </Menu.Target>
-      <Menu.Dropdown>
-        <Menu.Item component={Link} to="/" leftSection={appIcons.home}>{t('nav.overview')}</Menu.Item>
-        <Menu.Divider />
-        {MODULES.map((module) => (
-          <Menu.Item key={module.path} component={Link} to={module.path} leftSection={module.icon}>
-            {t(module.label)}
-          </Menu.Item>
-        ))}
-      </Menu.Dropdown>
-    </Menu>
-  );
-}
-
-// The signed-in user (an HR manager): their name and title, and their own page.
 function UserMenu() {
   const t = useTranslate();
   const data = useHrData();
@@ -190,7 +75,10 @@ function UserMenu() {
       </Menu.Target>
       <Menu.Dropdown>
         <Menu.Label>{viewer?.name}</Menu.Label>
-        <Menu.Item component={Link} to={`/employees/${viewerId}`} leftSection={appIcons.user}>
+        <Menu.Item
+          renderRoot={(props) => <Link to="/employees/$employeeId" params={{ employeeId: viewerId }} {...props} />}
+          leftSection={appIcons.user}
+        >
           {t('shell.myProfile')}
         </Menu.Item>
       </Menu.Dropdown>
@@ -198,134 +86,89 @@ function UserMenu() {
   );
 }
 
-// Home (a house icon, and the text as the link), then the module and its record; the last crumb is the current page
-// (not a link).
-function Crumbs() {
+function Layout() {
   const t = useTranslate();
-  const { pathname } = useLocation();
-  const data = useHrData();
-  const crumbs = crumbsOf(t, data, pathname);
-
-  // On the start page, "Home" is the current page: not a link.
-  if (crumbs.length === 0) {
-    return (
-      <Breadcrumbs separator="›" separatorMargin={6} className="human-resources__crumbs">
-        <span className="human-resources__home" aria-current="page">
-          {appIcons.home}
-          <span>{t('shell.home')}</span>
-        </span>
-      </Breadcrumbs>
-    );
-  }
+  const modules = [
+    { to: '/', label: t('nav.overview'), exact: true },
+    ...MODULES.map((module) => ({ to: module.to, label: t(module.label) })),
+  ];
 
   return (
-    <Breadcrumbs separator="›" separatorMargin={6} className="human-resources__crumbs">
-      <Anchor component={Link} to="/" className="human-resources__home">
-        {appIcons.home}
-        <span>{t('shell.home')}</span>
-      </Anchor>
-      {crumbs.map((crumb, index) =>
-        index === crumbs.length - 1
-          ? <Text key={crumb.to} size="sm" fw={500} aria-current="page">{crumb.label}</Text>
-          : <Anchor key={crumb.to} component={Link} to={crumb.to} size="sm">{crumb.label}</Anchor>
-      )}
-    </Breadcrumbs>
+    <div className="human-resources__app">
+      <MicroAppHeader icon={appIcons.app} title={t('shell.appName')} modules={modules} actions={<UserMenu />} />
+      <main className="human-resources__main">
+        <Outlet />
+      </main>
+    </div>
   );
 }
 
-// Back and Forward through the app's own history (the routes live in memory; the browser's history follows it, see
-// `hash-history.ts`), with tooltips that say where they go ("Back to Employees").
-function HistoryButtons() {
-  const t = useTranslate();
-  const navigate = useNavigate();
-  const { back, forward } = useHistoryPosition();
-  const data = useHrData();
-  const tip = (key: 'shell.back' | 'shell.forward', path: string | undefined) =>
-    path === undefined ? t(key) : t(`${key}To`, { page: pageName(t, data, path) });
+const rootRoute = createRootRoute({ component: Layout, notFoundComponent: OverviewPage });
 
-  return (
-    <Group gap={4} wrap="nowrap" className="human-resources__history">
-      <Tooltip label={tip('shell.back', back)} openDelay={400} fz="xs">
-        <ActionIcon
-          variant="subtle"
-          color="gray"
-          disabled={back === undefined}
-          onClick={() => void navigate(-1)}
-          aria-label={t('shell.back')}
-        >
-          {appIcons.back}
-        </ActionIcon>
-      </Tooltip>
-      <Tooltip label={tip('shell.forward', forward)} openDelay={400} fz="xs">
-        <ActionIcon
-          variant="subtle"
-          color="gray"
-          disabled={forward === undefined}
-          onClick={() => void navigate(1)}
-          aria-label={t('shell.forward')}
-        >
-          {appIcons.forward}
-        </ActionIcon>
-      </Tooltip>
-    </Group>
-  );
-}
+const homeRoute = createRoute({ getParentRoute: () => rootRoute, path: '/', component: OverviewPage });
 
-// Where the current location is in the memory router's history (React Router does not tell): its entries, kept like
-// the history itself (a push drops the entries after the current one, a replace changes it, a pop moves to its key).
-function useHistoryPosition(): { back: string | undefined; forward: string | undefined } {
-  const { key, pathname } = useLocation();
-  const action = useNavigationType();
-  const historyRef = useRef<{ entries: { key: string; path: string }[]; index: number }>({
-    entries: [{ key, path: pathname }],
-    index: 0,
-  });
-  const [position, setPosition] = useState<{ back: string | undefined; forward: string | undefined }>({
-    back: undefined,
-    forward: undefined,
-  });
+const employeesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/employees',
+  staticData: { crumb: () => <TextCrumb label="nav.employees" /> },
+});
+const employeeListRoute = createRoute({ getParentRoute: () => employeesRoute, path: '/', component: EmployeesPage });
+const employeeRoute = createRoute({
+  getParentRoute: () => employeesRoute,
+  path: '$employeeId',
+  staticData: { crumb: (params) => <RecordCrumb module="employees" id={params['employeeId'] ?? ''} /> },
+  component: EmployeePage,
+});
 
-  useEffect(() => {
-    const history = historyRef.current;
-    const entry = { key, path: pathname };
+const departmentsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/departments',
+  staticData: { crumb: () => <TextCrumb label="nav.departments" /> },
+  component: DepartmentsPage,
+});
 
-    if (history.entries[history.index]?.key !== key) {
-      if (action === 'PUSH') {
-        history.entries = [...history.entries.slice(0, history.index + 1), entry];
-        history.index = history.entries.length - 1;
-      } else if (action === 'REPLACE') {
-        history.entries[history.index] = entry;
-      } else {
-        const index = history.entries.findIndex((candidate) => candidate.key === key);
+const recruitingRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/recruiting',
+  staticData: { crumb: () => <TextCrumb label="nav.recruiting" /> },
+});
+const openingListRoute = createRoute({ getParentRoute: () => recruitingRoute, path: '/', component: RecruitingPage });
+const openingRoute = createRoute({
+  getParentRoute: () => recruitingRoute,
+  path: '$openingId',
+  staticData: { crumb: (params) => <RecordCrumb module="recruiting" id={params['openingId'] ?? ''} /> },
+  component: OpeningPage,
+});
 
-        history.index = index === -1 ? history.index : index;
-      }
-    }
+const checklistsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/onboarding',
+  staticData: { crumb: () => <TextCrumb label="nav.checklists" /> },
+});
+const checklistListRoute = createRoute({ getParentRoute: () => checklistsRoute, path: '/', component: ChecklistsPage });
+const checklistRoute = createRoute({
+  getParentRoute: () => checklistsRoute,
+  path: '$checklistId',
+  staticData: { crumb: (params) => <RecordCrumb module="onboarding" id={params['checklistId'] ?? ''} /> },
+  component: ChecklistPage,
+});
 
-    setPosition({
-      back: history.entries[history.index - 1]?.path,
-      forward: history.entries[history.index + 1]?.path,
-    });
-  }, [key, pathname, action]);
+const routeTree = rootRoute.addChildren([
+  homeRoute,
+  employeesRoute.addChildren([employeeListRoute, employeeRoute]),
+  departmentsRoute,
+  recruitingRoute.addChildren([openingListRoute, openingRoute]),
+  checklistsRoute.addChildren([checklistListRoute, checklistRoute]),
+]);
 
-  return position;
-}
+const createHumanResourcesRouter = (path: string) =>
+  createRouter({ routeTree, history: createMemoryHistory({ initialEntries: [path] }) });
 
 // The routes live in memory and are mirrored in the URL hash after a prefix: `#human-resources/employees/e3`, so a
-// reload (or a shared link) opens the same page; the browser's Back and Forward step through them (`hash-history.ts`).
-function createAppRouter(
-  element: HTMLElement,
-  hashPrefix: string,
-): { router: ReturnType<typeof createMemoryRouter>; dispose: () => void } {
+// reload (or a shared link) opens the same page; the browser's Back and Forward step through them.
+function createAppRouter(element: HTMLElement, hashPrefix: string) {
   const prefix = `#${hashPrefix}`;
-  const router = createMemoryRouter(routes, { initialEntries: [pathFromHash(prefix) ?? '/'] });
-  const stopMirror = mirrorInHash(router, element, prefix);
+  const router = createHumanResourcesRouter(pathFromHash(prefix) ?? '/');
 
-  return {
-    router,
-    dispose: () => {
-      stopMirror();
-      router.dispose();
-    },
-  };
+  return { router, dispose: mirrorInHash(router, element, prefix) };
 }

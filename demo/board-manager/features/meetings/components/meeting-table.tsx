@@ -1,16 +1,14 @@
-import { Anchor } from '@mantine/core';
-import { Link, useNavigate } from 'react-router';
+import { useNavigate } from '@tanstack/react-router';
 
 import type { RowSource, TableActions, TableColumn, TableColumns, TableFilters } from '@local/data-table/react';
 import { criteriaOf, dateRangeFilter, singleRowAction, textFilter } from '@local/data-table/react';
 import { useFindSource } from '@local/data-table/react-query';
+import { AnchorLink, DataTable, useSavedTableFilters, useTableActions } from '@local/micro-app';
 
 import type { MeetingCriteria, MeetingSummary, Page } from '../../../domain/index.js';
 import { MEETING_SORT_KEYS } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { DataTable, formatDateTime, PAGE_SIZE_OPTIONS } from '../../../shared/shared.js';
-import { useSavedFilters } from '../../../shared/ui/saved-filters.js';
-import { deleteAction, editAction, newAction, openAction } from '../../../shared/ui/table-actions.js';
+import { formatDateTime, PAGE_SIZE_OPTIONS } from '../../../shared/shared.js';
 import { boardFilter } from '../../boards/filters/board-filters.js';
 import { useBoardList } from '../../boards/reads.js';
 import { useMeetingService } from '../context.js';
@@ -22,12 +20,12 @@ import {
   useDeleteMeetingsFlow,
   useEditMeetingFlow,
 } from '../meeting-flows.js';
+import type { MeetingLink } from '../meeting-links.js';
 import { MinutesBadge, StatusBadge } from './meeting-badges.js';
 
 export { MeetingTable };
 
-// A meeting as a row: `chair` and `created` are always empty, their columns are there only for their filters, for the
-// look (2026-10-11).
+// A meeting as a row: `chair` and `created` are always empty, their columns are there only for their filters.
 type MeetingRow = MeetingSummary & { chair: ''; created: '' };
 
 // The filters `chair` and `created` are passed on, and the meetings' repository ignores them (see `MeetingRow`).
@@ -52,10 +50,10 @@ function useSource(boardId: string | undefined, personId: string | undefined): R
 type MeetingList = {
   boardId?: string;
   personId?: string;
-  pathOf: (meeting: { id: string; boardId: string }) => string;
+  linkOf: (meeting: { id: string; boardId: string }) => MeetingLink;
 };
 
-function useColumns({ boardId, pathOf }: MeetingList): TableColumns<MeetingRow> {
+function useColumns({ boardId, linkOf }: MeetingList): TableColumns<MeetingRow> {
   const t = useTranslate();
 
   return [
@@ -71,7 +69,7 @@ function useColumns({ boardId, pathOf }: MeetingList): TableColumns<MeetingRow> 
       header: t('meetings.columns.meeting'),
       width: 3,
       sortable: true,
-      render: (row) => <Anchor component={Link} to={pathOf(row)} size="sm">{row.title}</Anchor>,
+      render: (row) => <AnchorLink {...linkOf(row)} size="sm">{row.title}</AnchorLink>,
     },
     ...(boardId === undefined
       ? [
@@ -123,8 +121,7 @@ function useColumns({ boardId, pathOf }: MeetingList): TableColumns<MeetingRow> 
       hidden: true,
       align: 'end',
     },
-    // Only for the look (2026-10-11, the user's wish: enough filters for the filter drawer's two columns): columns
-    // without data, whose filters the source ignores.
+    // Columns without data, only for their filters, which the source ignores.
     {
       key: 'chair',
       header: t('meetings.columns.chair'),
@@ -159,6 +156,7 @@ function useFilters(boardId: string | undefined): TableFilters {
 }
 
 function useActions(list: MeetingList): TableActions<MeetingRow> {
+  const { deleteAction, editAction, newAction, openAction } = useTableActions();
   const t = useTranslate();
   const navigate = useNavigate();
   const createMeeting = useCreateMeetingFlow(list);
@@ -168,32 +166,27 @@ function useActions(list: MeetingList): TableActions<MeetingRow> {
 
   return [
     newAction(t('meetings.new'), createMeeting),
-    openAction((row) => navigate(list.pathOf(row))),
+    openAction((row) => navigate(list.linkOf(row))),
     editAction(editMeeting),
     singleRowAction('cancel', cancelMeeting, { label: t('meetings.cancel'), show: 'toolbar' }),
     deleteAction(deleteMeetings),
   ];
 }
 
-// The meetings of one board (`boardId`, on the board's page), of the boards of one person (`personId`, on the member's
-// page), or of all boards (the "Meetings" module). Without a board, with a board column and filter, and a new meeting
-// chooses its board (of the person's boards, with a person). `pathOf` is where a meeting opens: below its board, or
-// below "Meetings".
 function MeetingTable(
-  { boardId, personId, pathOf, title, subtitle }: {
+  { boardId, personId, linkOf, title, subtitle }: {
     boardId?: string;
     personId?: string;
-    pathOf: (meeting: { id: string; boardId: string }) => string;
+    linkOf: (meeting: { id: string; boardId: string }) => MeetingLink;
     title: string;
     subtitle: string;
   },
 ) {
   const source = useSource(boardId, personId);
-  const columns = useColumns({ boardId, pathOf });
+  const columns = useColumns({ boardId, linkOf });
   const filters = useFilters(boardId);
-  const actions = useActions({ boardId, personId, pathOf });
-  // Saved filters only in the Meetings module (2026-10-11, the user's wish: not on a board's or a member's page).
-  const savedFilters = useSavedFilters('meetings');
+  const actions = useActions({ boardId, personId, linkOf });
+  const savedFilters = useSavedTableFilters('meetings');
   const main = boardId === undefined && personId === undefined;
 
   return (

@@ -1,13 +1,12 @@
-import { Anchor, Badge, Group, Text } from '@mantine/core';
-import { Link, useNavigate } from 'react-router';
+import { Badge, Group, Text } from '@mantine/core';
+import { useNavigate } from '@tanstack/react-router';
 
 import type { TableActions, TableColumns } from '@local/data-table/react';
 import { singleRowAction } from '@local/data-table/react';
+import { AnchorLink, DataTable, useTableActions } from '@local/micro-app';
 
 import type { AccessData, Role } from '../../../domain/index.js';
-import { DataTable } from '../../../shared/ui/data-table.js';
 import { appIcons } from '../../../shared/ui/icons.js';
-import { deleteAction, newAction, openAction } from '../../../shared/ui/table-actions.js';
 import { useTableSource } from '../../iam/index.js';
 import { useCreateRoleFlow, useDeleteRolesFlow } from '../role-flows.js';
 
@@ -32,7 +31,7 @@ const columns: TableColumns<RoleRow> = [
     sortable: true,
     render: (row) => (
       <Group gap={8} wrap="nowrap">
-        <Anchor component={Link} to={`/roles/${row.id}`} size="sm" truncate>{row.name}</Anchor>
+        <AnchorLink to="/roles/$roleId" params={{ roleId: row.id }} size="sm" truncate>{row.name}</AnchorLink>
         {row.builtIn && <Badge size="xs" variant="outline">Built-in</Badge>}
       </Group>
     ),
@@ -49,19 +48,19 @@ const columns: TableColumns<RoleRow> = [
 ];
 
 function useActions(): TableActions<RoleRow> {
+  const { deleteAction, newAction, openAction } = useTableActions();
   const navigate = useNavigate();
   const createRole = useCreateRoleFlow();
   const deleteRoles = useDeleteRolesFlow();
 
   return [
     newAction('New role', () => createRole()),
-    openAction((row) => navigate(`/roles/${row.id}`)),
+    openAction((row) => navigate({ to: '/roles/$roleId', params: { roleId: row.id } })),
     singleRowAction('duplicate', createRole, { icon: appIcons.copy, tip: 'Duplicate', show: 'both' }),
     deleteAction(deleteRoles),
   ];
 }
 
-// All roles: named sets of permissions, granted on scopes.
 function RoleTable() {
   const actions = useActions();
   const source = useTableSource<RoleRow>('roles', roleRows, { search: ['name', 'description'] });

@@ -308,18 +308,10 @@ const en = {
     },
   },
 
-  // The shell: the app header, the module menu, the breadcrumb, Back and Forward.
+  // The shell: the app header (its own texts, Back and Forward, the breadcrumb's Home: `@local/micro-app`).
   shell: {
     appName: 'Board Manager',
-    modulesMenu: '{{app}}: modules',
     overview: 'Overview',
-    home: 'Home',
-    back: 'Back',
-    forward: 'Forward',
-    backTo: 'Back to <page/>',
-    forwardTo: 'Forward to <page/>',
-    backToOverview: 'Back to Overview',
-    forwardToOverview: 'Forward to Overview',
   },
   // The names of the modules (the menu, the breadcrumb, the start page), and of one of each (a crumb before its name
   // is known).

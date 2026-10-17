@@ -1,15 +1,13 @@
-import { Anchor, Badge, Group as MantineGroup } from '@mantine/core';
-import { Link } from 'react-router';
+import { Badge, Group as MantineGroup } from '@mantine/core';
 
 import type { TableActions, TableColumns } from '@local/data-table/react';
 import { multiRowAction, singleRowAction } from '@local/data-table/react';
+import { AnchorLink, DataTable, useTableActions } from '@local/micro-app';
 
 import type { Group, User } from '../../../domain/index.js';
 import { membersOf } from '../../../domain/index.js';
-import { DataTable } from '../../../shared/ui/data-table.js';
 import { appIcons } from '../../../shared/ui/icons.js';
 import { UserAvatar } from '../../../shared/ui/parts.js';
-import { newAction } from '../../../shared/ui/table-actions.js';
 import { useTableSource } from '../../iam/index.js';
 import { useAddMembersFlow, useRemoveMembersFlow } from '../group-flows.js';
 
@@ -24,7 +22,7 @@ const columns: TableColumns<User> = [
     render: (row) => (
       <MantineGroup gap={8} wrap="nowrap">
         <UserAvatar name={row.name} size={22} />
-        <Anchor component={Link} to={`/users/${row.id}`} size="sm" truncate>{row.name}</Anchor>
+        <AnchorLink to="/users/$userId" params={{ userId: row.id }} size="sm" truncate>{row.name}</AnchorLink>
         {!row.active && <Badge size="xs" variant="light" color="gray">Disabled</Badge>}
       </MantineGroup>
     ),
@@ -34,6 +32,7 @@ const columns: TableColumns<User> = [
 ];
 
 function useActions(group: Group): TableActions<User> {
+  const { newAction } = useTableActions();
   const addMembers = useAddMembersFlow();
   const removeMembers = useRemoveMembersFlow();
 
@@ -49,7 +48,6 @@ function useActions(group: Group): TableActions<User> {
   ];
 }
 
-// The members of a group: add, remove.
 function MemberTable({ group }: { group: Group }) {
   const actions = useActions(group);
   const source = useTableSource<User>(

@@ -1,19 +1,14 @@
 import { Group, Stack, Text, Title } from '@mantine/core';
 import type { ReactNode } from 'react';
 import { useSyncExternalStore } from 'react';
-import { IoMdHome } from 'react-icons/io';
 import {
-  TbArrowLeft,
-  TbArrowRight,
   TbBuilding,
   TbCalendar,
-  TbChevronDown,
   TbExternalLink,
   TbInfoCircle,
   TbLayoutBoard,
   TbNotes,
   TbPencil,
-  TbPlus,
   TbPresentation,
   TbSection,
   TbTrash,
@@ -21,15 +16,10 @@ import {
   TbUsers,
 } from 'react-icons/tb';
 
-import type { DataTableProps } from '@local/data-table/react';
-import { createDataTableComponent } from '@local/data-table/react';
-import { mantineTheme } from '@local/data-table/themes';
-
-import { i18n as tableI18n } from '../../../packages/data-table/demo/i18n.js';
+import { MantineScope } from '@local/micro-app';
 
 export {
   appIcons,
-  DataTable,
   formatDate,
   formatDateTime,
   formatSize,
@@ -42,24 +32,8 @@ export {
   useScheme,
 };
 
-// What the pages share: the table (a data table with the Mantine theme), formatting, icons, the page header, and
-// the scope of Mantine (its variables and its color scheme, which follows the page's switch).
-
-// One data table component for every table. It follows `<html lang>` through the i18n adapter of its demo.
-const BaseDataTable = createDataTableComponent({ i18n: tableI18n, theme: mantineTheme });
-
-// Every table in a `board-manager__table`, which has no box of its own (`display: contents`): the hook of the layout
-// that lets the table of a page fill the height below the app header (`board-manager.css`). The footer only when there is
-// something to page (`footer="auto"`, 2026-10-06), and the number of rows after the title (`showTotal`, so a short
-// list without a footer still tells it), and 50 rows a page (2026-10-08, the user's wish, in every app), unless a table
-// says otherwise.
-function DataTable<Row>(props: DataTableProps<Row>) {
-  return (
-    <div className="board-manager__table">
-      <BaseDataTable footer="auto" showTotal pageSize={50} {...props} />
-    </div>
-  );
-}
+// What the pages share: formatting, icons, the page header, and the scope of Mantine (its variables and its color
+// scheme, the element's or the page's).
 
 // The page sizes of the paged tables (not the agenda and the sections, which show one page).
 const PAGE_SIZE_OPTIONS: readonly number[] = [10, 25, 50];
@@ -155,9 +129,9 @@ const SCOPE_CLASS = 'board-manager';
 
 function Scope({ children }: { children: ReactNode }) {
   return (
-    <div className={SCOPE_CLASS} data-mantine-color-scheme={useScheme()}>
+    <MantineScope className={SCOPE_CLASS} scheme={useScheme()}>
       {children}
-    </div>
+    </MantineScope>
   );
 }
 
@@ -187,17 +161,11 @@ function PageHeader(
 // The icons of the app: the Tabler icons of react-icons, in the current text color.
 const appIcons = {
   app: <TbPresentation size={22} aria-hidden />,
-  home: <IoMdHome size={18} aria-hidden />,
-  chevronDown: <TbChevronDown size={16} aria-hidden />,
   boards: <TbLayoutBoard size={18} aria-hidden />,
   meetings: <TbCalendar size={18} aria-hidden />,
   members: <TbUsers size={18} aria-hidden />,
   organizations: <TbBuilding size={18} aria-hidden />,
-  open: <TbArrowRight size={16} aria-hidden />,
-  back: <TbArrowLeft size={18} aria-hidden />,
-  forward: <TbArrowRight size={18} aria-hidden />,
   minutes: <TbNotes size={16} aria-hidden />,
-  add: <TbPlus size={16} aria-hidden />,
   section: <TbSection size={16} aria-hidden />,
   edit: <TbPencil size={16} aria-hidden />,
   remove: <TbTrash size={16} aria-hidden />,

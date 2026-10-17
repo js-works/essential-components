@@ -4,12 +4,12 @@ import { useMemo } from 'react';
 import type { RowGroup, RowMove, RowSource, TableActions, TableColumns } from '@local/data-table/react';
 import { generalAction, singleRowAction } from '@local/data-table/react';
 import { useQuerySource } from '@local/data-table/react-query';
+import { DataTable, useTableActions } from '@local/micro-app';
 
 import type { Meeting } from '../../../domain/index.js';
 import { agendaNumbers, agendaOf } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { appIcons, DataTable } from '../../../shared/shared.js';
-import { deleteAction, editAction, newAction } from '../../../shared/ui/table-actions.js';
+import { appIcons } from '../../../shared/shared.js';
 import {
   useAddAgendaItemFlow,
   useDeleteAgendaItemsFlow,
@@ -26,7 +26,6 @@ import { MinutesText } from './minutes.js';
 
 export { AgendaTable };
 
-// The minutes, the decision and the description of an item, in its detail row.
 function AgendaDetail({ row }: { row: AgendaRow }) {
   const t = useTranslate();
 
@@ -68,7 +67,6 @@ function useColumns(): TableColumns<AgendaRow> {
   ];
 }
 
-// The whole agenda as one page, through TanStack Query: the table reloads after a change.
 function useSource(meetingId: string): RowSource<AgendaRow> {
   const service = useMeetingService();
 
@@ -87,6 +85,7 @@ function useSource(meetingId: string): RowSource<AgendaRow> {
 }
 
 function useActions(meeting: Meeting): TableActions<AgendaRow> {
+  const { deleteAction, editAction, newAction } = useTableActions();
   const t = useTranslate();
   const addItem = useAddAgendaItemFlow(meeting);
   const manageSections = useManageSectionsFlow(meeting);
@@ -108,11 +107,6 @@ function useActions(meeting: Meeting): TableActions<AgendaRow> {
   ];
 }
 
-// The agenda: in the order of its items (no sorting: the rows are moved with their handle, and every move is saved).
-// Each item has its minutes and decision ("Minutes", also a double click), shown in its detail row. Sections are the
-// groups of the table (`groupBy`): an item is moved within its section or into another one by dragging. The sections
-// themselves are managed in a dialog ("Manage sections": add, rename, delete, reorder). Without a section, the table
-// is not grouped: plain rows.
 function AgendaTable({ meeting }: { meeting: Meeting }) {
   const t = useTranslate();
   const columns = useColumns();

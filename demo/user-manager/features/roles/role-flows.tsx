@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router';
+import { useNavigate } from '@tanstack/react-router';
 
 import { useDialogs, useToast } from '@local/overlays/react';
 
@@ -42,7 +42,7 @@ function useCreateRoleFlow() {
 
     await changed();
     toasts.success(`Role "${created.name}" created`);
-    void navigate(`/roles/${created.id}`);
+    void navigate({ to: '/roles/$roleId', params: { roleId: created.id } });
   };
 }
 

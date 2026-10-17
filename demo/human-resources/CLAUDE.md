@@ -42,12 +42,18 @@ Started 2026-10-08.
 - `features/`: `hr/` (the service `createHrService`, `useHrData()`, `useChanged()`, `useTableSource()`, the lookups),
   `viewer/` (the signed-in employee: Sarah Krüger, HR Manager, `VIEWER_ID`; no roles), `home/`, `employees/`,
   `departments/`, `recruiting/`, `checklists/`. Each with an `index.ts`; they import each other only through it.
-- `shared/`: the Mantine scope (`.human-resources`), `DataTable` (the data table in Mantine's look, every table in
-  a `human-resources__table`, `footer="auto"` and `showTotal`; all compact, `density="compact"`, 2026-10-08, the user's
-  wish, like the User Manager's), `DocumentUpload`, icons, page parts (header, avatar, labels, the pills, the stat card, `Detail`, the
-  rating, a progress cell), `FieldError`, the translations, formatting, `useForm`.
-- `app/`: `human-resources-demo.tsx` (the element `human-resources-demo`), `app.tsx`, `look.tsx` (the Time Tracker's),
-  `hash-history.ts` (the same file in all five apps), `human-resources.css`.
+- `shared/`: `DocumentUpload`, icons, page parts (header, avatar, labels, the pills, the stat card, `Detail`, the
+  rating, a progress cell), the translations (with the building blocks' texts), formatting, `useForm`
+  (`defineForm()`). The tables are `DataTable`s (compact, `footer="auto"`, `showTotal`).
+- Built on `@local/micro-app` (2026-10-17, like the other apps; the app's own copies before: the app header, the look,
+  the Mantine scope, the hash history, the data table's wrapper, the table actions, the saved filters' hook,
+  `FieldError` and the form hook): `MicroAppHeader` (with the user menu as its `actions`), `createLook`,
+  `MantineScope`, `mirrorInHash`, `DataTable`, `useTableActions`, `useSavedTableFilters`, `defineForm`,
+  `AnchorLink`, inside a `MicroAppProvider`. Routing with TanStack Router (React Router before), typed:
+  `app/router-types.ts` registers the app's router, only in the app's own check (`demo/human-resources/tsconfig.json`, run by
+  `npm run typecheck`).
+- `app/`: `human-resources-demo.tsx` (the element `human-resources-demo`; the wiring, the look), `app.tsx` (the
+  routes, the header, the user menu, the hash), `router-types.ts`, `human-resources.css`.
 
 ## Look
 
@@ -64,16 +70,18 @@ Started 2026-10-08.
 ## App
 
 - Saved filters (2026-10-11, the user's wish) in Employees, Recruiting (the openings) and Checklists, with colleagues'
-  shared filters: see "Saved filters in the root's apps" in the root's `CLAUDE.md` (`shared/ui/saved-filters.ts`).
-- App header (`AppHeader`, 2026-10-08; "top bar" before): the app icon (`TbUsersGroup`; the cockpit's the same Tabler icon), "Human Resources" ("Personal" in German),
+  shared filters: see "Saved filters in the root's apps" in the root's `CLAUDE.md` (`useSavedTableFilters` of `@local/micro-app`).
+- The header (`MicroAppHeader` since 2026-10-17; the app's own `AppHeader` from 2026-10-08, "top bar" before): the app icon (`TbUsersGroup`; the cockpit's the same Tabler icon), "Human Resources" ("Personal" in German),
   the user menu (the viewer's avatar and title, "My page"), Back and Forward.
   - The modules as tabs (2026-10-08, the user's wish: tried here first, then rolled out to the Board Manager, the User
     Manager and the Time Tracker; before, a menu of the modules on the title, the breadcrumb in the same line):
-    Overview, Employees, Departments, Recruiting, Onboarding (`NavLink`s; the current one, also on its records' pages,
-    in the accent's light ground). Below 64rem of the bar a menu in their place (the current module and a chevron).
+    Overview, Employees, Departments, Recruiting, Onboarding (router links; the current one, also on its records'
+    pages, in the accent's light ground). Below 56rem of the header a menu in their place (the package's; 64rem with
+    the app's own header).
   - The breadcrumb in a second line of the bar (Home, then module › record).
-- Routes: `/`, `/employees`, `/employees/:employeeId`, `/departments`, `/recruiting`, `/recruiting/:openingId`,
-  `/onboarding`, `/onboarding/:checklistId`; mirrored in the hash after `#human-resources`.
+- Routes: `/`, `/employees`, `/employees/$employeeId`, `/departments`, `/recruiting`, `/recruiting/$openingId`,
+  `/onboarding`, `/onboarding/$checklistId` (an unknown path shows the start page); mirrored in the hash after
+  `#human-resources` (`mirrorInHash`).
 - Overview: four cards (headcount, open positions, candidates in process, running checklists), the headcount by
   department, the next 30 days (birthdays, anniversaries, first and last days), the recruiting pipeline, the next
   tasks.

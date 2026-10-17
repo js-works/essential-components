@@ -1,17 +1,15 @@
-import { useNavigate } from 'react-router';
+import { useNavigate } from '@tanstack/react-router';
 
 import type { RowSource, TableActions, TableColumns, TableFilters } from '@local/data-table/react';
 import { criteriaOf, dateRangeFilter, generalAction, multiRowAction, singleRowAction } from '@local/data-table/react';
 import { useFindSource } from '@local/data-table/react-query';
+import { DataTable, useSavedTableFilters, useTableActions } from '@local/micro-app';
 
 import type { Folder } from '../../../domain/index.js';
 import { FILE_SORT_KEYS, ROOT_ID } from '../../../domain/index.js';
 import { formatDateTime, formatSize } from '../../../shared/lib/format.js';
-import { DataTable } from '../../../shared/ui/data-table.js';
 import { appIcons } from '../../../shared/ui/icons.js';
-import { useSavedFilters } from '../../../shared/ui/saved-filters.js';
-import { deleteAction, newAction, openAction } from '../../../shared/ui/table-actions.js';
-import { folderPath, useBrowserService } from '../context.js';
+import { folderLink, useBrowserService } from '../context.js';
 import { useSetFavoriteFlow, useShowDetailsFlow } from '../entry-flows.js';
 import { fileKindFilter, ownerFilter } from '../folder-filters.js';
 import {
@@ -105,6 +103,7 @@ function useFilters(owners: readonly string[]): TableFilters {
 }
 
 function useActions(folder: Folder, folders: readonly Folder[]): TableActions<EntryRow> {
+  const { deleteAction, newAction, openAction } = useTableActions();
   const navigate = useNavigate();
   const showDetails = useShowDetailsFlow(folders);
   const markFavorites = useMarkFavoritesFlow();
@@ -116,10 +115,9 @@ function useActions(folder: Folder, folders: readonly Folder[]): TableActions<En
   const download = useDownloadFlow();
   const parent = folders.find((candidate) => candidate.id === folder.parentId);
   const list: TableActions<EntryRow> = [
-    // To the parent folder (2026-10-07, the user's wish; in place of a ".." row): not in the root. Pinned (2026-10-10,
-    // the user's wish): at the start of the bar, and still there while files are selected.
+    // To the parent folder: not in the root; pinned, so it stays while files are selected.
     ...(parent === undefined ? [] : [
-      generalAction('up', () => navigate(folderPath(parent.id)), {
+      generalAction('up', () => navigate(folderLink(parent.id)), {
         label: 'Up',
         icon: appIcons.up,
         tip: `Up to "${parent.name}"`,
@@ -127,12 +125,9 @@ function useActions(folder: Folder, folders: readonly Folder[]): TableActions<En
       }),
     ]),
     newAction('New folder', newFolder, { key: 'new-folder' }),
-    // The secondary actions of the toolbar as ghost buttons (2026-10-11, the user's wish: `tertiary`).
     generalAction('upload', uploadFiles, { label: 'Upload', icon: appIcons.upload, variant: 'tertiary' }),
-    // The default actions (a double click): a folder opens, a file shows its details (the first one marked that is
-    // there for the row). "Open" only for folders (2026-10-10, the user's wish: for a file it did the same as
-    // "Details"; the data table's `visible`).
-    openAction((row) => navigate(folderPath(row.id)), { visible: (row) => row.entry === 'folder' }),
+    // The default actions (a double click): a folder opens, a file shows its details; "Open" only for folders.
+    openAction((row) => navigate(folderLink(row.id)), { visible: (row) => row.entry === 'folder' }),
     singleRowAction('info', showDetails, {
       variant: 'tertiary',
       icon: appIcons.info,
@@ -140,16 +135,12 @@ function useActions(folder: Folder, folders: readonly Folder[]): TableActions<En
       show: 'both',
       default: true,
     }),
-    // Outlined (2026-10-11, the user's wish), like Move; with its text in the selection bar (the same day; icon only
-    // before), the icon only in the rows (the table's `rowActionLook`), named by its label.
     singleRowAction('rename', renameEntry, { label: 'Rename', icon: appIcons.rename, show: 'both' }),
-    // Outlined (2026-10-11, the user's wish): the main action on the selection.
     multiRowAction('move', moveEntries, { label: 'Move', icon: appIcons.move }),
     deleteAction(trashEntries),
     {
       type: 'menu',
       key: 'favorites',
-      // Icon only, with its tooltip (2026-10-11, the user's wish), like Download.
       tip: 'Favorites',
       variant: 'tertiary',
       icon: appIcons.star,
@@ -176,7 +167,6 @@ function useActions(folder: Folder, folders: readonly Folder[]): TableActions<En
     : list;
 }
 
-// A folder's contents: its subfolders first, then its files, in one table.
 function FolderTable({ folder, folders, owners }: {
   folder: Folder;
   folders: readonly Folder[];
@@ -186,7 +176,7 @@ function FolderTable({ folder, folders, owners }: {
   const columns = useColumns();
   const filters = useFilters(owners);
   const actions = useActions(folder, folders);
-  const savedFilters = useSavedFilters('files');
+  const savedFilters = useSavedTableFilters('files');
 
   return (
     <DataTable

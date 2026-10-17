@@ -1,16 +1,14 @@
-import { Anchor } from '@mantine/core';
-import { Link, useNavigate } from 'react-router';
+import { useNavigate } from '@tanstack/react-router';
 
 import type { RowSource, TableActions, TableColumns, TableFilters } from '@local/data-table/react';
 import { criteriaOf, dateRangeFilter, textFilter } from '@local/data-table/react';
 import { useFindSource } from '@local/data-table/react-query';
+import { AnchorLink, DataTable, useSavedTableFilters, useTableActions } from '@local/micro-app';
 
 import type { BoardCriteria, BoardSummary } from '../../../domain/index.js';
 import { BOARD_SORT_KEYS } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { DataTable, formatDateTime, PAGE_SIZE_OPTIONS } from '../../../shared/shared.js';
-import { useSavedFilters } from '../../../shared/ui/saved-filters.js';
-import { deleteAction, editAction, newAction, openAction } from '../../../shared/ui/table-actions.js';
+import { formatDateTime, PAGE_SIZE_OPTIONS } from '../../../shared/shared.js';
 import { useMemberService } from '../../members/context.js';
 import { personFilter } from '../../members/member-filters.js';
 import { useBoardService } from '../context.js';
@@ -39,7 +37,7 @@ function useColumns(): TableColumns<BoardSummary> {
       header: t('boards.columns.board'),
       width: 3,
       sortable: true,
-      render: (row) => <Anchor component={Link} to={`/boards/${row.id}`} size="sm">{row.name}</Anchor>,
+      render: (row) => <AnchorLink to="/boards/$boardId" params={{ boardId: row.id }} size="sm">{row.name}</AnchorLink>,
     },
     { key: 'description', header: t('boards.columns.description'), width: 4, hideable: true, hidden: true, wrap: true },
     { key: 'chair', header: t('boards.columns.chair'), width: 2, sortable: true, hideable: true },
@@ -68,6 +66,7 @@ function useFilters(): TableFilters {
 }
 
 function useActions(): TableActions<BoardSummary> {
+  const { deleteAction, editAction, newAction, openAction } = useTableActions();
   const t = useTranslate();
   const navigate = useNavigate();
   const createBoard = useCreateBoardFlow();
@@ -76,20 +75,19 @@ function useActions(): TableActions<BoardSummary> {
 
   return [
     newAction(t('boards.new'), createBoard),
-    openAction((row) => navigate(`/boards/${row.id}`)),
+    openAction((row) => navigate({ to: '/boards/$boardId', params: { boardId: row.id } })),
     editAction(editBoard),
     deleteAction(deleteBoards),
   ];
 }
 
-// The "Boards" module: every board, with a new one, editing and deleting (with its meetings).
 function BoardTable() {
   const t = useTranslate();
   const source = useSource();
   const columns = useColumns();
   const filters = useFilters();
   const actions = useActions();
-  const savedFilters = useSavedFilters('boards');
+  const savedFilters = useSavedTableFilters('boards');
 
   return (
     <DataTable

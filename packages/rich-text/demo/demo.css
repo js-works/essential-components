@@ -1,0 +1,15 @@
+/* What is specific to this demo: the element is a block, as wide as its page, and the value scrolls in its box. */
+rich-text-demo {
+  display: block;
+  max-width: 48rem;
+  margin: 2rem auto;
+  padding-inline: 1rem;
+}
+
+.rich-text-demo__value {
+  max-height: 16rem;
+  overflow: auto;
+  overscroll-behavior: none;
+  white-space: pre-wrap;
+  word-break: break-all;
+}

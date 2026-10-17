@@ -1,23 +1,22 @@
-import { Anchor, Group, Text } from '@mantine/core';
+import { Group, Text } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
 
 import type { RowSource, TableActions, TableColumns, TableFilters } from '@local/data-table/react';
 import { criteriaOf, dateRangeFilter, singleRowAction } from '@local/data-table/react';
 import { useFindSource } from '@local/data-table/react-query';
+import { AnchorLink, DataTable, useSavedTableFilters } from '@local/micro-app';
 
 import type { FileCriteria, Folder, MediaFile } from '../../../domain/index.js';
 import { ancestorsOf, FILE_SORT_KEYS } from '../../../domain/index.js';
 import { formatDateTime, formatSize } from '../../../shared/lib/format.js';
-import { DataTable } from '../../../shared/ui/data-table.js';
 import { appIcons, kindIcon } from '../../../shared/ui/icons.js';
-import { useSavedFilters } from '../../../shared/ui/saved-filters.js';
 import {
   browserKeys,
   FavoriteStar,
   fileKindFilter,
-  folderPath,
+  folderLink,
   KIND_LABELS,
   ownerFilter,
   useBrowserService,
@@ -27,10 +26,8 @@ import {
 
 export { RecentTable };
 
-// The days Recent starts with (its date filter, which the user may change or remove).
 const RECENT_DAYS = 30;
 
-// A local date (`yyyy-mm-dd`) some days before today.
 function daysAgo(days: number): string {
   const date = new Date();
 
@@ -126,7 +123,7 @@ function useActions(folders: readonly Folder[]): TableActions<MediaFile> {
 
   return [
     singleRowAction('info', showFileDetails, { icon: appIcons.info, tip: 'Details', show: 'both', default: true }),
-    singleRowAction('open-folder', (file) => navigate(folderPath(file.folderId)), {
+    singleRowAction('open-folder', (file) => navigate(folderLink(file.folderId)), {
       icon: appIcons.openFolder,
       tip: 'Open folder',
       show: 'both',
@@ -134,13 +131,10 @@ function useActions(folders: readonly Folder[]): TableActions<MediaFile> {
   ];
 }
 
-// The module "Recent" (2026-10-08): the files of all folders, the last modified first, from the last 30 days (a
-// default filter: changed or removed like any other). A double click (or the arrow) shows a file's details; its folder
-// is a link. Changes (rename, move, delete, upload) are made in Files.
 function RecentTable() {
   const source = useSource();
   const service = useBrowserService();
-  const savedFilters = useSavedFilters('recent');
+  const savedFilters = useSavedTableFilters('recent');
   const { data: folders = [] } = useQuery({
     queryKey: browserKeys.folders(),
     queryFn: ({ signal }) => service.folders(signal),
@@ -175,13 +169,12 @@ function RecentTable() {
   );
 }
 
-// A file's folder: its path from the storage on ("Company share › Projects"), a link that opens the folder.
 function FolderLink({ folders, id }: { folders: readonly Folder[]; id: string }) {
   const path = ancestorsOf(folders, id).slice(1);
 
   return (
-    <Anchor component={Link} to={folderPath(id)} size="sm" truncate>
+    <AnchorLink {...folderLink(id)} size="sm" truncate>
       {path.map((ancestor) => ancestor.name).join(' › ')}
-    </Anchor>
+    </AnchorLink>
   );
 }

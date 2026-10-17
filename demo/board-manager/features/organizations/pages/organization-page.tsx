@@ -1,7 +1,7 @@
 import { Button, Group, SimpleGrid, Stack, Tabs, Text } from '@mantine/core';
+import { useNavigate, useParams } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { Fragment, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
 
 import type { OrganizationSummary } from '../../../domain/index.js';
 import { countryName } from '../../../shared/lib/countries.js';
@@ -18,7 +18,7 @@ export { OrganizationPage };
 // One organization: its address and website ("Overview"), and its people.
 function OrganizationPage() {
   const t = useTranslate();
-  const { organizationId = '' } = useParams();
+  const { organizationId } = useParams({ from: '/organizations/$organizationId' });
   const { organization, isPending } = useOrganization(organizationId);
   const [tab, setTab] = useState<string | null>('overview');
 
@@ -78,7 +78,7 @@ function OrganizationOverview({ organization }: { organization: OrganizationSumm
 
   const remove = async () => {
     if (await deleteOrganizations([organization])) {
-      navigate('/organizations');
+      navigate({ to: '/organizations' });
     }
   };
 

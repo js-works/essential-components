@@ -1,13 +1,17 @@
-import { Anchor, Badge, Card, Group, Paper, SimpleGrid, Stack, Tabs, Text, ThemeIcon, Title } from '@mantine/core';
+import { Badge, Card, Group, Paper, SimpleGrid, Stack, Tabs, Text, ThemeIcon, Title } from '@mantine/core';
+import type { LinkProps } from '@tanstack/react-router';
+import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router';
+
+import { AnchorLink } from '@local/micro-app';
 
 import type { Meeting } from '../../../domain/index.js';
 import { localDateTime } from '../../../domain/index.js';
 import { useLanguage, useTranslate } from '../../../shared/lib/i18n/index.js';
 import { appIcons, formatDateTime } from '../../../shared/shared.js';
 import { useBoardList } from '../../boards/reads.js';
+import { boardMeetingLink } from '../../meetings/index.js';
 import { useMeetingList } from '../../meetings/reads.js';
 import { usePersonList } from '../../members/reads.js';
 import { useOrganizationList } from '../../organizations/reads.js';
@@ -102,10 +106,16 @@ function HomePage() {
 }
 
 function ModuleCard(
-  { to, icon, title, text }: { to: string; icon: ReactNode; title: string; text: string },
+  { to, icon, title, text }: { to: LinkProps['to']; icon: ReactNode; title: string; text: string },
 ) {
   return (
-    <Card component={Link} to={to} withBorder padding="md" radius="sm" className="board-manager__card">
+    <Card
+      withBorder
+      padding="md"
+      radius="sm"
+      className="board-manager__card"
+      renderRoot={(props) => <Link to={to} {...props} />}
+    >
       <Group gap="sm" wrap="nowrap">
         <ThemeIcon variant="light" size="lg" radius="sm">{icon}</ThemeIcon>
         <Stack gap={0}>
@@ -145,9 +155,9 @@ function MeetingList(
                 <span className="board-manager-home-date__day">{date.getDate()}</span>
               </div>
               <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
-                <Anchor component={Link} to={`/boards/${meeting.boardId}/meetings/${meeting.id}`} size="sm" truncate>
+                <AnchorLink {...boardMeetingLink(meeting)} size="sm" truncate>
                   {meeting.title}
-                </Anchor>
+                </AnchorLink>
                 <Text size="xs" c="dimmed" truncate>
                   {boards.find((board) => board.id === meeting.boardId)?.name} · {formatDateTime(meeting.start)}
                 </Text>

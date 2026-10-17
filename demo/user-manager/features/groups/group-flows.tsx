@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router';
+import { useNavigate } from '@tanstack/react-router';
 
 import { useDialogs, useToast } from '@local/overlays/react';
 
@@ -35,7 +35,7 @@ function useCreateGroupFlow() {
 
     await changed();
     toasts.success(`Group "${created.name}" created`);
-    void navigate(`/groups/${created.id}`);
+    void navigate({ to: '/groups/$groupId', params: { groupId: created.id } });
   };
 }
 

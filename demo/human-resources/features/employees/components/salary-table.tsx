@@ -1,14 +1,13 @@
 import { Badge, SimpleGrid, Stack, Text } from '@mantine/core';
 
 import type { TableActions, TableColumns } from '@local/data-table/react';
+import { DataTable, useTableActions } from '@local/micro-app';
 
 import type { Employee, HrData, SalaryChange } from '../../../domain/index.js';
 import { currentSalary, todayDate } from '../../../domain/index.js';
 import { formatDate, formatMoney, formatNumber } from '../../../shared/lib/format.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { DataTable } from '../../../shared/ui/data-table.js';
 import { StatCard } from '../../../shared/ui/parts.js';
-import { newAction } from '../../../shared/ui/table-actions.js';
 import { useTableSource } from '../../hr/index.js';
 import { useChangeSalaryFlow } from '../employee-flows.js';
 
@@ -89,14 +88,13 @@ function useColumns(): TableColumns<SalaryRow> {
 }
 
 function useActions(employee: Employee, data: HrData): TableActions<SalaryRow> {
+  const { newAction } = useTableActions();
   const t = useTranslate();
   const changeSalary = useChangeSalaryFlow();
 
   return [newAction(t('salary.new'), () => changeSalary(employee, data))];
 }
 
-// The salary of an employee: today's (with the change to the one before), and its history, the latest first. A new
-// salary from a date on (a raise, a promotion).
 function SalaryTable({ data, employee }: { data: HrData; employee: Employee }) {
   const t = useTranslate();
   const columns = useColumns();

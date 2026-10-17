@@ -1,7 +1,7 @@
 import { Badge, Button, Group, Paper, SimpleGrid, Stack, Tabs, Text, Title } from '@mantine/core';
+import { useLocation, useNavigate, useParams } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { Fragment, useMemo, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router';
 
 import type { MeetingSummary } from '../../../domain/index.js';
 import { agendaNumbers } from '../../../domain/index.js';
@@ -19,10 +19,10 @@ import { useAgenda, useBoardMembers, useMeeting } from '../reads.js';
 export { MeetingPage };
 
 // One meeting: its agenda (with the minutes per item), the minutes as one document, and the documents of the meeting.
-// It is below its board (`/boards/:boardId/meetings/:meetingId`) or below "Meetings" (`/meetings/:meetingId`).
+// It is below its board (`/boards/$boardId/meetings/$meetingId`) or below "Meetings" (`/meetings/$meetingId`).
 function MeetingPage() {
   const t = useTranslate();
-  const { meetingId = '' } = useParams();
+  const meetingId = useParams({ strict: false }).meetingId ?? '';
   const { meeting, isPending } = useMeeting(meetingId);
   const { entries } = useAgenda(meetingId);
   const approveMinutes = useApproveMinutesFlow();
@@ -134,7 +134,11 @@ function MeetingOverview({ meeting, duration }: { meeting: MeetingSummary; durat
 
   const remove = async () => {
     if (await deleteMeetings([meeting])) {
-      navigate(pathname.startsWith('/boards/') ? `/boards/${meeting.boardId}` : '/meetings');
+      void navigate(
+        pathname.startsWith('/boards/')
+          ? { to: '/boards/$boardId', params: { boardId: meeting.boardId } }
+          : { to: '/meetings' },
+      );
     }
   };
 

@@ -56,14 +56,20 @@ Started 2026-10-06.
     (`time-tracker:role`). A real app would take it from the user's permissions.
   - `home/` (the overview), `clock/`, `timesheet/` (with the corrections), `leave/`, `sick/`, `calendar/`,
     `approvals/`, `employees/`. Each with an `index.ts`; they import each other only through it.
-- `shared/`: the Mantine scope (`.time-tracker`), the data table in Mantine's look (`DataTable`: every table in a
-  `time-tracker__table`, `footer="auto"` and `showTotal`, like the Board Manager's), the file upload in Mantine's look,
+- `shared/`: the file upload in Mantine's look,
   icons, page parts (header, an employee's avatar and link, the badges of absences, requests and the clock, the cards,
   the notice of a page only for team leads), the decision dialog of a team lead, the translations, formatting,
-  `useForm` (form-validation plus the overlays' dialog form), `useNow`, `errorText`.
+  `useForm` (`defineForm()`), `useNow`, `errorText`. The tables are `DataTable`s.
+- Built on `@local/micro-app` (2026-10-17, like the other apps; the app's own copies before: the app header, the look,
+  the Mantine scope, the hash history, the data table's wrapper, the table actions, the saved filters' hook,
+  `FieldError` and the form hook): `MicroAppHeader` (with the user menu as its `actions`), `createLook`,
+  `MantineScope`, `mirrorInHash`, `DataTable`, `useTableActions`, `useSavedTableFilters`, `defineForm`,
+  `AnchorLink`, inside a `MicroAppProvider`. Routing with TanStack Router (React Router before), typed:
+  `app/router-types.ts` registers the app's router, only in the app's own check (`demo/time-tracker/tsconfig.json`, run by
+  `npm run typecheck`).
 - `app/`: `time-tracker-demo.tsx` (the element `time-tracker-demo`; the wiring, Mantine's `DatesProvider` in the page's
-  language with Monday first), `app.tsx` (routes, app header, breadcrumb, user menu, history, the hash), `look.tsx` (the
-  User Manager's, i.e. the Board Manager's look), `time-tracker.css`.
+  language with Monday first), `app.tsx` (the routes, the header, the user menu, the hash), `router-types.ts`,
+  `time-tracker.css`; the look in `time-tracker-demo.tsx`.
 
 ## Look
 
@@ -104,17 +110,17 @@ Started 2026-10-06.
 
 - Saved filters (2026-10-11, the user's wish) in Employees and in the team's tab of Leave (`LeaveTable`'s
   `savedFilters`, given by `LeavePage`), with colleagues' shared filters: see "Saved filters in the root's apps" in
-  the root's `CLAUDE.md` (`shared/ui/saved-filters.ts`).
-- App header (`AppHeader`, 2026-10-08; "top bar" before) like the Board Manager's, two lines (2026-10-08, the Human Resources' trial, rolled out; a menu of the modules
+  the root's `CLAUDE.md` (`useSavedTableFilters` of `@local/micro-app`).
+- The header (`MicroAppHeader` since 2026-10-17; the app's own `AppHeader` from 2026-10-08, "top bar" before), two lines (2026-10-08, the Human Resources' trial, rolled out; a menu of the modules
   on the title, the breadcrumb in the same line before): the app icon (`TbClock`, also the cockpit's), "Time Tracker",
   the modules as tabs (Overview, Time clock, Timesheet, Leave, Sick calls, Team calendar; for a team lead also Approvals
-  and Employees; the current one, also on an employee's page, in the accent's light ground; below 80rem of the bar a
-  menu in their place: the current module and a chevron), the user menu (the viewer's avatar and role: "My page", the
+  and Employees; the current one, also on an employee's page, in the accent's light ground; below 56rem of the header
+  a menu in their place (the package's; 80rem with the app's own header): the current module and a chevron), the user menu (the viewer's avatar and role: "My page", the
   role switch), Back and Forward; below them the breadcrumb (a house icon with "Home", a link to the start page; then
   module › employee). The role and the history go when the bar is narrow.
 - Routes: `/`, `/clock`, `/timesheet`, `/leave`, `/sick`, `/calendar`, `/approvals`, `/employees`,
-  `/employees/:employeeId`; mirrored in the hash after `#time-tracker`, with the browser's Back and Forward (`app/hash-history.ts`, see the
-  root's `CLAUDE.md`). A page only for team leads (Approvals,
+  `/employees/$employeeId`; mirrored in the hash after `#time-tracker`, with the browser's Back and Forward
+  (`mirrorInHash` of `@local/micro-app`). A page only for team leads (Approvals,
   Employees, another's page) shows a notice to an employee.
 - Overview (the start page): the clock, four cards (vacation left, my open requests (side by side: both open Leave),
   this week's balance; a team lead:
@@ -145,7 +151,7 @@ Started 2026-10-06.
     `isDirty` to the overlays' `<Form dirty>`: after a change, closing a form dialog asks first, in place of the dialog's content
     ("Discard your changes?"). Escape there answers Discard (2026-10-09, the user's wish: Escape, Escape leaves a changed form), said in a line below the question ("Press Esc to discard them.", the overlays' text; only with a keyboard).
   - The message of an invalid field is a popover below it (2026-10-06, the user's wish; first the Board Manager's
-    absolutely placed badge, the same day): `FieldError` (`shared/ui/`), given as Mantine's `error` by `useForm` (it
+    absolutely placed badge, the same day): `FieldError` (of `@local/micro-app` since 2026-10-17; `shared/ui/` before), given as Mantine's `error` by `useForm` (it
     wraps every field function). A native `popover="manual"` in the top layer (a dialog's scrolling body never cuts it
     off), opened while the field has the focus and no date picker's calendar of it is open, placed by script below the
     field, 2px away (2026-10-07; 4px before) (above it when there is no room, the arrow turned; inside the window;

@@ -317,15 +317,7 @@ const de: Catalog<typeof en> = {
 
   shell: {
     appName: 'Board Manager',
-    modulesMenu: '{{app}}: Module',
     overview: 'Übersicht',
-    home: 'Start',
-    back: 'Zurück',
-    forward: 'Vor',
-    backTo: 'Zurück zu <page/>',
-    forwardTo: 'Vor zu <page/>',
-    backToOverview: 'Zurück zur Übersicht',
-    forwardToOverview: 'Vor zur Übersicht',
   },
   modules: {
     boards: 'Gremien',

@@ -1,13 +1,12 @@
-import { Anchor, Group as MantineGroup, Text, ThemeIcon } from '@mantine/core';
-import { Link, useNavigate } from 'react-router';
+import { Group as MantineGroup, Text, ThemeIcon } from '@mantine/core';
+import { useNavigate } from '@tanstack/react-router';
 
 import type { TableActions, TableColumns } from '@local/data-table/react';
 import { singleRowAction } from '@local/data-table/react';
+import { AnchorLink, DataTable, useTableActions } from '@local/micro-app';
 
 import type { AccessData, Group } from '../../../domain/index.js';
-import { DataTable } from '../../../shared/ui/data-table.js';
 import { appIcons } from '../../../shared/ui/icons.js';
-import { deleteAction, editAction, newAction, openAction } from '../../../shared/ui/table-actions.js';
 import { useGrantAccessFlow } from '../../access/index.js';
 import { useTableSource } from '../../iam/index.js';
 import { useCreateGroupFlow, useDeleteGroupsFlow, useEditGroupFlow } from '../group-flows.js';
@@ -33,7 +32,7 @@ const columns: TableColumns<GroupRow> = [
     render: (row) => (
       <MantineGroup gap={8} wrap="nowrap">
         <ThemeIcon size={24} radius="xl" variant="light" aria-hidden>{appIcons.groups}</ThemeIcon>
-        <Anchor component={Link} to={`/groups/${row.id}`} size="sm" truncate>{row.name}</Anchor>
+        <AnchorLink to="/groups/$groupId" params={{ groupId: row.id }} size="sm" truncate>{row.name}</AnchorLink>
       </MantineGroup>
     ),
   },
@@ -49,6 +48,7 @@ const columns: TableColumns<GroupRow> = [
 ];
 
 function useActions(): TableActions<GroupRow> {
+  const { deleteAction, editAction, newAction, openAction } = useTableActions();
   const navigate = useNavigate();
   const createGroup = useCreateGroupFlow();
   const editGroup = useEditGroupFlow();
@@ -57,7 +57,7 @@ function useActions(): TableActions<GroupRow> {
 
   return [
     newAction('New group', createGroup),
-    openAction((row) => navigate(`/groups/${row.id}`)),
+    openAction((row) => navigate({ to: '/groups/$groupId', params: { groupId: row.id } })),
     editAction(editGroup),
     singleRowAction('grant', (row) => grantAccess({ principal: { type: 'group', id: row.id } }), {
       label: 'Grant access',
@@ -68,7 +68,6 @@ function useActions(): TableActions<GroupRow> {
   ];
 }
 
-// All groups: what a group is granted, its members get.
 function GroupTable() {
   const actions = useActions();
   const source = useTableSource<GroupRow>('groups', groupRows, { search: ['name', 'description'] });

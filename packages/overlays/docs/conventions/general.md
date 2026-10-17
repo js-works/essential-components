@@ -6,6 +6,14 @@ copied into a customer's monorepo. A change is made in the master, then copied i
 
 - English is the language of the project: code, comments, docs, specs and rules. Never German there.
   - Exception: translated texts (the German texts of a demo's language switch, message catalogs, test data).
+- Two tiers of packages (2026-10-17, the user's decision):
+  - Tier 1, framework-free where possible, for any customer's stack: `overlays`, `file-upload`, `data-table`,
+    `cockpit`, `form-validation`, `ui-theme`. No UI library, no i18n library (an `I18nAdapter`, `i18n.md`), themes as
+    JS objects (`css.md`). Expensive to build: only for packages that important.
+  - Tier 2, opinionated, for apps built on Mantine: `login`, `mantine-themes`, `rich-text`, `micro-app`. Mantine and
+    react-i18next (with i18next) as peers, and TanStack Router where routing is involved; their look from Mantine's
+    theme and variables, their texts from an i18next namespace of their own (`i18n.md`).
+  - A tier-2 package may depend on a tier-1 one, never the other way round.
 - A package is private and self-contained: `"private": true`, the name `@local/<name>`, never published to npm.
   - The customer copies the whole folder into its monorepo and owns the copy (like shadcn/ui).
   - It keeps its own tests, demo (`npm run dev` inside it) and `package-lock.json`.

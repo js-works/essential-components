@@ -6,7 +6,7 @@ import { parseColor, shades } from '../shared/lib/colors.js';
 import { setSchemeHost, useScheme } from '../shared/shared.js';
 import { createAppRouter } from './app.js';
 import type { Look } from './board-manager-demo.js';
-import { BoardManagerApp, createLook } from './board-manager-demo.js';
+import { BoardManagerApp, createBoardManagerLook } from './board-manager-demo.js';
 
 export { BoardManagerElement };
 
@@ -24,7 +24,7 @@ export { BoardManagerElement };
 //   `--board-manager-success-color`, `--board-manager-warning-color` (any CSS color, set by the host page's CSS): the
 //   primary, danger, success and warning colors (see `#look()`).
 // - `--board-manager-font-family`, `--board-manager-font-size` (the normal text, 14px by default): the font and the text
-//   size; Mantine's other sizes follow in proportion (see `createLook()`). Live: CSS only.
+//   size; Mantine's other sizes follow in proportion (see `createBoardManagerLook()`). Live: CSS only.
 // - `--board-manager-scale` (a number, 1 by default): Mantine's scale, all its sizes (and the text, unless
 //   `--board-manager-font-size` is set). Live: CSS only.
 // - `hash` (a prefix, `hash="bm"`): the route is mirrored in the URL hash (`#bm/boards/b1`).
@@ -114,7 +114,7 @@ class BoardManagerElement extends HTMLElement {
     const success = parseColor(style.getPropertyValue('--board-manager-success-color').trim());
     const warning = parseColor(style.getPropertyValue('--board-manager-warning-color').trim());
 
-    return createLook({
+    return createBoardManagerLook({
       accent: accent && shades(accent),
       danger: danger && shades(danger),
       success: success && shades(success),

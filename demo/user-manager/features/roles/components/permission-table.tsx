@@ -1,10 +1,10 @@
 import { Text } from '@mantine/core';
 
 import type { TableColumns, TableFilters } from '@local/data-table/react';
+import { DataTable } from '@local/micro-app';
 
 import type { AccessData } from '../../../domain/index.js';
 import { permissionParts } from '../../../domain/index.js';
-import { DataTable } from '../../../shared/ui/data-table.js';
 import { useAccessData, useTableSource } from '../../iam/index.js';
 import { appFilter } from '../role-filters.js';
 
@@ -52,7 +52,6 @@ function useFilters(): TableFilters {
   return { app: appFilter(data) };
 }
 
-// The catalog: every permission the apps register, and the roles that give it. Read only.
 function PermissionTable() {
   const filters = useFilters();
   const source = useTableSource<PermissionRow>(

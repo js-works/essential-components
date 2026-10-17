@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router';
+import { useNavigate } from '@tanstack/react-router';
 
 import type { Organization } from '../../domain/index.js';
 import { OrganizationForm } from '../../shared/forms.js';
@@ -36,7 +36,7 @@ function useCreateOrganizationFlow(): () => Promise<void> {
     });
 
     if (done) {
-      void navigate(`/organizations/${created}`);
+      void navigate({ to: '/organizations/$organizationId', params: { organizationId: created } });
     }
   };
 }

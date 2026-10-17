@@ -3,18 +3,20 @@
 import '@mantine/core/styles.layer.css';
 import '@mantine/dates/styles.layer.css';
 import 'dayjs/locale/de';
+import '@local/micro-app/styles.css';
 import './human-resources.css';
 import { MantineProvider } from '@mantine/core';
 import { DatesProvider } from '@mantine/dates';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { RouterProvider } from '@tanstack/react-router';
 import dayjs from 'dayjs';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
 import type { ReactNode } from 'react';
 import { StrictMode } from 'react';
 import type { Root } from 'react-dom/client';
 import { createRoot } from 'react-dom/client';
-import { RouterProvider } from 'react-router';
 
+import { createLook, MantineScope, MicroAppProvider, usePageScheme } from '@local/micro-app';
 import { OverlaysProvider } from '@local/overlays/react';
 
 import type { SavedFilterRepository } from '../domain/index.js';
@@ -22,21 +24,28 @@ import type { HrService } from '../features/hr/index.js';
 import { createHrService, HrServiceContext } from '../features/hr/index.js';
 import { ViewerProvider } from '../features/viewer/index.js';
 import { createInMemoryRepositories, createInMemorySavedFilters, VIEWER_ID } from '../infra/in-memory/index.js';
-import { useLanguage } from '../shared/lib/i18n/index.js';
-import { SavedFilterServiceContext } from '../shared/ui/saved-filters.js';
-import { SCOPE_CLASS, Scope, useScheme } from '../shared/ui/scope.js';
+import { i18n, useLanguage } from '../shared/lib/i18n/index.js';
 import { createAppRouter } from './app.js';
-import { createLook } from './look.js';
 
 export { HumanResourcesDemo };
 
 // Human resources: the employees (their job, salary history and documents), the departments with an org chart,
 // recruiting (openings, a pipeline board of candidates, the hire), and the checklists of joiners and leavers. Mantine
-// (with its dates), React Router, TanStack Query, i18next, and four packages: data tables for the lists, the
+// (with its dates), TanStack Router, TanStack Query, i18next, and four packages: data tables for the lists, the
 // dialogs and toasts of the overlays package, form-validation for the forms, the file upload for the documents. Built
 // like the Time Tracker: the domain, the repositories' in-memory implementation, a service, the app that wires them.
 
-const LOOK = createLook();
+// Mantine's variables and color scheme are set on this class, not on `:root`: the app shares its page with other demos.
+const SCOPE_CLASS = 'human-resources';
+
+function Scope({ children }: { children: ReactNode }) {
+  return <MantineScope className={SCOPE_CLASS}>{children}</MantineScope>;
+}
+
+const LOOK = createLook({
+  Scope,
+  tokens: { accent: '--human-resources-accent-color', fontSize: '--human-resources-font-size' },
+});
 
 // The date inputs show their date in the locale's short format (`valueFormat="ll"`: "Oct 6, 2026", "6. Okt. 2026"),
 // which needs dayjs's plugin; without it, dayjs shows the format itself ("ll"). Global to dayjs, but it only adds
@@ -59,12 +68,12 @@ function App({ router, service, savedFilters, queryClient }: {
   return (
     <QueryClientProvider client={queryClient}>
       <HrServiceContext.Provider value={service}>
-        <SavedFilterServiceContext.Provider value={savedFilters}>
+        <MicroAppProvider i18n={i18n} savedFilters={savedFilters}>
           <ViewerProvider employeeId={VIEWER_ID}>
             <MantineProvider
               theme={LOOK.theme}
               cssVariablesResolver={LOOK.cssVariablesResolver}
-              forceColorScheme={useScheme()}
+              forceColorScheme={usePageScheme()}
               cssVariablesSelector={`.${SCOPE_CLASS}`}
               deduplicateCssVariables={false}
               getRootElement={() => undefined}
@@ -78,7 +87,7 @@ function App({ router, service, savedFilters, queryClient }: {
               </Dates>
             </MantineProvider>
           </ViewerProvider>
-        </SavedFilterServiceContext.Provider>
+        </MicroAppProvider>
       </HrServiceContext.Provider>
     </QueryClientProvider>
   );

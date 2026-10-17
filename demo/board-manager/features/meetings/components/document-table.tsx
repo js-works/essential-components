@@ -1,12 +1,12 @@
 import type { RowSource, TableActions, TableColumns, TableFilters } from '@local/data-table/react';
 import { criteriaOf, dateRangeFilter, generalAction, singleRowAction, textFilter } from '@local/data-table/react';
 import { useFindSource } from '@local/data-table/react-query';
+import { DataTable, useTableActions } from '@local/micro-app';
 
 import type { DocumentCriteria, Meeting, MeetingDocument } from '../../../domain/index.js';
 import { DOCUMENT_SORT_KEYS } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { appIcons, DataTable, formatDateTime, formatSize, PAGE_SIZE_OPTIONS } from '../../../shared/shared.js';
-import { deleteAction } from '../../../shared/ui/table-actions.js';
+import { appIcons, formatDateTime, formatSize, PAGE_SIZE_OPTIONS } from '../../../shared/shared.js';
 import { useMeetingService } from '../context.js';
 import {
   useDeleteDocumentsFlow,
@@ -66,6 +66,7 @@ function useFilters(): TableFilters {
 }
 
 function useActions(meeting: Meeting): TableActions<MeetingDocument> {
+  const { deleteAction } = useTableActions();
   const t = useTranslate();
   const uploadDocuments = useUploadDocumentsFlow(meeting);
   const downloadDocument = useDownloadDocumentFlow();
@@ -99,7 +100,6 @@ function useActions(meeting: Meeting): TableActions<MeetingDocument> {
   ];
 }
 
-// The documents of the meeting (invitation, board pack, presentations, minutes): upload, download, rename, delete.
 function DocumentTable({ meeting }: { meeting: Meeting }) {
   const t = useTranslate();
   const source = useSource(meeting);

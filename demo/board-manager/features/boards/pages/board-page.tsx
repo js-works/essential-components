@@ -1,11 +1,12 @@
 import { Button, Group, SimpleGrid, Stack, Tabs, Text } from '@mantine/core';
+import { useNavigate, useParams } from '@tanstack/react-router';
 import { Fragment, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
 
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { appIcons, formatDateTime, PageHeader } from '../../../shared/shared.js';
 import { NotFound } from '../../../shared/ui/not-found.js';
 import { MeetingTable } from '../../meetings/components/meeting-table.js';
+import { boardMeetingLink } from '../../meetings/index.js';
 import { MemberTable } from '../components/member-table.js';
 import { useDeleteBoardsFlow, useEditBoardFlow } from '../flows/board-flows.js';
 import { useBoard } from '../reads.js';
@@ -13,12 +14,10 @@ import { useBoard } from '../reads.js';
 export { BoardPage };
 
 // A meeting of a board opens below the board (the breadcrumb: Boards › board › meeting).
-const meetingPath = (meeting: { id: string; boardId: string }) => `/boards/${meeting.boardId}/meetings/${meeting.id}`;
-
 // One board: its base information ("Overview"), its meetings and its members, in three tabs.
 function BoardPage() {
   const t = useTranslate();
-  const { boardId = '' } = useParams();
+  const { boardId } = useParams({ from: '/boards/$boardId' });
   const { board, isPending } = useBoard(boardId);
   const [tab, setTab] = useState<string | null>('overview');
 
@@ -45,7 +44,7 @@ function BoardPage() {
         <Tabs.Panel value="meetings" pt="md">
           <MeetingTable
             boardId={board.id}
-            pathOf={meetingPath}
+            linkOf={boardMeetingLink}
             title={t('modules.meetings')}
             subtitle={t('boards.meetingsSubtitle')}
           />
@@ -82,7 +81,7 @@ function BoardOverview({ boardId }: { boardId: string }) {
 
   const remove = async () => {
     if (await deleteBoards([board])) {
-      navigate('/boards');
+      navigate({ to: '/boards' });
     }
   };
 

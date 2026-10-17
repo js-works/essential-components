@@ -1,5 +1,6 @@
-import { Anchor, Grid, Group, Loader, Paper, Stack, Text, Title } from '@mantine/core';
-import { Link } from 'react-router';
+import { Grid, Group, Loader, Paper, Stack, Text, Title } from '@mantine/core';
+
+import { AnchorLink } from '@local/micro-app';
 
 import type { Employee, TimeData } from '../../../domain/index.js';
 import { addDays, daySheet, weekStart } from '../../../domain/index.js';
@@ -64,7 +65,7 @@ function WeekSoFar({ data, employee, today, time }: {
     <Paper withBorder p="md" radius="sm">
       <Group justify="space-between" mb="xs">
         <Title order={3} size="h5">{t('clock.thisWeek')}</Title>
-        <Anchor component={Link} to="/timesheet" size="sm">{t('clock.openTimesheet')}</Anchor>
+        <AnchorLink to="/timesheet" size="sm">{t('clock.openTimesheet')}</AnchorLink>
       </Group>
       <Group gap="xl">
         <Stack gap={0}>

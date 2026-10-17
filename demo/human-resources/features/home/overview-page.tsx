@@ -1,6 +1,7 @@
-import { Anchor, Grid, Group, Loader, Paper, Progress, SimpleGrid, Stack, Text, ThemeIcon, Title } from '@mantine/core';
+import { Grid, Group, Loader, Paper, Progress, SimpleGrid, Stack, Text, ThemeIcon, Title } from '@mantine/core';
 import type { ReactElement } from 'react';
-import { Link } from 'react-router';
+
+import { AnchorLink } from '@local/micro-app';
 
 import type { HrData, UpcomingEvent } from '../../domain/index.js';
 import {
@@ -133,7 +134,7 @@ function ByDepartment({ data }: { data: HrData }) {
     <Paper withBorder p="md" radius="sm" h="100%">
       <Group justify="space-between" mb="sm">
         <Title order={3} size="h5">{t('overview.byDepartment')}</Title>
-        <Anchor component={Link} to="/departments" size="sm">{t('overview.openChart')}</Anchor>
+        <AnchorLink to="/departments" size="sm">{t('overview.openChart')}</AnchorLink>
       </Group>
       <Stack gap={8}>
         {rows.map(({ department, count }) => (
@@ -210,7 +211,7 @@ function Pipeline({ data }: { data: HrData }) {
     <Paper withBorder p="md" radius="sm" h="100%">
       <Group justify="space-between" mb="sm">
         <Title order={3} size="h5">{t('overview.pipeline')}</Title>
-        <Anchor component={Link} to="/recruiting" size="sm">{t('overview.allOpenings')}</Anchor>
+        <AnchorLink to="/recruiting" size="sm">{t('overview.allOpenings')}</AnchorLink>
       </Group>
       <Stack gap={10}>
         {counts.map(({ stage, count }) => (
@@ -241,7 +242,7 @@ function NextTasks({ data }: { data: HrData }) {
     <Paper withBorder p="md" radius="sm" h="100%">
       <Group justify="space-between" mb="sm">
         <Title order={3} size="h5">{t('overview.nextTasks')}</Title>
-        <Anchor component={Link} to="/onboarding" size="sm">{t('overview.allChecklists')}</Anchor>
+        <AnchorLink to="/onboarding" size="sm">{t('overview.allChecklists')}</AnchorLink>
       </Group>
       {tasks.length === 0
         ? <Text size="sm" c="dimmed">{t('checklists.allDone')}</Text>
@@ -254,9 +255,9 @@ function NextTasks({ data }: { data: HrData }) {
               return (
                 <Group key={task.id} gap="sm" wrap="nowrap" justify="space-between">
                   <Stack gap={0} style={{ minWidth: 0 }}>
-                    <Anchor component={Link} to={`/onboarding/${checklist.id}`} size="sm" truncate>
+                    <AnchorLink to="/onboarding/$checklistId" params={{ checklistId: checklist.id }} size="sm" truncate>
                       {taskTitle(t, task)}
-                    </Anchor>
+                    </AnchorLink>
                     <Text size="xs" c="dimmed" truncate>
                       {`${employee?.name ?? ''} · ${t(`checklistKind.${checklist.kind}`)} · ${
                         t(`taskOwner.${task.owner}`)

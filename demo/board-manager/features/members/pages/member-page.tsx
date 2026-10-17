@@ -1,13 +1,16 @@
 import { Anchor, Button, Group, SimpleGrid, Stack, Tabs, Text } from '@mantine/core';
+import { useNavigate, useParams } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { Fragment, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+
+import { AnchorLink } from '@local/micro-app';
 
 import type { PersonSummary } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { appIcons, PageHeader } from '../../../shared/shared.js';
 import { NotFound } from '../../../shared/ui/not-found.js';
 import { MeetingTable } from '../../meetings/components/meeting-table.js';
+import { boardMeetingLink } from '../../meetings/index.js';
 import { MembershipTable } from '../components/membership-table.js';
 import { useDeletePeopleFlow, useEditPersonFlow } from '../member-flows.js';
 import { usePerson } from '../reads.js';
@@ -15,12 +18,10 @@ import { usePerson } from '../reads.js';
 export { MemberPage };
 
 // A meeting of the member's boards opens below its board (the breadcrumb: Boards › board › meeting).
-const meetingPath = (meeting: { id: string; boardId: string }) => `/boards/${meeting.boardId}/meetings/${meeting.id}`;
-
 // One member: their contact and organization ("Overview"), their boards, and the meetings of their boards.
 function MemberPage() {
   const t = useTranslate();
-  const { personId = '' } = useParams();
+  const { personId } = useParams({ from: '/members/$personId' });
   const { person, isPending } = usePerson(personId);
   const [tab, setTab] = useState<string | null>('overview');
 
@@ -50,7 +51,7 @@ function MemberPage() {
         <Tabs.Panel value="meetings" pt="md">
           <MeetingTable
             personId={person.id}
-            pathOf={meetingPath}
+            linkOf={boardMeetingLink}
             title={t('modules.meetings')}
             subtitle={t('members.meetingsSubtitle', { name: person.name })}
           />
@@ -75,9 +76,14 @@ function MemberOverview({ person }: { person: PersonSummary }) {
       person.organizationId === ''
         ? ''
         : (
-          <Anchor key="organization" component={Link} to={`/organizations/${person.organizationId}`} size="sm">
+          <AnchorLink
+            key="organization"
+            to="/organizations/$organizationId"
+            params={{ organizationId: person.organizationId }}
+            size="sm"
+          >
             {person.organization}
-          </Anchor>
+          </AnchorLink>
         ),
     ],
     [t('members.columns.boards'), String(person.boardIds.length)],
@@ -85,7 +91,7 @@ function MemberOverview({ person }: { person: PersonSummary }) {
 
   const remove = async () => {
     if (await deletePeople([person])) {
-      navigate('/members');
+      navigate({ to: '/members' });
     }
   };
 

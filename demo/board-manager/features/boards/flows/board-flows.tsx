@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router';
+import { useNavigate } from '@tanstack/react-router';
 
 import type { Board, BoardMember } from '../../../domain/index.js';
 import { BoardForm, MemberForm } from '../../../shared/forms.js';
@@ -41,7 +41,7 @@ function useCreateBoardFlow(): () => Promise<void> {
     });
 
     if (done) {
-      void navigate(`/boards/${created}`);
+      void navigate({ to: '/boards/$boardId', params: { boardId: created } });
     }
   };
 }

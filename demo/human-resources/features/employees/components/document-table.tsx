@@ -2,13 +2,12 @@ import { Group } from '@mantine/core';
 
 import type { TableActions, TableColumns, TableFilters } from '@local/data-table/react';
 import { dateRangeFilter, generalAction, singleRowAction } from '@local/data-table/react';
+import { DataTable, useTableActions } from '@local/micro-app';
 
 import type { Employee, EmployeeDocument } from '../../../domain/index.js';
 import { formatSize, formatStamp } from '../../../shared/lib/format.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { DataTable } from '../../../shared/ui/data-table.js';
 import { appIcons } from '../../../shared/ui/icons.js';
-import { deleteAction } from '../../../shared/ui/table-actions.js';
 import { useTableSource } from '../../hr/index.js';
 import { documentCategoryFilter } from '../employee-filters.js';
 import { useDownloadDocumentFlow, useRemoveDocumentsFlow, useUploadDocumentsFlow } from '../employee-flows.js';
@@ -63,6 +62,7 @@ function useFilters(): TableFilters {
 }
 
 function useActions(employee: Employee): TableActions<EmployeeDocument> {
+  const { deleteAction } = useTableActions();
   const t = useTranslate();
   const uploadDocuments = useUploadDocumentsFlow();
   const removeDocuments = useRemoveDocumentsFlow();
@@ -89,7 +89,6 @@ function useActions(employee: Employee): TableActions<EmployeeDocument> {
   ];
 }
 
-// The documents of an employee's records: upload (a category and files), download (not in the demo), delete.
 function DocumentTable({ employee }: { employee: Employee }) {
   const t = useTranslate();
   const columns = useColumns();

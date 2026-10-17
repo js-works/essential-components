@@ -1,14 +1,16 @@
-import { Anchor, Grid, Group, Loader, Paper, Progress, SimpleGrid, Stack, Text, Title } from '@mantine/core';
+import { Grid, Group, Loader, Paper, Progress, SimpleGrid, Stack, Text, Title } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
+import type { LinkProps } from '@tanstack/react-router';
+import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
-import { Link } from 'react-router';
+
+import { AnchorLink } from '@local/micro-app';
 
 import type { Folder } from '../../domain/index.js';
-import { ROOT_ID } from '../../domain/index.js';
 import { formatDateTime, formatSize } from '../../shared/lib/format.js';
 import { appIcons, kindIcon } from '../../shared/ui/icons.js';
 import type { Overview } from '../browser/index.js';
-import { browserKeys, folderPath, KIND_LABELS, useBrowserService } from '../browser/index.js';
+import { browserKeys, folderLink, KIND_LABELS, useBrowserService } from '../browser/index.js';
 
 export { OverviewPage };
 
@@ -58,7 +60,7 @@ function Numbers({ overview }: { overview: Overview }) {
         label="Files"
         value={overview.files.toLocaleString()}
         detail={`in ${overview.folders} folders`}
-        to={folderPath(ROOT_ID)}
+        to="/files"
         toLabel="Files"
       />
       <StatCard label="Space used" value={formatSize(overview.size)} detail="by all files" />
@@ -66,7 +68,7 @@ function Numbers({ overview }: { overview: Overview }) {
         label="Storages"
         value={overview.storages}
         detail="where the files are kept"
-        to={folderPath(ROOT_ID)}
+        to="/files"
         toLabel="Files"
       />
       <StatCard label="Modified this week" value={overview.thisWeek} detail="in the last 7 days" />
@@ -79,7 +81,7 @@ function StatCard({ label, value, detail, to, toLabel }: {
   label: string;
   value: ReactNode;
   detail: string;
-  to?: string;
+  to?: LinkProps['to'];
   toLabel?: string;
 }) {
   const content = (
@@ -101,7 +103,14 @@ function StatCard({ label, value, detail, to, toLabel }: {
   return to === undefined
     ? <Paper withBorder p="md" radius="sm" className="file-center__card">{content}</Paper>
     : (
-      <Paper withBorder p="md" radius="sm" component={Link} to={to} className="file-center__card" data-link>
+      <Paper
+        withBorder
+        p="md"
+        radius="sm"
+        className="file-center__card"
+        data-link
+        renderRoot={(props) => <Link to={to} {...props} />}
+      >
         {content}
       </Paper>
     );
@@ -147,9 +156,9 @@ function ByStorage({ overview }: { overview: Overview }) {
             <Group justify="space-between" gap="xs" wrap="nowrap" mb={2}>
               <Group gap={8} wrap="nowrap" style={{ minWidth: 0 }}>
                 <Text component="span" c="dimmed" display="inline-flex">{appIcons.storage}</Text>
-                <Anchor component={Link} to={folderPath(entry.storage.id)} size="sm" truncate>
+                <AnchorLink {...folderLink(entry.storage.id)} size="sm" truncate>
                   {entry.storage.name}
-                </Anchor>
+                </AnchorLink>
               </Group>
               <Text size="sm" c="dimmed" className="file-center__figures">
                 {formatSize(entry.size)} · {entry.files} files
@@ -175,9 +184,9 @@ function Recent({ overview, folders }: { overview: Overview; folders: readonly F
               <Text component="span" className="file-center__kind" display="inline-flex">{kindIcon(file.kind)}</Text>
               <Stack gap={0} style={{ minWidth: 0 }}>
                 <Text size="sm" truncate>{file.name}</Text>
-                <Anchor component={Link} to={folderPath(file.folderId)} size="xs" truncate>
+                <AnchorLink {...folderLink(file.folderId)} size="xs" truncate>
                   {folders.find((folder) => folder.id === file.folderId)?.name ?? ''}
-                </Anchor>
+                </AnchorLink>
               </Stack>
             </Group>
             <Text size="xs" c="dimmed" style={{ flex: 'none' }}>{formatDateTime(file.modified)}</Text>

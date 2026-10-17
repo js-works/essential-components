@@ -1,14 +1,13 @@
-import { Anchor } from '@mantine/core';
-import { Link, useNavigate } from 'react-router';
+import { useNavigate } from '@tanstack/react-router';
 
 import type { RowSource, TableActions, TableColumns } from '@local/data-table/react';
 import { useFindSource } from '@local/data-table/react-query';
+import { AnchorLink, DataTable, useTableActions } from '@local/micro-app';
 
 import type { PersonMembership } from '../../../domain/index.js';
 import { PERSON_MEMBERSHIP_SORT_KEYS } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { DataTable, formatDate, PAGE_SIZE_OPTIONS } from '../../../shared/shared.js';
-import { openAction } from '../../../shared/ui/table-actions.js';
+import { formatDate, PAGE_SIZE_OPTIONS } from '../../../shared/shared.js';
 import { useMemberService } from '../context.js';
 import { memberKeys } from '../keys.js';
 
@@ -34,7 +33,9 @@ function useColumns(): TableColumns<PersonMembership> {
       header: t('members.columns.board'),
       width: 3,
       sortable: true,
-      render: (row) => <Anchor component={Link} to={`/boards/${row.boardId}`} size="sm">{row.board}</Anchor>,
+      render: (row) => (
+        <AnchorLink to="/boards/$boardId" params={{ boardId: row.boardId }} size="sm">{row.board}</AnchorLink>
+      ),
     },
     {
       key: 'role',
@@ -54,14 +55,17 @@ function useColumns(): TableColumns<PersonMembership> {
 }
 
 function useActions(): TableActions<PersonMembership> {
+  const { openAction } = useTableActions();
   const t = useTranslate();
   const navigate = useNavigate();
 
-  return [openAction((row) => navigate(`/boards/${row.boardId}`), { tip: t('members.openBoard') })];
+  return [
+    openAction((row) => navigate({ to: '/boards/$boardId', params: { boardId: row.boardId } }), {
+      tip: t('members.openBoard'),
+    }),
+  ];
 }
 
-// The member's boards and roles, read-only: memberships are changed on the page of a board ("Open", also a double
-// click, or the name).
 function MembershipTable({ personId }: { personId: string }) {
   const t = useTranslate();
   const source = useSource(personId);

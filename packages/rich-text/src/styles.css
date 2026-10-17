@@ -1,0 +1,53 @@
+/* BlockNote's own styles, in a layer of their own: only its styles, not its copy of Mantine's (`mantineStyles.css`),
+   which in a later layer would win over Mantine's own states. The app imports Mantine's styles itself. */
+@import '@blocknote/mantine/blocknoteStyles.css' layer(blocknote);
+
+/* The editor's frame is a Mantine input (`Input` with `multiline`): its border, background, radius and error. Its
+   focus is within (the editor is a content-editable inside), so the focus border follows `:focus-within`. */
+.rich-text__input {
+  position: relative;
+  height: auto;
+  padding-block: calc(var(--mantine-spacing-xs) / 2);
+  cursor: text;
+
+  &:focus-within:not([data-error]) {
+    border-color: var(--input-bd-focus);
+  }
+
+  & .bn-container,
+  & .bn-editor {
+    background: transparent;
+  }
+
+  /* The size of Mantine's input text (its `size`), in Mantine's font (BlockNote's own: 16px, Inter). */
+  & .bn-editor {
+    font-family: var(--mantine-font-family);
+    font-size: var(--input-fz, var(--mantine-font-size-sm));
+  }
+}
+
+/* The height between `minRows` and `maxRows` (set inline): the text scrolls inside the frame. BlockNote's menus are
+   placed from the frame (`position: relative` above), so they stay where the text is. */
+.rich-text__scroller {
+  overflow-y: auto;
+  overscroll-behavior: none;
+}
+
+/* A mention, in the editor and as a link in the read-only view: in Mantine's accent color, like the filled buttons. */
+.rich-text__mention {
+  color: var(--mantine-primary-color-filled);
+}
+
+/* The read-only view: like text, without the room of the side menu, in Mantine's font and size. */
+.rich-text {
+  & .bn-container,
+  & .bn-editor {
+    background: transparent;
+  }
+
+  & .bn-editor {
+    padding-inline: 0;
+    font-family: var(--mantine-font-family);
+    font-size: var(--mantine-font-size-sm);
+  }
+}

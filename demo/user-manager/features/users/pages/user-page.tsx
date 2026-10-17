@@ -1,5 +1,7 @@
-import { Anchor, Badge, Button, Group, Paper, SimpleGrid, Stack, Tabs, Text } from '@mantine/core';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Badge, Button, Group, Paper, SimpleGrid, Stack, Tabs, Text } from '@mantine/core';
+import { Link, useNavigate, useParams } from '@tanstack/react-router';
+
+import { AnchorLink } from '@local/micro-app';
 
 import { effectivePermissions, groupsOf } from '../../../domain/index.js';
 import { formatDateTime } from '../../../shared/lib/format.js';
@@ -14,7 +16,7 @@ export { UserPage };
 // One user: their data and groups, the access granted to them (directly), and everything they may do (effective,
 // with the reasons).
 function UserPage() {
-  const { userId = '' } = useParams();
+  const { userId } = useParams({ from: '/users/$userId' });
   const data = useAccessData();
   const editUser = useEditUserFlow();
   const setUsersActive = useSetUsersActiveFlow();
@@ -29,7 +31,7 @@ function UserPage() {
   if (user === undefined) {
     return (
       <Text p="md">
-        This user does not exist (anymore). <Anchor component={Link} to="/users">All users</Anchor>
+        This user does not exist (anymore). <AnchorLink to="/users">All users</AnchorLink>
       </Text>
     );
   }
@@ -70,7 +72,7 @@ function UserPage() {
               leftSection={appIcons.remove}
               onClick={async () => {
                 if (await deleteUsers([user])) {
-                  void navigate('/users');
+                  void navigate({ to: '/users' });
                 }
               }}
             >
@@ -111,8 +113,7 @@ function UserPage() {
                   {groups.map((group) => (
                     <Badge
                       key={group.id}
-                      component={Link}
-                      to={`/groups/${group.id}`}
+                      renderRoot={(props) => <Link to="/groups/$groupId" params={{ groupId: group.id }} {...props} />}
                       variant="light"
                       style={{ cursor: 'pointer' }}
                     >

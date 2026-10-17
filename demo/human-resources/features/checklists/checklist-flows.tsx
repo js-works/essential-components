@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router';
+import { useNavigate } from '@tanstack/react-router';
 
 import { useDialogs, useToast } from '@local/overlays/react';
 
@@ -32,7 +32,7 @@ function useCreateChecklistFlow() {
   const created = async (checklist: Checklist, name: string) => {
     await changed();
     toasts.success(t('checklists.created', { kind: t(`checklistKind.${checklist.kind}`), name }));
-    void navigate(`/onboarding/${checklist.id}`);
+    void navigate({ to: '/onboarding/$checklistId', params: { checklistId: checklist.id } });
   };
 
   return async (data: HrData) => {
@@ -66,7 +66,7 @@ function useStartChecklistFlow() {
   const created = async (checklist: Checklist, name: string) => {
     await changed();
     toasts.success(t('checklists.created', { kind: t(`checklistKind.${checklist.kind}`), name }));
-    void navigate(`/onboarding/${checklist.id}`);
+    void navigate({ to: '/onboarding/$checklistId', params: { checklistId: checklist.id } });
   };
 
   return async (employee: Employee, kind: ChecklistKind) => {

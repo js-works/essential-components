@@ -1,13 +1,12 @@
 import type { TableActions, TableColumns } from '@local/data-table/react';
 import { singleRowAction } from '@local/data-table/react';
+import { DataTable, useTableActions } from '@local/micro-app';
 
 import type { Department, Employee, HrData } from '../../../domain/index.js';
 import { departmentPath, todayDate } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { DataTable } from '../../../shared/ui/data-table.js';
 import { appIcons } from '../../../shared/ui/icons.js';
 import { EmployeeLabel } from '../../../shared/ui/parts.js';
-import { editAction } from '../../../shared/ui/table-actions.js';
 import { employeeOf, useTableSource } from '../../hr/index.js';
 import { useDeleteDepartmentFlow, useEditDepartmentFlow } from '../department-flows.js';
 import { headcount } from '../headcount.js';
@@ -61,6 +60,7 @@ function useColumns(): TableColumns<DepartmentRow> {
 }
 
 function useActions(data: HrData): TableActions<DepartmentRow> {
+  const { editAction } = useTableActions();
   const t = useTranslate();
   const editDepartment = useEditDepartmentFlow();
   const deleteDepartment = useDeleteDepartmentFlow();
@@ -76,7 +76,6 @@ function useActions(data: HrData): TableActions<DepartmentRow> {
   ];
 }
 
-// The departments as a list: their place in the tree, head, headcount and cost center. Edit, delete.
 function DepartmentTable({ data }: { data: HrData }) {
   const columns = useColumns();
   const actions = useActions(data);

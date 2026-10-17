@@ -1,7 +1,7 @@
 import { Badge, Button, Grid, Group, Loader, Paper, SimpleGrid, Stack, Tabs, Text, Title } from '@mantine/core';
+import { useParams } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
-import { useParams } from 'react-router';
 
 import type { Employee, TimeData } from '../../../domain/index.js';
 import { todayDate, todayStatus, vacationBalance, weekStart } from '../../../domain/index.js';
@@ -24,7 +24,7 @@ export { EmployeePage };
 // The viewer's own page (from the user menu) for everyone; another's only for a team lead.
 function EmployeePage() {
   const t = useTranslate();
-  const { employeeId } = useParams();
+  const { employeeId } = useParams({ from: '/employees/$employeeId' });
   const data = useTimeData();
   const viewer = useViewer();
   const editEmployee = useEditEmployeeFlow();

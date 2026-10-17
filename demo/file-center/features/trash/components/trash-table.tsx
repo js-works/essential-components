@@ -3,9 +3,9 @@ import { Group, Text } from '@mantine/core';
 import type { RowSource, TableActions, TableColumns } from '@local/data-table/react';
 import { generalAction, multiRowAction } from '@local/data-table/react';
 import { useFindSource } from '@local/data-table/react-query';
+import { DataTable } from '@local/micro-app';
 
 import { formatDateTime, formatSize } from '../../../shared/lib/format.js';
-import { DataTable } from '../../../shared/ui/data-table.js';
 import { appIcons, kindIcon } from '../../../shared/ui/icons.js';
 import type { TrashRow } from '../../browser/index.js';
 import { browserKeys, KIND_LABELS, TRASH_SORT_KEYS, useBrowserService } from '../../browser/index.js';
@@ -78,9 +78,6 @@ function useActions(): TableActions<TrashRow> {
   ];
 }
 
-// The module "Trash" (2026-10-08): what was deleted in Files (a folder with everything in it, as one row), the last
-// deleted first. Restore puts it back where it was; "Delete permanently" and "Empty trash" delete for good (critical
-// confirmations).
 function TrashTable() {
   const source = useSource();
   const actions = useActions();

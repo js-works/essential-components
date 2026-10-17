@@ -1,5 +1,6 @@
-import { Anchor, Grid, Group, Loader, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core';
-import { Link } from 'react-router';
+import { Grid, Group, Loader, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core';
+
+import { AnchorLink } from '@local/micro-app';
 
 import type { Employee, TimeData } from '../../domain/index.js';
 import { absenceOn, addDays, daySheet, membersOf, vacationBalance, weekStart } from '../../domain/index.js';
@@ -138,7 +139,7 @@ function OffToday({ data, self, today }: { data: TimeData; self: Employee; today
     <Paper withBorder p="md" radius="sm" h="100%">
       <Group justify="space-between" mb="sm">
         <Title order={3} size="h5">{t('overview.offToday')}</Title>
-        <Anchor component={Link} to="/calendar" size="sm">{t('overview.openCalendar')}</Anchor>
+        <AnchorLink to="/calendar" size="sm">{t('overview.openCalendar')}</AnchorLink>
       </Group>
       {away.length === 0
         ? <Text size="sm" c="dimmed">{t('overview.allIn')}</Text>
@@ -171,7 +172,7 @@ function ComingUp({ data, self, today }: { data: TimeData; self: Employee; today
     <Paper withBorder p="md" radius="sm" h="100%">
       <Group justify="space-between" mb="sm">
         <Title order={3} size="h5">{t('overview.comingUp')}</Title>
-        <Anchor component={Link} to="/leave" size="sm">{t('overview.allRequests')}</Anchor>
+        <AnchorLink to="/leave" size="sm">{t('overview.allRequests')}</AnchorLink>
       </Group>
       {coming.length === 0
         ? <Text size="sm" c="dimmed">{t('overview.nothingPlanned')}</Text>

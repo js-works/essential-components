@@ -2,7 +2,7 @@ import { createContext, useContext } from 'react';
 
 import type { BrowserService } from './service.js';
 
-export { BrowserServiceContext, folderPath, useBrowserService };
+export { BrowserServiceContext, folderLink, useBrowserService };
 
 // The feature's service, given by the app (its wiring decides on the repositories behind it).
 const BrowserServiceContext = createContext<BrowserService | null>(null);
@@ -17,7 +17,8 @@ function useBrowserService(): BrowserService {
   return service;
 }
 
-// The route of a folder in the module "Files": the root is `/files`, every other folder `/files/<id>`.
-function folderPath(id: string): string {
-  return id === 'root' ? '/files' : `/files/${encodeURIComponent(id)}`;
+// The link to a folder in the module "Files" (for a `Link` or `navigate()`): the root is `/files`, every other folder
+// `/files/$folderId`.
+function folderLink(id: string) {
+  return id === 'root' ? ({ to: '/files' } as const) : ({ to: '/files/$folderId', params: { folderId: id } } as const);
 }

@@ -1,25 +1,22 @@
-import { Anchor } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
-import { Link, useNavigate } from 'react-router';
+import { useNavigate } from '@tanstack/react-router';
 
 import type { RowSource, TableActions, TableColumns, TableFilters } from '@local/data-table/react';
 import { criteriaOf, multiRowAction, singleRowAction } from '@local/data-table/react';
 import { useFindSource } from '@local/data-table/react-query';
+import { AnchorLink, DataTable, useSavedTableFilters, useTableActions } from '@local/micro-app';
 import { useToast } from '@local/overlays/react';
 
 import type { Folder } from '../../../domain/index.js';
 import { ancestorsOf, FILE_SORT_KEYS } from '../../../domain/index.js';
 import { countText, formatDateTime, formatSize } from '../../../shared/lib/format.js';
-import { DataTable } from '../../../shared/ui/data-table.js';
 import { appIcons } from '../../../shared/ui/icons.js';
-import { useSavedFilters } from '../../../shared/ui/saved-filters.js';
-import { openAction } from '../../../shared/ui/table-actions.js';
 import type { EntryCriteria, EntryRow } from '../../browser/index.js';
 import {
   browserKeys,
   EntryName,
   fileKindFilter,
-  folderPath,
+  folderLink,
   KIND_LABELS,
   ownerFilter,
   useBrowserService,
@@ -102,13 +99,14 @@ function useFilters(owners: readonly string[]): TableFilters {
 }
 
 function useActions(folders: readonly Folder[]): TableActions<EntryRow> {
+  const { openAction } = useTableActions();
   const navigate = useNavigate();
   const toasts = useToast();
   const showDetails = useShowDetailsFlow(folders);
   const setFavorite = useSetFavoriteFlow();
 
   return [
-    openAction((row) => (row.entry === 'folder' ? navigate(folderPath(row.id)) : showDetails(row))),
+    openAction((row) => (row.entry === 'folder' ? navigate(folderLink(row.id)) : showDetails(row))),
     singleRowAction('info', showDetails, { icon: appIcons.info, tip: 'Details', show: 'both' }),
     multiRowAction(
       'favorite-remove',
@@ -121,13 +119,10 @@ function useActions(folders: readonly Folder[]): TableActions<EntryRow> {
   ];
 }
 
-// The module "Favorites" (2026-10-08): the folders and files marked as favorites, from all folders; the folders first.
-// A double click (or the arrow) opens a folder or shows a file's details; a star (or "Remove from favorites") unmarks
-// one, and it leaves the list.
 function FavoriteTable() {
   const source = useSource();
   const service = useBrowserService();
-  const savedFilters = useSavedFilters('favorites');
+  const savedFilters = useSavedTableFilters('favorites');
   const { data: folders = [] } = useQuery({
     queryKey: browserKeys.folders(),
     queryFn: ({ signal }) => service.folders(signal),
@@ -159,14 +154,12 @@ function FavoriteTable() {
   );
 }
 
-// The folder an entry is in: its path from the storage on ("Company share › Projects"), a link that opens it. None
-// for a storage (it is in the root).
 function FolderLink({ folders, id }: { folders: readonly Folder[]; id: string | null }) {
   const path = id === null ? [] : ancestorsOf(folders, id).slice(1);
 
   return id === null || path.length === 0 ? null : (
-    <Anchor component={Link} to={folderPath(id)} size="sm" truncate>
+    <AnchorLink {...folderLink(id)} size="sm" truncate>
       {path.map((ancestor) => ancestor.name).join(' › ')}
-    </Anchor>
+    </AnchorLink>
   );
 }

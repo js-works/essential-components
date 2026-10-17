@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router';
+import { useNavigate } from '@tanstack/react-router';
 
 import { useDialogs, useToast } from '@local/overlays/react';
 
@@ -48,7 +48,7 @@ function useCreateOpeningFlow() {
 
     await changed();
     toasts.success(t('openings.created', { title: created.title }));
-    void navigate(`/recruiting/${created.id}`);
+    void navigate({ to: '/recruiting/$openingId', params: { openingId: created.id } });
   };
 }
 
@@ -204,6 +204,6 @@ function useHireFlow() {
 
     await changed();
     toasts.success(t('hire.done', { name: candidate.name }));
-    void navigate(`/employees/${employee.id}`);
+    void navigate({ to: '/employees/$employeeId', params: { employeeId: employee.id } });
   };
 }

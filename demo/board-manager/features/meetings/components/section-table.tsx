@@ -11,16 +11,15 @@ import type {
   TableController,
 } from '@local/data-table/react';
 import { singleRowAction, useDataTableController } from '@local/data-table/react';
+import { DataTable, useTableActions } from '@local/micro-app';
 
 import type { AgendaEntry, SectionDraft } from '../../../domain/index.js';
 import { agendaNumbers, withSections } from '../../../domain/index.js';
 import { translate, useTranslate } from '../../../shared/lib/i18n/index.js';
-import { appIcons, DataTable } from '../../../shared/shared.js';
-import { deleteAction, newAction } from '../../../shared/ui/table-actions.js';
+import { appIcons } from '../../../shared/shared.js';
 
 export { SectionTable };
 
-// A section in the list of the "Sections" drawer.
 type SectionRow = { id: string; title: string; number: string };
 
 // A text in the edit form of a data table (a section's name): Mantine's input, for the column it is in (the form's
@@ -38,7 +37,6 @@ function mantineTextEditor<Row>(): ColumnEditor<Row> {
   );
 }
 
-// The id of a new section (the server keeps it).
 const newSectionId = () => `s-${crypto.randomUUID()}`;
 
 // The trimmed name of a section from the edit form; an empty one is refused (the form shows the message).
@@ -65,6 +63,7 @@ function useActions(
   tableCtrl: TableController<SectionRow>,
   setDraft: Dispatch<SetStateAction<SectionDraft>>,
 ): TableActions<SectionRow> {
+  const { deleteAction, newAction } = useTableActions();
   const t = useTranslate();
 
   return [
@@ -82,12 +81,6 @@ function useActions(
   ];
 }
 
-// The list of the "Sections" drawer: the draft of the sections (`SectionDraft`) in their order, with their numbers on
-// the agenda as it would be with the draft. The names are edited in the data table's edit form: "Edit" (also a
-// double click) renames a section, "Add section" opens the form of a new one, which "Save" adds at the end. "Save" of
-// the form only changes the draft. "Delete" (of a row, or of the selected ones) and moving a section by its handle
-// change the draft at once (no confirmation: "Cancel" of the drawer undoes everything). The list is as wide as the
-// drawer and fills its height.
 function SectionTable({ meetingId, agenda, initial, onChange }: {
   meetingId: string;
   agenda: readonly AgendaEntry[];

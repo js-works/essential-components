@@ -1,10 +1,12 @@
-import { Anchor, Stack, Text } from '@mantine/core';
+import { Stack, Text } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
-import { Link, useParams } from 'react-router';
+import { useParams } from '@tanstack/react-router';
+
+import { AnchorLink } from '@local/micro-app';
 
 import { ROOT_ID } from '../../../domain/index.js';
 import { FolderTable } from '../components/folder-table.js';
-import { folderPath, useBrowserService } from '../context.js';
+import { folderLink, useBrowserService } from '../context.js';
 import { browserKeys } from '../keys.js';
 
 export { FolderPage };
@@ -12,7 +14,7 @@ export { FolderPage };
 // A folder's contents: its subfolders first, then its files, in one table. A double click (or the arrow) opens a
 // folder, or a file's details. New folders and uploads go into this folder.
 function FolderPage() {
-  const folderId = useParams()['folderId'] ?? ROOT_ID;
+  const folderId = useParams({ strict: false }).folderId ?? ROOT_ID;
   const service = useBrowserService();
   const { data: folders } = useQuery({
     queryKey: browserKeys.folders(),
@@ -32,7 +34,7 @@ function FolderPage() {
     return (
       <Stack gap={4} p="md">
         <Text fw={600}>This folder does not exist (anymore).</Text>
-        <Anchor component={Link} to={folderPath(ROOT_ID)} size="sm">Back to Files</Anchor>
+        <AnchorLink {...folderLink(ROOT_ID)} size="sm">Back to Files</AnchorLink>
       </Stack>
     );
   }

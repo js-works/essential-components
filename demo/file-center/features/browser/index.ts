@@ -4,7 +4,7 @@ export { EntryName } from './components/entry-name.js';
 export { FavoriteStar } from './components/favorite.js';
 export { FolderTree } from './components/folder-tree.js';
 export { confirmAndRun } from './confirm-and-run.js';
-export { BrowserServiceContext, folderPath, useBrowserService } from './context.js';
+export { BrowserServiceContext, folderLink, useBrowserService } from './context.js';
 export { useSetFavoriteFlow, useShowDetailsFlow, useShowFileDetailsFlow } from './entry-flows.js';
 export { fileKindFilter, ownerFilter } from './folder-filters.js';
 export { browserKeys } from './keys.js';

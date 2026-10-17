@@ -43,7 +43,9 @@
   - arrays in public types: `readonly T[]` (input we don't own must not be mutated)
   - class fields that are never reassigned
   - constant lookup data: `as const`
-  - not needed for props or local variables (`const` is enough there)
+  - not needed for props or local variables (`const` is enough there); SonarQube's rule for it (`typescript:S6759`,
+    "Mark the props of the component readonly") is off (2026-10-17, the user's choice, proposed at about 70%:
+    `.vscode/settings.json`, for SonarQube for IDE)
 - Named exports only, never `export default`.
   - Per file, exports are declared in exactly two places, directly after the imports: at most one `export { … }` for
     values and at most one `export type { … }` for types.

@@ -1,15 +1,16 @@
-import { Group, Paper, SimpleGrid, Stack, Text, ThemeIcon, Title, UnstyledButton } from '@mantine/core';
+import { Group, Paper, SimpleGrid, Stack, Text, ThemeIcon, Title } from '@mantine/core';
+import type { LinkProps } from '@tanstack/react-router';
+import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
-import { Link } from 'react-router';
 
 import { appIcons } from '../../shared/ui/icons.js';
 import { useAccessData } from '../iam/index.js';
 
 export { HomePage };
 
-function Card({ to, icon, title, text }: { to: string; icon: ReactNode; title: string; text: string }) {
+function Card({ to, icon, title, text }: { to: LinkProps['to']; icon: ReactNode; title: string; text: string }) {
   return (
-    <UnstyledButton component={Link} to={to}>
+    <Link to={to} className="user-manager__card-link">
       <Paper withBorder p="md" radius="sm" className="user-manager__card">
         <Group gap="md" wrap="nowrap">
           <ThemeIcon size="lg" variant="light" aria-hidden>{icon}</ThemeIcon>
@@ -19,7 +20,7 @@ function Card({ to, icon, title, text }: { to: string; icon: ReactNode; title: s
           </Stack>
         </Group>
       </Paper>
-    </UnstyledButton>
+    </Link>
   );
 }
 

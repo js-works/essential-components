@@ -26,150 +26,6 @@
   gap: var(--mantine-spacing-md);
 }
 
-/* Two lines (2026-10-08, the Human Resources' trial, rolled out; one line with a menu of the modules on the title
-   before): the icon, the title, the modules as tabs, Back and Forward; below them the breadcrumb (its crumbs end with
-   an ellipsis when it is too short). A container: the tabs become a menu, and Back and Forward go, when it is narrow. */
-.user-manager__app-header {
-  container: user-manager-app-header / inline-size;
-  /* A container is a containing block for its popups (tooltips, menus), but Floating UI (Mantine's positioning) only
-     knows that from `contain`: without it, they open far off to the side. */
-  contain: layout;
-  /* `contain: layout` makes the bar a stacking context: its popups' z-index counts only inside it. Above the page below
-     it, or the menus open under its content (e.g. the start page's tiles). Sticky: on a host page that scrolls it stays
-     at the top. */
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  flex: none;
-  background: var(--mantine-color-body);
-  user-select: none;
-}
-
-.user-manager__app-header-row {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  gap: var(--mantine-spacing-xs) var(--mantine-spacing-lg);
-  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
-}
-
-.user-manager__title {
-  padding: 4px 6px 4px 2px;
-  white-space: nowrap;
-}
-
-/* The modules as tabs: the current one (also on its records' pages) in the accent's light ground. */
-.user-manager__modules {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 2px;
-  min-width: 0;
-}
-
-.user-manager__module {
-  padding: 5px 10px;
-  border-radius: var(--mantine-radius-sm);
-  color: var(--mantine-color-dimmed);
-  font-weight: 500;
-  text-decoration: none;
-  white-space: nowrap;
-
-  &:hover {
-    background: var(--mantine-color-default-hover);
-    color: var(--mantine-color-text);
-  }
-
-  &[aria-current] {
-    background: var(--mantine-primary-color-light);
-    color: var(--mantine-primary-color-light-color);
-  }
-}
-
-/* The tabs as a menu: only while the app header is narrow (below). */
-.user-manager__module-menu {
-  display: none;
-  padding: 4px 8px;
-  border-radius: var(--mantine-radius-sm);
-  white-space: nowrap;
-
-  &:hover {
-    background: var(--mantine-color-default-hover);
-  }
-}
-
-/* The breadcrumb's line, below the tabs. No frame around the app header (2026-10-08, the user's wish; one with rounded
-   corners around both lines before): only a line between the two, in the gray of the tiles' borders (Mantine's
-   `Paper`: gray-3, dark-4 in the dark scheme, below). */
-.user-manager__crumbs {
-  flex-wrap: nowrap;
-  min-width: 0;
-  overflow: hidden;
-  padding: 6px var(--mantine-spacing-sm);
-  border-top: 1px solid var(--mantine-color-gray-3);
-
-  .user-manager[data-mantine-color-scheme='dark'] & {
-    border-top-color: var(--mantine-color-dark-4);
-  }
-
-  & > .mantine-Breadcrumbs-breadcrumb {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    /* Room inside the clip (2026-10-09, the user's find): with `overflow: hidden` and Mantine's `line-height: 1`, the
-       last pixel of the text (descenders, the hover underline) was cut off. Taken back outside, so the line keeps its
-       height. */
-    padding-block: 2px;
-    margin-block: -2px;
-  }
-
-  & > .user-manager__home,
-  & > .mantine-Breadcrumbs-separator {
-    flex: none;
-  }
-}
-
-/* The app icon at the start of the app header: only an icon, not a link (2026-10-04: the first crumb leads home). */
-.user-manager__app-icon {
-  display: inline-flex;
-  border-radius: var(--mantine-radius-sm);
-}
-
-/* The first crumb: a house icon and "Home", a link to the start page (the app icon is no link).
-   On the start page it is the current page (not a link). As a link, icon and text take the link color (the accent, like
-   the other crumbs; 2026-10-05: a dimmed gray of its own was here, which only counted in the dark scheme). A plain link
-   like them, underlined on hover (2026-10-05, the user's wish; a padding and a gray hover ground, like a ghost button,
-   before). */
-.user-manager__home {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: var(--mantine-font-size-sm);
-
-  /* On the start page: the current page, not a link (like the last crumb). */
-  &[aria-current] {
-    color: var(--mantine-color-text);
-    font-weight: 500;
-  }
-}
-
-/* Seven tabs: a bit more room than in the other apps. */
-@container user-manager-app-header (width < 60rem) {
-  .user-manager__modules {
-    display: none;
-  }
-
-  .user-manager__module-menu {
-    display: block;
-  }
-}
-
-@container user-manager-app-header (width < 40rem) {
-  .user-manager__history {
-    display: none;
-  }
-}
-
 /* A node of the scope trees (the grant dialog, the check of access): the chevron (an expander, hidden without subfolders), then
    the folder's button. */
 .user-manager .mantine-Tree-node > div {
@@ -250,20 +106,16 @@
 
 /* A page with a table: every element from the page down to the table is a flex column that takes the rest of the
    height, and the table fills it, so its rows scroll and its toolbar, column headers and footer stay (the data
-   table's "fixed header and footer"). `.user-manager__table` is around every table (`DataTable`) and has no box of
+   table's "fixed header and footer"). `.micro-app__table` is around every table (`DataTable`) and has no box of
    its own. Not in a dialog (outside `.user-manager__main`). Like the Board Manager (2026-10-08). */
-.user-manager__main :has(.user-manager__table) {
+.user-manager__main :has(.micro-app__table) {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
   min-height: 0;
 }
 
-.user-manager__table {
-  display: contents;
-}
-
-.user-manager__main .user-manager__table > * {
+.user-manager__main .micro-app__table > * {
   flex: 1 1 auto;
   min-height: 0;
 }
@@ -300,87 +152,9 @@
   }
 }
 
-/* The message of an invalid field: a popover below it (`FieldError`, 2026-10-06, the user's wish; an absolutely
-   placed badge before, which a dialog's scrolling body could cut off). The look is the Board Manager's badge: the body
-   color with a border and text in the danger color, a shadow, an arrow pointing at the field in front (down when the
-   popover is above it). Only the focused field shows it (at most one on screen). The red frame of an invalid field
-   stays Mantine's. For every Mantine input (the shared classes: `InputWrapper`, `Input`). */
-
-/* Mantine reserves room under the input for the message; the popover is out of the flow, so that would only push the
-   next field down. */
-.user-manager .mantine-InputWrapper-root .mantine-Input-wrapper {
-  margin-bottom: 0;
+/* The cards of the start page: links without the link's look. */
+.user-manager__card-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
 }
-
-/* Mantine's error element only holds the popover (and keeps its id for the input's `aria-describedby`): no box, and
-   the message's plain text (for a place without a field, see `FieldError`) hidden. */
-.user-manager .mantine-InputWrapper-error {
-  position: absolute;
-  inline-size: 0;
-  block-size: 0;
-  margin: 0;
-  padding: 0;
-  overflow: visible;
-
-  & .user-manager__field-error-text {
-    display: none;
-  }
-}
-
-/* The popover: placed by `FieldError` (`top`, `left`, inline); the browser's own look of a popover undone. No
-   `display` here: a closed popover is hidden by it. */
-.user-manager__field-error {
-  inset: auto;
-  max-inline-size: min(24rem, calc(100vw - 16px));
-  margin: 0;
-  overflow: visible;
-  padding: 0.35em 0.65em;
-  border-radius: 0.25em;
-  /* White on the error color (2026-10-10, the user's wish; the error color on the body's, with a light red border,
-     before). */
-  border: 1px solid var(--mantine-color-error);
-  background: var(--mantine-color-error);
-  color: var(--mantine-color-white);
-  font-family: var(--mantine-font-family);
-  font-size: calc(var(--mantine-font-size-xs) + 1px);
-  font-weight: 500;
-  line-height: 1.35;
-  box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
-}
-
-/* The arrow pointing at the field: a mask in the text's color (Tabler's `arrow-up`, stroked), turned when the popover
-   is above the field. Decoration only. */
-.user-manager__field-error::before {
-  content: '';
-  display: inline-block;
-  inline-size: 1.05em;
-  block-size: 1.05em;
-  margin-inline-end: 0.5em;
-  vertical-align: -0.2em;
-  background-color: currentColor;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 5v14M18 11l-6-6-6 6'/%3E%3C/svg%3E")
-    center / contain no-repeat;
-}
-
-.user-manager__field-error[data-side='top']::before {
-  rotate: 180deg;
-}
-
-/* Fades in (from a little closer to the field), cuts out. */
-.user-manager__field-error:popover-open {
-  opacity: 1;
-  translate: 0 0;
-  transition: opacity 140ms ease-out, translate 140ms ease-out;
-
-  @starting-style {
-    opacity: 0;
-    translate: 0 -0.25em;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .user-manager__field-error:popover-open {
-    transition: none;
-  }
-}
-

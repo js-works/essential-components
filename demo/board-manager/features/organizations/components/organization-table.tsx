@@ -1,17 +1,15 @@
-import { Anchor } from '@mantine/core';
-import { Link, useNavigate } from 'react-router';
+import { useNavigate } from '@tanstack/react-router';
 
 import type { RowSource, TableActions, TableColumns, TableFilters } from '@local/data-table/react';
 import { criteriaOf, textFilter } from '@local/data-table/react';
 import { useFindSource } from '@local/data-table/react-query';
+import { AnchorLink, DataTable, useSavedTableFilters, useTableActions } from '@local/micro-app';
 
 import type { OrganizationCriteria, OrganizationSummary } from '../../../domain/index.js';
 import { ORGANIZATION_SORT_KEYS } from '../../../domain/index.js';
 import { countryName } from '../../../shared/lib/countries.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { DataTable, PAGE_SIZE_OPTIONS } from '../../../shared/shared.js';
-import { useSavedFilters } from '../../../shared/ui/saved-filters.js';
-import { deleteAction, editAction, newAction, openAction } from '../../../shared/ui/table-actions.js';
+import { PAGE_SIZE_OPTIONS } from '../../../shared/shared.js';
 import { useOrganizationService } from '../context.js';
 import { organizationKeys } from '../keys.js';
 import { countryFilter, organizationFilter } from '../organization-filters.js';
@@ -45,7 +43,11 @@ function useColumns(): TableColumns<OrganizationSummary> {
       header: t('organizations.columns.organization'),
       width: 3,
       sortable: true,
-      render: (row) => <Anchor component={Link} to={`/organizations/${row.id}`} size="sm">{row.name}</Anchor>,
+      render: (row) => (
+        <AnchorLink to="/organizations/$organizationId" params={{ organizationId: row.id }} size="sm">
+          {row.name}
+        </AnchorLink>
+      ),
     },
     {
       key: 'description',
@@ -101,6 +103,7 @@ function useFilters(): TableFilters {
 }
 
 function useActions(): TableActions<OrganizationSummary> {
+  const { deleteAction, editAction, newAction, openAction } = useTableActions();
   const t = useTranslate();
   const navigate = useNavigate();
   const createOrganization = useCreateOrganizationFlow();
@@ -109,21 +112,19 @@ function useActions(): TableActions<OrganizationSummary> {
 
   return [
     newAction(t('organizations.new'), createOrganization),
-    openAction((row) => navigate(`/organizations/${row.id}`)),
+    openAction((row) => navigate({ to: '/organizations/$organizationId', params: { organizationId: row.id } })),
     editAction(editOrganization),
     deleteAction(deleteOrganizations),
   ];
 }
 
-// The "Organizations" module: every organization, with a new one, editing and deleting (its people stay, without an
-// organization). One opens on its own page, with its people.
 function OrganizationTable() {
   const t = useTranslate();
   const source = useSource();
   const columns = useColumns();
   const filters = useFilters();
   const actions = useActions();
-  const savedFilters = useSavedFilters('organizations');
+  const savedFilters = useSavedTableFilters('organizations');
 
   return (
     <DataTable

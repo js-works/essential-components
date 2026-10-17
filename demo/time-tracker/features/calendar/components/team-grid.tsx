@@ -1,6 +1,7 @@
-import { Anchor, Group, Text } from '@mantine/core';
+import { Group, Text } from '@mantine/core';
 import { Fragment } from 'react';
-import { Link } from 'react-router';
+
+import { AnchorLink } from '@local/micro-app';
 
 import type { Employee, Team, TimeData } from '../../../domain/index.js';
 import { absenceOn, isWeekend, monthDates } from '../../../domain/index.js';
@@ -57,9 +58,9 @@ function TeamGrid({ data, teams, year, month, today }: {
                 <div className="time-tracker__grid-name" role="rowheader">
                   <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
                     <EmployeeAvatar name={employee.name} size={20} />
-                    <Anchor component={Link} to={`/employees/${employee.id}`} size="xs" truncate>
+                    <AnchorLink to="/employees/$employeeId" params={{ employeeId: employee.id }} size="xs" truncate>
                       {employee.name}
-                    </Anchor>
+                    </AnchorLink>
                   </Group>
                 </div>
                 {dates.map((date) => {

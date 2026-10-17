@@ -2432,8 +2432,16 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       color, which did not say which state was which); the menu stays open; a rejection is only logged. It replaces the plain mark on
       those lines; another user's keeps the mark. (Weighed: "Save as…" for a saved filter again, replacing it by name.)
       Not done: sorting the menu into own and shared ones.
-    - Demo: the React tab, in memory, with sharing (a name saved again replaces that one); the Board Manager's
-      meetings tables in `localStorage`, with sharing and a made-up colleague's shared filter. Tests: `data-table.test.tsx` ("saved filters (the filter drawer)"), the element's property.
+    - `useSavedFilters(store, table)` (2026-10-17, the user's choice, proposed at about 60%: the same hook was in each
+      of the root's five apps, over TanStack Query; in `./react`, not `./react-query`: the cache adds little here): the
+      `savedFilters` of a table from a store of the app (`SavedFilterStore`: `list`, `save`, `remove`, `setShared` by
+      the table's name; its items `StoredFilter`, filters as plain JSON), with sharing; the list is loaded on mount and
+      again after each change; a filter with an `owner` (another user's) is not removable. `src/core/
+      use-saved-filters.ts`, tests `use-saved-filters.test.ts`. The root's apps wrap it in a hook of their own with
+      their store from a context (`useSavedFilters('boards')`).
+    - Demo: the React tab, in memory (`filterStore` with `useSavedFilters`), with sharing (a name saved again replaces
+      that one); the Board Manager's meetings tables in `localStorage`, with sharing and a made-up colleague's shared
+      filter. Tests: `data-table.test.tsx` ("saved filters (the filter drawer)"), the element's property.
 
 - Cards in a narrow table (2026-10-05, the first step is done, see "Cards in a narrow table"). TBD:
   - Sorting: there are no column headers; e.g. a sort menu in the toolbar (the sortable columns, ascending or

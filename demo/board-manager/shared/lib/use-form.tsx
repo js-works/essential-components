@@ -1,59 +1,14 @@
-import type { ReactNode } from 'react';
-import { useMemo } from 'react';
-import type { z } from 'zod';
+import { defineForm } from '@local/micro-app';
 
-import type { UseFormOptions } from '@local/form-validation';
-import { defineUseForm } from '@local/form-validation';
-import { Form } from '@local/overlays/react';
-
-import { FieldError } from '../ui/field-error.js';
 import { AppError } from './app-error.js';
-import { i18nAdapter, translateKey } from './i18n/index.js';
+import { translateKey } from './i18n/index.js';
 
 export { useForm };
 
-// The app's form hook: form-validation's `useForm` (`defineUseForm`, configured once here) plus `DialogForm`, the
-// overlays' `<Form>` bound to the form's `requestSubmit`, as the content of a form dialog (`dialogs.form`). The message
-// of an invalid field is a popover (`FieldError`, 2026-10-06).
-const useValidatedForm = defineUseForm({
-  i18n: { type: 'hook', useAdapter: () => i18nAdapter },
-  // The fake server's errors are meant for the user (an `AppError`: a key and its values, translated here).
-  errorMessage: (error) =>
-    error instanceof AppError
-      ? translateKey(`errors.${error.key}`, error.params)
-      : error instanceof Error
-      ? error.message
-      : undefined,
-  props: { label: 'label', error: 'error', invalid: 'error' },
+// The app's form hook (`@local/micro-app`): form-validation's `useForm` (its texts from the app's i18next: the labels of
+// the app's keys, `labels: '<form>'`, the messages of form-validation's catalogs) with `DialogForm` for a form dialog;
+// the message of an invalid field as a popover. The fake server's errors are meant for the user (an `AppError`: a key
+// and its values, translated here).
+const useForm = defineForm({
+  errorMessage: (error) => (error instanceof AppError ? translateKey(`errors.${error.key}`, error.params) : undefined),
 });
-
-// The props of a field with its message as a popover (`FieldError`) in place of the text: Mantine shows its red frame
-// and renders the popover in its error element. `true` (invalid without a message yet) stays as it is.
-function withFieldError<P>(props: P): P {
-  const { error } = props as { error?: unknown };
-
-  return typeof error === 'string' ? { ...props, error: <FieldError message={error} /> } : props;
-}
-
-function useForm<S extends z.ZodObject<any>>(schema: S, options: UseFormOptions<S>) {
-  const form = useValidatedForm(schema, options);
-  const { requestSubmit, isDirty } = form;
-  // A stable component (`requestSubmit` and `isDirty` are stable): a new one per render would remount the inputs and
-  // lose the focus. With `dirty`, closing the dialog after a change asks first ("Discard your changes?").
-  const DialogForm = useMemo(
-    () => ({ children }: { children?: ReactNode }) => <Form confirm={requestSubmit} dirty={isDirty}>{children}</Form>,
-    [requestSubmit, isDirty],
-  );
-  // Every field function of the form, its props passed through `withFieldError` (the forms are flat).
-  const field = new Proxy(form.field, {
-    get: (target, key, receiver) => {
-      const value: unknown = Reflect.get(target, key, receiver);
-
-      return typeof value === 'function'
-        ? (...args: unknown[]) => withFieldError((value as (...rest: unknown[]) => unknown)(...args))
-        : value;
-    },
-  });
-
-  return { ...form, field, DialogForm };
-}

@@ -1,16 +1,14 @@
-import { Anchor } from '@mantine/core';
-import { Link, useNavigate } from 'react-router';
+import { useNavigate } from '@tanstack/react-router';
 
 import type { RowSource, TableActions, TableColumns, TableFilters } from '@local/data-table/react';
 import { criteriaOf } from '@local/data-table/react';
 import { useFindSource } from '@local/data-table/react-query';
+import { AnchorLink, DataTable, useSavedTableFilters, useTableActions } from '@local/micro-app';
 
 import type { PersonCriteria, PersonSummary } from '../../../domain/index.js';
 import { PERSON_SORT_KEYS } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { DataTable, PAGE_SIZE_OPTIONS } from '../../../shared/shared.js';
-import { useSavedFilters } from '../../../shared/ui/saved-filters.js';
-import { deleteAction, editAction, newAction, openAction } from '../../../shared/ui/table-actions.js';
+import { PAGE_SIZE_OPTIONS } from '../../../shared/shared.js';
 import { boardFilter } from '../../boards/filters/board-filters.js';
 import { useBoardList } from '../../boards/reads.js';
 import { useOrganizationService } from '../../organizations/context.js';
@@ -20,10 +18,9 @@ import { memberKeys } from '../keys.js';
 import { personFilter } from '../member-filters.js';
 import { useCreatePersonFlow, useDeletePeopleFlow, useEditPersonFlow } from '../member-flows.js';
 
-export { memberPath, PersonTable };
+export { memberLink, PersonTable };
 
-// A member's page.
-const memberPath = (person: { id: string }) => `/members/${person.id}`;
+const memberLink = (person: { id: string }) => ({ to: '/members/$personId', params: { personId: person.id } }) as const;
 
 function useSource(organizationId: string | undefined): RowSource<PersonSummary> {
   const service = useMemberService();
@@ -46,7 +43,7 @@ function useColumns(organizationId: string | undefined): TableColumns<PersonSumm
       header: t('members.columns.person'),
       width: 2.5,
       sortable: true,
-      render: (row) => <Anchor component={Link} to={memberPath(row)} size="sm">{row.name}</Anchor>,
+      render: (row) => <AnchorLink {...memberLink(row)} size="sm">{row.name}</AnchorLink>,
     },
     {
       key: 'organization',
@@ -90,6 +87,7 @@ function useFilters(): TableFilters {
 }
 
 function useActions(organizationId: string | undefined): TableActions<PersonSummary> {
+  const { deleteAction, editAction, newAction, openAction } = useTableActions();
   const t = useTranslate();
   const navigate = useNavigate();
   const createPerson = useCreatePersonFlow(organizationId);
@@ -98,16 +96,12 @@ function useActions(organizationId: string | undefined): TableActions<PersonSumm
 
   return [
     newAction(t('members.new'), createPerson),
-    openAction((row) => navigate(memberPath(row))),
+    openAction((row) => navigate(memberLink(row))),
     editAction(editPerson),
     deleteAction(deletePeople),
   ];
 }
 
-// The people (create, edit, delete), with their boards and roles: all of them (the "Members" module), or those of one
-// organization (`organizationId`, on its page: a new person belongs to it, and the organization column is hidden). A
-// person opens on their own page ("Open", also a double click, or the name). The memberships are changed on the page
-// of a board.
 function PersonTable(
   { organizationId, title, subtitle }: { organizationId?: string; title: string; subtitle: string },
 ) {
@@ -115,7 +109,7 @@ function PersonTable(
   const columns = useColumns(organizationId);
   const filters = useFilters();
   const actions = useActions(organizationId);
-  const savedFilters = useSavedFilters('members');
+  const savedFilters = useSavedTableFilters('members');
 
   return (
     <DataTable

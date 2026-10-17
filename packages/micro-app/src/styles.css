@@ -1,0 +1,198 @@
+/* The header of a micro-app (`MicroAppHeader`): sticky at the top, above the page; two lines with a line between them.
+   Its own width decides (a container query): the tabs become a menu, Back and Forward hide, so it fits embedded too. */
+.micro-app__header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  container: micro-app-header / inline-size;
+  padding-inline: var(--mantine-spacing-md);
+  background: var(--mantine-color-body);
+  user-select: none;
+}
+
+.micro-app__header-line {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  min-height: 3.25rem;
+  border-bottom: 1px solid var(--mantine-color-default-border);
+}
+
+.micro-app__icon,
+.micro-app__title {
+  flex: none;
+}
+
+.micro-app__title {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* The modules as tabs: the current one (the router's `data-status="active"`) in the accent's light ground. */
+.micro-app__modules {
+  display: flex;
+  gap: 2px;
+  min-width: 0;
+  margin-inline-start: var(--mantine-spacing-sm);
+}
+
+.micro-app__module {
+  padding: 6px 10px;
+  border-radius: var(--mantine-radius-sm);
+  color: var(--mantine-color-text);
+  font-size: var(--mantine-font-size-sm);
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:hover {
+    background: var(--mantine-color-default-hover);
+  }
+
+  &[data-status='active'] {
+    background: var(--mantine-primary-color-light);
+    color: var(--mantine-primary-color-light-color);
+  }
+}
+
+.micro-app__module-menu {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: var(--mantine-radius-sm);
+  background: var(--mantine-primary-color-light);
+  color: var(--mantine-primary-color-light-color);
+  font-size: var(--mantine-font-size-sm);
+}
+
+.micro-app__end {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+  margin-inline-start: auto;
+}
+
+.micro-app__history {
+  display: flex;
+  flex: none;
+  gap: 2px;
+}
+
+/* The breadcrumb: its crumbs end with an ellipsis when it is too short; "Home" keeps its size. */
+.micro-app__crumbs {
+  min-height: 2.25rem;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.micro-app__home {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.micro-app__crumb {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@container micro-app-header (width < 56rem) {
+  .micro-app__modules {
+    display: none;
+  }
+
+  .micro-app__module-menu {
+    display: inline-flex;
+  }
+}
+
+@container micro-app-header (width < 40rem) {
+  .micro-app__history {
+    display: none;
+  }
+}
+
+/* The data table's box (`DataTable`): none of its own, so the page's layout reaches the table. */
+.micro-app__table {
+  display: contents;
+}
+
+/* Mantine reserves room under the input for the message; the popover is out of the flow, so that would only push the
+   next field down. */
+.mantine-InputWrapper-root:has(> .mantine-InputWrapper-error > .micro-app__field-error-text) .mantine-Input-wrapper {
+  margin-bottom: 0;
+}
+
+/* Mantine's error element only holds the popover (and keeps its id for the input's `aria-describedby`): no box, and
+   the message's plain text (for a place without a field, see `FieldError`) hidden. */
+.mantine-InputWrapper-error:has(> .micro-app__field-error-text) {
+  position: absolute;
+  inline-size: 0;
+  block-size: 0;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+
+  & > .micro-app__field-error-text {
+    display: none;
+  }
+}
+
+/* The popover: placed by `FieldError` (`top`, `left`, inline); the browser's own look of a popover undone. No
+   `display` here: a closed popover is hidden by it. */
+.micro-app__field-error {
+  inset: auto;
+  max-inline-size: min(24rem, calc(100vw - 16px));
+  margin: 0;
+  overflow: visible;
+  padding: 0.35em 0.65em;
+  border-radius: 0.25em;
+  border: 1px solid var(--mantine-color-error);
+  background: var(--mantine-color-error);
+  color: var(--mantine-color-white);
+  font-family: var(--mantine-font-family);
+  font-size: calc(var(--mantine-font-size-xs) + 1px);
+  font-weight: 500;
+  line-height: 1.35;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
+}
+
+/* The arrow pointing at the field: a mask in the text's color (Tabler's `arrow-up`, stroked), turned when the popover
+   is above the field. Decoration only. */
+.micro-app__field-error::before {
+  content: '';
+  display: inline-block;
+  inline-size: 1.05em;
+  block-size: 1.05em;
+  margin-inline-end: 0.5em;
+  vertical-align: -0.2em;
+  background-color: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 5v14M18 11l-6-6-6 6'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+.micro-app__field-error[data-side='top']::before {
+  rotate: 180deg;
+}
+
+/* Fades in (from a little closer to the field), cuts out. */
+.micro-app__field-error:popover-open {
+  opacity: 1;
+  translate: 0 0;
+  transition: opacity 140ms ease-out, translate 140ms ease-out;
+
+  @starting-style {
+    opacity: 0;
+    translate: 0 -0.25em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .micro-app__field-error:popover-open {
+    transition: none;
+  }
+}

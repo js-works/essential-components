@@ -1,17 +1,15 @@
 import { Loader } from '@mantine/core';
-import { useNavigate } from 'react-router';
+import { useNavigate } from '@tanstack/react-router';
 
 import type { TableActions, TableColumns, TableFilters } from '@local/data-table/react';
 import { dateRangeFilter } from '@local/data-table/react';
+import { DataTable, useSavedTableFilters, useTableActions } from '@local/micro-app';
 
 import type { Employee, EmployeeStatus, HrData } from '../../../domain/index.js';
 import { statusOf, todayDate } from '../../../domain/index.js';
 import { formatDate } from '../../../shared/lib/format.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { DataTable } from '../../../shared/ui/data-table.js';
 import { EmployeeLabel, EmployeeStatusBadge } from '../../../shared/ui/parts.js';
-import { useSavedFilters } from '../../../shared/ui/saved-filters.js';
-import { editAction, newAction, openAction } from '../../../shared/ui/table-actions.js';
 import { departmentFilter } from '../../departments/index.js';
 import { departmentName, employeeOf, useHrData, useTableSource } from '../../hr/index.js';
 import { employeeStatusFilter, employmentTypeFilter, locationFilter } from '../employee-filters.js';
@@ -107,6 +105,7 @@ function useFilters(): TableFilters {
 }
 
 function useActions(data: HrData | undefined): TableActions<EmployeeRow> {
+  const { editAction, newAction, openAction } = useTableActions();
   const t = useTranslate();
   const navigate = useNavigate();
   const createEmployee = useCreateEmployeeFlow();
@@ -114,20 +113,18 @@ function useActions(data: HrData | undefined): TableActions<EmployeeRow> {
 
   return [
     newAction(t('employees.new'), () => data !== undefined && createEmployee(data)),
-    openAction((row) => navigate(`/employees/${row.id}`)),
+    openAction((row) => navigate({ to: '/employees/$employeeId', params: { employeeId: row.id } })),
     editAction((row) => data !== undefined && editEmployee(row, data)),
   ];
 }
 
-// The directory: everyone with their job, manager, place, contract and status (former ones too: the status filter
-// narrows them). Open one for their page.
 function EmployeeTable() {
   const t = useTranslate();
   const data = useHrData();
   const columns = useColumns();
   const filters = useFilters();
   const actions = useActions(data);
-  const savedFilters = useSavedFilters('employees');
+  const savedFilters = useSavedTableFilters('employees');
   const source = useTableSource<EmployeeRow>('employees', employeeRows, {
     search: ['name', 'email', 'title', 'department', 'manager', 'location'],
     sortValue: { status: (row) => STATUS_ORDER[row.status] },

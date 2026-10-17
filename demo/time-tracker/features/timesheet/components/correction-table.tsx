@@ -2,12 +2,12 @@ import { Text } from '@mantine/core';
 
 import type { TableActions, TableColumns } from '@local/data-table/react';
 import { multiRowAction } from '@local/data-table/react';
+import { DataTable } from '@local/micro-app';
 
 import type { Correction, Employee, TimeData } from '../../../domain/index.js';
 import { minutesOf } from '../../../domain/index.js';
 import { formatDate, formatDuration, formatStamp, formatTime } from '../../../shared/lib/format.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { DataTable } from '../../../shared/ui/data-table.js';
 import { appIcons } from '../../../shared/ui/icons.js';
 import { EmployeeLabel } from '../../../shared/ui/parts.js';
 import { useTableSource } from '../../tracker/index.js';
@@ -69,8 +69,6 @@ function useActions(data: TimeData): TableActions<CorrectionRow> {
   ];
 }
 
-// The pending corrections of employees, for a team lead to approve (the stretch becomes an entry of the day) or to
-// reject.
 function CorrectionTable({ data, employees, title, subtitle }: {
   data: TimeData;
   employees: readonly Employee[];

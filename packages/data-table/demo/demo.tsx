@@ -1,11 +1,9 @@
-import { useState } from 'react';
-
 import type {
   ColumnGroup,
   DataTableComponent,
   EditField,
-  SavedFilter,
-  SavedFilters,
+  SavedFilterStore,
+  StoredFilter,
   TableColumn,
 } from '../src/react/index.js';
 import {
@@ -22,6 +20,7 @@ import {
   textFilter,
   useDataTableController,
   useDataTableSelection,
+  useSavedFilters,
 } from '../src/react/index.js';
 import { antdTheme, defaultTheme, mantineTheme, softTheme } from '../src/themes/index.js';
 import type { Controls, DemoTheme } from './controls.js';
@@ -143,6 +142,28 @@ const active: UserColumn = {
 
 // The filters of the table (`filters`), in the order of the filter view; each is labeled by the header of the column
 // of its key.
+// The saved filters, kept in memory for as long as the page is open (one list per table): a name saved again
+// replaces the filter of that name. With sharing (the demo has one user: shared ones are only marked).
+const storedFilters = new Map<string, readonly StoredFilter[]>();
+const ownOf = (table: string) => storedFilters.get(table) ?? [];
+const filterStore: SavedFilterStore = {
+  list: async (table) => ownOf(table),
+  save: async (table, name, filters, shared) => {
+    storedFilters.set(table, [...ownOf(table).filter((item) => item.name !== name), {
+      id: crypto.randomUUID(),
+      name,
+      filters,
+      shared,
+    }]);
+  },
+  remove: async (table, id) => {
+    storedFilters.set(table, ownOf(table).filter((item) => item.id !== id));
+  },
+  setShared: async (table, id, shared) => {
+    storedFilters.set(table, ownOf(table).map((item) => (item.id === id ? { ...item, shared } : item)));
+  },
+};
+
 const filters = defineFilters({
   // With the select of how the text must match (contains, starts with, ends with); the other text filters are plain.
   firstName: textFilter({ matchModes: true }),
@@ -196,23 +217,8 @@ function Demo({ controls }: { controls: Controls }) {
     editRow: nav.editRow,
     addRow: () => nav.addRow(newUser()),
   });
-  // Saved filters (in the filter view and the drawer), kept in memory: a name saved again replaces the
-  // filter of that name. With sharing (the demo has one user: shared ones are only marked).
-  const [saved, setSaved] = useState<readonly SavedFilter[]>([]);
-  const savedFilters: SavedFilters = {
-    items: saved,
-    sharing: true,
-    save: (name, filters, { shared }) => {
-      setSaved((current) => [
-        ...current.filter((item) => item.name !== name),
-        { id: crypto.randomUUID(), name, filters, shared },
-      ]);
-      show(`Saved filter "${name}"`);
-    },
-    remove: (id) => setSaved((current) => current.filter((item) => item.id !== id)),
-    setShared: (id, shared) =>
-      setSaved((current) => current.map((item) => (item.id === id ? { ...item, shared } : item))),
-  };
+  // Saved filters (in the filter view and the drawer), from a store in memory (`useSavedFilters`).
+  const savedFilters = useSavedFilters(filterStore, 'users');
 
   return (
     <div className="ui-stack">

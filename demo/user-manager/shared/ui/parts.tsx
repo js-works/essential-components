@@ -1,11 +1,12 @@
-import { Anchor, Avatar, Group, Stack, Text, ThemeIcon, Title } from '@mantine/core';
+import { Avatar, Group, Stack, Text, ThemeIcon, Title } from '@mantine/core';
 import type { ReactNode } from 'react';
-import { Link } from 'react-router';
+
+import { AnchorLink } from '@local/micro-app';
 
 import type { AccessData, PrincipalRef } from '../../domain/index.js';
 import { appIcons } from './icons.js';
 
-export { PageHeader, PrincipalLabel, principalName, principalPath, UserAvatar };
+export { PageHeader, PrincipalLabel, principalName, UserAvatar };
 
 // The title of a page, its subtitle, and its actions on the right.
 function PageHeader({ title, subtitle, badges, actions }: {
@@ -39,10 +40,6 @@ function principalName(data: AccessData, principal: PrincipalRef): string {
     : data.groups.find((group) => group.id === principal.id)?.name ?? 'Unknown group';
 }
 
-function principalPath(principal: PrincipalRef): string {
-  return principal.type === 'user' ? `/users/${principal.id}` : `/groups/${principal.id}`;
-}
-
 // A user (avatar) or a group (group icon) with its name as a link to its page.
 function PrincipalLabel({ data, principal }: { data: AccessData; principal: PrincipalRef }) {
   const name = principalName(data, principal);
@@ -56,7 +53,9 @@ function PrincipalLabel({ data, principal }: { data: AccessData; principal: Prin
             {appIcons.groups}
           </ThemeIcon>
         )}
-      <Anchor component={Link} to={principalPath(principal)} size="sm" truncate>{name}</Anchor>
+      {principal.type === 'user'
+        ? <AnchorLink to="/users/$userId" params={{ userId: principal.id }} size="sm" truncate>{name}</AnchorLink>
+        : <AnchorLink to="/groups/$groupId" params={{ groupId: principal.id }} size="sm" truncate>{name}</AnchorLink>}
     </Group>
   );
 }

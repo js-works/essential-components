@@ -2,16 +2,15 @@ import { Badge, Stack, Text } from '@mantine/core';
 
 import type { SavedFilters, TableActions, TableColumn, TableColumns, TableFilters } from '@local/data-table/react';
 import { multiRowAction } from '@local/data-table/react';
+import { DataTable, useTableActions } from '@local/micro-app';
 import { useToast } from '@local/overlays/react';
 
 import type { Employee, LeaveRequest, TimeData } from '../../../domain/index.js';
 import { leaveDays, todayDate } from '../../../domain/index.js';
 import { formatDateRange, formatDays, formatStamp } from '../../../shared/lib/format.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { DataTable } from '../../../shared/ui/data-table.js';
 import { appIcons } from '../../../shared/ui/icons.js';
 import { absenceText, EmployeeLabel, RequestStatusBadge } from '../../../shared/ui/parts.js';
-import { newAction } from '../../../shared/ui/table-actions.js';
 import { useTableSource } from '../../tracker/index.js';
 import { leaveTypeFilter, requestStatusFilter } from '../leave-filters.js';
 import { useCancelLeaveFlow, useDecideLeaveFlow, useRequestLeaveFlow } from '../leave-flows.js';
@@ -20,7 +19,6 @@ export { LeaveTable };
 
 type LeaveRow = LeaveRequest & { employee: Employee | undefined; employeeName: string; days: number };
 
-// The employee of a request, with a link to their page (only in the team's table).
 function employeeColumn(header: string): TableColumn<LeaveRow> {
   return {
     key: 'employeeName',
@@ -103,6 +101,7 @@ const pending = (row: LeaveRow) => row.status === 'pending';
 const cancellable = (row: LeaveRow) => pending(row) || (row.status === 'approved' && row.from > todayDate());
 
 function useActions(data: TimeData, mine: boolean, self: Employee | undefined): TableActions<LeaveRow> {
+  const { newAction } = useTableActions();
   const t = useTranslate();
   const toasts = useToast();
   const requestLeave = useRequestLeaveFlow();
@@ -136,10 +135,6 @@ function useActions(data: TimeData, mine: boolean, self: Employee | undefined): 
     ];
 }
 
-// Leave requests as a table: the viewer's own (`mine`: new, cancel) or those of employees (a team lead: approve,
-// reject; `pendingOnly`: only those still to decide, the approvals). Only pending requests are decided and only a
-// pending or coming approved one is cancelled; others among the selected rows are skipped (a toast says so when none is
-// left). `savedFilters` only where the page gives them (the Leave page's team tab, 2026-10-11).
 function LeaveTable({ data, employees, mine, pendingOnly = false, title, subtitle, savedFilters }: {
   data: TimeData;
   employees: readonly Employee[];

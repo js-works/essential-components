@@ -1,17 +1,15 @@
-import { Anchor, Loader, Text } from '@mantine/core';
-import { Link, useNavigate } from 'react-router';
+import { Loader, Text } from '@mantine/core';
+import { useNavigate } from '@tanstack/react-router';
 
 import type { TableActions, TableColumns, TableFilters } from '@local/data-table/react';
 import { dateRangeFilter } from '@local/data-table/react';
+import { AnchorLink, DataTable, useSavedTableFilters, useTableActions } from '@local/micro-app';
 
 import type { HrData, Opening, OpeningStatus } from '../../../domain/index.js';
 import { isInProcess } from '../../../domain/index.js';
 import { formatDate } from '../../../shared/lib/format.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { DataTable } from '../../../shared/ui/data-table.js';
 import { OpeningStatusBadge } from '../../../shared/ui/parts.js';
-import { useSavedFilters } from '../../../shared/ui/saved-filters.js';
-import { editAction, newAction, openAction } from '../../../shared/ui/table-actions.js';
 import { departmentFilter } from '../../departments/index.js';
 import { departmentName, employeeOf, useHrData, useTableSource } from '../../hr/index.js';
 import { openingStatusFilter } from '../recruiting-filters.js';
@@ -56,7 +54,9 @@ function useColumns(): TableColumns<OpeningRow> {
       sortable: true,
       render: (row) => (
         <div style={{ minWidth: 0 }}>
-          <Anchor component={Link} to={`/recruiting/${row.id}`} size="sm" truncate display="block">{row.title}</Anchor>
+          <AnchorLink to="/recruiting/$openingId" params={{ openingId: row.id }} size="sm" truncate display="block">
+            {row.title}
+          </AnchorLink>
           <Text size="xs" c="dimmed" truncate>
             {[row.location, t(`employmentType.${row.employmentType}`)].filter(Boolean).join(' · ')}
           </Text>
@@ -116,6 +116,7 @@ function useFilters(): TableFilters {
 }
 
 function useActions(data: HrData | undefined): TableActions<OpeningRow> {
+  const { editAction, newAction, openAction } = useTableActions();
   const t = useTranslate();
   const navigate = useNavigate();
   const createOpening = useCreateOpeningFlow();
@@ -123,19 +124,18 @@ function useActions(data: HrData | undefined): TableActions<OpeningRow> {
 
   return [
     newAction(t('openings.new'), () => data !== undefined && createOpening(data)),
-    openAction((row) => navigate(`/recruiting/${row.id}`)),
+    openAction((row) => navigate({ to: '/recruiting/$openingId', params: { openingId: row.id } })),
     editAction((row) => data !== undefined && editOpening(row, data)),
   ];
 }
 
-// The job openings: their department, hiring manager, status and candidates. Open one for its pipeline.
 function OpeningTable() {
   const t = useTranslate();
   const data = useHrData();
   const columns = useColumns();
   const filters = useFilters();
   const actions = useActions(data);
-  const savedFilters = useSavedFilters('openings');
+  const savedFilters = useSavedTableFilters('openings');
   const source = useTableSource<OpeningRow>('openings', openingRows, {
     search: ['title', 'department', 'manager', 'location'],
     sortValue: { status: (row) => STATUS_ORDER[row.status] },

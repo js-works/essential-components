@@ -1,7 +1,8 @@
-import { Alert, Anchor, Badge, Button, Group, Stack, Tabs, Text } from '@mantine/core';
+import { Alert, Badge, Button, Group, Stack, Tabs, Text } from '@mantine/core';
+import { useNavigate, useParams } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
 
+import { AnchorLink } from '@local/micro-app';
 import { useToast } from '@local/overlays/react';
 
 import { appIcons } from '../../../shared/ui/icons.js';
@@ -15,7 +16,7 @@ export { RolePage };
 
 // One role: its permissions (a matrix; edited in place, then "Save" or "Reset"), and where it is granted.
 function RolePage() {
-  const { roleId = '' } = useParams();
+  const { roleId } = useParams({ from: '/roles/$roleId' });
   const data = useAccessData();
   const service = useIamService();
   const changed = useChanged();
@@ -37,7 +38,7 @@ function RolePage() {
   if (role === undefined) {
     return (
       <Text p="md">
-        This role does not exist (anymore). <Anchor component={Link} to="/roles">All roles</Anchor>
+        This role does not exist (anymore). <AnchorLink to="/roles">All roles</AnchorLink>
       </Text>
     );
   }
@@ -88,7 +89,7 @@ function RolePage() {
                 leftSection={appIcons.remove}
                 onClick={async () => {
                   if (await deleteRoles([role])) {
-                    void navigate('/roles');
+                    void navigate({ to: '/roles' });
                   }
                 }}
               >

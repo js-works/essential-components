@@ -1,10 +1,13 @@
-import { Anchor, Avatar, Badge, Group, Paper, SimpleGrid, Stack, Text, useMantineTheme } from '@mantine/core';
+import { Avatar, Badge, Group, Paper, SimpleGrid, Stack, Text, useMantineTheme } from '@mantine/core';
 import { useMemo } from 'react';
-import { Link } from 'react-router';
+
+import { AnchorLink } from '@local/micro-app';
 
 import { localDateTime } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { useBoardList } from '../../boards/reads.js';
+import type { MeetingLink } from '../../meetings/index.js';
+import { boardMeetingLink } from '../../meetings/index.js';
 import { useMeetingList } from '../../meetings/reads.js';
 import { useMembershipList, usePersonList } from '../../members/reads.js';
 
@@ -13,7 +16,11 @@ export { HomeAttention };
 const LIMIT = 5;
 
 // `person`: the name for an avatar with initials.
-type Entry = { id: string; label: string; to: string; person?: string };
+type Entry = { id: string; label: string; link: EntryLink; person?: string };
+type EntryLink =
+  | { to: '/boards/$boardId'; params: { boardId: string } }
+  | MeetingLink
+  | { to: '/members/$personId'; params: { personId: string } };
 type Check = { key: 'overdue' | 'noUpcoming' | 'noChair' | 'noOrganization'; entries: Entry[] };
 
 // What needs a look: data that is probably incomplete or overdue, each check with its count and the first entries as
@@ -40,7 +47,7 @@ function HomeAttention() {
     const board = (item: { id: string; name: string }): Entry => ({
       id: item.id,
       label: item.name,
-      to: `/boards/${item.id}`,
+      link: { to: '/boards/$boardId', params: { boardId: item.id } },
     });
 
     const result: Check[] = [
@@ -52,7 +59,7 @@ function HomeAttention() {
           .map((meeting): Entry => ({
             id: meeting.id,
             label: `${meeting.title} · ${boardName(meeting.boardId)}`,
-            to: `/boards/${meeting.boardId}/meetings/${meeting.id}`,
+            link: boardMeetingLink(meeting),
           })),
       },
       { key: 'noUpcoming', entries: boards.filter((item) => !hasPlanned.has(item.id)).map(board) },
@@ -62,7 +69,7 @@ function HomeAttention() {
         entries: people.filter((person) => person.organizationId === '').map((person): Entry => ({
           id: person.id,
           label: person.name,
-          to: `/members/${person.id}`,
+          link: { to: '/members/$personId', params: { personId: person.id } },
           person: person.name,
         })),
       },
@@ -87,7 +94,7 @@ function HomeAttention() {
             {entries.slice(0, LIMIT).map((entry) => (
               <Group key={entry.id} gap="xs" wrap="nowrap">
                 {entry.person !== undefined && <Avatar name={entry.person} color={primaryColor} size="sm" />}
-                <Anchor component={Link} to={entry.to} size="sm" truncate>{entry.label}</Anchor>
+                <AnchorLink {...entry.link} size="sm" truncate>{entry.label}</AnchorLink>
               </Group>
             ))}
             {entries.length > LIMIT && (

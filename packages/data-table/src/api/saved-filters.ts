@@ -1,6 +1,6 @@
 import type { FilterValue } from './query.js';
 
-export type { SavedFilter, SavedFilters, SaveFilterOptions };
+export type { SavedFilter, SavedFilterStore, SavedFilters, SaveFilterOptions, StoredFilter };
 
 type SavedFilter = {
   id: string;
@@ -19,4 +19,19 @@ type SavedFilters = {
   remove: (id: string) => void | Promise<void>;
   sharing?: boolean;
   setShared?: (id: string, shared: boolean) => void | Promise<void>;
+};
+
+type StoredFilter = {
+  id: string;
+  name: string;
+  filters: Readonly<Record<string, unknown>>;
+  shared: boolean;
+  owner?: string;
+};
+
+type SavedFilterStore = {
+  list: (table: string, signal?: AbortSignal) => Promise<readonly StoredFilter[]>;
+  save: (table: string, name: string, filters: Readonly<Record<string, unknown>>, shared: boolean) => Promise<void>;
+  remove: (table: string, id: string) => Promise<void>;
+  setShared: (table: string, id: string, shared: boolean) => Promise<void>;
 };

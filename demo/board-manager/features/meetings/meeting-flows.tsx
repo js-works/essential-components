@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router';
+import { useNavigate } from '@tanstack/react-router';
 
 import type { Meeting } from '../../domain/index.js';
 import { MeetingForm } from '../../shared/forms.js';
@@ -7,6 +7,7 @@ import { formatDateTime } from '../../shared/shared.js';
 import { useBoardList } from '../boards/reads.js';
 import { useMembershipList } from '../members/reads.js';
 import { useMeetingService } from './context.js';
+import type { MeetingLink } from './meeting-links.js';
 
 export {
   useApproveMinutesFlow,
@@ -26,11 +27,11 @@ export {
 type NewMeetingPlace = {
   boardId?: string;
   personId?: string;
-  pathOf: (meeting: { id: string; boardId: string }) => string;
+  linkOf: (meeting: { id: string; boardId: string }) => MeetingLink;
 };
 
 // "New meeting": the meeting form in a dialog, saved before it closes; then a toast, and the new meeting's page.
-function useCreateMeetingFlow({ boardId, personId, pathOf }: NewMeetingPlace): () => Promise<void> {
+function useCreateMeetingFlow({ boardId, personId, linkOf }: NewMeetingPlace): () => Promise<void> {
   const { formFlow, t } = useFlowKit();
   const navigate = useNavigate();
   const service = useMeetingService();
@@ -58,7 +59,7 @@ function useCreateMeetingFlow({ boardId, personId, pathOf }: NewMeetingPlace): (
     });
 
     if (done && created !== undefined) {
-      void navigate(pathOf(created));
+      void navigate(linkOf(created));
     }
   };
 }

@@ -1,15 +1,27 @@
 # Board Manager
 
 The "Board Manager" tab of the root's demo page: a demo of the root (a small app, not a product): boards and
-committees, their meetings, agendas, minutes and documents. Mantine, React Router, Zustand, and three packages: a data
+committees, their meetings, agendas, minutes and documents. Mantine, TanStack Router, Zustand, the building blocks of
+`@local/micro-app`, and three packages: a data
 table for every list, the dialogs and toasts of the overlays package, the file upload for documents. The rules of
 the root's `CLAUDE.md` apply.
 
 - File structure (the target, open questions, decisions): `STRUCTURE.md`. Read it before moving or adding files.
+- Built on `@local/micro-app` (2026-10-17, like the other four apps; the app's own copies before: the app header with
+  its history, the look, the hash history, the data table's wrapper, the table actions, the saved filters' hook,
+  `FieldError` and the form hook): `MicroAppHeader`, `createLook` (`createBoardManagerLook()` in `board-manager-demo.tsx`
+  passes the element's colors and the app's custom properties), `MantineScope` (with the element's own color scheme,
+  `scheme`), `mirrorInHash`, `DataTable`, `useTableActions`, `useSavedTableFilters`, `defineForm`,
+  `AnchorLink`, inside a `MicroAppProvider`. Routing with TanStack Router (React Router before), typed:
+  `app/router-types.ts` registers the app's router, only in the app's own check (`demo/board-manager/tsconfig.json`,
+  run by `npm run typecheck`); the links of a meeting (`boardMeetingLink`, `meetingLink`) and a member (`memberLink`)
+  are link options, not strings. The standard actions look like the package's since then (Delete in the danger color;
+  not red before). Where the sections below describe the header, the history, `FieldError`, `DataTable` or
+  `createBoardManagerLook()` in detail, that was the app's own code; the package's `CLAUDE.md` has the current state.
 
 ## App
 
-- Made to be embedded (later e.g. in XWiki, with content around it): no side navigation, an app header (`AppHeader`; "top bar" before 2026-10-08) of two lines
+- Made to be embedded (later e.g. in XWiki, with content around it): no side navigation, an app header (`MicroAppHeader` since 2026-10-17; the app's own `AppHeader` before, "top bar" before 2026-10-08) of two lines
   (2026-10-08, the Human Resources' trial, rolled out; one line with a menu of the modules on the title before): the
   app icon, the title "Board Manager", the modules as tabs (Overview, Boards, Meetings, Members, Organizations;
   `NavLink`s, the current one, also on its records' pages, in the accent's light ground; below 56rem of the bar a menu
@@ -56,9 +68,10 @@ the root's `CLAUDE.md` apply.
     ("Back to Boards"; Mantine's, `fz="xs"`, after 400ms; none while disabled): the history keeps each entry's path, and the name
     is the last crumb of its routes (`matchRoutes`, the breadcrumb's `handle.crumb`), so it follows renames and new
     pages need nothing; `/` is "Overview", a path without a crumb only "Back"/"Forward".
-- Routes (`app.tsx`, a memory router): `/`, `/boards`, `/boards/:boardId` (tabs Overview, Meetings, Members),
-  `/boards/:boardId/meetings/:meetingId` and `/meetings/:meetingId` (tabs Overview, Agenda, Minutes, Documents),
-  `/members`, `/members/:personId` (tabs Overview, Boards, Meetings), `/organizations`, `/organizations/:organizationId` (tabs Overview, People).
+- Routes (`app.tsx`, a memory router): `/`, `/boards`, `/boards/$boardId` (tabs Overview, Meetings, Members),
+  `/boards/$boardId/meetings/$meetingId` and `/meetings/$meetingId` (tabs Overview, Agenda, Minutes, Documents),
+  `/members`, `/members/$personId` (tabs Overview, Boards, Meetings), `/organizations`, `/organizations/$organizationId` (tabs Overview, People);
+  an unknown path shows "Not found" (`notFoundComponent`).
   - The route is mirrored in the hash after the tab's segment (`#board-manager/boards/b1`), only while the tab is shown.
 - The fake server answers after `LOADING_TIME` (`infra/in-memory/store.ts`): 500ms since 2026-10-06 (the user's wish;
   1s for a day, to see the data table's loading indicators; 300ms before), for every read, the suggestions and the
@@ -134,13 +147,13 @@ the root's `CLAUDE.md` apply.
     meeting page's tables are files of their own (`AgendaTable`, `SectionTable`, `DocumentTable`; `meeting-page.tsx`
     from 967 to 297 lines), and its "Approve minutes" and "Mark as held" are flows too. `MemberTable` has no
     comments (2026-10-16, the user's wish: they were not useful). The standard builders are plain functions
-    (`newAction`, `openAction`, `editAction`, `deleteAction` of `shared/ui/table-actions.ts`; their texts from
-    `translate()` when called). A filter of a feature's `<subject>-filters.ts` is a function of `t` or of data (`roleFilter(t)`), called in `useFilters()`. The actions and their dialogs use `t`; the
+    (`newAction`, `openAction`, `editAction`, `deleteAction` of `useTableActions()`, `@local/micro-app`, since 2026-10-17;
+    `shared/ui/table-actions.ts` before). A filter of a feature's `<subject>-filters.ts` is a function of `t` or of data (`roleFilter(t)`), called in `useFilters()`. The actions and their dialogs use `t`; the
     texts of a feature are under its key (`boards.*`), the words every feature shares under `common`. A sentence with a
     number or a name is one key with the plural forms (`_one`: a single one, with its name; `_other`: the number), not
     pieces glued together (`countText` is replaced where it is used, and removed with its last use). Outside
     components (flows) `translate()`.
-  - A route's crumb gets `t` (`crumb(params, t)`): it is made where the breadcrumb or a tooltip renders.
+  - A route's crumb is a component (`staticData.crumb`, e.g. `<TextCrumb label="modules.boards" />`; `crumb(params, t)` of React Router's `handle` before 2026-10-17): it follows the language where the breadcrumb or a tooltip renders.
   - German terms: board = Gremium, meeting = Sitzung, agenda = Tagesordnung, minutes = Protokoll, decision = Beschluss,
     section = Abschnitt, member = Mitglied, chair = Vorsitz. "Home" is "Start". The app's name stays "Board Manager".
   - The minutes editor (BlockNote): its own texts (menus, placeholders) come from its `dictionary` (`de` or `en` of
@@ -163,7 +176,7 @@ the root's `CLAUDE.md` apply.
   the package would need its own test and demo). More contrast comes from the app's Mantine theme instead
   (`cssVariablesResolver`, 2026-09-30): `dimmed` `gray.7` (dark `dark.1`) and `placeholder` `gray.6` (dark `dark.2`),
   one step darker than Mantine's (lighter in dark mode); the text and the lines stay Mantine's.
-- The look is made per element (`createLook()` in `board-manager-demo.tsx`, 2026-10-01): the theme, the CSS variables
+- The look is made per element (`createBoardManagerLook()` in `board-manager-demo.tsx`, 2026-10-01): the theme, the CSS variables
   and the overlays' config. Two colors of ten shades: `accent` (the primary color) and `danger` (danger buttons, the
   error toasts, `--mantine-color-error`: shade 6, dark 8); by default Mantine's `indigo` and `red`. Danger buttons in
   the pages use `color="danger"`, never `red`. `autoContrast` (black text on a light accent).
@@ -185,7 +198,7 @@ the root's `CLAUDE.md` apply.
   dialogs are outside the scopes). Before, the dialogs had their fixed 16px and the system font, larger than the app.
   The spinner placeholder of a scope (the theme's `spinner`, 2026-10-01) is the accent's filled color.
 - The toasts (medium since 2026-10-02, the user's wish; small, like the Media Manager's (now the File Center), before; stacked, bottom
-  right) are in Mantine's palette (`createToastTheme()` in `createLook()`): they live in `<body>`, outside the scopes,
+  right) are in Mantine's palette (`createToastTheme()` in `createBoardManagerLook()`): they live in `<body>`, outside the scopes,
   so the colors are the theme's values (`mergeMantineTheme`), with `light-dark()` for the page's scheme.
   - Success toasts in the accent color, like info and loading (2026-10-01, the user's wish: one accent color in the
     app; Mantine's `green` before): only the icon differs, so a toast from a spinner to success changes only its icon.
@@ -276,7 +289,9 @@ the root's `CLAUDE.md` apply.
     the methods it added to `Array.prototype` (react-pdf's text layout failed, while the app had a PDF, `e.reduce is not a function`). The build
     replaces `Object.values` with a function of the bundle (`define`, defined in the `banner`, from `Object.keys`); the
     page's one is untouched. Not chosen: restoring the page's (it is global), the app in an iframe (much work).
-  - The size of the module (2026-10-16, the user's wish; 3.9 MB, 1.19 MB gzipped, before): 3.26 MB, 1.06 MB gzipped.
+  - The size of the module (2026-10-16, the user's wish; 3.9 MB, 1.19 MB gzipped, before): 3.26 MB, 1.06 MB gzipped;
+    3.45 MB, 1.10 MB gzipped with `@local/rich-text` (2026-10-17: it brings all of BlockNote's 23 locales, where the
+    app imported German and English).
     One file is a must (no chunks loaded later), and BlockNote and the charts stay (both were ruled out as options).
     - No emoji menu in the minutes editor (`emojiPicker={false}`): BlockNote loads emoji-mart and its data (about
       0.5 MB) by dynamic imports, which the one-file build inlined; the build replaces both with `app/no-emoji.ts`.
@@ -298,7 +313,7 @@ the root's `CLAUDE.md` apply.
     anchors). Read once, when the element is connected.
   - The colors are custom properties of the element, set by the host page's CSS (2026-10-02; attributes
     `accent-color` and `danger-color` before, 2026-10-01): `--board-manager-accent-color` and
-    `--board-manager-danger-color` (any CSS color), the `accent` and `danger` of `createLook()`. Without them, or with
+    `--board-manager-danger-color` (any CSS color), the `accent` and `danger` of `createBoardManagerLook()`. Without them, or with
     an invalid color, Mantine's indigo and red. Read once, on connect (`getComputedStyle`; there is no event for a
     changed custom property). The accent also live, for the demo element too: see below.
   - The theme is `modernTheme` of `packages/mantine-themes` merged with the app's own (2026-10-04): smaller corners
@@ -319,7 +334,7 @@ the root's `CLAUDE.md` apply.
     - No danger color derived from the accent any more (`dangerFor()`, a red that went with the accent, removed
       2026-10-02): without `--board-manager-danger-color` it is Mantine's red; a host with a red-ish accent sets it.
   - The font and the text size (2026-10-02): `--board-manager-font-family` and `--board-manager-font-size`, CSS only
-    (live): `createLook()`'s `cssVariablesResolver` sets Mantine's variables to them, with Mantine's values as the
+    (live): `createBoardManagerLook()`'s `cssVariablesResolver` sets Mantine's variables to them, with Mantine's values as the
     fallbacks. The size is the app's normal text (Mantine's `sm`, 14px by default, `0.875rem`); Mantine's other sizes
     (`xs` to `xl`) and the headings (`h1` to `h6`) keep their proportions to it. The dialogs' own text too (their
     theme). Everything using Mantine's variables follows (the data table's Mantine theme, BlockNote's look).
@@ -396,7 +411,7 @@ the root's `CLAUDE.md` apply.
   - Saved filters (2026-10-11, the user's wish; the data table's `savedFilters`, in its filter view and drawer):
     only in the Meetings module (not on a board's or a member's page, 2026-10-11, the user's wish), with the
     colleagues' "Minutes to approve" (Maria Keller), "Planned, next 90 days" (Jonas Weber) and "Supervisory Board"
-    (Lena Hoffmann); see "Saved filters in the root's apps" in the root's `CLAUDE.md` (`shared/ui/saved-filters.ts`).
+    (Lena Hoffmann); see "Saved filters in the root's apps" in the root's `CLAUDE.md` (`useSavedTableFilters` of `@local/micro-app`).
     Also in Boards, Members (not an organization's People tab) and Organizations, with colleagues' filters too.
 - A meeting's page opens on "Overview" (`MeetingOverview`): its base information as labels and values (title, board,
   date and time with the end from the agenda's duration, location, status and minutes badges, the number of items and
@@ -408,9 +423,13 @@ the root's `CLAUDE.md` apply.
 - The agenda is reordered by dragging (`reorder`), has a reload button (`reloadable`, 2026-10-07, like the documents), the minutes are recorded per item (a form dialog), the minutes tab
   shows them as one document; a held meeting's minutes are approved there. Its frame (a Mantine `Paper` with a border)
   is there without minutes too, around the note of a planned or cancelled meeting (2026-10-02).
-- The minutes of an item are a BlockNote document (`minutes.tsx`, 2026-10-01; `@blocknote/core`, `react`, `mantine`
-  0.55; before, a `Textarea`): stored as its JSON in `AgendaItem.minutes` (`''` for an empty document); plain text (the
-  seed) is read as one paragraph per line.
+- The minutes of an item are a rich text of `@local/rich-text` (2026-10-17; BlockNote in `minutes.tsx` itself from
+  2026-10-01, with its own Mantine look, dictionary switch and CSS; a `Textarea` before): stored as BlockNote's JSON in
+  `AgendaItem.minutes` (`''` for an empty document); plain text (the seed) is read as one paragraph per line.
+  `minutes.tsx` only adds the mentions of the board's members (`suggest`, the current name or "(deleted)" by
+  `labelOf`; in the read-only views links to the member's page through the router, `onOpen`); the package's
+  stylesheet is imported in `board-manager-demo.tsx`. The mentions' prop is `id` (the package's; `personId` before:
+  no stored minutes had any, the data is seeded anew).
   - The minutes form is a centered dialog (2026-10-01; a drawer before), extra wide (`width: 'extraWide'`, 64em; the
     overlays' named widths for dialogs and drawers: `default`, `wide` 48em, `extraWide` 64em, `full`), and
     maximizable (`maximizable: true`, 2026-10-01: Maximize before the close button, then Restore). Maximized, the two

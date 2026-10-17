@@ -1,17 +1,15 @@
-import { Anchor, Badge, Group, Stack, Text } from '@mantine/core';
-import { Link, useNavigate } from 'react-router';
+import { Badge, Group, Stack, Text } from '@mantine/core';
+import { useNavigate } from '@tanstack/react-router';
 
 import type { TableActions, TableColumns, TableFilters } from '@local/data-table/react';
 import { multiRowAction, singleRowAction } from '@local/data-table/react';
+import { AnchorLink, DataTable, useSavedTableFilters, useTableActions } from '@local/micro-app';
 
 import type { AccessData, User } from '../../../domain/index.js';
 import { groupsOf } from '../../../domain/index.js';
 import { formatDateTime } from '../../../shared/lib/format.js';
-import { DataTable } from '../../../shared/ui/data-table.js';
 import { appIcons } from '../../../shared/ui/icons.js';
 import { UserAvatar } from '../../../shared/ui/parts.js';
-import { useSavedFilters } from '../../../shared/ui/saved-filters.js';
-import { deleteAction, editAction, newAction, openAction } from '../../../shared/ui/table-actions.js';
 import { useGrantAccessFlow } from '../../access/index.js';
 import { useTableSource } from '../../iam/index.js';
 import { departmentFilter, userStatusFilter } from '../user-filters.js';
@@ -45,7 +43,7 @@ const columns: TableColumns<UserRow> = [
       <Group gap={8} wrap="nowrap">
         <UserAvatar name={row.name} />
         <Stack gap={0} style={{ minWidth: 0 }}>
-          <Anchor component={Link} to={`/users/${row.id}`} size="sm" truncate>{row.name}</Anchor>
+          <AnchorLink to="/users/$userId" params={{ userId: row.id }} size="sm" truncate>{row.name}</AnchorLink>
           <Text size="xs" c="dimmed" truncate>{row.title}</Text>
         </Stack>
       </Group>
@@ -87,6 +85,7 @@ const columns: TableColumns<UserRow> = [
 const filters: TableFilters = { department: departmentFilter, status: userStatusFilter };
 
 function useActions(): TableActions<UserRow> {
+  const { deleteAction, editAction, newAction, openAction } = useTableActions();
   const navigate = useNavigate();
   const createUser = useCreateUserFlow();
   const editUser = useEditUserFlow();
@@ -96,7 +95,7 @@ function useActions(): TableActions<UserRow> {
 
   return [
     newAction('New user', createUser),
-    openAction((row) => navigate(`/users/${row.id}`)),
+    openAction((row) => navigate({ to: '/users/$userId', params: { userId: row.id } })),
     editAction(editUser),
     singleRowAction('grant', (row) => grantAccess({ principal: { type: 'user', id: row.id } }), {
       label: 'Grant access',
@@ -109,10 +108,9 @@ function useActions(): TableActions<UserRow> {
   ];
 }
 
-// All users: their department, groups and status. Open one for its details and access.
 function UserTable() {
   const actions = useActions();
-  const savedFilters = useSavedFilters('users');
+  const savedFilters = useSavedTableFilters('users');
   const source = useTableSource<UserRow>('users', userRows, {
     search: ['name', 'email', 'title', 'department', 'groups'],
   });

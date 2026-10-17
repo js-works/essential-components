@@ -1,13 +1,13 @@
 import i18next from 'i18next';
 import { useTranslation } from 'react-i18next';
 
-import type { I18nAdapter } from '@local/form-validation';
+import { microAppResources } from '@local/micro-app';
 
 import { de } from './locales/de.js';
 import { en } from './locales/en.js';
 
 export type { Translate };
-export { i18n, i18nAdapter, translate, translateKey, useLanguage, useTranslate };
+export { i18n, translate, translateKey, useLanguage, useTranslate };
 
 // The app's own translations, with i18next (its own instance, not the global one) and react-i18next: English and
 // German, English is the default and the fallback. The texts are in the bundle (`locales/`), so the first render is
@@ -36,9 +36,10 @@ void i18n.init({
   // Only these two; `de-DE` and `en-US` are `de` and `en`.
   supportedLngs: ['en', 'de'],
   nonExplicitSupportedLngs: true,
-  ns: ['app'],
+  ns: ['app', 'microApp', 'dataTable'],
   defaultNS: 'app',
-  resources: { en: { app: en }, de: { app: de } },
+  // The building blocks' texts (`@local/micro-app`: its own and the data table's) beside the app's.
+  resources: { en: { ...microAppResources.en, app: en }, de: { ...microAppResources.de, app: de } },
   interpolation: { escapeValue: false }, // React escapes
 });
 
@@ -63,21 +64,10 @@ type Translate = ReturnType<typeof useTranslate>;
 
 const translate: Translate = i18n.t.bind(i18n);
 
-// The adapter of the components (here form-validation): a namespace i18next does not know (e.g. 'formValidation')
-// gives the `defaultValue`, the text of the component. Its keys are strings, not the app's typed ones.
+// Untyped: for a key that is only known at run time.
 const resolve = i18n.t.bind(i18n) as (key: string, options: object) => string;
 
 // A text by a key that is only known at run time (an error's key and values): untyped, the caller has checked the key.
 function translateKey(key: string, params?: object): string {
   return resolve(key, { ...params });
 }
-
-const i18nAdapter: I18nAdapter = {
-  currentLocale: () => i18n.language,
-  resolveText: (namespace, key, params, defaultValue) => resolve(key, { ns: namespace, ...params, defaultValue }),
-  onChange: (listener) => {
-    i18n.on('languageChanged', listener);
-
-    return () => i18n.off('languageChanged', listener);
-  },
-};

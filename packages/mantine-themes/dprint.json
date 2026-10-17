@@ -7,7 +7,8 @@
     "jsx.quoteStyle": "preferDouble",
     "module.sortImportDeclarations": "maintain",
     "importDeclaration.sortNamedImports": "maintain",
-    "exportDeclaration.sortNamedExports": "maintain"
+    "exportDeclaration.sortNamedExports": "maintain",
+    "module.sortExportDeclarations": "maintain"
   },
   "excludes": [
     "node_modules",

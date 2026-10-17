@@ -1,11 +1,12 @@
 import { Loader, Stack, Tabs } from '@mantine/core';
 import { useState } from 'react';
 
+import { useSavedTableFilters } from '@local/micro-app';
+
 import { membersOf, todayDate, vacationBalance } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { appIcons } from '../../../shared/ui/icons.js';
 import { PageHeader } from '../../../shared/ui/parts.js';
-import { useSavedFilters } from '../../../shared/ui/saved-filters.js';
 import { useTimeData } from '../../tracker/index.js';
 import { useViewer } from '../../viewer/index.js';
 import { BalanceCards } from '../components/balance-cards.js';
@@ -16,7 +17,7 @@ export { LeavePage };
 // Leave: the viewer's vacation of this year and their requests; a team lead also sees the requests of their team, to
 // approve or reject them.
 function LeavePage() {
-  const savedFilters = useSavedFilters('team-leave');
+  const savedFilters = useSavedTableFilters('team-leave');
   const t = useTranslate();
   const data = useTimeData();
   const viewer = useViewer();

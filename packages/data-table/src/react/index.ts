@@ -1,6 +1,7 @@
 import { useDataTableController, useDataTableSelection } from '../core/controller-hooks.js';
 import { inDateRange, localPage, localSource, matchesText, oneOf } from '../core/local-page.js';
 import { criteriaOf, pagingOf, sortOf } from '../core/query-helpers.js';
+import { useSavedFilters } from '../core/use-saved-filters.js';
 import { dateColumnEditor, selectColumnEditor, textColumnEditor } from '../core/view/column-editors.js';
 import {
   autocompleteFilter,
@@ -43,6 +44,7 @@ export {
   textFilter,
   useDataTableController,
   useDataTableSelection,
+  useSavedFilters,
 };
 
 // The React entry, `@local/data-table/react`: everything a React app needs (with the app's React). The themes come

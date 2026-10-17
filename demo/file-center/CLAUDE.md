@@ -47,21 +47,27 @@ structure completely (`demo/board-manager/STRUCTURE.md`): a reference for its ph
   - `components/`: also `EntryName` (the name with its icon and star), `favorite.tsx` (`FavoriteStar`,
     `FavoriteButton`), `FolderDetails`.
   - `keys.ts`: the query keys (TanStack Query), all under `['media']`; a change invalidates them all.
-  - `context.ts`: the service's React context (`useBrowserService`), and `folderPath()` (the route of a folder).
+  - `context.ts`: the service's React context (`useBrowserService`), and `folderLink()` (the typed link options of a
+    folder, for a `Link` or `navigate()`; `folderPath()`, a string, until 2026-10-17).
   - `components/`: `FolderTree`, `NameForm`, `MoveForm`, `FileDetails`; `pages/folder-page.tsx`: the table and its
     actions.
   - `index.ts`: the only import path for the app.
-- `shared/`: no domain knowledge except icons per kind: `ui/scope.tsx` (Mantine's scope, `.file-center`, and the
-  page's color scheme), `ui/data-table.tsx` (the data table in Mantine's look), `ui/icons.tsx`, `lib/format.ts`.
+- `shared/`: no domain knowledge except icons per kind: `ui/icons.tsx`, `lib/format.ts`, `lib/i18n.ts` (the app's
+  i18next instance, English only, for the building blocks' texts).
+- Built on `@local/micro-app` (2026-10-17, like the other apps; the app's own copies before: the app header, the look,
+  the Mantine scope, the hash history, the data table's wrapper, the table actions, the saved filters' hook):
+  `MicroAppHeader`, `createLook`, `MantineScope`, `mirrorInHash`, `DataTable`, `useTableActions`,
+  `useSavedTableFilters`, `AnchorLink`, inside a `MicroAppProvider`. Routing with TanStack Router (React Router before),
+  typed: `app/router-types.ts` registers the app's router, only in the app's own check (`tsconfig.json` of the app,
+  run by `npm run typecheck`).
 - `app/`: the wiring and the frame: `file-center-demo.tsx` (the element, light DOM, registered as
-  `file-center-demo`; it creates the repositories, the service and the query client, and provides them),
-  `app.tsx` (routes, layout, app header, history, the hash), `look.tsx` (Mantine's theme and the overlays' config, taken
-  from the Board Manager), `file-center.css`.
+  `file-center-demo`; it creates the repositories, the service and the query client, and provides them; the look),
+  `app.tsx` (the routes, the layout, the header's folder crumbs, the hash), `router-types.ts`, `file-center.css`.
   - The theme (2026-10-04): `modernTheme` of `packages/mantine-themes` merged with the app's own, like the Board Manager's:
     smaller corners and a bit more contrast (see its `CLAUDE.md`).
   - The accent (2026-10-03): `--file-center-accent-color` (any CSS color, set by the host page's CSS; the root page
-    maps its `--app-accent-color` to it), live in CSS like the Board Manager's (`accentVariables()` in `look.tsx`);
-    without it, Mantine's indigo.
+    maps its `--app-accent-color` to it), live in CSS (the `tokens` of `createLook`, also the font size, the
+    font family and the scale); without it, Mantine's indigo.
 
 ## Data access
 
@@ -78,7 +84,7 @@ structure completely (`demo/board-manager/STRUCTURE.md`): a reference for its ph
 ## App
 
 - Saved filters (2026-10-11, the user's wish) in Files (a folder's list), Recent and Favorites, with colleagues' shared
-  filters: see "Saved filters in the root's apps" in the root's `CLAUDE.md` (`shared/ui/saved-filters.ts`).
+  filters: see "Saved filters in the root's apps" in the root's `CLAUDE.md` (`useSavedTableFilters` of `@local/micro-app`).
 - Modules (2026-10-08, the user's wish, built one by one): Overview, Files, Recent, Favorites, Trash. Done so far:
   all five.
 - Trash (2026-10-08; `/trash`, `features/trash/`):
@@ -118,22 +124,22 @@ structure completely (`demo/board-manager/STRUCTURE.md`): a reference for its ph
   last modified files (each with its folder as a link). One read, `overview()` of the browser service (all files, by
   `modified`; `browserKeys.overview()`, so every change refreshes it). "Modified", not "uploaded": a file has no date
   of its upload.
-- App header (`AppHeader`; "top bar" before 2026-10-08; like the other apps, two lines, 2026-10-08): the app icon, "File Center", the modules as tabs (the current
-  one, also on its folders' pages, in the accent's light ground; below 56rem of the bar a menu in their place: the
-  current module and a chevron), Back and Forward through the app's own history (tooltips "Back to Logos"; hidden below
-  40rem of the app header); below them the breadcrumb: a house icon with the label "Home" (2026-10-04, a link to the start
-  page), the module ("Files", the root), then one crumb per folder; the last one not a link; the app icon is no link
-  (2026-10-04).
+- The header (`MicroAppHeader`, 2026-10-17; the app's own `AppHeader` from 2026-10-08 before): the app icon, "File
+  Center", the modules as tabs (Overview, Files, Recent, Favorites, Trash; a menu below 56rem), Back and Forward
+  (tooltips "Back to Logos": the folder route's crumb, the folder's name); below them the breadcrumb: Home, the module,
+  and in Files the open folder's path ("Files", then one crumb per folder below the root: the header's `crumbs`, given by
+  the layout, `useFolderCrumbs()`). See the package's `CLAUDE.md`.
 - The full-height layout of the Board Manager (2026-10-07, the user's wish; like the Time Tracker's): the app fills
   its element, the app header stays, the body below takes the rest; the table fills it (its rows scroll, its toolbar,
-  headers and footer stay; `file-center__table` around it), the folder tree scrolls on its own.
+  headers and footer stay; `micro-app__table` around it), the folder tree scrolls on its own.
 - Files, below the app header: the folder tree on the left (15.5rem, without a frame since 2026-10-07, a line on its right; hidden below 48rem of the
   app's width), the open folder's
   contents on the right.
-- Routes: `/` (the start page), `/files` (the root, "Files") and `/files/<id>` (`/folders/<id>` before 2026-10-08), in
-  a memory router, mirrored in the hash after `#file-center` (`#file-center/files/logos`): a reload or a link opens the same folder. Written only while the element is shown;
+- Routes: `/` (the start page), `/files` (the root, "Files") and `/files/$folderId` (`/folders/<id>` before 2026-10-08),
+  `/recent`, `/favorites`, `/trash` (an unknown path shows the start page, `notFoundComponent`; a redirect to it before
+  2026-10-17), in a memory router, mirrored in the hash after `#file-center` (`#file-center/files/logos`): a reload or a link opens the same folder. Written only while the element is shown;
   again when the cockpit shows it (it observes the closest `[data-hash-segment]` or `.ui-tabs__panel`). The browser's
-  Back and Forward step through the folders (`app/hash-history.ts`, see the root's `CLAUDE.md`).
+  Back and Forward step through the folders (`mirrorInHash` of `@local/micro-app`).
 
 ## Storages
 
@@ -161,7 +167,7 @@ structure completely (`demo/board-manager/STRUCTURE.md`): a reference for its ph
 
 ## Table
 
-- Compact (2026-10-07, the user's wish; `density="compact"` in `shared/ui/data-table.tsx`, like the User Manager's).
+- Compact (2026-10-07, the user's wish; `DataTable`'s default, like the User Manager's).
   The footer only when there is something to page (`footer="auto"`), the number of rows after the title
   (`showTotal`), like the Time Tracker's (2026-10-07).
 - A folder's contents: subfolders first (a folder icon in the accent color, its name a link that opens it), then files

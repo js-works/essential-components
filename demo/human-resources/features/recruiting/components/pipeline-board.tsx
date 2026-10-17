@@ -1,7 +1,8 @@
-import { ActionIcon, Anchor, Group, Menu, Stack, Text } from '@mantine/core';
+import { ActionIcon, Group, Menu, Stack, Text } from '@mantine/core';
 import type { DragEvent } from 'react';
 import { useState } from 'react';
-import { Link } from 'react-router';
+
+import { AnchorLink } from '@local/micro-app';
 
 import type { Candidate, HrData, Opening, Stage } from '../../../domain/index.js';
 import { PIPELINE, STAGES } from '../../../domain/index.js';
@@ -121,9 +122,15 @@ function CandidateCard({ candidate, onMove }: {
         <Stack gap={2} style={{ minWidth: 0, flex: 1 }}>
           {hired && candidate.employeeId !== null
             ? (
-              <Anchor component={Link} to={`/employees/${candidate.employeeId}`} size="sm" fw={500} truncate>
+              <AnchorLink
+                to="/employees/$employeeId"
+                params={{ employeeId: candidate.employeeId }}
+                size="sm"
+                fw={500}
+                truncate
+              >
                 {candidate.name}
-              </Anchor>
+              </AnchorLink>
             )
             : <Text size="sm" fw={500} truncate>{candidate.name}</Text>}
           <Text size="xs" c="dimmed" truncate>

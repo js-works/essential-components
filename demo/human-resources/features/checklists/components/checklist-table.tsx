@@ -1,17 +1,15 @@
 import { Badge, Loader, Stack, Text } from '@mantine/core';
-import { useNavigate } from 'react-router';
+import { useNavigate } from '@tanstack/react-router';
 
 import type { TableActions, TableColumns, TableFilters } from '@local/data-table/react';
+import { DataTable, useSavedTableFilters, useTableActions } from '@local/micro-app';
 
 import type { Checklist, Employee, HrData } from '../../../domain/index.js';
 import { checklistAnchor, isOverdue, nextTask, progressOf, todayDate } from '../../../domain/index.js';
 import { formatDate } from '../../../shared/lib/format.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { DataTable } from '../../../shared/ui/data-table.js';
 import { appIcons } from '../../../shared/ui/icons.js';
 import { EmployeeLabel, ProgressCell } from '../../../shared/ui/parts.js';
-import { useSavedFilters } from '../../../shared/ui/saved-filters.js';
-import { deleteAction, newAction, openAction } from '../../../shared/ui/table-actions.js';
 import { employeeOf, useHrData, useTableSource } from '../../hr/index.js';
 import { checklistKindFilter, checklistStateFilter } from '../checklist-filters.js';
 import { useCreateChecklistFlow, useDeleteChecklistsFlow } from '../checklist-flows.js';
@@ -128,6 +126,7 @@ function useFilters(): TableFilters {
 }
 
 function useActions(data: HrData | undefined): TableActions<ChecklistRow> {
+  const { deleteAction, newAction, openAction } = useTableActions();
   const t = useTranslate();
   const navigate = useNavigate();
   const createChecklist = useCreateChecklistFlow();
@@ -135,19 +134,18 @@ function useActions(data: HrData | undefined): TableActions<ChecklistRow> {
 
   return [
     newAction(t('checklists.new'), () => data !== undefined && createChecklist(data)),
-    openAction((row) => navigate(`/onboarding/${row.id}`)),
+    openAction((row) => navigate({ to: '/onboarding/$checklistId', params: { checklistId: row.id } })),
     deleteAction((rows) => data !== undefined && deleteChecklists(rows, data)),
   ];
 }
 
-// The checklists of joiners and leavers: whose, which kind, their day, how far, what comes next. The open ones first.
 function ChecklistTable() {
   const t = useTranslate();
   const data = useHrData();
   const columns = useColumns();
   const filters = useFilters();
   const actions = useActions(data);
-  const savedFilters = useSavedFilters('checklists');
+  const savedFilters = useSavedTableFilters('checklists');
   const source = useTableSource<ChecklistRow>('checklists', checklistRows, {
     search: ['name'],
     sortValue: { done: (row) => (row.total === 0 ? 0 : row.done / row.total) },

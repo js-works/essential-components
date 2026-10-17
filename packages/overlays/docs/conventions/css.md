@@ -1,7 +1,8 @@
 # CSS conventions
 
 - No CSS custom properties (`--…`) in the packages (2026-10-10, the user's rule): a package neither defines nor
-  requires any.
+  requires any. A tier-2 package (`general.md`) reads Mantine's (`var(--mantine-…)`), as a theme made for a library
+  may; never new ones of its own.
   - Values come from the package's theme (a JS object), put into the CSS by script (see the placeholders below), or are
     plain values or a local calc.
   - A value only known at run time is set as the real CSS property inline (`style.gridColumn = '3 / span 2'`), never as
