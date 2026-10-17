@@ -5,7 +5,7 @@ import { criteriaOf, dateRangeFilter, singleRowAction, textFilter } from '@local
 import { useFindSource } from '@local/data-table/react-query';
 import { AnchorLink, DataTable, useSavedTableFilters, useTableActions } from '@local/micro-app';
 
-import type { MeetingCriteria, MeetingSummary, Page } from '../../../domain/index.js';
+import type { MeetingCriteria, MeetingSummary } from '../../../domain/index.js';
 import { MEETING_SORT_KEYS } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { formatDateTime, PAGE_SIZE_OPTIONS } from '../../../shared/shared.js';
@@ -25,11 +25,7 @@ import { MinutesBadge, StatusBadge } from './meeting-badges.js';
 
 export { MeetingTable };
 
-// A meeting as a row: `chair` and `created` are always empty, their columns are there only for their filters.
-type MeetingRow = MeetingSummary & { chair: ''; created: '' };
-
-// The filters `chair` and `created` are passed on, and the meetings' repository ignores them (see `MeetingRow`).
-function useSource(boardId: string | undefined, personId: string | undefined): RowSource<MeetingRow> {
+function useSource(boardId: string | undefined, personId: string | undefined): RowSource<MeetingSummary> {
   const service = useMeetingService();
   const toCriteria = criteriaOf<MeetingCriteria>('text');
 
@@ -37,11 +33,7 @@ function useSource(boardId: string | undefined, personId: string | undefined): R
     [...meetingKeys.all, 'meetings', boardId ?? '', personId ?? ''],
     MEETING_SORT_KEYS,
     (query) => ({ ...toCriteria(query), boardId, personId }),
-    async (...args): Promise<Page<MeetingRow>> => {
-      const page = await service.find(...args);
-
-      return { ...page, items: page.items.map((meeting) => ({ ...meeting, chair: '', created: '' })) };
-    },
+    service.find,
   );
 }
 
@@ -53,7 +45,7 @@ type MeetingList = {
   linkOf: (meeting: { id: string; boardId: string }) => MeetingLink;
 };
 
-function useColumns({ boardId, linkOf }: MeetingList): TableColumns<MeetingRow> {
+function useColumns({ boardId, linkOf }: MeetingList): TableColumns<MeetingSummary> {
   const t = useTranslate();
 
   return [
@@ -79,7 +71,7 @@ function useColumns({ boardId, linkOf }: MeetingList): TableColumns<MeetingRow> 
           width: 2.5,
           sortable: true,
           hideable: true,
-        } satisfies TableColumn<MeetingRow>,
+        } satisfies TableColumn<MeetingSummary>,
       ]
       : []),
     {
@@ -121,21 +113,6 @@ function useColumns({ boardId, linkOf }: MeetingList): TableColumns<MeetingRow> 
       hidden: true,
       align: 'end',
     },
-    // Columns without data, only for their filters, which the source ignores.
-    {
-      key: 'chair',
-      header: t('meetings.columns.chair'),
-      width: 2,
-      hideable: true,
-      hidden: true,
-    },
-    {
-      key: 'created',
-      header: t('meetings.columns.created'),
-      width: 2,
-      hideable: true,
-      hidden: true,
-    },
   ];
 }
 
@@ -150,12 +127,10 @@ function useFilters(boardId: string | undefined): TableFilters {
     location: textFilter(),
     statuses: { label: t('meetings.columns.status'), filter: meetingStatusFilter(t) },
     minutes: { label: t('meetings.columns.minutes'), filter: minutesFilter(t) },
-    chair: textFilter(),
-    created: dateRangeFilter(),
   };
 }
 
-function useActions(list: MeetingList): TableActions<MeetingRow> {
+function useActions(list: MeetingList): TableActions<MeetingSummary> {
   const { deleteAction, editAction, newAction, openAction } = useTableActions();
   const t = useTranslate();
   const navigate = useNavigate();

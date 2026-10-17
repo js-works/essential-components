@@ -404,9 +404,9 @@ the root's `CLAUDE.md` apply.
   board and the status (multiple selects), the minutes (approved or draft, only held meetings have minutes; the
   location and the minutes since 2026-10-09). The meetings' repository applies them (`MeetingCriteria`). (The items and the
   documents had number ranges for a few hours that day.)
-  - Only for the look (2026-10-11, the user's wish: enough filters for the data table's filter drawer in two
-    columns): two hidden columns without data, "Chair" (text) and "Created" (a date range), with their filters (`chair`
-    and `created` of `MeetingRow`, always empty). The source ignores these two filters. (Number ranges on the items and
+  - Two hidden columns without data, "Chair" (text) and "Created" (a date range), with their filters, were there only
+    for the look of the filter drawer (2026-10-11, the user's wish); removed 2026-10-17 (the user's wish: decoration
+    only). (Number ranges on the items and
     the documents too, for a few hours the same day.)
   - Saved filters (2026-10-11, the user's wish; the data table's `savedFilters`, in its filter view and drawer):
     only in the Meetings module (not on a board's or a member's page, 2026-10-11, the user's wish), with the

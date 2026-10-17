@@ -198,8 +198,6 @@ const en = {
       minutes: 'Minutes',
       items: 'Items',
       documents: 'Documents',
-      chair: 'Chair',
-      created: 'Created',
     },
     minutesApproved: 'Minutes approved',
     minutesDraft: 'Minutes draft',
