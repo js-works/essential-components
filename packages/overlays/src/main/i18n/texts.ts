@@ -15,9 +15,9 @@
 // "de-CH" both land on "de", which is correct for them until a string actually diverges.
 
 import type { DialogTexts } from "../api/dialogs/texts.js";
+import type { ToastTexts } from "../api/toasts/texts.js";
 import type { TextKey } from "../dialogs/texts.js";
 import { defaultDialogTexts } from "../dialogs/texts.js";
-import type { ToastTexts } from "../api/toasts/texts.js";
 import { defaultToastTexts } from "../toasts/texts.js";
 
 /**

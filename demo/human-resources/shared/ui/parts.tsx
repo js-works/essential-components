@@ -1,6 +1,7 @@
 import { Anchor, Avatar, Badge, Group, Paper, Progress, Stack, Text, Title } from '@mantine/core';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
+
 import type { Employee, EmployeeStatus, OpeningStatus, Stage } from '../../domain/index.js';
 import { useTranslate } from '../lib/i18n/index.js';
 import { appIcons } from './icons.js';

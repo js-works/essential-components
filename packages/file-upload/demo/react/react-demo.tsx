@@ -1,6 +1,7 @@
-import { createContext, StrictMode, useContext, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
+import { createContext, StrictMode, useContext, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+
 import type { FileItem } from '../../src/index.js';
 import { createFileUploadComponent } from '../../src/react/index.js';
 import { submitted, summarize } from '../format.js';

@@ -29,7 +29,7 @@ files are moved to match them.
   │   │   ├── flows/          the feature's flows, one hook per use case (board-flows.tsx)
   │   │   ├── filters/        its domain filters (board-filters.ts)
   │   │   └── index.ts        the only import path for other features
-  │   ├── meetings/           components/ MeetingTable, Minutes; pdf/
+  │   ├── meetings/           components/ MeetingTable, Minutes
   │   ├── members/            components/ PersonTable
   │   ├── organizations/
   │   └── home/               the home page
@@ -133,20 +133,29 @@ interface ProductRepository {
     `createInMemoryRepositories()` in its `index.ts`; the old fetch functions with the data table's types are gone).
   - Step 3: a service per feature, provided by a context from `app/` (`BoardService`, `MemberService`,
     `OrganizationService`, `MeetingService`; each over the repositories it needs, e.g. the boards' with the
-    memberships, the meetings' with the agendas, documents and the report's data).
-  - Step 4: the rows in the features: a table maps its query to the criteria (`toCriteria` in its file; `searchText`,
-    `toSort`, `toPaging` and `usePageSource` of `shared/lib/table-query.ts`). Mostly the domain's summaries are the
+    memberships, the meetings' with the agendas, documents and the report's data). The contexts are one line each (2026-10-16, the user's choice,
+    proposed at about 70% over one context for all services, which would tie every feature to all the others):
+    `createServiceContext<S>(name)` of `shared/lib/service-context.ts` gives the context and its hook.
+  - Step 4: the rows in the features: a table maps its query to the criteria (`toCriteria` in its file, explicit: the
+    domain keeps names of its own; criteria named like the filter keys, so no mapping, was proposed and dropped,
+    2026-10-16, the user's decision). The wiring is one call (the same day, the user's choice, proposed at about 60%):
+    `useFindSource(scope, SORT_KEYS, toCriteria, find, reload)` of `shared/lib/table-query.ts` (the sort, the
+    paging, TanStack Query); a list of one record gives `find` as a closure (`service.findMembers(board.id, …)`). Mostly the domain's summaries are the
     rows; the meetings' `MeetingRow` adds the two look-only columns, the agenda's `AgendaRow` (`agenda.ts`) the number,
     the presenter and `recorded`. The agenda is one page: its rows, groups and search are made in the feature
     (`agendaPage`) from the repository's agenda.
-  - Step 5: the reads through TanStack Query: the tables' pages (`usePageSource`, `use-query-source.ts`), the records
+  - Step 5: the reads through TanStack Query: the tables' pages (`useFindSource`, `use-query-source.ts`), the records
     and lists (`reads.ts` of each feature: `useBoard`, `usePerson`, `useOrganization`, `useMeeting`, `use…List`,
     `useAgenda`, `useBoardMembers`; `shared/lib/queries.ts`: `useRead`, `useRecord`, a missing record is `null` in the
     cache: TanStack Query takes no `undefined`). `useDb` and `useReloadOnChange` are gone.
-  - Step 6: the flows call the service, then `changed()` (`shared/lib/use-changed.ts`: every read again). An "Edit"
+  - Step 6: the flows call the service; every read loads again after a change. The services say so themselves
+    (2026-10-16, the user's choice, proposed at about 65%; the flows called `changed()` of `shared/lib/use-changed.ts`
+    before, the same day): each service lists its changing methods once (`withChanges(service, ['create', …],
+    onChange)`, `shared/lib/with-changes.ts`: `onChange` after each has finished, not after a refused one), and the app
+    gives `onChange` (`queryClient.invalidateQueries()`); the services know no TanStack Query. A new changing method of
+    a service goes into its list. An "Edit"
     gets the record, not its id (no read before the dialog); the forms get their choices as props (`PersonForm`'s
-    organizations, `OrganizationForm`'s others for the unique name, `MemberForm`'s `suggest`); the PDF report is
-    built from `MeetingService.report()`.
+    organizations, `OrganizationForm`'s others for the unique name, `MemberForm`'s `suggest`).
   - Step 7: only `app/` imports `infra/` (`app/board-manager-demo.tsx`). The query client and the services are around
     everything, the dialogs' content too (`Services`). `AppError` moved to `shared/lib/app-error.ts` (the server throws
     it, the UI translates it).

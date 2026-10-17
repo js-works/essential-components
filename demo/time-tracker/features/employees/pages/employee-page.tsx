@@ -1,9 +1,10 @@
 import { Badge, Button, Grid, Group, Loader, Paper, SimpleGrid, Stack, Tabs, Text, Title } from '@mantine/core';
-import { useState } from 'react';
 import type { ReactNode } from 'react';
+import { useState } from 'react';
 import { useParams } from 'react-router';
-import { todayDate, todayStatus, vacationBalance, weekStart } from '../../../domain/index.js';
+
 import type { Employee, TimeData } from '../../../domain/index.js';
+import { todayDate, todayStatus, vacationBalance, weekStart } from '../../../domain/index.js';
 import { formatDate } from '../../../shared/lib/format.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { useNow } from '../../../shared/lib/use-now.js';

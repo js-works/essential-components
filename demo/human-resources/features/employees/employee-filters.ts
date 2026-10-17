@@ -1,7 +1,8 @@
-import { selectFilter } from '@local/data-table/react';
 import type { TableFilter } from '@local/data-table/react';
-import { DOCUMENT_CATEGORIES, EMPLOYEE_STATUSES, EMPLOYMENT_TYPES } from '../../domain/index.js';
+import { selectFilter } from '@local/data-table/react';
+
 import type { Employee } from '../../domain/index.js';
+import { DOCUMENT_CATEGORIES, EMPLOYEE_STATUSES, EMPLOYMENT_TYPES } from '../../domain/index.js';
 import type { Translate } from '../../shared/lib/i18n/index.js';
 
 export { documentCategoryFilter, employeeStatusFilter, employmentTypeFilter, locationFilter };

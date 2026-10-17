@@ -11,6 +11,7 @@ export type {
   PersonValues,
   SuggestPeople,
 };
+export { PERSON_SORT_KEYS };
 
 // `organizationId`: `''` for none.
 type Person = { id: string; name: string; email: string; organizationId: string };
@@ -37,7 +38,10 @@ type PersonCriteria = {
   organizationId?: string;
 };
 
-type PersonSortKey = 'name' | 'organization';
+// What the people can be sorted by.
+const PERSON_SORT_KEYS = ['name', 'organization'] as const;
+
+type PersonSortKey = (typeof PERSON_SORT_KEYS)[number];
 
 // A person to choose (an autocomplete): the name, the organization as its second line.
 type PersonOption = { id: string; name: string; organization: string };

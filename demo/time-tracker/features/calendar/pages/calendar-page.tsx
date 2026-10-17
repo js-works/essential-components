@@ -1,5 +1,6 @@
 import { ActionIcon, Button, Group, Loader, NativeSelect, Stack, Text, Tooltip } from '@mantine/core';
 import { useState } from 'react';
+
 import { todayDate } from '../../../domain/index.js';
 import { formatMonth } from '../../../shared/lib/format.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';

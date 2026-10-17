@@ -3,15 +3,15 @@ import type { ToastTextResolver } from "./texts.js";
 import type { ToastTheme } from "./theme.js";
 
 export type {
-  ToastOverflow,
-  ToastPlacement,
   ToastAction,
   ToastHandle,
   ToastOptions,
-  ToastsController,
-  ToastsControllerOptions,
+  ToastOverflow,
+  ToastPlacement,
   ToastSize,
   ToastSpec,
+  ToastsController,
+  ToastsControllerOptions,
   ToastType,
 };
 

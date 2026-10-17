@@ -1,9 +1,10 @@
 import { css, html, LitElement } from 'lit';
 import { property, state } from 'lit/decorators.js';
-import { dateRangeColumnFilter, selectColumnFilter, textColumnFilter } from '../../../../../packages/data-table/src';
+
 import type { DataTable } from '../../../../../packages/data-table/src';
-import { authorOf, formatDate, formatSize, queryAttachments, rowsOf, SIZES } from './attachments';
+import { dateRangeColumnFilter, selectColumnFilter, textColumnFilter } from '../../../../../packages/data-table/src';
 import type { AttachmentRow } from './attachments';
+import { authorOf, formatDate, formatSize, queryAttachments, rowsOf, SIZES } from './attachments';
 import { icons } from './icons';
 import { createTableController, dialogs, toasts } from './setup';
 import { attachmentsUrlOf, deleteAttachment, listAttachments, uploadAttachment } from './xwiki/rest';

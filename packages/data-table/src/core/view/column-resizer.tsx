@@ -1,5 +1,6 @@
-import { useRef } from 'react';
 import type { PointerEvent } from 'react';
+import { useRef } from 'react';
+
 import { MIN_COLUMN_WIDTH } from '../utils.js';
 import * as classes from './classes.js';
 

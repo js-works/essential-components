@@ -1,7 +1,7 @@
 import type { Action, StatusIcon } from '../core/view.js';
 
-export { createIcon };
 export type { IconName };
+export { createIcon };
 
 // The icons are copied from Tabler Icons (https://tabler.io/icons).
 //

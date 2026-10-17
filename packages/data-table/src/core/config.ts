@@ -1,11 +1,12 @@
 import { createContext, useContext } from 'react';
+
 import type * as Spec from '../api/react/index.js';
 import { defaultTheme } from '../themes/default.js';
-import { resolveTheme, themeStylesheet } from './stylesheet.js';
 import type { ThemeStylesheet } from './stylesheet.js';
+import { resolveTheme, themeStylesheet } from './stylesheet.js';
 
-export { checkI18nType, ConfigContext, resolveConfig, useThemed };
 export type { ResolvedConfig };
+export { ConfigContext, checkI18nType, resolveConfig, useThemed };
 
 // The configuration of one data table, ready to use: its i18n adapter, the stylesheet of its theme (see
 // stylesheet.ts), and (React with an i18n factory) the callback that gets the root element, to ask the factory with it.

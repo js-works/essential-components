@@ -1,12 +1,13 @@
-import { generalAction, singleRowAction, useDataTableController } from '@local/data-table/react';
-import type { RowGroup, RowMove, RowSource, TableActions, TableColumns } from '@local/data-table/react';
 import { Stack, Text } from '@mantine/core';
 import { useMemo } from 'react';
+
+import type { RowGroup, RowMove, RowSource, TableActions, TableColumns } from '@local/data-table/react';
+import { generalAction, singleRowAction } from '@local/data-table/react';
+import { useQuerySource } from '@local/data-table/react-query';
+
 import type { Meeting } from '../../../domain/index.js';
 import { agendaNumbers, agendaOf } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { useChanged } from '../../../shared/lib/use-changed.js';
-import { useQuerySource } from '../../../shared/lib/use-query-source.js';
 import { appIcons, DataTable } from '../../../shared/shared.js';
 import { deleteAction, editAction, newAction } from '../../../shared/ui/table-actions.js';
 import {
@@ -16,12 +17,11 @@ import {
   useManageSectionsFlow,
   useRecordMinutesFlow,
 } from '../agenda-flows.js';
-
 import { useMeetingService } from '../context.js';
 import { meetingKeys } from '../keys.js';
 import { useAgenda } from '../reads.js';
-import { agendaPage, numbered } from './agenda.js';
 import type { AgendaRow } from './agenda.js';
+import { agendaPage, numbered } from './agenda.js';
 import { MinutesText } from './minutes.js';
 
 export { AgendaTable };
@@ -69,7 +69,7 @@ function useColumns(): TableColumns<AgendaRow> {
 }
 
 // The whole agenda as one page, through TanStack Query: the table reloads after a change.
-function useSource(meetingId: string, reload: () => void): RowSource<AgendaRow> {
+function useSource(meetingId: string): RowSource<AgendaRow> {
   const service = useMeetingService();
 
   return useQuerySource<AgendaRow>(
@@ -83,7 +83,6 @@ function useSource(meetingId: string, reload: () => void): RowSource<AgendaRow> 
       return agendaPage(agendaOf({ agendaItems: items, agendaSections: sections }, meetingId), people, query.search);
     },
     meetingKeys.all,
-    reload,
   );
 }
 
@@ -116,12 +115,10 @@ function useActions(meeting: Meeting): TableActions<AgendaRow> {
 // is not grouped: plain rows.
 function AgendaTable({ meeting }: { meeting: Meeting }) {
   const t = useTranslate();
-  const tableCtrl = useDataTableController<AgendaRow>();
   const columns = useColumns();
   const actions = useActions(meeting);
   const service = useMeetingService();
-  const changed = useChanged();
-  const source = useSource(meeting.id, tableCtrl.reload);
+  const source = useSource(meeting.id);
   const { entries, sections } = useAgenda(meeting.id);
   const numbers = useMemo(() => agendaNumbers(entries), [entries]);
   const grouped = sections.length > 0;
@@ -129,7 +126,6 @@ function AgendaTable({ meeting }: { meeting: Meeting }) {
   // The positions (and the numbers) change with a move: saved, and the table follows the data.
   const reorder = async ({ row, group, after, before }: RowMove<AgendaRow>) => {
     await service.moveItem({ meetingId: meeting.id, itemId: row.id, group, after, before });
-    void changed();
   };
 
   // The header of a section: its number and name, and the duration of its items.
@@ -152,7 +148,6 @@ function AgendaTable({ meeting }: { meeting: Meeting }) {
     <DataTable
       // A new table when the first section comes or the last one goes: no group state is carried over.
       key={grouped ? 'grouped' : 'flat'}
-      controller={tableCtrl}
       title={t('meetings.agenda.title')}
       subtitle={grouped ? t('meetings.agenda.subtitleGrouped') : t('meetings.agenda.subtitle')}
       density="compact"

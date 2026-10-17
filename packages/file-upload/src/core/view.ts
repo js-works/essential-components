@@ -1,8 +1,8 @@
 import type * as Spec from '../api/index.js';
 import type { Localizer } from './texts.js';
 
-export { actionsOf, hintsOf, invalidityOf, statusIconOf, statusTextOf };
 export type { Action, Invalidity, Limits, StatusIcon };
+export { actionsOf, hintsOf, invalidityOf, statusIconOf, statusTextOf };
 
 // The actions of a row. They are also the keys of their labels.
 type Action = 'upload' | 'cancel' | 'stop' | 'retry' | 'remove';

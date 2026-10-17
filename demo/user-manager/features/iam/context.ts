@@ -1,10 +1,11 @@
-import type { RowSource } from '@local/data-table/react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createContext, useCallback, useContext } from 'react';
+
+import type { LocalPageOptions, RowSource } from '@local/data-table/react';
+import { localPage } from '@local/data-table/react';
+import { useQuerySource } from '@local/data-table/react-query';
+
 import type { AccessData } from '../../domain/index.js';
-import { runLocalQuery } from '../../shared/lib/local-query.js';
-import type { LocalQueryOptions } from '../../shared/lib/local-query.js';
-import { useQuerySource } from '../../shared/lib/use-query-source.js';
 import { iamKeys } from './keys.js';
 import type { IamService } from './service.js';
 
@@ -40,12 +41,11 @@ function useChanged(): () => Promise<void> {
 }
 
 // A data table's source over rows made from the access data (`rows`), with a local search, filters and sorting
-// (`options`). Each page is a query (`iamKeys.table`); a change reloads the table (`reload`, the controller's).
+// (`options`). Each page is a query (`iamKeys.table`); a change reloads the table (the source reports it).
 function useTableSource<Row>(
   name: string,
   rows: (data: AccessData) => readonly Row[],
-  options: LocalQueryOptions<Row>,
-  reload: () => void,
+  options: LocalPageOptions<Row>,
 ): RowSource<Row> {
   const service = useIamService();
   const queryClient = useQueryClient();
@@ -55,9 +55,8 @@ function useTableSource<Row>(
     async (query) => {
       const data = await queryClient.fetchQuery({ queryKey: iamKeys.data(), queryFn: () => service.data() });
 
-      return runLocalQuery(rows(data), query, options);
+      return localPage(rows(data), query, options);
     },
     iamKeys.tables(),
-    reload,
   );
 }

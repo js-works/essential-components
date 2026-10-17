@@ -1,14 +1,14 @@
-import { absenceOn } from './absence.js';
 import type { Absence, LeaveRequest, SickNote } from './absence.js';
-import { isWeekend } from './dates.js';
+import { absenceOn } from './absence.js';
 import type { Holiday } from './dates.js';
-import { dailyTargetMinutes } from './employee.js';
+import { isWeekend } from './dates.js';
 import type { Employee, Team } from './employee.js';
-import { clockStateOf, entriesOf, spentMinutes } from './time.js';
+import { dailyTargetMinutes } from './employee.js';
 import type { ClockState, Correction, TimeEntry } from './time.js';
+import { clockStateOf, entriesOf, spentMinutes } from './time.js';
 
-export { daySheet, todayStatus };
 export type { DaySheet, TimeData, TodayStatus };
+export { daySheet, todayStatus };
 
 // Everything the app shows, in one read (the lists are small).
 type TimeData = {

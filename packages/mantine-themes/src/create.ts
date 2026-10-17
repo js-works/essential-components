@@ -1,5 +1,6 @@
-import { createTheme, DEFAULT_THEME } from '@mantine/core';
 import type { CSSVariablesResolver, MantineColorsTuple } from '@mantine/core';
+import { createTheme, DEFAULT_THEME } from '@mantine/core';
+
 import type * as Spec from './api/theme.js';
 import { colorSetups } from './color-setups.js';
 import { parseHex, shades } from './colors.js';

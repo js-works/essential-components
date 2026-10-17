@@ -1,7 +1,7 @@
-import { useSyncExternalStore } from 'react';
 import type { ReactNode } from 'react';
+import { useSyncExternalStore } from 'react';
 
-export { Scope, SCOPE_CLASS, useScheme };
+export { SCOPE_CLASS, Scope, useScheme };
 
 // The color scheme of the page: the computed CSS `color-scheme` of `<html>` (the demo page's switch sets it through
 // `ui.css`, `data-scheme`). Only `dark` is dark, only `light` is light; anything else follows the system.

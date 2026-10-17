@@ -2,8 +2,8 @@ import type { Board, BoardRepository, BoardSummary } from '../../domain/index.js
 import { localDateTime } from '../../domain/index.js';
 import { getPerson } from './lookups.js';
 import { containsText, inList, inRange, matchesText, pageOf, sorted } from './query.js';
-import { db, LOADING_TIME, newId, save, wait } from './store.js';
 import type { Db } from './store.js';
+import { db, LOADING_TIME, newId, save, wait } from './store.js';
 
 export { createBoardRepository };
 

@@ -1,5 +1,7 @@
 import type { RowPage, RowQuery } from '../src/react/index.js';
+import { localSource, pagingOf } from '../src/react/index.js';
 
+export type { EmailSuggestion, User };
 export {
   countries,
   createUser,
@@ -12,8 +14,6 @@ export {
   saveUser,
   suggestEmails,
 };
-
-export type { EmailSuggestion, User };
 
 type User = {
   id: number;
@@ -222,9 +222,10 @@ async function fetchUsers(
   await wait(signal);
 
   const found = findUsers(query);
-  const { page, pageSize } = query;
+  // The page as a window of rows, as a server with offset paging takes it.
+  const { offset, limit } = pagingOf(query);
 
-  return { rows: found.slice((page - 1) * pageSize, page * pageSize), total: found.length };
+  return { rows: found.slice(offset, offset + limit), total: found.length };
 }
 
 // The source of the "Row grouping" tab: the users grouped by country. The rows come sorted by country first (the
@@ -237,8 +238,8 @@ async function fetchUsersByCountry(
 
   // A stable sort: within a country, the order of the query's sort stays.
   const found = [...findUsers(query)].sort((a, b) => a.country.localeCompare(b.country));
-  const { page, pageSize } = query;
-  const rows = found.slice((page - 1) * pageSize, page * pageSize);
+  const { offset, limit } = pagingOf(query);
+  const rows = found.slice(offset, offset + limit);
   const groups = [...new Set(rows.map((user) => user.country))].map((country) => ({
     key: country,
     total: found.filter((user) => user.country === country).length,
@@ -251,7 +252,7 @@ async function fetchUsersByCountry(
 function findUsers(query: RowQuery): readonly User[] {
   const { sort } = query;
   const text = query.search.toLowerCase();
-  const { firstName, lastName, email, role, country, dateOfBirth, logins, active } = query.filters;
+  const { firstName, lastName, email, role, country, city, dateOfBirth, logins, active } = query.filters;
   // A text filter is `{ text, match }`: contains, starts with or ends with, ignoring the case.
   const matches = (value: string, filter: unknown) => {
     if (filter === null || typeof filter !== 'object' || Array.isArray(filter)) {
@@ -292,6 +293,7 @@ function findUsers(query: RowQuery): readonly User[] {
     .filter(
       (user) =>
         matches(user.firstName, firstName) && matches(user.lastName, lastName) && matches(user.email, email)
+        && matches(user.city, city)
         // The email filter is a text filter in one tab and an autocomplete (a list of emails) in others.
         && (!Array.isArray(email) || email.includes(user.email))
         && (typeof role !== 'string' || user.role === role)
@@ -318,11 +320,5 @@ function findUsers(query: RowQuery): readonly User[] {
   return sorted;
 }
 
-async function fetchNothing(
-  _query: RowQuery,
-  signal: AbortSignal,
-): Promise<RowPage<User>> {
-  await wait(signal);
-
-  return { rows: [], total: 0 };
-}
+// The source of an empty table (the "Data" selector's "empty" and "custom"): a fixed array, without rows.
+const fetchNothing = localSource<User>([], { search: [] });

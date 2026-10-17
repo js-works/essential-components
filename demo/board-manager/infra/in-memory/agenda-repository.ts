@@ -1,7 +1,7 @@
-import { agendaOf, arranged, blockEnd, idOf, newPlace, withSections } from '../../domain/index.js';
 import type { AgendaEntry, AgendaItem, AgendaRepository } from '../../domain/index.js';
-import { db, LOADING_TIME, newId, save, wait } from './store.js';
+import { agendaOf, arranged, blockEnd, idOf, newPlace, withSections } from '../../domain/index.js';
 import type { Db } from './store.js';
+import { db, LOADING_TIME, newId, save, wait } from './store.js';
 
 export { createAgendaRepository };
 

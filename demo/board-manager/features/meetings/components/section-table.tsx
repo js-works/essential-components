@@ -1,4 +1,7 @@
-import { singleRowAction, useDataTableController } from '@local/data-table/react';
+import { Box, TextInput } from '@mantine/core';
+import type { Dispatch, SetStateAction } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+
 import type {
   ColumnEditor,
   RowMove,
@@ -7,12 +10,10 @@ import type {
   TableColumns,
   TableController,
 } from '@local/data-table/react';
+import { singleRowAction, useDataTableController } from '@local/data-table/react';
 
-import { Box, TextInput } from '@mantine/core';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Dispatch, SetStateAction } from 'react';
-import { agendaNumbers, withSections } from '../../../domain/index.js';
 import type { AgendaEntry, SectionDraft } from '../../../domain/index.js';
+import { agendaNumbers, withSections } from '../../../domain/index.js';
 import { translate, useTranslate } from '../../../shared/lib/i18n/index.js';
 import { appIcons, DataTable } from '../../../shared/shared.js';
 import { deleteAction, newAction } from '../../../shared/ui/table-actions.js';

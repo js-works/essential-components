@@ -1,12 +1,13 @@
-import { generalAction, singleRowAction, useDataTableController } from '@local/data-table/react';
-import type { TableActions, TableColumn, TableColumns, TableFilters } from '@local/data-table/react';
 import { Badge, Group, Text } from '@mantine/core';
-import { certificateRequired, sickDays, todayDate } from '../../../domain/index.js';
+
+import type { TableActions, TableColumn, TableColumns, TableFilters } from '@local/data-table/react';
+import { generalAction, singleRowAction } from '@local/data-table/react';
+
 import type { Employee, SickNote } from '../../../domain/index.js';
+import { certificateRequired, sickDays, todayDate } from '../../../domain/index.js';
 import { formatDateRange, formatStamp } from '../../../shared/lib/format.js';
-import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import type { Translate } from '../../../shared/lib/i18n/index.js';
-import { oneOf } from '../../../shared/lib/local-query.js';
+import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { DataTable } from '../../../shared/ui/data-table.js';
 import { appIcons } from '../../../shared/ui/icons.js';
 import { EmployeeLabel } from '../../../shared/ui/parts.js';
@@ -130,7 +131,6 @@ function SickTable({ employees, mine, title, subtitle }: {
   title: string;
   subtitle?: string;
 }) {
-  const tableCtrl = useDataTableController<SickRow>();
   const columns = useColumns(mine);
   const filters = useFilters();
   const actions = useActions(mine, employees[0]);
@@ -159,12 +159,10 @@ function SickTable({ employees, mine, title, subtitle }: {
       });
   }, {
     search: ['employeeName', 'note'],
-    filters: { certificateState: (row, value) => oneOf(row.certificateState, value) },
-  }, tableCtrl.reload);
+  });
 
   return (
     <DataTable
-      controller={tableCtrl}
       title={title}
       subtitle={subtitle}
       source={source}

@@ -1,5 +1,5 @@
-export { ancestorsOf, childrenOf, isInside, ROOT_ID };
 export type { Folder, FolderRepository };
+export { ancestorsOf, childrenOf, isInside, ROOT_ID };
 
 // A folder of the media library. The root is a folder too (`ROOT_ID`, without a parent): "Files" (2026-10-08, the
 // module's name; "Media" before, "All files" before 2026-10-07).

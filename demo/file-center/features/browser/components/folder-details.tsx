@@ -1,5 +1,6 @@
 import { Group, Stack, Table } from '@mantine/core';
 import type { ReactNode } from 'react';
+
 import type { Folder } from '../../../domain/index.js';
 import { ancestorsOf, childrenOf } from '../../../domain/index.js';
 import { formatDateTime } from '../../../shared/lib/format.js';

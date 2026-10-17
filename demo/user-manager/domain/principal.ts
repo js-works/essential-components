@@ -1,5 +1,5 @@
-export { groupsOf, membersOf };
 export type { Group, GroupRepository, PrincipalRef, User, UserRepository, UserValues };
+export { groupsOf, membersOf };
 
 // A person who signs in. Disabled users keep their data and their grants, but get no access.
 type User = {

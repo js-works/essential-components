@@ -1,0 +1,41 @@
+/* Mantine's styles of only the components the app uses (all of them, `styles.layer.css`, are 267 KB, these 120 KB), in
+   the order of Mantine's own full stylesheet. A component new to the app (also one used inside another, e.g.
+   `Combobox` in `Select`) needs its file here: its classes (`m_…`) are in the bundle's script, its CSS is not. */
+@import '@mantine/core/styles/baseline.layer.css';
+@import '@mantine/core/styles/global.layer.css';
+@import '@mantine/core/styles/default-css-variables.layer.css';
+@import '@mantine/core/styles/ScrollArea.layer.css';
+@import '@mantine/core/styles/UnstyledButton.layer.css';
+@import '@mantine/core/styles/VisuallyHidden.layer.css';
+@import '@mantine/core/styles/Paper.layer.css';
+@import '@mantine/core/styles/Overlay.layer.css';
+@import '@mantine/core/styles/Popover.layer.css';
+@import '@mantine/core/styles/Loader.layer.css';
+@import '@mantine/core/styles/ActionIcon.layer.css';
+@import '@mantine/core/styles/CloseButton.layer.css';
+@import '@mantine/core/styles/Group.layer.css';
+@import '@mantine/core/styles/ModalBase.layer.css';
+@import '@mantine/core/styles/Input.layer.css';
+@import '@mantine/core/styles/Flex.layer.css';
+@import '@mantine/core/styles/Text.layer.css';
+@import '@mantine/core/styles/Anchor.layer.css';
+@import '@mantine/core/styles/Combobox.layer.css';
+@import '@mantine/core/styles/Avatar.layer.css';
+@import '@mantine/core/styles/Badge.layer.css';
+@import '@mantine/core/styles/Breadcrumbs.layer.css';
+@import '@mantine/core/styles/Button.layer.css';
+@import '@mantine/core/styles/Card.layer.css';
+@import '@mantine/core/styles/Chip.layer.css';
+@import '@mantine/core/styles/ColorSwatch.layer.css';
+@import '@mantine/core/styles/Divider.layer.css';
+@import '@mantine/core/styles/LoadingOverlay.layer.css';
+@import '@mantine/core/styles/Menu.layer.css';
+@import '@mantine/core/styles/Modal.layer.css';
+@import '@mantine/core/styles/Tooltip.layer.css';
+@import '@mantine/core/styles/RingProgress.layer.css';
+@import '@mantine/core/styles/SimpleGrid.layer.css';
+@import '@mantine/core/styles/Skeleton.layer.css';
+@import '@mantine/core/styles/Stack.layer.css';
+@import '@mantine/core/styles/Tabs.layer.css';
+@import '@mantine/core/styles/ThemeIcon.layer.css';
+@import '@mantine/core/styles/Title.layer.css';

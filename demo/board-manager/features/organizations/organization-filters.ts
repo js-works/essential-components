@@ -1,5 +1,6 @@
-import { autocompleteFilter, selectFilter } from '@local/data-table/react';
 import type { TableFilter } from '@local/data-table/react';
+import { autocompleteFilter, selectFilter } from '@local/data-table/react';
+
 import type { Organization, SuggestOrganizations } from '../../domain/index.js';
 import { countryName } from '../../shared/lib/countries.js';
 import { suggestion } from '../../shared/ui/suggestion.js';

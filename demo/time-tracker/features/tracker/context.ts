@@ -1,10 +1,11 @@
-import type { RowSource } from '@local/data-table/react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createContext, useCallback, useContext } from 'react';
+
+import type { LocalPageOptions, RowSource } from '@local/data-table/react';
+import { localPage } from '@local/data-table/react';
+import { useQuerySource } from '@local/data-table/react-query';
+
 import type { TimeData } from '../../domain/index.js';
-import { runLocalQuery } from '../../shared/lib/local-query.js';
-import type { LocalQueryOptions } from '../../shared/lib/local-query.js';
-import { useQuerySource } from '../../shared/lib/use-query-source.js';
 import { trackerKeys } from './keys.js';
 import type { TimeService } from './service.js';
 
@@ -40,13 +41,12 @@ function useChanged(): () => Promise<void> {
 }
 
 // A data table's source over rows made from the data (`rows`), with a local search, filters and sorting
-// (`options`). Each page is a query (`trackerKeys.table`); a change reloads the table (`reload`, the controller's).
+// (`options`). Each page is a query (`trackerKeys.table`); a change reloads the table (the source reports it).
 // `name` tells the tables apart; it includes what `rows` depends on besides the data (e.g. the shown employee).
 function useTableSource<Row>(
   name: string,
   rows: (data: TimeData) => readonly Row[],
-  options: LocalQueryOptions<Row>,
-  reload: () => void,
+  options: LocalPageOptions<Row>,
 ): RowSource<Row> {
   const service = useTimeService();
   const queryClient = useQueryClient();
@@ -56,9 +56,8 @@ function useTableSource<Row>(
     async (query) => {
       const data = await queryClient.fetchQuery({ queryKey: trackerKeys.data(), queryFn: () => service.data() });
 
-      return runLocalQuery(rows(data), query, options);
+      return localPage(rows(data), query, options);
     },
     trackerKeys.tables(),
-    reload,
   );
 }

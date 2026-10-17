@@ -49,9 +49,17 @@
     values and at most one `export type { … }` for types.
   - Never `export` on the declarations themselves.
   - The public API is exactly what the package's entries export. Everything else is internal.
-- An empty line after every import or export statement that spans several lines (2026-10-15, the user's rule), so it
-  stands apart from the next one:
+- Imports in three groups, an empty line between them (2026-10-17, the user's choice, proposed at about 60%, like
+  IntelliJ's import layout): the packages of npm (and Node's), the repository's own packages (`@local/…`), the relative
+  ones. Sorted within a group, by module, an `import type` before the value import of the same module. No other empty
+  lines between imports. The repository's `npm run format` does it, the packages included (Biome's organize imports, the
+  root's `biome.json`); a package's dprint leaves the order alone (`maintain`), so a copy outside keeps it, and sorts by
+  hand. (2026-10-15 to 2026-10-17 instead: an empty line before and after every import that spans several lines; a
+  script kept it for a few hours: dprint left the empty lines when it joined an import into one line.) An export
+  statement that spans several lines gets an empty line after it (2026-10-15):
   ```ts
+  import { useMemo } from 'react';
+
   import {
     dateRangeFilter,
     defineActions,
@@ -61,6 +69,8 @@
     textFilter,
     useDataTableController,
   } from '@local/data-table/react';
-
   import { useDialogs } from '@local/overlays/react';
+
+  import type { Board } from '../../domain/index.js';
+  import { useTranslate } from '../../shared/lib/i18n/index.js';
   ```

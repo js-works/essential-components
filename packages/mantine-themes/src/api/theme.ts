@@ -1,4 +1,5 @@
 import type { CSSVariablesResolver, MantineThemeOverride } from '@mantine/core';
+
 import type { colorSetups } from '../color-setups.js';
 
 export type { ColorSetup, ColorSetupName, ThemeBundle, ThemeOptions, ThemeSize, ThemeVariant };

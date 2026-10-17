@@ -5,8 +5,8 @@ import { groupsOf } from './principal.js';
 import type { Scope } from './scope.js';
 import { pathOf } from './scope.js';
 
-export { checkAccess, effectivePermissions, grantsOf };
 export type { AccessData, Decision, EffectivePermission, Reason };
+export { checkAccess, effectivePermissions, grantsOf };
 
 // The rules of access, pure: allow only (no deny). A user may do something (a permission) somewhere (a scope) if a
 // grant gives a role with that permission to the user or to one of their groups, on that scope or one above it. A

@@ -1,4 +1,5 @@
 import { useDialogs, useToast } from '@local/overlays/react';
+
 import type { Department, HrData } from '../../domain/index.js';
 import { errorText } from '../../shared/lib/error-text.js';
 import { useTranslate } from '../../shared/lib/i18n/index.js';

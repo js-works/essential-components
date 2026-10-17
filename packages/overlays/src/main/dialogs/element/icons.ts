@@ -2,10 +2,10 @@
 // # Icons
 // -------------------------------------------------------------------
 
-import { parseSvg } from "../../internal/dom.js";
-import { infoIconSvg, successIconSvg } from "../../internal/icons.js";
 import type { OverlayContent } from "../../api/dialogs/content.js";
 import type { DialogType } from "../../api/dialogs/dialog.js";
+import { parseSvg } from "../../internal/dom.js";
+import { infoIconSvg, successIconSvg } from "../../internal/icons.js";
 
 export const closeIconSvg = `
   <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="currentColor" viewBox="0 0 16 16">

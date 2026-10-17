@@ -4,6 +4,7 @@ import '@mantine/core/styles.layer.css';
 import { createTheme, MantineProvider, mergeThemeOverrides } from '@mantine/core';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+
 import type * as Spec from './index.js';
 import { LoginScreen } from './login-screen.js';
 import { useScheme } from './page.js';

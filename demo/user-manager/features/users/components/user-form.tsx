@@ -1,5 +1,6 @@
 import { NativeSelect, Stack, Switch, TextInput } from '@mantine/core';
 import { z } from 'zod';
+
 import type { User, UserValues } from '../../../domain/index.js';
 import { useForm } from '../../../shared/lib/use-form.js';
 

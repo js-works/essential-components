@@ -1,7 +1,8 @@
-import { render } from 'lit';
 import type { TemplateResult } from 'lit';
-import { setupDataTable } from '../../../../../packages/data-table/src';
+import { render } from 'lit';
+
 import type { DataTable } from '../../../../../packages/data-table/src';
+import { setupDataTable } from '../../../../../packages/data-table/src';
 import { defaultTheme } from '../../../../../packages/data-table/src/themes';
 import { createFileUploadClass } from '../../../../../packages/file-upload/src';
 import { litDialogAdapter, litToastAdapter } from '../../../../../packages/overlays/src/main/bindings/lit/index';

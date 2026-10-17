@@ -1,5 +1,6 @@
-import { createElement, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactNode, Ref } from 'react';
+import { createElement, useEffect, useLayoutEffect, useRef, useState } from 'react';
+
 import type * as Spec from '../api/index.js';
 import type * as ReactSpec from '../api/react/index.js';
 import { DEFAULT_THEME, DENSITY_PADDING } from '../element/styles.js';

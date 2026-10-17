@@ -1,17 +1,16 @@
-import { isInside, ROOT_ID } from '../../domain/index.js';
 import type { Folder, FolderRepository } from '../../domain/index.js';
+import { isInside, ROOT_ID } from '../../domain/index.js';
+import type { Store } from './store.js';
 import {
   CURRENT_USER,
-  liveFolderIds,
   LOADING_TIME,
+  liveFolderIds,
   localDateTime,
   SAVE_TIME,
   wait,
   withFavorite,
   withoutDeletedAt,
 } from './store.js';
-
-import type { Store } from './store.js';
 
 export { createFolderRepository };
 

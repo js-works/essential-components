@@ -1,8 +1,10 @@
-import { multiRowAction, useDataTableController } from '@local/data-table/react';
-import type { TableActions, TableColumns } from '@local/data-table/react';
 import { Text } from '@mantine/core';
-import { minutesOf } from '../../../domain/index.js';
+
+import type { TableActions, TableColumns } from '@local/data-table/react';
+import { multiRowAction } from '@local/data-table/react';
+
 import type { Correction, Employee, TimeData } from '../../../domain/index.js';
+import { minutesOf } from '../../../domain/index.js';
 import { formatDate, formatDuration, formatStamp, formatTime } from '../../../shared/lib/format.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { DataTable } from '../../../shared/ui/data-table.js';
@@ -75,7 +77,6 @@ function CorrectionTable({ data, employees, title, subtitle }: {
   title: string;
   subtitle?: string;
 }) {
-  const tableCtrl = useDataTableController<CorrectionRow>();
   const columns = useColumns();
   const actions = useActions(data);
   const ids = employees.map((employee) => employee.id);
@@ -96,12 +97,10 @@ function CorrectionTable({ data, employees, title, subtitle }: {
           };
         }),
     { search: ['employeeName', 'reason'] },
-    tableCtrl.reload,
   );
 
   return (
     <DataTable
-      controller={tableCtrl}
       title={title}
       subtitle={subtitle}
       source={source}

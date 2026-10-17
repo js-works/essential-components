@@ -1,5 +1,5 @@
-export { attachmentsUrlOf, deleteAttachment, listAttachments, uploadAttachment };
 export type { Attachment };
+export { attachmentsUrlOf, deleteAttachment, listAttachments, uploadAttachment };
 
 // The XWiki REST API for the attachments of one page (XWiki 17.10). The requests go to the same server as the page and
 // carry the session cookie of the logged-in user, so XWiki checks that user's rights. Writing requests also need the

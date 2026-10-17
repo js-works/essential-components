@@ -1,5 +1,5 @@
-export { permissionParts };
 export type { CatalogRepository, Permission, Role, RoleRepository, RoleValues };
+export { permissionParts };
 
 // One thing that can be done: `<app>.<resource>.<action>` (`media.file.delete`). The apps register theirs; the user
 // manager does not know what they mean, it only grants them.

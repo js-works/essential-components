@@ -1,4 +1,5 @@
 import { selectFilter } from '@local/data-table/react';
+
 import { DEPARTMENTS } from './components/user-form.js';
 
 export { departmentFilter, userStatusFilter };

@@ -1,6 +1,5 @@
 import type { Page, Paging, Range, Sort } from './query.js';
 
-export { ROLES };
 export type {
   BoardMember,
   BoardMemberCriteria,
@@ -11,6 +10,7 @@ export type {
   PersonMembershipSortKey,
   Role,
 };
+export { BOARD_MEMBER_SORT_KEYS, PERSON_MEMBERSHIP_SORT_KEYS, ROLES };
 
 const ROLES = ['Chair', 'Vice chair', 'Secretary', 'Member'] as const;
 
@@ -31,12 +31,18 @@ type BoardMemberCriteria = {
   since?: Range<string>;
 };
 
-type BoardMemberSortKey = 'name' | 'role' | 'organization' | 'since';
+// What the members of a board can be sorted by.
+const BOARD_MEMBER_SORT_KEYS = ['name', 'role', 'organization', 'since'] as const;
+
+type BoardMemberSortKey = (typeof BOARD_MEMBER_SORT_KEYS)[number];
 
 // A board of a person: the membership with the board's name.
 type PersonMembership = Membership & { board: string };
 
-type PersonMembershipSortKey = 'board' | 'role' | 'since';
+// What the boards of a person can be sorted by.
+const PERSON_MEMBERSHIP_SORT_KEYS = ['board', 'role', 'since'] as const;
+
+type PersonMembershipSortKey = (typeof PERSON_MEMBERSHIP_SORT_KEYS)[number];
 
 // What can be done with the memberships. Without a sort, the members come by their role: chair first, then vice chair,
 // secretary, members.

@@ -1,5 +1,6 @@
-import { generalAction, multiRowAction, singleRowAction } from '@local/data-table/react';
 import type { GeneralAction, RowAction, RowsAction } from '@local/data-table/react';
+import { generalAction, multiRowAction, singleRowAction } from '@local/data-table/react';
+
 import { translate } from '../lib/i18n/index.js';
 import { appIcons } from '../shared.js';
 

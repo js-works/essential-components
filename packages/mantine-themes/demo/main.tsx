@@ -1,4 +1,5 @@
 import '@mantine/core/styles.css';
+
 import {
   Alert,
   Badge,
@@ -20,11 +21,11 @@ import {
   TextInput,
   Title,
 } from '@mantine/core';
-
 import { StrictMode, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { colorSetups, createMantineTheme } from '../src/index.js';
+
 import type { ColorSetupName, ThemeSize, ThemeVariant } from '../src/index.js';
+import { colorSetups, createMantineTheme } from '../src/index.js';
 
 // The demo: the themes of `createMantineTheme()` on a page of Mantine's components, with the choices on top: the color
 // setup, the size, the variant, the color scheme, and a live accent (a color input that sets the custom property

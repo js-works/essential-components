@@ -11,10 +11,10 @@ import {
   Title,
   Tooltip,
 } from '@mantine/core';
-
 import { useState } from 'react';
-import { addDays, membersOf, weekStart } from '../../../domain/index.js';
+
 import type { Employee, TimeData } from '../../../domain/index.js';
+import { addDays, membersOf, weekStart } from '../../../domain/index.js';
 import { formatDate, formatDateRange, formatStamp, formatTime } from '../../../shared/lib/format.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { useNow } from '../../../shared/lib/use-now.js';

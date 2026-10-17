@@ -1,5 +1,6 @@
 import { Badge, Center, Group, Stack, Table, Text } from '@mantine/core';
 import type { ReactNode } from 'react';
+
 import type { FileDetails as Details, Folder, MediaFile } from '../../../domain/index.js';
 import { ancestorsOf } from '../../../domain/index.js';
 import { formatDateTime, formatSize } from '../../../shared/lib/format.js';

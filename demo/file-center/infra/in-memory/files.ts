@@ -1,18 +1,17 @@
-import { kindOf, ROOT_ID, typeOf } from '../../domain/index.js';
 import type { FileDetails, FileRepository, MediaFile } from '../../domain/index.js';
+import { kindOf, ROOT_ID, typeOf } from '../../domain/index.js';
 import { OWNERS } from './seed.js';
+import type { Store } from './store.js';
 import {
   CURRENT_USER,
-  liveFolderIds,
   LOADING_TIME,
+  liveFolderIds,
   localDateTime,
   SAVE_TIME,
   wait,
   withFavorite,
   withoutDeletedAt,
 } from './store.js';
-
-import type { Store } from './store.js';
 
 export { createFileRepository };
 

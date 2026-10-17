@@ -1,4 +1,5 @@
 import { Anchor, VisuallyHidden } from '@mantine/core';
+
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { appIcons } from '../../../shared/shared.js';
 

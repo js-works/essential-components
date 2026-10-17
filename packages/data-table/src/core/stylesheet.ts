@@ -1,7 +1,7 @@
 import css from './view/data-table.css?inline';
 
-export { provideStylesheet, resolveTheme, themeStylesheet };
 export type { ThemeStylesheet };
+export { provideStylesheet, resolveTheme, themeStylesheet };
 
 // The stylesheet of one theme: no custom properties of our own (2026-10-09, the user's wish: they inherit into
 // everything inside the table, custom cell content too, and fill the dev tools). The source (`data-table.css`)

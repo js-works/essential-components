@@ -1,7 +1,7 @@
 import type { GroupTotal, RowMove, RowPage, RowQuery } from '../src/react/index.js';
 
-export { deleteSection, fetchAgenda, moveAgendaItem };
 export type { AgendaItem };
+export { deleteSection, fetchAgenda, moveAgendaItem };
 
 // The data of the "Grouped reordering" tab: an agenda whose items are in sections (one level), kept in memory for as
 // long as the page is open. The agenda is a list of sections, each with its items. The section `''` holds the items of

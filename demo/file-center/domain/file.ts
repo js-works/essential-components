@@ -1,7 +1,7 @@
 import type { Page, Paging, Range, Sort } from './query.js';
 
-export { FILE_KINDS, kindOf, typeOf };
 export type { FileCriteria, FileDetails, FileKind, FileRepository, FileSortKey, MediaFile };
+export { FILE_KINDS, FILE_SORT_KEYS, kindOf, typeOf };
 
 // What a file is, by its extension.
 const FILE_KINDS = ['image', 'video', 'audio', 'document', 'spreadsheet', 'presentation', 'archive', 'other'] as const;
@@ -52,7 +52,10 @@ type FileCriteria = {
   favorite?: true;
 };
 
-type FileSortKey = 'name' | 'type' | 'size' | 'modified' | 'owner';
+// What the files can be sorted by.
+const FILE_SORT_KEYS = ['name', 'type', 'size', 'modified', 'owner'] as const;
+
+type FileSortKey = (typeof FILE_SORT_KEYS)[number];
 
 // The files, independent of where they are kept. Everything but `trash()` sees only the files outside the trash
 // (neither in it nor in a folder that is).

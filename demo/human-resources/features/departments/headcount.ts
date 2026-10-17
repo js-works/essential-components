@@ -1,5 +1,5 @@
-import { descendantIds, statusOf } from '../../domain/index.js';
 import type { HrData } from '../../domain/index.js';
+import { descendantIds, statusOf } from '../../domain/index.js';
 
 export { headcount };
 

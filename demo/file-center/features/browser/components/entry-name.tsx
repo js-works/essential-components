@@ -1,5 +1,6 @@
 import { Anchor, Group, Text } from '@mantine/core';
 import { Link } from 'react-router';
+
 import { appIcons, kindIcon } from '../../../shared/ui/icons.js';
 import { folderPath } from '../context.js';
 import type { EntryRow } from '../service.js';

@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
 import type * as DataTable from '../api/index.js';
 import type * as DataTableComponent from '../api/react/index.js';
 import * as reactEditors from '../core/view/column-editors.js';

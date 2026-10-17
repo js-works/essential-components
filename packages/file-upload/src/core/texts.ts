@@ -1,7 +1,7 @@
 import type * as Spec from '../api/index.js';
 
-export { createLocalizer };
 export type { Localizer };
+export { createLocalizer };
 
 // The namespace of our texts in an `I18nAdapter`.
 const NAMESPACE = 'fileUpload';

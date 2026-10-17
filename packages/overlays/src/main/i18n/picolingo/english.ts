@@ -1,6 +1,7 @@
 import { allTexts, bundleTexts } from "picolingo";
-import { dialogTexts, toastTexts } from "./index.js";
+
 import { defaultDialogTexts, defaultToastTexts } from "../../index.js";
+import { dialogTexts, toastTexts } from "./index.js";
 
 export { englishTexts };
 

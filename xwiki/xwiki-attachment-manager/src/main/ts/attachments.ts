@@ -1,8 +1,8 @@
 import type { DataTable } from '../../../../../packages/data-table/src';
 import type { Attachment } from './xwiki/rest';
 
-export { authorOf, formatDate, formatSize, queryAttachments, rowsOf, SIZES, typeOf };
 export type { AttachmentRow };
+export { authorOf, formatDate, formatSize, queryAttachments, rowsOf, SIZES, typeOf };
 
 // An attachment as a row of the table: with its type (the extension in capitals) and its size class.
 type AttachmentRow = Attachment & { type: string };

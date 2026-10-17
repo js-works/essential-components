@@ -1,6 +1,7 @@
 import { Anchor, Avatar, Badge, Group, Paper, SimpleGrid, Stack, Text, useMantineTheme } from '@mantine/core';
 import { useMemo } from 'react';
 import { Link } from 'react-router';
+
 import { localDateTime } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { useBoardList } from '../../boards/reads.js';

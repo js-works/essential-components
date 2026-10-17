@@ -1,6 +1,7 @@
 import { Menu as BaseMenu } from '@base-ui/react/menu';
-import { Fragment, useContext, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, ReactNode, Ref, RefObject } from 'react';
+import { Fragment, useContext, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+
 import type * as Spec from '../../api/react/index.js';
 import { useThemed } from '../config.js';
 import { sameValue, withoutKey } from '../filters.js';
@@ -13,6 +14,7 @@ import { icons } from './icons.js';
 import { LayerContext } from './layer.js';
 import { ActionButton, TextButton } from './widgets.js';
 
+export type { FilterColumn };
 export {
   FILTER_DRAWER_CLOSE_TIME,
   FILTER_VIEW_CLOSE_TIME,
@@ -22,8 +24,6 @@ export {
   FilterSidebar,
   FilterView,
 };
-
-export type { FilterColumn };
 
 // A column as the filter view and the pills need it.
 type FilterColumn = { key: string; header: ReactNode; filter: Spec.TableFilter };

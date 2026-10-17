@@ -1,11 +1,12 @@
-import { dateRangeFilter, multiRowAction, singleRowAction, useDataTableController } from '@local/data-table/react';
-import type { TableActions, TableColumns, TableFilters } from '@local/data-table/react';
 import { Text } from '@mantine/core';
-import { STAGES } from '../../../domain/index.js';
+
+import type { TableActions, TableColumns, TableFilters } from '@local/data-table/react';
+import { dateRangeFilter, multiRowAction, singleRowAction } from '@local/data-table/react';
+
 import type { Candidate, HrData, Opening, Stage } from '../../../domain/index.js';
+import { STAGES } from '../../../domain/index.js';
 import { formatDate } from '../../../shared/lib/format.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { oneOf, within } from '../../../shared/lib/local-query.js';
 import { DataTable } from '../../../shared/ui/data-table.js';
 import { appIcons } from '../../../shared/ui/icons.js';
 import { Rating, StageBadge } from '../../../shared/ui/parts.js';
@@ -113,7 +114,6 @@ function useActions(opening: Opening, data: HrData): TableActions<Candidate> {
 // The candidates of an opening as a table: searched, filtered, sorted; the selected ones moved to a stage or rejected
 // at once.
 function CandidateTable({ data, opening }: { data: HrData; opening: Opening }) {
-  const tableCtrl = useDataTableController<Candidate>();
   const columns = useColumns();
   const filters = useFilters();
   const actions = useActions(opening, data);
@@ -122,19 +122,12 @@ function CandidateTable({ data, opening }: { data: HrData; opening: Opening }) {
     (all) => all.candidates.filter((candidate) => candidate.openingId === opening.id),
     {
       search: ['name', 'email', 'note'],
-      filters: {
-        stage: (row, value) => oneOf(row.stage, value),
-        source: (row, value) => oneOf(row.source, value),
-        applied: (row, value) => within(row.applied, value),
-      },
       sortValue: { stage: (row) => STAGE_ORDER[row.stage] },
     },
-    tableCtrl.reload,
   );
 
   return (
     <DataTable
-      controller={tableCtrl}
       source={source}
       rowKey="id"
       columns={columns}

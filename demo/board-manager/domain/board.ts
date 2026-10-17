@@ -1,6 +1,7 @@
 import type { Page, Paging, Range, Sort, TextMatch } from './query.js';
 
 export type { Board, BoardCriteria, BoardRepository, BoardSortKey, BoardSummary, BoardValues };
+export { BOARD_SORT_KEYS };
 
 type Board = { id: string; name: string; description: string };
 
@@ -20,7 +21,10 @@ type BoardCriteria = {
   nextMeeting?: Range<string>;
 };
 
-type BoardSortKey = 'name' | 'chair' | 'members' | 'meetings' | 'nextMeeting';
+// What the boards can be sorted by.
+const BOARD_SORT_KEYS = ['name', 'chair', 'members', 'meetings', 'nextMeeting'] as const;
+
+type BoardSortKey = (typeof BOARD_SORT_KEYS)[number];
 
 // What can be done with boards, independent of where the data lives. Deleting a board deletes what belongs to it:
 // its meetings (with their agendas and documents) and its memberships.

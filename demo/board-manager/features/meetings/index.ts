@@ -2,5 +2,5 @@
 
 export { MeetingServiceContext, useMeetingService } from './context.js';
 export { useMeeting, useMeetingList } from './reads.js';
-export { createMeetingService } from './service.js';
 export type { MeetingService } from './service.js';
+export { createMeetingService } from './service.js';

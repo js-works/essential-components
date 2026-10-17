@@ -1,7 +1,8 @@
 import { Group, Text } from '@mantine/core';
 import { Calendar } from '@mantine/dates';
-import { absenceOn, isWeekend } from '../../../domain/index.js';
+
 import type { AbsenceKind, TimeData } from '../../../domain/index.js';
+import { absenceOn, isWeekend } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { absenceColor, absenceText } from '../../../shared/ui/parts.js';
 

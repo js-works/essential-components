@@ -1,8 +1,9 @@
-import { useDataTableController } from '@local/data-table/react';
-import type { TableActions, TableColumns } from '@local/data-table/react';
 import { Badge, SimpleGrid, Stack, Text } from '@mantine/core';
-import { currentSalary, todayDate } from '../../../domain/index.js';
+
+import type { TableActions, TableColumns } from '@local/data-table/react';
+
 import type { Employee, HrData, SalaryChange } from '../../../domain/index.js';
+import { currentSalary, todayDate } from '../../../domain/index.js';
 import { formatDate, formatMoney, formatNumber } from '../../../shared/lib/format.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { DataTable } from '../../../shared/ui/data-table.js';
@@ -98,14 +99,12 @@ function useActions(employee: Employee, data: HrData): TableActions<SalaryRow> {
 // salary from a date on (a raise, a promotion).
 function SalaryTable({ data, employee }: { data: HrData; employee: Employee }) {
   const t = useTranslate();
-  const tableCtrl = useDataTableController<SalaryRow>();
   const columns = useColumns();
   const actions = useActions(employee, data);
   const source = useTableSource<SalaryRow>(
     `salaries:${employee.id}`,
     (all) => salaryRows(all, employee.id),
     { search: ['note'] },
-    tableCtrl.reload,
   );
   const rows = salaryRows(data, employee.id);
   const current = rows.find((row) => row.current);
@@ -140,7 +139,6 @@ function SalaryTable({ data, employee }: { data: HrData; employee: Employee }) {
         />
       </SimpleGrid>
       <DataTable
-        controller={tableCtrl}
         title={t('salary.history')}
         source={source}
         rowKey="id"

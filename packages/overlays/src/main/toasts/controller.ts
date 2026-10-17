@@ -4,27 +4,27 @@
 // the bound adapter a fully-resolved list of ToastViews to project (see api/toasts/adapter.ts).
 // -------------------------------------------------------------------
 
-import { DISMISS_EVENT, ensureElementRegistered, setToastsPaused, setToastTheme } from "./element.js";
-import { applyPlacement, splitPlacement } from "./placement.js";
-import { injectContainerStyles, themedContainerStyles, TOAST_GAP_PX } from "./styles.js";
-import { defaultToastTheme } from "./theme.js";
-import { bundledToastText } from "../i18n/texts.js";
-import { policyEnabled, roleFor } from "./view.js";
 import type { ToastAppearance, ToastView } from "../api/toasts/adapter.js";
 import type { ToastTexts } from "../api/toasts/texts.js";
 import type { ToastTheme } from "../api/toasts/theme.js";
 import type {
-  ToastOverflow,
-  ToastPlacement,
   ToastAction,
   ToastHandle,
   ToastOptions,
-  ToastsController,
-  ToastsControllerOptions,
+  ToastOverflow,
+  ToastPlacement,
   ToastSize,
   ToastSpec,
+  ToastsController,
+  ToastsControllerOptions,
   ToastType,
 } from "../api/toasts/toast.js";
+import { bundledToastText } from "../i18n/texts.js";
+import { DISMISS_EVENT, ensureElementRegistered, setToastsPaused, setToastTheme } from "./element.js";
+import { applyPlacement, splitPlacement } from "./placement.js";
+import { injectContainerStyles, TOAST_GAP_PX, themedContainerStyles } from "./styles.js";
+import { defaultToastTheme } from "./theme.js";
+import { policyEnabled, roleFor } from "./view.js";
 
 // Entering and leaving are not mirror images here, because they do not cover the same
 // ground. A toast arrives by rising its own height and fading in — a short, calm move that

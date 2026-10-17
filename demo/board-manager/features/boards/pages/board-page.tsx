@@ -1,6 +1,7 @@
 import { Button, Group, SimpleGrid, Stack, Tabs, Text } from '@mantine/core';
 import { Fragment, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
+
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { appIcons, formatDateTime, PageHeader } from '../../../shared/shared.js';
 import { NotFound } from '../../../shared/ui/not-found.js';

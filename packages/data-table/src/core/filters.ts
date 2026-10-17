@@ -1,7 +1,7 @@
 import type * as Spec from '../api/react/index.js';
 
-export { fallbackSummary, isRecord, optionsOf, sameValue, withoutKey };
 export type { FilterSummary, NormalizedOption, SummaryContext };
+export { fallbackSummary, isRecord, optionsOf, sameValue, withoutKey };
 
 type NormalizedOption = { value: string; label: string };
 

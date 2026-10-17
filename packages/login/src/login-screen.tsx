@@ -1,4 +1,5 @@
 import './login.css';
+
 import {
   Alert,
   Anchor,
@@ -12,9 +13,9 @@ import {
   TextInput,
   Title,
 } from '@mantine/core';
-
-import { useEffect, useRef, useState } from 'react';
 import type { FormEvent, ReactElement, ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
 import type * as Spec from './index.js';
 import { useLang } from './page.js';
 import { textsFor } from './texts.js';

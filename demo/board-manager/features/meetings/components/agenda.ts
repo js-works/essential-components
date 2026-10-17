@@ -1,9 +1,10 @@
 import type { GroupTotal, RowPage } from '@local/data-table/react';
-import { agendaNumbers } from '../../../domain/index.js';
-import type { AgendaEntry, AgendaItem, Person } from '../../../domain/index.js';
 
-export { agendaPage, numbered };
+import type { AgendaEntry, AgendaItem, Person } from '../../../domain/index.js';
+import { agendaNumbers } from '../../../domain/index.js';
+
 export type { AgendaRow };
+export { agendaPage, numbered };
 
 // An item of the agenda table. `number`: `2` for an item without a section, `2.1` for an item in a section.
 type AgendaRow = AgendaItem & { number: string; presenter: string; recorded: boolean };

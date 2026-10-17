@@ -1,6 +1,8 @@
 import { Anchor, Grid, Group, Loader, Paper, Progress, SimpleGrid, Stack, Text, ThemeIcon, Title } from '@mantine/core';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';
+
+import type { HrData, UpcomingEvent } from '../../domain/index.js';
 import {
   childrenOf,
   daysBetween,
@@ -12,8 +14,6 @@ import {
   todayDate,
   upcomingEvents,
 } from '../../domain/index.js';
-
-import type { HrData, UpcomingEvent } from '../../domain/index.js';
 import { formatDayMonth, formatRelativeDays } from '../../shared/lib/format.js';
 import { useTranslate } from '../../shared/lib/i18n/index.js';
 import { appIcons } from '../../shared/ui/icons.js';

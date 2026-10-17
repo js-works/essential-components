@@ -1,5 +1,6 @@
-import { selectFilter } from '@local/data-table/react';
 import type { TableFilter } from '@local/data-table/react';
+import { selectFilter } from '@local/data-table/react';
+
 import { FILE_KINDS } from '../../domain/index.js';
 import { KIND_LABELS } from './labels.js';
 

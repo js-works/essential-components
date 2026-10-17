@@ -15,8 +15,9 @@
 // anything the user has typed into it — is left strictly alone. The coupling to Lit lives
 // only in this file.
 
-import { nothing, render as litRender, type TemplateResult } from "lit-html";
+import { render as litRender, nothing, type TemplateResult } from "lit-html";
 import { html, unsafeStatic } from "lit-html/static.js";
+
 import type {
   DialogAdapterFactory,
   DialogProps,

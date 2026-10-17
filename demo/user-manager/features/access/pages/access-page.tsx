@@ -1,4 +1,5 @@
 import { Stack } from '@mantine/core';
+
 import { PageHeader } from '../../../shared/ui/parts.js';
 import { GrantTable } from '../components/grant-table.js';
 

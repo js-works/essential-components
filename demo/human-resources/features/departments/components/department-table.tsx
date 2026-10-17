@@ -1,7 +1,8 @@
-import { singleRowAction, useDataTableController } from '@local/data-table/react';
 import type { TableActions, TableColumns } from '@local/data-table/react';
-import { departmentPath, todayDate } from '../../../domain/index.js';
+import { singleRowAction } from '@local/data-table/react';
+
 import type { Department, Employee, HrData } from '../../../domain/index.js';
+import { departmentPath, todayDate } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { DataTable } from '../../../shared/ui/data-table.js';
 import { appIcons } from '../../../shared/ui/icons.js';
@@ -77,16 +78,14 @@ function useActions(data: HrData): TableActions<DepartmentRow> {
 
 // The departments as a list: their place in the tree, head, headcount and cost center. Edit, delete.
 function DepartmentTable({ data }: { data: HrData }) {
-  const tableCtrl = useDataTableController<DepartmentRow>();
   const columns = useColumns();
   const actions = useActions(data);
   const source = useTableSource<DepartmentRow>('departments', departmentRows, {
     search: ['name', 'path', 'headName', 'costCenter'],
-  }, tableCtrl.reload);
+  });
 
   return (
     <DataTable
-      controller={tableCtrl}
       source={source}
       rowKey="id"
       columns={columns}

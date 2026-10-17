@@ -1,8 +1,8 @@
 export {
   formatDate,
   formatDateRange,
-  formatDays,
   formatDayShort,
+  formatDays,
   formatDuration,
   formatMonth,
   formatStamp,

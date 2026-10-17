@@ -14,10 +14,10 @@ import {
   Title,
   Tooltip,
 } from '@mantine/core';
-
 import { Link, useNavigate, useParams } from 'react-router';
-import { checklistAnchor, daysBetween, isOverdue, progressOf, TASK_OWNERS, todayDate } from '../../../domain/index.js';
+
 import type { Checklist, ChecklistTask, HrData, TaskOwner } from '../../../domain/index.js';
+import { checklistAnchor, daysBetween, isOverdue, progressOf, TASK_OWNERS, todayDate } from '../../../domain/index.js';
 import { formatDate, formatRelativeDays } from '../../../shared/lib/format.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { appIcons } from '../../../shared/ui/icons.js';

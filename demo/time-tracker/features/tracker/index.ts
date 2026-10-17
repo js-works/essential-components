@@ -2,5 +2,5 @@
 
 export { TimeServiceContext, useChanged, useTableSource, useTimeData, useTimeService } from './context.js';
 export { trackerKeys } from './keys.js';
-export { createTimeService } from './service.js';
 export type { TimeService } from './service.js';
+export { createTimeService } from './service.js';

@@ -1,14 +1,15 @@
-import { html, LitElement, nothing } from 'lit';
 import type { PropertyValues, TemplateResult } from 'lit';
+import { html, LitElement, nothing } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
+
 import { textsFor } from '../core/texts.js';
 import type * as Spec from '../index.js';
 import { closeIcon, initialsIcon } from './icons.js';
 import { taskbarStyles } from './taskbar-styles.js';
 
-export { taskbarTagFor };
 export type { Task, TaskEventDetail, TaskMoveEventDetail };
+export { taskbarTagFor };
 
 // An entry of the taskbar: an open item. `icon`: SVG markup, drawn in `currentColor`. `closable: false`: no close
 // button.

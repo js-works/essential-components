@@ -1,11 +1,8 @@
-import { useDialogs, useToast } from '@local/overlays/react';
 import type { AgendaItem, Meeting, SectionDraft } from '../../domain/index.js';
 import { AgendaItemForm, MinutesForm } from '../../shared/forms.js';
-import { confirmAndRun } from '../../shared/lib/flows.js';
-import { useTranslate } from '../../shared/lib/i18n/index.js';
-import { useChanged } from '../../shared/lib/use-changed.js';
-import { numbered } from './components/agenda.js';
+import { useFlowKit } from '../../shared/lib/flows.js';
 import type { AgendaRow } from './components/agenda.js';
+import { numbered } from './components/agenda.js';
 import { SectionTable } from './components/section-table.js';
 import { useMeetingService } from './context.js';
 import { useAgenda, useBoardMembers } from './reads.js';
@@ -18,9 +15,9 @@ export {
   useRecordMinutesFlow,
 };
 
-// The flows of a meeting's agenda, one hook per use case. A flow changes the data through the service and says so
-// (`changed()`); it knows no table. The presenters are the members of the meeting's board; the sections are the
-// agenda's, in their order.
+// The flows of a meeting's agenda, one hook per use case. A flow changes the data through the service (which says
+// so: every read loads again); it knows no table. The presenters are the members of the meeting's board; the sections
+// are the agenda's, in their order.
 
 // The item of a row as it is stored (without the row's own fields).
 function itemOf({ number: _, presenter: __, recorded: ___, ...item }: AgendaRow): AgendaItem {
@@ -28,17 +25,14 @@ function itemOf({ number: _, presenter: __, recorded: ___, ...item }: AgendaRow)
 }
 
 // "Add item": the item form in a dialog, saved before it closes, then a toast.
-function useAddAgendaItemFlow(meeting: Meeting): () => Promise<void> {
-  const dialogs = useDialogs();
-  const toasts = useToast();
-  const t = useTranslate();
+function useAddAgendaItemFlow(meeting: Meeting): () => Promise<boolean> {
+  const { formFlow, t } = useFlowKit();
   const service = useMeetingService();
-  const changed = useChanged();
   const members = useBoardMembers(meeting.boardId);
   const { sections } = useAgenda(meeting.id);
 
-  return async () => {
-    const result = await dialogs.form({
+  return () =>
+    formFlow({
       title: t('meetings.agenda.newItem'),
       content: (
         <AgendaItemForm
@@ -48,29 +42,19 @@ function useAddAgendaItemFlow(meeting: Meeting): () => Promise<void> {
         />
       ),
       buttons: { confirm: t('common.add') },
+      success: t('meetings.agenda.itemAdded'),
     });
-
-    if (result.canceled) {
-      return;
-    }
-
-    void changed();
-    toasts.success(t('meetings.agenda.itemAdded'));
-  };
 }
 
 // "Edit" of an item, in the item form.
-function useEditAgendaItemFlow(meeting: Meeting): (item: AgendaRow) => Promise<void> {
-  const dialogs = useDialogs();
-  const toasts = useToast();
-  const t = useTranslate();
+function useEditAgendaItemFlow(meeting: Meeting): (item: AgendaRow) => Promise<boolean> {
+  const { formFlow, t } = useFlowKit();
   const service = useMeetingService();
-  const changed = useChanged();
   const members = useBoardMembers(meeting.boardId);
   const { sections } = useAgenda(meeting.id);
 
-  return async (row) => {
-    const result = await dialogs.form({
+  return (row) =>
+    formFlow({
       title: t('meetings.agenda.editItem'),
       content: (
         <AgendaItemForm
@@ -81,28 +65,18 @@ function useEditAgendaItemFlow(meeting: Meeting): (item: AgendaRow) => Promise<v
         />
       ),
       buttons: { confirm: t('common.save') },
+      success: t('meetings.agenda.itemSaved'),
     });
-
-    if (result.canceled) {
-      return;
-    }
-
-    void changed();
-    toasts.success(t('meetings.agenda.itemSaved'));
-  };
 }
 
 // "Minutes" of an item, in an extra wide dialog: room for the editor's blocks, its side menu and its toolbar.
-function useRecordMinutesFlow(meeting: Meeting): (item: AgendaRow) => Promise<void> {
-  const dialogs = useDialogs();
-  const toasts = useToast();
-  const t = useTranslate();
+function useRecordMinutesFlow(meeting: Meeting): (item: AgendaRow) => Promise<boolean> {
+  const { formFlow, t } = useFlowKit();
   const service = useMeetingService();
-  const changed = useChanged();
   const members = useBoardMembers(meeting.boardId);
 
-  return async (row) => {
-    const result = await dialogs.form({
+  return (row) =>
+    formFlow({
       width: 'extraWide',
       // Long minutes are easier to write in the whole window.
       maximizable: true,
@@ -116,54 +90,35 @@ function useRecordMinutesFlow(meeting: Meeting): (item: AgendaRow) => Promise<vo
         />
       ),
       buttons: { confirm: t('common.save') },
+      success: t('meetings.agenda.minutesSaved'),
     });
-
-    if (result.canceled) {
-      return;
-    }
-
-    void changed();
-    toasts.success(t('meetings.agenda.minutesSaved'));
-  };
 }
 
 // "Delete" of items: a critical confirmation that deletes them before it closes, then a toast.
-function useDeleteAgendaItemsFlow(): (items: readonly AgendaRow[]) => Promise<void> {
-  const dialogs = useDialogs();
-  const toasts = useToast();
-  const t = useTranslate();
+function useDeleteAgendaItemsFlow(): (items: readonly AgendaRow[]) => Promise<boolean> {
+  const { confirmFlow, t } = useFlowKit();
   const service = useMeetingService();
-  const changed = useChanged();
 
-  return async (rows) => {
-    const [first] = rows;
-    const done = await confirmAndRun(
-      dialogs,
-      {
-        title: t('meetings.agenda.deleteTitle', { count: rows.length }),
-        content: t('meetings.agenda.deleteContent', { count: rows.length, name: first?.title ?? '' }),
-        buttons: { confirm: t('common.delete') },
-      },
-      () => service.deleteItems(rows.map((row) => row.id)),
-    );
+  return (rows) => {
+    const count = rows.length;
+    const name = rows[0]?.title ?? '';
 
-    if (!done) {
-      return;
-    }
-
-    void changed();
-    toasts.success(t('meetings.agenda.deleted', { count: rows.length, name: first?.title ?? '' }));
+    return confirmFlow({
+      critical: true,
+      title: t('meetings.agenda.deleteTitle', { count }),
+      content: t('meetings.agenda.deleteContent', { count, name }),
+      buttons: { confirm: t('common.delete') },
+      run: () => service.deleteItems(rows.map((row) => row.id)),
+      success: t('meetings.agenda.deleted', { count, name }),
+    });
   };
 }
 
 // "Manage sections": the sections in a form drawer of their own. Everything in it changes a draft: "Apply" saves it
 // at once (the button shows a spinner meanwhile), "Cancel" drops it.
 function useManageSectionsFlow(meeting: Meeting): () => Promise<void> {
-  const dialogs = useDialogs();
-  const toasts = useToast();
-  const t = useTranslate();
+  const { dialogs, toasts, t } = useFlowKit();
   const service = useMeetingService();
-  const changed = useChanged();
   const { entries, sections } = useAgenda(meeting.id);
 
   return async () => {
@@ -193,7 +148,6 @@ function useManageSectionsFlow(meeting: Meeting): () => Promise<void> {
       return;
     }
 
-    void changed();
     toasts.success(t('meetings.sections.saved'));
   };
 }

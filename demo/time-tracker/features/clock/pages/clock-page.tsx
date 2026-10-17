@@ -1,7 +1,8 @@
 import { Anchor, Grid, Group, Loader, Paper, Stack, Text, Title } from '@mantine/core';
 import { Link } from 'react-router';
-import { addDays, daySheet, weekStart } from '../../../domain/index.js';
+
 import type { Employee, TimeData } from '../../../domain/index.js';
+import { addDays, daySheet, weekStart } from '../../../domain/index.js';
 import { formatDuration } from '../../../shared/lib/format.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { useNow } from '../../../shared/lib/use-now.js';

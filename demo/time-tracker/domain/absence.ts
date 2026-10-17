@@ -1,18 +1,7 @@
-import { datesBetween, isWeekend } from './dates.js';
 import type { Holiday } from './dates.js';
+import { datesBetween, isWeekend } from './dates.js';
 import type { Employee } from './employee.js';
 import type { Decision, RequestStatus } from './time.js';
-
-export {
-  absenceOn,
-  CERTIFICATE_FROM_DAY,
-  certificateRequired,
-  isWorkingDay,
-  leaveDays,
-  sickDays,
-  vacationBalance,
-  workingDays,
-};
 
 export type {
   Absence,
@@ -26,6 +15,16 @@ export type {
   SickNoteValues,
   SickRepository,
   VacationBalance,
+};
+export {
+  absenceOn,
+  CERTIFICATE_FROM_DAY,
+  certificateRequired,
+  isWorkingDay,
+  leaveDays,
+  sickDays,
+  vacationBalance,
+  workingDays,
 };
 
 // Vacation counts against the yearly allowance; special leave (a wedding, a move, a funeral) and unpaid leave do not.

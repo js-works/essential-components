@@ -1,11 +1,13 @@
-import type { I18nAdapter } from '@local/form-validation';
 import i18next from 'i18next';
 import { useTranslation } from 'react-i18next';
+
+import type { I18nAdapter } from '@local/form-validation';
+
 import { de } from './locales/de.js';
 import { en } from './locales/en.js';
 
-export { i18nAdapter, translate, translateKey, useLanguage, useTranslate };
 export type { TextKey, Translate };
+export { i18nAdapter, translate, translateKey, useLanguage, useTranslate };
 
 // The app's own translations, with i18next (its own instance, not the global one) and react-i18next: English and
 // German, English is the default and the fallback. The texts are in the bundle (`locales/`), so the first render is

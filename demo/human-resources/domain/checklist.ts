@@ -1,6 +1,7 @@
 import { addDays } from './dates.js';
 import type { Employee } from './employee.js';
 
+export type { Checklist, ChecklistKind, ChecklistRepository, ChecklistTask, TaskOwner, TaskValues, TemplateTask };
 export {
   CHECKLIST_KINDS,
   CHECKLIST_TEMPLATES,
@@ -11,8 +12,6 @@ export {
   TASK_OWNERS,
   tasksFromTemplate,
 };
-
-export type { Checklist, ChecklistKind, ChecklistRepository, ChecklistTask, TaskOwner, TaskValues, TemplateTask };
 
 // The checklists of a joiner (onboarding) and a leaver (offboarding): tasks for HR, IT, the manager and the employee,
 // each due some days before or after the first (last) day.

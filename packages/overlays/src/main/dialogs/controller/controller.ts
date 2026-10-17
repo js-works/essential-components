@@ -5,6 +5,46 @@
 // -------------------------------------------------------------------
 
 
+import type {
+  DialogAdapterFactory,
+  DialogSlots,
+  DialogSpec,
+} from "../../api/dialogs/adapter.js";
+import type { OverlayContent } from "../../api/dialogs/content.js";
+import type { 
+  AnyDialogResult,
+  ConfirmDialogResult,
+  DecideDialogResult,
+  DialogConfig,
+  DialogHandle,
+  DialogScope,
+  DialogsController,
+  DialogsControllerConfig,
+  DialogType,DialogViewConfig, 
+  FormAskChoicesOptions,
+  FormAskOptions,
+  FormAttempt,
+  FormCloseAttempt,
+  FormConfirm,
+  FormConfirmResult,
+  FormDialogConfig,
+  FormDialogHandle,
+  FormDialogResult,
+  MessageDialogResult,} from "../../api/dialogs/dialog.js";
+import type { DialogTheme } from "../../api/dialogs/theme.js";
+import { bundledDialogText } from "../../i18n/texts.js";
+import { mountDialog } from "../element/element.js";
+import { defaultDialogIcon } from "../element/icons.js";
+import { BUTTON_SPINNER_DELAY_MS, SPINNER_DIALOG_DELAY_MS } from "../element/styles.js";
+import { FormDialogData } from "../form-data.js";
+import type { TextKey } from "../texts.js";
+import { defaultDialogTheme } from "../theme.js";
+import type {
+  DialogButtonView,
+  DialogMount,
+  ResolvedNote,
+} from "../view.js";
+import type { ButtonConfig } from "./buttons.js";
 import {
   cancelBtn,
   confirmBtn,
@@ -12,59 +52,14 @@ import {
   noBtn,
   okBtn,
   okBtnDanger,
-  withActions,
   symbolCancel,
   symbolConfirm,
   symbolDecline,
   symbolOk,
+  withActions,
   yesBtn,
   yesBtnDanger,
 } from "./buttons.js";
-
-import type { ButtonConfig } from "./buttons.js";
-import { mountDialog } from "../element/element.js";
-import { FormDialogData } from "../form-data.js";
-import { defaultDialogIcon } from "../element/icons.js";
-import { defaultDialogTheme } from "../theme.js";
-import type { DialogTheme } from "../../api/dialogs/theme.js";
-import { BUTTON_SPINNER_DELAY_MS, SPINNER_DIALOG_DELAY_MS } from "../element/styles.js";
-import { bundledDialogText } from "../../i18n/texts.js";
-import type {
-  DialogAdapterFactory,
-  DialogSlots,
-  DialogSpec,
-} from "../../api/dialogs/adapter.js";
-
-import type { OverlayContent } from "../../api/dialogs/content.js";
-import type { TextKey } from "../texts.js";
-import type {
-  DialogButtonView,
-  DialogMount,
-  ResolvedNote,
-} from "../view.js";
-
-import type { DialogViewConfig } from "../../api/dialogs/dialog.js";
-import type {
-  AnyDialogResult,
-  DialogConfig,
-  ConfirmDialogResult,
-  DecideDialogResult,
-  DialogScope,
-  DialogsController,
-  DialogsControllerConfig,
-  DialogType,
-  FormAskOptions,
-  FormAskChoicesOptions,
-  FormAttempt,
-  FormCloseAttempt,
-  FormConfirm,
-  FormConfirmResult,
-  FormDialogConfig,
-  FormDialogResult,
-  DialogHandle,
-  FormDialogHandle,
-  MessageDialogResult,
-} from "../../api/dialogs/dialog.js";
 
 // Combine any number of (optional) signals into one. Returns undefined when none are
 // present, the single signal when exactly one is, else an `AbortSignal.any` of all.

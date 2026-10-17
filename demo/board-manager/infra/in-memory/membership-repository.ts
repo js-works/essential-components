@@ -1,5 +1,5 @@
-import { localDate, ROLES } from '../../domain/index.js';
 import type { BoardMember, Membership, MembershipRepository, PersonMembership } from '../../domain/index.js';
+import { localDate, ROLES } from '../../domain/index.js';
 import { getBoard, getPerson, organizationOf } from './lookups.js';
 import { containsText, inList, inRange, pageOf, sorted } from './query.js';
 import { db, LOADING_TIME, newId, save, wait } from './store.js';

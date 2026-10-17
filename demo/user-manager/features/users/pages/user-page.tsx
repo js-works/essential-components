@@ -1,5 +1,6 @@
 import { Anchor, Badge, Button, Group, Paper, SimpleGrid, Stack, Tabs, Text } from '@mantine/core';
 import { Link, useNavigate, useParams } from 'react-router';
+
 import { effectivePermissions, groupsOf } from '../../../domain/index.js';
 import { formatDateTime } from '../../../shared/lib/format.js';
 import { appIcons } from '../../../shared/ui/icons.js';

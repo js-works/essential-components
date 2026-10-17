@@ -1,3 +1,4 @@
+export type { Holiday, HolidayName };
 export {
   addDays,
   dateOf,
@@ -12,8 +13,6 @@ export {
   weekdayOf,
   weekStart,
 };
-
-export type { Holiday, HolidayName };
 
 // Dates are local calendar days as `yyyy-mm-dd` strings, times local `HH:mm` strings: no time zones, and they compare
 // as strings. Calculations go through UTC dates, so a daylight saving change never shifts a day.

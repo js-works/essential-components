@@ -17,7 +17,6 @@ import type {
   DialogProps,
   DialogSlots,
 } from "../../api/dialogs/adapter.js";
-
 import type { OverlayContent } from "../../api/dialogs/content.js";
 import type { DomDialogContent } from "../../api/dom/content.js";
 

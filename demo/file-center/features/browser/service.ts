@@ -1,4 +1,3 @@
-import { ancestorsOf, childrenOf, FILE_KINDS, isInside, ROOT_ID } from '../../domain/index.js';
 import type {
   FileCriteria,
   FileKind,
@@ -11,9 +10,10 @@ import type {
   Paging,
   Sort,
 } from '../../domain/index.js';
+import { ancestorsOf, childrenOf, FILE_KINDS, isInside, ROOT_ID } from '../../domain/index.js';
 
-export { createBrowserService };
 export type { BrowserService, EntryCriteria, EntryRow, Overview, TrashRow, TrashSortKey };
+export { createBrowserService, TRASH_SORT_KEYS };
 
 // A row of the folder table: a folder or a file, with what the table shows of it. `key` is unique over both
 // (`d:<id>`, `f:<id>`); `size` of a folder is the number of its entries.
@@ -60,7 +60,10 @@ type TrashRow = {
   owner: string;
 };
 
-type TrashSortKey = 'name' | 'size' | 'from' | 'deletedAt' | 'owner';
+// What the trash can be sorted by.
+const TRASH_SORT_KEYS = ['name', 'size', 'from', 'deletedAt', 'owner'] as const;
+
+type TrashSortKey = (typeof TRASH_SORT_KEYS)[number];
 
 // The feature's service: what the UI calls. Mostly the repositories' own methods; the logic is the folder's contents
 // (its subfolders first, then its files, paged together), and the actions on a mix of folders and files.

@@ -1,8 +1,10 @@
-import { useDialogs, useToast } from '@local/overlays/react';
 import { useQueryClient } from '@tanstack/react-query';
+
+import { useDialogs, useToast } from '@local/overlays/react';
+
 import { countText } from '../../shared/lib/format.js';
-import { browserKeys, confirmAndRun, useBrowserService } from '../browser/index.js';
 import type { TrashRow } from '../browser/index.js';
+import { browserKeys, confirmAndRun, useBrowserService } from '../browser/index.js';
 
 export { useEmptyTrashFlow, usePurgeFlow, useRestoreFlow };
 

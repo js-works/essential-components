@@ -1,8 +1,8 @@
 import type { AgendaItem, Meeting, MeetingRepository, MeetingSummary } from '../../domain/index.js';
 import { boardIdsOf, getBoard } from './lookups.js';
 import { containsText, inList, inRange, matchesText, pageOf, sorted } from './query.js';
-import { db, LOADING_TIME, newId, save, wait } from './store.js';
 import type { Db } from './store.js';
+import { db, LOADING_TIME, newId, save, wait } from './store.js';
 
 export { createMeetingRepository };
 

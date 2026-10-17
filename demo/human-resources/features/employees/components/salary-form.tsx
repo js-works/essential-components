@@ -1,8 +1,9 @@
 import { Group, NumberInput, Stack, Text, Textarea } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { z } from 'zod';
-import { SALARY_REASONS } from '../../../domain/index.js';
+
 import type { SalaryChange } from '../../../domain/index.js';
+import { SALARY_REASONS } from '../../../domain/index.js';
 import { formatMoney } from '../../../shared/lib/format.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { useForm } from '../../../shared/lib/use-form.js';

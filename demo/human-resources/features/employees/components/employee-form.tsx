@@ -1,8 +1,9 @@
 import { Divider, Group, NumberInput, SimpleGrid, Stack, Switch, Text, Textarea, TextInput } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { z } from 'zod';
-import { EMPLOYMENT_TYPES, todayDate } from '../../../domain/index.js';
+
 import type { Employee, HrData } from '../../../domain/index.js';
+import { EMPLOYMENT_TYPES, todayDate } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { useForm } from '../../../shared/lib/use-form.js';
 import { FormSelect } from '../../../shared/ui/form-select.js';

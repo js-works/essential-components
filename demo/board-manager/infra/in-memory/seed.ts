@@ -1,4 +1,3 @@
-import { ROLES } from '../../domain/index.js';
 import type {
   AgendaItem,
   AgendaSection,
@@ -9,8 +8,7 @@ import type {
   Organization,
   Person,
 } from '../../domain/index.js';
-
-import { localDate, localDateTime } from '../../domain/index.js';
+import { localDate, localDateTime, ROLES } from '../../domain/index.js';
 import { CURRENT_USER, typeOf } from './helpers.js';
 import type { Db } from './store.js';
 

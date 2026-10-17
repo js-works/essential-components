@@ -1,6 +1,7 @@
 import { Anchor, Stack, Text } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router';
+
 import { ROOT_ID } from '../../../domain/index.js';
 import { FolderTable } from '../components/folder-table.js';
 import { folderPath, useBrowserService } from '../context.js';

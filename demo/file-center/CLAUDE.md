@@ -52,8 +52,7 @@ structure completely (`demo/board-manager/STRUCTURE.md`): a reference for its ph
     actions.
   - `index.ts`: the only import path for the app.
 - `shared/`: no domain knowledge except icons per kind: `ui/scope.tsx` (Mantine's scope, `.file-center`, and the
-  page's color scheme), `ui/data-table.tsx` (the data table in Mantine's look), `ui/icons.tsx`, `lib/format.ts`,
-  `lib/use-query-source.ts`.
+  page's color scheme), `ui/data-table.tsx` (the data table in Mantine's look), `ui/icons.tsx`, `lib/format.ts`.
 - `app/`: the wiring and the frame: `file-center-demo.tsx` (the element, light DOM, registered as
   `file-center-demo`; it creates the repositories, the service and the query client, and provides them),
   `app.tsx` (routes, layout, app header, history, the hash), `look.tsx` (Mantine's theme and the overlays' config, taken
@@ -67,9 +66,12 @@ structure completely (`demo/board-manager/STRUCTURE.md`): a reference for its ph
 ## Data access
 
 - Reads and changes go through TanStack Query: `useQuery` for the folders (tree, breadcrumb, history tips) and the
-  owners; the table loads through `useQuerySource()` (`shared/lib`): each page it loads is a query
-  (`browserKeys.entryPage`), and when a query under `browserKeys.entries()` is invalidated, the table reloads. After
-  every change: `invalidateQueries(browserKeys.all)`.
+  owners; the tables load through `useFindSource()` of `@local/data-table/react-query` (2026-10-17;
+  `useQuerySource()` with a `browserKeys.entryPage` and the like before): each page they load is a query under the
+  table's scope (`[...browserKeys.entries(), folderId]`, `browserKeys.favorites()`, `files()`, `trash()`), and when a
+  query under it is invalidated, the table reloads. The query as the service's: the data table's `criteriaOf`,
+  `sortOf`, `pagingOf`; the sort keys are the domain's (`FILE_SORT_KEYS`; `TRASH_SORT_KEYS` of the browser's service).
+  After every change: `invalidateQueries(browserKeys.all)`.
   - The table's query runs on TanStack's own signal: it is shared, so the table's signal (aborted e.g. by React's
     StrictMode) only stops waiting for it, it never cancels it.
 

@@ -1,6 +1,5 @@
 import { minutesOf } from './dates.js';
 
-export { clockStateOf, entriesOf, nextClockActions, spentMinutes };
 export type {
   ClockAction,
   ClockState,
@@ -12,6 +11,7 @@ export type {
   RequestStatus,
   TimeEntry,
 };
+export { clockStateOf, entriesOf, nextClockActions, spentMinutes };
 
 // A stretch of a day: working or a break. The open one (no `end`) is the one the clock runs on now.
 type TimeEntry = {

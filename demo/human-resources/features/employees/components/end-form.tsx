@@ -1,6 +1,7 @@
 import { Stack, Switch, Text } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { z } from 'zod';
+
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { useForm } from '../../../shared/lib/use-form.js';
 

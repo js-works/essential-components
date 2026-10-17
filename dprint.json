@@ -4,7 +4,10 @@
   "newLineKind": "lf",
   "typescript": {
     "quoteStyle": "alwaysSingle",
-    "jsx.quoteStyle": "preferDouble"
+    "jsx.quoteStyle": "preferDouble",
+    "module.sortImportDeclarations": "maintain",
+    "importDeclaration.sortNamedImports": "maintain",
+    "exportDeclaration.sortNamedExports": "maintain"
   },
   "excludes": [
     "node_modules",

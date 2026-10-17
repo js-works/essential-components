@@ -2,6 +2,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testi
 import userEvent from '@testing-library/user-event';
 import { createContext, useContext } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+
 import type * as Spec from './api/react/index.js';
 import { useDataTableController, useDataTableSelection } from './core/controller-hooks.js';
 import { dateColumnEditor, selectColumnEditor, textColumnEditor } from './core/view/column-editors.js';
@@ -13,7 +14,6 @@ import {
   selectFilter,
   textFilter,
 } from './core/view/column-filters.js';
-
 import baseStylesheet from './core/view/data-table.css?raw';
 import { generalAction, groupAction, multiRowAction, singleRowAction } from './react/action-builders.js';
 import { createDataTableComponent } from './react/create-data-table-component.js';
@@ -838,6 +838,27 @@ describe('DataTable', () => {
       expect(screen.getByRole('textbox', { name: 'nickname' })).toBeTruthy();
       // no filter for the name: its column has none
       expect(screen.queryByRole('textbox', { name: 'Name' })).toBeNull();
+    });
+
+    it('labels a filter by its own label, over the header of its column', async () => {
+      renderNav({
+        columns: [
+          { key: 'name', header: 'Name' },
+          { key: 'city', header: 'City' },
+        ],
+        filters: {
+          city: { label: 'Town', filter: selectFilter({ options: ['Vienna', 'Berlin'] }) },
+          nickname: { label: 'Nickname', filter: textFilter() },
+          name: textFilter(),
+        },
+      });
+
+      await loaded();
+      await openFilters();
+
+      expect([...document.querySelectorAll('.data-table__filter-panel-label')].map((label) => label.textContent))
+        .toEqual(['Town', 'Nickname', 'Name']);
+      expect(screen.getByRole('textbox', { name: 'Nickname' })).toBeTruthy();
     });
 
     it('shows the localized default placeholder in a text filter, or the one of the app', async () => {
@@ -5672,6 +5693,121 @@ describe('controller', () => {
   });
 });
 
+describe('a source that reports its changes', () => {
+  // A source object: `load` and `onChange`, with `change()` to report a change, like a data store would.
+  function observedSource() {
+    const load = createSource();
+    const listeners = new Set<() => void>();
+    const onChange = vi.fn((listener: () => void) => {
+      listeners.add(listener);
+
+      return () => listeners.delete(listener);
+    });
+    // Reports a change; `act` lets the table batch them (a microtask) and render.
+    const change = (times = 1) =>
+      act(async () => {
+        for (let index = 0; index < times; index += 1) {
+          listeners.forEach((listener) => listener());
+        }
+      });
+
+    return { source: { load, onChange }, load, onChange, listeners, change };
+  }
+
+  function Table({ source }: { source: Spec.RowSource<Person> }) {
+    return (
+      <Nav
+        source={source}
+        rowKey="id"
+        columns={columns}
+        filters={{ name: textFilter() }}
+        pageSize={10}
+        actions={[{ type: 'multiRow', key: 'remove', label: 'Remove', onClick: () => {} }]}
+      />
+    );
+  }
+
+  it('loads with `load`, and reloads the current page with the same query on a change', async () => {
+    const { source, load, onChange, change } = observedSource();
+
+    render(<Table source={source} />);
+    await loaded();
+    click('Next page');
+    await loaded();
+    fireEvent.click(screen.getAllByRole('checkbox', { name: 'Select row' })[0]!);
+
+    const query = load.mock.lastCall?.[0];
+    const calls = load.mock.calls.length;
+
+    await change();
+    await loaded();
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(load.mock.calls.length).toBe(calls + 1);
+    expect(load.mock.lastCall?.[0]).toEqual(query);
+    expect(screen.queryByText('1 selected')).toBeNull();
+  });
+
+  it('reloads once for all the changes of one task', async () => {
+    const { source, load, change } = observedSource();
+
+    render(<Table source={source} />);
+    await loaded();
+
+    const calls = load.mock.calls.length;
+
+    await change(3);
+    await loaded();
+
+    expect(load.mock.calls.length).toBe(calls + 1);
+  });
+
+  it('subscribes again for a new `onChange` only, and unsubscribes on unmount', async () => {
+    const { load, onChange, listeners } = observedSource();
+    // A new source object on every render, with the same functions.
+    const { rerender, unmount } = render(<Table source={{ load, onChange }} />);
+
+    await loaded();
+    rerender(<Table source={{ load, onChange }} />);
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(listeners.size).toBe(1);
+
+    unmount();
+
+    expect(listeners.size).toBe(0);
+  });
+
+  it('waits while the filter view is open, then reloads once', async () => {
+    const { source, load, change } = observedSource();
+
+    render(<Table source={source} />);
+    await loaded();
+    await openFilters();
+
+    const calls = load.mock.calls.length;
+
+    await change(2);
+
+    expect(load.mock.calls.length).toBe(calls);
+
+    click('Cancel');
+    await waitFor(() => expect(load.mock.calls.length).toBe(calls + 1));
+    await loaded();
+
+    expect(load.mock.calls.length).toBe(calls + 1);
+  });
+
+  it('still takes a plain function', async () => {
+    const load = createSource();
+
+    render(<Table source={load} />);
+    await loaded();
+
+    expect(load).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('row reordering', () => {
   // The keys of the data rows, in the order shown.
   const order = () =>
@@ -6598,7 +6734,7 @@ describe('cards in a narrow table', () => {
 describe('new props on every render', () => {
   // An app without `useMemo`: new columns, actions and source functions on every render of its component (`renders`
   // only makes the test render it again).
-  function App({ source }: { source: Spec.RowSource<Person>; renders: number }) {
+  function App({ source }: { source: Spec.RowLoader<Person>; renders: number }) {
     return (
       <Nav
         source={(query, signal) => source(query, signal)}

@@ -1,4 +1,5 @@
 import { createStore } from 'zustand/vanilla';
+
 import type {
   AgendaItem,
   AgendaSection,
@@ -9,11 +10,10 @@ import type {
   Organization,
   Person,
 } from '../../domain/index.js';
-
 import { seedDb } from './seed.js';
 
-export { db, LOADING_TIME, newId, save, SAVE_TIME, wait };
 export type { Db };
+export { db, LOADING_TIME, newId, SAVE_TIME, save, wait };
 
 // The fake server of the board manager: every table lives in memory (a Zustand store, so the pages can follow it), for
 // as long as the page is open. The seed is made up but stable (a seeded random generator), and its dates are relative

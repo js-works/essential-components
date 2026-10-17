@@ -1,15 +1,10 @@
-import { dateRangeFilter, useDataTableController } from '@local/data-table/react';
-import type { RowQuery, RowSource, TableActions, TableColumns, TableFilters } from '@local/data-table/react';
-import type {
-  Board,
-  BoardMember,
-  BoardMemberCriteria,
-  BoardMemberSortKey,
-  Range,
-  Role,
-} from '../../../domain/index.js';
+import type { RowSource, TableActions, TableColumns, TableFilters } from '@local/data-table/react';
+import { criteriaOf, dateRangeFilter } from '@local/data-table/react';
+import { useFindSource } from '@local/data-table/react-query';
+
+import type { Board, BoardMember, BoardMemberCriteria } from '../../../domain/index.js';
+import { BOARD_MEMBER_SORT_KEYS } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { searchText, toPaging, toSort, usePageSource } from '../../../shared/lib/table-query.js';
 import { DataTable, formatDate, PAGE_SIZE_OPTIONS } from '../../../shared/shared.js';
 import { deleteAction, editAction, newAction } from '../../../shared/ui/table-actions.js';
 import { useMemberService } from '../../members/context.js';
@@ -22,27 +17,14 @@ import { boardKeys } from '../keys.js';
 
 export { MemberTable };
 
-const SORT_KEYS: readonly BoardMemberSortKey[] = ['name', 'role', 'organization', 'since'];
-
-function toCriteria(query: RowQuery): BoardMemberCriteria {
-  const { name, role, organization, since } = query.filters as {
-    name?: string[];
-    role?: Role[];
-    organization?: string[];
-    since?: Range<string>;
-  };
-
-  return { text: searchText(query), names: name, roles: role, organizations: organization, since };
-}
-
-function useSource(boardId: string, reload: () => void): RowSource<BoardMember> {
+function useSource(board: Board): RowSource<BoardMember> {
   const service = useBoardService();
 
-  return usePageSource(
-    boardKeys.members(boardId),
-    (query, signal) =>
-      service.findMembers(boardId, toCriteria(query), toSort(query, SORT_KEYS), toPaging(query), signal),
-    reload,
+  return useFindSource(
+    boardKeys.members(board.id),
+    BOARD_MEMBER_SORT_KEYS,
+    criteriaOf<BoardMemberCriteria>('text'),
+    (...args) => service.findMembers(board.id, ...args),
   );
 }
 
@@ -83,9 +65,9 @@ function useFilters(): TableFilters {
   const organizations = useOrganizationService();
 
   return {
-    name: personFilter(members.suggest),
-    role: roleFilter(t),
-    organization: organizationFilter(organizations.suggest),
+    names: { label: t('boards.columns.person'), filter: personFilter(members.suggest) },
+    roles: { label: t('boards.columns.role'), filter: roleFilter(t) },
+    organizations: { label: t('boards.columns.organization'), filter: organizationFilter(organizations.suggest) },
     since: dateRangeFilter(),
   };
 }
@@ -105,15 +87,13 @@ function useActions(board: Board): TableActions<BoardMember> {
 
 function MemberTable({ board }: { board: Board }) {
   const t = useTranslate();
-  const tableCtrl = useDataTableController<BoardMember>();
+  const source = useSource(board);
   const columns = useColumns();
   const filters = useFilters();
   const actions = useActions(board);
-  const source = useSource(board.id, tableCtrl.reload);
 
   return (
     <DataTable
-      controller={tableCtrl}
       title={t('modules.members')}
       density="compact"
       searchable

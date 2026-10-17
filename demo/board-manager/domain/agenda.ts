@@ -1,4 +1,3 @@
-export { agendaNumbers, agendaOf, arranged, blockEnd, idOf, newPlace, withSections };
 export type {
   Agenda,
   AgendaEntry,
@@ -9,6 +8,7 @@ export type {
   AgendaSection,
   SectionDraft,
 };
+export { agendaNumbers, agendaOf, arranged, blockEnd, idOf, newPlace, withSections };
 
 // `presenterId` is a person; `minutes` and `decision` are empty until they are recorded. `sectionId`: the section the
 // item is in, or `''`.

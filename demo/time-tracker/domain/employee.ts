@@ -1,5 +1,5 @@
-export { dailyTargetMinutes, membersOf };
 export type { Employee, EmployeeRepository, EmployeeValues, Team, TeamRepository };
+export { dailyTargetMinutes, membersOf };
 
 // A team, led by one of its members (the lead approves the team's requests).
 type Team = {

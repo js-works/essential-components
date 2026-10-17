@@ -1,4 +1,3 @@
-import { normalizeWebsite } from '../../domain/index.js';
 import type {
   Organization,
   OrganizationRepository,
@@ -7,12 +6,12 @@ import type {
   OrganizationValues,
   Sort,
 } from '../../domain/index.js';
-
+import { normalizeWebsite } from '../../domain/index.js';
 import { AppError } from '../../shared/lib/app-error.js';
 import { countryName } from '../../shared/lib/countries.js';
 import { containsText, inList, matchesText, pageOf, sorted } from './query.js';
-import { db, LOADING_TIME, newId, save, SAVE_TIME, wait } from './store.js';
 import type { Db } from './store.js';
+import { db, LOADING_TIME, newId, SAVE_TIME, save, wait } from './store.js';
 
 export { createOrganizationRepository };
 

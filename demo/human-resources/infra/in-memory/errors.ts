@@ -1,5 +1,5 @@
-export { AppError };
 export type { AppErrorKey };
+export { AppError };
 
 // What the server refuses, as a key of the app's texts (`errors.<key>`) and its values: the app translates it (the
 // message itself is the English text, for the console).

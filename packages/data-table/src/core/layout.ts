@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
+
 import type * as Spec from '../api/react/index.js';
 
-export { createLayout, withoutHidden };
 export type { Layout };
+export { createLayout, withoutHidden };
 
 type Leaf<Row> = {
   column: Spec.TableColumn<Row>;

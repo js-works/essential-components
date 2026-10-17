@@ -1,12 +1,13 @@
 import { useDialogs, useToast } from '@local/overlays/react';
-import { scopeLabel } from '../../domain/index.js';
+
 import type { Grant, PrincipalRef } from '../../domain/index.js';
+import { scopeLabel } from '../../domain/index.js';
 import { principalName } from '../../shared/ui/parts.js';
 import { useAccessData, useChanged, useIamService } from '../iam/index.js';
 import { GrantForm } from './components/grant-form.js';
 
-export { useGrantAccessFlow, useRevokeGrantsFlow };
 export type { GrantPreset };
+export { useGrantAccessFlow, useRevokeGrantsFlow };
 
 // The flows of grants, one hook per use case: each gives the function a button or an action calls. A flow
 // changes the data and says so; the tables follow the data themselves (the queries).

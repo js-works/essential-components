@@ -1,7 +1,9 @@
-import { binding } from '@local/form-validation';
 import { Checkbox, Paper, ScrollArea, Stack, Text, TextInput } from '@mantine/core';
 import { useState } from 'react';
 import { z } from 'zod';
+
+import { binding } from '@local/form-validation';
+
 import type { User } from '../../../domain/index.js';
 import { useForm } from '../../../shared/lib/use-form.js';
 

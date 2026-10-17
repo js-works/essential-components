@@ -1,5 +1,6 @@
 import { Alert, Grid, Group, Paper, Select, Stack, Text, ThemeIcon } from '@mantine/core';
 import { useState } from 'react';
+
 import { checkAccess, scopeLabel } from '../../../domain/index.js';
 import { appIcons } from '../../../shared/ui/icons.js';
 import { PageHeader } from '../../../shared/ui/parts.js';

@@ -1,4 +1,5 @@
 import type { z } from 'zod';
+
 import type { ErrorData } from './i18n.js';
 import type { FieldInfo } from './schema.js';
 

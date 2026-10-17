@@ -1,14 +1,16 @@
 import { Menu as BaseMenu } from '@base-ui/react/menu';
 import { Select as BaseSelect } from '@base-ui/react/select';
 import { Tooltip as BaseTooltip } from '@base-ui/react/tooltip';
-import { useContext, useLayoutEffect, useRef, useState } from 'react';
 import type { KeyboardEventHandler, ReactElement, ReactNode } from 'react';
+import { useContext, useLayoutEffect, useRef, useState } from 'react';
+
 import type * as Spec from '../../api/react/index.js';
 import { flag, hasContent, isShiftClick } from '../utils.js';
 import * as styles from './classes.js';
 import { icons } from './icons.js';
 import { LayerContext } from './layer.js';
 
+export type { ButtonPlacement, MenuEntry, Option, ToggleEntry };
 export {
   ActionButton,
   ActionMenu,
@@ -31,8 +33,6 @@ export {
   ToggleMenu,
   WithTip,
 };
-
-export type { ButtonPlacement, MenuEntry, Option, ToggleEntry };
 
 // The widgets of the data table: native elements with the classes of our stylesheet. They know nothing about rows,
 // queries or the state of the table. Selects, menus and tooltips come from Base UI.

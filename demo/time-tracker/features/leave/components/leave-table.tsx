@@ -1,12 +1,13 @@
-import { multiRowAction, useDataTableController } from '@local/data-table/react';
-import type { SavedFilters, TableActions, TableColumn, TableColumns, TableFilters } from '@local/data-table/react';
-import { useToast } from '@local/overlays/react';
 import { Badge, Stack, Text } from '@mantine/core';
-import { leaveDays, todayDate } from '../../../domain/index.js';
+
+import type { SavedFilters, TableActions, TableColumn, TableColumns, TableFilters } from '@local/data-table/react';
+import { multiRowAction } from '@local/data-table/react';
+import { useToast } from '@local/overlays/react';
+
 import type { Employee, LeaveRequest, TimeData } from '../../../domain/index.js';
+import { leaveDays, todayDate } from '../../../domain/index.js';
 import { formatDateRange, formatDays, formatStamp } from '../../../shared/lib/format.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { oneOf } from '../../../shared/lib/local-query.js';
 import { DataTable } from '../../../shared/ui/data-table.js';
 import { appIcons } from '../../../shared/ui/icons.js';
 import { absenceText, EmployeeLabel, RequestStatusBadge } from '../../../shared/ui/parts.js';
@@ -148,7 +149,6 @@ function LeaveTable({ data, employees, mine, pendingOnly = false, title, subtitl
   subtitle?: string;
   savedFilters?: SavedFilters;
 }) {
-  const tableCtrl = useDataTableController<LeaveRow>();
   const columns = useColumns(mine);
   const filters = useFilters();
   const actions = useActions(data, mine, employees[0]);
@@ -168,15 +168,10 @@ function LeaveTable({ data, employees, mine, pendingOnly = false, title, subtitl
         };
       }), {
     search: ['employeeName', 'note', 'comment'],
-    filters: {
-      type: (row, value) => oneOf(row.type, value),
-      status: (row, value) => oneOf(row.status, value),
-    },
-  }, tableCtrl.reload);
+  });
 
   return (
     <DataTable
-      controller={tableCtrl}
       title={title}
       subtitle={subtitle}
       source={source}

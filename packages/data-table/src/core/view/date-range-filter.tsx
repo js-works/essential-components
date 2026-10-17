@@ -1,11 +1,12 @@
 import { Popover as BasePopover } from '@base-ui/react/popover';
 import { useContext, useEffect, useRef, useState } from 'react';
+
 import type * as Spec from '../../api/react/index.js';
 import { useLocale, useTexts } from '../texts.js';
 import { flag } from '../utils.js';
 import * as styles from './classes.js';
-import { createDatePicker, createRangePicker } from './date-range-picker.js';
 import type { RangeSelection } from './date-range-picker.js';
+import { createDatePicker, createRangePicker } from './date-range-picker.js';
 import { icons } from './icons.js';
 import { LayerContext } from './layer.js';
 import { ClearButton } from './widgets.js';

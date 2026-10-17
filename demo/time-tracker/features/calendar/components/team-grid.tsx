@@ -1,8 +1,9 @@
 import { Anchor, Group, Text } from '@mantine/core';
 import { Fragment } from 'react';
 import { Link } from 'react-router';
-import { absenceOn, isWeekend, monthDates } from '../../../domain/index.js';
+
 import type { Employee, Team, TimeData } from '../../../domain/index.js';
+import { absenceOn, isWeekend, monthDates } from '../../../domain/index.js';
 import { formatDate, formatWeekday } from '../../../shared/lib/format.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { absenceColor, absenceText, EmployeeAvatar } from '../../../shared/ui/parts.js';

@@ -6,8 +6,9 @@
 // at all. Reachable as "@local/overlays/lit".
 
 import { render } from "lit-html";
-import { html, unsafeStatic } from "lit-html/static.js";
 import { repeat } from "lit-html/directives/repeat.js";
+import { html, unsafeStatic } from "lit-html/static.js";
+
 import type { LitContent } from "../../api/lit/content.js";
 import type { ToastAdapterFactory } from "../../api/toasts/adapter.js";
 

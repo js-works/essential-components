@@ -1,6 +1,7 @@
-import { defaultDialogTexts, defaultToastTexts } from "../../index.js";
-import type { DialogTexts, ToastTexts } from "../../index.js";
 import { createNamespace } from "picolingo";
+
+import type { DialogTexts, ToastTexts } from "../../index.js";
+import { defaultDialogTexts, defaultToastTexts } from "../../index.js";
 
 export { dialogTexts, toastTexts };
 

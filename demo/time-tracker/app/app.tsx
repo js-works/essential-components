@@ -1,8 +1,9 @@
 import { ActionIcon, Anchor, Breadcrumbs, Group, Menu, Text, ThemeIcon, Tooltip, UnstyledButton } from '@mantine/core';
-import { useEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
-import { createMemoryRouter, Link, NavLink, Outlet, useLocation, useNavigate, useNavigationType } from 'react-router';
+import { useEffect, useRef, useState } from 'react';
 import type { RouteObject } from 'react-router';
+import { createMemoryRouter, Link, NavLink, Outlet, useLocation, useNavigate, useNavigationType } from 'react-router';
+
 import type { TimeData } from '../domain/index.js';
 import { ApprovalsPage } from '../features/approvals/index.js';
 import { CalendarPage } from '../features/calendar/index.js';
@@ -14,8 +15,8 @@ import { SickPage } from '../features/sick/index.js';
 import { TimesheetPage } from '../features/timesheet/index.js';
 import { useTimeData } from '../features/tracker/index.js';
 import { useViewer } from '../features/viewer/index.js';
-import { useTranslate } from '../shared/lib/i18n/index.js';
 import type { TextKey, Translate } from '../shared/lib/i18n/index.js';
+import { useTranslate } from '../shared/lib/i18n/index.js';
 import { appIcons } from '../shared/ui/icons.js';
 import { EmployeeAvatar } from '../shared/ui/parts.js';
 import { mirrorInHash, pathFromHash } from './hash-history.js';

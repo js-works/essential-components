@@ -1,4 +1,5 @@
 import { SimpleGrid } from '@mantine/core';
+
 import type { VacationBalance } from '../../../domain/index.js';
 import { formatDays } from '../../../shared/lib/format.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';

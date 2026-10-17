@@ -3,7 +3,7 @@
 import type { DialogTheme } from "./dialogs/theme.js";
 import type { ToastTheme } from "./toasts/theme.js";
 
-export type { ThemePalette, OverlayThemes };
+export type { OverlayThemes, ThemePalette };
 
 /**
  * The colours an application actually thinks in. Each is a CSS colour — a literal, or a

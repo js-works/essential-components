@@ -1,6 +1,6 @@
 import type { ChecklistTask } from '../../domain/index.js';
-import { translateKey } from '../../shared/lib/i18n/index.js';
 import type { Translate } from '../../shared/lib/i18n/index.js';
+import { translateKey } from '../../shared/lib/i18n/index.js';
 
 export { taskTitle };
 

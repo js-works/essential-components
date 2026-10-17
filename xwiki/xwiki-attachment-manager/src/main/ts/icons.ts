@@ -1,5 +1,5 @@
-import { svg } from 'lit';
 import type { TemplateResult } from 'lit';
+import { svg } from 'lit';
 
 export { icons };
 

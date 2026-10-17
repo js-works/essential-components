@@ -1,8 +1,9 @@
 // The design language first, so the demo's own CSS comes after it.
 import './ui/ui.css';
 import './demo.css';
-import { createCockpitClass } from '../src/index.js';
+
 import type { FooterAction } from '../src/index.js';
+import { createCockpitClass } from '../src/index.js';
 import { FEW, GROUPS, MANY, SOME } from './apps.js';
 import { DemoApp } from './demo-app.js';
 import { accentSetting, MENU, navigationSetting, pageSettings, USER, userMenu } from './footer.js';

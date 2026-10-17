@@ -1,11 +1,12 @@
-import { CheckIcon, Group, Loader, Select, Text } from '@mantine/core';
 import type { ComboboxItem } from '@mantine/core';
-import { forwardRef, useEffect, useRef, useState } from 'react';
+import { CheckIcon, Group, Loader, Select, Text } from '@mantine/core';
 import type { ReactNode } from 'react';
+import { forwardRef, useEffect, useRef, useState } from 'react';
+
 import { useTranslate } from '../lib/i18n/index.js';
 
-export { AsyncSelect };
 export type { AsyncOption };
+export { AsyncSelect };
 
 // An option: the value, the label (the input shows it once chosen) and an optional second line (dimmed, smaller).
 type AsyncOption = { value: string; label: string; description?: string };

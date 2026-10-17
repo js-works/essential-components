@@ -1,5 +1,6 @@
-import { selectFilter } from '@local/data-table/react';
 import type { TableFilter } from '@local/data-table/react';
+import { selectFilter } from '@local/data-table/react';
+
 import type { Team } from '../../domain/index.js';
 import type { Translate } from '../../shared/lib/i18n/index.js';
 

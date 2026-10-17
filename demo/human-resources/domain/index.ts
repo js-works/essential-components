@@ -6,8 +6,15 @@ import type { Employee, EmployeeDocument, SalaryChange } from './employee.js';
 import type { Department } from './organization.js';
 import type { Candidate, Opening } from './recruiting.js';
 
-export type { HrData };
-
+export type {
+  Checklist,
+  ChecklistKind,
+  ChecklistRepository,
+  ChecklistTask,
+  TaskOwner,
+  TaskValues,
+  TemplateTask,
+} from './checklist.js';
 export {
   CHECKLIST_KINDS,
   CHECKLIST_TEMPLATES,
@@ -18,31 +25,7 @@ export {
   TASK_OWNERS,
   tasksFromTemplate,
 } from './checklist.js';
-
-export type {
-  Checklist,
-  ChecklistKind,
-  ChecklistRepository,
-  ChecklistTask,
-  TaskOwner,
-  TaskValues,
-  TemplateTask,
-} from './checklist.js';
-
 export { addDays, dateOf, daysBetween, nextYearly, todayDate, yearsBetween } from './dates.js';
-export {
-  currentSalary,
-  DOCUMENT_CATEGORIES,
-  EMPLOYEE_STATUSES,
-  EMPLOYMENT_TYPES,
-  fullName,
-  reportsOf,
-  SALARY_REASONS,
-  splitName,
-  statusOf,
-  upcomingEvents,
-} from './employee.js';
-
 export type {
   DocumentCategory,
   DocumentRepository,
@@ -58,10 +41,20 @@ export type {
   SalaryValues,
   UpcomingEvent,
 } from './employee.js';
-
-export { childrenOf, departmentPath, descendantIds } from './organization.js';
+export {
+  currentSalary,
+  DOCUMENT_CATEGORIES,
+  EMPLOYEE_STATUSES,
+  EMPLOYMENT_TYPES,
+  fullName,
+  reportsOf,
+  SALARY_REASONS,
+  splitName,
+  statusOf,
+  upcomingEvents,
+} from './employee.js';
 export type { Department, DepartmentRepository, DepartmentValues } from './organization.js';
-export { CANDIDATE_SOURCES, isInProcess, OPENING_STATUSES, PIPELINE, STAGES } from './recruiting.js';
+export { childrenOf, departmentPath, descendantIds } from './organization.js';
 export type {
   Candidate,
   CandidateRepository,
@@ -74,6 +67,8 @@ export type {
   OpeningValues,
   Stage,
 } from './recruiting.js';
+export { CANDIDATE_SOURCES, isInProcess, OPENING_STATUSES, PIPELINE, STAGES } from './recruiting.js';
+export type { HrData };
 
 // Everything the app shows, in one read (the lists are small).
 type HrData = {
@@ -85,3 +80,5 @@ type HrData = {
   candidates: readonly Candidate[];
   checklists: readonly Checklist[];
 };
+
+export type { SavedFilterRepository, SavedTableFilter } from './saved-filter.js';

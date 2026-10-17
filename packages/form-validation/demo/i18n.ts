@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+
 import type { I18nAdapter } from '../src/index.js';
 
 export { adapter, text, useLocale };

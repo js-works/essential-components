@@ -1,12 +1,10 @@
 import { html, render } from "lit";
 
-import { createDialogsController, createDialogTheme, createToastController } from "../main/index.js";
-
 // The lit adapters live behind their own entry point (published as "@local/overlays/lit") so the
 // main entry stays framework-free.
 import { litDialogAdapter, litToastAdapter } from "../main/bindings/lit/index.js";
-
 import type { DialogType, FormDialogResult, ToastAppearance, ToastPlacement, ToastSize, ToastType } from "../main/index.js";
+import { createDialogsController, createDialogTheme, createToastController } from "../main/index.js";
 
 // The result logs on the page: one next to each panel (Toasts, Dialogs), all showing the same
 // entries. Filled in by mountLitDemo() (bottom of this file).

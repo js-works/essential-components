@@ -1,7 +1,7 @@
 import type { en } from './i18n/locales/en.js';
 
-export { AppError };
 export type { ErrorKey };
+export { AppError };
 
 // The keys of the messages the fake server (and the schemas) give: the UI translates them (`errors` of the texts).
 type ErrorKey = keyof typeof en.errors;

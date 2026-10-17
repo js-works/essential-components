@@ -1,6 +1,7 @@
 import type { Page, Paging, Range, Sort, TextMatch } from './query.js';
 
 export type { DocumentCriteria, DocumentRepository, DocumentSortKey, MeetingDocument, UploadDocument };
+export { DOCUMENT_SORT_KEYS };
 
 // The type is the extension in capitals (`PDF`), like in the File Center.
 type MeetingDocument = {
@@ -23,7 +24,10 @@ type DocumentCriteria = {
   uploaded?: Range<string>;
 };
 
-type DocumentSortKey = 'name' | 'type' | 'size' | 'user' | 'uploaded';
+// What the documents can be sorted by.
+const DOCUMENT_SORT_KEYS = ['name', 'type', 'size', 'user', 'uploaded'] as const;
+
+type DocumentSortKey = (typeof DOCUMENT_SORT_KEYS)[number];
 
 // The upload of one file (the file upload's function): it reports its progress and gives the staged document's id.
 type UploadDocument = (

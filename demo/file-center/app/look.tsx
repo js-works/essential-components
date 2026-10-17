@@ -1,6 +1,4 @@
-import { combineCssVariables, modernTheme } from '@local/mantine-themes';
-import { createDialogTheme, createToastTheme } from '@local/overlays';
-import type { OverlaysConfig } from '@local/overlays/react';
+import type { CSSVariablesResolver, MantineColorsTuple, MantineThemeOverride } from '@mantine/core';
 import {
   ActionIcon,
   Badge,
@@ -14,13 +12,16 @@ import {
   Popover,
   Tooltip,
 } from '@mantine/core';
-
-import type { CSSVariablesResolver, MantineColorsTuple, MantineThemeOverride } from '@mantine/core';
 import { TbMaximize, TbMinimize } from 'react-icons/tb';
+
+import { combineCssVariables, modernTheme } from '@local/mantine-themes';
+import { createDialogTheme, createToastTheme } from '@local/overlays';
+import type { OverlaysConfig } from '@local/overlays/react';
+
 import { Scope } from '../shared/ui/scope.js';
 
-export { createLook };
 export type { Look };
+export { createLook };
 
 // The look of the File Center, the same as the Board Manager's (taken from its `board-manager-demo.tsx`, 2026-10-03):
 // Mantine's theme, its CSS variables, and the overlays' config in Mantine's look.

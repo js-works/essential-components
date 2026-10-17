@@ -9,6 +9,7 @@ export type {
   ColumnEditor,
   ColumnGroup,
   EditField,
+  LabeledFilter,
   TableColumn,
   TableColumns,
   TableFilter,
@@ -23,7 +24,9 @@ type BuiltInFilter = { readonly [builtInFilter]: true };
 
 type TableFilter<C> = BuiltInFilter | ((props: FilterProps) => string | C);
 
-type TableFilters<C> = Readonly<Record<string, TableFilter<C>>>;
+type LabeledFilter<C> = { label: TextContent<C>; filter: TableFilter<C> };
+
+type TableFilters<C> = Readonly<Record<string, TableFilter<C> | LabeledFilter<C>>>;
 
 type BuiltInColumnEditor = { readonly [builtInEditor]: true };
 

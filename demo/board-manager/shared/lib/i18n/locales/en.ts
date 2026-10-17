@@ -243,7 +243,6 @@ const en = {
     agendaItems_other: '{{count}} items',
     inSections_one: 'in {{count}} section',
     inSections_other: 'in {{count}} sections',
-    pdf: { preview: 'Preview', print: 'Print', download: 'Download' },
     // The agenda.
     agenda: {
       title: 'Agenda',
@@ -307,25 +306,6 @@ const en = {
       deleted_one: '"{{name}}" deleted',
       deleted_other: '{{count}} documents deleted',
     },
-  },
-
-  // The PDF report of a meeting and its preview (in the language at the time it is made).
-  pdf: {
-    subject: 'Minutes',
-    draft: 'DRAFT',
-    minutesCancelled: 'Cancelled: no minutes',
-    minutesPlanned: 'Not held yet',
-    minutesApproved: 'Approved',
-    minutesDraft: 'Draft, not approved yet',
-    attendees: 'Attendees',
-    agendaAndMinutes: 'Agenda and minutes',
-    noPresenter: 'no presenter',
-    noMinutes: 'No minutes.',
-    decision: 'Decision:',
-    page: 'Page {{page}} of {{total}}',
-    previewTitle: 'PDF preview',
-    couldNotPrint: 'The PDF could not be printed.',
-    couldNotCreate: 'The PDF could not be created.',
   },
 
   // The shell: the app header, the module menu, the breadcrumb, Back and Forward.

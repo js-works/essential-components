@@ -1,8 +1,7 @@
 export { parseMinutes };
 
-// The stored form of the minutes (`AgendaItem.minutes`), without BlockNote itself, so a reader that only needs the
-// blocks (the PDF report) does not load the editor: the JSON of BlockNote's blocks, `''` for none, or plain text (the
-// seed: one paragraph per line).
+// The stored form of the minutes (`AgendaItem.minutes`), without BlockNote itself: the JSON of BlockNote's blocks, `''`
+// for none, or plain text (the seed: one paragraph per line).
 
 // The stored minutes as BlockNote's (partial) blocks; `undefined` for none.
 function parseMinutes(minutes: string): unknown[] | undefined {

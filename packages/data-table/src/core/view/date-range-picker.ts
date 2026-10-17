@@ -3,8 +3,8 @@
 import type { Datepicker } from 'vanillajs-datepicker';
 import type { DatepickerOptions } from 'vanillajs-datepicker/Datepicker';
 
-export { createDatePicker, createRangePicker };
 export type { CalendarLabels, PickedRange, RangeSelection };
+export { createDatePicker, createRangePicker };
 
 // A date range with two inline calendars of vanillajs-datepicker (bundled into our build, MIT), side by side, that act
 // as one calendar of two months: the first click (in either calendar) sets the start, the second one the end. The

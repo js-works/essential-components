@@ -1,3 +1,4 @@
+import type { Correction, Employee, LeaveRequest, LeaveType, SickNote, Team, TimeEntry } from '../../domain/index.js';
 import {
   absenceOn,
   addDays,
@@ -9,10 +10,8 @@ import {
   timeOf,
 } from '../../domain/index.js';
 
-import type { Correction, Employee, LeaveRequest, LeaveType, SickNote, Team, TimeEntry } from '../../domain/index.js';
-
-export { seed, VIEWER_ID };
 export type { Data };
+export { seed, VIEWER_ID };
 
 // The made-up data of the time tracker, relative to today: 40 employees in 5 teams, the clock's entries of the last
 // three months (and of today up to now), leave requests (over, now, coming; pending, decided), sick calls (one is

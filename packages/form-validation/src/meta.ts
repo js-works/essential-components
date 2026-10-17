@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import type { FieldBinding, FieldBindingConfig, FormMeta } from './index.js';
 
 export { binding, formMeta, formRegistry, isBinding };

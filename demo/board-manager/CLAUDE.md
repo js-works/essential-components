@@ -86,6 +86,12 @@ the root's `CLAUDE.md` apply.
     `LOADING_TIME`), by name; the filters are functions of it (`personFilter(members.suggest)`, 2026-10-16).
   - The value is the name, like the column's: the sources compare with `oneOf`. Two people of the same name would
     both match (accepted: the chair column has only the name, not the id).
+- The flows' two shapes are helpers (2026-10-16, the user's choice, proposed at about 65%): `useFlowKit()`
+  (`shared/lib/flows.ts`) gives `dialogs`, `toasts`, `t`, `formFlow` (a form dialog, then a success toast) and
+  `confirmFlow` (a confirmation, `critical` for a delete, that runs the change in a scope, then a success toast); both
+  resolve `true` when done. `success` is a function when the toast needs what was saved. The flows went from 978 to
+  814 lines (`confirmAndRun` and the meetings' `confirmChange` before). Only the Board Manager so far; the other four
+  apps may follow.
 - "Delete" in the tables (decided 2026-10-01): a `multiRow` action everywhere (the selection, or a right-click on a
   row, which selects it). Also a row action (an icon in the action column) only where deleting is frequent and cheap:
   the documents of a meeting and the sections in the "Sections" drawer (a draft). Records much depends on (boards,
@@ -96,7 +102,7 @@ the root's `CLAUDE.md` apply.
 
 - English and German (2026-10-04), English is the default and the fallback; the app is localized step by step (done:
   the shell, the start page, "Not found", the forms, the fake server's errors, everything the user reads, except the seed data: the boards, members, organizations, meetings (agenda,
-  sections, minutes, documents), the PDF and the minutes editor).
+  sections, minutes, documents) and the minutes editor).
   - `shared/lib/i18n/`: the app's own i18next instance (not the global one) with react-i18next; the texts are in the
     bundle (`locales/en.ts`, `locales/de.ts`), `initAsync: false`, so the first render is translated and nothing is
     loaded on demand. Only `en` and `de` (`supportedLngs`; `de-DE` is `de`).
@@ -104,8 +110,8 @@ the root's `CLAUDE.md` apply.
   - The keys are typed by `en.ts`; `de.ts` has the type `Catalog<typeof en>`, so a missing or an extra German text is
     an error of `tsc`. Plurals: `_one` and `_other` (`t('home.boards', { count })`).
   - In a component: `const t = useTranslate();` (`useTranslation('app', { i18n })`: the instance is given, no provider,
-    so it also works in the content of the overlays' dialogs and toasts and in the shadow root). Outside React (the PDF,
-    flows, the fake server's errors): `translate('key')`. Rich text: `<Trans i18n={i18n} t={t} …>`.
+    so it also works in the content of the overlays' dialogs and toasts and in the shadow root). Outside React (flows,
+    the fake server's errors): `translate('key')`. Rich text: `<Trans i18n={i18n} t={t} …>`.
   - The forms (`forms.tsx`): the labels (`labels: '<form>'`), the texts around the fields (`forms.*`), "(none)"
     (`common.none`), the roles (`roles.<stored value>`: `t(`roles.${role}`)`, the stored English value is the key, so
     the filters and the server keep working on it; the same for `statuses`), the messages of the schemas (the key as
@@ -119,8 +125,9 @@ the root's `CLAUDE.md` apply.
   - The pages of a feature: the tables follow "The structure of a table in the root's apps" in the root's `CLAUDE.md`
     (2026-10-15, worked out on the board page's members table, `MemberTable`, then rolled out): `useColumns()`,
     `useFilters()`, `useActions(…)` (hooks of the table's file), the flows one hook per use case in a feature's
-    `flows.tsx` (the meetings also `agenda-flows.tsx`, `document-flows.tsx`), `tableCtrl`, and the table's source through
-    TanStack Query (`usePageSource`; `useReloadOnChange(tableCtrl)` until 2026-10-16)
+    `flows.tsx` (the meetings also `agenda-flows.tsx`, `document-flows.tsx`), and the table's source through
+    TanStack Query (`useFindSource`, which reports the changes itself, 2026-10-17: no `tableCtrl` for the reload;
+    `tableCtrl.reload` passed to it until then, `useReloadOnChange(tableCtrl)` until 2026-10-16)
     (the tables follow the store; the flows know no table). The way there, the same day: `columnsOf(t)` (with
     `useMemo(() => columnsOf(t), [t])` until 2026-10-14), `actionsOf(t, ctx)` with plain flows in `<x>Flows.tsx` and a
     `TableContext<Row>` (dialogs, toasts, the table), handlers in the component with a `MemberHandlers` type. The
@@ -139,8 +146,6 @@ the root's `CLAUDE.md` apply.
   - The minutes editor (BlockNote): its own texts (menus, placeholders) come from its `dictionary` (`de` or `en` of
     `@blocknote/core/locales`), taken when the editor is created; so the editor is created again when the language
     changes (`useCreateBlockNote(…, [language])`), with the value it has then (`valueRef`: nothing typed is lost).
-  - The PDF report and its messages are in the language at the time it is made (`translate()` in `report.tsx`), the
-    preview dialog's title too.
   - Not translated: the data (names, titles, descriptions), and the stored values (`Planned`, `Chair`): they get a
     lookup for their display, so the filters keep working on the stored values.
 
@@ -264,13 +269,23 @@ the root's `CLAUDE.md` apply.
     shadow root: nothing of it reaches the host page. The dialogs and toasts are in the shadow root too (the overlays
     provider's mount point).
   - An AMD loader on the host page (XWiki: RequireJS, 2026-10-01): UMD modules in the bundle took the page's `define`
-    and registered with it instead of exporting (react-pdf's hyphenation patterns: every PDF failed, `reading
-    'length'`). The bundle starts with `var define;` (`banner`), a `define` of its own module scope, so the minifier
+    and registered with it instead of exporting (react-pdf's hyphenation patterns, while the app had a PDF: every PDF failed,
+    `reading 'length'`). The bundle starts with `var define;` (`banner`), a `define` of its own module scope, so the minifier
     drops their AMD branches; the page's `define` is untouched. The example `index.html` loads RequireJS to show it.
   - Prototype.js on the host page (XWiki: 1.7.3, 2026-10-02): it replaces `Object.values` with one that also returns
-    the methods it added to `Array.prototype` (react-pdf's text layout failed, `e.reduce is not a function`). The build
+    the methods it added to `Array.prototype` (react-pdf's text layout failed, while the app had a PDF, `e.reduce is not a function`). The build
     replaces `Object.values` with a function of the bundle (`define`, defined in the `banner`, from `Object.keys`); the
     page's one is untouched. Not chosen: restoring the page's (it is global), the app in an iframe (much work).
+  - The size of the module (2026-10-16, the user's wish; 3.9 MB, 1.19 MB gzipped, before): 3.26 MB, 1.06 MB gzipped.
+    One file is a must (no chunks loaded later), and BlockNote and the charts stay (both were ruled out as options).
+    - No emoji menu in the minutes editor (`emojiPicker={false}`): BlockNote loads emoji-mart and its data (about
+      0.5 MB) by dynamic imports, which the one-file build inlined; the build replaces both with `app/no-emoji.ts`.
+    - Mantine's CSS per component (`app/mantine.css`, also on the demo page): only the 37 files of the components the
+      bundle uses, found by their classes (`m_…`) in the bundle's script (120 of 267 KB). A Mantine component new to
+      the app needs its file there.
+    - What it is made of: BlockNote with ProseMirror and Tiptap (about 0.8 MB), the CSS (about 0.48 MB), the
+      charts (about 0.4 MB), the data table with `@base-ui/react` (about 0.4 MB), React DOM, Mantine; the app's own
+      code is about 150 KB.
   - The color scheme is the element's computed CSS `color-scheme` (2026-10-02; a `scheme` attribute and
     `<html data-scheme>` before): set on it or inherited from the page; only `dark` is dark, only `light` is light,
     `normal` and `light dark` follow the system. In the demo tab `<html>`'s (`ui.css` sets it from `data-scheme`).
@@ -358,7 +373,7 @@ the root's `CLAUDE.md` apply.
   - A link that opens a new tab is marked: Tabler's `TbExternalLink` (an arrow out of a box) after the text, and
     "(opens in a new tab)" for screen readers (`WebsiteLink`, 2026-10-01). Not the `mailto:` links.
   - The form validates the name and the website; the fake server checks them again (`checkedOrganization()`).
-- The list (`organizations-page.tsx`): Organization (a link), City, Country (a select filter of the countries in use; its value the ISO code since 2026-10-16, the name before: the
+- The list (`OrganizationTable`, `components/organization-table.tsx`, the page renders it): Organization (a link), City, Country (a select filter of the countries in use; its value the ISO code since 2026-10-16, the name before: the
   repository knows no language),
   Website, Members (the count); "New organization" (then its page), "Open" (default), "Edit", "Delete".
 - The page (`organization-page.tsx`): the name with the description as subtitle; "Overview" (labels and values, "Edit"
@@ -388,39 +403,8 @@ the root's `CLAUDE.md` apply.
   sections, documents), "Edit", the same meeting form dialog as "Edit" in the meetings list (`editMeeting()` in
   `meeting-table.tsx`), and "Delete" (2026-10-01), the same confirmation (`deleteMeetingsFlow()`), then back to where
   it was opened (its board's page, or the meetings list). The status keeps its own buttons in the page header.
-- "PDF" (a menu on the overview, 2026-10-01): "Preview", "Print" and "Download" of the meeting's report (`pdf/`).
-  - The menu has `floatingStrategy="fixed"` (2026-10-04): without a portal and without a positioned ancestor, Floating UI
-    measured from the wrong `offsetParent` in the `<board-manager>` element's shadow root, and the popup opened away
-    from its button (the demo tab was not affected). Same as `AsyncSelect`.
-  - Its icon (`appIcons.pdf`) is `TbFileExport` for now; to be checked again (tried: `TbFileTypePdf`, too small at
-    16px; `TbFileText`; `TbPdf`).
-  - `pdf/report.tsx` (`@react-pdf/renderer`, A4, the standard Helvetica): the meeting's data, the attendees (the
-    board's members by role), the agenda with sections, every item's presenter, duration, minutes (BlockNote's blocks:
-    paragraphs, headings, lists, check lists as `[x]`, quotes, code, bold/italic/underline/strike, links, mentions as
-    names) and decision, the documents; "DRAFT" while the minutes are not approved; a footer with "Page n of m" on
-    every page. An item's title, presenter and first block of minutes are one group that never
-    breaks (`wrap={false}`; `minPresenceAhead` had no effect). Black and white only, small
-    sizes (2026-10-01: 9pt text, 14pt title, 11pt headings); set apart by weight and italics, thin black lines.
-    - react-pdf 4.9: no `lineHeight` on the page (it drops the fixed footer), and a unitless one only together with a
-      `fontSize` in the same style (else far too large).
-    - The minutes are parsed by `minutes-format.ts` (no BlockNote), so the report does not load the editor.
-  - "Preview": an extra wide dialog (`dialogs.confirm`, "Download" and "Close") with the pages, rendered by pdfjs
-    (`pdf/preview.tsx`; its worker inlined with `?worker&inline`, so the `<board-manager>` build stays one module).
-    It must stay a real worker (2026-10-02): on the main thread (pdfjs's "fake worker"), pdfjs refuses a page whose
-    `Array.prototype` has enumerable additions (XWiki's Prototype.js).
-    The pages lie on a gray ground with a line above and below (`--mantine-color-default-border`, square corners;
-    2026-10-01, the user's wish; tried the same day: a frame all around with a soft inner shadow, no gray ground, and
-    only a line below).
-    - Maximizable (2026-10-01): the pages stay as wide as the dialog, so maximized they fill the window's width (like a
-      zoom); drawn at `RESOLUTION = 3`, so they stay sharp there. Not chosen: a capped page width.
-  - "Print": built, loaded into a hidden frame (the browser's PDF viewer), which opens the print dialog; the frame
-    stays until the next print.
-  - "Download": built and saved, `<title> – <yyyy-mm-dd>.pdf`; no toast (the browser shows the download; removed
-    2026-10-01).
-  - All three build the PDF in a scope of the dialogs (`dialogs.open()`) and take at least 1.2s (a simulated server):
-    meanwhile the scope's spinner placeholder shows, which the preview replaces. The preview's pages are drawn
-    (pdfjs, canvases) before it opens, so it opens at its final size (`renderPages`, `PdfPages`).
-  - Both are loaded on first use (dynamic imports in `pdf/index.tsx`).
+- No PDF (2026-10-16, the user's wish): the overview's "PDF" menu (2026-10-01: "Preview", "Print" and "Download" of
+  the meeting's report; `features/meetings/pdf/`, `@react-pdf/renderer`, pdfjs) was removed, with its dependencies.
 - The agenda is reordered by dragging (`reorder`), has a reload button (`reloadable`, 2026-10-07, like the documents), the minutes are recorded per item (a form dialog), the minutes tab
   shows them as one document; a held meeting's minutes are approved there. Its frame (a Mantine `Paper` with a border)
   is there without minutes too, around the note of a planned or cancelled meeting (2026-10-02).
@@ -517,7 +501,6 @@ the root's `CLAUDE.md` apply.
   variables BlockNote's stylesheet really reads where (editor, menus, toolbar), whether the theme's variables reach
   them (set on the editor container, `applyThemedRoot` for the popups), and whether the scheme still follows the app
   (`SchemeContext`).
-- The icon of the "PDF" menu (see Meetings).
 - The demo tab with the real `<board-manager>` element (shadow DOM, its attributes) instead of `<board-manager-demo>`
   (2026-10-01, open). The obstacle: the CSS, which only `build:board-manager` puts into the module (its marker); under
   `dev` and `build:pages` Vite adds it to `<head>`. Ideas: copy the page's stylesheets into the shadow root while the

@@ -1,7 +1,7 @@
 import type { UploadFn } from '../src/index.js';
 
-export { createUpload, isUploadBehavior };
 export type { UploadBehavior };
+export { createUpload, isUploadBehavior };
 
 const BEHAVIORS = ['works', 'slow', 'flaky', 'fails'] as const;
 

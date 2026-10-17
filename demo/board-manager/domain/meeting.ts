@@ -1,6 +1,5 @@
 import type { Page, Paging, Range, Sort, TextMatch } from './query.js';
 
-export { MEETING_STATUSES };
 export type {
   Meeting,
   MeetingCriteria,
@@ -11,6 +10,7 @@ export type {
   MeetingValues,
   MinutesState,
 };
+export { MEETING_SORT_KEYS, MEETING_STATUSES };
 
 const MEETING_STATUSES = ['Planned', 'Held', 'Cancelled'] as const;
 
@@ -51,7 +51,10 @@ type MeetingCriteria = {
   start?: Range<string>;
 };
 
-type MeetingSortKey = 'start' | 'title' | 'board' | 'status' | 'items' | 'documents';
+// What the meetings can be sorted by.
+const MEETING_SORT_KEYS = ['start', 'title', 'board', 'status', 'items', 'documents'] as const;
+
+type MeetingSortKey = (typeof MEETING_SORT_KEYS)[number];
 
 // What can be done with meetings. A new meeting gets the two standard items and "Any other business", presented by the
 // board's chair. Deleting a meeting deletes its agenda and documents.

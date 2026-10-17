@@ -1,7 +1,8 @@
-import type { RowMove, RowPage, RowQuery } from '../src/react/index.js';
+import type { RowMove, RowPage, RowQuery, RowSource } from '../src/react/index.js';
+import { localPage } from '../src/react/index.js';
 
-export { fetchTasks, reorderTasks, statuses };
 export type { Task };
+export { markDone, reorderTasks, statuses, taskSource };
 
 // The data of the "Row reordering" tab: a backlog, in the order of its priority. The order is kept in memory for as
 // long as the page is open.
@@ -84,14 +85,28 @@ async function fetchTasks(
 ): Promise<RowPage<Task>> {
   await wait(LOADING_TIME, signal);
 
-  const { page, pageSize } = query;
-  const text = query.search.toLowerCase();
-  const { status } = query.filters;
-  const found = tasks
-    .filter((task) => (typeof status !== 'string' || task.status === status))
-    .filter((task) => text === '' || task.title.toLowerCase().includes(text));
+  // The tasks are all in memory: the search in the title, the status filter (by the task's field `status`), the page.
+  return localPage(tasks, query, { search: ['title'] });
+}
 
-  return { rows: found.slice((page - 1) * pageSize, page * pageSize), total: found.length };
+// Who hears of a change of the tasks: the tables of their source.
+const listeners = new Set<() => void>();
+
+// The source of the table: it loads the tasks and reports their changes, so the table reloads by itself.
+const taskSource: RowSource<Task> = {
+  load: fetchTasks,
+  onChange: (listener) => {
+    listeners.add(listener);
+
+    return () => listeners.delete(listener);
+  },
+};
+
+// Marks the tasks as done, and reports the change.
+async function markDone(ids: readonly number[]): Promise<void> {
+  await wait(SAVING_TIME);
+  tasks = tasks.map((task) => (ids.includes(task.id) ? { ...task, status: 'Done' } : task));
+  listeners.forEach((listener) => listener());
 }
 
 // Saves a move: the task goes right after `after` (or right before `before`, at the top of a page). With `fail`, the

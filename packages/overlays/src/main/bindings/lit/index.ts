@@ -5,8 +5,7 @@
 // The only entry point that imports a framework. Keeping it separate is what lets the
 // main entry stay free of `lit-html` for vanilla and React consumers.
 
-export { litDialogAdapter } from "./dialog-adapter.js";
-export { litToastAdapter } from "./toast-adapter.js";
-
 // The types, with all of the main entry's.
 export type * from "../../api/lit/index.js";
+export { litDialogAdapter } from "./dialog-adapter.js";
+export { litToastAdapter } from "./toast-adapter.js";

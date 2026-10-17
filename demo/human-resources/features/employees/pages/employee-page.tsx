@@ -1,8 +1,9 @@
 import { Anchor, Button, Grid, Group, Loader, Menu, Paper, SimpleGrid, Stack, Tabs, Text, Title } from '@mantine/core';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router';
-import { progressOf, reportsOf, statusOf, todayDate, yearsBetween } from '../../../domain/index.js';
+
 import type { Employee, HrData } from '../../../domain/index.js';
+import { progressOf, reportsOf, statusOf, todayDate, yearsBetween } from '../../../domain/index.js';
 import { formatDate } from '../../../shared/lib/format.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { appIcons } from '../../../shared/ui/icons.js';
@@ -14,7 +15,6 @@ import {
   PageHeader,
   ProgressCell,
 } from '../../../shared/ui/parts.js';
-
 import { useStartChecklistFlow } from '../../checklists/index.js';
 import { departmentName, employeeOf, useHrData } from '../../hr/index.js';
 import { DocumentTable } from '../components/document-table.js';

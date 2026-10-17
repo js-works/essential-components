@@ -4,23 +4,27 @@ import '@mantine/core/styles.layer.css';
 import '@mantine/dates/styles.layer.css';
 import 'dayjs/locale/de';
 import './human-resources.css';
-import { OverlaysProvider } from '@local/overlays/react';
 import { MantineProvider } from '@mantine/core';
 import { DatesProvider } from '@mantine/dates';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
-import { StrictMode } from 'react';
 import type { ReactNode } from 'react';
-import { createRoot } from 'react-dom/client';
+import { StrictMode } from 'react';
 import type { Root } from 'react-dom/client';
+import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router';
-import { createHrService, HrServiceContext } from '../features/hr/index.js';
+
+import { OverlaysProvider } from '@local/overlays/react';
+
+import type { SavedFilterRepository } from '../domain/index.js';
 import type { HrService } from '../features/hr/index.js';
+import { createHrService, HrServiceContext } from '../features/hr/index.js';
 import { ViewerProvider } from '../features/viewer/index.js';
-import { createInMemoryRepositories, VIEWER_ID } from '../infra/in-memory/index.js';
+import { createInMemoryRepositories, createInMemorySavedFilters, VIEWER_ID } from '../infra/in-memory/index.js';
 import { useLanguage } from '../shared/lib/i18n/index.js';
-import { Scope, SCOPE_CLASS, useScheme } from '../shared/ui/scope.js';
+import { SavedFilterServiceContext } from '../shared/ui/saved-filters.js';
+import { SCOPE_CLASS, Scope, useScheme } from '../shared/ui/scope.js';
 import { createAppRouter } from './app.js';
 import { createLook } from './look.js';
 
@@ -46,32 +50,35 @@ function Dates({ children }: { children: ReactNode }) {
   return <DatesProvider settings={{ locale: language, firstDayOfWeek: 1 }}>{children}</DatesProvider>;
 }
 
-function App({ router, service, queryClient }: {
+function App({ router, service, savedFilters, queryClient }: {
   router: ReturnType<typeof createAppRouter>['router'];
   service: HrService;
+  savedFilters: SavedFilterRepository;
   queryClient: QueryClient;
 }) {
   return (
     <QueryClientProvider client={queryClient}>
       <HrServiceContext.Provider value={service}>
-        <ViewerProvider employeeId={VIEWER_ID}>
-          <MantineProvider
-            theme={LOOK.theme}
-            cssVariablesResolver={LOOK.cssVariablesResolver}
-            forceColorScheme={useScheme()}
-            cssVariablesSelector={`.${SCOPE_CLASS}`}
-            deduplicateCssVariables={false}
-            getRootElement={() => undefined}
-          >
-            <Dates>
-              <OverlaysProvider config={LOOK.overlaysConfig}>
-                <Scope>
-                  <RouterProvider router={router} />
-                </Scope>
-              </OverlaysProvider>
-            </Dates>
-          </MantineProvider>
-        </ViewerProvider>
+        <SavedFilterServiceContext.Provider value={savedFilters}>
+          <ViewerProvider employeeId={VIEWER_ID}>
+            <MantineProvider
+              theme={LOOK.theme}
+              cssVariablesResolver={LOOK.cssVariablesResolver}
+              forceColorScheme={useScheme()}
+              cssVariablesSelector={`.${SCOPE_CLASS}`}
+              deduplicateCssVariables={false}
+              getRootElement={() => undefined}
+            >
+              <Dates>
+                <OverlaysProvider config={LOOK.overlaysConfig}>
+                  <Scope>
+                    <RouterProvider router={router} />
+                  </Scope>
+                </OverlaysProvider>
+              </Dates>
+            </MantineProvider>
+          </ViewerProvider>
+        </SavedFilterServiceContext.Provider>
       </HrServiceContext.Provider>
     </QueryClientProvider>
   );
@@ -83,6 +90,7 @@ class HumanResourcesDemo extends HTMLElement {
   #root: Root | undefined;
   #disposeRouter: (() => void) | undefined;
   readonly #service = createHrService(createInMemoryRepositories());
+  readonly #savedFilters = createInMemorySavedFilters();
   readonly #queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30_000, retry: false } } });
 
   connectedCallback(): void {
@@ -92,7 +100,12 @@ class HumanResourcesDemo extends HTMLElement {
     this.#root = createRoot(this);
     this.#root.render(
       <StrictMode>
-        <App router={router} service={this.#service} queryClient={this.#queryClient} />
+        <App
+          router={router}
+          service={this.#service}
+          savedFilters={this.#savedFilters}
+          queryClient={this.#queryClient}
+        />
       </StrictMode>,
     );
   }

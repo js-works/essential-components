@@ -1,6 +1,7 @@
-import { html, svg } from 'lit';
 import type { TemplateResult } from 'lit';
+import { html, svg } from 'lit';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
+
 import type { NavItem } from '../index.js';
 
 export {

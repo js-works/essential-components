@@ -1,8 +1,9 @@
 import { Group, Stack, Text, TextInput } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { z } from 'zod';
-import { CHECKLIST_KINDS, statusOf, TASK_OWNERS, todayDate } from '../../../domain/index.js';
+
 import type { HrData } from '../../../domain/index.js';
+import { CHECKLIST_KINDS, statusOf, TASK_OWNERS, todayDate } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { useForm } from '../../../shared/lib/use-form.js';
 import { FormSelect } from '../../../shared/ui/form-select.js';

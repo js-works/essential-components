@@ -1,5 +1,6 @@
 import { renderToString } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
+
 import { createFileUploadComponent } from './create-file-upload-component.js';
 
 // Plain Node, without any DOM: the wrapper must neither touch `HTMLElement` when it is imported nor when it renders.

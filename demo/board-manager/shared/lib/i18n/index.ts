@@ -1,18 +1,20 @@
-import type { I18nAdapter } from '@local/form-validation';
 import i18next from 'i18next';
 import { useTranslation } from 'react-i18next';
+
+import type { I18nAdapter } from '@local/form-validation';
+
 import { de } from './locales/de.js';
 import { en } from './locales/en.js';
 
-export { i18n, i18nAdapter, translate, translateKey, useLanguage, useTranslate };
 export type { Translate };
+export { i18n, i18nAdapter, translate, translateKey, useLanguage, useTranslate };
 
 // The app's own translations, with i18next (its own instance, not the global one) and react-i18next: English and
 // German, English is the default and the fallback. The texts are in the bundle (`locales/`), so the first render is
 // translated, nothing is loaded on demand. The language follows `<html lang>` (the page's language switch), observed.
 //
 // - In a component: `const t = useTranslate();` (it renders again when the language changes).
-// - Outside a component (the PDF, flows, the fake server's errors): `translate('key')`.
+// - Outside a component (flows, the fake server's errors): `translate('key')`.
 // The keys are typed by the English texts, and `de.ts` must have the same ones.
 
 declare module 'i18next' {

@@ -1,6 +1,7 @@
-import { createDataTableComponent } from '@local/data-table/react';
 import type { DataTableProps } from '@local/data-table/react';
+import { createDataTableComponent } from '@local/data-table/react';
 import { mantineTheme } from '@local/data-table/themes';
+
 import { i18n as tableI18n } from '../../../../packages/data-table/demo/i18n.js';
 
 export { DataTable };

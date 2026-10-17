@@ -14,10 +14,8 @@
 // is diff *inside* a slot — pass a new node and the whole slot is replaced. Hold your
 // nodes and mutate them, which is how you would write DOM without a framework anyway.
 
-export { domDialogAdapter } from "./dialog-adapter.js";
-
-export { domToastAdapter } from "./toast-adapter.js";
-
+// The types, with all of the main entry's.
+export type * from "../../api/dom/index.js";
 // Building content without a framework means document.createElement chains. This takes
 // the boilerplate off without introducing a template language: no parsing, no innerHTML,
 // so nothing here is an injection surface, and event handlers go in directly.
@@ -25,6 +23,5 @@ export { domToastAdapter } from "./toast-adapter.js";
 //   const email = h("input", { name: "email", type: "email", required: true });
 //   const form = h("div", null, h("label", null, "Email"), email);
 export { h } from "../../internal/dom.js";
-
-// The types, with all of the main entry's.
-export type * from "../../api/dom/index.js";
+export { domDialogAdapter } from "./dialog-adapter.js";
+export { domToastAdapter } from "./toast-adapter.js";

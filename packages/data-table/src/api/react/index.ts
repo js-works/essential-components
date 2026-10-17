@@ -3,6 +3,7 @@
 export type * from '../editors.js';
 export type * from '../filters.js';
 export type * from '../i18n.js';
+export type * from '../local-page.js';
 export type * from '../query.js';
 export type * from '../rows.js';
 export type * from '../saved-filters.js';

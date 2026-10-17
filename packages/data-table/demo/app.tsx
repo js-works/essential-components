@@ -1,4 +1,5 @@
 import { useState } from 'react';
+
 import type { FooterMode, RowActionLook, SelectionAppearance, TableDensity } from '../src/react/index.js';
 import type {
   Controls,
@@ -12,7 +13,6 @@ import type {
   DemoTheme,
   DemoVariants,
 } from './controls.js';
-
 import { Demo } from './demo.js';
 
 export { App };

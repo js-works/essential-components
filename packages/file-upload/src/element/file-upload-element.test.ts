@@ -1,5 +1,6 @@
 import { fireEvent, within } from '@testing-library/dom';
 import { describe, expect, it, vi } from 'vitest';
+
 import type * as Spec from '../api/index.js';
 import { createFileUploadClass } from './create-file-upload-class.js';
 

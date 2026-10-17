@@ -2,17 +2,21 @@
 // restyle the other demos.
 import '@mantine/core/styles.layer.css';
 import './file-center.css';
-import { OverlaysProvider } from '@local/overlays/react';
 import { MantineProvider } from '@mantine/core';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
+import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router';
-import { BrowserServiceContext, createBrowserService } from '../features/browser/index.js';
+
+import { OverlaysProvider } from '@local/overlays/react';
+
+import type { SavedFilterRepository } from '../domain/index.js';
 import type { BrowserService } from '../features/browser/index.js';
-import { createInMemoryRepositories } from '../infra/in-memory/index.js';
-import { Scope, SCOPE_CLASS, useScheme } from '../shared/ui/scope.js';
+import { BrowserServiceContext, createBrowserService } from '../features/browser/index.js';
+import { createInMemoryRepositories, createInMemorySavedFilters } from '../infra/in-memory/index.js';
+import { SavedFilterServiceContext } from '../shared/ui/saved-filters.js';
+import { SCOPE_CLASS, Scope, useScheme } from '../shared/ui/scope.js';
 import { createAppRouter } from './app.js';
 import { createLook } from './look.js';
 
@@ -28,28 +32,31 @@ const LOOK = createLook();
 
 // Mantine follows the page's color scheme switch. It does not set the scheme on `<html>` (`getRootElement`): the
 // scopes set it on themselves.
-function App({ router, service, queryClient }: {
+function App({ router, service, savedFilters, queryClient }: {
   router: ReturnType<typeof createAppRouter>['router'];
   service: BrowserService;
+  savedFilters: SavedFilterRepository;
   queryClient: QueryClient;
 }) {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserServiceContext.Provider value={service}>
-        <MantineProvider
-          theme={LOOK.theme}
-          cssVariablesResolver={LOOK.cssVariablesResolver}
-          forceColorScheme={useScheme()}
-          cssVariablesSelector={`.${SCOPE_CLASS}`}
-          deduplicateCssVariables={false}
-          getRootElement={() => undefined}
-        >
-          <OverlaysProvider config={LOOK.overlaysConfig}>
-            <Scope>
-              <RouterProvider router={router} />
-            </Scope>
-          </OverlaysProvider>
-        </MantineProvider>
+        <SavedFilterServiceContext.Provider value={savedFilters}>
+          <MantineProvider
+            theme={LOOK.theme}
+            cssVariablesResolver={LOOK.cssVariablesResolver}
+            forceColorScheme={useScheme()}
+            cssVariablesSelector={`.${SCOPE_CLASS}`}
+            deduplicateCssVariables={false}
+            getRootElement={() => undefined}
+          >
+            <OverlaysProvider config={LOOK.overlaysConfig}>
+              <Scope>
+                <RouterProvider router={router} />
+              </Scope>
+            </OverlaysProvider>
+          </MantineProvider>
+        </SavedFilterServiceContext.Provider>
       </BrowserServiceContext.Provider>
     </QueryClientProvider>
   );
@@ -61,6 +68,7 @@ class FileCenterDemo extends HTMLElement {
   #root: Root | undefined;
   #disposeRouter: (() => void) | undefined;
   readonly #service = createBrowserService(createInMemoryRepositories());
+  readonly #savedFilters = createInMemorySavedFilters();
   readonly #queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30_000, retry: false } } });
 
   connectedCallback(): void {
@@ -70,7 +78,12 @@ class FileCenterDemo extends HTMLElement {
     this.#root = createRoot(this);
     this.#root.render(
       <StrictMode>
-        <App router={router} service={this.#service} queryClient={this.#queryClient} />
+        <App
+          router={router}
+          service={this.#service}
+          savedFilters={this.#savedFilters}
+          queryClient={this.#queryClient}
+        />
       </StrictMode>,
     );
   }

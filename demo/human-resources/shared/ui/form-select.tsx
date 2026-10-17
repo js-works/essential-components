@@ -1,6 +1,7 @@
-import { Select } from '@mantine/core';
 import type { SelectProps } from '@mantine/core';
+import { Select } from '@mantine/core';
 import { useRef, useState } from 'react';
+
 import { useTranslate } from '../lib/i18n/index.js';
 
 export { FormSelect };

@@ -9,8 +9,8 @@ import type {
   SalaryRepository,
 } from '../../domain/index.js';
 
-export { createHrService };
 export type { HrService };
+export { createHrService };
 
 // The app's service: what the UI calls. The repositories' own methods, and `data()`: everything in one read (the lists
 // are small, and most pages combine several of them).

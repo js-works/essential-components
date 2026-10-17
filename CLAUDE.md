@@ -186,7 +186,7 @@ and imports the files it needs from its `CLAUDE.md`.
 ## Stack
 
 - TypeScript (strict), Vite, npm workspaces. The root has dev dependencies (`vite`, `typescript`,
-  `@vitejs/plugin-react`, `react`, `react-dom`, their types, `dprint`; for the board manager `@mantine/core`,
+  `@vitejs/plugin-react`, `react`, `react-dom`, their types, `dprint`, `@biomejs/biome` (only its organize imports, 2026-10-17); for the board manager `@mantine/core`,
   `@mantine/hooks`, `react-router`) and `zustand`, `react-icons` (the board manager's icons: its Tabler set, `tb`),
   `@mantine/dates` with `dayjs` (pinned to the versions the workspace has from `overlays`: `9.5.1`, `1.11.23`),
   `i18next` (the board manager's translations), `zod` (the schemas of `form-validation` in the board manager),
@@ -207,8 +207,13 @@ and imports the files it needs from its `CLAUDE.md`.
   `DocumentTable` (Board Manager, Human Resources), `GrantTable`, `CandidateTable`.
 - The structure of a table in the root's apps (2026-10-15, the user's wishes, step by step on the Board Manager's
   members table, then rolled out to all five apps; target rewritten the same day):
-  - A table is a component of its own file (`features/<x>/components/<Name>Table.tsx`), unless it is the whole page
-    (a module's list, e.g. `UsersPage`).
+  - A table is a component of its own file (`features/<x>/components/<name>-table.tsx`, `<Name>Table`), also when it
+    is the whole page (2026-10-17, the user's choice, proposed at about 60%; a module's list was its page before, e.g.
+    `UsersPage`): the page only renders it (`function BoardsPage() { return <BoardTable />; }`, the User Manager's with
+    its `PageHeader` around it). Moved the same day: `BoardTable`, `OrganizationTable` (Board Manager), `RecentTable`,
+    `FavoriteTable`, `TrashTable` (File Center, in a `components/` of their feature), `EmployeeTable`, `OpeningTable`,
+    `ChecklistTable` (Human Resources), `EmployeeTable` (Time Tracker), `UserTable`, `GroupTable`, `RoleTable`,
+    `PermissionTable` (User Manager).
   - Its columns, filters and actions are hooks of its file, outside the component (2026-10-15, the user's choice,
     proposed at about 70%, like MUI: React does the wiring, nothing is passed by hand): `useColumns()`, `useFilters()`,
     `useActions(boardId)` (function declarations; the same names in every table file, a convention), each taking what
@@ -218,6 +223,35 @@ and imports the files it needs from its `CLAUDE.md`.
     a context of the package (`context` in the config, `columns={createColumns}`, AG Grid's way) was weighed and dropped
     (a second mechanism for little: `(t)` per table). A plain constant when the columns depend on nothing (the apps
     without texts).
+  - Its rows likewise (2026-10-17, the user's choice, proposed at about 75%; inline in the component before):
+    `useSource(board): RowSource<Row>`, named after the prop like the others (not `useQuery`: TanStack's hook of that
+    name is used beneath it). The first of the hooks, in the file and in the calls (2026-10-17, the user's choice,
+    proposed at about 65%): the data first. The sort keys are the domain's (2026-10-17, the user's choice, proposed at
+    about 65%; a `SORT_KEYS` of the table before): a constant beside the type, which comes from it, like `ROLES` and
+    `Role` (`BOARD_MEMBER_SORT_KEYS`, `BoardMemberSortKey`). The table's query as the domain's criteria:
+    `criteriaOf<C>('text', { name: 'names' })` of the data table (2026-10-17, the user's choice, proposed at about 65%;
+    of the Board Manager's `shared/lib/table-query.ts` for a few hours, with the search always as `text`; then `{
+    search, filters }` for a few hours): the search under the key given first, each filter under its key or the one the
+    renames give it (checked against the criteria's keys; the values unchecked, like the cast before); `useFindSource`
+    uses the data table's `sortOf` and `pagingOf`. The way there, the same day: a function `toCriteria` beside the hook,
+    then inline in it, both with a cast of `query.filters`; weighed: the domain's keys like the filter keys (the UI
+    would shape the domain), the filter keys like the domain's (needs a filter label of its own, a todo of the data
+    table); the filters take the criteria's keys, with a label of their own where the key is not their column's (the
+    data table's `{ label, filter }`), so no renames are needed: `names: { label: t('boards.columns.person'), filter:
+    personFilter(…) }` and `criteriaOf<BoardMemberCriteria>('text')` (2026-10-17, the user's wish, worked out on
+    `MemberTable`, then rolled out to every table of the Board Manager and the File Center; the label repeats the
+    column's header, which is fine, the user said; the colleagues' saved filters took the new keys, a filter saved in
+    `localStorage` with an old key no longer applies); the find passes its arguments on (`(...args) =>
+    service.findMembers(board.id, ...args)`, 2026-10-17). Worked out on the Board Manager's `MemberTable`, rolled out
+    the same day to every table of the Board Manager and the File Center, which have a repository's `find`:
+    `useFindSource` of `@local/data-table/react-query` (the same file in both apps, `shared/lib/table-query.ts`, until
+    the same day); a criterion the filters do not give is added to the mapped ones (`(query) => ({ ...toCriteria(query),
+    organizationId })`). The User Manager, Human Resources and the Time Tracker filter on the client (the data table's
+    `localPage`), so they have no `criteriaOf`. No `tableCtrl` (2026-10-17): the source reports a change itself (the
+    data table's `onChange` of a source, `useQuerySource` of `@local/data-table/react-query` gives `{ load, onChange }`;
+    the same file in each of the five apps, `shared/lib/use-query-source.ts`, until the same day), so a table needs a
+    controller only for what else it does (e.g. the Board Manager's sections, `addRow`). Rolled out to every table of
+    the five apps the same day.
   - What the actions do lives outside the component, in flows. The target (2026-10-15, the user's decisions, worked out
     on the Board Manager's `MemberTable`, the rollout to the other tables later):
     - One hook per flow, a use case each (separation of concerns; a hook per subject, `useMemberFlows`, was proposed and
@@ -259,11 +293,16 @@ and imports the files it needs from its `CLAUDE.md`.
   tables of the modules with at least two filters, never on a record's page (e.g. a meeting's documents, a board's
   meetings), nor in Trash. Board Manager: Boards, Meetings, Members, Organizations; File Center: Files, Recent,
   Favorites; Human Resources: Employees, Recruiting, Checklists; Time Tracker: Employees, Leave (the team's tab); User
-  Manager: Users, Access. Each with 2 or 3 made-up colleagues' shared filters (`sharedBy(owner, name, filters)`, first in
-  the list, not removable; date ranges relative to today, `daysFromToday`) and its own `localStorage` key
-  (`<app>:saved-filters:<table>`), with sharing (one user here: own shared ones are only marked).
-  `<app>/shared/ui/saved-filters.ts` (`useSavedFilters`), the same file in each of the five apps: a change goes into all
-  five.
+  Manager: Users, Access. Each with 2 or 3 made-up colleagues' shared filters (first in the list, not removable; date
+  ranges relative to today) and the user's own, with sharing (one user here: own shared ones are only marked).
+  - Data like any other (2026-10-17, the user's choice, proposed at about 60%; before, the colleagues' filters were in
+    the table components, and each table chose its `localStorage` key): the domain's `SavedFilterRepository` (`list`,
+    `save`, `remove`, `setShared` by the table's name, e.g. `boards`, `team-leave`; `domain/saved-filter.ts`), the
+    in-memory one (`infra/in-memory/saved-filter-repository.ts`: the others' filters given to it, the user's own per
+    browser in `localStorage` under `<app>:saved-filters:<table>`, the keys of before), and `useSavedFilters(table)` of
+    `shared/ui/saved-filters.ts` over TanStack Query, its `SavedFilterServiceContext` given by the app. These three
+    files are the same in each of the five apps (a change goes into all five); the colleagues' filters are each app's
+    (`infra/in-memory/saved-filter-seed.ts`). A table only calls `useSavedFilters('boards')`.
 - The toolbar of a table in the root's apps (2026-10-09, the user's wish): one action in the accent
   (`variant: 'primary'`), normally the "New …" or "Add …" one, else the main one (an upload, "Report sick"); the
   others secondary (a danger one stays danger; File Center's Files: `tertiary`, ghost buttons, 2026-10-11, the user's
@@ -285,7 +324,7 @@ and imports the files it needs from its `CLAUDE.md`.
   `min-release-age=7`.
   - The first workspace install (2026-09-26) was run once with `--min-release-age=5`, because `antd@6.6.5` (a dev
     dependency of `data-table`) was only six days old.
-- `.editorconfig` and dprint (`dprint.json`), line width 120, single quotes. The root's dprint excludes `packages/`: each
+- `.editorconfig` and dprint (`dprint.json`), line width 120, single quotes; the imports by Biome (`biome.json`). The root's dprint excludes `packages/`: each
   package keeps its own formatting (`overlays` uses double quotes and no dprint), so run a package's formatter inside it.
 
 ## Commands
@@ -296,7 +335,14 @@ and imports the files it needs from its `CLAUDE.md`.
 - `npm run build:pages`: the same for GitHub Pages (`vite build --mode pages`, base `/essential-components/`).
 - `npm run build:board-manager`: the `<board-manager>` element as one module into `dist-board-manager/`.
 - `npm run typecheck`
-- `npm run format`: dprint. `npm run format:check`
+- `npm run format`: Biome's organize imports (`biome check --write`; its formatter and linter off, `biome.json`), then
+  dprint. `npm run format:check`: both checks. Biome only sorts and groups the imports (see
+  `docs/conventions/typescript.md`); dprint formats and leaves the imports' order and their names' order to it
+  (`module.sortImportDeclarations`, `importDeclaration.sortNamedImports`, `exportDeclaration.sortNamedExports`:
+  `maintain`). Biome covers the packages too (2026-10-17, the user's wish; their own dprint configs got the same
+  three `maintain`), the root's dprint does not (each package runs its own). (2026-10-17, the user's choice of Biome over ESLint with
+  `simple-import-sort`, proposed at about 60%: one dependency with no transitive ones, and the linter question stays
+  open; our own script `scripts/import-spacing.mjs` for a few hours before.)
 - The tests run inside a package (`npm test -w @local/file-upload`, …).
 
 ## TODO

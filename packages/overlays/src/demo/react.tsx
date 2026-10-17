@@ -35,9 +35,6 @@
 //   is an attempt the "server" can reject - which also keeps the dialog open, with the
 //   values intact, and shows a note instead of a field error.
 
-import { useState, createContext, use } from "react";
-import type { ReactNode } from "react";
-import { createRoot } from "react-dom/client";
 import {
   Button,
   CloseButton,
@@ -48,10 +45,12 @@ import {
   Select,
   TextInput,
 } from "@mantine/core";
-
 import { DateInput } from "@mantine/dates";
-import { schemaResolver, useForm } from "@mantine/form";
 import type { UseFormReturnType } from "@mantine/form";
+import { schemaResolver, useForm } from "@mantine/form";
+import type { ReactNode } from "react";
+import { createContext, use, useState } from "react";
+import { createRoot } from "react-dom/client";
 import { z } from "zod";
 
 // The layered variants (`@layer mantine`): the same rules, but below every unlayered rule of
@@ -61,8 +60,8 @@ import "@mantine/core/styles.layer.css";
 import "@mantine/dates/styles.layer.css";
 import "./react.css";
 
-import { OverlaysProvider, useDialogs } from "../main/bindings/react/index.js";
 import type { ActionButtonType, OverlaysConfig } from "../main/bindings/react/index.js";
+import { OverlaysProvider, useDialogs } from "../main/bindings/react/index.js";
 import { createDialogTheme } from "../main/index.js";
 
 function today(): string {

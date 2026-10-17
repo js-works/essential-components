@@ -1,8 +1,8 @@
-import { createContext, useContext, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
+import { createContext, useContext, useMemo, useState } from 'react';
 
-export { useViewer, ViewerProvider };
 export type { Role, Viewer };
+export { useViewer, ViewerProvider };
 
 // Who uses the app: the signed-in employee, and the role they look at it with. As an employee they see their own time,
 // requests and sick calls; as a team lead also their team's, the approvals, and the changes of employees. A switch of

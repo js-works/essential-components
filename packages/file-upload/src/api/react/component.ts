@@ -1,4 +1,5 @@
 import type { AriaAttributes, CSSProperties, ReactNode, Ref } from 'react';
+
 import type { FileUploadClassConfig } from '../config.js';
 import type { FileUploadElement, UploadDensity } from '../element.js';
 import type { I18nAdapter } from '../i18n.js';

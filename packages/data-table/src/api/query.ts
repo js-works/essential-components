@@ -1,4 +1,18 @@
-export type { ColumnSort, FilterValue, GroupBy, GroupTotal, RowGroup, RowPage, RowQuery, RowSource, SortDirection };
+export type {
+  ColumnSort,
+  FilterRenames,
+  FilterValue,
+  GroupBy,
+  GroupTotal,
+  RowGroup,
+  RowLoader,
+  RowPage,
+  RowPaging,
+  RowQuery,
+  RowSort,
+  RowSource,
+  SortDirection,
+};
 
 type SortDirection = 'asc' | 'desc';
 
@@ -28,4 +42,15 @@ type GroupBy<Row> = (keyof Row & string) | ((row: Row) => string);
 
 type RowGroup<Row> = { key: string; rows: readonly Row[]; total: number | undefined };
 
-type RowSource<Row> = (query: RowQuery, signal: AbortSignal) => Promise<RowPage<Row>>;
+type RowLoader<Row> = (query: RowQuery, signal: AbortSignal) => Promise<RowPage<Row>>;
+
+type RowSource<Row> = RowLoader<Row> | {
+  load: RowLoader<Row>;
+  onChange?: (listener: () => void) => () => void;
+};
+
+type RowPaging = { offset: number; limit: number };
+
+type RowSort<K extends string> = { key: K; direction: SortDirection };
+
+type FilterRenames<C> = Partial<Record<string, keyof C & string>>;

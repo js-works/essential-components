@@ -13,3 +13,5 @@ function createInMemoryRepositories(): { folders: FolderRepository; files: FileR
 
   return { folders: createFolderRepository(store), files: createFileRepository(store) };
 }
+
+export { createInMemorySavedFilters } from './saved-filter-seed.js';

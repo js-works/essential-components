@@ -2,8 +2,8 @@ import type * as Spec from '../api/index.js';
 import { matchesAccept } from './accept.js';
 import { clamp } from './utils.js';
 
-export { FileUploadStore };
 export type { StoreOptions };
+export { FileUploadStore };
 
 type StoreOptions = {
   upload: Spec.UploadFn | undefined;

@@ -1,7 +1,7 @@
 import type { MantineColorsTuple } from '@mantine/core';
 
-export { parseColor, shades };
 export type { Oklch };
+export { parseColor, shades };
 
 // The colors of the `<board-manager>` element's `--board-manager-accent-color` and `--board-manager-danger-color`: any
 // CSS color, turned into Mantine's ten shades in OKLCH (no dependency). The given color is shade 6 (Mantine's filled color in light mode), the lighter

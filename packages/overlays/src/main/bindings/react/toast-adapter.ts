@@ -6,11 +6,12 @@
 // the animations; this only projects the keyed list of views into the stack container —
 // through a portal the provider owns, so rendering a toast is a setState.
 
+import type { ReactNode } from "react";
 import { createElement } from "react";
 import { flushSync } from "react-dom";
-import type { ReactNode } from "react";
-import type { ToastAdapterFactory, ToastView } from "../../api/toasts/adapter.js";
+
 import type { ReactToastContent } from "../../api/react/content.js";
+import type { ToastAdapterFactory, ToastView } from "../../api/toasts/adapter.js";
 import type { PortalStore } from "./portals.js";
 
 export function createToastAdapter(

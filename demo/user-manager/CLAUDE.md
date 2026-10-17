@@ -36,14 +36,15 @@ Started 2026-10-03.
   - `iam/`: the service (`createIamService`: the repositories' methods, and `data()`: everything access depends on, in
     one read), its context, the query keys, `useAccessData()`, `useChanged()` (invalidates every read after a change),
     `useTableSource()` (a data table's source over rows made from the access data, searched, filtered, sorted and
-    paged locally, `shared/lib/local-query.ts`; each page is a TanStack query).
+    paged locally by the data table's `localPage`, 2026-10-17; `shared/lib/local-query.ts` before; each page is a
+    TanStack query).
   - `users/`, `groups/`, `roles/` (with the permission catalog), `access/` (grants, "Grant access", the effective
     permissions, the check), `home/`. Each with an `index.ts`; they import each other only through it.
 - `shared/`: the Mantine scope (`.user-manager`), the data table in Mantine's look (`DataTable`: `density="compact"`
   by default, 2026-10-06, the user's wish), icons, page parts (header, avatar, a user's or group's label), formatting,
   `useForm` (form-validation plus the overlays' dialog form, like the Board Manager's and the Time Tracker's;
-  `useDialogSave`, the app's own check, is gone), `FieldError` (the message of an invalid field as a popover),
-  `useQuerySource`.
+  `useDialogSave`, the app's own check, is gone), `FieldError` (the message of an invalid field as a popover); the
+  tables' source through `useQuerySource` of `@local/data-table/react-query` (2026-10-17; a copy in `shared/` before).
 - `app/`: `user-manager-demo.tsx` (the element `user-manager-demo`; the wiring), `app.tsx` (routes, app header, breadcrumb,
   history, the hash), `look.tsx` (taken from the File Center, i.e. the Board Manager's look), `user-manager.css`.
   - The theme (2026-10-04): `modernTheme` of `packages/mantine-themes` merged with the app's own, like the Board Manager's:

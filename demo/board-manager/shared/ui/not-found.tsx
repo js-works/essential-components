@@ -1,5 +1,6 @@
 import { Anchor, Stack, Text, Title } from '@mantine/core';
 import { Link } from 'react-router';
+
 import { useTranslate } from '../lib/i18n/index.js';
 
 export { NotFound };

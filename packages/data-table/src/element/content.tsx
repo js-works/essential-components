@@ -1,10 +1,11 @@
-import { useLayoutEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
+import { useLayoutEffect, useRef } from 'react';
+
 import type * as DataTable from '../api/index.js';
 import * as classes from '../core/view/classes.js';
 
-export { contentRendererOf, nodeContent };
 export type { ContentRenderer };
+export { contentRendererOf, nodeContent };
 
 // Turns the content of the element's API (a string, content of the adapter's type, or a function that returns one of
 // them) into React nodes. Strings are rendered by us, as text; everything else by the content adapter.

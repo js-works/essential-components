@@ -2,17 +2,21 @@
 // restyle the other demos.
 import '@mantine/core/styles.layer.css';
 import './user-manager.css';
-import { OverlaysProvider } from '@local/overlays/react';
 import { MantineProvider } from '@mantine/core';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
+import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router';
-import { createIamService, IamServiceContext } from '../features/iam/index.js';
+
+import { OverlaysProvider } from '@local/overlays/react';
+
+import type { SavedFilterRepository } from '../domain/index.js';
 import type { IamService } from '../features/iam/index.js';
-import { createInMemoryRepositories } from '../infra/in-memory/index.js';
-import { Scope, SCOPE_CLASS, useScheme } from '../shared/ui/scope.js';
+import { createIamService, IamServiceContext } from '../features/iam/index.js';
+import { createInMemoryRepositories, createInMemorySavedFilters } from '../infra/in-memory/index.js';
+import { SavedFilterServiceContext } from '../shared/ui/saved-filters.js';
+import { SCOPE_CLASS, Scope, useScheme } from '../shared/ui/scope.js';
 import { createAppRouter } from './app.js';
 import { createLook } from './look.js';
 
@@ -25,28 +29,31 @@ export { UserManagerDemo };
 
 const LOOK = createLook();
 
-function App({ router, service, queryClient }: {
+function App({ router, service, savedFilters, queryClient }: {
   router: ReturnType<typeof createAppRouter>['router'];
   service: IamService;
+  savedFilters: SavedFilterRepository;
   queryClient: QueryClient;
 }) {
   return (
     <QueryClientProvider client={queryClient}>
       <IamServiceContext.Provider value={service}>
-        <MantineProvider
-          theme={LOOK.theme}
-          cssVariablesResolver={LOOK.cssVariablesResolver}
-          forceColorScheme={useScheme()}
-          cssVariablesSelector={`.${SCOPE_CLASS}`}
-          deduplicateCssVariables={false}
-          getRootElement={() => undefined}
-        >
-          <OverlaysProvider config={LOOK.overlaysConfig}>
-            <Scope>
-              <RouterProvider router={router} />
-            </Scope>
-          </OverlaysProvider>
-        </MantineProvider>
+        <SavedFilterServiceContext.Provider value={savedFilters}>
+          <MantineProvider
+            theme={LOOK.theme}
+            cssVariablesResolver={LOOK.cssVariablesResolver}
+            forceColorScheme={useScheme()}
+            cssVariablesSelector={`.${SCOPE_CLASS}`}
+            deduplicateCssVariables={false}
+            getRootElement={() => undefined}
+          >
+            <OverlaysProvider config={LOOK.overlaysConfig}>
+              <Scope>
+                <RouterProvider router={router} />
+              </Scope>
+            </OverlaysProvider>
+          </MantineProvider>
+        </SavedFilterServiceContext.Provider>
       </IamServiceContext.Provider>
     </QueryClientProvider>
   );
@@ -58,6 +65,7 @@ class UserManagerDemo extends HTMLElement {
   #root: Root | undefined;
   #disposeRouter: (() => void) | undefined;
   readonly #service = createIamService(createInMemoryRepositories());
+  readonly #savedFilters = createInMemorySavedFilters();
   readonly #queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30_000, retry: false } } });
 
   connectedCallback(): void {
@@ -67,7 +75,12 @@ class UserManagerDemo extends HTMLElement {
     this.#root = createRoot(this);
     this.#root.render(
       <StrictMode>
-        <App router={router} service={this.#service} queryClient={this.#queryClient} />
+        <App
+          router={router}
+          service={this.#service}
+          savedFilters={this.#savedFilters}
+          queryClient={this.#queryClient}
+        />
       </StrictMode>,
     );
   }

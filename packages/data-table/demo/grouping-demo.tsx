@@ -1,4 +1,6 @@
 import { useState } from 'react';
+
+import type { RowSource } from '../src/react/index.js';
 import {
   createDataTableComponent,
   defineActions,
@@ -8,11 +10,9 @@ import {
   selectFilter,
   textFilter,
 } from '../src/react/index.js';
-
-import type { RowSource } from '../src/react/index.js';
 import { defaultTheme } from '../src/themes/index.js';
-import { fetchUsersByCountry, roles } from './data.js';
 import type { User } from './data.js';
+import { fetchUsersByCountry, roles } from './data.js';
 import { badge, fixedHeight, note } from './demo.module.css';
 import { i18n } from './i18n.js';
 import { icons } from './icons.js';

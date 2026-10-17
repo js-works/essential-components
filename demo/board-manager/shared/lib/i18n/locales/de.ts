@@ -241,7 +241,6 @@ const de: Catalog<typeof en> = {
     agendaItems_other: '{{count}} Punkte',
     inSections_one: 'in {{count}} Abschnitt',
     inSections_other: 'in {{count}} Abschnitten',
-    pdf: { preview: 'Vorschau', print: 'Drucken', download: 'Herunterladen' },
     agenda: {
       title: 'Tagesordnung',
       subtitleGrouped:
@@ -314,24 +313,6 @@ const de: Catalog<typeof en> = {
       deleted_one: '„{{name}}“ gelöscht',
       deleted_other: '{{count}} Dokumente gelöscht',
     },
-  },
-
-  pdf: {
-    subject: 'Protokoll',
-    draft: 'ENTWURF',
-    minutesCancelled: 'Abgesagt: kein Protokoll',
-    minutesPlanned: 'Noch nicht abgehalten',
-    minutesApproved: 'Genehmigt',
-    minutesDraft: 'Entwurf, noch nicht genehmigt',
-    attendees: 'Teilnehmende',
-    agendaAndMinutes: 'Tagesordnung und Protokoll',
-    noPresenter: 'keine vortragende Person',
-    noMinutes: 'Kein Protokoll.',
-    decision: 'Beschluss:',
-    page: 'Seite {{page}} von {{total}}',
-    previewTitle: 'PDF-Vorschau',
-    couldNotPrint: 'Das PDF konnte nicht gedruckt werden.',
-    couldNotCreate: 'Das PDF konnte nicht erstellt werden.',
   },
 
   shell: {

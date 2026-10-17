@@ -5,11 +5,11 @@
 // per-dialog config and result types.
 // -------------------------------------------------------------------
 
+import type { FormDialogData } from "../../dialogs/form-data.js";
 import type { DialogAdapterFactory } from "./adapter.js";
-import type { DialogTheme } from "./theme.js";
 import type { OverlayContent } from "./content.js";
 import type { DialogTexts } from "./texts.js";
-import type { FormDialogData } from "../../dialogs/form-data.js";
+import type { DialogTheme } from "./theme.js";
 
 export type DialogType =
   | "info"

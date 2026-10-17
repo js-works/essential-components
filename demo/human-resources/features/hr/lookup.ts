@@ -1,5 +1,5 @@
-import { departmentPath, statusOf } from '../../domain/index.js';
 import type { Employee, HrData } from '../../domain/index.js';
+import { departmentPath, statusOf } from '../../domain/index.js';
 
 export { departmentName, departmentOptions, employeeOf, managerOptions };
 

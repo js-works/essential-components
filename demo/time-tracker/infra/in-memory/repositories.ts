@@ -1,3 +1,12 @@
+import type {
+  CorrectionRepository,
+  EmployeeRepository,
+  EntryRepository,
+  LeaveRepository,
+  SickRepository,
+  TeamRepository,
+  TimeEntry,
+} from '../../domain/index.js';
 import {
   clockStateOf,
   dateOf,
@@ -8,23 +17,12 @@ import {
   timeOf,
   vacationBalance,
 } from '../../domain/index.js';
-
-import type {
-  CorrectionRepository,
-  EmployeeRepository,
-  EntryRepository,
-  LeaveRepository,
-  SickRepository,
-  TeamRepository,
-  TimeEntry,
-} from '../../domain/index.js';
-
 import { AppError } from './errors.js';
-import { seed } from './seed.js';
 import type { Data } from './seed.js';
+import { seed } from './seed.js';
 
-export { createInMemoryRepositories };
 export type { Repositories };
+export { createInMemoryRepositories };
 
 type Repositories = {
   employees: EmployeeRepository;

@@ -1,13 +1,10 @@
 // Mantine's layered styles (`@layer mantine`): below every unlayered rule of the page, so its global rules do not
 // restyle the other demos (like in the React demo of overlays).
-import '@mantine/core/styles.layer.css';
+import './mantine.css';
 import '@mantine/charts/styles.layer.css';
 import '@mantine/dates/styles.layer.css';
 import './board-manager.css';
-import { combineCssVariables, modernTheme } from '@local/mantine-themes';
-import { createDialogTheme, createToastTheme } from '@local/overlays';
-import { OverlaysProvider } from '@local/overlays/react';
-import type { OverlaysConfig } from '@local/overlays/react';
+import type { CSSVariablesResolver, MantineColorsTuple, MantineThemeOverride } from '@mantine/core';
 import {
   ActionIcon,
   Badge,
@@ -22,26 +19,31 @@ import {
   Popover,
   Tooltip,
 } from '@mantine/core';
-
-import type { CSSVariablesResolver, MantineColorsTuple, MantineThemeOverride } from '@mantine/core';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { StrictMode } from 'react';
 import type { ReactNode } from 'react';
-import { createRoot } from 'react-dom/client';
+import { StrictMode } from 'react';
 import type { Root } from 'react-dom/client';
+import { createRoot } from 'react-dom/client';
 import { TbMaximize, TbMinimize } from 'react-icons/tb';
 import { RouterProvider } from 'react-router';
+
+import { combineCssVariables, modernTheme } from '@local/mantine-themes';
+import { createDialogTheme, createToastTheme } from '@local/overlays';
+import type { OverlaysConfig } from '@local/overlays/react';
+import { OverlaysProvider } from '@local/overlays/react';
+
 import { BoardServiceContext, createBoardService } from '../features/boards/index.js';
 import { createMeetingService, MeetingServiceContext } from '../features/meetings/index.js';
 import { createMemberService, MemberServiceContext } from '../features/members/index.js';
 import { createOrganizationService, OrganizationServiceContext } from '../features/organizations/index.js';
 import { createInMemoryRepositories } from '../infra/in-memory/index.js';
 import { translate, useLanguage } from '../shared/lib/i18n/index.js';
-import { Scope, SCOPE_CLASS, useScheme } from '../shared/shared.js';
+import { SCOPE_CLASS, Scope, useScheme } from '../shared/shared.js';
+import { SavedFilterServiceContext } from '../shared/ui/saved-filters.js';
 import { createAppRouter } from './app.js';
 
-export { App as BoardManagerApp, BoardManagerDemo, createLook };
 export type { Look };
+export { App as BoardManagerApp, BoardManagerDemo, createLook };
 
 // A board manager: boards and committees, their meetings, agendas, minutes and documents. Mantine, React Router and
 // three packages: data tables for every list, the dialogs and toasts of the overlays package, and a file upload
@@ -225,7 +227,7 @@ function createLook(
       icons: true,
       // The dialogs' own text (title, message) in the app's size and font, like the Mantine inputs in their content:
       // the values of the theme (the dialogs are outside the scopes, where Mantine's variables are not set).
-      // The spinner placeholder (while a scope waits, e.g. for the PDF) in the accent's filled color (shade 6, 8 dark).
+      // The spinner placeholder (while a scope waits) in the accent's filled color (shade 6, 8 dark).
       theme: createDialogTheme({
         radius: radius.lg,
         actionRadius: radius.sm,
@@ -274,16 +276,18 @@ function createLook(
 }
 
 // The services of the features, over the in-memory repositories (the only place that chooses the implementation).
+// The reads of the app (TanStack Query), one cache for the app's data: after every change, all of them again (a change
+// of one feature's data may show in another's, e.g. a deleted board takes its meetings with it).
+const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30_000, retry: false } } });
+const changed = () => void queryClient.invalidateQueries();
+
 const repositories = createInMemoryRepositories();
 const services = {
-  boards: createBoardService(repositories),
-  members: createMemberService(repositories),
-  organizations: createOrganizationService(repositories),
-  meetings: createMeetingService(repositories),
+  boards: createBoardService(repositories, changed),
+  members: createMemberService(repositories, changed),
+  organizations: createOrganizationService(repositories, changed),
+  meetings: createMeetingService(repositories, changed),
 };
-
-// The reads of the app (TanStack Query), one cache for the app's data.
-const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30_000, retry: false } } });
 
 // The features' services and the query client, around everything (the dialogs' content too: it reads through them).
 function Services({ children }: { children: ReactNode }) {
@@ -292,7 +296,11 @@ function Services({ children }: { children: ReactNode }) {
       <BoardServiceContext.Provider value={services.boards}>
         <MemberServiceContext.Provider value={services.members}>
           <OrganizationServiceContext.Provider value={services.organizations}>
-            <MeetingServiceContext.Provider value={services.meetings}>{children}</MeetingServiceContext.Provider>
+            <MeetingServiceContext.Provider value={services.meetings}>
+              <SavedFilterServiceContext.Provider value={repositories.savedFilters}>
+                {children}
+              </SavedFilterServiceContext.Provider>
+            </MeetingServiceContext.Provider>
           </OrganizationServiceContext.Provider>
         </MemberServiceContext.Provider>
       </BoardServiceContext.Provider>

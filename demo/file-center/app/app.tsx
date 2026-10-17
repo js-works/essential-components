@@ -1,6 +1,7 @@
 import { ActionIcon, Anchor, Breadcrumbs, Group, Menu, Text, ThemeIcon, Tooltip, UnstyledButton } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
+import type { RouteObject } from 'react-router';
 import {
   createMemoryRouter,
   Link,
@@ -13,9 +14,8 @@ import {
   useParams,
 } from 'react-router';
 
-import type { RouteObject } from 'react-router';
 import { ancestorsOf, ROOT_ID } from '../domain/index.js';
-import { browserKeys, FolderPage, folderPath, FolderTree, useBrowserService } from '../features/browser/index.js';
+import { browserKeys, FolderPage, FolderTree, folderPath, useBrowserService } from '../features/browser/index.js';
 import { FavoritesPage } from '../features/favorites/index.js';
 import { OverviewPage } from '../features/home/index.js';
 import { RecentPage } from '../features/recent/index.js';

@@ -1,7 +1,7 @@
 import type { NavItem } from '../index.js';
 
-export { groupsOf, search, subgroupsOf };
 export type { Group, Match };
+export { groupsOf, search, subgroupsOf };
 
 // A group of the navigation: its name (`''` for the items without a group) and its items, in the order of the config.
 type Group = { name: string; items: readonly NavItem[] };

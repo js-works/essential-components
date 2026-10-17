@@ -1,5 +1,5 @@
-export { childrenOf, departmentPath, descendantIds };
 export type { Department, DepartmentRepository, DepartmentValues };
+export { childrenOf, departmentPath, descendantIds };
 
 // A department of the company, in a tree (`parentId`; the top ones have none), with its head (an employee) and its cost
 // center.

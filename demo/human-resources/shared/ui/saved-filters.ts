@@ -1,61 +1,46 @@
-import type { FilterValue, SavedFilter, SavedFilters } from '@local/data-table/react';
-import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { createContext, useContext } from 'react';
 
-export { daysFromToday, sharedBy, useSavedFilters };
+import type { FilterValue, SavedFilters } from '@local/data-table/react';
 
-// The saved filters of the main tables (2026-10-11, the user's wish; the same file in each of the root's five apps: a
-// change goes into all five). Not in the tables of a record's page (e.g. a meeting's documents), nor where a table
-// has fewer than two filters.
+import type { SavedFilterRepository } from '../../domain/index.js';
 
-type Filters = Record<string, FilterValue>;
+export { SavedFilterServiceContext, useSavedFilters };
 
-// A made-up colleague's shared filter: first in the list, not removable.
-function sharedBy(owner: string, name: string, filters: Filters): SavedFilter {
-  return { id: `shared:${owner}:${name}`, name, filters, shared: true, owner, removable: false };
-}
+// Where the saved filters are kept, given by the app (its wiring decides on the repository). The same file in each of
+// the root's five apps: a change goes into all five.
+const SavedFilterServiceContext = createContext<SavedFilterRepository | null>(null);
 
-// The day `days` from today (before it when negative), `yyyy-mm-dd` in local time: for the date ranges of the
-// colleagues' filters.
-function daysFromToday(days: number): string {
-  const date = new Date();
+// The saved filters of one of the main tables (`table`: its name, e.g. `boards`), for the data table's `savedFilters`:
+// the others' shared ones (only marked, not removable) and the user's own, through TanStack Query. Only in the main
+// tables of the modules with at least two filters, not in a record's page (e.g. a meeting's documents).
+function useSavedFilters(table: string): SavedFilters {
+  const service = useContext(SavedFilterServiceContext);
 
-  date.setDate(date.getDate() + days);
+  if (service === null) {
+    throw new Error('useSavedFilters: no SavedFilterServiceContext around it.');
+  }
 
-  return [date.getFullYear(), date.getMonth() + 1, date.getDate()]
-    .map((part, index) => String(part).padStart(index === 0 ? 4 : 2, '0'))
-    .join('-');
-}
-
-// The saved filters of one table, per browser in `localStorage` under `key`, after the colleagues' shared ones: a name
-// saved again replaces the filter of that name; shared ones are only marked (one user here). Without storage (blocked,
-// private mode) they live until the page is left.
-function useSavedFilters(key: string, colleagues: readonly SavedFilter[] = []): SavedFilters {
-  const [items, setItems] = useState<readonly SavedFilter[]>(() => {
-    try {
-      const stored: unknown = JSON.parse(localStorage.getItem(key) ?? '[]');
-
-      return Array.isArray(stored) ? stored : [];
-    } catch {
-      return [];
-    }
-  });
-
-  const store = (next: readonly SavedFilter[]) => {
-    setItems(next);
-
-    try {
-      localStorage.setItem(key, JSON.stringify(next));
-    } catch {
-      // Not stored: kept in memory only.
-    }
+  const queryClient = useQueryClient();
+  const queryKey = ['saved-filters', table];
+  const { data = [] } = useQuery({ queryKey, queryFn: ({ signal }) => service.list(table, signal) });
+  const then = async (change: Promise<void>) => {
+    await change;
+    await queryClient.invalidateQueries({ queryKey });
   };
 
   return {
-    items: [...colleagues, ...items],
+    items: data.map((filter) => ({
+      id: filter.id,
+      name: filter.name,
+      filters: filter.filters as Record<string, FilterValue>,
+      shared: filter.shared,
+      owner: filter.owner,
+      removable: filter.owner === undefined,
+    })),
     sharing: true,
-    save: (name, filters, { shared }) =>
-      store([...items.filter((item) => item.name !== name), { id: crypto.randomUUID(), name, filters, shared }]),
-    remove: (id) => store(items.filter((item) => item.id !== id)),
-    setShared: (id, shared) => store(items.map((item) => (item.id === id ? { ...item, shared } : item))),
+    save: (name, filters, { shared }) => then(service.save(table, name, filters, shared)),
+    remove: (id) => then(service.remove(table, id)),
+    setShared: (id, shared) => then(service.setShared(table, id, shared)),
   };
 }

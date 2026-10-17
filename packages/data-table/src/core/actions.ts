@@ -1,5 +1,6 @@
 import type * as Spec from '../api/react/index.js';
 
+export type { ActionInput, ActionItem, ContextMenuItem };
 export {
   columnItems,
   contextMenuItems,
@@ -12,8 +13,6 @@ export {
   selectionToolbarItems,
   variantOf,
 };
-
-export type { ActionInput, ActionItem, ContextMenuItem };
 
 // The actions and menus as the app gives them.
 type ActionInput<Row> = Spec.TableAction<Row> | Spec.ActionMenu<Row>;

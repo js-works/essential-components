@@ -1,18 +1,17 @@
 import type { Folder, MediaFile } from '../../domain/index.js';
 
+export type { Store };
 export {
-  createStore,
   CURRENT_USER,
-  liveFolderIds,
+  createStore,
   LOADING_TIME,
+  liveFolderIds,
   localDateTime,
   SAVE_TIME,
   wait,
   withFavorite,
   withoutDeletedAt,
 };
-
-export type { Store };
 
 // The fake server's data: every folder and file, in memory for as long as the page is open. Both repositories share
 // one store (deleting a folder deletes its files).

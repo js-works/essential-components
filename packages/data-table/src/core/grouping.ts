@@ -1,7 +1,7 @@
 import type * as Spec from '../api/react/index.js';
 
-export { flatRows, groupKeyOf, linesOf, moveInSegments, segmentsOf };
 export type { Line, Segment, SegmentMove };
+export { flatRows, groupKeyOf, linesOf, moveInSegments, segmentsOf };
 
 // The rows of the page as runs: with `groupBy`, the rows of a group (`key`; `''` is the group of the empty value);
 // without it, one run of all rows (`key` undefined). A group whose rows were all moved away keeps its run, empty, until

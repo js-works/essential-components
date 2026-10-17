@@ -1,5 +1,6 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+
 import type * as DataTable from '../api/index.js';
 import { generalAction, multiRowAction, singleRowAction } from './action-builders.js';
 import { defineActions, defineColumns, defineFilters } from './definitions.js';
@@ -561,6 +562,28 @@ describe('defineColumns, defineActions and defineFilters', () => {
   });
 });
 
+describe('filters', () => {
+  it('labels a filter by its own label (a function follows the language)', async () => {
+    const [ElementClass, createController] = setupDataTable();
+    const element = create(ElementClass);
+
+    element.controller = createController({
+      source: createSource(),
+      rowKey: 'id',
+      columns: [{ key: 'name', header: 'Name' }],
+      filters: { town: { label: () => 'Town', filter: textFilter() } },
+    });
+    await mount(element);
+    await waitFor(() => expect(screen.getByText('Person 01')).toBeTruthy());
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
+    });
+
+    expect(await screen.findByRole('textbox', { name: 'Town' })).toBeTruthy();
+  });
+});
+
 describe('controller', () => {
   it('reloads, reports and clears the selection, typed by the rows of its source', async () => {
     const [ElementClass, createController] = setupDataTable();
@@ -595,6 +618,34 @@ describe('controller', () => {
 
     await act(async () => controller.reload());
     await waitFor(() => expect(source.mock.calls.length).toBe(calls + 1));
+  });
+
+  it('reloads when its source reports a change (`onChange`), typed by the rows of `load`', async () => {
+    const [ElementClass, createController] = setupDataTable();
+    const load = createSource();
+    let report = () => {};
+    const controller = createController({
+      source: {
+        load,
+        onChange: (listener) => {
+          report = listener;
+
+          return () => {};
+        },
+      },
+      rowKey: 'id',
+      columns: [{ key: 'name', header: 'Name' }],
+    });
+    const element = create(ElementClass);
+
+    element.controller = controller;
+    await mount(element);
+    await waitFor(() => expect(screen.getByText('Person 01')).toBeTruthy());
+
+    const calls = load.mock.calls.length;
+
+    await act(async () => report());
+    await waitFor(() => expect(load.mock.calls.length).toBe(calls + 1));
   });
 
   it('stops reporting after the returned function was called', async () => {

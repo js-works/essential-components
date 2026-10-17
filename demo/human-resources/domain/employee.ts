@@ -1,18 +1,5 @@
 import { addDays, daysBetween, nextYearly, yearsBetween } from './dates.js';
 
-export {
-  currentSalary,
-  DOCUMENT_CATEGORIES,
-  EMPLOYEE_STATUSES,
-  EMPLOYMENT_TYPES,
-  fullName,
-  reportsOf,
-  SALARY_REASONS,
-  splitName,
-  statusOf,
-  upcomingEvents,
-};
-
 export type {
   DocumentCategory,
   DocumentRepository,
@@ -27,6 +14,18 @@ export type {
   SalaryRepository,
   SalaryValues,
   UpcomingEvent,
+};
+export {
+  currentSalary,
+  DOCUMENT_CATEGORIES,
+  EMPLOYEE_STATUSES,
+  EMPLOYMENT_TYPES,
+  fullName,
+  reportsOf,
+  SALARY_REASONS,
+  splitName,
+  statusOf,
+  upcomingEvents,
 };
 
 type EmploymentType = 'fullTime' | 'partTime' | 'contractor' | 'intern';

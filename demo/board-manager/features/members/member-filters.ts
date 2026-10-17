@@ -1,7 +1,8 @@
-import { autocompleteFilter, selectFilter } from '@local/data-table/react';
 import type { TableFilter } from '@local/data-table/react';
-import { ROLES } from '../../domain/index.js';
+import { autocompleteFilter, selectFilter } from '@local/data-table/react';
+
 import type { SuggestPeople } from '../../domain/index.js';
+import { ROLES } from '../../domain/index.js';
 import type { Translate } from '../../shared/lib/i18n/index.js';
 import { suggestion } from '../../shared/ui/suggestion.js';
 

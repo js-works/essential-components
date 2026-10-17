@@ -1,8 +1,9 @@
 import { BarChart, DonutChart } from '@mantine/charts';
 import { Paper, RingProgress, Stack, Text, useMantineTheme } from '@mantine/core';
 import { useMemo } from 'react';
-import { MEETING_STATUSES, ROLES } from '../../../domain/index.js';
+
 import type { Meeting, MeetingStatus } from '../../../domain/index.js';
+import { MEETING_STATUSES, ROLES } from '../../../domain/index.js';
 import { useLanguage, useTranslate } from '../../../shared/lib/i18n/index.js';
 import { useBoardList } from '../../boards/reads.js';
 import { useMeetingList } from '../../meetings/reads.js';

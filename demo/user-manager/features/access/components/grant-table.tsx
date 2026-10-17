@@ -1,21 +1,22 @@
-import { dateRangeFilter, multiRowAction, singleRowAction, useDataTableController } from '@local/data-table/react';
-import type { SavedFilter, TableActions, TableColumn, TableColumns, TableFilters } from '@local/data-table/react';
 import { Anchor, Badge } from '@mantine/core';
 import { Link } from 'react-router';
-import { scopeLabel } from '../../../domain/index.js';
+
+import type { TableActions, TableColumn, TableColumns, TableFilters } from '@local/data-table/react';
+import { dateRangeFilter, multiRowAction, singleRowAction } from '@local/data-table/react';
+
 import type { AccessData, Grant } from '../../../domain/index.js';
+import { scopeLabel } from '../../../domain/index.js';
 import { formatDateTime } from '../../../shared/lib/format.js';
-import { matchesText, oneOf, within } from '../../../shared/lib/local-query.js';
 import { DataTable } from '../../../shared/ui/data-table.js';
 import { appIcons } from '../../../shared/ui/icons.js';
 import { PrincipalLabel, principalName } from '../../../shared/ui/parts.js';
-import { daysFromToday, sharedBy, useSavedFilters } from '../../../shared/ui/saved-filters.js';
+import { useSavedFilters } from '../../../shared/ui/saved-filters.js';
 import { newAction } from '../../../shared/ui/table-actions.js';
 import { useAccessData, useTableSource } from '../../iam/index.js';
 import { roleFilter } from '../../roles/index.js';
 import { principalTypeFilter } from '../access-filters.js';
-import { useGrantAccessFlow, useRevokeGrantsFlow } from '../access-flows.js';
 import type { GrantPreset } from '../access-flows.js';
+import { useGrantAccessFlow, useRevokeGrantsFlow } from '../access-flows.js';
 
 export { GrantTable };
 
@@ -46,13 +47,6 @@ function grantRows(data: AccessData, filter: (grant: Grant) => boolean): GrantRo
     grant,
   }));
 }
-
-// The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
-const COLLEAGUES_FILTERS: readonly SavedFilter[] = [
-  sharedBy('Laura Schmidt', 'Group grants', { type: ['Group'] }),
-  sharedBy('Max Müller', 'Owners', { role: ['Owner'] }),
-  sharedBy('Laura Schmidt', 'Granted this month', { created: { from: daysFromToday(-30), to: daysFromToday(0) } }),
-];
 
 function useColumns(hide: readonly HiddenColumn[]): TableColumns<GrantRow> {
   const data = useAccessData();
@@ -132,29 +126,20 @@ function GrantTable({ name, filter = () => true, preset, hide = [], title, subti
   title?: string;
   subtitle?: string;
 }) {
-  const tableCtrl = useDataTableController<GrantRow>();
   const columns = useColumns(hide);
   const filters = useFilters(hide);
   const actions = useActions(preset);
-  const savedFilters = useSavedFilters('user-manager:saved-filters:access', COLLEAGUES_FILTERS);
+  const savedFilters = useSavedFilters('access');
   const source = useTableSource<GrantRow>(
     name,
     (all) => grantRows(all, filter),
     {
       search: ['who', 'role', 'scope', 'grantedBy'],
-      filters: {
-        who: (row, value) => matchesText(row.who, value),
-        type: (row, value) => oneOf(row.type, value),
-        role: (row, value) => oneOf(row.role, value),
-        created: (row, value) => within(row.created, value),
-      },
     },
-    tableCtrl.reload,
   );
 
   return (
     <DataTable
-      controller={tableCtrl}
       {...(title === undefined ? {} : { title })}
       {...(subtitle === undefined ? {} : { subtitle })}
       source={source}

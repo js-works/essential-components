@@ -1,8 +1,8 @@
 import type { FieldPropNames, FormConfig, I18nAdapter, MessageContext, ValidationMessage } from './index.js';
 import { catalogs, localeCandidates } from './messages/index.js';
 
-export { checkI18nType, createTranslator, documentLocale, humanize, isDev, LIBRARY_NAMESPACE, warnOnce };
 export type { ErrorData };
+export { checkI18nType, createTranslator, documentLocale, humanize, isDev, LIBRARY_NAMESPACE, warnOnce };
 
 /** Errors are stored as data and only translated when rendering. */
 interface ErrorData {

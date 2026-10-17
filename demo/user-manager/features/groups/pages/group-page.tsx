@@ -1,5 +1,6 @@
 import { Anchor, Badge, Button, Stack, Tabs, Text } from '@mantine/core';
 import { Link, useNavigate, useParams } from 'react-router';
+
 import { appIcons } from '../../../shared/ui/icons.js';
 import { PageHeader } from '../../../shared/ui/parts.js';
 import { GrantTable } from '../../access/index.js';

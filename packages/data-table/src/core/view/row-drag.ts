@@ -1,8 +1,8 @@
-import { useState } from 'react';
 import type { CSSProperties, KeyboardEvent, PointerEvent } from 'react';
+import { useState } from 'react';
 
-export { useRowDrag };
 export type { RowDrag };
+export { useRowDrag };
 
 // A drag in progress: the line of the dragged row and the slot it would take (the number of the other lines above it),
 // how far it is moved (px), and its height (px), by which the lines between the two make room.

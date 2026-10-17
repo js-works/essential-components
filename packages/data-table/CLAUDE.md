@@ -166,6 +166,21 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     optional peer dependency).
   - `@local/data-table/themes`: `defaultTheme`, `softTheme`, `mantineTheme`, `antdTheme` (plain data, used by both; no React,
     no element). The other entries export no themes.
+  - `@local/data-table/react-query` (2026-10-17, the user's choice, proposed at about 60%; the same file in each of the
+    root's five apps, `shared/lib/use-query-source.ts`, before): `useQuerySource(key, fetch, watch)`, a source through
+    the app's TanStack Query. Each page the table loads is a query (`key(query)`, `fetchQuery` with a `staleTime` of 30
+    seconds), so it is cached and deduplicated like the app's other reads; when a query under `watch` is invalidated,
+    the source reports it (`onChange`), and the table reloads. The query runs on TanStack's own signal (shared), the
+    table's signal only stops waiting for it. `@tanstack/react-query` is an optional peer dependency (`^5.0.0`), only
+    this entry needs it, external in the build like React. Named after TanStack's package (`react-tanstack` was the
+    first idea). Not the cache itself in the package: it is the app's, for all its reads (one cache, one way to
+    invalidate). Also `useFindSource(scope, sortKeys, toCriteria, find)` (2026-10-17, the user's wish; the same file in
+    the Board Manager and the File Center, `shared/lib/table-query.ts`, before): a source over a `find(criteria, sort,
+    paging, signal)` (`FindRows<Row, Criteria, K>`, returning a `FoundPage<Row>`, `{ items, total }`), each page under
+    `[...scope, 'page', query]`, the query mapped by `toCriteria` (e.g. `criteriaOf`), `sortOf` and `pagingOf`; it
+    reloads when a read under `scope` is invalidated. Tests: `src/react-query/use-query-source.test.tsx`,
+    `use-find-source.test.tsx`; demo: the "TanStack Query" tab (`demo/query-demo.tsx`: a server's find through
+    `useFindSource`, paging back from the cache, "Invalidate" reloads).
   - Shared types (`Theme`, `I18nAdapter`, `Query`, ...) are in the `dataTable` of both entries (2026-10-12; only in
     the main entry's `DataTable` before), so a React app needs only `/react`.
   - Needs the built files (`exports` to `dist/`), else the app's bundler resolves `react` itself.
@@ -362,12 +377,12 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - Without `theme`: the default theme, so the table always has its colors.
   - This reversed "Themes are CSS only: no theme prop, nothing in the API", decided at first.
 - The stylesheet itself (`data-table.css`) is still imported by the app.
-- The public API of the React entry (`@local/data-table/react`): `createDataTableComponent`,
-  `useDataTableController`, `useDataTableSelection`, `textFilter`, `selectFilter`,
-  `dateRangeFilter`, `numberRangeFilter`, `booleanFilter`, `autocompleteFilter`, `textColumnEditor`, `selectColumnEditor`,
-  `dateColumnEditor`, and the types (`DataTableComponentConfig`, `DataTableTheme`, `I18nAdapter`, `DataTableComponent`,
-  `.Controller`, `.Props`, ...). The themes (`defaultTheme`, `softTheme`, `mantineTheme`, `antdTheme`) come from
-  `@local/data-table/themes`.
+- The public API of the React entry (`@local/data-table/react`): `createDataTableComponent`, `useDataTableController`,
+  `useDataTableSelection`, `textFilter`, `selectFilter`, `dateRangeFilter`, `numberRangeFilter`, `booleanFilter`,
+  `autocompleteFilter`, `textColumnEditor`, `selectColumnEditor`, `dateColumnEditor`, `criteriaOf`, `pagingOf`,
+  `sortOf`, `localPage`, `localSource`, `oneOf`, `matchesText`, `inDateRange`, and the types
+  (`DataTableComponentConfig`, `DataTableTheme`, `I18nAdapter`, `DataTableComponent`, `.Controller`, `.Props`, ...). The
+  themes (`defaultTheme`, `softTheme`, `mantineTheme`, `antdTheme`) come from `@local/data-table/themes`.
 
 ## Safepoints
 
@@ -412,12 +427,14 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   and `tsconfig.json`); everywhere else, a customer's copy too, the condition is ignored and `dist/` counts.
 - `src/api/` and `src/api/react/`: the spec (types only), see "Working rules".
   - The React code (`src/core/`, `src/react/`) imports `* as Spec` from `api/react/index.js`.
-- Three entries (`exports` in `package.json`, to `dist/`):
+- Four entries (`exports` in `package.json`, to `dist/`):
   - `src/index.ts` (`@local/data-table`): the custom element (`setupDataTable`, the element's column filters)
     and the types (`src/api/index.ts`).
   - `src/react/index.ts` (`@local/data-table/react`): the React API and its types
     (`src/api/react/index.ts`).
-  - `src/themes/index.ts` (`@local/data-table/themes`): the three themes.
+  - `src/themes/index.ts` (`@local/data-table/themes`): the themes.
+  - `src/react-query/index.ts` (`@local/data-table/react-query`): `useQuerySource`, `useFindSource` and their types
+    (`src/api/find.ts`), on TanStack Query.
 - `src/element/`: the custom element, a wrapper of the React view:
   - `setup-data-table.tsx`: the setup and the element class (attributes, properties, the React root in the light
     DOM, the i18n subscription).
@@ -482,7 +499,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - `reorder-demo.tsx` + `tasks.ts` (the "Row reordering" tab): a backlog of 24 tasks in the order of their priority,
     kept in memory (`tasks.ts`: the source, 500ms, and the save of a move, 300ms), 10 per page, searchable, a status
     filter, a multi-row action ("Mark as done", a toast), striped, row details for 10 of the tasks (a note each; the
-    others have none). A "Saving" selector (`succeeds`, `fails`: the save
+    others have none; "Mark as done" marks them, and the source reports it, see "Data comes from exactly one prop"). A "Saving" selector (`succeeds`, `fails`: the save
     rejects, and the page is loaded again), and a line with the last move.
   - `grouped-reorder-demo.tsx` + `agenda.ts` (the "Grouped reordering" tab): an agenda whose items are all in sections
     (`groupBy="section"`, `reorder`), kept in memory (`agenda.ts`: the sections with their items; the source, 400ms,
@@ -970,6 +987,55 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     - The signal is aborted on unmount too.
     - The response or the rejection of an aborted load is ignored, and the rejection is not logged.
     - A source may ignore the signal (a one-argument function still works): the outdated response is ignored anyway.
+  - A source may report its changes (2026-10-17, the user's choice, proposed at about 65%: the app wired a change to
+    the controller's `reload()` by hand): `RowSource<Row>` is a function (`RowLoader<Row>`) or an object `{ load,
+    onChange? }`, `onChange(listener)` returning the unsubscribe function (the package's pattern, like the
+    `I18nAdapter`'s `onChange`). The same for the element's controller.
+    - The table subscribes while mounted, keyed by the identity of `onChange` (the source object may be new on every
+      render: only `onChange` needs to stay the same, else the table subscribes again), and unsubscribes on unmount.
+    - A report reloads the table like `reload()` (the current page with the same query; selection and details
+      cleared); all the reports of one task give one reload (a microtask). A running load is aborted by it, like by a
+      new filter.
+    - While the edit form or the filter view is open, the reload waits until both are closed, then comes once: the
+      draft and the user's place are not lost.
+    - Weighed: a prop of its own (`subscribe` next to `source`: two things that belong together), leaving it to the app.
+    - Demo: the "Row reordering" tab (`taskSource` in `demo/tasks.ts`: "Mark as done" changes the tasks and reports it).
+      Tests: "a source that reports its changes" (`data-table.test.tsx`), and one of the element.
+- Helpers for a source that asks a server (2026-10-17, the user's choice, proposed at about 65%: they were the Board
+  Manager's, `shared/lib/table-query.ts`, and the File Center and the User Manager would need them too), in both
+  entries, without React (`src/core/query-helpers.ts`, tests `query-helpers.test.ts`):
+  - `pagingOf(query)`: the page as a window of rows, `RowPaging` (`{ offset, limit }`).
+  - `sortOf(query, keys)`: the sort, `RowSort<K>` (`{ key, direction }`), if its key is one of `keys` (what the source
+    can sort by), else `undefined`.
+  - `criteriaOf<C>(search, filters?)` and `criteriaOf<C>(filters?)` (two overloads, 2026-10-17, the user's idea, proposed
+    at about 70%; one object `{ search, filters }`, `CriteriaMapping<C>`, for a few hours the same day, which made each
+    call two lines longer) return `(query) => C`: the search (trimmed; left out when empty) under the key `search`
+    (without it, the search is left out: no convention of ours in the app's domain; a fixed `text` was weighed), every
+    filter under its key, or under the one `filters` gives it (`FilterRenames<C>`). A string first is the search key,
+    an object the renames. The keys are checked against `C`, the values are not (they are taken as they are):
+    `criteriaOf<BoardMemberCriteria>('text', { name: 'names' })`.
+  - `localPage(rows, query, options)` (2026-10-17, the user's wish; `runLocalQuery` of `shared/lib/local-query.ts`, the
+    same file in Human Resources, the Time Tracker and the User Manager, before; moved as it was): a page of rows that
+    are all in memory (small lists), as a source gives it: the rows that pass every filter (`options.filters`: a
+    predicate per filter key, called with the filter's value; a filter without one is matched by default, 2026-10-17,
+    the user's choice, proposed at about 65%: the row's field of the filter's key, by the shape of the value, a list one
+    of them, `{ text, match }` the text match, `{ from, to }` a range, of numbers for a number field, else of days,
+    anything else, a boolean or a single select's value, equal; a row without that field passes. It removed 28
+    predicates of the apps that only repeated it; it passed every filter without one before) and contain the search
+    (trimmed, ignoring the case) in one of the fields of `options.search`, sorted by the query's sort (the row's field
+    of its key, or `options.sortValue`; numbers as numbers, texts in a natural order), the query's page of them and
+    their number (`LocalPageOptions<Row>`, `src/api/local-page.ts`). With matchers for the predicates, for the values of
+    the built-in filters (`unknown`, as they come from `query.filters`): `oneOf(value, filter)` (a list; none or an
+    empty one: all), `matchesText(value, filter)` (`{ text, match }`), `inDateRange(date, filter)` (2026-10-17, the
+    user's choice; `within` for a few hours, a name that said little and collided with Testing Library's; `{ from, to
+    }`, days, both inclusive; a date with a time counts by its date). `src/core/local-page.ts`, tests
+    `local-page.test.ts`.
+  - `localSource(rows, options)` (2026-10-17, the user's wish; the package's todo "Array helper" since the first
+    days): a source over a fixed array, each page by `localPage`. A new array is a new source, which the table does not
+    load again by itself (the rule for every source): a `key` of the rows, or `reload()`.
+  - Demo: `demo/data.ts` (`pagingOf`; `localSource` for the empty table, `fetchNothing`, without the loading time it
+    had), `demo/query-demo.tsx` (`criteriaOf`), `demo/tasks.ts` (`localPage`). The Board
+    Manager's `useFindSource` uses `sortOf` and `pagingOf`, its `MemberTable` `criteriaOf`.
 - Naming: `header` is the heading of a column or column group. `label` is the text of a control (action, menu item).
 - Paging: `pageSize` is the initial page size, `pageSizeOptions` fills the page size dropdown.
   - `pageSize` is the only way to set the initial size.
@@ -1480,9 +1546,17 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     user chose the object over an array with the key first, which was proposed at about 65%, to try it first;
     `Column.filter` before, from the time of the filter row): `filters?: TableFilters`, an object of filters by key
     (`Readonly<Record<string, TableFilter>>`; the element's `TableFilters<C>`, in the controller's options). The key
-    is the key in `Query.filters`; the order of the object is the order of the filter view. A filter's label is the
-    header of the column of its key (hidden columns too), else the key itself (a label of its own: the next step,
-    open). A filter needs no column, and a column no filter.
+    is the key in `Query.filters`; the order of the object is the order of the filter view. A filter's label is its own,
+    else the header of the column of its key (hidden columns too), else the key itself. A filter needs no column, and
+    a column no filter.
+    - A label of its own (2026-10-17, the user's choice of three, proposed at about 55%): an entry `{ label, filter }`
+      in place of the filter (`LabeledFilter`; React `label: ReactNode`, the element's `TextContent<C>`, so a function
+      follows the language): `nickname: { label: t('people.nickname'), filter: textFilter() }`. The same for built-in
+      filters, custom ones and an app's helpers (`personFilter(…)`), which need no option. Weighed: a `label` option of
+      the factories (a custom filter, a plain function, would need a wrapper; each helper of an app would pass it on),
+      a prop `filterLabels` (the label away from its filter). It shows in the filter view (or drawer) and the pill; the
+      saved filters and the query use the key only. Demo: the React tab's `city` (the users have a city, the table no
+      column). Tests: "labels a filter by its own label" (React and the element).
   - The filter factories and types without "Column" (2026-10-15, the user's wish, once the filters were no longer on
     the columns): `textFilter`, `selectFilter`, `autocompleteFilter`, `dateRangeFilter`, `numberRangeFilter`,
     `booleanFilter`; the types `TableFilter`, `BuiltInFilter`, `TextFilterSettings`, `SelectFilterSettings`,
@@ -2283,10 +2357,6 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 
 ## Todo (later)
 
-- A label of a filter's own (2026-10-15, the user's wish: later): a filter without a column of its key shows the key
-  itself as its label (in the filter view and its pill). Proposed: a `label` option of the factories
-  (`textFilter({ label: t('people.nickname') })`); it would win over the column's header. Only for filters without a
-  column; every filter of the root's apps has one today.
 - Row actions that are not visible for a row (`visible`, 2026-10-10, the user's wish: later): keep their place in the
   action column (an empty slot as wide as the button, `visibility: hidden`: not focusable, not announced), so every
   action has its own column across the rows, whatever the order (proposed at about 55%; for now the column is
@@ -2459,13 +2529,9 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 - `src/api/`: add the final comments to all types, and group the `Props` properties with blank
   lines again.
 
-- Array helper: turns an array into a `source` (client-side sorting, filtering and paging).
-  - Name and place undecided (`DataTable.fromArray(rows)` or a separate export).
 - Long-press tooltip on touch devices for icon-only actions (Base UI disables tooltips on touch). Try the icon-only
   buttons on a real touch device first.
 - `Query.filters` with keys typed against the row type (`Query<Row>`), a possible later safety net.
-- Array helper and filters: how the helper applies `Query.filters` (contains for text, equals for select, a list means
-  "one of"), and how an own filter supplies its predicate.
 - Controlled query state (`query` and `onQueryChange`), e.g. for URL sync or "reset all" from outside.
   - Design it as one unit, together with `pageSize` and the selection reset.
 - Error state: what happens when `source` rejects (display, retry, texts in `DataTableTexts`).

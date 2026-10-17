@@ -11,8 +11,7 @@
 // stays framework-free). Nothing is injected at runtime any more: this module imports
 // React itself, so the hooks can share a single provider-owned portal registry.
 
-export { OverlaysProvider, useDialogs, useToast } from "./provider.js";
-export { Form } from "./dialog-adapter.js";
-
 // The types, with all of the main entry's.
 export type * from "../../api/react/index.js";
+export { Form } from "./dialog-adapter.js";
+export { OverlaysProvider, useDialogs, useToast } from "./provider.js";

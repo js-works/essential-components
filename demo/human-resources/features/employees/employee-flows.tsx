@@ -1,7 +1,9 @@
-import { useDialogs, useToast } from '@local/overlays/react';
 import { useNavigate } from 'react-router';
-import { addDays, currentSalary, todayDate } from '../../domain/index.js';
+
+import { useDialogs, useToast } from '@local/overlays/react';
+
 import type { Employee, EmployeeDocument, HrData } from '../../domain/index.js';
+import { addDays, currentSalary, todayDate } from '../../domain/index.js';
 import { errorText } from '../../shared/lib/error-text.js';
 import { useTranslate } from '../../shared/lib/i18n/index.js';
 import { useChanged, useHrService } from '../hr/index.js';

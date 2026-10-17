@@ -1,8 +1,8 @@
 import type * as Spec from '../../api/react/index.js';
-import { variantOf } from '../actions.js';
 import type { ActionItem } from '../actions.js';
-import { ActionButton, ActionMenu } from './widgets.js';
+import { variantOf } from '../actions.js';
 import type { ButtonPlacement, MenuEntry } from './widgets.js';
+import { ActionButton, ActionMenu } from './widgets.js';
 
 export { ActionList };
 

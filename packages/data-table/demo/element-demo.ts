@@ -1,3 +1,4 @@
+import type { TableDensity } from '../src/index.js';
 import {
   autocompleteFilter,
   defineColumns,
@@ -7,11 +8,9 @@ import {
   setupDataTable,
   textFilter,
 } from '../src/index.js';
-
-import type { TableDensity } from '../src/index.js';
 import { defaultTheme } from '../src/themes/index.js';
-import { countries, fetchUsers, roles, suggestEmails } from './data.js';
 import type { User } from './data.js';
+import { countries, fetchUsers, roles, suggestEmails } from './data.js';
 import { i18n } from './i18n.js';
 import './element-demo.css';
 

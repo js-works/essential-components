@@ -6,6 +6,6 @@
 
 export { createDialogsController } from "./controller/controller.js";
 export { Dialog } from "./element/element.js";
-export { createDialogTheme, defaultDialogTheme } from "./theme.js";
-export { defaultDialogTexts } from "./texts.js";
 export { FormDialogData } from "./form-data.js";
+export { defaultDialogTexts } from "./texts.js";
+export { createDialogTheme, defaultDialogTheme } from "./theme.js";

@@ -1,10 +1,12 @@
 // The design language first, so the CSS of the demos comes after it.
 import './ui/ui.css';
 import './demo.css';
-import { createCockpitClass } from '@local/cockpit';
+
 import type { CockpitFooter, MenuSection } from '@local/cockpit';
-import { mountLoginScreen } from '@local/login';
+import { createCockpitClass } from '@local/cockpit';
 import type { MountedLoginScreen } from '@local/login';
+import { mountLoginScreen } from '@local/login';
+
 import {
   accentSetting,
   MENU,

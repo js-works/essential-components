@@ -1,9 +1,10 @@
 import type { BoardRepository, MembershipRepository, Person, PersonRepository } from '../../domain/index.js';
+import { withChanges } from '../../shared/lib/with-changes.js';
 
-export { createBoardService };
 export type { BoardService };
+export { createBoardService };
 
-// What the boards feature's UI calls: the boards, and their members.
+// What the boards feature's UI calls: the boards, and their members. After a change, `onChange`.
 type BoardService = ReturnType<typeof createBoardService>;
 
 function createBoardService(
@@ -12,8 +13,9 @@ function createBoardService(
     memberships: MembershipRepository;
     people: PersonRepository;
   },
+  onChange: () => void,
 ) {
-  return {
+  const service = {
     ...boards,
     findMembers: memberships.findOfBoard,
     addMember: memberships.add,
@@ -31,4 +33,10 @@ function createBoardService(
       return all.filter((person) => !onBoard.has(person.id));
     },
   };
+
+  return withChanges(
+    service,
+    ['create', 'update', 'delete', 'addMember', 'changeRole', 'removeMembers'],
+    onChange,
+  );
 }

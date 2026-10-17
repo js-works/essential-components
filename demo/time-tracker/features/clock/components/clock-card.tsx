@@ -1,7 +1,8 @@
 import { Alert, Button, Group, Paper, Progress, Stack, Text } from '@mantine/core';
 import type { ReactElement } from 'react';
-import { clockStateOf, daySheet, nextClockActions } from '../../../domain/index.js';
+
 import type { ClockAction, Employee, TimeData } from '../../../domain/index.js';
+import { clockStateOf, daySheet, nextClockActions } from '../../../domain/index.js';
 import { formatDuration } from '../../../shared/lib/format.js';
 import { useLanguage, useTranslate } from '../../../shared/lib/i18n/index.js';
 import { useNow } from '../../../shared/lib/use-now.js';

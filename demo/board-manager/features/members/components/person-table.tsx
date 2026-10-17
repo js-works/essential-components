@@ -1,20 +1,15 @@
-import { useDataTableController } from '@local/data-table/react';
-import type {
-  RowQuery,
-  RowSource,
-  SavedFilter,
-  TableActions,
-  TableColumns,
-  TableFilters,
-} from '@local/data-table/react';
-
 import { Anchor } from '@mantine/core';
 import { Link, useNavigate } from 'react-router';
-import type { PersonCriteria, PersonSortKey, PersonSummary } from '../../../domain/index.js';
+
+import type { RowSource, TableActions, TableColumns, TableFilters } from '@local/data-table/react';
+import { criteriaOf } from '@local/data-table/react';
+import { useFindSource } from '@local/data-table/react-query';
+
+import type { PersonCriteria, PersonSummary } from '../../../domain/index.js';
+import { PERSON_SORT_KEYS } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { searchText, toPaging, toSort, usePageSource } from '../../../shared/lib/table-query.js';
 import { DataTable, PAGE_SIZE_OPTIONS } from '../../../shared/shared.js';
-import { sharedBy, useSavedFilters } from '../../../shared/ui/saved-filters.js';
+import { useSavedFilters } from '../../../shared/ui/saved-filters.js';
 import { deleteAction, editAction, newAction, openAction } from '../../../shared/ui/table-actions.js';
 import { boardFilter } from '../../boards/filters/board-filters.js';
 import { useBoardList } from '../../boards/reads.js';
@@ -27,37 +22,20 @@ import { useCreatePersonFlow, useDeletePeopleFlow, useEditPersonFlow } from '../
 
 export { memberPath, PersonTable };
 
-const SORT_KEYS: readonly PersonSortKey[] = ['name', 'organization'];
-
-function toCriteria(query: RowQuery, organizationId: string | undefined): PersonCriteria {
-  const { name, organization, boards } = query.filters as {
-    name?: string[];
-    organization?: string[];
-    boards?: string[];
-  };
-
-  return { text: searchText(query), names: name, organizations: organization, boards, organizationId };
-}
-
-function useSource(organizationId: string | undefined, reload: () => void): RowSource<PersonSummary> {
-  const service = useMemberService();
-
-  return usePageSource(
-    [...memberKeys.all, 'people', organizationId ?? ''],
-    (query, signal) =>
-      service.find(toCriteria(query, organizationId), toSort(query, SORT_KEYS), toPaging(query), signal),
-    reload,
-  );
-}
-
 // A member's page.
 const memberPath = (person: { id: string }) => `/members/${person.id}`;
 
-// The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
-const COLLEAGUES_FILTERS: readonly SavedFilter[] = [
-  sharedBy('Lena Hoffmann', 'Audit Committee', { boards: ['Audit Committee'] }),
-  sharedBy('Jonas Weber', 'Works Council', { organization: ['Works Council'] }),
-];
+function useSource(organizationId: string | undefined): RowSource<PersonSummary> {
+  const service = useMemberService();
+  const toCriteria = criteriaOf<PersonCriteria>('text');
+
+  return useFindSource(
+    [...memberKeys.all, 'people', organizationId ?? ''],
+    PERSON_SORT_KEYS,
+    (query) => ({ ...toCriteria(query), organizationId }),
+    service.find,
+  );
+}
 
 function useColumns(organizationId: string | undefined): TableColumns<PersonSummary> {
   const t = useTranslate();
@@ -99,13 +77,14 @@ function useColumns(organizationId: string | undefined): TableColumns<PersonSumm
 }
 
 function useFilters(): TableFilters {
+  const t = useTranslate();
   const boards = useBoardList();
   const members = useMemberService();
   const organizations = useOrganizationService();
 
   return {
-    name: personFilter(members.suggest),
-    organization: organizationFilter(organizations.suggest),
+    names: { label: t('members.columns.person'), filter: personFilter(members.suggest) },
+    organizations: { label: t('members.columns.organization'), filter: organizationFilter(organizations.suggest) },
     boards: boardFilter(boards),
   };
 }
@@ -132,16 +111,14 @@ function useActions(organizationId: string | undefined): TableActions<PersonSumm
 function PersonTable(
   { organizationId, title, subtitle }: { organizationId?: string; title: string; subtitle: string },
 ) {
-  const tableCtrl = useDataTableController<PersonSummary>();
+  const source = useSource(organizationId);
   const columns = useColumns(organizationId);
   const filters = useFilters();
   const actions = useActions(organizationId);
-  const savedFilters = useSavedFilters('board-manager:saved-filters:members', COLLEAGUES_FILTERS);
-  const source = useSource(organizationId, tableCtrl.reload);
+  const savedFilters = useSavedFilters('members');
 
   return (
     <DataTable
-      controller={tableCtrl}
       title={title}
       subtitle={subtitle}
       density="compact"

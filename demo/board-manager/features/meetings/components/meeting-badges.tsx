@@ -1,4 +1,5 @@
 import { Badge } from '@mantine/core';
+
 import type { MeetingStatus } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 

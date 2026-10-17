@@ -1,7 +1,8 @@
 import { ActionIcon, Anchor, Breadcrumbs, Group, Menu, Text, ThemeIcon, Tooltip, UnstyledButton } from '@mantine/core';
-import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Trans } from 'react-i18next';
+import type { Params, RouteObject } from 'react-router';
 import {
   createMemoryRouter,
   Link,
@@ -14,7 +15,6 @@ import {
   useNavigationType,
 } from 'react-router';
 
-import type { Params, RouteObject } from 'react-router';
 import { useBoard } from '../features/boards/index.js';
 import { BoardPage } from '../features/boards/pages/board-page.js';
 import { BoardsPage } from '../features/boards/pages/boards-page.js';
@@ -28,8 +28,8 @@ import { MembersPage } from '../features/members/pages/members-page.js';
 import { useOrganization } from '../features/organizations/index.js';
 import { OrganizationPage } from '../features/organizations/pages/organization-page.js';
 import { OrganizationsPage } from '../features/organizations/pages/organizations-page.js';
-import { i18n, useTranslate } from '../shared/lib/i18n/index.js';
 import type { Translate } from '../shared/lib/i18n/index.js';
+import { i18n, useTranslate } from '../shared/lib/i18n/index.js';
 import { appIcons } from '../shared/shared.js';
 import { NotFound } from '../shared/ui/not-found.js';
 import { mirrorInHash, pathFromHash } from './hash-history.js';

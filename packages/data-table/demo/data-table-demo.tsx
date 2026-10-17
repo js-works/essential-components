@@ -1,11 +1,13 @@
-import { StrictMode } from 'react';
 import type { ComponentType, ReactNode } from 'react';
-import { createRoot } from 'react-dom/client';
+import { StrictMode } from 'react';
 import type { Root } from 'react-dom/client';
+import { createRoot } from 'react-dom/client';
+
 import { App } from './app.js';
 import { mountElementDemo } from './element-demo.js';
 import { GroupedReorderDemo } from './grouped-reorder-demo.js';
 import { GroupingDemo } from './grouping-demo.js';
+import { QueryDemo } from './query-demo.js';
 import { ReorderDemo } from './reorder-demo.js';
 import { setupUi } from './ui/ui.js';
 
@@ -17,6 +19,7 @@ const EXAMPLES: readonly { readonly tab: string; readonly Example: ComponentType
   { tab: 'Row reordering', Example: ReorderDemo },
   { tab: 'Row grouping', Example: GroupingDemo },
   { tab: 'Grouped reordering', Example: GroupedReorderDemo },
+  { tab: 'TanStack Query', Example: QueryDemo },
 ];
 
 // The whole demo of the data table, as a light DOM custom element without attributes, so a page can show it alone

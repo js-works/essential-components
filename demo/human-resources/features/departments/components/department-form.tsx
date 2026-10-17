@@ -1,7 +1,8 @@
 import { SimpleGrid, Stack, TextInput } from '@mantine/core';
 import { z } from 'zod';
-import { departmentPath, descendantIds, statusOf, todayDate } from '../../../domain/index.js';
+
 import type { Department, HrData } from '../../../domain/index.js';
+import { departmentPath, descendantIds, statusOf, todayDate } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { useForm } from '../../../shared/lib/use-form.js';
 import { FormSelect } from '../../../shared/ui/form-select.js';

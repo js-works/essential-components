@@ -1,5 +1,5 @@
-import { agendaOf } from '../../domain/index.js';
 import type { AgendaEntry, AgendaSection } from '../../domain/index.js';
+import { agendaOf } from '../../domain/index.js';
 import { useRead, useRecord } from '../../shared/lib/queries.js';
 import { useMeetingService } from './context.js';
 import { meetingKeys } from './keys.js';

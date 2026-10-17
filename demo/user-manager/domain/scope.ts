@@ -1,5 +1,5 @@
-export { pathOf, scopeChildren, scopeLabel };
 export type { Scope, ScopeRepository };
+export { pathOf, scopeChildren, scopeLabel };
 
 // Where access is granted: a node of the resource tree (the organization, an app, a folder, a board, ...). A grant on a
 // scope applies to everything below it.

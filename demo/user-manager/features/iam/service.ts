@@ -8,8 +8,8 @@ import type {
   UserRepository,
 } from '../../domain/index.js';
 
-export { createIamService };
 export type { IamService };
+export { createIamService };
 
 // The app's service: what the UI calls. The repositories' own methods, and `data()`: everything access depends on, in
 // one read (the lists are small; every page needs several of them, and the rules of access need all).

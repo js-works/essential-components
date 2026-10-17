@@ -17,6 +17,7 @@
 // React cannot honour) is needed.
 
 import type { DialogButtonView } from "../../dialogs/view.js";
+import type { OverlayContent } from "./content.js";
 import type {
   DialogRenderOverrides,
   DialogSurface,
@@ -24,8 +25,6 @@ import type {
   DialogWidth,
   FormConfirm,
 } from "./dialog.js";
-
-import type { OverlayContent } from "./content.js";
 import type { DialogTheme } from "./theme.js";
 
 /**

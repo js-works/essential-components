@@ -1,4 +1,5 @@
 import type { ReactElement, ReactNode } from 'react';
+
 import type * as DataTable from '../api/index.js';
 import type * as Spec from '../api/react/index.js';
 import { createDataTableController, subscribeToSelection } from '../core/controller.js';
@@ -7,8 +8,8 @@ import type { ContentRenderer } from './content.js';
 import { editorOf } from './editors.js';
 import { reactFilterOf } from './filters.js';
 
-export { bindController, controllerFactoryOf, releaseController, renderController };
 export type { ElementSettings };
+export { bindController, controllerFactoryOf, releaseController, renderController };
 
 // What the element adds to the controller's options: the settings that do not depend on the row type.
 type ElementSettings = {
@@ -158,10 +159,15 @@ function propsOf<Row, C>(
     filters: options.filters === undefined
       ? undefined
       : Object.fromEntries(
-        Object.entries(options.filters).flatMap(([key, filter]) => {
-          const reactFilter = filterOf(filter, content);
+        Object.entries(options.filters).flatMap(([key, entry]) => {
+          const labeled = typeof entry === 'object' && 'filter' in entry;
+          const reactFilter = filterOf(labeled ? entry.filter : entry, content);
 
-          return reactFilter === undefined ? [] : [[key, reactFilter]];
+          if (reactFilter === undefined) {
+            return [];
+          }
+
+          return [[key, labeled ? { label: content(entry.label), filter: reactFilter } : reactFilter]];
         }),
       ),
     columns: options.columns.map((column) =>

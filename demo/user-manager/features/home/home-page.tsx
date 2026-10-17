@@ -1,6 +1,7 @@
 import { Group, Paper, SimpleGrid, Stack, Text, ThemeIcon, Title, UnstyledButton } from '@mantine/core';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
+
 import { appIcons } from '../../shared/ui/icons.js';
 import { useAccessData } from '../iam/index.js';
 

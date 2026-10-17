@@ -2,5 +2,5 @@
 
 export { BoardServiceContext, useBoardService } from './context.js';
 export { useBoard, useBoardList } from './reads.js';
-export { createBoardService } from './service.js';
 export type { BoardService } from './service.js';
+export { createBoardService } from './service.js';

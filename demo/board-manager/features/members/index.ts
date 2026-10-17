@@ -2,5 +2,5 @@
 
 export { MemberServiceContext, useMemberService } from './context.js';
 export { useMembershipList, usePerson, usePersonList } from './reads.js';
-export { createMemberService } from './service.js';
 export type { MemberService } from './service.js';
+export { createMemberService } from './service.js';

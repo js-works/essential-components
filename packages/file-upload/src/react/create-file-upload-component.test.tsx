@@ -2,6 +2,7 @@ import { within } from '@testing-library/dom';
 import { act, cleanup, render, waitFor } from '@testing-library/react';
 import { createContext, createRef, useContext, useMemo } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+
 import type * as Spec from '../api/index.js';
 import type * as ReactSpec from '../api/react/index.js';
 import { createFileUploadComponent } from './create-file-upload-component.js';

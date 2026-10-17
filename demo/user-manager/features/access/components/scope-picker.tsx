@@ -1,9 +1,10 @@
-import { Paper, Text, Tree, UnstyledButton, useTree } from '@mantine/core';
 import type { TreeNodeData } from '@mantine/core';
+import { Paper, Text, Tree, UnstyledButton, useTree } from '@mantine/core';
 import { useMemo, useState } from 'react';
 import { TbChevronRight } from 'react-icons/tb';
-import { pathOf, scopeChildren } from '../../../domain/index.js';
+
 import type { Scope } from '../../../domain/index.js';
+import { pathOf, scopeChildren } from '../../../domain/index.js';
 
 export { ScopePicker };
 

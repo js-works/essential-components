@@ -1,7 +1,7 @@
 import { createContext, useContext } from 'react';
 
-export { ColumnLabelsContext, FilterLabelsContext, useColumnLabels, useLabelsOfColumn };
 export type { FilterLabels };
+export { ColumnLabelsContext, FilterLabelsContext, useColumnLabels, useLabelsOfColumn };
 
 // The labels of the values chosen in the filters of one table (an autocomplete's options), by column key, then by
 // value. The table keeps them, not the filter: a filter made anew on every render keeps its pill texts.

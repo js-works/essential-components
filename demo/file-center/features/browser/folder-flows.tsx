@@ -1,7 +1,9 @@
+import { useQueryClient } from '@tanstack/react-query';
+
 import type { FileItem, FileUploadTheme } from '@local/file-upload';
 import { createFileUploadComponent } from '@local/file-upload/react';
 import { useDialogs, useToast } from '@local/overlays/react';
-import { useQueryClient } from '@tanstack/react-query';
+
 import { createDemoI18n } from '../../../../packages/file-upload/demo/i18n.js';
 import type { Folder, MediaFile } from '../../domain/index.js';
 import { countText } from '../../shared/lib/format.js';

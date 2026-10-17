@@ -1,7 +1,7 @@
 // Inter, self-hosted (the variable font, its stylesheet loads the woff2 files of the scripts a page uses).
 import '@fontsource-variable/inter';
-import { Badge, Button, Input, InputWrapper } from '@mantine/core';
 import type { CSSVariablesResolver, MantineThemeOverride } from '@mantine/core';
+import { Badge, Button, Input, InputWrapper } from '@mantine/core';
 
 export { MODERN_DANGER, modernOverride, modernVariables };
 

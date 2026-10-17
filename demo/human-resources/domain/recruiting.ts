@@ -1,6 +1,5 @@
 import type { Employee, EmploymentType } from './employee.js';
 
-export { CANDIDATE_SOURCES, isInProcess, OPENING_STATUSES, PIPELINE, STAGES };
 export type {
   Candidate,
   CandidateRepository,
@@ -13,6 +12,7 @@ export type {
   OpeningValues,
   Stage,
 };
+export { CANDIDATE_SOURCES, isInProcess, OPENING_STATUSES, PIPELINE, STAGES };
 
 // A job opening: a position (or a few of the same) to fill, in a department, with its hiring manager.
 type OpeningStatus = 'open' | 'onHold' | 'closed';

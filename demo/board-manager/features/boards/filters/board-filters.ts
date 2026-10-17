@@ -1,5 +1,6 @@
-import { selectFilter } from '@local/data-table/react';
 import type { TableFilter } from '@local/data-table/react';
+import { selectFilter } from '@local/data-table/react';
+
 import type { Board } from '../../../domain/index.js';
 
 export { boardFilter };

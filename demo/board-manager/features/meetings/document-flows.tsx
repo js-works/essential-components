@@ -1,30 +1,25 @@
 import type { FileItem } from '@local/file-upload';
-import { useDialogs, useToast } from '@local/overlays/react';
+
 import type { Meeting, MeetingDocument } from '../../domain/index.js';
 import { DocumentForm, UploadForm } from '../../shared/forms.js';
-import { confirmAndRun } from '../../shared/lib/flows.js';
-import { useTranslate } from '../../shared/lib/i18n/index.js';
-import { useChanged } from '../../shared/lib/use-changed.js';
+import { useFlowKit } from '../../shared/lib/flows.js';
 import { useMeetingService } from './context.js';
 
 export { useDeleteDocumentsFlow, useDownloadDocumentFlow, useRenameDocumentFlow, useUploadDocumentsFlow };
 
-// The flows of a meeting's documents, one hook per use case. A flow changes the data through the service and says so
-// (`changed()`); it knows no table.
+// The flows of a meeting's documents, one hook per use case. A flow changes the data through the service (which says
+// so: every read loads again); it knows no table.
 
 // "Upload": a drawer with the file upload. Every file is uploaded (staged) at once, "Apply" adds them, "Cancel"
 // discards them.
 function useUploadDocumentsFlow(meeting: Meeting): () => Promise<void> {
-  const dialogs = useDialogs();
-  const toasts = useToast();
-  const t = useTranslate();
+  const { formFlow, t } = useFlowKit();
   const service = useMeetingService();
-  const changed = useChanged();
 
   return async () => {
     let items: readonly FileItem[] = [];
     let committed: readonly MeetingDocument[] = [];
-    const result = await dialogs.form({
+    const done = await formFlow({
       surface: 'drawer',
       title: t('meetings.documents.uploadTitle'),
       subtitle: meeting.title,
@@ -42,22 +37,18 @@ function useUploadDocumentsFlow(meeting: Meeting): () => Promise<void> {
         />
       ),
       buttons: { confirm: t('meetings.sections.apply') },
+      success: () => t('meetings.documents.uploaded', { count: committed.length, name: committed[0]?.name ?? '' }),
     });
 
-    if (result.canceled) {
+    if (!done) {
       service.discardDocuments(items.flatMap((item) => (item.result === undefined ? [] : [item.result])));
-      return;
     }
-
-    void changed();
-    toasts.success(t('meetings.documents.uploaded', { count: committed.length, name: committed[0]?.name ?? '' }));
   };
 }
 
 // "Download": not in the demo, a note says so.
 function useDownloadDocumentFlow(): () => void {
-  const dialogs = useDialogs();
-  const t = useTranslate();
+  const { dialogs, t } = useFlowKit();
 
   return () => {
     void dialogs.warn({ title: t('meetings.documents.download'), content: t('meetings.documents.notAvailable') });
@@ -66,16 +57,14 @@ function useDownloadDocumentFlow(): () => void {
 
 // "Rename": the name in a form dialog (the fake server trims it and refuses an empty one; the dialog shows its
 // message), then a toast.
-function useRenameDocumentFlow(): (document: MeetingDocument) => Promise<void> {
-  const dialogs = useDialogs();
-  const toasts = useToast();
-  const t = useTranslate();
+function useRenameDocumentFlow(): (document: MeetingDocument) => Promise<boolean> {
+  const { formFlow, t } = useFlowKit();
   const service = useMeetingService();
-  const changed = useChanged();
 
-  return async (document) => {
+  return (document) => {
     let renamed = document.name;
-    const result = await dialogs.form({
+
+    return formFlow({
       title: t('meetings.documents.renameTitle'),
       content: (
         <DocumentForm
@@ -86,42 +75,27 @@ function useRenameDocumentFlow(): (document: MeetingDocument) => Promise<void> {
         />
       ),
       buttons: { confirm: t('common.save') },
+      success: () => t('meetings.documents.renamed', { name: renamed }),
     });
-
-    if (result.canceled) {
-      return;
-    }
-
-    void changed();
-    toasts.success(t('meetings.documents.renamed', { name: renamed }));
   };
 }
 
 // "Delete" of documents: a critical confirmation that deletes them before it closes, then a toast.
-function useDeleteDocumentsFlow(): (documents: readonly MeetingDocument[]) => Promise<void> {
-  const dialogs = useDialogs();
-  const toasts = useToast();
-  const t = useTranslate();
+function useDeleteDocumentsFlow(): (documents: readonly MeetingDocument[]) => Promise<boolean> {
+  const { confirmFlow, t } = useFlowKit();
   const service = useMeetingService();
-  const changed = useChanged();
 
-  return async (documents) => {
-    const [first] = documents;
-    const done = await confirmAndRun(
-      dialogs,
-      {
-        title: t('meetings.documents.deleteTitle', { count: documents.length }),
-        content: t('meetings.documents.deleteContent', { count: documents.length, name: first?.name ?? '' }),
-        buttons: { confirm: t('common.delete') },
-      },
-      () => service.deleteDocuments(documents.map((document) => document.id)),
-    );
+  return (documents) => {
+    const count = documents.length;
+    const name = documents[0]?.name ?? '';
 
-    if (!done) {
-      return;
-    }
-
-    void changed();
-    toasts.success(t('meetings.documents.deleted', { count: documents.length, name: first?.name ?? '' }));
+    return confirmFlow({
+      critical: true,
+      title: t('meetings.documents.deleteTitle', { count }),
+      content: t('meetings.documents.deleteContent', { count, name }),
+      buttons: { confirm: t('common.delete') },
+      run: () => service.deleteDocuments(documents.map((document) => document.id)),
+      success: t('meetings.documents.deleted', { count, name }),
+    });
   };
 }

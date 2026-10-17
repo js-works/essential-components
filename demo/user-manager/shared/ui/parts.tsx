@@ -1,6 +1,7 @@
 import { Anchor, Avatar, Group, Stack, Text, ThemeIcon, Title } from '@mantine/core';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
+
 import type { AccessData, PrincipalRef } from '../../domain/index.js';
 import { appIcons } from './icons.js';
 

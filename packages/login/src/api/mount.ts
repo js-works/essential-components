@@ -1,4 +1,5 @@
 import type { MantineThemeOverride } from '@mantine/core';
+
 import type { LoginScreenProps } from './props.js';
 
 export type { MountedLoginScreen, MountOptions };

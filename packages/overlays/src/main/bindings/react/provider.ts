@@ -8,6 +8,7 @@
 // boundary — even though the elements themselves live at the end of <body>, where a
 // modal <dialog> and a fixed toast stack have to be.
 
+import type { ReactElement } from "react";
 import {
   createContext,
   createElement,
@@ -17,21 +18,18 @@ import {
   useLayoutEffect,
   useState,
 } from "react";
-
 import { createPortal } from "react-dom";
-import type { ReactElement } from "react";
 
-import { createDialogsController } from "../../dialogs/dialogs.js";
-import { createToastController } from "../../toasts/toasts.js";
 import type { DialogsController, DialogsControllerConfig } from "../../api/dialogs/dialog.js";
-import type { ToastsController, ToastsControllerOptions } from "../../api/toasts/toast.js";
-
-import { createDialogAdapter } from "./dialog-adapter.js";
-import { createToastAdapter } from "./toast-adapter.js";
-import { createPortalStore, usePortalEntries } from "./portals.js";
-import type { PortalStore } from "./portals.js";
 import type { ReactContent, ReactToastContent } from "../../api/react/content.js";
 import type { OverlaysProviderProps } from "../../api/react/provider.js";
+import type { ToastsController, ToastsControllerOptions } from "../../api/toasts/toast.js";
+import { createDialogsController } from "../../dialogs/dialogs.js";
+import { createToastController } from "../../toasts/toasts.js";
+import { createDialogAdapter } from "./dialog-adapter.js";
+import type { PortalStore } from "./portals.js";
+import { createPortalStore, usePortalEntries } from "./portals.js";
+import { createToastAdapter } from "./toast-adapter.js";
 
 interface Overlays {
   dialogs: DialogsController<ReactContent>;

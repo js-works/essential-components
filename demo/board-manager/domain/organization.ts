@@ -1,6 +1,5 @@
 import type { Page, Paging, Sort, TextMatch } from './query.js';
 
-export { normalizeWebsite };
 export type {
   Organization,
   OrganizationCriteria,
@@ -11,6 +10,7 @@ export type {
   OrganizationValues,
   SuggestOrganizations,
 };
+export { normalizeWebsite, ORGANIZATION_SORT_KEYS };
 
 // The address is optional, each of its parts; `country` is an ISO code (`DE`, see `countries.ts`), `website` a full URL
 // (`https://…`, see `normalizeWebsite()`).
@@ -57,7 +57,10 @@ type OrganizationCriteria = {
 };
 
 // `country`: by the country's name in the page's language.
-type OrganizationSortKey = 'name' | 'city' | 'country' | 'people';
+// What the organizations can be sorted by.
+const ORGANIZATION_SORT_KEYS = ['name', 'city', 'country', 'people'] as const;
+
+type OrganizationSortKey = (typeof ORGANIZATION_SORT_KEYS)[number];
 
 // An organization to choose (an autocomplete): the name, the city as its second line.
 type OrganizationOption = { name: string; city: string };

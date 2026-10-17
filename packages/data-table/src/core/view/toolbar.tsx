@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
+
 import type * as Spec from '../../api/react/index.js';
-import { variantOf } from '../actions.js';
 import type { ActionItem } from '../actions.js';
+import { variantOf } from '../actions.js';
 import type { SearchBox } from '../use-data-table.js';
 import { flag, hasContent, textFieldKeys } from '../utils.js';
 import { ActionList } from './actions.js';

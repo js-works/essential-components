@@ -4,9 +4,17 @@
   "newLineKind": "lf",
   "typescript": {
     "quoteStyle": "alwaysSingle",
-    "jsx.quoteStyle": "preferDouble"
+    "jsx.quoteStyle": "preferDouble",
+    "module.sortImportDeclarations": "maintain",
+    "importDeclaration.sortNamedImports": "maintain",
+    "exportDeclaration.sortNamedExports": "maintain"
   },
-  "excludes": ["node_modules", "dist", "coverage", "package-lock.json"],
+  "excludes": [
+    "node_modules",
+    "dist",
+    "coverage",
+    "package-lock.json"
+  ],
   "plugins": [
     "npm:@dprint/typescript@0.96.1",
     "npm:@dprint/json@0.24.0",

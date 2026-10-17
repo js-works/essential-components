@@ -11,5 +11,5 @@
 // original behaviour.
 
 export { createToastController } from "./controller.js";
-export { createToastTheme, defaultToastTheme } from "./theme.js";
 export { defaultToastTexts } from "./texts.js";
+export { createToastTheme, defaultToastTheme } from "./theme.js";

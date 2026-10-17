@@ -1,15 +1,15 @@
 import type * as Spec from '../api/index.js';
 import { createPreviewUrl } from '../core/preview.js';
-import { FileUploadStore } from '../core/store.js';
 import type { StoreOptions } from '../core/store.js';
-import { createLocalizer } from '../core/texts.js';
+import { FileUploadStore } from '../core/store.js';
 import type { Localizer } from '../core/texts.js';
-import { actionsOf, hintsOf, invalidityOf, statusIconOf, statusTextOf } from '../core/view.js';
+import { createLocalizer } from '../core/texts.js';
 import type { Action, Limits } from '../core/view.js';
+import { actionsOf, hintsOf, invalidityOf, statusIconOf, statusTextOf } from '../core/view.js';
 import { createIcon } from './icons.js';
 
-export { FileUploadElement, setElementI18nAdapter };
 export type { GetI18nAdapter };
+export { FileUploadElement, setElementI18nAdapter };
 
 type GetI18nAdapter = NonNullable<Spec.FileUploadClassConfig['i18n']>['getAdapter'];
 

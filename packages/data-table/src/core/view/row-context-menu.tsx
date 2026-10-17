@@ -1,6 +1,7 @@
 import { ContextMenu as BaseContextMenu } from '@base-ui/react/context-menu';
-import { useContext, useEffect, useRef } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
+import { useContext, useEffect, useRef } from 'react';
+
 import type * as Spec from '../../api/react/index.js';
 import type { ActionItem, ContextMenuItem } from '../actions.js';
 import type { ContextTarget } from '../use-data-table.js';

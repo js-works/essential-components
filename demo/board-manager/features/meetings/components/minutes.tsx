@@ -1,20 +1,20 @@
 import { BlockNoteSchema, defaultInlineContentSpecs } from '@blocknote/core';
 import { filterSuggestionItems } from '@blocknote/core/extensions';
 import { de, en } from '@blocknote/core/locales';
-import { BlockNoteView } from '@blocknote/mantine';
 import type { Theme } from '@blocknote/mantine';
+import { BlockNoteView } from '@blocknote/mantine';
+import type { DefaultReactSuggestionItem } from '@blocknote/react';
 import {
   BlockNoteContext,
   createReactInlineContentSpec,
   SuggestionMenuController,
   useCreateBlockNote,
 } from '@blocknote/react';
-
-import type { DefaultReactSuggestionItem } from '@blocknote/react';
 import { Anchor, Input, Text } from '@mantine/core';
-import { useRef } from 'react';
 import type { ReactNode, Ref } from 'react';
+import { useRef } from 'react';
 import { Link, useInRouterContext } from 'react-router';
+
 import type { Person } from '../../../domain/index.js';
 import { useLanguage, useTranslate } from '../../../shared/lib/i18n/index.js';
 import { useScheme } from '../../../shared/shared.js';
@@ -153,6 +153,8 @@ function MinutesEditor({ label, description, error, defaultValue = '', onChange,
           <BlockNoteView
             editor={editor}
             theme={MANTINE_LOOK}
+            // No emoji menu on ":": minutes need none, and its data is about 0.5 MB (see `vite.board-manager.config.ts`).
+            emojiPicker={false}
             onChange={() => {
               valueRef.current = toMinutes(editor.document);
               onChange?.(valueRef.current);

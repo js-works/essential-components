@@ -1,5 +1,6 @@
 import { Button, Loader, Stack, Tabs } from '@mantine/core';
 import { useState } from 'react';
+
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { appIcons } from '../../../shared/ui/icons.js';
 import { PageHeader } from '../../../shared/ui/parts.js';

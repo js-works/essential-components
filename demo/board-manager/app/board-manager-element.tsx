@@ -1,11 +1,12 @@
 import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
+import { createRoot } from 'react-dom/client';
+
 import { parseColor, shades } from '../shared/lib/colors.js';
 import { setSchemeHost, useScheme } from '../shared/shared.js';
 import { createAppRouter } from './app.js';
-import { BoardManagerApp, createLook } from './board-manager-demo.js';
 import type { Look } from './board-manager-demo.js';
+import { BoardManagerApp, createLook } from './board-manager-demo.js';
 
 export { BoardManagerElement };
 

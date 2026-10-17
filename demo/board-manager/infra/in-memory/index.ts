@@ -8,6 +8,8 @@ import { createMeetingRepository } from './meeting-repository.js';
 import { createMembershipRepository } from './membership-repository.js';
 import { createOrganizationRepository } from './organization-repository.js';
 import { createPersonRepository } from './person-repository.js';
+import { createSavedFilterRepository } from './saved-filter-repository.js';
+import { COLLEAGUES_FILTERS } from './saved-filter-seed.js';
 
 export { createInMemoryRepositories };
 
@@ -20,5 +22,6 @@ function createInMemoryRepositories() {
     memberships: createMembershipRepository(),
     organizations: createOrganizationRepository(),
     people: createPersonRepository(),
+    savedFilters: createSavedFilterRepository('board-manager:saved-filters', COLLEAGUES_FILTERS),
   };
 }

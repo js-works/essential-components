@@ -1,8 +1,9 @@
 import { ActionIcon, Anchor, Badge, Group, Menu, Stack, Text } from '@mantine/core';
 import { useLayoutEffect, useRef } from 'react';
 import { Link } from 'react-router';
-import { childrenOf, todayDate } from '../../../domain/index.js';
+
 import type { Department, HrData } from '../../../domain/index.js';
+import { childrenOf, todayDate } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { appIcons } from '../../../shared/ui/icons.js';
 import { EmployeeAvatar } from '../../../shared/ui/parts.js';

@@ -1,16 +1,17 @@
-import { ActionIcon, Group, Loader, Text, Tooltip, Tree, UnstyledButton, useTree } from '@mantine/core';
 import type { TreeNodeData } from '@mantine/core';
+import { ActionIcon, Group, Loader, Text, Tooltip, Tree, UnstyledButton, useTree } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
+import { useMemo, useState } from 'react';
 import { TbChevronRight } from 'react-icons/tb';
-import { ancestorsOf, childrenOf, ROOT_ID } from '../../../domain/index.js';
+
 import type { Folder } from '../../../domain/index.js';
+import { ancestorsOf, childrenOf, ROOT_ID } from '../../../domain/index.js';
 import { appIcons } from '../../../shared/ui/icons.js';
 import { useBrowserService } from '../context.js';
 import { browserKeys } from '../keys.js';
 
-export { folderIcon, FolderTree, toTreeData };
+export { FolderTree, folderIcon, toTreeData };
 
 // The icon of a folder in a tree (the side tree, the Move dialog): a storage (2026-10-07) or an ordinary folder, both
 // outline icons (the table's folders are filled).

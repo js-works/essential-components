@@ -1,5 +1,5 @@
-export { PAGER_SLOTS, pagerSlots };
 export type { PagerSlot };
+export { PAGER_SLOTS, pagerSlots };
 
 // A slot of the numbered pager: a page number, or a gap (`…`) for the pages left out.
 type PagerSlot = number | 'gap';

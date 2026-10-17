@@ -9,15 +9,15 @@
 // and discarded whatever the user had typed into it. Here an update is an ordinary
 // re-render, so React reconciles and the DOM (and its state) survives.
 
+import type { ReactElement, ReactNode } from "react";
 import { createContext, createElement, Fragment, useContext, useLayoutEffect, useRef } from "react";
 import { flushSync } from "react-dom";
-import type { ReactElement, ReactNode } from "react";
+
 import type {
   DialogAdapterFactory,
   DialogProps,
   DialogSlots,
 } from "../../api/dialogs/adapter.js";
-
 import type { OverlayContent } from "../../api/dialogs/content.js";
 import type { FormConfirm } from "../../api/dialogs/dialog.js";
 import type { FormProps, ReactContent } from "../../api/react/content.js";

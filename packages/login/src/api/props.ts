@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+
 import type { LoginTexts } from './texts.js';
 
 export type { AccountRegistration, Credentials, LoginProvider, LoginScreenProps, PasswordReset };

@@ -7,8 +7,8 @@
 // itself without a second React root; instead it registers the container here, and the
 // provider renders one portal per entry. That is what makes `render()` a setState.
 
-import { useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
+import { useSyncExternalStore } from "react";
 
 export interface PortalEntry {
   id: number;

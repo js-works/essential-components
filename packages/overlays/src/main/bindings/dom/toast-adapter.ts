@@ -7,9 +7,9 @@
 // so the main entry pulls in nothing framework-specific.
 // -------------------------------------------------------------------
 
-import { h } from "../../internal/dom.js";
 import type { DomToastContent } from "../../api/dom/content.js";
 import type { ToastAdapterFactory } from "../../api/toasts/adapter.js";
+import { h } from "../../internal/dom.js";
 
 function setAttrIfChanged(el: Element, name: string, value: string) {
   // Avoid re-triggering attributeChangedCallback (e.g. re-injecting the icon)

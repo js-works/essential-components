@@ -6,14 +6,13 @@
 // loading spinner is toast-specific. Looked up by the custom element from its
 // `type` attribute at runtime.
 
+import type { ToastType } from "../api/toasts/toast.js";
 import {
   errorIconSvg,
   infoIconSvg,
   successIconSvg,
   warnIconSvg,
 } from "../internal/icons.js";
-
-import type { ToastType } from "../api/toasts/toast.js";
 
 // A single arc that spins via CSS (see :host([type="loading"]) .icon svg).
 const loadingIcon = `

@@ -1,6 +1,7 @@
 import { Badge, Checkbox, Group, Paper, Stack, Table, Text } from '@mantine/core';
-import { permissionParts } from '../../../domain/index.js';
+
 import type { Permission, Scope } from '../../../domain/index.js';
+import { permissionParts } from '../../../domain/index.js';
 
 export { PermissionMatrix };
 

@@ -1,5 +1,5 @@
-export { textsFor };
 export type { Texts };
+export { textsFor };
 
 // The cockpit's own texts, in the language of the page (`<html lang>`): German for `de…`, else English.
 type Texts = {

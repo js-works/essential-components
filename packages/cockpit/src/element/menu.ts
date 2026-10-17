@@ -1,8 +1,8 @@
 import { autoUpdate, computePosition, flip, offset, shift, size } from '@floating-ui/dom';
 import type { LitElement } from 'lit';
 
-export { Menu };
 export type { MenuOptions, MenuPlacement };
+export { Menu };
 
 type MenuPlacement = 'right-start' | 'right-end' | 'top-start' | 'bottom-start' | 'bottom-end';
 

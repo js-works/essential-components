@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react';
-import { generalAction, multiRowAction, singleRowAction } from '../src/react/index.js';
+
 import type { ActionMenu, ActionSeparator, TableAction } from '../src/react/index.js';
+import { generalAction, multiRowAction, singleRowAction } from '../src/react/index.js';
 import type { DemoActions } from './controls.js';
 import type { User } from './data.js';
 
-export { createActions, fullName };
 export type { DemoIcons };
+export { createActions, fullName };
 
 function fullName(user: User): string {
   return `${user.firstName} ${user.lastName}`;

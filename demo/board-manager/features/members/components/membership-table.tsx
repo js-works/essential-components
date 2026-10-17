@@ -1,10 +1,12 @@
-import { useDataTableController } from '@local/data-table/react';
-import type { RowSource, TableActions, TableColumns } from '@local/data-table/react';
 import { Anchor } from '@mantine/core';
 import { Link, useNavigate } from 'react-router';
-import type { PersonMembership, PersonMembershipSortKey } from '../../../domain/index.js';
+
+import type { RowSource, TableActions, TableColumns } from '@local/data-table/react';
+import { useFindSource } from '@local/data-table/react-query';
+
+import type { PersonMembership } from '../../../domain/index.js';
+import { PERSON_MEMBERSHIP_SORT_KEYS } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { searchText, toPaging, toSort, usePageSource } from '../../../shared/lib/table-query.js';
 import { DataTable, formatDate, PAGE_SIZE_OPTIONS } from '../../../shared/shared.js';
 import { openAction } from '../../../shared/ui/table-actions.js';
 import { useMemberService } from '../context.js';
@@ -12,16 +14,14 @@ import { memberKeys } from '../keys.js';
 
 export { MembershipTable };
 
-const SORT_KEYS: readonly PersonMembershipSortKey[] = ['board', 'role', 'since'];
-
-function useSource(personId: string, reload: () => void): RowSource<PersonMembership> {
+function useSource(personId: string): RowSource<PersonMembership> {
   const service = useMemberService();
 
-  return usePageSource(
+  return useFindSource(
     memberKeys.boards(personId),
-    (query, signal) =>
-      service.findMemberships(personId, searchText(query), toSort(query, SORT_KEYS), toPaging(query), signal),
-    reload,
+    PERSON_MEMBERSHIP_SORT_KEYS,
+    (query) => query.search.trim() || undefined,
+    (...args) => service.findMemberships(personId, ...args),
   );
 }
 
@@ -64,14 +64,12 @@ function useActions(): TableActions<PersonMembership> {
 // click, or the name).
 function MembershipTable({ personId }: { personId: string }) {
   const t = useTranslate();
-  const tableCtrl = useDataTableController<PersonMembership>();
+  const source = useSource(personId);
   const columns = useColumns();
   const actions = useActions();
-  const source = useSource(personId, tableCtrl.reload);
 
   return (
     <DataTable
-      controller={tableCtrl}
       title={t('modules.boards')}
       subtitle={t('members.boardsSubtitle')}
       density="compact"

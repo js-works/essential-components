@@ -1,7 +1,8 @@
 import { Anchor, Badge, Card, Group, Paper, SimpleGrid, Stack, Tabs, Text, ThemeIcon, Title } from '@mantine/core';
-import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
+
 import type { Meeting } from '../../../domain/index.js';
 import { localDateTime } from '../../../domain/index.js';
 import { useLanguage, useTranslate } from '../../../shared/lib/i18n/index.js';

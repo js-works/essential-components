@@ -1,6 +1,7 @@
 import { ActionIcon, Table, Text, Tooltip } from '@mantine/core';
-import { addDays, daySheet } from '../../../domain/index.js';
+
 import type { DaySheet, Employee, TimeData } from '../../../domain/index.js';
+import { addDays, daySheet } from '../../../domain/index.js';
 import { formatDayShort, formatDuration, formatTime } from '../../../shared/lib/format.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { appIcons } from '../../../shared/ui/icons.js';

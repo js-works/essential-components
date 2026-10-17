@@ -1,7 +1,8 @@
 import { Anchor, Button, Group, SimpleGrid, Stack, Tabs, Text } from '@mantine/core';
-import { Fragment, useState } from 'react';
 import type { ReactNode } from 'react';
+import { Fragment, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
+
 import type { PersonSummary } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { appIcons, PageHeader } from '../../../shared/shared.js';

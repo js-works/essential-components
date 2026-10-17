@@ -1,4 +1,13 @@
 import { useState } from 'react';
+
+import type {
+  ColumnGroup,
+  DataTableComponent,
+  EditField,
+  SavedFilter,
+  SavedFilters,
+  TableColumn,
+} from '../src/react/index.js';
 import {
   autocompleteFilter,
   booleanFilter,
@@ -14,22 +23,12 @@ import {
   useDataTableController,
   useDataTableSelection,
 } from '../src/react/index.js';
-
-import type {
-  ColumnGroup,
-  DataTableComponent,
-  EditField,
-  SavedFilter,
-  SavedFilters,
-  TableColumn,
-} from '../src/react/index.js';
-
 import { antdTheme, defaultTheme, mantineTheme, softTheme } from '../src/themes/index.js';
 import type { Controls, DemoTheme } from './controls.js';
-import { countries, createUser, fetchNothing, fetchUsers, newUser, roles, saveUser, suggestEmails } from './data.js';
 import type { User } from './data.js';
-import { DemoControls } from './demo-controls.js';
+import { countries, createUser, fetchNothing, fetchUsers, newUser, roles, saveUser, suggestEmails } from './data.js';
 import { badge, fixedHeight, note, selectedLine, suggestion } from './demo.module.css';
+import { DemoControls } from './demo-controls.js';
 import { i18n } from './i18n.js';
 import { icons } from './icons.js';
 import { createActions } from './shared.js';
@@ -164,6 +163,8 @@ const filters = defineFilters({
       })),
   }),
   country: selectFilter({ options: countries, multiple: true }),
+  // A filter without a column (the users have a city, the table shows none): its label is its own.
+  city: { label: 'City', filter: textFilter() },
   role: selectFilter({ options: roles }),
   logins: numberRangeFilter(),
   active: booleanFilter(),

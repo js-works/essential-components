@@ -1,4 +1,13 @@
 import { Tooltip } from '@base-ui/react/tooltip';
+import type {
+  CSSProperties,
+  HTMLAttributes,
+  KeyboardEvent,
+  MouseEvent,
+  PointerEvent,
+  ReactElement,
+  ReactNode,
+} from 'react';
 import {
   Fragment,
   useCallback,
@@ -10,29 +19,19 @@ import {
   useSyncExternalStore,
 } from 'react';
 
-import type {
-  CSSProperties,
-  HTMLAttributes,
-  KeyboardEvent,
-  MouseEvent,
-  PointerEvent,
-  ReactElement,
-  ReactNode,
-} from 'react';
-
 import type * as Spec from '../../api/react/index.js';
 import { ConfigContext } from '../config.js';
 import { useNarrowerThan, useScrollEdges, useStickyOffsets } from '../hooks.js';
 import { provideStylesheet } from '../stylesheet.js';
-import { useDataTable } from '../use-data-table.js';
 import type { RowGroupEntry } from '../use-data-table.js';
+import { useDataTable } from '../use-data-table.js';
 import { flag, formatValue, hasContent, suppressesTextSelection, suppressesWordSelection } from '../utils.js';
 import { ActionList } from './actions.js';
 import * as classes from './classes.js';
 import { ColumnResizer } from './column-resizer.js';
 import { EditForm } from './edit-form.js';
-import { FilterLabelsContext } from './filter-labels.js';
 import type { FilterLabels } from './filter-labels.js';
+import { FilterLabelsContext } from './filter-labels.js';
 import {
   FILTER_DRAWER_CLOSE_TIME,
   FILTER_VIEW_CLOSE_TIME,
@@ -42,7 +41,6 @@ import {
   FilterSidebar,
   FilterView,
 } from './filter-panel.js';
-
 import { Footer } from './footer.js';
 import { icons } from './icons.js';
 import { LayerContext } from './layer.js';

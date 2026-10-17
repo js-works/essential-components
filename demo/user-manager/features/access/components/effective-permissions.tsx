@@ -1,6 +1,7 @@
 import { Badge, Group, Stack, Table, Text } from '@mantine/core';
-import { effectivePermissions, scopeLabel } from '../../../domain/index.js';
+
 import type { AccessData, Reason } from '../../../domain/index.js';
+import { effectivePermissions, scopeLabel } from '../../../domain/index.js';
 
 export { EffectivePermissions, ReasonText };
 

@@ -1,4 +1,3 @@
-import { addDays, dateOf, daysBetween, splitName, tasksFromTemplate } from '../../domain/index.js';
 import type {
   Candidate,
   CandidateSource,
@@ -11,9 +10,10 @@ import type {
   SalaryChange,
   Stage,
 } from '../../domain/index.js';
+import { addDays, dateOf, daysBetween, splitName, tasksFromTemplate } from '../../domain/index.js';
 
-export { seed, VIEWER_ID };
 export type { Data };
+export { seed, VIEWER_ID };
 
 // The made-up data of human resources, relative to today: 48 employees in 12 departments (a tree below Management),
 // two joining soon and one recently (with their onboarding), one leaving (offboarding begun) and one gone; their salary

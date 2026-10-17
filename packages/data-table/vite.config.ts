@@ -2,8 +2,9 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
 // `vite` serves the demo (index.html). `vite build` builds the library in two steps:
-// - the React entry (src/react/index.ts, `@local/data-table/react`) and the themes (src/themes/index.ts,
-//   `@local/data-table/themes`), with React and Base UI outside the build (the app's);
+// - the React entry (src/react/index.ts, `@local/data-table/react`), the TanStack Query entry (src/react-query/index.ts,
+//   `@local/data-table/react-query`) and the themes (src/themes/index.ts, `@local/data-table/themes`), with React, Base
+//   UI and TanStack Query outside the build (the app's);
 // - `--mode element`: the custom element (src/index.ts, `@local/data-table`), with everything bundled in, so an app
 //   needs nothing else. Instead of React, it bundles Preact (`preact/compat`, much smaller): our code and Base UI are
 //   written for React, and the aliases below hand them Preact's compatibility layer.
@@ -52,6 +53,7 @@ const config = defineConfig(({ mode }) => ({
       lib: {
         entry: {
           react: 'src/react/index.ts',
+          'react-query': 'src/react-query/index.ts',
           themes: 'src/themes/index.ts',
         },
         formats: ['es'],
@@ -59,6 +61,7 @@ const config = defineConfig(({ mode }) => ({
       rollupOptions: {
         external: [
           /^@base-ui\//,
+          /^@tanstack\//,
           'react',
           'react-dom',
           'react/jsx-runtime',

@@ -1,5 +1,6 @@
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent, MouseEvent } from 'react';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+
 import type * as Spec from '../api/react/index.js';
 import {
   hasContent,
@@ -9,7 +10,6 @@ import {
   MAX_OPTIMAL_COLUMN_WIDTH,
   MIN_COLUMN_WIDTH,
 } from '../core/utils.js';
-
 import {
   columnItems,
   contextMenuItems,
@@ -21,18 +21,17 @@ import {
   selectionModeOf,
   selectionToolbarItems,
 } from './actions.js';
-
-import { connectController, notifySelection } from './controller.js';
 import type { ControllerTarget } from './controller.js';
+import { connectController, notifySelection } from './controller.js';
 import { sameValue, withoutKey } from './filters.js';
-import { flatRows, groupKeyOf, linesOf, moveInSegments, segmentsOf } from './grouping.js';
 import type { Line, Segment } from './grouping.js';
+import { flatRows, groupKeyOf, linesOf, moveInSegments, segmentsOf } from './grouping.js';
 import { useDelayedFlag, useElementHeight, useScrollbarWidth } from './hooks.js';
 import { createLayout, withoutHidden } from './layout.js';
 import { useTexts } from './texts.js';
 
-export { DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS, useDataTable };
 export type { ContextTarget, RowGroupEntry, SearchBox };
+export { DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS, useDataTable };
 
 const DEFAULT_PAGE_SIZE = 25;
 const DEFAULT_PAGE_SIZE_OPTIONS: readonly number[] = [10, 25, 50, 100];
@@ -127,6 +126,11 @@ function initialFilters(
   return Object.fromEntries(Object.entries(defaults).filter(([key]) => keys.has(key)));
 }
 
+// The function that loads the rows: the source itself, or its `load`.
+function loaderOf<Row>(source: Spec.RowSource<Row>): Spec.RowLoader<Row> {
+  return typeof source === 'function' ? source : source.load;
+}
+
 // The state and behavior of the data table, independent of any UI library.
 // An implementation renders what this hook returns with the controls of its UI library.
 function useDataTable<Row>(props: Spec.DataTableProps<Row>) {
@@ -184,7 +188,7 @@ function useDataTable<Row>(props: Spec.DataTableProps<Row>) {
 
     setLoading(true);
 
-    sourceRef.current({ page, pageSize, sort, search, filters }, controller.signal).then(
+    loaderOf(sourceRef.current)({ page, pageSize, sort, search, filters }, controller.signal).then(
       (next) => {
         if (current) {
           setResult(next);
@@ -417,6 +421,48 @@ function useDataTable<Row>(props: Spec.DataTableProps<Row>) {
       addRow: (template) => latestRef.current.addRow(template),
     });
   }, [controller]);
+
+  // A source that reports its changes (`onChange`) reloads the table, like the controller's `reload()`: once for all the
+  // changes of one task. While the edit form or the filter view is open, the reload waits until both are closed, so
+  // neither the draft nor the user's place is lost.
+  const onSourceChange = typeof source === 'function' ? undefined : source.onChange;
+  const [sourceChanged, setSourceChanged] = useState(false);
+  const busy = edit !== undefined || filterPanel.open;
+
+  useEffect(() => {
+    if (onSourceChange === undefined) {
+      return;
+    }
+
+    let active = true;
+    let pending = false;
+    const unsubscribe = onSourceChange(() => {
+      if (pending) {
+        return;
+      }
+
+      pending = true;
+      queueMicrotask(() => {
+        pending = false;
+
+        if (active) {
+          setSourceChanged(true);
+        }
+      });
+    });
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, [onSourceChange]);
+
+  useEffect(() => {
+    if (sourceChanged && !busy) {
+      setSourceChanged(false);
+      latestRef.current.reload();
+    }
+  }, [sourceChanged, busy]);
 
   // New filters (all of them at once: "Apply" of the filter popup, a pill's ×, "Clear all") start on the first page and
   // clear the selection. Equal filters do nothing.
@@ -1021,16 +1067,16 @@ function useDataTable<Row>(props: Spec.DataTableProps<Row>) {
     applyFilters,
     removeFilter,
     clearFilters: () => applyFilters(EMPTY_FILTERS),
-    // The filters of the table (`filters`), in their order, each labeled by the header of the column of its key (hidden
-    // ones too), else by its key. Only they are in the filter popup.
+    // The filters of the table (`filters`), in their order, each labeled by its own label, else by the header of the
+    // column of its key (hidden ones too), else by its key. Only they are in the filter popup.
     filterColumns: useMemo(() => {
       const headers = new Map(allLayout.leaves.map(({ column }) => [column.key as string, column.header]));
 
-      return Object.entries(props.filters ?? {}).map(([key, filter]) => ({
-        key,
-        header: headers.get(key) ?? key,
-        filter,
-      }));
+      return Object.entries(props.filters ?? {}).map(([key, entry]) => {
+        const { label, filter } = typeof entry === 'function' ? { label: undefined, filter: entry } : entry;
+
+        return { key, header: label ?? headers.get(key) ?? key, filter };
+      });
     }, [allLayout, props.filters]),
     columnToggles,
     toggleColumn,

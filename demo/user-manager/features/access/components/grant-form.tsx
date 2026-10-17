@@ -1,9 +1,11 @@
-import { binding } from '@local/form-validation';
 import { Input, NativeSelect, Stack } from '@mantine/core';
 import type { FocusEvent, ReactNode } from 'react';
 import { z } from 'zod';
-import { scopeLabel } from '../../../domain/index.js';
+
+import { binding } from '@local/form-validation';
+
 import type { AccessData, PrincipalRef, Scope } from '../../../domain/index.js';
+import { scopeLabel } from '../../../domain/index.js';
 import { useForm } from '../../../shared/lib/use-form.js';
 import { ScopePicker } from './scope-picker.js';
 

@@ -1,12 +1,13 @@
 import { useRef, useState } from 'react';
-import { createDataTableComponent, defineFilters, selectFilter } from '../src/react/index.js';
+
 import type { RowMove, TableActions, TableColumns } from '../src/react/index.js';
+import { createDataTableComponent, defineFilters, selectFilter } from '../src/react/index.js';
 import { defaultTheme } from '../src/themes/index.js';
 import { badge, fixedHeight, note, selectedLine } from './demo.module.css';
 import { i18n } from './i18n.js';
 import { icons } from './icons.js';
-import { fetchTasks, reorderTasks, statuses } from './tasks.js';
 import type { Task } from './tasks.js';
+import { markDone, reorderTasks, statuses, taskSource } from './tasks.js';
 import { useToasts } from './toasts.js';
 
 export { ReorderDemo };
@@ -60,7 +61,10 @@ function ReorderDemo() {
       key: 'done',
       label: 'Mark as done',
       icon: icons.done,
-      onClick: (tasks) => show(`Done: ${tasks.map((task) => task.title).join(', ')}`),
+      onClick: async (tasks) => {
+        await markDone(tasks.map((task) => task.id));
+        show(`Done: ${tasks.map((task) => task.title).join(', ')}`);
+      },
     },
   ];
 
@@ -85,7 +89,7 @@ function ReorderDemo() {
           subtitle="Drag a task by its handle to change its priority (or Alt+ArrowUp/ArrowDown on the handle)"
           searchable
           reloadable
-          source={fetchTasks}
+          source={taskSource}
           reorder={reorder}
           rowKey="id"
           columns={columns}

@@ -1,20 +1,15 @@
-import {
-  dateRangeFilter,
-  generalAction,
-  multiRowAction,
-  singleRowAction,
-  useDataTableController,
-} from '@local/data-table/react';
-
-import type { RowQuery, SavedFilter, TableActions, TableColumns, TableFilters } from '@local/data-table/react';
 import { useNavigate } from 'react-router';
-import { ROOT_ID } from '../../../domain/index.js';
-import type { FileKind, FileSortKey, Folder } from '../../../domain/index.js';
+
+import type { RowSource, TableActions, TableColumns, TableFilters } from '@local/data-table/react';
+import { criteriaOf, dateRangeFilter, generalAction, multiRowAction, singleRowAction } from '@local/data-table/react';
+import { useFindSource } from '@local/data-table/react-query';
+
+import type { Folder } from '../../../domain/index.js';
+import { FILE_SORT_KEYS, ROOT_ID } from '../../../domain/index.js';
 import { formatDateTime, formatSize } from '../../../shared/lib/format.js';
-import { useQuerySource } from '../../../shared/lib/use-query-source.js';
 import { DataTable } from '../../../shared/ui/data-table.js';
 import { appIcons } from '../../../shared/ui/icons.js';
-import { sharedBy, useSavedFilters } from '../../../shared/ui/saved-filters.js';
+import { useSavedFilters } from '../../../shared/ui/saved-filters.js';
 import { deleteAction, newAction, openAction } from '../../../shared/ui/table-actions.js';
 import { folderPath, useBrowserService } from '../context.js';
 import { useSetFavoriteFlow, useShowDetailsFlow } from '../entry-flows.js';
@@ -28,7 +23,6 @@ import {
   useTrashEntriesFlow,
   useUploadFilesFlow,
 } from '../folder-flows.js';
-
 import { browserKeys } from '../keys.js';
 import { KIND_LABELS } from '../labels.js';
 import type { EntryCriteria, EntryRow } from '../service.js';
@@ -36,42 +30,16 @@ import { EntryName } from './entry-name.js';
 
 export { FolderTable };
 
-const SORT_KEYS: readonly FileSortKey[] = ['name', 'type', 'size', 'modified', 'owner'];
+function useSource(folder: Folder): RowSource<EntryRow> {
+  const service = useBrowserService();
 
-// The table's state as the service's query: its search and filters as file criteria, its sort, its page as a window.
-function toCriteria(query: RowQuery): EntryCriteria {
-  const { kind, owner, modified } = query.filters as Record<string, unknown>;
-  const range = modified as { from?: string; to?: string } | undefined;
-
-  return {
-    ...(query.search.trim() === '' ? {} : { text: query.search }),
-    ...(Array.isArray(kind) && kind.length > 0 ? { kinds: kind as FileKind[] } : {}),
-    ...(Array.isArray(owner) && owner.length > 0 ? { owners: owner as string[] } : {}),
-    ...(range !== undefined && range !== null && (range.from !== undefined || range.to !== undefined)
-      ? { modified: range }
-      : {}),
-  };
+  return useFindSource(
+    [...browserKeys.entries(), folder.id],
+    FILE_SORT_KEYS,
+    criteriaOf<EntryCriteria>('text'),
+    (...args) => service.entries(folder.id, ...args),
+  );
 }
-
-function toSort(query: RowQuery) {
-  const key = query.sort?.key as FileSortKey | undefined;
-
-  return query.sort !== undefined && key !== undefined && SORT_KEYS.includes(key)
-    ? { key, direction: query.sort.direction }
-    : undefined;
-}
-
-const toPaging = (query: RowQuery) => ({
-  offset: (query.page - 1) * query.pageSize,
-  limit: query.pageSize,
-});
-
-// The colleagues' shared filters of this table (2026-10-11, the user's wish: to show sharing).
-const COLLEAGUES_FILTERS: readonly SavedFilter[] = [
-  sharedBy('Anna Schröder', 'Images', { kind: ['image'] }),
-  sharedBy('Ben Carter', 'Office documents', { kind: ['document', 'spreadsheet', 'presentation'] }),
-  sharedBy('Claire Dubois', 'My files', { owner: ['Claire Dubois'] }),
-];
 
 function useColumns(): TableColumns<EntryRow> {
   const setFavorite = useSetFavoriteFlow();
@@ -129,7 +97,11 @@ function useColumns(): TableColumns<EntryRow> {
 }
 
 function useFilters(owners: readonly string[]): TableFilters {
-  return { kind: fileKindFilter, modified: dateRangeFilter(), owner: ownerFilter(owners) };
+  return {
+    kinds: { label: 'Kind', filter: fileKindFilter },
+    modified: dateRangeFilter(),
+    owners: { label: 'Owner', filter: ownerFilter(owners) },
+  };
 }
 
 function useActions(folder: Folder, folders: readonly Folder[]): TableActions<EntryRow> {
@@ -210,27 +182,14 @@ function FolderTable({ folder, folders, owners }: {
   folders: readonly Folder[];
   owners: readonly string[];
 }) {
-  const service = useBrowserService();
-  const tableCtrl = useDataTableController<EntryRow>();
+  const source = useSource(folder);
   const columns = useColumns();
   const filters = useFilters(owners);
   const actions = useActions(folder, folders);
-  const savedFilters = useSavedFilters('file-center:saved-filters:files', COLLEAGUES_FILTERS);
-
-  const source = useQuerySource<EntryRow>(
-    (query) => browserKeys.entryPage(folder.id, toCriteria(query), toSort(query), toPaging(query)),
-    async (query, signal) => {
-      const page = await service.entries(folder.id, toCriteria(query), toSort(query), toPaging(query), signal);
-
-      return { rows: page.items, total: page.total };
-    },
-    browserKeys.entries(),
-    tableCtrl.reload,
-  );
+  const savedFilters = useSavedFilters('files');
 
   return (
     <DataTable
-      controller={tableCtrl}
       title={folder.name}
       subtitle={folder.id === ROOT_ID
         ? 'The storages where the folders and files are kept. A double click opens one.'

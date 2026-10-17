@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { createContext, useContext, useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
+
 import { binding, defineUseForm, formMeta, type I18nAdapter, type I18nConfig } from './index.js';
 
 /* A minimal locale store as a stand-in for the app adapter */

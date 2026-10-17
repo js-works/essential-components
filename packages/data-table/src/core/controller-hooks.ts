@@ -1,4 +1,5 @@
 import { useState, useSyncExternalStore } from 'react';
+
 import type * as Spec from '../api/react/index.js';
 import { createDataTableController, subscribeToSelection } from './controller.js';
 

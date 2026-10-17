@@ -1,4 +1,3 @@
-import { holidaysAround, todayDate } from '../../domain/index.js';
 import type {
   CorrectionRepository,
   EmployeeRepository,
@@ -8,9 +7,10 @@ import type {
   TeamRepository,
   TimeData,
 } from '../../domain/index.js';
+import { holidaysAround, todayDate } from '../../domain/index.js';
 
-export { createTimeService };
 export type { TimeService };
+export { createTimeService };
 
 // The app's service: what the UI calls. The repositories' own methods, and `data()`: everything in one read (the lists
 // are small, and most pages combine several of them), with the public holidays around today.

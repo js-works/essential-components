@@ -1,11 +1,12 @@
-import type { FileItem, UploadFn } from '@local/file-upload';
-import { binding } from '@local/form-validation';
 import { Group, NativeSelect, Select, SimpleGrid, Stack, Textarea, TextInput } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
-import { useRef } from 'react';
 import type { FocusEvent } from 'react';
+import { useRef } from 'react';
 import { z } from 'zod';
-import { normalizeWebsite, ROLES } from '../domain/index.js';
+
+import type { FileItem, UploadFn } from '@local/file-upload';
+import { binding } from '@local/form-validation';
+
 import type {
   AgendaItem,
   AgendaSection,
@@ -17,7 +18,7 @@ import type {
   Role,
   SuggestPeople,
 } from '../domain/index.js';
-
+import { normalizeWebsite, ROLES } from '../domain/index.js';
 import { MinutesEditor } from '../features/meetings/components/minutes.js';
 import { countryOptions } from './lib/countries.js';
 import { useTranslate } from './lib/i18n/index.js';

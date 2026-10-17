@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { flatRows, groupKeyOf, linesOf, moveInSegments, segmentsOf } from './grouping.js';
+
 import type { Segment } from './grouping.js';
+import { flatRows, groupKeyOf, linesOf, moveInSegments, segmentsOf } from './grouping.js';
 
 // Rows are their names; the group is the part before the dot (`.1` is in the blank group `''`).
 const keyOf = (row: string) => row.split('.')[0] ?? '';

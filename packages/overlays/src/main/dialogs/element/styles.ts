@@ -2,8 +2,8 @@
 // # Styles & timing
 // -------------------------------------------------------------------
 
-import { css } from "../../internal/css.js";
 import type { DialogTheme } from "../../api/dialogs/theme.js";
+import { css } from "../../internal/css.js";
 
 // Duration of the note appear/disappear (collapse) animation. Drives both the
 // CSS transition and the JS timer that removes the element after the collapse finishes.

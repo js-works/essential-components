@@ -1,9 +1,10 @@
 import type { z } from 'zod';
+
 import type { FormMeta } from './index.js';
 import { formRegistry } from './meta.js';
 
-export { collectFields, getPath, setPath, unwrap };
 export type { FieldInfo, FieldKind };
+export { collectFields, getPath, setPath, unwrap };
 
 type FieldKind = 'string' | 'number' | 'boolean' | 'date' | 'enum' | 'other';
 

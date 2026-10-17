@@ -1,4 +1,5 @@
 import type { ReactElement, ReactNode } from 'react';
+
 import type { DataTableSetupConfig } from '../element.js';
 import type { I18nAdapter } from '../i18n.js';
 import type { ColumnSort, FilterValue, GroupBy, RowGroup, RowSource } from '../query.js';

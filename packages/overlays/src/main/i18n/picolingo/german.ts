@@ -1,6 +1,7 @@
 import { allTexts, bundleTexts } from "picolingo";
-import { dialogTexts, toastTexts } from "./index.js";
+
 import { germanDialogTexts, germanToastTexts } from "../texts.js";
+import { dialogTexts, toastTexts } from "./index.js";
 
 export { germanTexts };
 

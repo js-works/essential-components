@@ -1,7 +1,7 @@
 import type * as Spec from '../api/react/index.js';
 
-export { connectController, createDataTableController, notifySelection, subscribeToSelection };
 export type { ControllerTarget };
+export { connectController, createDataTableController, notifySelection, subscribeToSelection };
 
 // What a mounted table offers its controller. The controller only forwards to it.
 type ControllerTarget = {

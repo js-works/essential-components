@@ -1,16 +1,17 @@
 import { computePosition, flip, offset, shift } from '@floating-ui/dom';
-import { html, LitElement, nothing } from 'lit';
 import type { PropertyValues, TemplateResult } from 'lit';
+import { html, LitElement, nothing } from 'lit';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { html as staticHtml, unsafeStatic } from 'lit/static-html.js';
-import { groupsOf, search, subgroupsOf } from '../core/search.js';
+
 import type { Group, Match } from '../core/search.js';
+import { groupsOf, search, subgroupsOf } from '../core/search.js';
 import { readStored, writeStored } from '../core/storage.js';
-import { textsFor } from '../core/texts.js';
 import type { Texts } from '../core/texts.js';
+import { textsFor } from '../core/texts.js';
 import type * as Spec from '../index.js';
 import {
   checkIcon,
@@ -27,12 +28,11 @@ import {
   searchIcon,
   selectorIcon,
 } from './icons.js';
-
-import { Menu } from './menu.js';
 import type { MenuOptions } from './menu.js';
+import { Menu } from './menu.js';
 import { layoutStyles, styles } from './styles.js';
-import { taskbarTagFor } from './taskbar-element.js';
 import type { Task, TaskEventDetail, TaskMoveEventDetail } from './taskbar-element.js';
+import { taskbarTagFor } from './taskbar-element.js';
 
 export { CockpitElement };
 

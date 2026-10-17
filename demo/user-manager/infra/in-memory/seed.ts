@@ -1,7 +1,7 @@
 import type { Grant, Group, Permission, Role, Scope, User } from '../../domain/index.js';
 
-export { seed };
 export type { Data };
+export { seed };
 
 type Data = {
   users: User[];

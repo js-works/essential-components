@@ -1,8 +1,9 @@
 // The design language first, so the demo's own CSS comes after it.
 import './ui/ui.css';
 import './demo.css';
-import { mountLoginScreen } from '../src/index.js';
+
 import type { MountedLoginScreen } from '../src/index.js';
+import { mountLoginScreen } from '../src/index.js';
 
 // The demo: the login screen; any username and password sign in (after a short delay), except the password "wrong",
 // which shows the error; so do the made-up providers, except "Google" (it fails). Signed in: the user's name and a button to sign out again.

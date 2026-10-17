@@ -1,55 +1,32 @@
-import {
-  dateRangeFilter,
-  generalAction,
-  singleRowAction,
-  textFilter,
-  useDataTableController,
-} from '@local/data-table/react';
+import type { RowSource, TableActions, TableColumns, TableFilters } from '@local/data-table/react';
+import { criteriaOf, dateRangeFilter, generalAction, singleRowAction, textFilter } from '@local/data-table/react';
+import { useFindSource } from '@local/data-table/react-query';
 
-import type { RowQuery, RowSource, TableActions, TableColumns, TableFilters } from '@local/data-table/react';
-import type {
-  DocumentCriteria,
-  DocumentSortKey,
-  Meeting,
-  MeetingDocument,
-  Range,
-  TextMatch,
-} from '../../../domain/index.js';
-
+import type { DocumentCriteria, Meeting, MeetingDocument } from '../../../domain/index.js';
+import { DOCUMENT_SORT_KEYS } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { searchText, toPaging, toSort, usePageSource } from '../../../shared/lib/table-query.js';
 import { appIcons, DataTable, formatDateTime, formatSize, PAGE_SIZE_OPTIONS } from '../../../shared/shared.js';
-
 import { deleteAction } from '../../../shared/ui/table-actions.js';
+import { useMeetingService } from '../context.js';
 import {
   useDeleteDocumentsFlow,
   useDownloadDocumentFlow,
   useRenameDocumentFlow,
   useUploadDocumentsFlow,
 } from '../document-flows.js';
-
-import { useMeetingService } from '../context.js';
 import { meetingKeys } from '../keys.js';
 import { documentTypeFilter } from '../meeting-filters.js';
 
 export { DocumentTable };
 
-const SORT_KEYS: readonly DocumentSortKey[] = ['name', 'type', 'size', 'user', 'uploaded'];
-
-function toCriteria(query: RowQuery): DocumentCriteria {
-  const { name, type, uploaded } = query.filters as { name?: TextMatch; type?: string[]; uploaded?: Range<string> };
-
-  return { text: searchText(query), name, types: type, uploaded };
-}
-
-function useSource(meetingId: string, reload: () => void): RowSource<MeetingDocument> {
+function useSource(meeting: Meeting): RowSource<MeetingDocument> {
   const service = useMeetingService();
 
-  return usePageSource(
-    meetingKeys.documents(meetingId),
-    (query, signal) =>
-      service.findDocuments(meetingId, toCriteria(query), toSort(query, SORT_KEYS), toPaging(query), signal),
-    reload,
+  return useFindSource(
+    meetingKeys.documents(meeting.id),
+    DOCUMENT_SORT_KEYS,
+    criteriaOf<DocumentCriteria>('text'),
+    (...args) => service.findDocuments(meeting.id, ...args),
   );
 }
 
@@ -78,11 +55,15 @@ function useColumns(): TableColumns<MeetingDocument> {
   ];
 }
 
-const filters: TableFilters = {
-  name: textFilter(),
-  type: documentTypeFilter,
-  uploaded: dateRangeFilter(),
-};
+function useFilters(): TableFilters {
+  const t = useTranslate();
+
+  return {
+    name: textFilter(),
+    types: { label: t('meetings.documents.columns.type'), filter: documentTypeFilter },
+    uploaded: dateRangeFilter(),
+  };
+}
 
 function useActions(meeting: Meeting): TableActions<MeetingDocument> {
   const t = useTranslate();
@@ -121,14 +102,13 @@ function useActions(meeting: Meeting): TableActions<MeetingDocument> {
 // The documents of the meeting (invitation, board pack, presentations, minutes): upload, download, rename, delete.
 function DocumentTable({ meeting }: { meeting: Meeting }) {
   const t = useTranslate();
-  const tableCtrl = useDataTableController<MeetingDocument>();
+  const source = useSource(meeting);
   const columns = useColumns();
+  const filters = useFilters();
   const actions = useActions(meeting);
-  const source = useSource(meeting.id, tableCtrl.reload);
 
   return (
     <DataTable
-      controller={tableCtrl}
       title={t('meetings.documents.title')}
       subtitle={t('meetings.documents.subtitle')}
       density="compact"

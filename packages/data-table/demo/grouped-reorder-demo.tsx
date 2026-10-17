@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { createDataTableComponent, useDataTableController } from '../src/react/index.js';
+
 import type { RowMove, TableActions, TableColumns } from '../src/react/index.js';
+import { createDataTableComponent, useDataTableController } from '../src/react/index.js';
 import { defaultTheme } from '../src/themes/index.js';
-import { deleteSection, fetchAgenda, moveAgendaItem } from './agenda.js';
 import type { AgendaItem } from './agenda.js';
+import { deleteSection, fetchAgenda, moveAgendaItem } from './agenda.js';
 import { fixedHeight, selectedLine } from './demo.module.css';
 import { i18n } from './i18n.js';
 import { icons } from './icons.js';

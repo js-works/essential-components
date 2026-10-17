@@ -1,8 +1,10 @@
-import { useDialogs } from '@local/overlays/react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { ReactElement } from 'react';
-import { ROOT_ID } from '../../domain/index.js';
+
+import { useDialogs } from '@local/overlays/react';
+
 import type { Folder, MediaFile } from '../../domain/index.js';
+import { ROOT_ID } from '../../domain/index.js';
 import { FavoriteButton } from './components/favorite.js';
 import { FileDetails } from './components/file-details.js';
 import { FolderDetails } from './components/folder-details.js';

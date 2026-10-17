@@ -11,9 +11,9 @@
 // palette of one colour changes one colour.
 
 import type { DialogTheme } from "../api/dialogs/theme.js";
-import type { ThemePalette, OverlayThemes } from "../api/theme.js";
-import { createDialogTheme } from "../dialogs/theme.js";
+import type { OverlayThemes, ThemePalette } from "../api/theme.js";
 import type { ToastTheme } from "../api/toasts/theme.js";
+import { createDialogTheme } from "../dialogs/theme.js";
 import { createToastTheme } from "../toasts/theme.js";
 
 /**

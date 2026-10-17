@@ -1,10 +1,11 @@
-import { dateRangeFilter, generalAction, singleRowAction, useDataTableController } from '@local/data-table/react';
-import type { TableActions, TableColumns, TableFilters } from '@local/data-table/react';
 import { Group } from '@mantine/core';
+
+import type { TableActions, TableColumns, TableFilters } from '@local/data-table/react';
+import { dateRangeFilter, generalAction, singleRowAction } from '@local/data-table/react';
+
 import type { Employee, EmployeeDocument } from '../../../domain/index.js';
 import { formatSize, formatStamp } from '../../../shared/lib/format.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
-import { oneOf, within } from '../../../shared/lib/local-query.js';
 import { DataTable } from '../../../shared/ui/data-table.js';
 import { appIcons } from '../../../shared/ui/icons.js';
 import { deleteAction } from '../../../shared/ui/table-actions.js';
@@ -91,7 +92,6 @@ function useActions(employee: Employee): TableActions<EmployeeDocument> {
 // The documents of an employee's records: upload (a category and files), download (not in the demo), delete.
 function DocumentTable({ employee }: { employee: Employee }) {
   const t = useTranslate();
-  const tableCtrl = useDataTableController<EmployeeDocument>();
   const columns = useColumns();
   const filters = useFilters();
   const actions = useActions(employee);
@@ -100,17 +100,11 @@ function DocumentTable({ employee }: { employee: Employee }) {
     (data) => data.documents.filter((document) => document.employeeId === employee.id),
     {
       search: ['name'],
-      filters: {
-        category: (row, value) => oneOf(row.category, value),
-        uploaded: (row, value) => within(row.uploaded, value),
-      },
     },
-    tableCtrl.reload,
   );
 
   return (
     <DataTable
-      controller={tableCtrl}
       title={t('documents.title')}
       source={source}
       rowKey="id"

@@ -9,8 +9,17 @@
 // user has typed into survives an update. The element's only content entry point is the
 // `props` property.
 
+import type {
+  DialogAdapter,
+  DialogAdapterFactory,
+  DialogProps,
+  DialogSpec,
+} from "../../api/dialogs/adapter.js";
+import type { DialogTheme } from "../../api/dialogs/theme.js";
 import { registerFirstFreeTag } from "../../internal/custom-element.js";
 import { deepActiveElement, h, parseSvg } from "../../internal/dom.js";
+import { defaultDialogTheme } from "../theme.js";
+import type { DialogButtonView, DialogMount } from "../view.js";
 import {
   alertIconSvg,
   closeIconSvg,
@@ -19,28 +28,16 @@ import {
   noteIconSvg,
   restoreIconSvg,
 } from "./icons.js";
-
 import {
   CLOSE_ANIMATION_FALLBACK_MS,
   DIALOG_GROW_ANIM_MS,
   QUESTION_MORPH_ANIM_MS,
   REJECT_MESSAGE_ANIM_MS,
   SPINNER_DROP_ANIM_MS,
-  styleText,
   SPINNER_SWAP_OUT_MS,
   SWAP_OUT_MS,
+  styleText,
 } from "./styles.js";
-
-import type {
-  DialogAdapter,
-  DialogAdapterFactory,
-  DialogProps,
-  DialogSpec,
-} from "../../api/dialogs/adapter.js";
-
-import { defaultDialogTheme } from "../theme.js";
-import type { DialogTheme } from "../../api/dialogs/theme.js";
-import type { DialogButtonView, DialogMount } from "../view.js";
 
 // How many frames focusFirstInvalid() lets the caller's re-render settle before reading
 // aria-invalid off the form. Three is a frame past where React lands in practice, and

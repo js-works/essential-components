@@ -1,5 +1,6 @@
 import { Stack, Textarea, TextInput } from '@mantine/core';
 import { z } from 'zod';
+
 import type { Group } from '../../../domain/index.js';
 import { useForm } from '../../../shared/lib/use-form.js';
 

@@ -1,6 +1,7 @@
+import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
-import { defaultClientConditions, defineConfig } from 'vite';
 import type { Plugin } from 'vite';
+import { defaultClientConditions, defineConfig } from 'vite';
 
 // `npm run build:board-manager`: the `<board-manager>` custom element (demo/board-manager/app/board-manager-element.tsx) as
 // one ES module with everything it needs (React, Mantine, the packages), into `dist-board-manager/`. Its CSS is not a
@@ -76,12 +77,18 @@ const config = defineConfig({
     dedupe: ['react', 'react-dom'],
     // The packages from their sources (the `source` condition of their `exports`), like the demo page.
     conditions: ['source', ...defaultClientConditions],
+    // BlockNote's emoji menu (off in the minutes editor, `emojiPicker={false}`) loads emoji-mart and its data (about
+    // 0.5 MB) by dynamic imports, which this one-file build would inline: an empty module in their place.
+    alias: {
+      'emoji-mart': fileURLToPath(new URL('demo/board-manager/app/no-emoji.ts', import.meta.url)),
+      '@emoji-mart/data': fileURLToPath(new URL('demo/board-manager/app/no-emoji.ts', import.meta.url)),
+    },
   },
   define: {
     // A library build does not replace it on its own, and React picks its development build by it.
     'process.env.NODE_ENV': JSON.stringify('production'),
     // The host page may have Prototype.js (XWiki: 1.7.3), which replaces `Object.values` with one that also returns
-    // what it added to `Array.prototype` (e.g. react-pdf's text layout failed, `e.reduce is not a function`). The
+    // what it added to `Array.prototype` (a library that reduces its result fails, `e.reduce is not a function`). The
     // bundle uses its own (see `banner`); the page's one stays as it is.
     'Object.values': '__boardManagerObjectValues',
   },
@@ -101,8 +108,8 @@ const config = defineConfig({
         // One file: the dynamic imports of the packages are part of it.
         inlineDynamicImports: true,
         minify: true,
-        // The host page may have an AMD loader (XWiki: RequireJS): UMD modules in the bundle (e.g. the hyphenation
-        // patterns of react-pdf) would register with it instead of exporting. A module-scoped `define` hides the
+        // The host page may have an AMD loader (XWiki: RequireJS): UMD modules in the bundle would register with it
+        // instead of exporting. A module-scoped `define` hides the
         // page's one; the page's own stays as it is. And the bundle's `Object.values` (see `define`), from
         // `Object.keys` (Prototype.js keeps the browser's one).
         banner: 'var define; var __boardManagerObjectValues = (o) => Object.keys(o).map((k) => o[k]);',

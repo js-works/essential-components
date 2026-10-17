@@ -1,21 +1,19 @@
-import { useDialogs, useToast } from '@local/overlays/react';
-import { Badge, Button, Group, Menu, Paper, SimpleGrid, Stack, Tabs, Text, Title } from '@mantine/core';
-import { Fragment, useMemo, useState } from 'react';
+import { Badge, Button, Group, Paper, SimpleGrid, Stack, Tabs, Text, Title } from '@mantine/core';
 import type { ReactNode } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
+
 import type { MeetingSummary } from '../../../domain/index.js';
 import { agendaNumbers } from '../../../domain/index.js';
 import { useTranslate } from '../../../shared/lib/i18n/index.js';
 import { appIcons, formatDateTime, formatTime, PageHeader } from '../../../shared/shared.js';
 import { NotFound } from '../../../shared/ui/not-found.js';
-import { AgendaTable } from '../components/agenda-table.js';
 import { numbered } from '../components/agenda.js';
+import { AgendaTable } from '../components/agenda-table.js';
 import { DocumentTable } from '../components/document-table.js';
 import { MinutesBadge, StatusBadge } from '../components/meeting-badges.js';
 import { MinutesText } from '../components/minutes.js';
-import { useMeetingService } from '../context.js';
 import { useApproveMinutesFlow, useDeleteMeetingsFlow, useEditMeetingFlow, useMarkHeldFlow } from '../meeting-flows.js';
-import { downloadMeetingPdf, previewMeetingPdf, printMeetingPdf } from '../pdf/index.js';
 import { useAgenda, useBoardMembers, useMeeting } from '../reads.js';
 
 export { MeetingPage };
@@ -102,13 +100,10 @@ function MeetingPage() {
 // end is the start plus the duration of the agenda.
 function MeetingOverview({ meeting, duration }: { meeting: MeetingSummary; duration: number }) {
   const t = useTranslate();
-  const dialogs = useDialogs();
-  const toasts = useToast();
   const editMeeting = useEditMeetingFlow();
   const deleteMeetings = useDeleteMeetingsFlow();
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const service = useMeetingService();
   const { sections } = useAgenda(meeting.id);
   const end = new Date(new Date(meeting.start).getTime() + duration * 60_000);
   const fields: readonly (readonly [string, ReactNode])[] = [
@@ -166,33 +161,6 @@ function MeetingOverview({ meeting, duration }: { meeting: MeetingSummary; durat
           >
             {t('common.delete')}
           </Button>
-          <Menu position="bottom-end" shadow="md" floatingStrategy="fixed">
-            <Menu.Target>
-              <Button size="xs" variant="default" leftSection={appIcons.pdf} rightSection={appIcons.chevronDown}>
-                PDF
-              </Button>
-            </Menu.Target>
-            <Menu.Dropdown>
-              <Menu.Item
-                leftSection={appIcons.preview}
-                onClick={() => void previewMeetingPdf(service, dialogs, toasts, meeting)}
-              >
-                {t('meetings.pdf.preview')}
-              </Menu.Item>
-              <Menu.Item
-                leftSection={appIcons.print}
-                onClick={() => void printMeetingPdf(service, dialogs, toasts, meeting)}
-              >
-                {t('meetings.pdf.print')}
-              </Menu.Item>
-              <Menu.Item
-                leftSection={appIcons.download}
-                onClick={() => void downloadMeetingPdf(service, dialogs, toasts, meeting)}
-              >
-                {t('meetings.pdf.download')}
-              </Menu.Item>
-            </Menu.Dropdown>
-          </Menu>
         </Group>
       </Group>
       <SimpleGrid cols={2} spacing="lg" verticalSpacing="xs" style={{ gridTemplateColumns: 'max-content 1fr' }}>

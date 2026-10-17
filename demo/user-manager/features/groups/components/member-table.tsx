@@ -1,9 +1,11 @@
-import { multiRowAction, singleRowAction, useDataTableController } from '@local/data-table/react';
-import type { TableActions, TableColumns } from '@local/data-table/react';
 import { Anchor, Badge, Group as MantineGroup } from '@mantine/core';
 import { Link } from 'react-router';
-import { membersOf } from '../../../domain/index.js';
+
+import type { TableActions, TableColumns } from '@local/data-table/react';
+import { multiRowAction, singleRowAction } from '@local/data-table/react';
+
 import type { Group, User } from '../../../domain/index.js';
+import { membersOf } from '../../../domain/index.js';
 import { DataTable } from '../../../shared/ui/data-table.js';
 import { appIcons } from '../../../shared/ui/icons.js';
 import { UserAvatar } from '../../../shared/ui/parts.js';
@@ -49,7 +51,6 @@ function useActions(group: Group): TableActions<User> {
 
 // The members of a group: add, remove.
 function MemberTable({ group }: { group: Group }) {
-  const tableCtrl = useDataTableController<User>();
   const actions = useActions(group);
   const source = useTableSource<User>(
     `members:${group.id}`,
@@ -59,12 +60,10 @@ function MemberTable({ group }: { group: Group }) {
       return current === undefined ? [] : membersOf(all.users, current);
     },
     { search: ['name', 'email', 'department', 'title'] },
-    tableCtrl.reload,
   );
 
   return (
     <DataTable
-      controller={tableCtrl}
       source={source}
       rowKey="id"
       columns={columns}

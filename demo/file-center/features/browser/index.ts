@@ -10,5 +10,5 @@ export { fileKindFilter, ownerFilter } from './folder-filters.js';
 export { browserKeys } from './keys.js';
 export { KIND_LABELS } from './labels.js';
 export { FolderPage } from './pages/folder-page.js';
-export { createBrowserService } from './service.js';
 export type { BrowserService, EntryCriteria, EntryRow, Overview, TrashRow, TrashSortKey } from './service.js';
+export { createBrowserService, TRASH_SORT_KEYS } from './service.js';

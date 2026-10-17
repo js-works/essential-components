@@ -1,9 +1,6 @@
-import { createDataTableComponent } from '@local/data-table/react';
-import type { DataTableProps } from '@local/data-table/react';
-import { mantineTheme } from '@local/data-table/themes';
 import { Group, Stack, Text, Title } from '@mantine/core';
-import { useSyncExternalStore } from 'react';
 import type { ReactNode } from 'react';
+import { useSyncExternalStore } from 'react';
 import { IoMdHome } from 'react-icons/io';
 import {
   TbArrowLeft,
@@ -11,22 +8,22 @@ import {
   TbBuilding,
   TbCalendar,
   TbChevronDown,
-  TbDownload,
   TbExternalLink,
-  TbEye,
-  TbFileExport,
   TbInfoCircle,
   TbLayoutBoard,
   TbNotes,
   TbPencil,
   TbPlus,
   TbPresentation,
-  TbPrinter,
   TbSection,
   TbTrash,
   TbUpload,
   TbUsers,
 } from 'react-icons/tb';
+
+import type { DataTableProps } from '@local/data-table/react';
+import { createDataTableComponent } from '@local/data-table/react';
+import { mantineTheme } from '@local/data-table/themes';
 
 import { i18n as tableI18n } from '../../../packages/data-table/demo/i18n.js';
 
@@ -39,8 +36,8 @@ export {
   formatTime,
   PAGE_SIZE_OPTIONS,
   PageHeader,
-  Scope,
   SCOPE_CLASS,
+  Scope,
   setSchemeHost,
   useScheme,
 };
@@ -207,8 +204,4 @@ const appIcons = {
   info: <TbInfoCircle size={16} aria-hidden />,
   upload: <TbUpload size={16} aria-hidden />,
   external: <TbExternalLink size={14} aria-hidden />,
-  pdf: <TbFileExport size={16} aria-hidden />,
-  preview: <TbEye size={16} aria-hidden />,
-  download: <TbDownload size={16} aria-hidden />,
-  print: <TbPrinter size={16} aria-hidden />,
 };

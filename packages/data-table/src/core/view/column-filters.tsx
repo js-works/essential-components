@@ -1,7 +1,8 @@
 import { useEffect, useId, useState } from 'react';
+
 import type * as Spec from '../../api/react/index.js';
-import { fallbackSummary, isRecord, optionsOf } from '../filters.js';
 import type { FilterSummary, SummaryContext } from '../filters.js';
+import { fallbackSummary, isRecord, optionsOf } from '../filters.js';
 import { useTexts } from '../texts.js';
 import { AutocompleteFilterInput, autocompleteIdsOf } from './autocomplete-filter.js';
 import * as styles from './classes.js';

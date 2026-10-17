@@ -1,6 +1,6 @@
 import { createElement } from 'react';
-import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
+import { createRoot } from 'react-dom/client';
 import './demo.css';
 import { FormDemo } from './form-demo.js';
 

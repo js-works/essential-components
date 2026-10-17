@@ -1,5 +1,6 @@
 import { Combobox as BaseCombobox } from '@base-ui/react/combobox';
 import { useContext, useEffect, useRef, useState } from 'react';
+
 import type * as Spec from '../../api/react/index.js';
 import { useTexts } from '../texts.js';
 import { flag } from '../utils.js';
