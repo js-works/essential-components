@@ -19,13 +19,14 @@ import type {
   SuggestPeople,
 } from '../domain/index.js';
 import { normalizeWebsite, ROLES } from '../domain/index.js';
-import { MinutesEditor } from '../features/meetings/components/minutes.js';
+import { MinutesEditor } from '../features/meetings/minutes.js';
 import { countryOptions } from './lib/countries.js';
 import { useTranslate } from './lib/i18n/index.js';
 import { useForm } from './lib/use-form.js';
 import { AsyncSelect } from './ui/async-select.js';
 import { DocumentUpload } from './ui/document-upload.js';
 
+export type { MeetingFormValues };
 export {
   AgendaItemForm,
   BoardForm,
@@ -157,7 +158,7 @@ const meetingSchema = z.object({
 const meetingWithBoardSchema = meetingSchema.extend({ boardId: z.string() });
 
 // What the form saves: the date and the time joined into the fake server's `start`.
-type MeetingValues = Omit<z.output<typeof meetingSchema>, 'date' | 'time'> & { start: string };
+type MeetingFormValues = Omit<z.output<typeof meetingSchema>, 'date' | 'time'> & { start: string };
 
 // The times of the time select: every quarter of an hour from 7:00 to 20:45, and a meeting's own time if it is
 // another one (e.g. 6:30), so it is shown.
@@ -176,7 +177,7 @@ function MeetingForm({
 }: {
   meeting?: Meeting;
   boards?: readonly Board[];
-  save: (values: MeetingValues) => Promise<void>;
+  save: (values: MeetingFormValues) => Promise<void>;
 }) {
   const t = useTranslate();
   const { DialogForm, field } = useForm(

@@ -1,6 +1,8 @@
 import react from '@vitejs/plugin-react';
 import { defaultClientConditions, defineConfig } from 'vite';
 
+import { appRoutes } from './vite.routes.js';
+
 // The demo page of all packages. The demos come from the workspace packages, by relative imports
 // (`../packages/file-upload/demo/…`); the apps import the packages by name (`@local/data-table/react`), resolved to
 // their sources by the `source` condition of the packages' `exports` (no build of a package needed). All of them use
@@ -15,7 +17,7 @@ import { defaultClientConditions, defineConfig } from 'vite';
 // `color-scheme` of the element). The JavaScript for `es2024`: newer syntax that not every one of them has yet (`using`)
 // is lowered.
 const config = defineConfig(({ mode }) => ({
-  plugins: [react()],
+  plugins: [...appRoutes(), react()],
   base: mode === 'pages' ? '/essential-components/' : '/',
   resolve: {
     dedupe: ['react', 'react-dom'],

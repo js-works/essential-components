@@ -8,8 +8,7 @@ import { suggestion } from '../../shared/ui/suggestion.js';
 export { countryFilter, organizationFilter };
 
 // The filter of every column of an organization (by name, the value is the name): an autocomplete of `suggest`'s
-// organizations, all options when the list opens (`minQueryLength: 0`), each with the organization's city as its
-// second line.
+// organizations, all options when the list opens, each with the organization's city as its second line.
 function organizationFilter(suggest: SuggestOrganizations): TableFilter {
   return autocompleteFilter({
     multiple: true,
@@ -23,8 +22,7 @@ function organizationFilter(suggest: SuggestOrganizations): TableFilter {
   });
 }
 
-// The filter of the country of an organization (its ISO code, shown by its name): the countries the given
-// organizations have, by name.
+// The filter of the country (its ISO code, shown by its name): the countries the given organizations have, by name.
 function countryFilter(organizations: readonly Organization[]): TableFilter {
   const codes = new Set(organizations.map((organization) => organization.country).filter((code) => code !== ''));
 

@@ -7,5 +7,12 @@
   "[javascriptreact]": { "editor.defaultFormatter": "dprint.dprint" },
   "[json]": { "editor.defaultFormatter": "dprint.dprint" },
   "[jsonc]": { "editor.defaultFormatter": "dprint.dprint" },
-  "[markdown]": { "editor.defaultFormatter": "dprint.dprint" }
+  "[markdown]": { "editor.defaultFormatter": "dprint.dprint" },
+  // SonarQube for IDE: rules switched off because they contradict the conventions (`docs/conventions/`).
+  "sonarlint.rules": {
+    // "Mark the props of the component readonly": props are not marked `readonly` (`typescript.md`). React never
+    // changes them, `Readonly<…>` is shallow anyway, and the arrays in public types are `readonly T[]` already.
+    "typescript:S6759": { "level": "off" },
+    "javascript:S6759": { "level": "off" }
+  }
 }

@@ -29,7 +29,8 @@
   "include": [
     "demo",
     "vite.config.ts",
-    "vite.board-manager.config.ts"
+    "vite.board-manager.config.ts",
+    "vite.routes.ts"
   ],
   "exclude": [
     "demo/*/app/router-types.ts"

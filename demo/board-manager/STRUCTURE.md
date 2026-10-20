@@ -5,6 +5,12 @@ files are moved to match them.
 
 ## Target structure
 
+- Being replaced (2026-10-17): Organizations, Boards and Members are flat now, files by kind in the feature's folder
+  (`<subject>-data.ts`, `-flows.tsx`, `-filters.ts`, `-table.tsx`, `-page.tsx`, …), without query keys, reads, a
+  service or an index of their own where they only passed calls on; see the Board Manager's `CLAUDE.md`
+  (Organizations). All four features are flat now (the meetings with the files of their parts, `agenda-…`,
+  `document-…`); the target below is outdated, and this file is rewritten once the pattern is decided.
+
 - Feature-based structure ("package by feature", like Bulletproof React): one folder per feature (the modules of the
   app's menu), each with its services and UI; plus `app/`, `domain/`, `infra/` and `shared/`.
   ```

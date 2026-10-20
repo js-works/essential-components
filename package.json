@@ -13,15 +13,15 @@
     "build:pages": "npm run typecheck && vite build --mode pages",
     "build:board-manager": "npm run typecheck && vite build --config vite.board-manager.config.ts",
     "freeze-demo": "test ! -e old-demos/$npm_package_version || { echo \"old-demos/$npm_package_version exists already\"; exit 1; } && npm run typecheck && vite build --base ./ --outDir old-demos/$npm_package_version",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p demo/user-manager && tsc --noEmit -p demo/time-tracker && tsc --noEmit -p demo/human-resources && tsc --noEmit -p demo/file-center && tsc --noEmit -p demo/board-manager",
+    "typecheck": "npm run routes && tsc --noEmit && tsc --noEmit -p demo/user-manager && tsc --noEmit -p demo/time-tracker && tsc --noEmit -p demo/human-resources && tsc --noEmit -p demo/file-center && tsc --noEmit -p demo/board-manager",
     "format": "biome check --write && dprint fmt",
-    "format:check": "biome check && dprint check"
+    "format:check": "biome check && dprint check",
+    "routes": "cd demo/board-manager && tsr generate"
   },
   "dependencies": {
     "@blocknote/core": "^0.55.0",
     "@blocknote/mantine": "^0.55.0",
     "@blocknote/react": "^0.55.0",
-    "@mantine/charts": "9.5.1",
     "@mantine/dates": "9.5.1",
     "@tanstack/react-query": "^5.104.0",
     "@tanstack/react-router": "^1.170.41",
@@ -29,11 +29,12 @@
     "react-i18next": "^17.0.15",
     "react-icons": "^5.7.0",
     "react-router": "^8.4.0",
-    "recharts": "3.10.1",
     "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
+    "@tanstack/router-cli": "1.167.40",
+    "@tanstack/router-plugin": "1.168.42",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",

@@ -170,6 +170,11 @@ and imports the files it needs from its `CLAUDE.md`.
   - `npm run freeze-demo` builds the current demo into `old-demos/<version of the root package.json>/` (it refuses an
     existing folder). So: freeze first, then raise the version in the root `package.json`.
   - The deploy workflow copies `old-demos/` into `dist/`: https://js-works.github.io/essential-components/old-demos/0.0.0/
+- `vite.routes.ts` (2026-10-18): TanStack Router's plugin for the apps with file-based routes (each app's `routes/`,
+  its tree generated into `.generated/route-tree.ts` of the app, not checked in, both set in the app's `tsr.config.json`, which `npm run routes`
+  reads too), used by both Vite configs. Open: each generated tree declares its
+  routes globally (`FileRoutesByPath`), so two apps with file routes in the root's `tsc` program may conflict; to be
+  checked with the second app.
 - `vite.config.ts`: `resolve.dedupe` makes all demos use one React, even where a package pins its own version (e.g.
   `overlays`, which gets a nested one in its `node_modules`).
 - The apps import the packages by name (2026-10-15, the user's choice, about 70%; relative paths into `packages/*/src/`
@@ -199,7 +204,9 @@ and imports the files it needs from its `CLAUDE.md`.
 - TypeScript (strict), Vite, npm workspaces. The root has dev dependencies (`vite`, `typescript`,
   `@vitejs/plugin-react`, `react`, `react-dom`, their types, `dprint`, `@biomejs/biome` (only its organize imports, 2026-10-17); for the board manager `@mantine/core`,
   `@mantine/hooks`, `react-router` (no longer imported since 2026-10-17: to be removed)) and `@tanstack/react-router` (the
-  apps' routing, 2026-10-17), and `zustand`, `react-icons` (the board manager's icons: its Tabler set, `tb`),
+  apps' routing, 2026-10-17) with `@tanstack/router-plugin` (its file-based routes, 2026-10-18, pinned to `1.168.42`, the
+  version for the router's `1.170.41`; so far the Board Manager only, `vite.routes.ts`) and `@tanstack/router-cli`
+  (`tsr generate`, `npm run routes`, before every typecheck; pinned to `1.167.40`, the plugin's generator), and `zustand`, `react-icons` (the board manager's icons: its Tabler set, `tb`),
   `@mantine/dates` with `dayjs` (pinned to the versions the workspace has from `overlays`: `9.5.1`, `1.11.23`),
   `i18next` (the board manager's translations), `zod` (the schemas of `form-validation` in the board manager),
   `@tanstack/react-query` (the reads and changes of the board manager, the file center and the user manager).
@@ -340,7 +347,8 @@ and imports the files it needs from its `CLAUDE.md`.
   `min-release-age=7`.
   - The first workspace install (2026-09-26) was run once with `--min-release-age=5`, because `antd@6.6.5` (a dev
     dependency of `data-table`) was only six days old.
-- `.editorconfig` and dprint (`dprint.json`), line width 120, single quotes; the imports by Biome (`biome.json`). The root's dprint excludes `packages/`: each
+- `.editorconfig` and dprint (`dprint.json`), line width 120, single quotes; the imports by Biome (`biome.json`); both
+  skip the generated `.generated/` folders (gitignored, hidden in VSCodium by `.vscode/settings.json`). The root's dprint excludes `packages/`: each
   package keeps its own formatting (`overlays` uses double quotes and no dprint), so run a package's formatter inside it.
 
 ## Commands
@@ -350,7 +358,7 @@ and imports the files it needs from its `CLAUDE.md`.
 - `npm run build`: typecheck + build the demo page into `dist/`.
 - `npm run build:pages`: the same for GitHub Pages (`vite build --mode pages`, base `/essential-components/`).
 - `npm run build:board-manager`: the `<board-manager>` element as one module into `dist-board-manager/`.
-- `npm run typecheck`
+- `npm run typecheck`: first `npm run routes` (the apps' route trees, `tsr generate`), then `tsc` for the root and each app.
 - `npm run format`: Biome's organize imports (`biome check --write`; its formatter and linter off, `biome.json`), then
   dprint. `npm run format:check`: both checks. Biome only sorts and groups the imports (see
   `docs/conventions/typescript.md`); dprint formats and leaves the imports' order and their names' order to it

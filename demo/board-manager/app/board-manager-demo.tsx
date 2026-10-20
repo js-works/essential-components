@@ -1,7 +1,6 @@
 // Mantine's layered styles (`@layer mantine`): below every unlayered rule of the page, so its global rules do not
 // restyle the other demos (like in the React demo of overlays).
 import './mantine.css';
-import '@mantine/charts/styles.layer.css';
 import '@mantine/dates/styles.layer.css';
 import '@local/rich-text/styles.css';
 import '@local/micro-app/styles.css';
@@ -18,12 +17,13 @@ import type { MicroAppLook, MicroAppLookOptions } from '@local/micro-app';
 import { createLook, MicroAppProvider } from '@local/micro-app';
 import { OverlaysProvider } from '@local/overlays/react';
 
-import { BoardServiceContext, createBoardService } from '../features/boards/index.js';
-import { createMeetingService, MeetingServiceContext } from '../features/meetings/index.js';
-import { createMemberService, MemberServiceContext } from '../features/members/index.js';
-import { createOrganizationService, OrganizationServiceContext } from '../features/organizations/index.js';
+import { BoardServiceContext, createBoardService } from '../features/boards/board-data.js';
+import { createMeetingService, MeetingServiceContext } from '../features/meetings/meeting-data.js';
+import { createMemberService, MemberServiceContext } from '../features/members/member-data.js';
+import { OrganizationServiceContext } from '../features/organizations/organization-data.js';
 import { createInMemoryRepositories } from '../infra/in-memory/index.js';
 import { i18n, useLanguage } from '../shared/lib/i18n/index.js';
+import { withChanges } from '../shared/lib/with-changes.js';
 import { SCOPE_CLASS, Scope, useScheme } from '../shared/shared.js';
 import { createAppRouter } from './app.js';
 
@@ -64,7 +64,7 @@ const repositories = createInMemoryRepositories();
 const services = {
   boards: createBoardService(repositories, changed),
   members: createMemberService(repositories, changed),
-  organizations: createOrganizationService(repositories, changed),
+  organizations: withChanges(repositories.organizations, ['create', 'update', 'delete'], changed),
   meetings: createMeetingService(repositories, changed),
 };
 

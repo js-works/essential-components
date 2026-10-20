@@ -1,82 +1,51 @@
 import { useNavigate } from '@tanstack/react-router';
 
-import type { Meeting } from '../../domain/index.js';
+import type { Meeting, MeetingSummary } from '../../domain/index.js';
+import type { MeetingFormValues } from '../../shared/forms.js';
 import { MeetingForm } from '../../shared/forms.js';
+import { useCrudFlows } from '../../shared/lib/crud-flows.js';
 import { useFlowKit } from '../../shared/lib/flows.js';
 import { formatDateTime } from '../../shared/shared.js';
-import { useBoardList } from '../boards/reads.js';
-import { useMembershipList } from '../members/reads.js';
-import { useMeetingService } from './context.js';
-import type { MeetingLink } from './meeting-links.js';
+import { useBoardList } from '../boards/board-data.js';
+import { useMembershipList } from '../members/member-data.js';
+import { useMeetingService } from './meeting-data.js';
 
-export {
-  useApproveMinutesFlow,
-  useCancelMeetingFlow,
-  useCreateMeetingFlow,
-  useDeleteMeetingsFlow,
-  useEditMeetingFlow,
-  useMarkHeldFlow,
-};
+export { useApproveMinutesFlow, useCancelMeetingFlow, useMarkHeldFlow, useMeetingFlows };
 
-// The flows of the meetings, one hook per use case (the agenda's and the documents' are in their own files). A flow
-// changes the data through the service (which says so: every read loads again); it knows no
-// table.
-
-// Where a new meeting goes: the board of the list (none: it is chosen, of the person's boards with a person), and
-// where a meeting opens.
+// Where a new meeting goes: the board of the list (none: it is chosen, of the person's boards with a person).
 type NewMeetingPlace = {
   boardId?: string;
   personId?: string;
-  linkOf: (meeting: { id: string; boardId: string }) => MeetingLink;
 };
 
-// "New meeting": the meeting form in a dialog, saved before it closes; then a toast, and the new meeting's page.
-function useCreateMeetingFlow({ boardId, personId, linkOf }: NewMeetingPlace): () => Promise<void> {
-  const { formFlow, t } = useFlowKit();
+// "New", "Edit" and "Delete" of meetings; deleting says that the agenda, the minutes and the documents go with them.
+function useMeetingFlows({ boardId, personId }: NewMeetingPlace = {}) {
+  const { t } = useFlowKit();
   const navigate = useNavigate();
   const service = useMeetingService();
   const boards = useBoardList();
   const memberships = useMembershipList();
+  const choices = boards.filter((board) =>
+    personId === undefined
+    || memberships.some((membership) => membership.boardId === board.id && membership.personId === personId)
+  );
 
-  return async () => {
-    const choices = boards.filter((board) =>
-      personId === undefined
-      || memberships.some((membership) => membership.boardId === board.id && membership.personId === personId)
-    );
-    let created: { id: string; boardId: string } | undefined;
-    const done = await formFlow({
-      title: t('meetings.new'),
-      content: (
-        <MeetingForm
-          boards={boardId === undefined ? choices : undefined}
-          save={async (values) => {
-            created = await service.create(boardId ?? values.boardId ?? '', values);
-          }}
-        />
-      ),
-      buttons: { confirm: t('common.create') },
-      success: t('meetings.created'),
-    });
-
-    if (done && created !== undefined) {
-      void navigate(linkOf(created));
-    }
-  };
-}
-
-// "Edit" of a meeting (in the meetings list and on the meeting's overview): the meeting form in a dialog, saved before
-// it closes, then a toast. Resolves `true` when saved.
-function useEditMeetingFlow(): (meeting: Meeting) => Promise<boolean> {
-  const { formFlow, t } = useFlowKit();
-  const service = useMeetingService();
-
-  return (meeting) =>
-    formFlow({
-      title: t('meetings.editTitle'),
-      content: <MeetingForm meeting={meeting} save={(values) => service.update(meeting.id, values)} />,
-      buttons: { confirm: t('common.save') },
-      success: t('meetings.saved'),
-    });
+  return useCrudFlows<MeetingSummary, MeetingFormValues, Meeting>({
+    texts: 'meetings',
+    nameOf: (meeting) => meeting.title,
+    form: ({ record, save }) => (
+      <MeetingForm
+        meeting={record}
+        boards={record === undefined && boardId === undefined ? choices : undefined}
+        save={save}
+      />
+    ),
+    create: (values) => service.create(boardId ?? values.boardId ?? '', values),
+    update: service.update,
+    remove: service.delete,
+    deleteContent: (records) => t('meetings.deleteContent', { count: records.length, name: records[0]?.title ?? '' }),
+    created: (meeting) => void navigate({ to: '/meetings/$meetingId', params: { meetingId: meeting.id } }),
+  });
 }
 
 // "Cancel" of a meeting: only a planned one (else a note says why); a critical confirmation that cancels it before it
@@ -105,27 +74,6 @@ function useCancelMeetingFlow(): (meeting: Meeting) => Promise<boolean> {
       buttons: { confirm: t('meetings.cancel'), cancel: t('meetings.keep') },
       run: () => service.setStatus(meeting.id, 'Cancelled'),
       success: t('meetings.cancelled', { title: meeting.title }),
-    });
-  };
-}
-
-// "Delete" of meetings (in the meetings list and on a meeting's overview): a critical confirmation (the agenda, the
-// minutes and the documents go with them), then a toast. Resolves `true` when deleted.
-function useDeleteMeetingsFlow(): (meetings: readonly { id: string; title: string }[]) => Promise<boolean> {
-  const { confirmFlow, t } = useFlowKit();
-  const service = useMeetingService();
-
-  return (meetings) => {
-    const count = meetings.length;
-    const name = meetings[0]?.title ?? '';
-
-    return confirmFlow({
-      critical: true,
-      title: t('meetings.deleteTitle', { count }),
-      content: t('meetings.deleteContent', { count, name }),
-      buttons: { confirm: t('common.delete') },
-      run: () => service.delete(meetings.map((meeting) => meeting.id)),
-      success: t('meetings.deleted', { count, name }),
     });
   };
 }

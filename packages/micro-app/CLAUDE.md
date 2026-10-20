@@ -54,6 +54,9 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   (`staticData: { crumb: (params) => … }`), the last one plain text (the current page); on the start page "Home" alone,
   no link. Links through `AnchorLink` (exported: `createLink` of a plain Mantine `Anchor` (`Anchor` is polymorphic: TanStack Router's way); an app uses it for its own links, typed by its registered router).
   Crumbs end with an ellipsis when it is too short.
+- The current module is a crumb by itself (2026-10-18, the user's choice, proposed at about 65%): right after "Home",
+  its label, unless a matched route has a crumb of its own for the module's path (no crumb twice); so a module's
+  route needs no crumb (the package's demo has none). The history's tooltips name a module's path the same way.
 - Back and Forward: the router's history (`history.back()`, `forward()`), disabled at either end. Where they lead is
   known from the history's index in each entry's state (`__TSR_index`, `history.ts`; a new entry forgets the ones after
   it). Their tooltips name the page: "Back to <page>" with the last crumb of that path's routes (`router.matchRoutes`;
@@ -64,7 +67,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   (2026-10-17, the user's wish: one below the header too for a few hours; the apps' own headers had none); not
   selectable.
 - Tests: `src/micro-app-header.test.tsx` (a memory router and an i18next instance: the tabs and the active one, the
-  breadcrumb, German, Back and Forward).
+  breadcrumb, the module's crumb, German, Back and Forward).
 
 ## The other building blocks (2026-10-17, the user's wish: everything the five apps had as copies)
 

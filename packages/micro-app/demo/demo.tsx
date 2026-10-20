@@ -77,10 +77,10 @@ const overviewRoute = createRoute({
   ),
 });
 
+// No crumb of their own: the header shows the current module's label as the first crumb.
 const projectsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/projects',
-  staticData: { crumb: () => 'Projects' },
 });
 
 const projectListRoute = createRoute({
@@ -117,7 +117,6 @@ const projectRoute = createRoute({
 const peopleRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/people',
-  staticData: { crumb: () => 'People' },
   component: () => <Text>Everyone in the projects.</Text>,
 });
 

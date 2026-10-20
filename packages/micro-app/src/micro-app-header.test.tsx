@@ -31,7 +31,7 @@ beforeAll(() => {
 
 afterEach(cleanup);
 
-function renderApp(path: string, language = 'en') {
+function renderApp(path: string, language = 'en', moduleCrumb = true) {
   const i18n = createInstance();
 
   void i18n.use(initReactI18next).init({
@@ -59,7 +59,7 @@ function renderApp(path: string, language = 'en') {
   const projects = createRoute({
     getParentRoute: () => root,
     path: '/projects',
-    staticData: { crumb: () => 'Projects' },
+    staticData: moduleCrumb ? { crumb: () => 'Projects' } : {},
   });
   const projectList = createRoute({ getParentRoute: () => projects, path: '/', component: () => <p>List</p> });
   const project = createRoute({
@@ -138,6 +138,20 @@ describe('MicroAppHeader', () => {
     expect(screen.getByText('Projects', { selector: '.micro-app__crumb' }).closest('a')?.getAttribute('href'))
       .toBe('/projects');
     expect(screen.getByText('Project 7').closest('a')).toBeNull();
+    expect(crumbs.querySelectorAll('.micro-app__crumb')).toHaveLength(2);
+  });
+
+  it('shows the current module as a crumb where no route has one for its path', async () => {
+    renderApp('/projects/7', 'en', false);
+
+    await waitFor(() => expect(screen.getByText('Project 7')).toBeTruthy());
+
+    const crumbs = document.querySelector('.micro-app__crumbs')!;
+
+    expect([...crumbs.querySelectorAll('.micro-app__crumb')].map((crumb) => crumb.textContent))
+      .toEqual(['Projects', 'Project 7']);
+    expect(screen.getByText('Projects', { selector: '.micro-app__crumb' }).closest('a')?.getAttribute('href'))
+      .toBe('/projects');
   });
 
   it('shows Home alone, no link, on the start page; in German "Start"', async () => {

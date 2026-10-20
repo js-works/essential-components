@@ -25,10 +25,10 @@ function MicroAppHeader({ icon, title, modules, actions, crumbs }: MicroAppHeade
         <ModuleMenu modules={modules} />
         <div className="micro-app__end">
           {actions}
-          <HistoryButtons />
+          <HistoryButtons modules={modules} />
         </div>
       </div>
-      <Crumbs given={crumbs} />
+      <Crumbs given={crumbs} modules={modules} />
     </header>
   );
 }
@@ -75,8 +75,19 @@ function ModuleMenu({ modules }: { modules: readonly MicroAppModule[] }) {
   );
 }
 
-// The crumb of the page at a path: the last crumb of its routes; none for a path without one.
-function useCrumbOf(): (path: string) => ReactNode | undefined {
+// A path without a trailing slash (an index route's `/boards/` is the module's `/boards`).
+const trimmed = (path: string) => (path.length > 1 ? path.replace(/\/$/, '') : path);
+
+// The module a path belongs to (not the start page's): the one whose path it is or starts with.
+function moduleOf(modules: readonly MicroAppModule[], path: string): MicroAppModule | undefined {
+  return modules.find((module) =>
+    module.exact !== true && (trimmed(path) === module.to || trimmed(path).startsWith(`${module.to}/`))
+  );
+}
+
+// The crumb of the page at a path: the last crumb of its routes, else the module's label where the path is a module's;
+// none for a path without one.
+function useCrumbOf(modules: readonly MicroAppModule[]): (path: string) => ReactNode | undefined {
   const router = useRouter();
 
   return (path) => {
@@ -86,16 +97,17 @@ function useCrumbOf(): (path: string) => ReactNode | undefined {
     }[];
     const match = matches.findLast((candidate) => candidate.staticData?.crumb !== undefined);
 
-    return match?.staticData?.crumb?.(match.params);
+    return match?.staticData?.crumb?.(match.params)
+      ?? modules.find((module) => module.exact !== true && module.to === trimmed(path))?.label;
   };
 }
 
 // Back and Forward through the router's history, disabled at either end; their tooltips name the page ("Back to …").
-function HistoryButtons() {
+function HistoryButtons({ modules }: { modules: readonly MicroAppModule[] }) {
   const { text, t } = useTexts();
   const router = useRouter();
   const { back, forward } = useHistoryPosition();
-  const crumbOf = useCrumbOf();
+  const crumbOf = useCrumbOf(modules);
   const tip = (path: string | undefined, key: 'back' | 'forward') => {
     const page = path === undefined ? undefined : path === '/' ? text('home') : crumbOf(path);
 
@@ -139,17 +151,25 @@ function HistoryButtons() {
   );
 }
 
-// "Home" (a house icon and the text, a link to the start page), then one crumb per route with one (or the app's own);
-// the last one is the current page, no link. On the start page, "Home" alone, no link.
-function Crumbs({ given }: { given: readonly MicroAppCrumbItem[] | undefined }) {
+// "Home" (a house icon and the text, a link to the start page), then the current module (its label, unless a route
+// has a crumb of its own for the module's path), then one crumb per route with one (or the app's own instead); the
+// last one is the current page, no link. On the start page, "Home" alone, no link.
+function Crumbs({ given, modules }: {
+  given: readonly MicroAppCrumbItem[] | undefined;
+  modules: readonly MicroAppModule[];
+}) {
   const { text } = useTexts();
   const matches = useMatches();
   const fromRoutes = matches.flatMap((match) => {
     const crumb = (match.staticData as { crumb?: MicroAppCrumb }).crumb;
 
-    return crumb === undefined ? [] : [{ id: match.id, to: match.pathname, label: crumb(match.params) }];
+    return crumb === undefined ? [] : [{ id: match.id, to: trimmed(match.pathname), label: crumb(match.params) }];
   });
-  const crumbs = given === undefined ? fromRoutes : given.map((crumb) => ({ id: crumb.to, ...crumb }));
+  const module = moduleOf(modules, matches.at(-1)?.pathname ?? '/');
+  const withModule = module === undefined || fromRoutes.some((crumb) => crumb.to === module.to)
+    ? fromRoutes
+    : [{ id: `module:${module.to}`, to: module.to, label: module.label }, ...fromRoutes];
+  const crumbs = given === undefined ? withModule : given.map((crumb) => ({ id: crumb.to, ...crumb }));
   const home = (
     <span className="micro-app__home">
       <HomeIcon />

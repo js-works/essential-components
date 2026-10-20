@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react';
 import type { Plugin } from 'vite';
 import { defaultClientConditions, defineConfig } from 'vite';
 
+import { appRoutes } from './vite.routes.js';
+
 // `npm run build:board-manager`: the `<board-manager>` custom element (demo/board-manager/app/board-manager-element.tsx) as
 // one ES module with everything it needs (React, Mantine, the packages), into `dist-board-manager/`. Its CSS is not a
 // file of its own: `inlineStyles()` puts it into the module, which adds it to the element's shadow root. So nothing of
@@ -72,7 +74,7 @@ function inlineStyles(): Plugin {
 }
 
 const config = defineConfig({
-  plugins: [react(), inlineStyles()],
+  plugins: [...appRoutes(), react(), inlineStyles()],
   resolve: {
     dedupe: ['react', 'react-dom'],
     // The packages from their sources (the `source` condition of their `exports`), like the demo page.

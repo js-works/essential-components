@@ -1,0 +1,8 @@
+{
+  "target": "react",
+  "routesDirectory": "./routes",
+  "generatedRouteTree": "./.generated/route-tree.ts",
+  "quoteStyle": "single",
+  "addExtensions": "js",
+  "autoCodeSplitting": false
+}

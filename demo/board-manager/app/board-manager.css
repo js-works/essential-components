@@ -160,27 +160,6 @@
   }
 }
 
-/* The start page's charts: the grid wraps by minimum width. */
-.board-manager-home-charts {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
-  gap: var(--mantine-spacing-md);
-}
-
-.board-manager-home-charts__wide {
-  grid-column: span 2;
-}
-
-@media (max-width: 40rem) {
-  .board-manager-home-charts__wide {
-    grid-column: auto;
-  }
-}
-
-.board-manager-home-charts__title {
-  align-self: flex-start;
-}
-
 /* The start page's date block of a meeting: the month small above the day. */
 .board-manager-home-date {
   flex: none;

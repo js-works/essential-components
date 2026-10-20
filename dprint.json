@@ -17,7 +17,8 @@
     "coverage",
     "package-lock.json",
     "old-demos",
-    "packages"
+    "packages",
+    "**/.generated"
   ],
   "plugins": [
     "npm:@dprint/typescript@0.96.1",

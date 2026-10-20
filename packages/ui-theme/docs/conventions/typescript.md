@@ -44,12 +44,16 @@
   - class fields that are never reassigned
   - constant lookup data: `as const`
   - not needed for props or local variables (`const` is enough there); SonarQube's rule for it (`typescript:S6759`,
-    "Mark the props of the component readonly") is off (2026-10-17, the user's choice, proposed at about 70%:
-    `.vscode/settings.json`, for SonarQube for IDE)
+    "Mark the props of the component readonly") does not apply (2026-10-17, the user's choice, proposed at about 70%).
+    SonarQube for IDE does not analyze the repository (2026-10-20, the user's choice, proposed at about 75%:
+    `sonarlint.analysisExcludesStandalone: "**/*"` in `.vscode/settings.json`): its rules cannot be switched off per
+    project, `sonarlint.rules` only works in the user settings (`S6759` off there for a day, without effect).
 - Named exports only, never `export default`.
   - Per file, exports are declared in exactly two places, directly after the imports: at most one `export { … }` for
     values and at most one `export type { … }` for types.
-  - Never `export` on the declarations themselves.
+  - Never `export` on the declarations themselves. Except in a route file of TanStack Router's file-based routing
+    (2026-10-18, the user's choice, proposed at about 60%): `export const Route = createFileRoute(…)({ … })`, the
+    router's documented form.
   - The public API is exactly what the package's entries export. Everything else is internal.
 - Imports in three groups, an empty line between them (2026-10-17, the user's choice, proposed at about 60%, like
   IntelliJ's import layout): the packages of npm (and Node's), the repository's own packages (`@local/…`), the relative

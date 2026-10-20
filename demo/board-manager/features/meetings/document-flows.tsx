@@ -3,7 +3,7 @@ import type { FileItem } from '@local/file-upload';
 import type { Meeting, MeetingDocument } from '../../domain/index.js';
 import { DocumentForm, UploadForm } from '../../shared/forms.js';
 import { useFlowKit } from '../../shared/lib/flows.js';
-import { useMeetingService } from './context.js';
+import { useMeetingService } from './meeting-data.js';
 
 export { useDeleteDocumentsFlow, useDownloadDocumentFlow, useRenameDocumentFlow, useUploadDocumentsFlow };
 

@@ -1,11 +1,10 @@
 import type { AgendaItem, Meeting, SectionDraft } from '../../domain/index.js';
 import { AgendaItemForm, MinutesForm } from '../../shared/forms.js';
 import { useFlowKit } from '../../shared/lib/flows.js';
-import type { AgendaRow } from './components/agenda.js';
-import { numbered } from './components/agenda.js';
-import { SectionTable } from './components/section-table.js';
-import { useMeetingService } from './context.js';
-import { useAgenda, useBoardMembers } from './reads.js';
+import type { AgendaRow } from './agenda.js';
+import { numbered } from './agenda.js';
+import { useAgenda, useBoardMembers, useMeetingService } from './meeting-data.js';
+import { SectionTable } from './section-table.js';
 
 export {
   useAddAgendaItemFlow,

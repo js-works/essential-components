@@ -2,3 +2,6 @@ node_modules/
 dist/
 dist-board-manager/
 .vitest/
+
+# Generated files (the apps' route trees, `npm run routes`)
+.generated/
