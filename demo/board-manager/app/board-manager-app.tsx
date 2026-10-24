@@ -1,5 +1,5 @@
 // Mantine's layered styles (`@layer mantine`): below every unlayered rule of the page, so its global rules do not
-// restyle the other demos (like in the React demo of overlays).
+// restyle the other apps of the page.
 import './mantine.css';
 import '@mantine/dates/styles.layer.css';
 import '@local/rich-text/styles.css';
@@ -9,9 +9,6 @@ import { MantineProvider } from '@mantine/core';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
-import { StrictMode } from 'react';
-import type { Root } from 'react-dom/client';
-import { createRoot } from 'react-dom/client';
 
 import type { MicroAppLook, MicroAppLookOptions } from '@local/micro-app';
 import { createLook, MicroAppProvider } from '@local/micro-app';
@@ -25,10 +22,10 @@ import { createInMemoryRepositories } from '../infra/in-memory/index.js';
 import { i18n, useLanguage } from '../shared/lib/i18n/index.js';
 import { withChanges } from '../shared/lib/with-changes.js';
 import { SCOPE_CLASS, Scope, useScheme } from '../shared/shared.js';
-import { createAppRouter } from './app.js';
+import type { createAppRouter } from './router.js';
 
 export type { Look };
-export { App as BoardManagerApp, BoardManagerDemo, createBoardManagerLook };
+export { App as BoardManagerApp, createBoardManagerLook };
 
 // A board manager: boards and committees, their meetings, agendas, minutes and documents. Mantine, TanStack Router,
 // TanStack Query, the building blocks of `@local/micro-app`, and three packages: data tables for every list, the
@@ -89,11 +86,14 @@ function Services({ children }: { children: ReactNode }) {
 
 const DEFAULT_LOOK = createBoardManagerLook();
 
+type AppProps = {
+  router: ReturnType<typeof createAppRouter>['router'];
+  look?: Look;
+};
+
 // Mantine follows the page's color scheme switch. It does not set the scheme on `<html>` (`getRootElement`): the
 // scopes set it on themselves.
-function App(
-  { router, look = DEFAULT_LOOK }: { router: ReturnType<typeof createAppRouter>['router']; look?: Look },
-) {
+function App({ router, look = DEFAULT_LOOK }: AppProps) {
   return (
     <Services>
       <MantineProvider
@@ -113,29 +113,4 @@ function App(
       </MantineProvider>
     </Services>
   );
-}
-
-// The demo as a light DOM custom element without attributes, like the other demos (exported, registered by the page).
-class BoardManagerDemo extends HTMLElement {
-  #root: Root | undefined;
-  #disposeRouter: (() => void) | undefined;
-
-  connectedCallback(): void {
-    const { router, dispose } = createAppRouter(this, 'board-manager');
-
-    this.#disposeRouter = dispose;
-    this.#root = createRoot(this);
-    this.#root.render(
-      <StrictMode>
-        <App router={router} />
-      </StrictMode>,
-    );
-  }
-
-  disconnectedCallback(): void {
-    this.#root?.unmount();
-    this.#disposeRouter?.();
-    this.#root = undefined;
-    this.#disposeRouter = undefined;
-  }
 }

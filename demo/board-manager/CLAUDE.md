@@ -9,7 +9,7 @@ the root's `CLAUDE.md` apply.
 - File structure (the target, open questions, decisions): `STRUCTURE.md`. Read it before moving or adding files.
 - Built on `@local/micro-app` (2026-10-17, like the other four apps; the app's own copies before: the app header with
   its history, the look, the hash history, the data table's wrapper, the table actions, the saved filters' hook,
-  `FieldError` and the form hook): `MicroAppHeader`, `createLook` (`createBoardManagerLook()` in `board-manager-demo.tsx`
+  `FieldError` and the form hook): `MicroAppHeader`, `createLook` (`createBoardManagerLook()` in `board-manager-app.tsx`
   passes the element's colors and the app's custom properties), `MantineScope` (with the element's own color scheme,
   `scheme`), `mirrorInHash`, `DataTable`, `useTableActions`, `useSavedTableFilters`, `defineForm`,
   `AnchorLink`, inside a `MicroAppProvider`. Routing with TanStack Router (React Router before), typed:
@@ -91,8 +91,9 @@ the root's `CLAUDE.md` apply.
   makes it. `npm run typecheck` generates it first (`npm run
   routes`: `tsr generate` of `@tanstack/router-cli`, 2026-10-18, the user's choice, proposed at about 70%: the plugin
   had left a stale tree after route files were deleted, every page "not found", which the typecheck could not see, the
-  file has `@ts-nocheck`); the CLI and the plugin read the same `tsr.config.json` of the app (`vite.routes.ts`). `app.tsx` only creates the
-  router (27 lines; 175 with the routes in code). The links stay typed (`router-types.ts`).
+  file has `@ts-nocheck`); the CLI and the plugin read the same `tsr.config.json` of the app (`vite.routes.ts`). `router.ts` only creates the
+  router (27 lines; 175 with the routes in code; `app.tsx` until 2026-10-20, the user's choice, proposed at about 65%:
+  the name no longer fit beside `board-manager-app.tsx`). The links stay typed (`router-types.ts`).
 - Routes (memory history): `/`, `/boards`, `/boards/$boardId` (tabs Overview, Meetings, Members),
   `/meetings/$meetingId` (tabs Overview, Agenda, Minutes, Documents),
   `/members`, `/members/$personId` (tabs Overview, Boards, Meetings), `/organizations`, `/organizations/$organizationId` (tabs Overview, People);
@@ -201,7 +202,7 @@ the root's `CLAUDE.md` apply.
   the package would need its own test and demo). More contrast comes from the app's Mantine theme instead
   (`cssVariablesResolver`, 2026-09-30): `dimmed` `gray.7` (dark `dark.1`) and `placeholder` `gray.6` (dark `dark.2`),
   one step darker than Mantine's (lighter in dark mode); the text and the lines stay Mantine's.
-- The look is made per element (`createBoardManagerLook()` in `board-manager-demo.tsx`, 2026-10-01): the theme, the CSS variables
+- The look is made per element (`createBoardManagerLook()` in `board-manager-app.tsx`, 2026-10-01): the theme, the CSS variables
   and the overlays' config. Two colors of ten shades: `accent` (the primary color) and `danger` (danger buttons, the
   error toasts, `--mantine-color-error`: shade 6, dark 8); by default Mantine's `indigo` and `red`. Danger buttons in
   the pages use `color="danger"`, never `red`. `autoContrast` (black text on a light accent).
@@ -297,6 +298,20 @@ the root's `CLAUDE.md` apply.
     as its second line (dimmed, `xs`).
   - It starts empty (the native select had the first person preselected): the person is required, so "OK" without one
     shows the field's error. form-validation binds it uncontrolled (`defaultValue` in, `onChange(id)` out).
+
+## The entries
+
+- The app itself is `app/board-manager-app.tsx` (2026-10-20, the user's choice, proposed at about 75%: the app's code
+  should not read as a demo; it was all in `board-manager-demo.tsx` before): `BoardManagerApp`, its services and
+  `createBoardManagerLook()`. One entry renders it: `board-manager-element.tsx` (`<board-manager>`, below). The other
+  four apps may follow (later).
+- No "demo" in the app's files (2026-10-20, the user's wish; the folder `demo/` stays for now): the element is made by
+  `createBoardManagerClass({ shadowRoot, hash })` (the user's choice, proposed at about 65%, like the packages'
+  `createCockpitClass()`; a second element, `BoardManagerDemo` in `board-manager-demo.tsx`, before). The module
+  registers `<board-manager>` with the defaults; the root page registers its own tag, `board-manager-demo`, with
+  `{ shadowRoot: false, hash: 'board-manager' }` (`demo/main.ts`): the app in the element itself, styled by Vite's CSS
+  in `<head>`. Without a shadow root the colors are read from the element too (`#look()`), and the scheme from it
+  (`setSchemeHost`), as for `<board-manager>`.
 
 ## The `<board-manager>` element
 
@@ -424,7 +439,7 @@ the root's `CLAUDE.md` apply.
   `organizations.tsx` and `organization-pages.tsx`, for an hour): `organization-data.ts` (the repository's context,
   `useOrganization`, `useOrganizationList`), `organization-flows.tsx`, `organization-filters.ts`,
   `organization-components.tsx` (`WebsiteLink`), the list and the page in `routes/organizations/`. No query keys, reads or service of their own: the keys
-  inline (`['organizations', …]`), the app gives the repository itself (`withChanges` in `board-manager-demo.tsx`).
+  inline (`['organizations', …]`), the app gives the repository itself (`withChanges` in `board-manager-app.tsx`).
   The flows are `useCrudFlows` (`shared/lib/crud-flows.tsx`: "New", "Edit", "Delete" from a form, the repository's
   methods and the texts' prefix, `organizations.new`, `.created`, …; those texts by `translateKey`, unchecked), the
   page is `RecordPage` (`shared/ui/record-page.tsx`: the header, "Overview" with the fields, Edit and Delete, and the
@@ -480,7 +495,7 @@ the root's `CLAUDE.md` apply.
   `AgendaItem.minutes` (`''` for an empty document); plain text (the seed) is read as one paragraph per line.
   `minutes.tsx` only adds the mentions of the board's members (`suggest`, the current name or "(deleted)" by
   `labelOf`; in the read-only views links to the member's page through the router, `onOpen`); the package's
-  stylesheet is imported in `board-manager-demo.tsx`. The mentions' prop is `id` (the package's; `personId` before:
+  stylesheet is imported in `board-manager-app.tsx`. The mentions' prop is `id` (the package's; `personId` before:
   no stored minutes had any, the data is seeded anew).
   - The minutes form is a centered dialog (2026-10-01; a drawer before), extra wide (`width: 'extraWide'`, 64em; the
     overlays' named widths for dialogs and drawers: `default`, `wide` 48em, `extraWide` 64em, `full`), and
@@ -572,8 +587,8 @@ the root's `CLAUDE.md` apply.
   variables BlockNote's stylesheet really reads where (editor, menus, toolbar), whether the theme's variables reach
   them (set on the editor container, `applyThemedRoot` for the popups), and whether the scheme still follows the app
   (`SchemeContext`).
-- The demo tab with the real `<board-manager>` element (shadow DOM, its attributes) instead of `<board-manager-demo>`
-  (2026-10-01, open). The obstacle: the CSS, which only `build:board-manager` puts into the module (its marker); under
+- The demo tab with the shadow root of the `<board-manager>` element (2026-10-01, open; its class without a shadow
+  root since 2026-10-20, `createBoardManagerClass({ shadowRoot: false })`). The obstacle: the CSS, which only `build:board-manager` puts into the module (its marker); under
   `dev` and `build:pages` Vite adds it to `<head>`. Ideas: copy the page's stylesheets into the shadow root while the
   marker is unreplaced (a `MutationObserver` on `<head>` for HMR; the page's own CSS gets in too, check `ui.css` for
   element selectors), or load the built module in the demo (no HMR).

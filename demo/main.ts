@@ -185,7 +185,9 @@ customElements.define(
         ),
         element: 'board-manager-demo',
         load: async () => {
-          define('board-manager-demo', (await import('./board-manager/app/board-manager-demo.js')).BoardManagerDemo);
+          const { createBoardManagerClass } = await import('./board-manager/app/board-manager-element.js');
+
+          define('board-manager-demo', createBoardManagerClass({ shadowRoot: false, hash: 'board-manager' }));
         },
       },
       {

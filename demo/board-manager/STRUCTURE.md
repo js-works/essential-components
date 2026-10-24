@@ -15,7 +15,7 @@ files are moved to match them.
   app's menu), each with its services and UI; plus `app/`, `domain/`, `infra/` and `shared/`.
   ```
   board-manager/
-  ├── app/                    the shell and the wiring: App, routes, providers, BoardManagerDemo, BoardManagerElement,
+  ├── app/                    the shell and the wiring: App, routes, providers, the element (createBoardManagerClass),
   │                           css; creates the repositories (from infra/) and the services, and provides the services
   ├── domain/                 the shared kernel: pure TypeScript, imports nothing from outside
   │   ├── query.ts            Range, Sort, Paging, Page, TextMatch (later Filter): the vocabulary of the repositories
@@ -162,7 +162,7 @@ interface ProductRepository {
     a service goes into its list. An "Edit"
     gets the record, not its id (no read before the dialog); the forms get their choices as props (`PersonForm`'s
     organizations, `OrganizationForm`'s others for the unique name, `MemberForm`'s `suggest`).
-  - Step 7: only `app/` imports `infra/` (`app/board-manager-demo.tsx`). The query client and the services are around
+  - Step 7: only `app/` imports `infra/` (`app/board-manager-app.tsx`). The query client and the services are around
     everything, the dialogs' content too (`Services`). `AppError` moved to `shared/lib/app-error.ts` (the server throws
     it, the UI translates it).
   - A temporary bridge for a few hours the same day (the store's changes invalidated every read) is gone.

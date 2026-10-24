@@ -4,11 +4,12 @@ import { createRoot } from 'react-dom/client';
 
 import { parseColor, shades } from '../shared/lib/colors.js';
 import { setSchemeHost, useScheme } from '../shared/shared.js';
-import { createAppRouter } from './app.js';
-import type { Look } from './board-manager-demo.js';
-import { BoardManagerApp, createBoardManagerLook } from './board-manager-demo.js';
+import type { Look } from './board-manager-app.js';
+import { BoardManagerApp, createBoardManagerLook } from './board-manager-app.js';
+import { createAppRouter } from './router.js';
 
-export { BoardManagerElement };
+export type { BoardManagerClassConfig };
+export { createBoardManagerClass };
 
 // `<board-manager>`: the whole board manager in a shadow root, for a host page (e.g. XWiki) that knows nothing of it.
 // The entry of `npm run build:board-manager`, which bundles it with everything it needs (React, Mantine, the packages)
@@ -31,6 +32,10 @@ export { BoardManagerElement };
 // - The language follows `<html lang>` (the i18n adapters of the packages read it there).
 // - Without `hash`, the routes are in memory only: the host page owns its URL.
 // - The dialogs and toasts are in the shadow root too (the overlays provider's mount point).
+//
+// `createBoardManagerClass()` makes the class, the host registers it under a tag of its choice; this module registers
+// `<board-manager>` with the defaults. Without a shadow root (`shadowRoot: false`), the app is rendered into the
+// element itself, and the page's CSS styles it (the host loads the app's CSS itself, e.g. Vite's in `<head>`).
 
 // All CSS of the bundle (Mantine, the packages' CSS modules, the app's own): the build puts it in place of this marker
 // (`vite.board-manager.config.ts`), so none of it reaches the host page.
@@ -67,70 +72,91 @@ function SchemeRoot(
   );
 }
 
-class BoardManagerElement extends HTMLElement {
-  #root: Root | undefined;
-  #disposeRouter: (() => void) | undefined;
+type BoardManagerClassConfig = {
+  // `false`: the app in the element itself, styled by the page's CSS (none of the bundle's, no events stopped).
+  shadowRoot?: boolean;
+  // The hash prefix when the element has no `hash` attribute.
+  hash?: string;
+};
 
-  connectedCallback(): void {
-    let shadow = this.shadowRoot;
+function createBoardManagerClass({ shadowRoot = true, hash }: BoardManagerClassConfig = {}) {
+  return class BoardManagerElement extends HTMLElement {
+    #root: Root | undefined;
+    #disposeRouter: (() => void) | undefined;
 
-    if (shadow === null) {
-      shadow = this.attachShadow({ mode: 'open' });
+    connectedCallback(): void {
+      // `hash="bm"`: the route is mirrored in the URL hash (`#bm/boards/b1`); without it, in memory only. Read once.
+      const hashPrefix = this.getAttribute('hash')?.replace(/^#/, '').trim() || hash;
+      const { router, dispose } = createAppRouter(this, hashPrefix);
 
-      for (const type of SWALLOWED_EVENTS) {
-        shadow.addEventListener(type, stopPropagation);
+      this.#disposeRouter = dispose;
+      setSchemeHost(this);
+
+      if (!shadowRoot) {
+        this.#root = createRoot(this);
+        this.#root.render(
+          <StrictMode>
+            <BoardManagerApp router={router} look={this.#look()} />
+          </StrictMode>,
+        );
+        return;
       }
+
+      let shadow = this.shadowRoot;
+
+      if (shadow === null) {
+        shadow = this.attachShadow({ mode: 'open' });
+
+        for (const type of SWALLOWED_EVENTS) {
+          shadow.addEventListener(type, stopPropagation);
+        }
+      }
+
+      const style = document.createElement('style');
+      const container = document.createElement('div');
+
+      style.textContent = `${HOST_STYLES}\n${STYLES}`;
+      shadow.replaceChildren(style, container);
+
+      this.#root = createRoot(container);
+      this.#root.render(
+        <StrictMode>
+          <SchemeRoot router={router} look={this.#look()} />
+        </StrictMode>,
+      );
     }
 
-    const style = document.createElement('style');
-    const container = document.createElement('div');
+    // The custom properties of the host page's CSS (any CSS color; a `var()` in them is resolved by the browser):
+    // `--board-manager-accent-color` is Mantine's primary color, `--board-manager-danger-color` the danger buttons,
+    // errors and error toasts, `--board-manager-success-color` and `--board-manager-warning-color` the states of the
+    // meetings and their minutes (held, approved; a draft) and the warning toasts. Without them (or with an invalid
+    // color), Mantine's indigo, red, green and orange. Read once, on connect: there is no event for a changed custom
+    // property.
+    #look(): Look {
+      const style = getComputedStyle(this);
+      const accent = parseColor(style.getPropertyValue('--board-manager-accent-color').trim());
+      const danger = parseColor(style.getPropertyValue('--board-manager-danger-color').trim());
+      const success = parseColor(style.getPropertyValue('--board-manager-success-color').trim());
+      const warning = parseColor(style.getPropertyValue('--board-manager-warning-color').trim());
 
-    style.textContent = `${HOST_STYLES}\n${STYLES}`;
-    shadow.replaceChildren(style, container);
-    setSchemeHost(this);
+      return createBoardManagerLook({
+        accent: accent && shades(accent),
+        danger: danger && shades(danger),
+        success: success && shades(success),
+        warning: warning && shades(warning),
+      });
+    }
 
-    // `hash="bm"`: the route is mirrored in the URL hash (`#bm/boards/b1`); without it, in memory only. Read once.
-    const hashPrefix = this.getAttribute('hash')?.replace(/^#/, '').trim() || undefined;
-    const { router, dispose } = createAppRouter(this, hashPrefix);
-
-    this.#disposeRouter = dispose;
-    this.#root = createRoot(container);
-    this.#root.render(
-      <StrictMode>
-        <SchemeRoot router={router} look={this.#look()} />
-      </StrictMode>,
-    );
-  }
-
-  // The custom properties of the host page's CSS (any CSS color; a `var()` in them is resolved by the browser):
-  // `--board-manager-accent-color` is Mantine's primary color, `--board-manager-danger-color` the danger buttons, errors
-  // and error toasts, `--board-manager-success-color` and `--board-manager-warning-color` the states of the meetings and
-  // their minutes (held, approved; a draft) and the warning toasts. Without them (or with an invalid color), Mantine's
-  // indigo, red, green and orange. Read once, on connect: there is no event for a changed custom property.
-  #look(): Look {
-    const style = getComputedStyle(this);
-    const accent = parseColor(style.getPropertyValue('--board-manager-accent-color').trim());
-    const danger = parseColor(style.getPropertyValue('--board-manager-danger-color').trim());
-    const success = parseColor(style.getPropertyValue('--board-manager-success-color').trim());
-    const warning = parseColor(style.getPropertyValue('--board-manager-warning-color').trim());
-
-    return createBoardManagerLook({
-      accent: accent && shades(accent),
-      danger: danger && shades(danger),
-      success: success && shades(success),
-      warning: warning && shades(warning),
-    });
-  }
-
-  disconnectedCallback(): void {
-    this.#root?.unmount();
-    this.#disposeRouter?.();
-    this.#root = undefined;
-    this.#disposeRouter = undefined;
-    setSchemeHost(null);
-  }
+    disconnectedCallback(): void {
+      this.#root?.unmount();
+      this.#disposeRouter?.();
+      this.#root = undefined;
+      this.#disposeRouter = undefined;
+      setSchemeHost(null);
+    }
+  };
 }
 
 if (customElements.get('board-manager') === undefined) {
-  customElements.define('board-manager', BoardManagerElement);
+  customElements.define('board-manager', createBoardManagerClass());
 }
