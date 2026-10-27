@@ -5,22 +5,21 @@ import sloc from 'sloc';
 
 type Row = { name: string; files: number; source: number; comment: number; total: number };
 
-const isTest = (path: string) => /\.test\.tsx?$/.test(path);
-
 // The parts, in order. Every file belongs to the first part that matches it.
 const PARTS = [
-  { name: 'tests', matches: isTest },
-  { name: 'api', matches: (path: string) => path.startsWith('src/api/') || path === 'src/index.ts' },
-  { name: 'core (plain TS)', matches: (path: string) => path.startsWith('src/core/') },
-  { name: 'element (UI)', matches: (path: string) => path.startsWith('src/element/') },
-  { name: 'react', matches: (path: string) => path.startsWith('src/react/') },
-  { name: 'demo', matches: (path: string) => path.startsWith('demo/') },
+  { name: 'tests', matches: (path: string) => path.startsWith('src/test/') },
+  { name: 'api', matches: (path: string) => path.startsWith('src/main/api/') || path === 'src/main/index.ts' },
+  { name: 'core (plain TS)', matches: (path: string) => path.startsWith('src/main/core/') },
+  { name: 'element (UI)', matches: (path: string) => path.startsWith('src/main/element/') },
+  { name: 'react', matches: (path: string) => path.startsWith('src/main/react/') },
+  { name: 'themes', matches: (path: string) => path.startsWith('src/main/themes/') },
+  { name: 'demo', matches: (path: string) => path.startsWith('src/demo/') },
 ] as const;
 
-const LIBRARY = ['api', 'core (plain TS)', 'element (UI)', 'react'];
+const LIBRARY = ['api', 'core (plain TS)', 'element (UI)', 'react', 'themes'];
 
-const files = ['src', 'demo']
-  .flatMap((dir) => readdirSync(dir, { recursive: true, encoding: 'utf8' }).map((path) => join(dir, path)))
+const files = readdirSync('src', { recursive: true, encoding: 'utf8' })
+  .map((path) => join('src', path))
   .filter((path) => sloc.extensions.includes(extname(path).slice(1)))
   .sort();
 

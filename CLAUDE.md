@@ -121,7 +121,7 @@ and imports the files it needs from its `CLAUDE.md`.
   - `demo/main.ts`: creates the cockpit (`createCockpitClass`, title "Back Office", subtitle "Acme Corporate" (2026-10-03; "App Center" without a subtitle before), with the search, a made-up
     signed-in user) with
     the demos. Each is loaded when it is opened
-    the first time (`load`: a dynamic `import()` by a relative path, e.g. `../packages/file-upload/demo/file-upload-demo.js`)
+    the first time (`load`: a dynamic `import()` by a relative path, e.g. `../packages/file-upload/src/demo/file-upload-demo.js`)
     and registered then (`data-table-demo`, `file-upload-demo`, `overlays-demo`; the root's own `file-center-demo`,
     `board-manager-demo`, `user-manager-demo`, `time-tracker-demo` and `human-resources-demo`). Each demo element is a light DOM custom element of its package (see "Demo element" in
     the package's `CLAUDE.md`), exported and not registered.
@@ -172,7 +172,9 @@ and imports the files it needs from its `CLAUDE.md`.
   - The deploy workflow copies `old-demos/` into `dist/`: https://js-works.github.io/essential-components/old-demos/0.0.0/
 - `vite.routes.ts` (2026-10-18): TanStack Router's plugin for the apps with file-based routes (each app's `routes/`,
   its tree generated into `.generated/route-tree.ts` of the app, not checked in, both set in the app's `tsr.config.json`, which `npm run routes`
-  reads too), used by both Vite configs. Open: each generated tree declares its
+  reads too), used by both Vite configs. Only its generator (`tanstackRouterGenerator`): the full plugin's HMR code in
+  the route files patches the page's last router (`window.__TSR_ROUTER__`), another app's in the cockpit, so the Board
+  Manager showed the previously opened app's layout. Open: each generated tree declares its
   routes globally (`FileRoutesByPath`), so two apps with file routes in the root's `tsc` program may conflict; to be
   checked with the second app.
 - `vite.config.ts`: `resolve.dedupe` makes all demos use one React, even where a package pins its own version (e.g.

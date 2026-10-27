@@ -1,10 +1,11 @@
 import { useQueryClient } from '@tanstack/react-query';
 
-import type { FileItem, FileUploadTheme } from '@local/file-upload';
+import type { FileItem } from '@local/file-upload';
 import { createFileUploadComponent } from '@local/file-upload/react';
+import { MANTINE_THEME } from '@local/file-upload/themes';
 import { useDialogs, useToast } from '@local/overlays/react';
 
-import { createDemoI18n } from '../../../../packages/file-upload/demo/i18n.js';
+import { createDemoI18n } from '../../../../packages/file-upload/src/demo/i18n.js';
 import type { Folder, MediaFile } from '../../domain/index.js';
 import { countText } from '../../shared/lib/format.js';
 import { MoveForm } from './components/move-form.js';
@@ -30,26 +31,9 @@ export {
 
 const uploadI18n = createDemoI18n();
 
-// The file upload in Mantine's look: its theme values are Mantine's variables (inherited into its shadow DOM from the
-// scope), like the data table's `mantineTheme`.
-const MANTINE_UPLOAD_THEME: FileUploadTheme = {
-  accentColor: 'var(--mantine-primary-color-filled)',
-  accentTextColor: 'var(--mantine-primary-color-contrast)',
-  textColor: 'var(--mantine-color-text)',
-  mutedColor: 'var(--mantine-color-dimmed)',
-  borderColor: 'var(--mantine-color-default-border)',
-  surfaceColor: 'var(--mantine-color-default-hover)',
-  successColor: 'var(--mantine-color-green-text)',
-  dangerColor: 'var(--mantine-color-error)',
-  borderRadius: 'var(--mantine-radius-default)',
-  buttonBorderRadius: 'var(--mantine-radius-default)',
-  fontFamily: 'var(--mantine-font-family)',
-  fontSize: 'var(--mantine-font-size-sm)',
-};
-
 const MediaUpload = createFileUploadComponent({
   i18n: { type: 'factory', getAdapter: () => uploadI18n },
-  theme: MANTINE_UPLOAD_THEME,
+  theme: MANTINE_THEME,
 });
 
 // Marks or unmarks the selected rows, then says so.
@@ -240,7 +224,7 @@ function useUploadFilesFlow(folder: Folder) {
           multiple
           previews
           required
-          upload={(file, { signal, onProgress }) => service.upload(folder.id, file, onProgress, signal)}
+          upload={({ file, signal, onProgress }) => service.upload(folder.id, file, onProgress, signal)}
           onChange={(next) => {
             items = next;
           }}

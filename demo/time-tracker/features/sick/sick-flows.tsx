@@ -83,7 +83,7 @@ function useUploadCertificateFlow() {
       title: t('sick.certificateTitle'),
       content: (
         <CertificateForm
-          upload={(file, context) => service.uploadFile(file, context)}
+          upload={({ file, ...context }) => service.uploadFile(file, context)}
           save={async ({ files }) => {
             const fileId = files[0]?.result;
 

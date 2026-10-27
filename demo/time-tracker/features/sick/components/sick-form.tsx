@@ -2,7 +2,7 @@ import { Group, Stack, Text, Textarea } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { z } from 'zod';
 
-import type { FileItem, UploadFn } from '@local/file-upload';
+import type { FileItem, UploadFunction } from '@local/file-upload';
 import { binding } from '@local/form-validation';
 
 import { CERTIFICATE_FROM_DAY } from '../../../domain/index.js';
@@ -67,7 +67,7 @@ const uploadFiles = binding({
 });
 
 function CertificateForm({ upload, save }: {
-  upload: UploadFn;
+  upload: UploadFunction;
   save: (values: z.output<typeof certificateSchema>) => Promise<void>;
 }) {
   const t = useTranslate();

@@ -2,8 +2,9 @@ import react from '@vitejs/plugin-react';
 import { playwright } from '@vitest/browser-playwright';
 import { defineConfig } from 'vitest/config';
 
-// `vite` serves the demo (index.html), `vite build` builds the library: the main entry (src/index.ts) and
-// the React wrapper (src/react/index.ts, the subpath `@local/file-upload/react`). React stays outside the build.
+// `vite` serves the demo (index.html), `vite build` builds the library: the main entry (src/main/index.ts) and
+// the React wrapper (src/main/react/index.ts, the subpath `@local/file-upload/react`) and the themes
+// (src/main/themes/index.ts, `@local/file-upload/themes`). React stays outside the build.
 const config = defineConfig({
   plugins: [react()],
   build: {
@@ -12,8 +13,9 @@ const config = defineConfig({
     cssTarget: 'esnext',
     lib: {
       entry: {
-        index: 'src/index.ts',
-        react: 'src/react/index.ts',
+        index: 'src/main/index.ts',
+        react: 'src/main/react/index.ts',
+        themes: 'src/main/themes/index.ts',
       },
       formats: ['es'],
     },
@@ -24,8 +26,9 @@ const config = defineConfig({
   test: {
     coverage: {
       provider: 'v8',
-      include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/**/*.test.{ts,tsx}', 'src/**/*.d.ts', 'src/**/index.ts'],
+      reportsDirectory: '.generated/coverage',
+      include: ['src/main/**/*.{ts,tsx}'],
+      exclude: ['src/main/**/index.ts'],
       reporter: ['text', 'html'],
     },
     projects: [
@@ -34,9 +37,9 @@ const config = defineConfig({
         test: {
           name: 'jsdom',
           environment: 'jsdom',
-          setupFiles: ['./vitest.setup.ts'],
-          include: ['src/**/*.test.{ts,tsx}'],
-          exclude: ['src/**/*.{browser,server}.test.{ts,tsx}'],
+          setupFiles: ['./src/test/setup.ts'],
+          include: ['src/test/**/*.test.{ts,tsx}'],
+          exclude: ['src/test/**/*.{browser,server}.test.{ts,tsx}'],
         },
       },
       // Server rendering: plain Node, without any DOM.
@@ -45,7 +48,7 @@ const config = defineConfig({
         test: {
           name: 'server',
           environment: 'node',
-          include: ['src/**/*.server.test.{ts,tsx}'],
+          include: ['src/test/**/*.server.test.{ts,tsx}'],
         },
       },
       // Form association: jsdom lacks it, so these tests run in a real Chromium.
@@ -53,11 +56,12 @@ const config = defineConfig({
         extends: true,
         test: {
           name: 'browser',
-          include: ['src/**/*.browser.test.{ts,tsx}'],
+          include: ['src/test/**/*.browser.test.{ts,tsx}'],
           browser: {
             enabled: true,
             headless: true,
             provider: playwright(),
+            screenshotDirectory: '.generated/screenshots',
             instances: [{ browser: 'chromium' }],
           },
         },

@@ -1,7 +1,6 @@
 # login
 
-`@local/login`: a generic login screen for apps (React, Mantine). Created 2026-10-03 (`@local/app-login` until 2026-10-10); the details are to be
-discussed. The rules of the root's `CLAUDE.md` apply.
+`@local/login`: a generic login screen for apps (React, Mantine); the details are to be discussed. The rules of the root's `CLAUDE.md` apply.
 
 ## Conventions
 
@@ -14,15 +13,14 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 
 ## Working rules
 
-- `src/api/` holds the API types (2026-10-12; `src/api.ts` with the namespace `Login` before, the namespace `login`
-  for two days): `props.ts` (`LoginScreenProps`, `Credentials`, `AccountRegistration`, `PasswordReset`,
+- `src/api/` holds the API types: `props.ts` (`LoginScreenProps`, `Credentials`, `AccountRegistration`, `PasswordReset`,
   `LoginProvider`), `texts.ts` (`LoginTexts`), `mount.ts` (`MountOptions`, `MountedLoginScreen`); no theme of its own
-  (a Mantine override) and no `I18nAdapter` (the texts are props). `src/index.ts` exports them flat (2026-10-14,
-  `typescript.md`): `import type { LoginScreenProps } from '@local/login'`. The demos' variable of the mounted screen
+  (a Mantine override) and no `I18nAdapter` (the texts are props). `src/index.ts` exports them flat
+  (`typescript.md`): `import type { LoginScreenProps } from '@local/login'`. The demos' variable of the mounted screen
   is `loginScreen`.
 - Always add the decisions (also small ones) to this file, in the same step as the code.
 
-## Decided (2026-10-03)
+## Decided
 
 - React and Mantine (peer dependencies: `react`, `react-dom` `>=19`, `@mantine/core`, `@mantine/hooks` `^9.5.1`;
   the workspace has 9.5.1, pinned in the dev dependencies like `overlays`).
@@ -33,12 +31,12 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 - Props (`LoginScreenProps`): `title`, `subtitle?`, `logo?` (a React node, or a string of markup, e.g. an SVG in
   `currentColor`, drawn in the accent), `hint?` (a small note below the card, e.g. "A demo: any username and
   password"), `texts?` (each text can be replaced), `onLogin({ username, password })` (may return a promise).
-- Forgot password and registration (2026-10-04, "as you like it"): two optional host functions; each switches on its
+- Forgot password and registration: two optional host functions; each switches on its
   part of the screen, so an app without them keeps the plain sign in:
   - `onForgotPassword({ account })` (the username or the email): the link "Forgot password?" under the password input.
   - `onRegister({ username, email, password })`: the line "Not yet registered? Create an account" under the button.
   - Both may return a promise, and reject (or throw) with a message to show.
-- Providers, e.g. OIDC or SSO (2026-10-04): the screen only shows the buttons, the host signs in (a redirect to the
+- Providers, e.g. OIDC or SSO: the screen only shows the buttons, the host signs in (a redirect to the
   identity provider with its own library, e.g. `oidc-client-ts`, or a popup): nothing of OIDC is in this package.
   - `providers: { id, label, icon? }[]` (the icon: a node or markup, optional per provider) and `onProvider(id)`
     (may return a promise, and reject with a message). Both are needed, else no buttons.
@@ -49,28 +47,25 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 
 ## Behavior
 
-- A card (30rem; 24rem, 26rem, then 28rem before) on a subtle background (Mantine's `gray.0`, `dark.8`), at least the window's height: the logo with the
+- A card (30rem) on a subtle background (Mantine's `gray.0`, `dark.8`), at least the window's height: the logo with the
   title and the subtitle (small, the app's name as a line on top), the heading "Sign in" (large: the view leads), the
   username (focused), the password (Mantine's `PasswordInput`, with its eye), the button (full width), below a line the
-  footer. The card (with the hint, in `.login__column`) sits a bit above the middle (2026-10-08, the user's wish,
-  like the overlays' dialogs): the screen is a grid of three rows, `minmax(xl, 2fr) auto minmax(md, 3fr)`, so the free
+  footer. The card (with the hint, in `.login__column`) sits a bit above the middle (like the overlays'
+  dialogs): the screen is a grid of three rows, `minmax(xl, 2fr) auto minmax(md, 3fr)`, so the free
   space is split 40/60 above and below it. Accepted: the card moves by 40% of a change of its height (another view, an
-  error). Before, it hung from the top (`clamp(1.5rem, 14vh, 7rem)`, 2026-10-04), so it never moved; exactly centered
-  it had jumped by half the change. On a narrow screen (up to 30rem) it still hangs from the top, edge to edge.
+  error); exactly centered it would jump by half the change, hung from the top it would sit too high. On a narrow screen (up to 30rem) it still hangs from the top, edge to edge.
 - Submitting: both fields must be filled (else "Required" at the empty ones; the username is trimmed); then `onLogin`.
   While its promise is pending: the button's spinner, the fields read-only. A rejected promise (or a thrown error)
   shows its message in a red alert above the button (an empty message: "Invalid username or password."), and the
   password is selected again.
 - The page's color scheme (`<html>`: its computed `color-scheme`) and language (`<html lang>`: English, German) are
   followed live.
-- The look with `mountLoginScreen()` (2026-10-10, Claude's choice, the user left it open for later): the option
+- The look with `mountLoginScreen()` (open for later): the option
   `theme` (`MountOptions`, a Mantine theme override, e.g. `{ primaryColor: 'teal' }`), merged over the login's
-  own (Mantine's indigo, a small radius); `update(props, options)` changes it. Before: the accent from the page's
-  custom property `--app-login-accent-color` (Mantine's ten shades as `color-mix()` of it), gone with the rule
-  "no custom properties in the packages". `LoginScreen` inside an app's own `MantineProvider` uses that app's theme.
+  own (Mantine's indigo, a small radius); `update(props, options)` changes it (not a custom property of the page: no
+  custom properties in the packages). `LoginScreen` inside an app's own `MantineProvider` uses that app's theme.
 
-- The layout of the views (2026-10-04, after a critique of the register view: too tall and uniform, two stacked
-  headers, a jumping card, inconsistent links):
+- The layout of the views:
   - The labels stay above their inputs (labels to the left of the inputs, left and right aligned, were tried and dropped).
   - The register view's passwords side by side (password, repeated password: they belong together); username and email
     full width above them. One row less than four stacked fields.
@@ -78,17 +73,17 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     sign in view (only with `onRegister`), "Back to sign in" on the others. "Forgot password?" in the same size (`sm`).
   - Not solved: an error line pushes the next field down (about 20px each); reserving the room would make every form
     taller.
-- Provider buttons (sign in view only): below the form, after a line with "or" (no line without the form; above the
-  form first, 2026-10-04: the password login is the main way in, with "Forgot password?" and registration, so the
+- Provider buttons (sign in view only): below the form, after a line with "or" (no line without the form; not above the
+  form: the password login is the main way in, with "Forgot password?" and registration, so the
   providers are the alternative), full width, outlined (`default` variant), "Continue with {provider}" with the icon if
   there is one; below them the footer. One
   host function at a time: the clicked button shows the spinner, the other buttons and the form are locked (read-only
   fields, disabled button); a rejected promise shows its message (else "The sign in failed. Please try again.") under
   the buttons. New texts: `continueWith` (`{provider}` is replaced), `or`, `providerFailed` (English and German, each
   replaceable).
-- `user-select: none` on the screen (2026-10-04), like the cockpit's frame; the inputs keep `text` (Safari: a field with `none`
+- `user-select: none` on the screen, like the cockpit's frame; the inputs keep `text` (Safari: a field with `none`
   cannot be typed into).
-- Small screens (2026-10-04, `login.css`):
+- Small screens (`login.css`):
   - The card's frame (border, radius, shadow, padding) is our CSS, not Paper's props, so it can be taken away.
   - Narrow (up to 30rem, a phone): the card is the whole page, edge to edge: full width (one grid column, `minmax(0, 1fr)`:
     with a centered column the card was as wide as its content, and a different width in each view), the page's
@@ -117,8 +112,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 
 ## Layout and commands
 
-- `exports` in `package.json` (2026-10-15, the user's choice; proposed at about 70%, over an alias per package and
-  entry in the root): each entry has a `source` condition first, its file in `src/`, then its built file in `dist/`.
+- `exports` in `package.json` (rather than an alias per package and entry in the root): each entry has a `source` condition first, its file in `src/`, then its built file in `dist/`.
   The root's demo resolves the package by name (`@local/…`) to its sources by that condition (its `vite.config.ts`
   and `tsconfig.json`); everywhere else, a customer's copy too, the condition is ignored and `dist/` counts.
 - `src/api/` (types), `src/login-screen.tsx`, `src/mount.tsx`, `src/login.css`, `src/texts.ts`, `src/page.ts`

@@ -4,7 +4,7 @@ import { render } from 'lit';
 import type { DataTable } from '../../../../../packages/data-table/src';
 import { setupDataTable } from '../../../../../packages/data-table/src';
 import { defaultTheme } from '../../../../../packages/data-table/src/themes';
-import { createFileUploadClass } from '../../../../../packages/file-upload/src';
+import { createFileUploadClass } from '../../../../../packages/file-upload/src/main';
 import { litDialogAdapter, litToastAdapter } from '../../../../../packages/overlays/src/main/bindings/lit/index';
 import { createDialogsController, createToastController } from '../../../../../packages/overlays/src/main/index';
 

@@ -1,7 +1,7 @@
 import { Stack, Text } from '@mantine/core';
 import { z } from 'zod';
 
-import type { FileItem, UploadFn } from '@local/file-upload';
+import type { FileItem, UploadFunction } from '@local/file-upload';
 import { binding } from '@local/form-validation';
 
 import { DOCUMENT_CATEGORIES } from '../../../domain/index.js';
@@ -39,7 +39,7 @@ const uploadFiles = binding({
 
 function DocumentsForm({ name, upload, save }: {
   name: string;
-  upload: UploadFn;
+  upload: UploadFunction;
   save: (values: z.output<typeof documentsSchema>) => Promise<void>;
 }) {
   const t = useTranslate();

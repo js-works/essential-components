@@ -240,7 +240,10 @@ customElements.define(
         subgroup: 'Components',
         element: 'file-upload-demo',
         load: async () => {
-          define('file-upload-demo', (await import('../packages/file-upload/demo/file-upload-demo.js')).FileUploadDemo);
+          define(
+            'file-upload-demo',
+            (await import('../packages/file-upload/src/demo/file-upload-demo.js')).FileUploadDemo,
+          );
         },
       },
       {

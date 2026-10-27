@@ -6,12 +6,16 @@
   "type": "module",
   "exports": {
     ".": {
-      "source": "./src/index.ts",
+      "source": "./src/main/index.ts",
       "default": "./dist/index.js"
     },
     "./react": {
-      "source": "./src/react/index.ts",
+      "source": "./src/main/react/index.ts",
       "default": "./dist/react.js"
+    },
+    "./themes": {
+      "source": "./src/main/themes/index.ts",
+      "default": "./dist/themes.js"
     }
   },
   "scripts": {
@@ -33,6 +37,7 @@
     "@types/node": "^24.13.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "@types/sloc": "^0.2.3",
     "@vitejs/plugin-react": "^6.1.1",
     "@vitest/browser-playwright": "^5.0.1",
     "@vitest/coverage-v8": "^5.0.1",

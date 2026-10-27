@@ -4,7 +4,7 @@ import type { FocusEvent } from 'react';
 import { useRef } from 'react';
 import { z } from 'zod';
 
-import type { FileItem, UploadFn } from '@local/file-upload';
+import type { FileItem, UploadFunction } from '@local/file-upload';
 import { binding } from '@local/form-validation';
 
 import type {
@@ -93,7 +93,7 @@ function UploadForm({
   save,
   onChange,
 }: {
-  upload: UploadFn;
+  upload: UploadFunction;
   save: Save<typeof uploadSchema>;
   onChange?: (items: readonly FileItem[]) => void;
 }) {

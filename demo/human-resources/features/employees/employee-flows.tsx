@@ -183,7 +183,7 @@ function useUploadDocumentsFlow() {
       content: (
         <DocumentsForm
           name={employee.name}
-          upload={(file, context) => service.uploadFile(file, context)}
+          upload={({ file, ...context }) => service.uploadFile(file, context)}
           save={async ({ category, files }) => {
             const ids = files.flatMap((file) => file.result === undefined ? [] : [file.result]);
 

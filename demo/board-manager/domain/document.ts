@@ -31,8 +31,7 @@ type DocumentSortKey = (typeof DOCUMENT_SORT_KEYS)[number];
 
 // The upload of one file (the file upload's function): it reports its progress and gives the staged document's id.
 type UploadDocument = (
-  file: File,
-  options: { signal: AbortSignal; onProgress: (progress: number) => void },
+  params: { file: File; signal: AbortSignal; onProgress: (progress: number) => void },
 ) => Promise<string>;
 
 // What can be done with a meeting's documents. An upload stages a file (on the server, not in the list yet): `commit`

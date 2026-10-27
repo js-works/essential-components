@@ -16,8 +16,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 
 ## Working rules
 
-- `src/api/` holds the draft API types we are discussing (2026-10-12; `src/api.ts` with `declare namespace DataTable`
-  and `src/react/api.ts` with `DataTableComponent` before). Types only, no comments for now (comments come later).
+- `src/api/` holds the draft API types we are discussing. Types only, no comments for now (comments come later).
   - Shared by both entries: `query.ts` (`RowQuery`, `RowPage`, `RowSource`, `ColumnSort`, `GroupTotal`,
     `FilterValue`, `GroupBy`, `RowGroup`), `rows.ts` (`RowMove`, `ReorderRows`, `SaveRow`, `CreateRow`), `filters.ts`,
     `editors.ts`, `saved-filters.ts`, `settings.ts` (`TableDensity`, `TableLayout`, `FooterMode`, `ColumnAlign`,
@@ -28,8 +27,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - The React entry's own (`src/api/react/`): `columns.ts`, `actions.ts`, `autocomplete.ts` (content `ReactNode`),
     `component.ts` (`DataTableProps`, `DataTableComponentConfig`, `TableController`, `DataTableComponent`).
   - `src/api/index.ts` re-exports the shared and the element's files, `src/api/react/index.ts` the shared and the
-    React ones; both entries export them flat (2026-10-14, `typescript.md`; the namespace `dataTable` for two days,
-    with `Query`, `Result`, `Column`, `Action`, `Theme`, `Props`, `Config` …): `import type { TableColumn } from
+    React ones; both entries export them flat (`typescript.md`): `import type { TableColumn } from
     '@local/data-table/react'` (`TableColumn<User>`; from `@local/data-table`, `TableColumn<User, Node>`).
   - Both use the same names (`TableColumn`, `TableAction`, ...) with their own meaning (unique within one entry,
     `typescript.md`).
@@ -55,15 +53,13 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     the filled native look too loud). The check color is the input's `color`: `--param-color-primary`. Indeterminate (the
     select-all box while some rows are selected) shows a short dash. Disabled ones are half transparent.
   - Selects (single and multiple): Base UI's `Select` (`@base-ui/react`, MIT), unstyled, styled by us with the theme values.
-    - This reverses the first decision ("no headless library"): native selects could not be made to look and behave
-      the same in every browser (`::picker(select)` has no Firefox support and no dropdown for `<select multiple>`).
+    - Not native selects: they cannot be made to look and behave the same in every browser (`::picker(select)` has no Firefox support and no dropdown for `<select multiple>`).
     - Base UI was chosen over React Aria Components (Apache-2.0, more dependencies, its own API), Headless UI, Ariakit
       and Downshift: it has all the parts we may need (Select, Combobox, Autocomplete, Menu, Tooltip, Popover), is
       MIT and version 1.x.
-  - Menu buttons: Base UI's `Menu`, since the select (step 2).
-  - Tooltips: Base UI's `Tooltip` (step 3). Our own popover code (`popover.ts`, `useTooltip`, `useToggle`) is gone.
-  - Result of the three steps (September 2026): our own component code went from 2904 to 2762 source lines, and the
-    code that is left mostly describes the parts instead of implementing positioning, focus and keyboard handling.
+  - Menu buttons: Base UI's `Menu`.
+  - Tooltips: Base UI's `Tooltip`. Our own code mostly describes the parts instead of implementing positioning, focus
+    and keyboard handling.
   - The popups of Base UI (the list of a select, a menu) share one look (`.popupPositioner`, `.popup`) and are
     rendered into the layer of the root (`LayerContext`), so they get the values of the theme.
   - Icons: inline SVGs shipped with the component (the paths of the Tabler icons, `view/icons.tsx`).
@@ -79,38 +75,35 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       `colorDanger`, `colorFocus`.
     - Shape and type: `radius`, `buttonRadius` (buttons with a shape: text and icon buttons, the clear buttons of the
       fields and the date picker's Clear), `shadow` (menus and tooltips), `shadowSm` (the filter panel), `fontFamily`, `fontSize`, `fontSizeSm`, `fontWeightBold`.
-    - The focus ring (2026-10-09, the user's wish): `focusRingWidth`, `focusRingOffset` (with `colorFocus`; 2px and 2px
+    - The focus ring: `focusRingWidth`, `focusRingOffset` (with `colorFocus`; 2px and 2px
       in every theme, like the design language's ring). Rings drawn inside an element (where a box would cut them off)
       take the width as a negative offset.
-    - Spacing and size: `spacingXs`, `spacingSm`, `spacingMd`, `controlHeight`, `buttonHeight` (2026-10-06, the user's wish: the actions of the toolbar, a bit taller than the other controls: 36px in the default theme, `controlHeight` + 4px; in the Mantine theme the height of a normal Mantine button since 2026-10-09, the user's wish: its `sm`, 2.25rem, as tall as the inputs; `md`, 2.5rem, before).
-  - The grays are three steps (2026-10-04, the user's wish: far too many tokens; 20 colors became 14): `colorSurface`,
+    - Spacing and size: `spacingXs`, `spacingSm`, `spacingMd`, `controlHeight`, `buttonHeight` (the actions of the toolbar, a bit taller than the other controls: 36px in the default theme, `controlHeight` + 4px; in the Mantine theme the height of a normal Mantine button: its `sm`, 2.25rem, as tall as the inputs).
+  - The grays are three steps (few tokens): `colorSurface`,
     `colorHover` (the row hover, the stripes), `colorSurfaceStrong` (everything stronger: the group header band, the
     hover and press of buttons, menu items and sortable headers, the neutral selection, the hover of striped rows, the
-    separators of menus), and the line `colorBorder` (also the lines of a hovered row). Removed: `colorHeader`,
-    `colorHeaderHover`, `colorHoverBorder`, `colorStripe`, `colorStripeHover`, `colorSelectedNeutral`.
-  - `colorDivider` (2026-10-05, the user's wish: lighter lines between the rows; the user allowed the new property
-    `--param-color-divider`): the line below every row (`.cell`; data, detail, group, edit form and empty rows), the
-    header's line (since the same day), the line at the bottom of the rows and the one before the action column. The
+    separators of menus), and the line `colorBorder` (also the lines of a hovered row).
+  - `colorDivider` (lighter lines between the rows): the line below every row (`.cell`; data, detail, group, edit
+    form and empty rows), the header's line, the line at the bottom of the rows and the one before the action column. The
     frame of a hovered or selected row, the dragged row, the inputs, buttons and popups keep `colorBorder`. Like the design language's `--ui-color-divider` next to `--ui-color-border`. Default `#e0e0e0`, dark
     `#363636` (pure grays, like the rest of the default theme; `#dee2e6` of `ui.css` is bluish); soft `#ececec`, dark
     `#2e2e2e`; Mantine `gray-3`, dark `dark-4` (lighter than `default-border`, which `modernTheme` makes `gray-5`); antd
     `--ant-color-border-secondary` (antd's own table lines). Why not `colorSurfaceStrong`: in Mantine (`gray-1`) the
     lines almost vanished; why not a lighter `colorBorder`: the inputs would lose their contrast.
-  - `colorSurfaceStrong` (added 2026-09-30, since 2026-10-04 also what the removed header, stripe-hover and neutral
-    values were): default `#eee`, dark `#262626` (`#ededed`/`#3a3a3a` before), soft `#f0f0f0` (dark `#262626`), Mantine `gray-1`
+  - `colorSurfaceStrong`: default `#eee`, dark `#262626`, soft `#f0f0f0` (dark `#262626`), Mantine `gray-1`
     (`#f1f3f5`, dark `dark-5`; Mantine's light grays are all slightly bluish, and it has no neutral light gray), antd
     `--ant-color-fill-secondary`.
   - Every color is its own value, mapped by the theme. No colors derived with `color-mix()` (except pressed states).
   - `selectionAppearance` stays. `'neutral'` uses `colorSurfaceStrong` and a gray selection border (`colorBorder`).
   - More specific values (per part) may be added later if a library needs them (not breaking: all are optional).
-  - `colorSelected` in the Mantine theme (2026-10-04, the user's wish): in light mode `--mantine-primary-color-0` (shade 0, the
-    next lighter value than `light`, shade 1), in dark mode as before (`--mantine-primary-color-light`). So the row hover
-    (`colorHoverAccent`, shade 1 now) stays one step stronger than the selected rows. Only the Mantine theme: the default
+  - `colorSelected` in the Mantine theme: in light mode `--mantine-primary-color-0` (shade 0, the
+    next lighter value than `light`, shade 1), in dark mode `--mantine-primary-color-light`. So the row hover
+    (`colorHoverAccent`, shade 1) stays one step stronger than the selected rows. Only the Mantine theme: the default
     theme's `#e2f1ff` is light enough.
   - `colorHoverAccent` (the row hover with `selectionAppearance="accent"`, stronger than the selection): Mantine
-    `--mantine-primary-color-light` since 2026-10-04 (the user's wish, the next lighter value; `light-hover` before, a
-    clear lavender in the apps; now the same color as the selected rows: a hovered selected row shows no change, the
-    selection is told by its lines and checkbox), antd `--ant-color-primary-bg-hover` (unchanged).
+    `--mantine-primary-color-light` (not `light-hover`, a clear lavender in the apps; the same color as the selected
+    rows: a hovered selected row shows no change, the selection is told by its lines and checkbox), antd
+    `--ant-color-primary-bg-hover`.
   - antd: `colorBorder` is `--ant-color-border` (the border of antd's inputs, `#d9d9d9`), not
     `--ant-color-border-secondary` (`#f0f0f0`, almost invisible on inputs and buttons).
   - Sizes that have no value of their own are derived with `calc()` (e.g. the title is `1.25 * fontSize`, a row button
@@ -118,7 +111,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - The tooltip turns the colors around: `colorText` as background, `colorSurface` as text.
 - Themes are objects in the configuration, not CSS files (see Configuration): `defaultTheme`, `softTheme`,
   `mantineTheme`, `antdTheme`.
-- The soft theme (`src/themes/soft.ts`, decided 2026-09-28): the look of the design spec of the filter popup and the
+- The soft theme (`src/themes/soft.ts`): the look of the design spec of the filter popup and the
   selection bar, for apps without a UI library that want it instead of the neutral default. Hard-coded values like the
   default theme, light and dark: lighter lines (`#dcdcdc`), a brighter blue as the one accent (`#2b72d6`), a light blue
   selection (`#eaf2fd`), rounder corners (`radius` and `buttonRadius` 6px), 13px text (12px small) and a medium weight
@@ -132,13 +125,12 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     class.
 - The default theme (`src/themes/default.ts`) is the neutral look, for apps without a UI library that has a theme here.
   - All its grays are pure grays (equal red, green and blue). It has a high contrast, for readability: text `#111`,
-    dimmed text `#555`, borders `#c6c6c6` (it was `#a8a8a8` until 2026-09-29, too dark; `#bababa` for a moment), a row hover of `#e4e4e4` (dark `#303030`; it was `#dfdfdf` / `#333` until 2026-09-29, a tiny bit
-    too dark) over a lighter neutral selection (`#eee`), a soft
+    dimmed text `#555`, borders `#c6c6c6`, a row hover of `#e4e4e4` (dark `#303030`) over a lighter neutral selection (`#eee`), a soft
     zebra (`#f8f8f8`), and a light control hover (`#f9f9f9`). Primary and danger are deep enough for 6:1 against
     white. Radius 2px, buttons 5px (the `--ui-radius-sm` and `--ui-radius-md` of the design language of the demos, see the
     root `CLAUDE.md`). Mantine and antd map `buttonRadius` onto their normal radius (their buttons use it).
   - Its colors have a light and a dark value (`{ light, dark }`), which follow the color scheme of the page. Dark mode:
-    text `#f5f5f5`, borders `#474747` (it was `#5c5c5c`), and a lighter primary with dark text on it.
+    text `#f5f5f5`, borders `#474747`, and a lighter primary with dark text on it.
   - It and the soft theme are the only places with hard-coded colors (besides the demo).
 - Class names are fixed BEM names (`data-table`, `data-table__cell-text`; `src/core/view/classes.ts`). They are not public.
   - What the theme values do not cover cannot be restyled by apps (accepted, to keep the public surface small).
@@ -161,32 +153,28 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 - Entries (like `file-upload`):
   - `@local/data-table`: the element (`setupDataTable`), its column filters and editors and the types (flat,
     with the element's types). Preact is bundled in (as React), the app needs no React.
-  - `@local/data-table/react`: `createDataTableComponent` (renamed from `createDataTable`), the hooks, the
+  - `@local/data-table/react`: `createDataTableComponent`, the hooks, the
     React column filters and their types (flat, with the React types), with the app's React (an
     optional peer dependency).
   - `@local/data-table/themes`: `defaultTheme`, `softTheme`, `mantineTheme`, `antdTheme` (plain data, used by both; no React,
     no element). The other entries export no themes.
-  - `@local/data-table/react-query` (2026-10-17, the user's choice, proposed at about 60%; the same file in each of the
-    root's five apps, `shared/lib/use-query-source.ts`, before): `useQuerySource(key, fetch, watch)`, a source through
+  - `@local/data-table/react-query`: `useQuerySource(key, fetch, watch)`, a source through
     the app's TanStack Query. Each page the table loads is a query (`key(query)`, `fetchQuery` with a `staleTime` of 30
     seconds), so it is cached and deduplicated like the app's other reads; when a query under `watch` is invalidated,
     the source reports it (`onChange`), and the table reloads. The query runs on TanStack's own signal (shared), the
     table's signal only stops waiting for it. `@tanstack/react-query` is an optional peer dependency (`^5.0.0`), only
-    this entry needs it, external in the build like React. Named after TanStack's package (`react-tanstack` was the
-    first idea). Not the cache itself in the package: it is the app's, for all its reads (one cache, one way to
-    invalidate). Also `useFindSource(scope, sortKeys, toCriteria, find)` (2026-10-17, the user's wish; the same file in
-    the Board Manager and the File Center, `shared/lib/table-query.ts`, before): a source over a `find(criteria, sort,
+    this entry needs it, external in the build like React. Named after TanStack's package. Not the cache itself in the package: it is the app's, for all its reads (one cache, one way to
+    invalidate). Also `useFindSource(scope, sortKeys, toCriteria, find)`: a source over a `find(criteria, sort,
     paging, signal)` (`FindRows<Row, Criteria, K>`, returning a `FoundPage<Row>`, `{ items, total }`), each page under
     `[...scope, 'page', query]`, the query mapped by `toCriteria` (e.g. `criteriaOf`), `sortOf` and `pagingOf`; it
     reloads when a read under `scope` is invalidated. Tests: `src/react-query/use-query-source.test.tsx`,
     `use-find-source.test.tsx`; demo: the "TanStack Query" tab (`demo/query-demo.tsx`: a server's find through
     `useFindSource`, paging back from the cache, "Invalidate" reloads).
-  - Shared types (`Theme`, `I18nAdapter`, `Query`, ...) are in the `dataTable` of both entries (2026-10-12; only in
-    the main entry's `DataTable` before), so a React app needs only `/react`.
+  - Shared types (`Theme`, `I18nAdapter`, `Query`, ...) are in both entries, so a React app needs only `/react`.
   - Needs the built files (`exports` to `dist/`), else the app's bundler resolves `react` itself.
     (Under the `source` condition, e.g. in the root's demo, it is the sources, with the app's React.)
 - `setupDataTable(config)` is called once per app with the config (theme, i18n factory, content adapter, and
-  `defaults` (2026-10-09, the user's wish): the settings of every element where it has no attribute or property of its
+  `defaults`: the settings of every element where it has no attribute or property of its
   own, e.g. `{ selectionAppearance: 'neutral' }`; only those with values (density, layout, footer, rowActionLook,
   selectionAppearance, pageSize, pageSizeOptions): a boolean attribute cannot say "off", so a default `true` could not
   be turned off on one element. The React component has none: an app's wrapper component sets its defaults) and
@@ -209,7 +197,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - A controller belongs to one element (like the React controller): setting it on a second element is an error. It also
     controls that element: `reload()`, `clearRowSelection()`, `getSelectedRows()` (typed: `readonly User[]`).
   - A new controller replaces all parts at once (one render).
-  - `defaultSort` is part of the controller (its `key` is a column key), and so is `defaultFilters` (2026-10-08).
+  - `defaultSort` is part of the controller (its `key` is a column key), and so is `defaultFilters`.
   - Events: the element fires no events of its own; to hear anything, you need the controller. Subscriptions are
     methods named `onXyz(listener)` that return an unsubscribe function (rarely needed: listener, controller and
     element usually live and die together). No event callbacks in the controller's options.
@@ -291,9 +279,8 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     and dropped: a source hook with `reload` (covers only the reload), a ref handle (the same sharing problem, and
     `null` before the mount), a hook that returns a bound component (fragile), helpers in the action callbacks (no
     triggers from outside the table), controlled props (more wiring, and still no reload).
-  - `TableController<Row>` (of `/react`) has exactly these methods, and `editRow(row)` and `addRow(template)` since
-    2026-09-30 (see "Row editing and new rows"). The `controller` prop is optional: without it the table works as
-    before.
+  - `TableController<Row>` (of `/react`) has exactly these methods, and `editRow(row)` and `addRow(template)` (see "Row
+    editing and new rows"). The `controller` prop is optional: the table works without it.
 - The framework-free core is `createDataTableController()` (`src/core/controller.ts`, no React). The hooks only
   wrap it (`src/core/controller-hooks.ts`): `useDataTableController` keeps one stable, `useDataTableSelection`
   subscribes with `useSyncExternalStore`. The custom element's controller (see "Custom element") will build on the
@@ -325,14 +312,13 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - It is the only way to get the component: no ready-made, unconfigured `DataTable` next to it.
   - Several looks or languages in one app: several factory calls.
   - Internally the created component passes its config down with a private context (e.g. to the built-in filters).
-- Localization: `config.i18n`, a discriminated union on `type`, the same as the `file-upload` React wrapper's (decided
-  2026-10-02, to unify both packages). Without `i18n`: the English defaults. Another `type` (e.g. an adapter given
-  directly, as before) makes `createDataTableComponent` throw a `TypeError`.
+- Localization: `config.i18n`, a discriminated union on `type`, the same as the `file-upload` React wrapper's (both
+  packages alike). Without `i18n`: the English defaults. Another `type` (e.g. an adapter given directly) makes `createDataTableComponent` throw a `TypeError`.
   - `{ type: 'factory', getAdapter: (element: HTMLElement) => I18nAdapter }` (for i18n libraries that read the DOM, e.g.
     `lang`): asked once per instance, with the root element of the table, when it is committed (a ref callback, before
     the first paint; the texts are rendered once more, in the adapter's language). The same config object works for
     `setupDataTable`. A shared adapter: `{ type: 'factory', getAdapter: () => i18n }`.
-    - Also in React (decided 2026-10-02): e.g. two parts of a page in two languages, told apart by `lang` on a
+    - Also in React: e.g. two parts of a page in two languages, told apart by `lang` on a
       container and not by a React context. No `{ type: 'adapter' }` for a fixed adapter: `getAdapter: () => i18n` is
       short enough, and written once per app.
   - `{ type: 'hook', useAdapter: () => I18nAdapter }` (for i18n libraries with a React context): called in the
@@ -352,15 +338,15 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     Texts without params get `null`.
   - Without an adapter: the English texts, and the locale of `<html lang>` (else `en-US`).
   - No i18n library is a dependency. An adapter for react-i18next (or any other library) is a few lines.
-  - This replaced a hidden `useTranslation('dataTable')` of react-i18next, which tied every app to one i18n library.
+  - No hidden `useTranslation('dataTable')` of react-i18next: it would tie every app to one i18n library.
 - Theme: `config.theme`, a typed `DataTableTheme`: the design values in camelCase (`colorText`, `colorSelected`,
   `radius`, `fontSize`, ...), all optional; missing ones come from the default theme.
   - Colors take a string or `{ light, dark }`, which becomes `light-dark(light, dark)`: it follows the `color-scheme`
     the root inherits from the page (the root sets none: `light dark` would follow the system's scheme instead). Values
     may be `var(...)` of the app's design system. `light-dark()` works only for colors, so the shadow is a plain string;
     the default theme puts `light-dark()` into the color of its shadow.
-  - No custom properties of our own (2026-10-09, the user's wish; before, the root had them inline, `--datnav-*`: they
-    inherited into everything inside the table, custom cell content too, and filled the dev tools).
+  - No custom properties of our own: they would inherit into everything inside the table, custom cell content too,
+    and fill the dev tools.
     - The source (`src/core/view/data-table.css`, imported with `?inline`) reads the values as `var(--param-…)`
       placeholders. `themeStylesheet` (`src/core/stylesheet.ts`) replaces each by the theme's value, once per
       theme (a `createDataTableComponent` or `setupDataTable` call), without the comments.
@@ -372,11 +358,9 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     - The few lengths the view computes inline (the pager's slots, the filter view, the edit form) use the same
       placeholders, through `useThemed()` (`config.ts`).
     - Apps configure only through `theme`.
-  - The themes are exported objects: `defaultTheme`, `softTheme`, `mantineTheme`, `antdTheme` (`src/themes/*.ts`). There are no
-    CSS theme files anymore.
+  - The themes are exported objects: `defaultTheme`, `softTheme`, `mantineTheme`, `antdTheme` (`src/themes/*.ts`). No CSS theme
+    files.
   - Without `theme`: the default theme, so the table always has its colors.
-  - This reversed "Themes are CSS only: no theme prop, nothing in the API", decided at first.
-- The stylesheet itself (`data-table.css`) is still imported by the app.
 - The public API of the React entry (`@local/data-table/react`): `createDataTableComponent`, `useDataTableController`,
   `useDataTableSelection`, `textFilter`, `selectFilter`, `dateRangeFilter`, `numberRangeFilter`, `booleanFilter`,
   `autocompleteFilter`, `textColumnEditor`, `selectColumnEditor`, `dateColumnEditor`, `criteriaOf`, `pagingOf`,
@@ -415,14 +399,13 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   library is a peer.
 - Runtime dependency: `@base-ui/react` (MIT), for the selects, menus and tooltips. It is external in the library
   build, like React.
-  - Size (September 2026): our own bundle is about 44 kB (11.6 kB gzip). With Base UI bundled in, it is 217 kB (62 kB
+  - Size (measured): our own bundle is about 44 kB (11.6 kB gzip). With Base UI bundled in, it is 217 kB (62 kB
     gzip) with the Select, 274 kB (76 kB gzip) with the Menu too, and 291 kB (81 kB gzip) with the Tooltip too. So Base
-    UI costs an app about 69 kB gzip (less if the app uses Base UI itself). The user accepts that: the size matters less than the behavior.
+    UI costs an app about 69 kB gzip (less if the app uses Base UI itself). Accepted: the size matters less than the behavior.
 
 ## Project layout and commands
 
-- `exports` in `package.json` (2026-10-15, the user's choice; proposed at about 70%, over an alias per package and
-  entry in the root): each entry has a `source` condition first, its file in `src/`, then its built file in `dist/`.
+- `exports` in `package.json` (rather than an alias per package and entry in the root): each entry has a `source` condition first, its file in `src/`, then its built file in `dist/`.
   The root's demo resolves the package by name (`@local/…`) to its sources by that condition (its `vite.config.ts`
   and `tsconfig.json`); everywhere else, a customer's copy too, the condition is ignored and `dist/` counts.
 - `src/api/` and `src/api/react/`: the spec (types only), see "Working rules".
@@ -468,8 +451,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 - `src/themes/`: the theme objects: `default.ts` (the neutral look, with hard-coded values, light and dark), `soft.ts`
   (the look of the design spec, hard-coded too) and one per
   UI library (`mantine.ts`, `antd.ts`).
-- `src/data-table.test.tsx`: the test suite of the component (it was the conformance suite of the old
-  implementations), plus the theming tests (every theme has every value, they end up in the stylesheet of the theme,
+- `src/data-table.test.tsx`: the test suite of the component, plus the theming tests (every theme has every value, they end up in the stylesheet of the theme,
   the stylesheet reads only known ones) and the i18n tests (with small adapters).
 - `demo/` + `index.html`: the demo app (`npm run dev`): 245 users, 1 second loading time, en/de, all selection modes
   (through the Actions selector). It starts striped.
@@ -603,12 +585,11 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       that the stylesheet reads back. That indirection buys nothing and invents names nobody asked for.
 - Use `data-*` attributes for state (`data-selected`, `data-expanded`, `data-sorted`), not conditional inline styles.
   - Hover, focus, selected rows and transitions are done in CSS.
-- The class names (2026-10-09; a CSS module, hashed, before: it could not give its class names without injecting its
-  CSS): fixed BEM names, the block `data-table` (the root) and its elements `data-table__…` (kebab case). The stylesheet is
+- The class names (not a CSS module: hashed, it cannot give its class names without injecting its CSS): fixed BEM
+  names, the block `data-table` (the root) and its elements `data-table__…` (kebab case). The stylesheet is
   global CSS, light DOM: an app's rules for generic names (`.button`, `.cell`) must not reach us, nor ours its content.
   - `classes.ts` exports each as a camelCase constant (`cellText = 'data-table__cell-text'`); the views use only those.
-    A name that builds on another one carries both (`dataRow = 'data-table__data-row data-table__row'`; CSS modules'
-    `composes` before).
+    A name that builds on another one carries both (`dataRow = 'data-table__data-row data-table__row'`).
   - Change the CSS and `classes.ts` together, in the same step.
   - The keyframes and container names are prefixed too (`data-table-spin`, `data-table-edit-form`).
   - The demo still has a CSS module (`demo.module.css`, with its declaration file `demo.module.d.css.ts`).
@@ -624,8 +605,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     ones. The theme stays a small set of general design values.
   - No derived colors (`rgba()`, `hsl()`, opacity tricks on colors). A test checks this.
   - One exception: pressed states (`:active`) may use `color-mix()`, to mix a little of `--param-color-text` into the
-    hover or fill color (darker in light mode, lighter in dark mode). The user allowed it, to avoid a token per
-    pressed color. The test checks that every `color-mix()` sits in an `:active` rule.
+    hover or fill color (darker in light mode, lighter in dark mode), to avoid a token per pressed color. The test checks that every `color-mix()` sits in an `:active` rule.
   - A library theme only maps the values onto the library's own variables, which already adapt to dark mode.
   - Do not use `light-dark()` in the stylesheet: the Vite 8 build (Lightning CSS) rewrites it into a form that needs
     extra variables. In theme values it is fine: they are put in at runtime and never pass the build.
@@ -633,10 +613,9 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 - No custom properties of our own (the `var(--param-…)` of the source are placeholders, gone at runtime), and none for
   passing other runtime values to the stylesheet either: set the real property inline instead.
 - No `!important`. Never remove focus outlines. Every button and input has a `:focus-visible` outline in
-  `colorFocus`, `focusRingWidth` wide, `focusRingOffset` away; the text fields too (2026-10-09, the user's wish: only their
-  border in the accent before). Only a chip in a field has a thin 1px ring.
-  - One rule gives it to all buttons (`.data-table__button`, `__icon-button`, `__sort-button`, `__clear-button`);
-    2026-10-09: before, these had none, and the browser drew its own, black and on the edge.
+  `colorFocus`, `focusRingWidth` wide, `focusRingOffset` away; the text fields too (not only their border in the accent). Only a chip in a field has a thin 1px ring.
+  - One rule gives it to all buttons (`.data-table__button`, `__icon-button`, `__sort-button`, `__clear-button`), so
+    the browser does not draw its own, black and on the edge.
   - The one exception: the items of a menu (the toolbar's menus, the context menu). Their highlight background
     (Base UI's `data-highlighted`, `--param-color-surface-strong`) marks the item of the keyboard, like in a native menu. Base
     UI moves the focus to the item under the pointer too, and after a key press the browser counts that as keyboard
@@ -653,30 +632,26 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     stripe rule is wrapped in `:where()`, so it weighs one class only.
   - Every row hovers with `--param-color-surface-strong` (one shade over the stripes), striped or not, gray or white rows
     alike. `--param-color-hover` is only for controls (buttons, list and menu items).
-  - Striped changes only the row backgrounds (2026-10-06, the user's wish): the horizontal lines between the rows stay,
-    striped or not. (Until then the zebra was the separator and the lines between unselected rows went, with only
-    their color transparent.)
+  - Striped changes only the row backgrounds: the horizontal lines between the rows stay, striped or not.
   - The root carries `data-striped`, and every tinted data row carries `data-stripe`. The parity cannot be done in
     CSS: rows are `display: contents` and expanded detail rows break `:nth-child`.
 - Density: `density?: 'compact' | 'normal' | 'comfortable'` (default `'normal'`, which is the standard look).
   - Only the vertical padding of the header cells and data cells changes. The horizontal padding stays.
-  - The values map onto the spacing values: `calc(var(--param-spacing-xs) / 3)` (2026-10-05, the user's wish: a tiny
-    bit less; `/ 2` before), `--param-spacing-xs`, `--param-spacing-md`.
+  - The values map onto the spacing values: `calc(var(--param-spacing-xs) / 3)`, `--param-spacing-xs`, `--param-spacing-md`.
   - In `compact`, the column headers get a little more vertical padding than the data cells (3/4 of `spacingXs`
     instead of a third of it), so a header (often a click target) does not look squeezed.
   - The root element carries `data-density`, and the stylesheet does the rest (with `:where()`, so more specific cell
     classes like the group header keep their own padding).
   - Toolbar and footer change in `compact` only, both flatter, with controls of 0.875 × `controlHeight`; their text
-    has the table's size (`fontSize`; 2026-10-05, the user's wish: one size; a size between `fontSizeSm` and
-    `fontSize` before, 13px next to the rows' 14px):
+    has the table's size (`fontSize`: one size):
     - Toolbar: `spacingXs` above, below and between its lines (instead of `spacingSm`; the sides stay), smaller action
-      and menu buttons and search field. The title and the subtitle keep their sizes in every density (2026-10-05, the
-      user's wish: density changes spacing only; the title was 1.1 × `fontSize` in compact).
+      and menu buttons and search field. The title and the subtitle keep their sizes in every density (density changes
+      spacing only).
     - Footer: less room around it (`spacingSm` above instead of `spacingMd`, `spacingXs` below). (The pager is small
-      in every density since 2026-10-05, the page size a ghost button of the toolbar's size.)
+      in every density, the page size a ghost button of the toolbar's size.)
     - The heights are set on those controls directly (the stylesheet only reads the theme's custom properties and never
       sets one).
-- Animations (decided 2026-09-28): short and subtle, and none at all with the system's reduced motion setting
+- Animations: short and subtle, and none at all with the system's reduced motion setting
   (`prefers-reduced-motion: reduce`: one rule at the end of the stylesheet turns off every animation and transition
   inside the root; the loading bar then stands still).
   - The bar and the selection bar: see the toolbar. Popups (menus, selects, the filter popup, the date popover) fade in
@@ -694,17 +669,15 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 - Header look: no gray band, in every mode (striped or not): the header shows the plain surface color
   (`--param-color-surface`), with bold text and a 1px line below it.
   - The header text is muted (`--param-color-text-dimmed`); the sorted column is the only one in the full text color
-    (`data-sorted`). (Decided 2026-09-28, with the filter popup. Before, the arrow was the only marker.)
+    (`data-sorted`).
   - It is not transparent: it stays opaque, so scrolled rows never shine through the sticky header.
-  - With `selectionAppearance="accent"` (2026-10-04, the user's wish) the hover shape and the pressed shape of a sortable
+  - With `selectionAppearance="accent"` the hover shape and the pressed shape of a sortable
     header are light accent tints too: the hover is `--param-color-selected` (the tint of the selected rows), the pressed
-    shape `--param-color-hover-accent` (the tint of the hovered rows). (A first try: the hover-accent tint for the hover and
-    the same with 10% of the text color for the pressed shape: a bit too dark, the user said.) The neutral appearance
+    shape `--param-color-hover-accent` (the tint of the hovered rows). The neutral appearance
     keeps the grays (`--param-color-surface-strong`).
   - The hover shape of a sortable header (`--param-color-surface-strong`) lies on the surface, so a theme may map it onto
     a translucent color (antd does).
-  - Before, the header had a light gray band (`--param-color-surface-strong`), and only striped mode gave it up. The user wants
-    no band at all. `--param-color-surface-strong` is now only used for other soft gray areas (the item highlight of menus and selects,
+  - `--param-color-surface-strong` is used for other soft gray areas (the item highlight of menus and selects,
     the hover of the ghost buttons, the track of the segmented control, the role badges of the demo).
 - Tooltips: Base UI's `Tooltip` (`WithTip` in `widgets.tsx`), shown on hover and on keyboard focus, hidden on leave,
   blur, Escape and click. Never the native `title` attribute.
@@ -724,15 +697,12 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 - Sort arrow: the sorted column always shows its arrow (up or down), and its header is in the full text color (the
   other headers are muted); no background.
   - The up/down icon of a sortable column that is not sorted is always shown, but faint (`opacity: 0.45`); it is clear
-    while its header is hovered or has keyboard focus. (Before, it was only visible on hover or focus, and always on
-    touch devices.)
+    while its header is hovered or has keyboard focus.
 - Empty state: `empty?: ReactNode`. It replaces the default when given.
   - Default: no icon, only the text `Texts.empty` ("No entries"), centered and dimmed, in one cell that spans all
-    columns. (Before: a database icon above the text; removed by decision, the default is "no icon".) Custom content
-    is not dimmed.
+    columns. Custom content is not dimmed.
   - It is shown only when a load has finished and returned no rows (never before the first load).
-  - It has no line below it, for the default content and for a custom `empty` (decided 2026-09-29, again: it had
-    none for a while, then the line of the last row for a while).
+  - It has no line below it, for the default content and for a custom `empty`.
   - The footer is shown only if at least one data row is shown. So it is hidden while the empty state is shown, and
     also before the first load returned rows (no item range, page size or pager: there is nothing to page).
   - The old rows stay visible while a new load runs, so the footer stays then too.
@@ -744,7 +714,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     nowrap`.
   - With `wrap: true`, the cell carries `data-wrap`, and the text wraps at word boundaries. Long words are hyphenated
     at syllable boundaries (`hyphens: auto`). Only a word that does not fit on a line at all (an email address) is
-    broken at any place (`overflow-wrap: break-word`, not `anywhere`, which broke words at any letter).
+    broken at any place (`overflow-wrap: break-word`, not `anywhere`, which breaks words at any letter).
   - The text of a detail row always wraps (like `wrap: true`).
   - Custom `render` and `renderDetail` content is left alone: its layout is the app's business.
   - A tooltip with the full text of a cut-off cell may come later (only when it is really cut off).
@@ -753,15 +723,14 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 - Column headers never wrap: the header text stays on one line and gets an ellipsis when it does not fit.
   - This also applies to group headers.
   - The sort arrow never shrinks and always stays visible, only the text is shortened.
-- Selection color: `selectionAppearance?: 'neutral' | 'accent'` (default `'accent'`, since 2026-09-28: the design of
-  the selection bar wants selected rows in a light accent tint with checkboxes in the accent color; it was
-  `'neutral'`; the element's attribute `selection-appearance` follows).
+- Selection color: `selectionAppearance?: 'neutral' | 'accent'` (default `'accent'`: the design of the selection bar
+  wants selected rows in a light accent tint with checkboxes in the accent color; the element's attribute
+  `selection-appearance` follows).
   - `neutral`: `--param-color-surface-strong`, a light gray tint. The row hover is stronger than it
     (`--param-color-surface-strong`), so a hovered row stands out even when it is selected (the default theme swapped the two
     grays for that: selection `#eee`, hover `#e4e4e4`).
   - `accent`: `--param-color-selected`, the standard selection color of the UI library (its primary color, lightly
     tinted). The name follows the common term "accent color" (the highlight color of a UI).
-  - It was `'default' | 'neutral'` with `'default'` (now `accent`) as the default. Renamed before the first release.
   - It applies to selected data rows and to their detail rows (see below).
   - Selected rows get a line on top and at the bottom, in both appearances.
     - `neutral`: gray, the normal border color (`--param-color-border`).
@@ -776,7 +745,6 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       line, and the row would grow by 1px.) With `accent`, the top edge of a selected first row is therefore the gray
       header line.
     - The stylesheet has the neutral look (gray background, gray lines) as the base, and `accent` overrides the colors.
-    - Before, `neutral` had no top line (only the normal line below each row). The user wants the frame in both.
   - With `neutral`, the selection checkboxes and radios of the rows and the select-all checkbox are gray too
     (`color: --param-color-text-dimmed`). With `accent` they have the primary color. Other checkboxes (for
     example in a custom filter) always keep the primary color.
@@ -795,22 +763,20 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - The detail row of a selected row that is expanded has the selection color too, including the empty cells beside
     the detail cell. The hover color wins over it while hovered. When the row is deselected, the detail row loses
     it again. So selecting works like hovering: the data row and its detail row are one unit.
-  - The border of an unchecked checkbox in a hovered row is the one of a selected checkbox (2026-10-04, the user's wish:
-    `currentColor`, the checkbox's own color: the primary color, or the gray of the neutral appearance; in both
-    appearances; a first try took the line color of the accent hover and was not what was meant). A checked one has it
+  - The border of an unchecked checkbox in a hovered row is the one of a selected checkbox (`currentColor`, the
+    checkbox's own color: the primary color, or the gray of the neutral appearance; in both appearances). A checked one has it
     anyway. (A test skips these rules: they are about the checkbox, not the row's cells. Write them with chained
     `:not()`, no commas inside: the test splits the selectors at commas.)
-  - The rows have a transparent line of 1px on their outer sides (2026-10-04, the user's wish): `border-inline-start` on
+  - The rows have a transparent line of 1px on their outer sides: `border-inline-start` on
     the first and `border-inline-end` on the last cell of a row (logical, so right-to-left works; also on the header and
     the group rows, which are cells too, so the select-all checkbox still lines up with the row checkboxes). On hover and
     with a selection the line takes the color of the row's lines on top and at the bottom (hover: `--param-color-border`,
     with the accent appearance `--param-color-selected-border`; selected: `--param-color-border`, accent
     `--param-color-selected-border`), so the row is framed. Only the color changes, never the width: nothing shifts. A detail
-    row's single cell has both. (A real border and no inset shadow: a transparent border is what was asked, and a border
-    follows the writing direction.)
+    row's single cell has both. (A real border and no inset shadow: a border follows the writing direction.)
   - A hovered row also gets a line on top and at the bottom (`--param-color-border`, the normal
     lines in the default theme; with `selectionAppearance="accent"` `--param-color-selected-border`, the line color
-    of the accent selection, to go with the accent hover, since 2026-09-29), around the data row and its detail
+    of the accent selection, to go with the accent hover), around the data row and its detail
     row together, whichever of the two is hovered.
     - The top line overlaps the line of the row above (negative margin, like the selection border), so nothing
       shifts and the row does not grow.
@@ -818,46 +784,38 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       overlap it (the sticky header paints above), so the row would grow on hover.
     - Selected rows keep their own lines.
   - Only on devices that can hover (`@media (hover: hover)`), so touch devices show no sticky hover.
-- Meta columns (drag handle, selection, details toggle) sit close together (decided 2026-09-29; before, each had the
-  full cell padding on both sides): half of xs on the sides that face another meta cell, the normal padding (sm) at
+- Meta columns (drag handle, selection, details toggle) sit close together: half of xs on the sides that face another meta cell, the normal padding (sm) at
   the start of the first one and at the end of the last one. Every meta cell (data, detail, header and group rows)
   carries `data-meta` with its outer edges (`first`, `last`, both, or empty), so they all align.
 - Separators: horizontal lines between rows and under the header, no vertical lines between data columns.
-  - All horizontal lines of the table are `colorDivider` (2026-10-05): the lines between the rows, the line under the
-    header (the user's wish, the same day: `colorBorder` looked heavy at a display scaling of 125%, where every 1px line
-    falls between device pixels and is smeared over a second one; it was `colorBorder`, stronger than the row lines)
-    and the line at the bottom of the rows.
+  - All horizontal lines of the table are `colorDivider`: the lines between the rows, the line under the header
+    (`colorBorder` looks heavy at a display scaling of 125%, where every 1px line falls between device pixels and is
+    smeared over a second one) and the line at the bottom of the rows.
   - One vertical line: before the action column (`data-divider="start"` on its cells, `border-inline-start` in
     `colorDivider`), through the data rows and the detail rows; not in the header and not on group rows. A selected or
     hovered row (with its detail row) shows none: only its color goes (`transparent`), never its width, so nothing
     shifts.
-  - None after the meta columns (selection, details toggle, handle). History (2026-10-05, the user's wishes): both lines
-    (after the meta columns, `end`, and before the action column, in `colorBorder`) were removed in the first step of
-    the look's rework; the one before the action column came back a few hours later, lighter: it sets the actions apart
-    from the data, while the one after the meta columns was not missed.
-  - A line at the bottom of the rows area (2026-10-05, the user's wish; like the line under the header, but in
-    `colorDivider`), also where the rows scroll (a table of a limited height), so they never end open. A 1px line laid
+  - None after the meta columns (selection, details toggle, handle): not missed, while the one before the action
+    column sets the actions apart from the data.
+  - A line at the bottom of the rows area (like the line under the header, in `colorDivider`), also where the rows scroll (a table of a limited height), so they never end open. A 1px line laid
     over the bottom edge of the rows area (`.scrollArea::after`, `z-index: 2`, above the fixed cells): where the rows
-    do not scroll it covers the last row's own line exactly, never a double line. It adds nothing to scroll. (First,
-    the same day: the scroller's bottom border with `margin-bottom: -1px` of the table; the cut-off line was content
-    to scroll, so every table had a scrollbar for 1px.) None below the empty state and below cards. It spans the
+    do not scroll it covers the last row's own line exactly, never a double line. It adds nothing to scroll (the scroller's
+    bottom border with `margin-bottom: -1px` would be content to scroll: a scrollbar for 1px). None below the empty state and below cards. It spans the
     scrollbar's reserved space too (a few pixels wider than the row lines).
-  - The last row has no line of its own (2026-10-06, the user's wish): only that line ends the rows. A table taller
-    than its rows (its parent gives it the height, e.g. the Board Manager's pages) showed two, one under the last row
-    and one at the bottom. The last child of the grid (a data, detail or group row, or an edit form) loses only the
+  - The last row has no line of its own: only that line ends the rows (a table taller than its rows, e.g. the Board
+    Manager's pages, would show two). The last child of the grid (a data, detail or group row, or an edit form) loses only the
     color of its plain divider (`transparent`, nothing shifts); a selected last row keeps its line, a hovered or
     dragged one gets its own (those rules win).
   - No outer border.
 - Search: `searchable?: boolean` (default `false`) shows a search box. There is no initial search text (no
-  `defaultSearch`), and there will be no initial filters either (no `defaultFilters`): the initial state of the search
-  and of the filters is always empty.
+  `defaultSearch`): the search always starts empty (initial filters: `defaultFilters`).
   - The text goes to `source` as `Query.search: string` (trimmed, `''` when empty). `source` does the searching.
   - The box sits at the start of the toolbar's bar (see the toolbar), growing with the table up to 22.5rem: search
     icon on the left, a clear button on the right while there is text. Placeholder and labels are texts
-    (`searchPlaceholder`, `clearSearch`). (It was at the right end, 16rem wide, before the filter popup.)
+    (`searchPlaceholder`, `clearSearch`).
   - Only Enter searches: what is typed is a draft, like in a text filter (no search after a pause in typing, and none
     when the box loses its focus). Escape, the clear button and emptying the box by hand remove the search at once.
-  - Before, typing searched after a pause of 300 ms. The user wants a new load only on Enter.
+  - Not a search after a pause in typing: a new load only on Enter.
   - A new search goes back to page 1 and clears the selection (like sorting).
   - The box stays usable while loading (everything else is blocked), so it does not lose its focus while the user types.
     A newer search replaces a running one, and the response of the outdated one is ignored.
@@ -866,17 +824,16 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     (see Filtering). A custom `empty` always wins.
   - The toolbar is shown when the component is searchable, even without title and actions.
 - No text selection around the data: the toolbar (title, subtitle, buttons, pills), the header (column headers, group
-  headers), the header bands of the row groups (`.groupRow`, since 2026-10-01), the footer, the filter view and the
-  empty state (its text and a custom `empty`, since 2026-10-01) have
+  headers), the header bands of the row groups (`.groupRow`), the footer, the filter view and the
+  empty state (its text and a custom `empty`) have
   `user-select: none`. Text inputs inside (search box, page number,
   the text and number inputs of the filters) stay
   selectable (`user-select: text`).
-  - Cell text can be copied, one cell at a time (2026-10-04): `.table` has `user-select: none`; on `pointerdown` the view
+  - Cell text can be copied, one cell at a time: `.table` has `user-select: none`; on `pointerdown` the view
     marks the cell under the pointer (`data-selecting`), and only a marked cell has `user-select: text`, so a drag
     never reaches the next cell. A cell with an input (the edit form) is always selectable.
 - Reload: `reloadable?: boolean` (default `false`, the element's attribute `reloadable`) shows a Reload button.
-  - It sits at the start of the bar, before the search box, and stays there without one (see the toolbar; since
-    2026-09-29, it was on the right next to the filter button). An icon-only ghost button (the
+  - It sits at the start of the bar, before the search box, and stays there without one (see the toolbar). An icon-only ghost button (the
     secondary variant, Tabler's `refresh`), with the tooltip and accessible name `Texts.reload` ("Reload"). Its icon
     turns while loading.
   - It does the same as the controller's `reload()`: the current page again with the same query; selection and
@@ -889,7 +846,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - The pager buttons (previous, next) are text-only icon buttons. A disabled one has a transparent
     background (no gray box): it is only faded (`opacity: 0.4`, in the normal text color), with the `not-allowed`
     cursor.
-- Cards in a narrow table (2026-10-05, the user's wish; a first step, details TBD, see "Todo (later)"): below a
+- Cards in a narrow table (a first step, details TBD, see "Todo (later)"): below a
   width of the data table of 576px (`CARDS_BELOW` in the view, 36rem at a 16px root; fixed, no prop yet) its rows
   are cards instead of a table. The width is the root's (`useNarrowerThan` in `hooks.ts`, a `ResizeObserver`, measured
   before the first paint), not the window's: a table in a drawer or a narrow column gets cards too. Without a width (not
@@ -898,12 +855,12 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     the same hook, actions, handlers and texts. Chosen over a CSS-only change of the grid (a container query): every
     cell would need a hidden copy of its header as its label, and the roles of the grid would not match what is shown.
   - The list (`role="list"`, the trigger of the context menu like the grid) has as many columns of cards as fit, each
-    card at least 20rem wide (`repeat(auto-fill, minmax(min(100%, 20rem), 1fr))`, 2026-10-05, the user's wish): one in a
+    card at least 20rem wide (`repeat(auto-fill, minmax(min(100%, 20rem), 1fr))`): one in a
     narrow table, two or more with "Cards" chosen in a wide one. The cards fill a line from left to right; the cards of
     a line are equally high; group headers and the empty state span all columns. Each card has its own two columns,
-    the labels (as wide as its widest) and the values. (First the same day: one column, with the labels of all cards
-    lined up by a subgrid of the list; that cannot work with several columns of cards. At most two columns with lined-up
-    labels was weighed: four tracks and a fixed switch point, more rigid.)
+    the labels (as wide as its widest) and the values. (Labels lined up across cards by a subgrid of the list cannot
+    work with several columns of cards; at most two columns with lined-up labels was weighed: four tracks and a fixed
+    switch point, more rigid.)
   - A card (`role="listitem"`, `data-row-key`, `data-selected`): a bar on top (only when there is something for it):
     the selection checkbox (its free space a click on it, like the selection cell), the details toggle (only
     for a row with details) and the row actions at the end (`rowActionLook`); then one line per shown column, its
@@ -914,7 +871,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     `--param-color-selected`), the frame then in the line color of the selection (`--param-color-border`,
     `--param-color-selected-border`). The pointer cursor where a click selects. The checkbox like a row's: on a
     hovered card the border of an unchecked one takes its own color (the primary color, with the neutral appearance the
-    gray; 2026-10-05, the user's wish), a selected one is checked anyway; with the neutral appearance the cards'
+    gray), a selected one is checked anyway; with the neutral appearance the cards'
     checkboxes are gray, like the rows' (`.cardSelect > .check`, `.cardGroup > .check`).
   - The same row click, Ctrl/Cmd and Shift click, double click (default action) and context menu as a grid row: the
     bar, the labels and the values are the direct children of the card, so their free space is the row's
@@ -924,12 +881,12 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - The empty state is a line of the list. The toolbar, the selection bar, the pills, the filter view and the footer
     stay as they are (the footer's own narrow pager comes below 28rem).
   - The edited row is its edit form, in the place of its card (no folding animation); a new row's form comes first.
-  - The app can fix it (2026-10-06, the user's wish): the prop `layout` (`'auto' | 'table' | 'cards'`, the attribute
+  - The app can fix it: the prop `layout` (`'auto' | 'table' | 'cards'`, the attribute
     `layout` of the element; an invalid attribute value means not set). Set, the "Layout" group is not in the column
-    menu any more (the user cannot override the app), and the prop decides: `table` always the table, `cards` always
+    menu (the user cannot override the app), and the prop decides: `table` always the table, `cards` always
     cards, `auto` the width decides (below the breakpoint, cards). Not set (the default): the user chooses, as below.
     The Board Manager's agenda and sections tables have `layout="table"`. Demo: the "Layout" select.
-  - The layout can be chosen in the column menu (2026-10-05): a group "Layout" (`Texts.layout`) at its top, radio
+  - The layout can be chosen in the column menu: a group "Layout" (`Texts.layout`) at its top, radio
     items "Automatic" (the default: cards below the breakpoint), "Table" (always; a narrow table scrolls sideways) and
     "Cards" (always), with a check at the chosen one; the menu stays open. Not kept after a remount (like the hidden
     columns). While the rows are cards, "Optimize column widths" and "Reset column widths" are disabled. (Weighed: one
@@ -945,9 +902,9 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - The vertical scrollbar of the rows area always reserves its space: `scrollbar-gutter: stable`.
     - So the columns keep their width whether or not a page needs the scrollbar (also when paging).
   - All header rows (group headers and column headers) are sticky together inside the scroll area.
-- No overscroll (2026-10-08, the user's wish): every scroll area (the rows, the body of the filter view, the popups)
-  has `overscroll-behavior: none`: no bounce at its ends (Firefox's elastic overscroll), and a scroll that reaches its
-  end does not go on to the page. The same in every package and in the root's apps.
+- No overscroll: every scroll area (the rows, the body of the filter view, the popups) has `overscroll-behavior:
+  none`: no bounce at its ends (Firefox's elastic overscroll), and a scroll that reaches its end does not go on to the
+  page.
 - More rules will be added here as we discuss them.
 
 ## Design decisions
@@ -960,21 +917,16 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - The widgets in `widgets.tsx` are leaves: they take what they need in neutral terms and never know about rows,
     queries, selection or loading. Everything else belongs in the view.
 - Icons: our own inline SVGs (`view/icons.tsx`, the paths of the Tabler icons), drawn in the current text color and
-  `aria-hidden`. The pager buttons: `chevron-left`, `chevron-right` (`chevron-left-pipe` and `chevron-right-pipe` for
-  first and last until 2026-10-05, gone with the page numbers). The filled Material arrows were tried and dropped: they did not match the line style of the other icons.
-  - The filter button's icon is `VscFilter` (react-icons, the Codicons of VS Code, filled, 16×16; Tabler's `filter` until
-    2026-10-04, the user's wish). Codicons are CC BY 4.0 (attribution required, unlike the MIT Tabler and Bootstrap icons).
+  `aria-hidden`. The pager buttons: `chevron-left`, `chevron-right`. The filled Material arrows were tried and dropped: they did not match the line style of the other icons.
+  - The filter button's icon is `VscFilter` (react-icons, the Codicons of VS Code, filled, 16×16). Codicons are CC BY 4.0 (attribution required, unlike the MIT Tabler and Bootstrap icons).
   - The filled icons (`filledIcon` in `icons.tsx`: the sort arrows, the calendar, the filter, the column menu) have
-    `overflow="visible"` (2026-10-05): their shapes reach the very edge of their grid, and at a fractional position (a
+    `overflow="visible"`: their shapes reach the very edge of their grid, and at a fractional position (a
     display scaling of 125%) the SVG's box cut their outer line (the date range filter's calendar looked clipped).
   - The sort icons: for a sortable column that is not sorted, only the two heads of the arrows, without a shaft
-    (2026-10-06, the user's wish; `sortHeads` in `icons.tsx`: the path of the double arrow below with the shaft taken
-    out, so the heads are exactly the arrows' and as high. Drawn as lines of our own for a few minutes the same day:
-    they rendered differently from the filled arrows, and 2 units apart in the middle they looked smaller). Before: one arrow with a head at both ends (since 2026-09-29;
-    our own path from the heads of `BsArrowUp` and `BsArrowDown`), and `BsArrowDownUp`, two arrows side by side,
-    before that. Tried the same day and dropped: two filled triangles (▲▼) in every state, the sorted direction's in
-    full color. The sorted column keeps the filled Bootstrap arrows (MIT, 16×16), `BsArrowUp` and `BsArrowDown`. They replaced the Tabler chevrons (and before that a
-    chevron pair of our own).
+    (`sortHeads` in `icons.tsx`: the path of the double arrow with the shaft taken out, so the heads are exactly the
+    arrows' and as high; lines of our own render differently from the filled arrows). Weighed and dropped: one arrow
+    with a head at both ends, two arrows side by side, two filled triangles (▲▼) in every state. The sorted column has
+    the filled Bootstrap arrows (MIT, 16×16), `BsArrowUp` and `BsArrowDown`.
 - Data comes from exactly one prop: `source`, a function `(query, signal) => Promise<{ rows, total }>`.
   - The table itself never sorts, filters or pages. It delegates everything to `source`.
   - There is no `data` array prop. For arrays, a helper turns an array into a `source` (name and place undecided).
@@ -987,8 +939,8 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     - The signal is aborted on unmount too.
     - The response or the rejection of an aborted load is ignored, and the rejection is not logged.
     - A source may ignore the signal (a one-argument function still works): the outdated response is ignored anyway.
-  - A source may report its changes (2026-10-17, the user's choice, proposed at about 65%: the app wired a change to
-    the controller's `reload()` by hand): `RowSource<Row>` is a function (`RowLoader<Row>`) or an object `{ load,
+  - A source may report its changes (so the app need not wire a change to the controller's `reload()` by hand):
+    `RowSource<Row>` is a function (`RowLoader<Row>`) or an object `{ load,
     onChange? }`, `onChange(listener)` returning the unsubscribe function (the package's pattern, like the
     `I18nAdapter`'s `onChange`). The same for the element's controller.
     - The table subscribes while mounted, keyed by the identity of `onChange` (the source object may be new on every
@@ -1001,40 +953,31 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     - Weighed: a prop of its own (`subscribe` next to `source`: two things that belong together), leaving it to the app.
     - Demo: the "Row reordering" tab (`taskSource` in `demo/tasks.ts`: "Mark as done" changes the tasks and reports it).
       Tests: "a source that reports its changes" (`data-table.test.tsx`), and one of the element.
-- Helpers for a source that asks a server (2026-10-17, the user's choice, proposed at about 65%: they were the Board
-  Manager's, `shared/lib/table-query.ts`, and the File Center and the User Manager would need them too), in both
-  entries, without React (`src/core/query-helpers.ts`, tests `query-helpers.test.ts`):
+- Helpers for a source that asks a server, in both entries, without React (`src/core/query-helpers.ts`, tests `query-helpers.test.ts`):
   - `pagingOf(query)`: the page as a window of rows, `RowPaging` (`{ offset, limit }`).
   - `sortOf(query, keys)`: the sort, `RowSort<K>` (`{ key, direction }`), if its key is one of `keys` (what the source
     can sort by), else `undefined`.
-  - `criteriaOf<C>(search, filters?)` and `criteriaOf<C>(filters?)` (two overloads, 2026-10-17, the user's idea, proposed
-    at about 70%; one object `{ search, filters }`, `CriteriaMapping<C>`, for a few hours the same day, which made each
-    call two lines longer) return `(query) => C`: the search (trimmed; left out when empty) under the key `search`
+  - `criteriaOf<C>(search, filters?)` and `criteriaOf<C>(filters?)` (two overloads; one object `{ search, filters }` was
+    weighed: each call two lines longer) return `(query) => C`: the search (trimmed; left out when empty) under the key `search`
     (without it, the search is left out: no convention of ours in the app's domain; a fixed `text` was weighed), every
     filter under its key, or under the one `filters` gives it (`FilterRenames<C>`). A string first is the search key,
     an object the renames. The keys are checked against `C`, the values are not (they are taken as they are):
     `criteriaOf<BoardMemberCriteria>('text', { name: 'names' })`.
-  - `localPage(rows, query, options)` (2026-10-17, the user's wish; `runLocalQuery` of `shared/lib/local-query.ts`, the
-    same file in Human Resources, the Time Tracker and the User Manager, before; moved as it was): a page of rows that
+  - `localPage(rows, query, options)`: a page of rows that
     are all in memory (small lists), as a source gives it: the rows that pass every filter (`options.filters`: a
-    predicate per filter key, called with the filter's value; a filter without one is matched by default, 2026-10-17,
-    the user's choice, proposed at about 65%: the row's field of the filter's key, by the shape of the value, a list one
+    predicate per filter key, called with the filter's value; a filter without one is matched by default: the row's field of the filter's key, by the shape of the value, a list one
     of them, `{ text, match }` the text match, `{ from, to }` a range, of numbers for a number field, else of days,
-    anything else, a boolean or a single select's value, equal; a row without that field passes. It removed 28
-    predicates of the apps that only repeated it; it passed every filter without one before) and contain the search
+    anything else, a boolean or a single select's value, equal; a row without that field passes; so the apps need no predicate that only repeats it) and contain the search
     (trimmed, ignoring the case) in one of the fields of `options.search`, sorted by the query's sort (the row's field
     of its key, or `options.sortValue`; numbers as numbers, texts in a natural order), the query's page of them and
     their number (`LocalPageOptions<Row>`, `src/api/local-page.ts`). With matchers for the predicates, for the values of
     the built-in filters (`unknown`, as they come from `query.filters`): `oneOf(value, filter)` (a list; none or an
-    empty one: all), `matchesText(value, filter)` (`{ text, match }`), `inDateRange(date, filter)` (2026-10-17, the
-    user's choice; `within` for a few hours, a name that said little and collided with Testing Library's; `{ from, to
-    }`, days, both inclusive; a date with a time counts by its date). `src/core/local-page.ts`, tests
+    empty one: all), `matchesText(value, filter)` (`{ text, match }`), `inDateRange(date, filter)` (not `within`: it says
+    little and collides with Testing Library's; `{ from, to }`, days, both inclusive; a date with a time counts by its date). `src/core/local-page.ts`, tests
     `local-page.test.ts`.
-  - `localSource(rows, options)` (2026-10-17, the user's wish; the package's todo "Array helper" since the first
-    days): a source over a fixed array, each page by `localPage`. A new array is a new source, which the table does not
+  - `localSource(rows, options)`: a source over a fixed array, each page by `localPage`. A new array is a new source, which the table does not
     load again by itself (the rule for every source): a `key` of the rows, or `reload()`.
-  - Demo: `demo/data.ts` (`pagingOf`; `localSource` for the empty table, `fetchNothing`, without the loading time it
-    had), `demo/query-demo.tsx` (`criteriaOf`), `demo/tasks.ts` (`localPage`). The Board
+  - Demo: `demo/data.ts` (`pagingOf`; `localSource` for the empty table, `fetchNothing`, without a loading time), `demo/query-demo.tsx` (`criteriaOf`), `demo/tasks.ts` (`localPage`). The Board
     Manager's `useFindSource` uses `sortOf` and `pagingOf`, its `MemberTable` `criteriaOf`.
 - Naming: `header` is the heading of a column or column group. `label` is the text of a control (action, menu item).
 - Paging: `pageSize` is the initial page size, `pageSizeOptions` fills the page size dropdown.
@@ -1046,28 +989,28 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     - Once a column is sorted, the table stays sorted. Only the initial state can be unsorted.
     - A new column starts ascending.
   - `Sort` is a single object `{ key, direction }`, not an array. `Query.sort` is `undefined` when unsorted.
-- Initial filters are set with `defaultFilters` (2026-10-08, the user's wish: the "Recent" of the root's File Center app starts with
-  the last 30 days; same type as `Query.filters`: a value per column key, as that column's filter gives it).
+- Initial filters are set with `defaultFilters` (e.g. the "Recent" of the root's File Center app starts with the last
+  30 days; same type as `Query.filters`: a value per column key, as that column's filter gives it).
   - Only the start: the first load asks with them, and they show like any active filter (pills, the filter button's
     count). "Clear all" and a pill's × remove them for good (not back to the defaults), like `defaultSort`, which is
     not restored either. A later change of the prop does nothing (like `pageSize`).
   - A key without a filter (`filters`) is ignored, and said so while developing (`console.warn`).
   - With `reorder`, the handles are off from the start while a default filter is active (the rule of the filters).
   - The table must know the sort itself, to draw the sort indicator in the header.
-  - There are no initial filters (no `defaultFilters`), and no initial search text either.
-- Column visibility (decided 2026-09-29): a column toggle menu, derived from the columns (like the selection mode from
+  - There is no initial search text.
+- Column visibility: a column toggle menu, derived from the columns (like the selection mode from
   the actions): `Column.hideable?: boolean` puts a column into the menu, `Column.hidden?: boolean` is its start value
   (only on a hideable column: otherwise it could not be shown again). The same options on the element's columns.
-  - The menu is always there (2026-10-04, since it also has the column width actions, see "Column width"): in a table
+  - The menu is always there (it also has the column width actions, see "Column width"): in a table
     without a hideable column it has only those, with no separator and no checkboxes.
   - Columns without `hideable` are always shown and not in the menu (e.g. the key column). A table prop
     (`columnToggle`, every column hideable) was considered and not taken: the app could not protect a column.
-  - Look: an icon-only ghost button (Bootstrap's `BsLayoutThreeColumns`, filled, 16×16, like the sort arrows; Tabler's `columns-3` at first;
+  - Look: an icon-only ghost button (Bootstrap's `BsLayoutThreeColumns`, filled, 16×16, like the sort arrows;
     `data-placement="tool"`), named and tipped `Texts.columns`
     ("Columns"), at the very end of the bar, after a divider. Hidden in the selection bar, like the other view
     controls. Usable while loading (it only changes the view).
   - The menu (`ToggleMenu` in `widgets.tsx`, Base UI's `Menu` with `Menu.CheckboxItem`): first the layout (radio items,
-    since 2026-10-05, see "Cards in a narrow table") and a separator, then its actions (plain items,
+    see "Cards in a narrow table") and a separator, then its actions (plain items,
     "Optimize column widths" (our own `fitWidth`: a double arrow between two bars) and "Reset column widths" (`arrow-back-up`, disabled until a column was resized), each with an icon in the checkboxes' place; they close the menu), then a separator (only when
     there are checkboxes too), then one item per hideable column,
     in the order of the columns, its header as the text and a checkbox in front (only a picture of the state, gray,
@@ -1082,18 +1025,18 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     empty). Keeping it (e.g. in the URL or the storage) may come with the controlled query state.
 - Column width: `width?: number | string`.
   - A number is a ratio relative to the sum of all the numbers (`fr`), shared out of the free width.
-  - A string is a CSS length (decided 2026-09-30), a fixed track of the grid, e.g. `'3rem'` for a number column
-    (with ratios only, a narrow column got too little room in a narrow table). The same on the element's columns.
+  - A string is a CSS length, a fixed track of the grid, e.g. `'3rem'` for a number column
+    (with ratios only, a narrow column gets too little room in a narrow table). The same on the element's columns.
   - Widths stay identical when the page changes.
-  - Columns can be resized by mouse (2026-10-04): a handle (`ColumnResizer`) at the end edge of every leaf column's
-    header, a thin line in a light accent (`--param-color-selected-border` at 70% opacity; the primary color at 80% while it is dragged), 3px wide (the grab area is the handle's 10px, 5px either side of the edge; the line is centered on the edge, so half a pixel either side: a little soft on a screen without a high pixel density) and high (from 10% to 90% of the header), centered on the edge between two columns (its header goes above the next one while the line shows: a sortable header is a stacking context of its own, which would hide the half of the line over the next header) (half of it over the next header cell) and shown only while the pointer is on the handle itself (the cursor is `col-resize`; not on the whole header's hover, 2026-10-04, the user's wish) and while dragging; then no header shows its hover shape (the line is the only feedback; the shapes of neighboring sortable headers are 10px apart). Always on; `resizable: false` on a
+  - Columns can be resized by mouse: a handle (`ColumnResizer`) at the end edge of every leaf column's
+    header, a thin line in a light accent (`--param-color-selected-border` at 70% opacity; the primary color at 80% while it is dragged), 3px wide (the grab area is the handle's 10px, 5px either side of the edge; the line is centered on the edge, so half a pixel either side: a little soft on a screen without a high pixel density) and high (from 10% to 90% of the header), centered on the edge between two columns (its header goes above the next one while the line shows: a sortable header is a stacking context of its own, which would hide the half of the line over the next header) (half of it over the next header cell) and shown only while the pointer is on the handle itself (the cursor is `col-resize`; not on the whole header's hover) and while dragging; then no header shows its hover shape (the line is the only feedback; the shapes of neighboring sortable headers are 10px apart). Always on; `resizable: false` on a
     column leaves it out (e.g. a narrow icon or number column with a fixed `width`). Not on group headers and the
     meta and action columns.
     - Only the dragged column changes: it gets a pixel track (`gridTemplateColumns`), so the table may become wider
       than its view and scroll horizontally (the scroller does). When a drag starts, the columns without a width of
-      their own are fixed at what they are then (`freezeColumns`, measured, in pixels; 2026-10-04): the `fr` tracks
+      their own are fixed at what they are then (`freezeColumns`, measured, in pixels): the `fr` tracks
       would else share out the free width again with every step, and all columns would change with the dragged one.
-      After that, the table no longer fills its view by itself; "Optimize column widths" does that again.
+      After that, the table does not fill its view by itself; "Optimize column widths" does that again.
     - At least 64px; a double click gives the column its own `width` back. The widths are not kept after a remount
       (like the hidden columns).
     - "Reset column widths" in the column menu gives all columns their own `width` back (`Texts.resetColumnWidths`).
@@ -1105,7 +1048,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       is shared in proportion to them, so the table keeps filling its view, also when it is resized. A dragged column
       is a fixed pixel width instead. A one-time action: later pages, filters and searches do not change it.
       A column with `resizable: false` is left as it is.
-    - Fixed columns (2026-10-04): when the table is wider than its view, the control columns (handle, selection,
+    - Fixed columns: when the table is wider than its view, the control columns (handle, selection,
       details) stay at the start and the action column at the end (`position: sticky`, `data-sticky="start"|"end"`
       on their header and row cells; the data columns scroll between them).
       - The start columns' offsets are the widths of those before them (`useStickyOffsets`, measured from the header
@@ -1144,7 +1087,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     - It is a `::after` of the cell, drawn over the cell's own 1px bottom border, which stays (transparent), so the
       height of the header does not change.
     - The line is 1px thick and gray: `--param-color-border`.
-    - Before, the lines of neighboring groups touched (the bottom border of the cell). The user wants gaps.
+    - The lines of neighboring groups have gaps between them (they do not touch).
     - The line runs over all data columns of the upper header row: under the group headers and also under the fillers
       above the columns without a group (the meta columns and the action column have their own cells that span both
       rows). The fillers get the same inset line, so there is a gap between a group and a filler too.
@@ -1164,21 +1107,18 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 
 - Loading state:
   - The loading indicator is shown only after a short delay (about 200 ms, not immediately), to avoid flicker.
-  - It is a thin bar in the accent color, no spinner (decided 2026-09-29; a spinner in the primary color, centered in the rows area,
-    before): 1px high (2px at first), across the whole width at the top of the rows area, right below the column headers. Its track
-    is `--param-color-selected`, a segment of 30% in `--param-color-primary` slides from left to right (gray at
-    first: `--param-color-surface-strong` and `--param-color-text-dimmed`; the user wanted the accent color)
-    (2.4s per pass, again and again; 1.2s at first, too fast; it stands still with reduced motion). `LoadingBar` in `widgets.tsx`, `role="status"`,
+  - It is a thin bar in the accent color, no spinner: 1px high, across the whole width at the top of the rows area, right below the column headers. Its track
+    is `--param-color-selected`, a segment of 30% in `--param-color-primary` slides from left to right (2.4s per
+    pass, again and again; it stands still with reduced motion). `LoadingBar` in `widgets.tsx`, `role="status"`,
     named by `Texts.loading`. It covers nothing, and works with any height of the table.
   - All user interaction is prevented while loading, from the very start (also during the delay). The exceptions are
     the search box (see Search) and the filter button with the filter view (see Filtering).
   - The loading overlay never covers the header (the toolbar, the column headers and the footer stay undimmed).
     - It only covers the rows area below the column headers: the rows are dimmed to `opacity: 0.3`, and the bar sits
       at the top of that area (the overlay takes no pointer events).
-    - The rows stay visible under the dimming, as before.
+    - The rows stay visible under the dimming.
   - A minimum height of the rows area, six times the medium spacing token (`calc(6 * var(--param-spacing-md))`, 96px
-    by default), so the table does not collapse to the header alone while the first load runs. (The overlay had one
-    of its own for the spinner; the bar needs none.)
+    by default), so the table does not collapse to the header alone while the first load runs.
   - If the parent gives the component even less height, the component overflows it: the minimum height wins.
 - Row selection has three modes: none, single, multi. There is no `selection` prop: the mode is derived from the
   actions.
@@ -1192,8 +1132,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     `selection` prop back then is not a breaking change.
   - The table owns the selection. There is no `selected` prop for now. Actions receive the selected rows.
   - The selection is cleared when the page, the page size, the sorting, the search or the filters change, and on a
-    reload. So the selection never spans pages. (Decided 2026-09-29, again: a selection across pages, kept on paging,
-    the page size and at first the sorting, was tried on 2026-09-28 with the selection bar, and dropped by the user.)
+    reload. So the selection never spans pages (a selection across pages was tried and dropped).
     The table keeps the row objects of the selected rows (a newer object from a later load replaces the older one).
   - Multi-row actions receive the selected row objects of the current page, in the order they were selected.
   - The select-all checkbox: empty, partial (–) or full for the rows of the page; a click selects them all or none.
@@ -1206,14 +1145,14 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - Without column groups, the select-all checkbox is centered vertically in the header (on the center line of the
     column titles, which sit at the bottom of their cells). With groups, it stays at the bottom, next to the lower
     header row.
-  - Single has no selection column and no control (2026-10-07, the user's decision; radios were dropped): the selected
+  - Single has no selection column and no control (no radios): the selected
     row is highlighted (`aria-selected`), selected by a row click.
     - Keyboard: in single mode the rows are focusable (`tabIndex=0`); Space selects the focused row, ArrowUp/ArrowDown
       move the focus to the previous/next row and select it. Keys inside a cell are the cell's own.
     - Narrow table (cards): the same, no checkbox in the card bar.
   - Clicking a data row selects it (row click):
     - Single mode: the row becomes the selected row. Clicking the selected row again keeps it selected.
-    - Multi mode, like in a file manager (decided 2026-09-29; before, a plain click toggled the row):
+    - Multi mode, like in a file manager:
       - A plain click selects only this row (all others are deselected) and makes it the anchor of Shift + click.
       - Ctrl/Cmd + click toggles the row (selected or deselected), and keeps the others.
       - Shift + click: block selection (below).
@@ -1224,9 +1163,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     - No selection mode: clicking a row does nothing.
     - All of a data cell selects: its free space, its text and whatever a custom `render` drew (an icon beside a
       name, a pill), except a control and anything inside one (`CONTROLS` in `core/utils.ts`: links, buttons, inputs,
-      `[tabindex]`, the control roles). 2026-10-09, the user's wish: before, only the free space counted, so a double
-      click on a name only selected a word (first the plain text was added, then the same day custom content too: the
-      Human Resources' document names, an icon and a span, still did not open).
+      `[tabindex]`, the control roles). Not only the free space: else a double click on a name only selects a word.
       - Plain text gets a `<span data-cell-text>` of its own (still needed for the detail cell, below).
       - Text can still be selected and copied by a drag: a click that ends a text selection does not count (below).
         Lost: a double click on a word to copy it. Later maybe text selection only with a modifier (Alt + drag): the
@@ -1237,15 +1174,14 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       - A detail row is part of the row click: its free space selects the row it belongs to, exactly like the data
         row above it. That covers the detail cell beside its content and the empty cells next to it.
       - What `renderDetail` returns is its own target, so a click on it does not select, like custom `render`
-        output in a data cell. Except its empty space (2026-10-06, the user's wish; the Board Manager's agenda detail is a
-        block that fills the whole cell, so there was no free space to click): a layout element inside the detail cell
+        output in a data cell. Except its empty space (e.g. the Board Manager's agenda detail, a block that fills the
+        whole cell): a layout element inside the detail cell
         (`data-detail`) counts like the cell itself when it has no text of its own and is no control, picture or
         focusable element, nor inside one (`isLayoutSpace` in `core/utils.ts`). So it selects, runs the default action
         on a double click and keeps the browser from selecting a word there. Text (a paragraph, a span) and controls
         stay their own targets: a word can still be selected and copied.
     - The two meta cells are not control cells, and get the pointer cursor like a data cell:
-      - The selection cell (multi only, checkbox, `data-select`): its free space is a click on the checkbox
-        (decided 2026-09-29; before, it was a row click), so a click a few pixels beside it still hits. In multi mode
+      - The selection cell (multi only, checkbox, `data-select`): its free space is a click on the checkbox, so a click a few pixels beside it still hits. In multi mode
         it toggles the row and keeps the others, with Shift + click for block selection (single mode has no such
         cell). It is no row click, so a double click there does not run the default action.
       - The details toggle cell (chevron): clicking its free space is a row click.
@@ -1257,8 +1193,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       space and plain text (the text `inherit`); the same in cards, but only when a row click actually selects: the root carries `data-selection` with the mode, and the
       stylesheet keys off `single` and `multi`. Everything else a cell shows keeps the normal caret (one rule on the children of a cell), since `cursor`
       inherits and a value set on the content itself wins over what it would inherit. Links in a cell
-      (`a:any-link` and `[role='link']`, also deeper inside custom output) keep `cursor: pointer` (2026-10-10: the rule
-      weighed less than the one for controls, so links had the text cursor).
+      (`a:any-link` and `[role='link']`, also deeper inside custom output) keep `cursor: pointer` (that rule must weigh more than the one for controls).
     - The checkbox (multi) or the focused row (single, see above) is the way to select with the keyboard.
   - Block selection (multi mode only): shift + click changes a range of rows, like in Gmail.
     - The range goes from the anchor row (the row that was clicked last) to the shift-clicked row, both included, in
@@ -1274,92 +1209,77 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     - Shift + mouse down must not select text in the browser (except in text inputs inside cells).
     - Single mode and no selection mode ignore the shift key.
 
-- The footer only when it is needed (decided 2026-09-30): `footer?: 'always' | 'auto' | 'never'` (default
+- The footer only when it is needed: `footer?: 'always' | 'auto' | 'never'` (default
   `'always'`; `FooterMode`; the element's attribute `footer`, reflected like `density`).
-  - `always`: as before, whenever data rows are shown. `never`: no footer at all (for lists that never need a second
+  - `always`: whenever data rows are shown. `never`: no footer at all (for lists that never need a second
     page). `auto`: only when there is something to page or to choose: more than one page, or more rows (`total`) than
     the smallest page size option. So a short list (a dialog's list, an agenda) ends with its last row.
   - Decided from the last load (the result stays while a new one runs), so the footer does not flicker during a load;
-    a search or a filter that shrinks the result to one page does take it away with `auto` (accepted: that was the
-    trade-off against `paging={false}`, a list without paging, which was proposed as the other option).
+    a search or a filter that shrinks the result to one page does take it away with `auto` (accepted: the trade-off
+    against `paging={false}`, a list without paging, which was weighed).
   - The demo has a "Footer" selector (always, auto, never).
 - The default footer (navigation bar) looks like this:
   - `1-50 of 1350        ‹ 1 … 17 (18) 19 … 27 › │ 50 per page ⌄`
-  - The item range is only the numbers (`Texts.itemRange`, `{from}-{to} of {total}`, German `{from}-{to} von {total}`;
-    "of" since 2026-10-06, the user's wish, a slash before; 2026-10-05: "Items" once, on the right; it was
-    `Items {from}-{to} / {total}`, German `Einträge …`). A range of one item has a text of its own
-    (`Texts.itemSingle`, `{item} of {total}`; 2026-10-05, the user's wish): "1 of 1", "21 of 21" on a last page with
+  - The item range is only the numbers (`Texts.itemRange`, `{from}-{to} of {total}`, German `{from}-{to} von {total}`).
+    A range of one item has a text of its own
+    (`Texts.itemSingle`, `{item} of {total}`): "1 of 1", "21 of 21" on a last page with
     one row, not "1-1 of 1" (one text with an ICU `select` was weighed: the default texts and the demo's adapter only
     replace `{name}` placeholders). In a narrow footer the item range ("11-20 of 57") and the pager ("2 of 6", the pages)
     read alike; accepted for now.
-  - Between the pager and the page size the toolbar's divider (`.toolbarDivider`, 1px, `--param-color-border`;
-    2026-10-05, the user's wish), also with the narrow pager. Lower than in the toolbar (0.4 × the control height,
-    half of it there) and without its side margin; the right side of the footer is `spacingXs` apart (`spacingMd`
-    before), so the line sits close to the pager and the page size (the user's wish, the same day).
-  - Left: item range and total. (The selection pill that was here moved into the selection bar, 2026-09-28.)
-  - Right: the pager (previous, the page numbers, next), then the page size at the very end (2026-10-05, the user's
-    wish, like Ant Design's pager; before the pager until then): nothing on the right moves while paging. The user
-    liked that about the old pager ("Page [18] of 27": always the same width); with the page size before the numbered
-    pager, it jumped whenever the pager changed its width. The pager now changes its width only with fewer than seven
-    pages (a filter, a search) or a new page size, the user's own action.
-    - The page size (2026-10-05, the user's wish: a select drawn by us never matches the selects of the app's UI
-      library, so it should not look like a form field): one ghost button, "10 per page" (`Texts.perPage`) and a
+  - Between the pager and the page size the toolbar's divider (`.toolbarDivider`, 1px, `--param-color-border`), also with the narrow pager. Lower than in the toolbar (0.4 × the control height,
+    half of it there) and without its side margin; the right side of the footer is `spacingXs` apart, so the line
+    sits close to the pager and the page size.
+  - Left: item range and total.
+  - Right: the pager (previous, the page numbers, next), then the page size at the very end (like Ant Design's
+    pager): nothing on the right moves while paging (with the page size before the numbered pager, it would jump
+    whenever the pager changes its width). The pager changes its width only with fewer than seven pages (a filter, a
+    search) or a new page size, the user's own action.
+    - The page size (a select drawn by us never matches the selects of the app's UI library, so it should not look
+      like a form field): one ghost button, "10 per page" (`Texts.perPage`) and a
       chevron (turned while the list is open), like the view controls of the toolbar (`.button[data-placement='tool']`,
-      `.pageSizeButton`, tabular figures); its text is its name. "10 per page" (German "10 pro Seite") again since
-      2026-10-10, the user's wish ("10 items per page", German "Einträge", from 2026-10-05; "10 per page" for a few
-      hours before); the item range on the left has only its numbers.
-    - Its menu (2026-10-05, the user's wish): in the look of the other menus (the context menu, the layout choice of
+      `.pageSizeButton`, tabular figures); its text is its name. "10 per page" (German "10 pro Seite"); the item range on
+      the left has only its numbers.
+    - Its menu: in the look of the other menus (the context menu, the layout choice of
       the column menu): the sizes one below the other, a check at the current one (`PageSizeField` in `widgets.tsx`,
       Base UI's `Menu`, a `RadioGroup` of `RadioItem`s in `.menuWithIcons`, `.menuItem`, `.pageSizeItem` for the
       tabular figures; the group named `Texts.pageSize`, "Page Size", the menu by its button). Above the button, aligned
       to its end (the footer is at the bottom; the button is at its end); another size closes it.
-    - Choosing the current size changes nothing and keeps the menu open (`closeOnClick` only on the other sizes; the
-      user's wish, it closed it for a moment). Base UI reports it as a change, and the change of the page size cleared
-      the selection and went back to page 1 (2026-10-05): checked in `PageSizeField` and in `changePageSize` (the same
-      size returns at once). The current size has the normal cursor.
-    - History: an outlined select with the label "Page Size" before it (`SelectField`); a ghost select was tried on
-      2026-09-29 and dropped (with the old pager); 2026-10-05: proposed and not taken, the select only without its
-      border; then the ghost button with the list of a single select (a check at the chosen size), the same day; then
-      a menu with the sizes in one row, round like the page numbers in a capsule (the current one filled, then in the
-      context menu's gray and bold), dropped the same day for the look of the other menus (the user: "go back to the
-      style in the context menu"). (Weighed: the sizes directly in the footer as a segmented row, too wide.)
-  - The page numbers (2026-10-05, the user's wish, to make the footer nicer; before: first, previous, "Page [18] of
-    27" with a page number field, next, last, chosen for its narrowness; the soft design spec of 2026-09-28 had asked
-    for numbers too):
+    - Choosing the current size changes nothing and keeps the menu open (`closeOnClick` only on the other sizes). Base UI
+      reports it as a change, which would clear the selection and go back to page 1: checked in `PageSizeField` and in
+      `changePageSize` (the same size returns at once). The current size has the normal cursor.
+    - Weighed and dropped: an outlined select with a label, a ghost select, the list of a single select, the sizes in
+      one row like the page numbers, the sizes directly in the footer as a segmented row (too wide).
+  - The page numbers (not "Page [18] of 27" with a field: numbers are nicer):
     - Always seven slots once there are more than seven pages (`pagerSlots` in `core/pager.ts`, with its unit test), so
       the pager keeps its width while paging: `[1] 2 3 4 5 … 27` near the start (the current page up to 4),
       `1 … 17 [18] 19 … 27` in the middle, `1 … 23 24 25 26 [27]` near the end; up to seven pages all of them. The first
       and the last page are always there, so there are no first and last buttons.
-    - Small and close together (2026-10-05, the user's wish: a denser pager): the numbers, the gaps, previous and next
+    - Small and close together (a dense pager): the numbers, the gaps, previous and next
       are 0.65 × `controlHeight` in every density, the numbers with a side padding of a quarter of `spacingXs`, a
-      quarter of `spacingXs` and 1px apart (the 1px since the same day, the user's wish). (Steps the same day: the full control height, 0.875 × in compact, half of
-      `spacingXs` apart; then 0.75 ×, the row buttons' size, with half of `spacingXs` as the side padding; then 0.65 ×.)
+      quarter of `spacingXs` and 1px apart.
       Every slot (number and gap) gets the width the largest page number needs, set inline by `Footer`
       (`max(0.65 × controlHeight, <digits>ch + spacingXs / 2)`, `min-width` of a number, `width` of a gap): when the
       digits do not fit, the slots widen all alike, so the pager keeps its width while paging.
     - A number is a ghost button like the pager buttons (`.pageButton`, composes `.iconButton`), with tabular figures; named `Texts.goToPage` ("Page 18"). The current page has
       `aria-current="page"` and is filled like a primary button (`--param-color-primary`, text
-      `--param-color-on-primary`; the light accent tint of the selected rows with the number in the primary color
-      before, the same day), the number bold; it keeps that look on hover and does nothing when clicked.
-    - Fully round (`border-radius: 999px`, 2026-10-05, the user's wish: a higher radius; `--param-button-radius`
-      before): the numbers are circles (pills for longer numbers), and previous and next too, so the pager is one row
+      `--param-color-on-primary`), the number bold; it keeps that look on hover and does nothing when clicked.
+    - Fully round (`border-radius: 999px`): the numbers are circles (pills for longer numbers), and previous and next too, so the pager is one row
       of circles. The one round control of the table besides the pills. (Proposed, not taken: twice the button
       radius.)
-    - A gap is a dimmed `…` (`.pagerGap`, `aria-hidden`), not clickable, as wide as a page number (2026-10-05; three
-      quarters of it before, so the pager grew by the difference when a second gap came, past page 4). So the pager
+    - A gap is a dimmed `…` (`.pagerGap`, `aria-hidden`), not clickable, as wide as a page number (narrower, the pager
+      would grow when a second gap comes, past page 4). So the pager
       keeps its width while paging (see the slot width above). (A field to jump to a
       page, e.g. behind the gap, may come later.)
     - A narrow footer (below 28rem; a container query on the footer, `data-table-footer`, e.g. in a drawer): previous,
       "18 of 27" (`Texts.pageOf`, `.pagerCompact`), next, so it never wraps.
-    - Texts: `pageOf` is `{page} of {pages}` now (it was `of {pages}`, after "Page" and the field); `goToPage` is new;
-      `page`, `firstPage` and `lastPage` are gone.
-  - While a page or a page size loads (2026-10-05, the user's wish: the footer jumped ahead of the rows): the footer
+    - Texts: `pageOf` is `{page} of {pages}`; `goToPage`.
+  - While a page or a page size loads (so the footer does not jump ahead of the rows): the footer
     shows the rows shown, not the requested state: the item range, the current page, the page numbers and the page size
     of the last finished load (`shownPage`, `shownPageSize`, `shownPageCount` of the hook, set when a load succeeds), so
     it changes together with the rows. A failed or replaced load leaves it as it is.
     - What is loading gets a small indicator: the clicked page number after the delay of the loading bar (200ms,
-      `spinnerVisible`, so a fast load shows none), the page size at once (2026-10-05, the user's wish: with the delay,
-      the chevron first turned back as the menu closed, then the spinner came). The clicked page number (also the target of previous and next, when it is shown) a thin ring
+      `spinnerVisible`, so a fast load shows none), the page size at once (with the delay, the chevron would first
+      turn back as the menu closes, then the spinner would come). The clicked page number (also the target of previous and next, when it is shown) a thin ring
       in the primary color turning around its circle, open at the top (`data-pending` on `.pageButton`, its `::after`);
       the page size button a small turning spinner in place of its chevron (`.pendingSpinner`, as large as the
       chevron). They stand still with reduced motion. (`pendingPage`, `pendingPageSize` of the hook; a new page size
@@ -1367,149 +1287,129 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     - The footer is blocked while loading anyway (`inert`), so nothing else can be clicked meanwhile.
   - All texts are localizable.
 
-- Filtering: a filter view and filter pills (decided 2026-09-28, after a design spec from a chat about the look; it
-  replaced the filter row below the column headers). The filter controls themselves stayed (the user likes their
-  look): the text input, `SelectField` for the single and the multiple select, the date range trigger with its two
-  calendars. They moved from the filter row into the filter view.
-  - The filter button (in the toolbar's bar, see the toolbar): a ghost button with a funnel (Tabler `filter`) and the
-    label `Texts.filters` ("Filters"; the label since 2026-09-29, it was icon-only with a tooltip), only when the
-    table has a filter (`filters`). With active filters, its icon is in the primary color, and a small round badge
-    (`--param-color-primary`, text `--param-color-on-primary`) after the label shows their number (hidden from
-    assistive technology). No tooltip; `Texts.activeFilters` ("{count} active") is its description.
-    It stays usable while loading (like the search box). It shows and hides the filter view, and is pressed
-    (`aria-pressed`, `--param-color-surface-strong` as its background) while the view is shown.
+- Filtering: a filter view and filter pills (after a design spec; not a filter row below the column headers). The
+  filter controls: the text input, `SelectField` for the single and the multiple select, the date range trigger with
+  its two calendars.
+  - The filter button (in the toolbar's bar, see the toolbar): a ghost button with a funnel and the label
+    `Texts.filters` ("Filters"), only when the table has a filter (`filters`). With active filters, its icon is in the
+    primary color, and a small round badge (`--param-color-primary`, text `--param-color-on-primary`) after the label
+    shows their number (hidden from assistive technology). No tooltip; `Texts.activeFilters` ("{count} active") is its
+    description. It stays usable while loading (like the search box). It shows and hides the filter view, and is
+    pressed (`aria-pressed`, `--param-color-surface-strong` as its background) while the view is shown.
     - While filters are active (whether the view is shown or not), a small × is joined to it (`.filterButtonGroup`, an
-      icon-only ghost button right after it, no line between the two: each has its own hover; a thin line was tried and dropped, it looked like a second kind of divider): it removes all filters at once.
-      Its name and tooltip are `Texts.clearFilters` ("Clear filters"). Redundant with "Clear all" of the pills on
-      purpose (decided 2026-09-29): the × is where the filters are opened, "Clear all" where they are read.
-      - While the view is shown, the × also closes it (its draft is dropped) and gives the focus to the filter button
-        (2026-09-29; hidden while the view was shown before, so clearing there took "Clear" and "Apply").
-  - The filter view (`FilterView` in `view/filter-panel.tsx`, decided 2026-09-29): it takes the place of the column
-    headers, the rows and the footer while it is shown; the toolbar stays above it, with the pill row too
-    (2026-10-04, the user's wish: it was not rendered while the view was shown, as the view shows the same filters, as a
-    draft): disabled (`inert`) and a bit faded (`opacity: 0.8`, like the bar's other parts), so the toolbar keeps its height. It has at most as much room as the table, and works the same on a page, in
-    a drawer and in a narrow column.
-    - The height of the table does not change when the view opens or closes (decided 2026-09-29, the user's idea):
-      the grid with the footer (`.tableArea`) and the view lie in one grid cell (`.stack`), so the height is the
-      larger of the two. While the view is shown, the table area stays mounted below it, `inert`, and its contents
-      are faded and gray: the contents of the cells (the header's too), of the cards and the footer at `opacity: 0.4`
-      in grayscale, the lines and backgrounds of the rows as they are (since 2026-10-11, the user's wish, the toolbar's
-      blocked parts too; 0.5 before; no blur: 1.25px, 1.1px and 1.05px tried and dropped the same day; 2026-10-09, the user's wish: the look of the filter drawer, see the todo; before, the whole table area at 80%, `opacity: 0.8`, 2026-10-07; 0.7, 0.6 and 0.5 tried the same day, 0.15 (2026-10-04) and 0.4 before; a white veil over an
-      unfaded table was tried and dropped: it looked the same, but not in a dark theme), the header row(s) too (they were
-      invisible, `opacity: 0`, from 2026-10-04 until the view got only as wide as its filters the same day: the header
-      next to it would have been missing); the toolbar's disabled parts and the pills fade in the same times as the table area
-      (400ms in, 250ms back; 2026-10-04, the user's wish: they switched at once before); a click on it does nothing (it does not close the view, so a
-      stray click never drops the draft). (Hidden with `visibility: hidden` until 2026-09-30: seeing only the filters
-      looked odd.) Only when the filters need more room than
-      the rows (a short table) does the table grow, by that much. The table stays mounted meanwhile: its scroll
-      position, expanded rows and state are still there, and closing is instant. (Before, the view replaced the grid
-      and the footer, and the table got as high as the filters, usually lower; measuring the old height was
-      considered.) The view is opaque (`--param-color-surface`: white in the default theme; a stripe-colored gray was tried 2026-10-04 and dropped).
-    - Before, it was a popup (Base UI's `Popover`, below the filter button, with an arrow, 20rem wide and at most 24rem
-      high; a drawer of the viewport and a panel inside the table were discussed). The user did not like the popup.
-    - It is a sheet over the top of the table area (decided 2026-09-30): only as high as its filters and footer, with
-      the theme's small shadow (`--param-shadow-sm`, since 2026-10-04, the user's wish; the medium one `--param-shadow` for a few hours; none from 2026-10-01 to 2026-10-04).
-      As wide as its filters, their side padding and the frame, at the end of the table, moved towards the start only as
-      far as its nose needs to reach the middle of the filter button (2026-10-10, the user's wish; never past the
-      table's start); before, it ended where the filter button ends (2026-10-04,
-      the user's wish, "not full width if not necessary"; `justify-self: end`, the width, a `max-width` of the room
-      before the end and `margin-inline-end` set inline by `FilterView`, measured from the button: the button is not at
-      the end of the toolbar, the general actions and the column menu come after it), so the nose always points to the
-      button; in a narrow table it is as wide as the table, with one column of filters. History: from 2026-09-30 it was
-      as wide as the filters at the table's right end (the nose then could miss the button); as wide as the table from
-      2026-10-01 (the user's wish) to 2026-10-04. More room above the filters (24px, 1.5 times `--param-spacing-md`) and below the buttons (20px; 16px and 12px
-      before; 2026-10-04, the user's wish). The side padding of the body and the
-      footer is `--param-spacing-md` (`--param-spacing-sm` until 2026-09-30, too little). It sits a little below the
-      toolbar (`margin-top: calc(--param-spacing-xs / 2)`, 4px; with active filters it reaches up over the row of the
-      pills by that row's height, measured, so it sits where it does without them and its nose stays at the filter
-      button, 2026-10-10: it hung a row lower; it was `--param-spacing-sm`, which showed the top
-      of the table's scrollbar, its faded arrow button in Chromium on Windows, like a bump), with a nose on its top edge
-      pointing to the middle of the filter button (`.filterViewNose`, a 10px square turned by 45°, with the frame on
-      its upper sides; its distance from the end of the view is measured and kept up to date with a `ResizeObserver`
-      on the view and the table, at least 16px from the corners; mirrored for right-to-left; no nose without the
-      button; removed and put back 2026-10-04). On opening it unrolls from its top edge down, like a roller blind, and fades in, and the table
-      fades out, both in 250ms, `ease-in-out` (2026-10-04, the user's wish; 400ms, 600ms, `linear` and `ease-out` were tried, and `cubic-bezier(0.3, 0, 0.2, 1)` and before `0.2, 0, 0, 1` were tried; sliding down by 8px in 180ms, then 260ms, were too
-      subtle; doubled to 800ms on 2026-10-01, then back, too slow with the height animation). Closing plays it back, a
-      bit faster (250ms, `ease-in`). The unrolling animates the view's height (2026-10-01, the user's wish; before: a `clip-path` over a
-      fixed frame): measured, from 0 and back with the Web Animations API (`FilterView`; CSS cannot animate to an
-      unknown height in every browser), so its lower edge, shadow and buttons move down with it; meanwhile
-      `data-animating` lifts its min height, keeps its body from scrolling and from shrinking (2026-10-04: the buttons showed first, then the fields) and cuts off what does not fit yet. Closing
-      during the opening starts from the height reached. The times are `FILTER_VIEW_OPEN_TIME` and
-      `FILTER_VIEW_CLOSE_TIME` (`filter-panel.tsx`), the table's fade in the stylesheet (`.stack`): the view rolls up and the table fades
-      back. Everything else is back at once (the toolbar, the pills, the focus on the filter button); the closed view
-      stays only for its animation (`inert`, `aria-hidden`, then removed), and one opened meanwhile is a new one. No
-      animation with reduced motion (the view goes at once). (Before, it filled the whole
-      table area.)
-    - A click outside closes the filter view (2026-10-04, the user's wish), but only while nothing was changed since it
-      opened (`!changed`: the draft equals the applied filters; else the draft would be lost by accident, so the click does
-      nothing). Not outside: the view, its popups (the layer) and the filter button (it toggles). The click that closes it
-      does nothing else (it is swallowed: the faded table acts like a scrim, so a row is not selected by it). Only the
+      icon-only ghost button right after it, no line between the two: each has its own hover; a thin line looks like
+      a second kind of divider): it removes all filters at once. Its name and tooltip are `Texts.clearFilters` ("Clear
+      filters"). Redundant with "Clear all" of the pills on purpose: the × is where the filters are opened, "Clear all"
+      where they are read.
+      - While the view is shown, the × also closes it (its draft is dropped) and gives the focus to the filter button.
+  - The filter view (`FilterView` in `view/filter-panel.tsx`): it takes the place of the column headers, the rows and
+    the footer while it is shown; the toolbar stays above it, with the pill row too: disabled (`inert`) and faded like
+    the bar's other parts, so the toolbar keeps its height. It has at most as much room as the table, and works the
+    same on a page, in a drawer and in a narrow column. (Weighed and dropped: a popup below the filter button, a
+    drawer of the viewport.)
+    - The height of the table does not change when the view opens or closes: the grid with the footer (`.tableArea`)
+      and the view lie in one grid cell (`.stack`), so the height is the larger of the two. While the view is shown,
+      the table area stays mounted below it, `inert`, and its contents are faded and gray: the contents of the cells
+      (the header's too), of the cards and the footer at `opacity: 0.4` in grayscale, the lines and backgrounds of the
+      rows as they are (the look of the filter drawer, see the todo; no blur; a white veil over an unfaded table looks
+      the same, but not in a dark theme); the toolbar's disabled parts and the pills fade in the same times as the
+      table area (400ms in, 250ms back); a click on it does nothing (it does not close the view, so a stray click never
+      drops the draft). Not hidden: seeing only the filters looks odd. Only when the filters need more room than the
+      rows (a short table) does the table grow, by that much. The table stays mounted meanwhile: its scroll position,
+      expanded rows and state are still there, and closing is instant. The view is opaque (`--param-color-surface`:
+      white in the default theme).
+    - It is a sheet over the top of the table area: only as high as its filters and footer, with the theme's small
+      shadow (`--param-shadow-sm`). As wide as its filters, their side padding and the frame, at the end of the table,
+      moved towards the start only as far as its nose needs to reach the middle of the filter button (never past the
+      table's start; `justify-self: end`, the width, a `max-width` of the room before the end and `margin-inline-end`
+      set inline by `FilterView`, measured from the button: the button is not at the end of the toolbar, the general
+      actions and the column menu come after it), so the nose always points to the button ("not full width if not
+      necessary"); in a narrow table it is as wide as the table, with one column of filters. More room above the
+      filters (24px, 1.5 times `--param-spacing-md`) and below the buttons (20px). The side padding of the body and the
+      footer is `--param-spacing-md`. It sits a little below the toolbar (`margin-top: calc(--param-spacing-xs / 2)`,
+      4px, not `--param-spacing-sm`, which shows the top of the table's scrollbar, its faded arrow button in Chromium
+      on Windows, like a bump; with active filters it reaches up over the row of the pills by that row's height,
+      measured, so it sits where it does without them and its nose stays at the filter button), with a nose on its top
+      edge pointing to the middle of the filter button (`.filterViewNose`, a 10px square turned by 45°, with the frame
+      on its upper sides; its distance from the end of the view is measured and kept up to date with a
+      `ResizeObserver` on the view and the table, at least 16px from the corners; mirrored for right-to-left; no nose
+      without the button). On opening it unrolls from its top edge down, like a roller blind, and fades in, and the
+      table fades out, both in 250ms, `ease-in-out` (longer times and other easings were tried; a slide down by 8px is
+      too subtle). Closing plays it back, a bit faster (250ms, `ease-in`). The unrolling animates the view's height
+      (not a `clip-path` over a fixed frame): measured, from 0 and back with the Web Animations API (`FilterView`; CSS
+      cannot animate to an unknown height in every browser), so its lower edge, shadow and buttons move down with it;
+      meanwhile `data-animating` lifts its min height, keeps its body from scrolling and from shrinking (else the
+      buttons show first, then the fields) and cuts off what does not fit yet. Closing during the opening starts from
+      the height reached. The times are `FILTER_VIEW_OPEN_TIME` and `FILTER_VIEW_CLOSE_TIME` (`filter-panel.tsx`), the
+      table's fade in the stylesheet (`.stack`): the view rolls up and the table fades back. Everything else is back at
+      once (the toolbar, the pills, the focus on the filter button); the closed view stays only for its animation
+      (`inert`, `aria-hidden`, then removed), and one opened meanwhile is a new one. No animation with reduced motion
+      (the view goes at once).
+    - A click outside closes the filter view, but only while nothing was changed since it opened (`!changed`: the
+      draft equals the applied filters; else the draft would be lost by accident, so the click does nothing). Not
+      outside: the view, its popups (the layer) and the filter button (it toggles). The click that closes it does
+      nothing else (it is swallowed: the faded table acts like a scrim, so a row is not selected by it). Only the
       primary button. `FilterView` listens for `pointerdown` on the document (capture) while it is open and unchanged.
-  - It is a `<section>` named `Texts.filters` (no headline), with a line all around (2026-10-04, the user's wish: at the sides too; above and below before), rounded
-    at all four corners (`calc(2 * --param-radius)`, since 2026-10-04, the user's wish; the bottom ones only before;
-    square from 2026-10-01 with the full width), 1px, gray: the color of the lines
-    (`--param-color-border`), the nose too, on the surface color as its background (white in the default theme; the
-    stripe color was tried and dropped). History (2026-10-04, the user's wishes): the color of the lines; darker grays (a theme value
-    `colorBorderStrong`, removed again); the accent (the primary color); 2px; a tiny bit of the accent in the
-    background (the tint of the selected rows over the stripe color at 20%, as an overlay behind the content: no
-    `color-mix()`, the stylesheet mixes colors only for pressed states, and a test checks it, comments included);
-    all of it dropped for the gray lines and the plain stripe background ("try grayish"); tried on 2026-09-30: the light
-    accent, and the primary color of Apply, 1px and 2px). It is at least
-    `calc(6 * --param-spacing-md)` high; in a table of a limited height only its filters scroll, the footer stays. The footer follows right after the filters and ends the sheet.
-    - The search is not part of the filters (decided 2026-09-29): filters describe a subset worth coming back to (and,
-      later, worth saving as a view, together with the sorting and the visible columns), the search is a quick,
-      one-off lookup. So the search box stays in the toolbar. (Taking the search into the filter view as a draft
-      field was tried and dropped for that reason.)
+  - It is a `<section>` named `Texts.filters` (no headline), with a line all around, rounded at all four corners
+    (`calc(2 * --param-radius)`), 1px, gray: the color of the lines (`--param-color-border`), the nose too, on the
+    surface color as its background (white in the default theme). Weighed and dropped: darker grays (a theme value
+    `colorBorderStrong`), the accent, 2px, a tint of the accent in the background ("try grayish"). It is at least
+    `calc(6 * --param-spacing-md)` high; in a table of a limited height only its filters scroll, the footer stays. The
+    footer follows right after the filters and ends the sheet.
+    - The search is not part of the filters: filters describe a subset worth coming back to (and worth saving as a
+      view, together with the sorting and the visible columns), the search is a quick, one-off lookup. So the search
+      box stays in the toolbar (the search as a draft field of the filter view was tried and dropped for that reason).
     - While the view is shown, everything of the toolbar's bar but the filter button is disabled (`inert`) and faded
-      like the table's contents (`opacity: 0.4` in grayscale since 2026-10-11, 0.5 from 2026-10-09; 0.8 from 2026-10-07, 0.2 before, then 0.7, 0.6 and 0.5 tried; the dividers between them too, `.toolbarBar[data-filtering] > [inert]`): the Reload button, the search box, the general
-      actions and the column toggle menu. The filter button is the way back to the rows (besides Cancel, Apply and
-      Escape). So nothing loads into the hidden table meanwhile.
-    - Body: one filter per column that has one, in the order of the columns, in one or two columns (never more; as
-      many as fit was tried first and looked bad), centered in the view (since 2026-09-29; at its right edge at first)
-      (`.filterViewColumns`, `margin-inline: auto`; one column only for one or two filters, 2026-10-07). The button row below has the width of the filters too (plus its side padding) and is centered the same way, with its buttons at its end: so "Apply" ends where the last column ends. When only one column fits (a narrow table), it takes the whole width, and its filters sit at its right end (right aligned, with "Apply" below them): the user found both cases right. A column is as wide as
-      a filter: a label of about 4rem and the control (at most 20rem, decided 2026-09-29; a longer label narrows the
-      control a little); two when there is room for both, else one. Two filters of a column are `--param-spacing-xs` apart (it was
-      `--param-spacing-sm`). The columns are `--param-spacing-sm` apart (it was
-      `--param-spacing-md`, and columns for 6rem labels: the free room before a short label made the gap look too
-      wide). They are CSS columns, like newspaper columns: down the first, then on in the second, and each filter is
-      only as high as it is (`break-inside: avoid`). A grid of rows made every filter as high as the tallest of its
-      row, which left gaps next to the text filter. A filter: the column header as the label, followed by a dot in
-      the primary color (`.filterPanelDot`, 6px) while the filter is set in the draft (2026-09-30, the user's wish:
-      the only accent besides Apply; its room is always kept, hidden while not set, so nothing moves) (in the text color since 2026-09-30, like the labels of a form: the muted one was too light in some themes, e.g. Mantine's; in the normal size since 2026-09-29, the small
-      one was too small; no fixed width since 2026-09-29, it was 4.5rem, then 6rem) right before its control. Every
-      label gets the width of the widest label of the view (measured when the view opens, `scrollWidth`, and set
-      inline as the first grid track of every row and in the width of the columns): so every control gets its full
-      width (at most 20rem) and the controls line up on both edges. (With each label as wide as its own text, a long
-      label, "Date of birth", made its control narrower than the others.) So on the left the label, the filter on the right (the `labelledBy` of the filter is the id of
-      that label). Custom filters are rendered there too, as wide as the column of the controls.
-    - Footer (`.filterPanelFooter`; no line above it: a full-width one was removed 2026-09-29, one as wide as the filter columns on 2026-09-30, the user's wish): on the left the drawer's title (2026-10-10, the user's wish: the left side looked empty; the filter icon, in the accent while the draft has a filter (without the word "Filters" since 2026-10-10, the user's wish), the number of filters in the draft as the filter button's badge, and "Clear" as a × after it while the draft has a filter, like the drawer's; not a button), the buttons on the right: `Reset | Cancel [Apply]` (before 2026-10-10: `Reset Clear | Cancel [Apply]`; Cancel as a `chevron-up` in the top corner for a moment the same day, dropped: it needed more room above the filters)
-      (2026-09-29): "Reset" (`Texts.resetFilters`), "Clear" (`Texts.clear`) and "Cancel" (`Texts.cancelFilters`) are
-      ghost buttons (`data-placement="tool"`, like the view controls of the toolbar); since 2026-10-10 (the user's wish,
-      like the drawer's) "Reset" icon only (Tabler's `rotate`, named and tipped by its text, square; with its text too
-      for a moment the same day; "Clear" next to it,
-      icon only as `eraser` and the ×, then moved into the title, the same day), "Cancel" with a `chevron-up` before its text (2026-10-10, the user's wish: the view rolls up; the thin `arrow-left` of the drawer before), and "Apply" with a check before its text; a divider (the toolbar's)
-      separates the two that change the draft from the two that close the view; "Apply" after "Cancel", a little more
-      room before it.
+      like the table's contents (`opacity: 0.4` in grayscale; the dividers between them too,
+      `.toolbarBar[data-filtering] > [inert]`): the Reload button, the search box, the general actions and the column
+      toggle menu. The filter button is the way back to the rows (besides Cancel, Apply and Escape). So nothing loads
+      into the hidden table meanwhile.
+    - Body: one filter per column that has one, in the order of the columns, in one or two columns (never more: as
+      many as fit looks bad), centered in the view (`.filterViewColumns`, `margin-inline: auto`; one column only for
+      one or two filters). The button row below has the width of the filters too (plus its side padding) and is
+      centered the same way, with its buttons at its end: so "Apply" ends where the last column ends. When only one
+      column fits (a narrow table), it takes the whole width, and its filters sit at its right end (right aligned, with
+      "Apply" below them). A column is as wide as a filter: a label of about 4rem and the control (at most 20rem; a
+      longer label narrows the control a little); two when there is room for both, else one. Two filters of a column
+      are `--param-spacing-xs` apart. The columns are `--param-spacing-sm` apart (wider, the free room before a short
+      label makes the gap look too wide). They are CSS columns, like newspaper columns: down the first, then on in the
+      second, and each filter is only as high as it is (`break-inside: avoid`; a grid of rows makes every filter as
+      high as the tallest of its row, which leaves gaps next to the text filter). A filter: the column header as the
+      label (in the text color, like the labels of a form: the muted one is too light in some themes, e.g. Mantine's;
+      in the normal size), followed by a dot in the primary color (`.filterPanelDot`, 6px) while the filter is set in
+      the draft (the only accent besides Apply; its room is always kept, hidden while not set, so nothing moves),
+      right before its control. Every label gets the width of the widest label of the view (measured when the view
+      opens, `scrollWidth`, and set inline as the first grid track of every row and in the width of the columns): so
+      every control gets its full width (at most 20rem) and the controls line up on both edges (with each label as
+      wide as its own text, a long label, "Date of birth", would make its control narrower). So on the left the label,
+      the filter on the right (the `labelledBy` of the filter is the id of that label). Custom filters are rendered
+      there too, as wide as the column of the controls.
+    - Footer (`.filterPanelFooter`; no line above it): on the left the drawer's title (else the left side looks
+      empty; the filter icon, in the accent while the draft has a filter, without the word "Filters", the number of
+      filters in the draft as the filter button's badge, and "Clear" as a × after it while the draft has a filter, like
+      the drawer's; not a button), the buttons on the right: `Reset | Cancel [Apply]`. "Reset" (`Texts.resetFilters`)
+      and "Cancel" (`Texts.cancelFilters`) are ghost buttons (`data-placement="tool"`, like the view controls of the
+      toolbar); "Reset" icon only (Tabler's `rotate`, named and tipped by its text, square, like the drawer's),
+      "Cancel" with a `chevron-up` before its text (the view rolls up), and "Apply" with a check before its text; a
+      divider (the toolbar's) separates the one that changes the draft from the two that close the view; "Apply" after
+      "Cancel", a little more room before it. (Cancel as a `chevron-up` in the top corner was tried: it needs more room
+      above the filters.)
       - "Reset" and "Clear" are shown only when they would change something (hidden, not disabled): "Reset" while the
-        draft differs from the applied filters, "Clear" while the draft has a filter. The divider only with one of them. (Tried before: "Reset" as a quiet text button on the left with a muted "Cancel"; dividers
-        between all; `Reset Clear Cancel | [Apply]`; `Reset | Clear | Cancel [Apply]`; `Reset Clear Cancel [Apply]`.)
-    - "Apply" (`Texts.applyFilters`, "Apply" again since 2026-10-09, the user's wish; German "Anwenden"; "Apply filters"
-      from 2026-10-01: clearer next to "Cancel", and the view had the room; "Apply" before that; "Show results" was dropped, since the number of results is not
+        draft differs from the applied filters, "Clear" while the draft has a filter. The divider only with "Reset".
+        (Other orders and dividers between all were tried.)
+    - "Apply" (`Texts.applyFilters`, "Apply", German "Anwenden"; not "Show results": the number of results is not
       known before applying): a filled button in the primary color, like the primary actions of the toolbar
-      (`--param-color-primary`, text `--param-color-on-primary`, normal weight, `--param-color-primary-hover` on
-      hover; since 2026-09-30, the user's wish: an accent; before, outlined like the secondary actions), as wide as its
-      text (side padding `--param-spacing-md`). All four buttons of the footer are as high as the filters
-      (`0.8 * --param-control-height`, since 2026-09-30; Apply had the full control height, the ghost buttons
-      `0.875 *`, like in the toolbar). (It was a full-width button in the primary color at first, as the
-      spec had it, then only filled.)
+      (`--param-color-primary`, text `--param-color-on-primary`, normal weight, `--param-color-primary-hover` on hover;
+      an accent, not outlined), as wide as its text (side padding `--param-spacing-md`). All buttons of the footer are
+      as high as the filters (`0.8 * --param-control-height`).
     - No live result count (a query may be expensive).
   - Everything changed in the filter view is a draft: the `onChange` of a filter changes the draft (so custom filters
-    work unchanged, their `onChange` just means "draft" now). "Apply" and Enter in a text input (not in a select,
-    where Enter opens the list) apply the draft, all filters at once (one load), and close the view. "Reset" puts the
-    draft back to the applied filters (it undoes the changes in the view), "Clear" empties it (since 2026-09-29; before,
-    "Reset" emptied it); neither applies anything, "Apply" does. "Cancel", Escape and the filter button close the view and throw the draft away.
-    - "Apply" applies at once. (A delay between closing the view and applying, so the table is seen before its new
-      load starts, was tried on 2026-09-29, one second, then 300ms, and dropped.)
+    work unchanged, their `onChange` just means "draft"). "Apply" and Enter in a text input (not in a select, where
+    Enter opens the list) apply the draft, all filters at once (one load), and close the view. "Reset" puts the draft
+    back to the applied filters (it undoes the changes in the view), "Clear" empties it; neither applies anything,
+    "Apply" does. "Cancel", Escape and the filter button close the view and throw the draft away.
+    - "Apply" applies at once (a delay between closing the view and applying, so the table is seen before its new load
+      starts, was tried and dropped).
     - The draft starts with the applied filters on every opening (the view is mounted anew).
     - The select lists and the date popover are popups of their own (in the layer; their keys bubble up to the view
       through the portal): an Enter or an Escape there belongs to them and does not apply or close the view.
@@ -1520,11 +1420,11 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     active filter. They wrap onto more lines.
     - The row has a line above and below it (`--param-color-border`, 1px, edge to edge over the side padding of the
       toolbar, `--param-spacing-xs` inside). As the last part of the toolbar, the toolbar gives up its bottom padding,
-      so the line below sits right on the column headers. (Decided 2026-09-29.)
-    - Look: outlined (since 2026-09-29; the spec's light accent tint, then a gray fill like the selection pill were
-      tried first): a gray border (`--param-color-border`) on a transparent background, the text color, the box of a text filter's
-      value and the hover of the × in gray too; the small font, fully rounded, at most 13.75rem wide (or the whole row). Only the value is cut off with an ellipsis: the label, the `⋯`
-      and the × always stay.
+      so the line below sits right on the column headers.
+    - Look: outlined (not the spec's light accent tint, nor a gray fill): a gray border (`--param-color-border`) on a
+      transparent background, the text color, the box of a text filter's value and the hover of the × in gray too; the
+      small font, fully rounded, at most 13.75rem wide (or the whole row). Only the value is cut off with an ellipsis:
+      the label, the `⋯` and the × always stay.
     - A click on a pill opens the filter view with its filter focused. Its × (`Texts.removeFilter`) removes the filter at
       once. No tooltips (they do not work on touch).
     - While the selection bar is shown, a pill cannot open the filter view (the filter button is not there either);
@@ -1542,27 +1442,25 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       - A custom filter (the library does not know its value): strings, numbers and booleans as they are, a list by its
         values, anything else as JSON. A way for custom filters to give their own pill text may come later.
   - No filter icons in the column headers: the pills and the badge are the only filter indicators.
-  - The filters are a prop of the table, not of its columns (2026-10-15, the user's wish, "filters prop only"; the
-    user chose the object over an array with the key first, which was proposed at about 65%, to try it first;
-    `Column.filter` before, from the time of the filter row): `filters?: TableFilters`, an object of filters by key
-    (`Readonly<Record<string, TableFilter>>`; the element's `TableFilters<C>`, in the controller's options). The key
-    is the key in `Query.filters`; the order of the object is the order of the filter view. A filter's label is its own,
-    else the header of the column of its key (hidden columns too), else the key itself. A filter needs no column, and
-    a column no filter.
-    - A label of its own (2026-10-17, the user's choice of three, proposed at about 55%): an entry `{ label, filter }`
-      in place of the filter (`LabeledFilter`; React `label: ReactNode`, the element's `TextContent<C>`, so a function
-      follows the language): `nickname: { label: t('people.nickname'), filter: textFilter() }`. The same for built-in
-      filters, custom ones and an app's helpers (`personFilter(…)`), which need no option. Weighed: a `label` option of
-      the factories (a custom filter, a plain function, would need a wrapper; each helper of an app would pass it on),
-      a prop `filterLabels` (the label away from its filter). It shows in the filter view (or drawer) and the pill; the
-      saved filters and the query use the key only. Demo: the React tab's `city` (the users have a city, the table no
-      column). Tests: "labels a filter by its own label" (React and the element).
-  - The filter factories and types without "Column" (2026-10-15, the user's wish, once the filters were no longer on
-    the columns): `textFilter`, `selectFilter`, `autocompleteFilter`, `dateRangeFilter`, `numberRangeFilter`,
-    `booleanFilter`; the types `TableFilter`, `BuiltInFilter`, `TextFilterSettings`, `SelectFilterSettings`,
-    `AutocompleteFilterSettings` (`textColumnFilter`, `ColumnFilter`, `BuiltInColumnFilter`, … before; this file was
-    changed along, so older notes here use the new names too). The editors keep "Column" (`textColumnEditor`): they
-    are still on the columns. The internal files keep their names (`column-filters.tsx`).
+  - The filters are a prop of the table, not of its columns ("filters prop only"; an object, rather than an array
+    with the key first): `filters?: TableFilters`, an object of filters by key (`Readonly<Record<string,
+    TableFilter>>`; the element's `TableFilters<C>`, in the controller's options). The key is the key in
+    `Query.filters`; the order of the object is the order of the filter view. A filter's label is its own, else the
+    header of the column of its key (hidden columns too), else the key itself. A filter needs no column, and a column
+    no filter.
+    - A label of its own: an entry `{ label, filter }` in place of the filter (`LabeledFilter`; React `label:
+      ReactNode`, the element's `TextContent<C>`, so a function follows the language): `nickname: { label:
+      t('people.nickname'), filter: textFilter() }`. The same for built-in filters, custom ones and an app's helpers
+      (`personFilter(…)`), which need no option. Weighed: a `label` option of the factories (a custom filter, a plain
+      function, would need a wrapper; each helper of an app would pass it on), a prop `filterLabels` (the label away
+      from its filter). It shows in the filter view (or drawer) and the pill; the saved filters and the query use the
+      key only. Demo: the React tab's `city` (the users have a city, the table no column). Tests: "labels a filter by
+      its own label" (React and the element).
+  - The filter factories and types without "Column" (the filters are not on the columns): `textFilter`,
+    `selectFilter`, `autocompleteFilter`, `dateRangeFilter`, `numberRangeFilter`, `booleanFilter`; the types
+    `TableFilter`, `BuiltInFilter`, `TextFilterSettings`, `SelectFilterSettings`, `AutocompleteFilterSettings`. The
+    editors keep "Column" (`textColumnEditor`): they are on the columns. The internal files keep their names
+    (`column-filters.tsx`).
   - A filter is a plain function
     `(props: FilterProps) => ReactNode`, `FilterProps = { value: FilterValue | undefined; onChange(value: FilterValue |
     undefined): void; labelledBy: string }`.
@@ -1571,39 +1469,33 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - The built-in filters are factories, exported next to the component (and by the element's entry, as opaque
     markers):
     - `textFilter({ placeholder?, matchModes? })`: a plain text input (`FilterTextField`) by default, the value
-      always `{ text, match: 'contains' }` (decided 2026-10-02: the select is noise in most columns; the select was
-      always there before). With `matchModes: true`, the input with the select described here (the React demo's first
-      and last name keep it).
-      The text input with a select inside it, at its start (`PrefixedTextField` in
-      `widgets.tsx`; the select is our `SelectField` with its chevron, named `Texts.textMatch` "Match"). The wrapper
-      (`.prefixedField`) is the field, with the border and the focus outline of the input; the select is a chip in it,
-      2px from its top, start and bottom edge, that looks like the knob of the segmented control (flat,
-      `--param-color-surface`, a thin `--param-color-border`, the text color); the input fills the rest without a
-      border (2026-09-30, the user's wish). (Tried the same day: the chip white, then in the light accent, then the
-      select at the end of the field as quiet text without a box, which the user moved back to the start. Before
-      that, the select in front of the input, joined side by side with overlapping borders, on a transparent
-      background, at first `--param-color-surface-strong`.) The modes: `contains` (default), `starts with`, `ends with`
-      (`Texts.textContains`, ...). (A segmented control below the input was tried first, 2026-09-28; the user replaced
-      it on 2026-09-29.) When the view opens, the text input (not the select) gets the focus. The value is
-      `{ text, match }` (`TextFilterValue`, `match`: `'contains' | 'startsWith' | 'endsWith'`), the text
-      trimmed; an empty text removes the filter. (It was a plain string, before the match modes.) The placeholder is
-      `Texts.filterPlaceholder` ("Filter") or `placeholder`. Its clear button (`Texts.clearFilter`) empties it.
-    - `selectFilter({ options, multiple? })`: unchanged (`SelectField`): the value of the chosen option, or a list
-      of them with `multiple`; "All" (`Texts.filterAll`, value `''`) as the first option of a single select; a clear
-      button while something is chosen, before the chevron (2026-10-02; it took the chevron's place before), like the
-      autocomplete (`.listField`).
-    - `dateRangeFilter()`: unchanged (see below): `{ from, to }`. The second click sets the range in the draft and
-      closes the calendars (not the filter view); Clear removes it from the draft.
-    - `numberRangeFilter()` (new): two number inputs in one row, `from – to` (placeholders and names
-      `Texts.rangeFrom` "From", `Texts.rangeTo` "To", each named with the label of the filter in front, e.g. "Logins
-      From"). The value is `{ from?, to? }` (`NumberRangeFilterValue`), both inclusive; an empty side is
-      open, both empty remove the filter. Native `<input type="number">`, without the spin buttons.
-    - `booleanFilter()` (new): a segmented control `All` / `Yes` / `No` (`Texts.filterAll`, `filterYes`,
-      `filterNo`); the value is `true` or `false`, "All" removes the filter (and shows no pill).
-    - `autocompleteFilter({ load, multiple?, minQueryLength?, maxChips? })` (decided 2026-10-02,
-      `view/autocomplete-filter.tsx`): a text input whose options are loaded while typing (Base UI's `Combobox`; its
-      `Autocomplete` is for free text). The value is the `value` of the chosen option, or a list of them with
-      `multiple`.
+      always `{ text, match: 'contains' }` (the select is noise in most columns). With `matchModes: true`, the input
+      with the select described here (the React demo's first and last name keep it).
+      The text input with a select inside it, at its start (`PrefixedTextField` in `widgets.tsx`; the select is our
+      `SelectField` with its chevron, named `Texts.textMatch` "Match"). The wrapper (`.prefixedField`) is the field,
+      with the border and the focus outline of the input; the select is a chip in it, 2px from its top, start and
+      bottom edge, that looks like the knob of the segmented control (flat, `--param-color-surface`, a thin
+      `--param-color-border`, the text color); the input fills the rest without a border. (Weighed and dropped: the
+      chip in the light accent, the select at the end of the field as quiet text, the select in front of the input
+      with overlapping borders, a segmented control below the input.) The modes: `contains` (default), `starts with`,
+      `ends with` (`Texts.textContains`, ...). When the view opens, the text input (not the select) gets the focus.
+      The value is `{ text, match }` (`TextFilterValue`, `match`: `'contains' | 'startsWith' | 'endsWith'`), the text
+      trimmed; an empty text removes the filter. The placeholder is `Texts.filterPlaceholder` ("Filter") or
+      `placeholder`. Its clear button (`Texts.clearFilter`) empties it.
+    - `selectFilter({ options, multiple? })` (`SelectField`): the value of the chosen option, or a list of them with
+      `multiple`; "All" (`Texts.filterAll`, value `''`) as the first option of a single select; a clear button while
+      something is chosen, before the chevron, like the autocomplete (`.listField`).
+    - `dateRangeFilter()` (see below): `{ from, to }`. The second click sets the range in the draft and closes the
+      calendars (not the filter view); Clear removes it from the draft.
+    - `numberRangeFilter()`: two number inputs in one row, `from – to` (placeholders and names `Texts.rangeFrom`
+      "From", `Texts.rangeTo` "To", each named with the label of the filter in front, e.g. "Logins From"). The value is
+      `{ from?, to? }` (`NumberRangeFilterValue`), both inclusive; an empty side is open, both empty remove the filter.
+      Native `<input type="number">`, without the spin buttons.
+    - `booleanFilter()`: a segmented control `All` / `Yes` / `No` (`Texts.filterAll`, `filterYes`, `filterNo`); the
+      value is `true` or `false`, "All" removes the filter (and shows no pill).
+    - `autocompleteFilter({ load, multiple?, minQueryLength?, maxChips? })` (`view/autocomplete-filter.tsx`): a text
+      input whose options are loaded while typing (Base UI's `Combobox`; its `Autocomplete` is for free text). The
+      value is the `value` of the chosen option, or a list of them with `multiple`.
       - `load(query, signal)` returns `{ value, label, content? }[]` (`AutocompleteOption`). `label` is a string,
         always: the pill, the input text and the accessible name need one. `content` is only the look of the entry in
         the list (falls back to `label`).
@@ -1615,41 +1507,40 @@ The general rules (copies of the repository's master, `docs/conventions/`):
         characters (default 1; with 0 it is also called with `''` when the list opens). A newer query aborts the older
         one (`signal`). No cache: the app decides about caching.
       - The list shows its state (Base UI's `Status`, announced): below the minimum `Texts.typeToSearch` ("Type to
-        search"), while loading `Texts.loading` ("Loading…", with an ellipsis since 2026-10-09, the user's wish; also the name of the loading bar) (or the previous options, faded), no options `Texts.emptySearch` ("No
-        results found"), a rejected `load` (not an abort) `Texts.loadFailed` ("Could not load"; no retry button:
-        typing again tries again; no toast, the package has no overlays).
+        search"), while loading `Texts.loading` ("Loading…", also the name of the loading bar) (or the previous
+        options, faded), no options `Texts.emptySearch` ("No results found"), a rejected `load` (not an abort)
+        `Texts.loadFailed` ("Could not load"; no retry button: typing again tries again; no toast, the package has no
+        overlays).
       - Single: the input shows the label of the chosen option. Multiple: the chosen ones are shown before the input
         (`.chipsField`); the list shows a checkbox in front of every option, like the multiple select. The list is placed
         below the whole field (`anchor`), not below the input, which moves right with the values before it.
-        - `maxChips` (2026-10-02, default 0): with 0, the values are comma-separated text on one line, cut off with an
-          ellipsis (the input keeps at least 4rem); else at most that many chips (the field grows with them), each
-          with a remove button (`Texts.removeValue`, "Remove {label}"), and `+N` for the rest: like a chip, without a
-          remove button, not focusable, a click opens the list (where every value has its checked box).
+        - `maxChips` (default 0): with 0, the values are comma-separated text on one line, cut off with an ellipsis
+          (the input keeps at least 4rem); else at most that many chips (the field grows with them), each with a remove
+          button (`Texts.removeValue`, "Remove {label}"), and `+N` for the rest: like a chip, without a remove button,
+          not focusable, a click opens the list (where every value has its checked box).
         - Backspace in the empty input removes the last value, in both modes (our own handler: Base UI's removes the
           last chip shown, which is not the last value while some are hidden).
       - The placeholder is `Texts.filterAll` while nothing is chosen. The field ends with a clear button
-        (`Texts.clearFilter`) while something is chosen or typed, and always a chevron (2026-10-02, it replaced a
-        search icon): Base UI's `Combobox.Trigger`, a click opens or closes the list (a click on the input does not
-        close it; the multiple select's whole field is its trigger, so it has this already). Not reachable with Tab
-        and `aria-hidden` (the keyboard has the arrow keys and Escape). It turns while the list is open.
+        (`Texts.clearFilter`) while something is chosen or typed, and always a chevron (not a search icon): Base UI's
+        `Combobox.Trigger`, a click opens or closes the list (a click on the input does not close it; the multiple
+        select's whole field is its trigger, so it has this already). Not reachable with Tab and `aria-hidden` (the
+        keyboard has the arrow keys and Escape). It turns while the list is open.
       - The pill shows the labels (like the select: `Ann+2` when long). The table keeps the labels of the options
-        chosen in it, per column key (`filter-labels.ts`, a private context; 2026-10-14: the filter kept them before, so a
-        filter made anew on every render lost them and its pill showed the values).
+        chosen in it, per column key (`filter-labels.ts`, a private context), so a filter made anew on every render
+        keeps them.
       - In the filter view, Enter and Escape in its input belong to the open list (choose, close): they apply or
         cancel the view only while the list is closed (`aria-expanded`).
     - Ranges are always inclusive on both ends. All filters are combined with AND (the source does that).
   - The segmented control (`Segmented` in `widgets.tsx`): a `radiogroup` of buttons (`role="radio"`), outlined
     (`--param-color-border`) on a transparent background; the chosen one is a flat knob on the surface color
-    (`--param-color-surface`) with a thin border (`--param-color-border`), no shadow (2026-09-30, the user's wish).
-    (Before, the same day: in the light accent, and white with a small shadow. Before that, a light gray fill, `--param-color-surface-strong`, too gray. At first a gray track, `--param-color-surface-strong`, with the chosen one on the surface
-    color with a border.) Used by the boolean filter
-    (its smaller variant was for the match of the text filter, which is a select now).
-  - The controls in the filter view are small (`0.8 * --param-control-height`), with a text size between the small and the
-    normal size, like the filter row had them.
+    (`--param-color-surface`) with a thin border (`--param-color-border`), no shadow (the light accent, a small shadow
+    and a gray fill were tried). Used by the boolean filter.
+  - The controls in the filter view are small (`0.8 * --param-control-height`), with a text size between the small and
+    the normal size.
   - `dateRangeFilter()` (`view/date-range-filter.tsx`): a trigger in the look of the selects (`Texts.filterAll`
     while empty, dimmed; else the range, formatted with `Intl.DateTimeFormat#formatRange` (`dateStyle: 'medium'`) in
-    the adapter's locale, e.g. "Sep 12 – 20, 2026"), with a calendar icon at its end (Bootstrap's `BsCalendar4`, filled, 16×16, since 2026-10-01; Tabler's `calendar`
-    before), or the clear button while set.
+    the adapter's locale, e.g. "Sep 12 – 20, 2026"), with a calendar icon at its end (Bootstrap's `BsCalendar4`,
+    filled, 16×16), or the clear button while set.
     It opens a Base UI `Popover` (in the layer of the root, not modal, below the trigger) with two inline calendars
     of vanillajs-datepicker (`view/date-range-picker.ts`), side by side, that act as one calendar of two months, with
     the range highlighted in both and today marked.
@@ -1674,16 +1565,16 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     - Dense: a day and a header button are 80% of `--param-control-height` high (and a day as wide), the days of the
       week 60%; the days' text is between the small and the normal size (like the filters); the calendars are
       `--param-spacing-md` apart, the footer `--param-spacing-xs` below them.
-    - The month and year above a calendar have the weight 500 (since 2026-10-01; the theme's bold before): a fixed value
-      in the stylesheet, the one exception to "no values of its own", as no theme value is a medium weight.
+    - The month and year above a calendar have the weight 500: a fixed value in the stylesheet, the one exception to
+      "no values of its own", as no theme value is a medium weight.
     - The library's keyboard position (a gray day) is only shown while the keyboard is in that calendar.
     - Today: a short bar below its number (in `--param-color-primary`; sized from `--param-control-height`: half of
       it wide, a sixteenth high, rounded), visible on every background, and its number bold and in the primary color.
-      As an end of the range, the number and the bar are in `--param-color-on-primary`, like every end. (A dot was
-      tried: quieter, but easier to miss. A text underline would look like a link.)
+      As an end of the range, the number and the bar are in `--param-color-on-primary`, like every end. (A dot is
+      quieter, but easier to miss. A text underline would look like a link.)
     - Every day that can be picked has the pointer cursor, the ends of the range too. The day under the mouse gets a
       ring in `--param-color-primary` (1px, inside), the same inside the range and outside it; the ends of the range
-      keep their look. (A background was too weak to see within the range.)
+      keep their look. (A background is too weak to see within the range.)
     - The start and the end are ours: the library's own `DateRangePicker` only works with two `<input>`s
       (dropdowns) and has one date per picker, and a click on a picker's selected day reports no change (a range of
       one day). So we handle the clicks and Enter on the days, keep the range, and give both pickers the small range
@@ -1704,8 +1595,8 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - Every select (the single and the multiple select filter) is one widget, `SelectField`, on Base
     UI's `Select`. The trigger looks like our text inputs (same classes), with our chevron; in the select filters
     (`FilterSelectField`) the clear button comes before it while something is chosen, and the chevron turns while the
-    list is open (only a picture: the whole field is the trigger, a second click on it closes the list). It shows the chosen labels (comma separated) or the placeholder, dimmed
-    (`data-empty`) while nothing is chosen.
+    list is open (only a picture: the whole field is the trigger, a second click on it closes the list). It shows the
+    chosen labels (comma separated) or the placeholder, dimmed (`data-empty`) while nothing is chosen.
   - The list opens below the trigger (`alignItemWithTrigger={false}`, not over it as Base UI does by default), at
     least as wide as the trigger, in the look of our menus: `--param-color-surface`, `--param-color-border`,
     `--param-radius`, `--param-shadow`. The highlighted option is `--param-color-surface-strong` (like the menus), a
@@ -1721,7 +1612,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - A single select closes when an option is chosen. A multiple select stays open while options are chosen (Escape
     or a click outside closes it).
   - Selects (the single select filter, the button of a multiple select) have 1px more padding on every side than the
-    text inputs. (The page size is no select field since 2026-10-05, see the footer.)
+    text inputs. (The page size is no select field, see the footer.)
   - Every applied change of the filters goes back to page 1 and clears the selection. A newer change replaces a
     running load, and the response of the outdated load is ignored (as for the search). Equal filters (as JSON
     values) start no load.
@@ -1735,24 +1626,25 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       - A custom `onChange` takes a `FilterValue`, or `undefined` to remove the filter.
     - The keys are plain strings (not checked against the row type). Keys typed against the row type are a todo.
   - Empty result with active filters: the default empty state says `Texts.emptyFilters` ("No rows match these
-    filters") with a "Clear filters" ghost button in the text color (`Texts.clearFilters`, `data-placement="tool"`; it was a text button in the primary color) below it (it removes all filters). With a
-    search only: `Texts.emptySearch`. A custom `empty` always wins (and has no button).
+    filters") with a "Clear filters" ghost button in the text color (`Texts.clearFilters`, `data-placement="tool"`)
+    below it (it removes all filters). With a search only: `Texts.emptySearch`. A custom `empty` always wins (and has
+    no button).
 
-- The toolbar above the table (decided 2026-09-28, with the filter popup): the heading, the bar, the pills, one below
+- The toolbar above the table: the heading, the bar, the pills, one below
   the other, `--param-spacing-sm` apart.
   - The heading: the optional title and the subtitle below it.
     - Props `title` and `subtitle`, both optional and of type `ReactNode`.
     - The title is bold and `1.25 * --param-font-size`. The subtitle is smaller (`--param-font-size-sm`) and dimmed.
-      Both in every density alike (since 2026-10-05).
+      Both in every density alike.
     - There is little gap between title and subtitle: both use a tight line height (1.3). No extra margin.
     - Without title and subtitle, the heading is not rendered.
-    - `showTotal?: boolean` (default `false`; the element's attribute `show-total`, 2026-10-06, the user's wish: with
-      `footer="auto"` a short list has no footer, so its number of rows was nowhere): the total of the rows after the
+    - `showTotal?: boolean` (default `false`; the element's attribute `show-total`: with
+      `footer="auto"` a short list has no footer, so its number of rows would be nowhere): the total of the rows after the
       title (`Texts.totalCount`, `{count}`), dimmed, in the normal size and weight, `spacingSm` after it (`.titleTotal`),
       like the counts of tabs. The total of the last finished load (`Result.total`), so it follows the search and the
       filters; none before the first load, and none without a title.
   - The bar, one line of a fixed height (`--param-control-height`), left to right:
-    - The pinned actions (`pinned: true`, 2026-10-10), if any, at the very start (also in the selection bar): ghost
+    - The pinned actions (`pinned: true`), if any, at the very start (also in the selection bar): ghost
       buttons, then a divider.
     - The Reload button (`reloadable`), always at the start, also without a search box (so it is in the same place in
       every table, and "refresh this list, search in it" reads from the left).
@@ -1764,38 +1656,31 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     - A thin vertical divider (1px, half a control high), only when there are a filter button and general actions.
     - The general actions (menus included; the app puts rarer ones into an icon-only menu, e.g. "⋯").
     - A divider (when a filter button or general actions come before it) and the column menu (see "Column
-      visibility"; always there since 2026-10-04), at the very end.
+      visibility"; always there), at the very end.
     - Without Reload and search box everything sits on the right: the bar stays in its place with its height, so
       every table looks the same, and the selection bar has the same line to take.
     - Buttons are `calc(--param-spacing-xs / 4)` apart.
-    - The bar (and the selection bar) has the text size of the table (`--param-font-size`; decided 2026-09-30). From
-      2026-09-28 it had a larger one (`8 / 7 *`, 16px with the default 14px), as the controls of the table rather than
-      its content; the buttons looked too big, also next to Mantine's own. The buttons keep their height.
+    - The bar (and the selection bar) has the text size of the table (`--param-font-size`; a larger one makes the
+      buttons look too big, also next to Mantine's own). The buttons keep their height.
     - Without search box, view controls and general actions (and without a selection mode), the bar is not rendered.
-  - The selection bar (IBM Carbon's batch action bar, adopted now; "tried and dropped" before, when it was a bar in the
-    brand color): while at least one row is selected, it takes the place of the bar, in the same place and with the
+  - The selection bar (IBM Carbon's batch action bar; not in the brand color): while at least one row is selected, it takes the place of the bar, in the same place and with the
     same height, so nothing below moves. When the selection is cleared, the bar comes back (with the search text kept).
     - Left to right: the selection pill, the free space, the actions on the selection (on the right, like the general
-      actions of the bar; they were on the left, next to the pill, at first). Then a divider and an icon-only
-      ghost button with a "deselect" icon (a dashed square with a diagonal line, drawn by us in the style of Tabler's `deselect`; tried before: a plain × like the pill's, a circled ×, and this icon once already; the dashed
-      square came back on 2026-09-29) (`data-placement="tool"`; name and tooltip `Texts.clearSelection`, "Clear selection", the
+      actions of the bar). Then a divider and an icon-only
+      ghost button with a "deselect" icon (a dashed square with a diagonal line, drawn by us in the style of Tabler's `deselect`; a plain × and a circled × were tried) (`data-placement="tool"`; name and tooltip `Texts.clearSelection`, "Clear selection", the
       same as the pill), which clears the selection, like the pill. Redundant on purpose: after the actions, the
-      pointer is on the right, and the pill is far away on the left (like the "Cancel" of Carbon's batch action bar).
-      (History, 2026-09-28/29: a muted "Cancel" text button, removed for a while, then a "Cancel" ghost button;
-      "Cancel" was vague, so an icon: a ×, the "deselect" icon, a circled ×, and back to the plain ×.)
-    - Its text is the normal size (`--param-font-size`, 14px; the small one, 12px, until 2026-10-04: the user's wish, it
-      was too small), normal weight (400; bold before, 2026-10-04), with a × of 14px (12px before); the line height 1.6 keeps it as high as the filter pills (24px).
-    - The selection pill: `Texts.selectedCount` ("2 selected") and a × in the pill that the footer had before
-      (`Pill`, `.pill`, fully rounded, small bold text), outlined like the filter pills: a gray border
+      pointer is on the right, and the pill is far away on the left (like the "Cancel" of Carbon's batch action bar;
+      the text "Cancel" is vague, so an icon).
+    - Its text is the normal size (`--param-font-size`, 14px; the small one is too small), normal weight (400), with a
+      × of 14px; the line height 1.6 keeps it as high as the filter pills (24px).
+    - The selection pill: `Texts.selectedCount` ("2 selected") and a × in the pill (`Pill`, `.pill`, fully rounded, small bold text), outlined like the filter pills: a gray border
       (`--param-color-border`) on a transparent background, the × dimmed (`--param-color-text-dimmed`), in the middle of the room between the text and the right edge
-      (`calc(--param-spacing-xs / 2)` before and after it). (2026-09-29:
-      a gray fill and the accent color were tried too; the user went back to transparent. The spec's accent pill "2x"
-      was tried first.) It counts the selected rows (of the current page: the selection never spans pages). The footer has no pill
-      anymore.
+      (`calc(--param-spacing-xs / 2)` before and after it). (A gray fill and the accent color were tried.) It counts the
+      selected rows (of the current page: the selection never spans pages). The footer has no pill.
       - The whole pill is one button that clears the selection (`.selectionPill`), so it is easy to find: hovered, the
         pill gets `--param-color-surface-strong` and the × the text color, pressed a little darker; the tooltip and the
         accessible name are `Texts.clearSelection` ("Clear selection"). The count is announced by a `role="status"`
-        inside. (A small round × button of its own at the end of the pill was tried first, next to "Cancel".)
+        inside.
     - The actions on the selection: the rows actions (at least one selected) and the row actions shown in the toolbar
       (exactly one selected: e.g. "Edit", hidden, not disabled, otherwise). General actions are not there.
     - "Show only the selected rows" (a click on the pill, with "N selected shown" in the footer) was part of the spec,
@@ -1803,55 +1688,47 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - The pills of the active filters (see Filtering).
   - If there is no title, no subtitle, no bar and no pill, the toolbar is not rendered.
   - While loading, everything is blocked (`inert`), except the search box and the filter button.
-  - The actions (of the bar and of the selection bar, `data-placement="toolbar"`): the standard buttons, as before
-    the redesign: secondary outlined (`--param-color-border` on the surface), primary and danger filled (see Action
-    variants), `--param-control-height` high, normal weight (bold until 2026-09-30), `calc(--param-spacing-xs / 2)` apart. (Ghost buttons, as the
-    spec wanted, were tried first and replaced by the user, 2026-09-28.) Their menus open aligned to the end of the
+  - The actions (of the bar and of the selection bar, `data-placement="toolbar"`): the standard buttons: secondary outlined (`--param-color-border` on the surface), primary and danger filled (see Action
+    variants), `--param-control-height` high, normal weight, `calc(--param-spacing-xs / 2)` apart. (Ghost buttons, as the spec wanted, were tried and dropped.)
+    Their menus open aligned to the end of the
     button.
   - The view controls (the filter button, the Reload button, `data-placement="tool"`): ghost buttons: no border and
     no background at rest; `--param-color-surface-strong` on hover and while their popup is open (`data-popup-open`) or they are pressed (`aria-pressed`, the filter button while the filter view is shown), a little
     darker while pressed. `0.875 * --param-control-height` high (28px), `0.75 * --param-spacing-xs` side padding,
-    `--param-button-radius`, in the weight of the actions: normal since 2026-09-30, like every button (actions,
-    view controls, the buttons of the filter view, row actions with a label); they were bold, and a normal "Filters"
-    next to a bold "Add user" looked smaller. An icon-only one is at least square (the filter button grows with
+    `--param-button-radius`, in the weight of the actions: normal, like every button (actions, view controls, the
+    buttons of the filter view, row actions with a label; a normal "Filters" next to a bold "Add user" looks smaller). An icon-only one is at least square (the filter button grows with
     its badge).
   - The Reload button's icon turns while loading (`data-busy`).
   - Animations (short, and none with the system's reduced motion setting, see "Look and feel"): a new bar (the bar or
-    the selection bar) comes at once (2026-10-11, the user's wish; it faded in with a tiny upward shift, 150ms, before,
-    and so did the filter drawer's header and the actions after the drawer closed: `data-table-bar-in` and
-    `data-actions-back` are gone); the selection pill and the filter pills scale in
-    from 0.7 (160ms, the selection pill from its left); the text of the selection pill bumps (1.15 wide and 1.25 high, 150ms; it was 1.25 in both directions, then 1.1 wide) when the count
+    the selection bar) comes at once (no fade); the selection pill and the filter pills scale in
+    from 0.7 (160ms, the selection pill from its left); the text of the selection pill bumps (1.15 wide and 1.25 high, 150ms) when the count
     changes.
-- Actions come in four types: general, single-row, multi-row and group (the group one since 2026-09-30, see "Group
-  actions" under Row grouping).
-  - The discriminator `type` of an action is `'general' | 'singleRow' | 'multiRow'` (renamed on 2026-09-29 from
-    `'general' | 'row' | 'rows'`: `'row'` and `'rows'` differed by one letter, easy to misread). Only a single-row
+- Actions come in four types: general, single-row, multi-row and group (see "Group actions" under Row grouping).
+  - The discriminator `type` of an action is `'general' | 'singleRow' | 'multiRow'` (not `'row'` and `'rows'`: one
+    letter apart, easy to misread). Only a single-row
     action has `show` and `default`. The TypeScript names of the types (`RowAction`, `RowsAction`) stay.
-  - Builders (2026-10-15, the user's choice; proposed at about 80%, in the package rather than in each app, since they
-    hold nothing of an app): `generalAction(key, onClick, fields)`, `singleRowAction(…)`, `multiRowAction(…)`,
+  - Builders (in the package rather than in each app: they hold nothing of an app): `generalAction(key, onClick, fields)`, `singleRowAction(…)`, `multiRowAction(…)`,
     `groupAction(…)` fill in `type`; `fields` is the rest of the action (`ActionFields<RowAction<Row>>`, the type
     without `type`, `key` and `onClick`). The handler may return a value (a promise), which is ignored: no `void` in
     the app. The key comes first, never derived from the label (it changes with the language). Menus stay plain
-    objects. In both entries (2026-10-15, the user's choice, proposed at about 80%; the React entry only for a few
-    hours): one implementation (`src/core/action-builders.ts`), typed per entry (`src/react/action-builders.ts`,
+    objects. In both entries: one implementation (`src/core/action-builders.ts`), typed per entry (`src/react/action-builders.ts`,
     `src/element/action-builders.ts`, with `C = Node`; `C` is not inferred from the fields, `NoInfer`: a label
     `() => string` made it `string`). The demos' actions use them (`demo/shared.ts`, `demo/element-demo.ts`). The
     root's apps build their standard actions (New, Open, Edit, Delete) on them, in their own look and texts.
-  - `defineColumns<Row>([…])` and `defineActions<Row>([…])` (2026-10-15, the user's wish; leaving them out was
-    proposed at about 60%: they save only the type import and `readonly …[]`): typed by the rows, they return the
+  - `defineColumns<Row>([…])` and `defineActions<Row>([…])` (they save only the type import and `readonly …[]`): typed by the rows, they return the
     array as it is, so a table's columns and actions need no type annotation. `Row` is given (it cannot be inferred
     from the columns: `render` and `visible` need it). In both entries (`src/react/definitions.ts`,
     `src/element/definitions.ts`, there with `C = Node`). The arrays include column groups and action menus. Used in
     `demo/grouping-demo.tsx` and `demo/element-demo.ts`, and by every table of the root's apps.
-  - The list types (2026-10-15, the user's wish, proposed at about 75%): `TableColumns<Row>` (`readonly (TableColumn<Row>
+  - The list types: `TableColumns<Row>` (`readonly (TableColumn<Row>
     | ColumnGroup<Row>)[]`) and `TableActions<Row>` (`readonly (TableAction<Row> | ActionMenu<Row>)[]`), like
     `TableFilters`: a whole list, with its groups and menus, as the props take it (the props use them too). In both
     entries (the element's with `C`). The root's apps type their lists with them, in place of the `define…` helpers.
-  - `defineFilters({…})` (2026-10-15, the user's wish): the same for the filters (`filters`), in both entries (the
+  - `defineFilters({…})`: the same for the filters (`filters`), in both entries (the
     element's with `C = Node`). No `Row`: a filter's key need not be a field of the row (a filter without a column).
     Used by the demos and every filters object of the root's apps (not in the tests, nor in the apps' filter
     hooks).
-  - What the action column shows of an action is a setting of the table, not of the action (decided 2026-09-29):
+  - What the action column shows of an action is a setting of the table, not of the action:
     `rowActionLook?: 'icon' | 'label' | 'iconAndLabel'` (default `'icon'`; the element's attribute `row-action-look`,
     property `rowActionLook`). Actions describe their whole look (label, icon, tip); the table decides for the rows.
     - `'icon'`: only the icon, with the label as the tooltip and the accessible name (or the tip, when there is one).
@@ -1860,36 +1737,33 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       with a tip) always shows its icon.
     - The toolbar and the selection bar show an action as it is (icon and label, or what it has).
     - So one action can be shown in both places (`show: 'both'`), with a label in the toolbar and only an icon in the
-      rows. The rows look uniform. (A per-action `iconOnlyIn` was tried first and replaced; dropping `show: 'both'`
-      for two actions per place was considered.)
+      rows. The rows look uniform. (Weighed: a per-action `iconOnlyIn`; dropping `show: 'both'` for two actions
+      per place.)
     - The type cannot check that every action of the column has an icon when the table shows icons.
     - Later (a separate step): make the label required and the icon optional in `ActionLook` (the label is then always
       there for the name, the tooltip and the menus).
-  - `contextMenu?: boolean` on every action (default `true`, decided 2026-09-29): `false` leaves it out of the context
+  - `contextMenu?: boolean` on every action (default `true`): `false` leaves it out of the context
     menu (also inside a menu), for an action that does the same as another one there. E.g. a single-row "Delete" in
     the rows next to a multi-row "Delete" of the selection: on a right-click both would be about the clicked row.
-  - `visible?: (row) => boolean` on a `singleRow` action (2026-10-10, the user's choice of three, proposed at about 50%;
-    for the File Center's "Open", which did the same as "Details" for a file): the action is only there for the rows it
+  - `visible?: (row) => boolean` on a `singleRow` action (e.g. the File Center's "Open", which would do the same as
+    "Details" for a file): the action is only there for the rows it
     returns `true` for, everywhere: the action column (`columnItems(actions, row)`, `rowActionsFor(row)`), the context
     menu of a row, the selection bar (one row selected) and the double click. Inside a menu too; a menu left empty is
     gone. Not a disabled look: the action is simply not there. The action column stays while any row action exists.
-    - The action column is right-aligned (2026-10-10, the user's choice of two, proposed at about 45%): the actions
+    - The action column is right-aligned: the actions
       every row has line up at the end, so the app puts the ones that vary first (the File Center: "Open", then
       "Details", "Rename"). The other one, an invisible action keeping its place, is in the Todo.
     - The default action (a double click): the first one marked (`default: true`) that is visible for the row; so a
-      table may mark several, e.g. "Open" for folders and "Details" for files (before: only the first one marked
-      counted, the rest were ignored).
-  - `pinned?: boolean` on a `general` action (2026-10-10, the user's wish, for the File Center's "Up"; proposed at
-    about 60%, see Todo for an enumerated value instead): at the very start of the bar, before Reload, and kept in the
+      table may mark several, e.g. "Open" for folders and "Details" for files.
+  - `pinned?: boolean` on a `general` action (e.g. the File Center's "Up"; see Todo for an enumerated value instead): at the very start of the bar, before Reload, and kept in the
     selection bar at the same place, before the pill (navigation, not an action on the rows: it must not go when rows
     are selected). Several keep the order of the app. Not among the general actions on the right. Inside a menu it does
     nothing (the action stays in its menu). Blocked like the rest of the bar (loading, the filter view, the drawer).
     `pinnedToolbarItems` in `actions.ts`, `.toolbarPinned` (`data-table__toolbar-pinned`).
-    - Ghost buttons (`data-placement="tool"`, like Reload and the column menu) and a divider after them (2026-10-10,
-      the user's idea: as standard buttons at the start they looked odd), only when something follows on the left
+    - Ghost buttons (`data-placement="tool"`, like Reload and the column menu) and a divider after them (as
+      standard buttons at the start they look odd), only when something follows on the left
       (Reload or the search box; in the selection bar the pill). A `primary` or `danger` variant is the filled button of
-      that variant, like the other actions (2026-10-10, the user's wish: whoever pins one gets that; for a while the
-      same day the variant was ignored). Weighed: right of the search box (it would jump to the start when rows are
+      that variant, like the other actions (whoever pins one gets that). Weighed: right of the search box (it would jump to the start when rows are
       selected: the selection bar has no Reload and no search box), before the title (not every table has one).
   - They are described declaratively (a list of actions), not by hand-written render functions.
   - Actions are native buttons, and a menu is Base UI's `Menu` (`role="menu"`, items `role="menuitem"`).
@@ -1898,11 +1772,11 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     - Arrow keys (wrapping), Home, End and typing move between the items. Escape closes it and gives the focus back to
       its button, a click outside closes it.
     - Choosing an item closes the menu and runs the action once. A second click on the menu button closes it.
-    - It opens below the button, aligned to its end: the actions of the toolbar (since 2026-09-28) and the action
-      column both sit at the right, so it does not reach past the table. Base UI flips it
+    - It opens below the button, aligned to its end: the actions of the toolbar and the action column both sit at the
+      right, so it does not reach past the table. Base UI flips it
       when there is no room. It is not modal (`modal={false}`).
     - The item under the pointer or the keyboard focus is `--param-color-surface-strong` (Base UI's `data-highlighted`):
-      darker than `--param-color-hover` (too light on the popup; it was that before), an existing theme value.
+      darker than `--param-color-hover` (too light on the popup), an existing theme value.
   - General and multi-row actions are shown in the bar of the toolbar, on the left side.
   - Single-row actions can be shown in an optional action column at the very right, in the toolbar, or in both.
     - When no data row is shown, the whole action column is not shown: header cell and left border included.
@@ -1923,8 +1797,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     `'secondary'`).
     - `primary`: the one main action, emphasized. `secondary`: the normal look. `danger`: destructive actions, in a red
       tone. There is no combination of primary and danger.
-    - `tertiary` (2026-10-11, the user's wish; proposed at about 65%, over a table setting `actionLook: 'outline' |
-      'ghost'`, which could not mix both): less important than secondary. In the toolbar and the selection bar a ghost
+    - `tertiary` (not a table setting `actionLook: 'outline' | 'ghost'`, which could not mix both): less important than secondary. In the toolbar and the selection bar a ghost
       button like the view controls (no border, no background at rest; `colorSurfaceStrong` on hover and while its menu
       is open); in the action column and in menus the same as secondary. Named by its role, like the others (Carbon's
       "tertiary" is an outlined button, its "ghost" the borderless one; Mantine calls the look `subtle`).
@@ -1945,7 +1818,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
         icon button class) too.
       - With `selectionAppearance="accent"` (where the row hovers in the accent tint), the action column buttons and
         the details chevron get `--param-color-selected-border` instead, a darker shade of that tint, like the drag
-        handle (2026-09-29). The pager buttons (not on a row) keep the gray.
+        handle. The pager buttons (not on a row) keep the gray.
     - In a menu, the menu button follows the variant of the menu. An item of a menu is red when it is `danger`
       (the other variants look the same there).
     - Every action button carries `data-variant` with its variant.
@@ -1958,11 +1831,11 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       a visible action is before and after it: none at the start or at the end, and only one where several follow each
       other. A menu with only separators and invisible actions is hidden.
     - Works in the toolbar and in the action column.
-    - The chevron of a menu button (2026-10-11, the user's wish): always with a label; an icon-only menu has one in the
+    - The chevron of a menu button: always with a label; an icon-only menu has one in the
       toolbar and the selection bar (a 12px chevron after the icon, the button then as wide as its content,
       `data-chevron`), not in the action column (tight room). `chevron?: boolean` on a menu decides instead (React and
-      the element), e.g. `false` for a "⋯" menu, where a chevron would say "more" twice. Before, icon-only menus had
-      none anywhere. (Weighed: on every icon-only menu, the rows' too; only by `chevron: true`.)
+      the element), e.g. `false` for a "⋯" menu, where a chevron would say "more" twice. (Weighed: on every icon-only menu,
+      the rows' too; only by `chevron: true`.)
   - A single-row action can be the default action: `default?: boolean` on `RowAction`.
     - A double click on a row runs it, with that row. The same area as the single click: all of a data cell but its
       controls, the free space and plain text of a detail cell (and its layout elements), never a control cell.
@@ -1977,15 +1850,13 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       real browser shows this: the test suite mocks `getSelection` to pin it.
     - A double click selects only its row (with a selection mode) and runs the action: its first click is a plain
       row click, which already selects only this row (see the row click), and nothing flashes.
-      - Before (until 2026-09-29), a double click left the selection exactly as it was: the first click selected, and
-        the second mouse down put the selection from before back. The checkbox then showed a short flash, so it was
-        dropped.
+      - Not "a double click leaves the selection as it was": the second mouse down would put the selection back, and
+        the checkbox would flash.
       - No delay and no guessed threshold: a row click selects at once. The second click of a double click never
         counts on its own (`event.detail >= 2`, the browser counts the clicks itself).
       - Never invent a double click duration. It differs per system and per browser, the web platform does not
         expose it, and `event.detail` makes knowing it unnecessary.
-    - The first action marked `default` that is there for the row (`visible`) wins, the rest are ignored (2026-10-10;
-      before, the first one marked, whatever the row). So several may be marked, e.g. "Open" (folders) and "Details".
+    - The first action marked `default` that is there for the row (`visible`) wins, the rest are ignored. So several may be marked, e.g. "Open" (folders) and "Details".
     - It counts wherever the action lives: in the action column, in the toolbar, or inside a menu, whatever `show`
       says. It does not change the selection mode either, so a table can have a default action and no checkboxes.
     - No touch equivalent (there is no double tap) and no cursor of its own: the button stays the discoverable way.
@@ -2025,7 +1896,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       when its own handler is skipped. So where the browser's menu is wanted, our listener on the table stops the
       event there (`stopPropagation`): neither Base UI's handler nor its document listener get it.
     - Base UI keeps the open handler of its first render: it calls our latest `prepare` through a ref.
-- Row reordering (decided 2026-09-29, our own code, no library): the user moves rows, and the table tells the app.
+- Row reordering (our own code, no library): the user moves rows, and the table tells the app.
   - `reorder?: (move: Move<Row>) => void | Promise<void>`, `Move<Row> = { row, group, after, before }`: the moved row,
     the group it landed in (with `groupBy`, `''` for the blank group; `undefined` without `groupBy`), and its new
     neighbors on the page (`undefined` at the start or the end of the page; in the order of the source, rows of
@@ -2044,15 +1915,14 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - The handle: an icon button (Tabler's `grip-vertical`), dimmed, the text color on hover, `cursor: grab`, named
     `Texts.moveRow` ("Move row"), no tooltip. Its hover background is the gray of the row buttons
     (`--param-color-surface-strong`), and with `selectionAppearance="accent"` (where the row hovers in the accent tint)
-    `--param-color-selected-border`, a darker shade of that tint (2026-09-29), like the other row buttons.
+    `--param-color-selected-border`, a darker shade of that tint, like the other row buttons.
   - Pointer (mouse, touch, pen; `view/row-drag.ts`): pressing the handle starts a drag (the pointer is captured, no
-    scrolling on touch, `touch-action: none`). The row itself moves (decided 2026-09-29; a faded row with a 2px drop
-    line in the primary color was the first version): it follows the pointer (an inline `translateY` on its cells and
+    scrolling on touch, `touch-action: none`). The row itself moves (not a faded row with a drop line): it follows the pointer (an inline `translateY` on its cells and
     those of its detail row, `data-drag="dragged"`), lifted above the others (`z-index: 2`, opaque: above the fixed columns of the other rows too,
-    which are `z-index: 1` and come later in the DOM; 2026-10-04; the sticky header, `z-index: 3`, stays above it), with a line on top and at the bottom of the normal width (real borders, the top one
+    which are `z-index: 1` and come later in the DOM; the sticky header, `z-index: 3`, stays above it), with a line on top and at the bottom of the normal width (real borders, the top one
     overlapping the line above, like the selection border): `--param-color-border`, and with
     `selectionAppearance="accent"` `--param-color-selected-border`, hovered or not, also on the first row (an inset
-    shadow on top of the borders was tried first: too thick), shown within the rows of the page (never over
+    shadow on top of the borders is too thick), shown within the rows of the page (never over
     the header or below the last row). The rows between its old and its new place slide aside by its height
     (`data-drag="up"`/`"down"`, 150ms, none with reduced motion), so the gap is where it will land. Nothing changes in
     the DOM until the release. The rows are measured once at the start (the transforms would change the measures), in
@@ -2068,30 +1938,28 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     fails (rejects), the error is logged and the page is loaded again (the source's order is the truth). The next load
     (any: page, reload) shows the order of the source.
   - Not while loading.
-- Row grouping (decided 2026-09-29): the table groups the rows of the page; the source may add the totals.
+- Row grouping: the table groups the rows of the page; the source may add the totals.
   - `groupBy?: (keyof Row & string) | ((row: Row) => string)`: a column key (its value as a string) or a function.
     The same option on the element's controller.
-  - Classic grouping, as in data grids (decided 2026-09-30): every row is in a group. An empty value (`''`, `null`,
+  - Classic grouping, as in data grids: every row is in a group. An empty value (`''`, `null`,
     `undefined`) is the blank group `''`, a normal group (like "(Blanks)" in AG Grid and Excel): the source decides
     where it goes; its default header shows `Texts.emptyGroup` ("(Blank)"), `renderGroup` and group actions get `key:
     ''`.
-    - Rows without a group between the groups (an outline, like an agenda with "Opening" before its sections) were
-      built first and dropped: that is tree data, not grouping. With them went the indentation of grouped rows and the
-      sideways moves (dragging left or right, Alt+ArrowLeft/ArrowRight).
+    - No rows without a group between the groups (an outline, like an agenda with "Opening" before its sections): that
+      is tree data, not grouping. So no indentation of grouped rows and no sideways moves.
   - The source delivers the rows sorted by group (the group is its first sort key; the column sort applies within the
     groups). The table groups consecutive rows with the same key, so unsorted rows give a group more than once.
-  - `Result.groups?: readonly ResultGroup[]` (optional), `ResultGroup = { key, total }` (it was `GroupTotal`): the
+  - `Result.groups?: readonly ResultGroup[]` (optional), `ResultGroup = { key, total }`: the
     total of every group on the page. Without it, a group counts only its rows on the page. Paging stays over rows.
-  - Groups come from the rows, as in data grids (decided 2026-09-30), and the order of the groups is the order of the
-    source (its sorting). Dragging whole groups (`reorderGroup`, with all groups collapsing during the drag) was built
-    and dropped for it.
-  - Empty groups from the source (decided 2026-09-30, for an agenda section without items): a group of `Result.groups`
+  - Groups come from the rows, as in data grids, and the order of the groups is the order of the source (its
+    sorting). No dragging of whole groups (built and dropped for it).
+  - Empty groups from the source (e.g. an agenda section without items): a group of `Result.groups`
     with `total: 0` that has no rows on the page gets its header (count `0`, no checkbox), at its place in the order of
     `groups`: right before the next group of that order that is on the page, else right after the one before it; none
     when no group of that order is on the page, or the page has no rows (the empty state). A row can be moved into it
-    (below its header). `segmentsOf` in `grouping.ts`. (A first version, with `ResultGroup.at`, the place of an empty
-    group's header, was dropped: the order of `groups` gives the place.)
-  - Moving a row between groups changes the caret of the groups involved (2026-10-04, the user's wish; `moveLine` in
+    (below its header). `segmentsOf` in `grouping.ts`. (No `ResultGroup.at` for the place of an empty group's header: the
+    order of `groups` gives it.)
+  - Moving a row between groups changes the caret of the groups involved (`moveLine` in
     `use-data-table.ts`, also for the keyboard move):
     - A group whose last row is moved out collapses (nothing left to show).
     - A collapsed empty group a row is moved into expands (the row is its only content).
@@ -2102,36 +1970,27 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     page), total (from the source, or undefined) }`: the content of the group header. It replaces the default (the key
     and the count). Plain content only: it is inside the toggle button.
   - The group header row (`.groupRow`, `.groupCell`): over the whole width, with bold text and no background of
-    its own since 2026-10-04 (the user's wish; a gray band, `--param-color-surface-strong`, was the look from
-    2026-09-30, then a light one, the hover color, for a few hours: both looked heavy; the weight, the caret and the gap
-    above set a group apart; the line below is the cell's own), of the normal height of a row (decided 2026-09-30), the
+    its own (a gray band looks heavy; the weight, the caret and the gap above set a group apart; the line below is the
+    cell's own), of the normal height of a row, the
     normal text color, the caret too; the count dimmed and small. No hover and no row click. With `selectableGroups` and multi selection, a checkbox in the
     selection column (`Texts.selectGroup` / `deselectGroup`, indeterminate while some are selected; gray with the
     neutral appearance) selects all rows of the group on the page, or none. The rest is one button
     (`aria-expanded`): a filled caret (Tabler's `caret-right-filled`; right while collapsed, turned down while expanded)
-    and the content. Not the chevron of the row details (decided 2026-09-30): a group hides or shows rows, the details
+    and the content. Not the chevron of the row details: a group hides or shows rows, the details
     toggle a row's own content, like the triangles of outlines and spreadsheet groups.
-    - The text of a group header is not selectable (`user-select: none`, 2026-10-04, the user's wish): the cells of the
+    - The text of a group header is not selectable (`user-select: none`): the cells of the
       header row are never marked as the selectable cell (`markSelectableCell` in the view), where a click on a data
       cell marks it for text selection.
-    - A gap above every group header (2026-10-04, the user's wish): a transparent top border of
+    - A gap above every group header: a transparent top border of
       `--param-spacing-sm` on the cells of the header row. It is
       part of the cell, so the row drag, which measures the cells, still moves the rows by the right amount (a margin
-      would not be in that height). The first group has it too (it had none for a few hours: without a band, a bold label tight under the
-      column headers' line would look like a part of them).
+      would not be in that height). The first group has it too (without a band, a bold label tight under the column headers' line would look like a
+      part of them).
     - The band spans the whole width: with a checkbox and a handle column (`reorder`), an empty band cell sits in the
       handle column, so the checkbox stays in line with the rows' checkboxes.
-    - History (2026-09-30): first a soft gray band (`--param-color-surface-strong`), too close to the neutral selection, the
-      row hover and the stripes, and almost white in the Mantine theme; then set apart like a section heading (room
-      above, a dimmed line on top, a larger title), which made the rows taller; then a dark band with light text
-      (`--param-color-text-dimmed`, the surface color as text), too much; then the line color (`#c6c6c6`), a bit too
-      dark; then the new value `colorSurfaceStrong`; on 2026-10-04 the light hover color (a caret in the primary color was tried and dropped).
-    - The band spans the whole width: with a checkbox and a handle column (`reorder`), an empty band cell sits in the
-      handle column, so the checkbox stays in line with the rows' checkboxes.
-    - Set apart like a section heading (decided 2026-09-30; the band alone was too close to the neutral selection, the
-      row hover and the stripes, and almost white in the Mantine theme): `spacingXs + spacingSm` of room above its
-      text, a 1px line on top in `--param-color-text-dimmed` (overlapping the line of the row above, so nothing
-      grows; none right below the column headers), and the title at `1.07 × fontSize`.
+    - Weighed and dropped: gray bands (too close to the neutral selection, the row hover and the stripes, almost white
+      in the Mantine theme), a dark band with light text, a section heading with a dimmed line on top and a larger
+      title (taller rows), a caret in the primary color.
     - The default content: the key, then the count, dimmed and small: `Texts.groupCount` ("37"), or
       `Texts.groupPartial` ("5 of 37") when the source's total is larger than the rows on the page (a group that runs
       over a page break; which side it continues on is not known, so there is no "continued").
@@ -2140,13 +1999,12 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - The stripes start again in every group.
   - Row details, the context menu, the selection and the actions work inside groups as without them. The select-all
     checkbox of the header is about all rows of the page.
-  - The group checkbox is opt-in (decided 2026-09-30, like in other grids: AG Grid's `groupSelects`, MUI X's
+  - The group checkbox is opt-in (like in other grids: AG Grid's `groupSelects`, MUI X's
     `rowSelectionPropagation`): `selectableGroups?: boolean` (default `false`; the element's attribute
     `selectable-groups`). Without it (or without multi selection), the header's content (the caret and the name)
-    starts in the first column, over the handle and selection columns (decided 2026-09-30, the user's wish; an empty
-    cell in the selection column pushed it to the right at first). Before, every group header had one with multi
-    selection.
-  - Group actions (decided 2026-09-30): `type: 'group'` in `actions` (`GroupAction`, `onClick(group: RowGroup<Row>)`),
+    starts in the first column, over the handle and selection columns (not after an empty cell in the selection
+    column).
+  - Group actions: `type: 'group'` in `actions` (`GroupAction`, `onClick(group: RowGroup<Row>)`),
     the same on the element's controller. Chosen over a separate `groupActions` prop: `actions` describes everything
     the table offers, and menus and the context menu work the same.
     - At the end of every group header, in the action column (the band's toggle ends before it), in the look of the
@@ -2155,7 +2013,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     - The context menu of a group header (`data-group-key` on the row): its group actions, without those with
       `contextMenu: false`; nothing else. The context menu of a row has no group actions.
     - Never in the toolbar or the selection bar; they do not change the selection mode.
-  - Moving between groups (decided 2026-09-30; before, `reorder` was ignored with `groupBy`): with `reorder`, a row
+  - Moving between groups: with `reorder`, a row
     moves within its group or into another group (like dragging a row onto another group in AG Grid, which changes its
     group value); `Move.group` says where it landed. The logic is pure (`core/grouping.ts`: the page as runs,
     `Segment`, and its lines; `moveInSegments`), with its unit test.
@@ -2167,15 +2025,14 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       last row, at the start of the group below.
     - A group whose rows were all moved away stays on the page, empty, until the next load.
     - The counts in the headers change at once; the totals from the source by ±1, until the next load.
-- Row editing and new rows (decided 2026-09-30): an edit form below the row, over the whole width of the table, one
-  row at a time; "OK" saves the whole row.
-  - History: first like ExtJS's `RowEditing` (the editors in the cells of the row, "Save" and "Cancel" in the action
-    column). Dropped the same day: only the visible columns could be edited, and a narrow column left little room for
-    its editor.
+- Row editing and new rows: an edit form below the row, over the whole width of the table, one row at a time; "OK"
+  saves the whole row.
+  - Not like ExtJS's `RowEditing` (the editors in the cells of the row): only the visible columns could be edited, and
+    a narrow column leaves little room for its editor.
   - `saveRow?: SaveRow<Row>`, `(row, draft) => void | Row | Promise<void | Row>`: saves an edited row. What it returns
     (else the draft) takes the place of the row on the page, without a new load (the app may `reload()`).
   - `createRow?: CreateRow<Row>`, `(draft) => Row | Promise<Row>`: creates a new row; it returns the created row (with
-    its real key). Two functions, not one `saveRow(row | undefined, draft)` (decided): clear types, and a table may
+    its real key). Two functions, not one `saveRow(row | undefined, draft)`: clear types, and a table may
     offer only one of the two.
   - The fields of the form: every column with `edit` (also the hidden ones, in the order of the columns; the column
     header is the label), then `editFields?: readonly EditField<Row>[]`, `{ key, label, edit }`: values that are no
@@ -2188,8 +2045,8 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       that is up to `saveRow`), `selectColumnEditor({ options })` (a single select that always has a value,
       `SelectInput` in `widgets.tsx`), `dateColumnEditor({ placeholder? })` (see below). Small, like the controls of
       the filter view.
-    - `dateColumnEditor()` (`DateInput` in `view/date-range-filter.tsx`, decided 2026-09-30, instead of a text input or
-      a native `<input type="date">`): a trigger in the look of the date range filter (the date in the medium format of
+    - `dateColumnEditor()` (`DateInput` in `view/date-range-filter.tsx`, not a text input or a native `<input
+      type="date">`): a trigger in the look of the date range filter (the date in the medium format of
       the locale, "Apr 6, 1953", or the placeholder, dimmed; a calendar icon, or the clear button while set). It opens
       a popover with one calendar of the same library (`createDatePicker` in `date-range-picker.ts`, next to
       `createRangePicker`): at the month of the date (else of today), the date selected, both ‹ and › shown
@@ -2209,27 +2066,24 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - The form (`view/edit-form.tsx`, a row of the grid with one cell over all columns, `data-edit-form`; a `group` named
     `Texts.editRow` "Edit row" or `Texts.newRow` "New row"): the fields, in as many columns as fit (a column: the
     widest label, the gap and an editor of at least 12rem); below them, on the right, "Cancel" (`Texts.cancelEdit`, a
-    ghost button) and "OK" (`Texts.confirmEdit`, outlined, like "Apply" of the filter view; it was "Save",
-    `Texts.saveRow`, until 2026-09-30: "OK" in capitals, like the dialogs of the overlays package), for a new row "Add"
-    (`Texts.confirmNew`, since 2026-10-01, the user's wish: with "OK" it looked too much like the filter view; like the
-    app's "Add …" action that opens it; "Insert" sounded too technical). Both buttons are as high as the editors and the
-    buttons of the filter view (`0.8 * --param-control-height`, since 2026-10-01, the user's wish; before, the full
-    control height and `0.875 *`, like in the toolbar). On the left the
-    message
-    of a failed save.
-    - The labels (decided 2026-09-30, like the filter view; they were above the editors at first): muted, right
+    ghost button) and "OK" (`Texts.confirmEdit`, outlined, like "Apply" of the filter view; "OK" in capitals,
+    like the dialogs of the overlays package), for a new row "Add" (`Texts.confirmNew`: with "OK" it looks too much
+    like the filter view; like the app's "Add …" action that opens it; "Insert" sounds too technical). Both buttons are
+    as high as the editors and the buttons of the filter view (`0.8 * --param-control-height`). On the left the
+    message of a failed save.
+    - The labels (like the filter view): muted, right
       aligned, before their editor, all as wide as the widest one (measured when the form opens, `scrollWidth`, and set
       inline as the labels' `min-width` and in the width of the columns), so the editors line up. In a narrow form
       (`@container edit-form (width < 24rem)`: a drawer, a phone) the label is above its editor, small and left
       aligned.
-    - It takes the place of the edited row (decided 2026-09-30; before, the row stayed above it and showed the draft):
+    - It takes the place of the edited row:
       it follows the row (after its detail row, if it is expanded), and the row folds up while the form is open.
     - A new row is only its form, first on the page (before its rows, also in an empty table: no empty state
-      meanwhile). (Before, an empty row with the draft stood above it.)
-    - Animation (decided 2026-09-30): when it opens, the form unfolds from no height to its own and its content fades
-      in, while its row (and its detail row) folds up to no height, in 400 ms (`cubic-bezier(0.2, 0, 0, 1)`: the filter view's time and easing, 2026-10-04, the user's wish; 180 ms `ease` before), so the rows below slide
+      meanwhile).
+    - Animation: when it opens, the form unfolds from no height to its own and its content fades
+      in, while its row (and its detail row) folds up to no height, in 400 ms (`cubic-bezier(0.2, 0, 0, 1)`: the filter view's time and easing), so the rows below slide
       by the difference; the rest of the table fades to its faded look meanwhile. Nothing with reduced motion.
-      - "Cancel" and Escape (decided 2026-09-30, the user's wish): the other way round, in 250 ms (`ease-in`, the filter view's closing; 180 ms before): the form
+      - "Cancel" and Escape: the other way round, in 250 ms (`ease-in`, the filter view's closing): the form
         folds up (`data-closing`, inert meanwhile) while its row unfolds again and the rest of the table fades back
         (`data-edit-closing` on the root); then the form closes (`cancelEdit` of the view, a timer; the hook's
         `keyDownEdit` takes it as the cancel of Escape). Not while the draft is saved.
@@ -2239,21 +2093,21 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       - The row: a Web Animation of its cells (`useLayoutEffect` in the view, before the first paint) from their
         measured height, padding, bottom line and opacity to none (CSS cannot animate from `auto`), kept with
         `fill: 'forwards'` while the form is open and cancelled when it closes. "Cancel" plays its keyframes backwards
-        as a new animation (not `reverse()`, which also turns the easing around: the row lagged behind the form and
-        jumped at the end). `EDIT_FORM_OPEN_TIME` and `EDIT_FORM_CLOSE_TIME` in the view are the filter view's times, as in the stylesheet.
+        as a new animation (not `reverse()`, which also turns the easing around: the row lags behind the form and
+        jumps at the end). `EDIT_FORM_OPEN_TIME` and `EDIT_FORM_CLOSE_TIME` in the view are the filter view's times, as in the stylesheet.
     - The first editor gets the focus (its text selected); once the form has unfolded, it comes into view as far as it
       fits. When it closes, the focus goes back to where it was (e.g. the row's "Edit", or "Add" in the toolbar), else
       to the first button of the row's actions.
     - Enter in a text input saves, Escape cancels (it does not clear the selection). Not in an editor's popup (the list
       of a select: its keys are its own). Both are handled (`preventDefault`, `stopPropagation`), so a dialog around the
       table (e.g. the board manager's "Sections" drawer) neither confirms on Enter nor closes on Escape.
-      - A native `keydown` listener on the form's cell, not React's `onKeyDown` (decided 2026-09-30): React handles
-        events where its root is, and the dialog of the overlays package (its `<dialog>` in a shadow root gets the
-        events of its slotted content first) confirmed on Enter before the form had marked it as handled.
+      - A native `keydown` listener on the form's cell, not React's `onKeyDown`: React handles events where its root
+        is, and the dialog of the overlays package (its `<dialog>` in a shadow root gets the events of its slotted
+        content first) would confirm on Enter before the form has marked it as handled.
     - Everything else is blocked (`inert`): the toolbar (the search box and the filter button too), all rows, the
-      footer. The other rows, the footer and the toolbar are faded to 80% and in grayscale (2026-10-10, the user's wish,
-      like the filter view: links, badges and avatars of the app's content turn gray too), as under the open filter view, in the same times
-      (2026-10-07, the user's wish; 70%, 60% and 50% tried the same day, 15% and 20% (2026-10-04), `opacity: 0.4` and 180 ms before); the edited row is not, and the
+      footer. The other rows, the footer and the toolbar are faded and in grayscale (like the filter view: links, badges and
+      avatars of the app's content turn gray too), as under the open filter view, in the same times; the edited row is
+      not, and the
       column headers are only blocked (they stay opaque over the rows). No reordering.
   - Saving: an edited row without a change just closes the form (no call); a new row is always created. While the save
     runs, "OK" shows a turning icon, and the editors and the buttons do nothing (the form keeps its focus). A
@@ -2262,7 +2116,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     - A created row comes first on the page, and the total grows by one, until the next load puts it where the source
       has it (with `groupBy`, it may be a group of its own at the top until then).
   - A new load (a reload of the controller) closes the form; the draft is dropped. "Cancel" of a new row removes it.
-  - The controller's target is kept current in a layout effect (it was a passive effect): a call right after a render
+  - The controller's target is kept current in a layout effect (not a passive one): a call right after a render
     (e.g. `editRow` from a click on a row that just came) gets the state of that render.
   - The demo ("React component" tab): "Edit" (the default action) opens the form of the names, the date of birth (the
     date editor), the email, the country, the role and, as extra fields, the city and the notes; "Add user" a new user (`newUser()`).
@@ -2322,12 +2176,12 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - Each load has its own `AbortController`. The effect cleanup (a newer load, or the unmount) aborts it and marks the
     load as outdated, so its response and its rejection are ignored.
   - A rejected `source` is only logged with `console.error` (see Todo: error state).
-- No `useMemo` needed in the app (2026-10-14, the user's rule: more work in the package, no boilerplate in the apps):
+- No `useMemo` needed in the app (more work in the package, no boilerplate in the apps):
   `columns`, `actions`, `source` and the other props may be new objects on every render, and nothing is reset or
   loaded again (the sort, the selection, the hidden columns, the filters stay). A test renders a table with new props
   three times ("new props on every render"). Filters too: the autocomplete's chosen labels are kept by the table (see the
   autocomplete filter). The dev warning about `sortable` with `reorder` depends on a boolean,
-  so it is not repeated on every render. The apps' and the demo's `useMemo` around columns and actions are gone.
+  so it is not repeated on every render.
 - The current page, page size and sort live in the component. `source` is called when one of them changes.
   - A changed `source` function identity does not trigger a reload.
   - Changing the sort also goes back to page 1.
@@ -2357,83 +2211,72 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 
 ## Todo (later)
 
-- Row actions that are not visible for a row (`visible`, 2026-10-10, the user's wish: later): keep their place in the
-  action column (an empty slot as wide as the button, `visibility: hidden`: not focusable, not announced), so every
-  action has its own column across the rows, whatever the order (proposed at about 55%; for now the column is
-  right-aligned instead, which needs the varying actions first). The context menu and the selection bar would stay
-  without the action. It changes the meaning of `visible` a bit: "not there, but keeps its place".
+- Row actions that are not visible for a row (`visible`): keep their place in the action column (an empty slot as
+  wide as the button, `visibility: hidden`: not focusable, not announced), so every action has its own column across
+  the rows, whatever the order (for now the column is right-aligned instead, which needs the varying actions first).
+  The context menu and the selection bar would stay without the action. It changes the meaning of `visible` a bit:
+  "not there, but keeps its place".
 
-- Pinned actions (2026-10-10, the user's question for later): replace the boolean `pinned` of a `general` action by an
-  enumerated value, e.g. `placement: 'start' | …`? A boolean for now (the user's decision, proposed at about 60%:
-  nobody needs a second position yet; the cockpit's `placement: 'pinned'` has the same meaning). Weighed: a type of
-  its own (`type: 'navigation'`, about 40%: `type` says what `onClick` gets, not where the button is), the names
-  `navigation` and `sticky`.
-- Decide between the filter view and the filter drawer (2026-10-09, the user's wish: "finally decide some day";
-  2026-10-10: the filter view is the default, the user's decision, after Claude's recommendation: the filters are a
-  draft, so the drawer's main advantage, the results beside it, does not count; two columns show more at once; the nose
-  ties it to the filter button; in narrow places it becomes one column. The drawer stays switchable for now). Both
-  are in the code: the filter view (`FilterView`, the sheet below the toolbar, see Filtering) and the drawer, a prototype
-  (`FilterSidebar` in `filter-panel.tsx`: at the right edge over the rows, its buttons at the top: `⟲ | [✓ Apply] [×]`, Cancel an icon-only × at the very end, tipped "Cancel" (2026-10-11,
-  the user's wish: where a drawer's close button is; before, "Cancel" as a ghost button before Apply, with Tabler's
-  thin `arrow-left` until the same day), the title with the count and Clear as Tabler's `eraser` (the same day; the ×
-  before); animated (2026-10-11, the user's wish, tried again; off from 2026-10-09): uncovered from the right edge to
-  the left and faded in, 250ms `ease-out` like the filter view (150ms for a moment the same day), closing the same back with the same easing (`ease-in` for a moment the same day: it vanished abruptly), none with reduced motion (a `clip-path`,
-  `DRAWER_ANIMATION`); two columns when one column would scroll (2026-10-11, the
-  user's wish: adaptive; from 7 filters on for a few minutes the same day), decided once when it opens, before the
-  first paint (no switch while it is open; a resize counts at the next opening), the drawer `min(52rem, 100%)` wide (`28rem` with one), the filters down the first
-  column, then the second, each column lining up its labels; one column again below 40rem of the drawer, a container
-  query). A page flag switches every table, live: the attribute
-  `data-data-table-filter-drawer` on `<html>` (`useFilterDrawerFlag` in `data-table-view.tsx`, a `MutationObserver`;
-  not an API; 2026-10-09, the user's wish: a check item "Filter drawer" in the section "Prototypes" of the root page's
-  kebab menu, remembered per browser, on by default since 2026-10-11 (the user's wish; off before); the constant `FILTER_SIDEBAR` before). A switch closes what is
-  open, its draft dropped. Then remove the other one and the flag, or make it a prop.
-  - Saved filters (2026-10-11, the user's wish; first only in the drawer, in the filter view too since the same day: a
-    row of its own between the filters and the buttons' row, as wide as that and centered like it (the same
-    `SaveFilterFooter`, `data-place="view"`; there "Save as…" follows the saved filters on the left, not at the end, and the name field is at most 20rem wide,
-    like a filter's control; in the buttons' row after the title it would be squeezed again, like in
-    the drawer's header)): the optional
-    prop `savedFilters` (`SavedFilters = { items, save(name, filters), remove(id) }`, `SavedFilter = { id, name,
-    filters }`; on the element a property). The app stores them (the user's choice: not a `storageKey` of the table);
-    `save` and `remove` may return a promise. Without the prop the drawer is as before.
+- Pinned actions: replace the boolean `pinned` of a `general` action by an enumerated value, e.g. `placement: 'start'
+  | …`? A boolean for now (nobody needs a second position yet; the cockpit's `placement: 'pinned'` has the same
+  meaning). Weighed: a type of its own (`type: 'navigation'`: `type` says what `onClick` gets, not where the button
+  is), the names `navigation` and `sticky`.
+- Decide between the filter view and the filter drawer ("finally decide some day"). The filter view is the default:
+  the filters are a draft, so the drawer's main advantage, the results beside it, does not count; two columns show
+  more at once; the nose ties it to the filter button; in narrow places it becomes one column. The drawer stays
+  switchable for now. Both are in the code: the filter view (`FilterView`, the sheet below the toolbar, see Filtering)
+  and the drawer, a prototype (`FilterSidebar` in `filter-panel.tsx`: at the right edge over the rows, its buttons at
+  the top: `⟲ | [✓ Apply] [×]`, Cancel an icon-only × at the very end, tipped "Cancel" (where a drawer's close button
+  is), the title with the count and Clear as Tabler's `eraser`; animated: uncovered from the right edge to the left and
+  faded in, 250ms `ease-out` like the filter view, closing the same back with the same easing (`ease-in` makes it
+  vanish abruptly), none with reduced motion (a `clip-path`, `DRAWER_ANIMATION`); two columns when one column would
+  scroll (adaptive), decided once when it opens, before the first paint (no switch while it is open; a resize counts
+  at the next opening), the drawer `min(52rem, 100%)` wide (`28rem` with one), the filters down the first column, then
+  the second, each column lining up its labels; one column again below 40rem of the drawer, a container query). A page
+  flag switches every table, live: the attribute `data-data-table-filter-drawer` on `<html>` (`useFilterDrawerFlag` in
+  `data-table-view.tsx`, a `MutationObserver`; not an API; a check item "Filter drawer" in the section "Prototypes" of
+  the root page's kebab menu, remembered per browser, on by default). A switch closes what is open, its draft dropped.
+  Then remove the other one and the flag, or make it a prop.
+  - Saved filters (in the drawer, and in the filter view: a row of its own between the filters and the buttons' row,
+    as wide as that and centered like it (the same `SaveFilterFooter`, `data-place="view"`; there "Save as…" follows
+    the saved filters on the left, not at the end, and the name field is at most 20rem wide, like a filter's control;
+    in the buttons' row after the title it would be squeezed, like in the drawer's header)): the optional prop
+    `savedFilters` (`SavedFilters = { items, save(name, filters), remove(id) }`, `SavedFilter = { id, name, filters
+    }`; on the element a property). The app stores them (not a `storageKey` of the table); `save` and `remove` may
+    return a promise. Without the prop the drawer has no saved filters.
     - The drawer's bottom row (`SaveFilterFooter`, `.filter-sidebar-footer`, below the filters, which scroll; at the
-      drawer's bottom edge, the free space above it, `margin-top: auto`, 2026-10-11, the user's wish; only while it has
-      something): the saved filters on the left, "Save as…" at the end (2026-10-11, the user's wish: after
-      the title for a few hours the same day, where the button's text went for lack of room when the count came); while the name field of "Save as…" is open, the row is that field).
+      drawer's bottom edge, the free space above it, `margin-top: auto`; only while it has something): the saved
+      filters on the left, "Save as…" at the end (after the title, the button's text would go for lack of room when
+      the count comes); while the name field of "Save as…" is open, the row is that field.
     - The saved filters, only while there are some: a ghost button with the name of the saved filter the draft
       equals (`sameValue`), else "Saved filters" (`Texts.savedFilters`; with a name, that is its description), cut off
-      when long, and a chevron; its menu (opens upwards) (`SavedFilterMenu` in `filter-panel.tsx`, `.saved-filter-menu`): per saved
-      filter two items on one line, the name (a check at the current one; a click loads it into the draft, Apply
-      applies it as always) and an × (`Texts.deleteSavedFilter`, "Delete {name}"; calls `remove`, the menu stays
-      open; a rejection is only logged).
-    - "Save as…"
-      (`Texts.saveFilter`, Tabler's `device-floppy`, a ghost button), only while there is something to save: not while
-      the draft is empty or equals a saved filter (the user's wish the same day; disabled while empty before; the
-      footer goes with it). It becomes a
-      name field (`Texts.filterName`, focused), Cancel and Save: square outlined icon buttons, × and ✓, as tall as the
-      field, their texts (`Texts.cancelSaveFilter`, `Texts.confirmSaveFilter`) as tooltips and names (2026-10-11, the
-      user's wish: the words, Cancel a ghost button and Save outlined, were too long in some languages); Save disabled
-      while the name is empty ("OK" was proposed, "Save" taken).
-      Save and Enter call `save` with the trimmed name and the draft (not the applied filters); the app decides what an
-      existing name means. Meanwhile Save's check is a turning icon; a rejection keeps the field and shows the message below it
-      (`role="alert"`, the `Error`'s message, else `Texts.saveFilterFailed`), the next change removes it. Enter and
-      Escape in the field belong to it (they neither apply nor cancel the drawer); Escape closes the field.
-    - Sharing (2026-10-11, the user's wish; proposed at about 65%): the table knows no users, the app decides who sees
-      what. `SavedFilters.sharing` (off by default) adds a "Share" checkbox to the name row (`Texts.shareFilter`, our
-      native checkbox in the primary color; unchecked for every new name), and `save` gets `{ shared }`
-      (`SaveFilterOptions`) as its third argument (always `false` without `sharing`). A `SavedFilter` may have
-      `shared` (Tabler's `users` after the name, dimmed, named `Texts.sharedFilter`), `owner` (another user's: "by
-      {name}", `Texts.filterOwner`, dimmed and small below the name) and `removable: false` (no ×, its place empty).
-      Sharing and unsharing later (2026-10-11, the user's wish, proposed at about 70%): with `sharing` and the optional
-      `setShared(id, shared)`, every removable (own) filter has a toggle in the menu between its name and its ×: Base
-      UI's checkbox item (`menuitemcheckbox`, `Texts.shareSavedFilter`, "Share {name}") showing its state as a round
-      chip with an icon and a word (`.saved-filter-chip`, the small size, a 1px line in its color): "🔒 Private"
+      when long, and a chevron; its menu (opens upwards) (`SavedFilterMenu` in `filter-panel.tsx`,
+      `.saved-filter-menu`): per saved filter two items on one line, the name (a check at the current one; a click
+      loads it into the draft, Apply applies it as always) and an × (`Texts.deleteSavedFilter`, "Delete {name}"; calls
+      `remove`, the menu stays open; a rejection is only logged).
+    - "Save as…" (`Texts.saveFilter`, Tabler's `device-floppy`, a ghost button), only while there is something to
+      save: not while the draft is empty or equals a saved filter (the footer goes with it). It becomes a name field
+      (`Texts.filterName`, focused), Cancel and Save: square outlined icon buttons, × and ✓, as tall as the field,
+      their texts (`Texts.cancelSaveFilter`, `Texts.confirmSaveFilter`) as tooltips and names (the words are too long
+      in some languages); Save disabled while the name is empty ("Save", not "OK"). Save and Enter call `save` with the
+      trimmed name and the draft (not the applied filters); the app decides what an existing name means. Meanwhile
+      Save's check is a turning icon; a rejection keeps the field and shows the message below it (`role="alert"`, the
+      `Error`'s message, else `Texts.saveFilterFailed`), the next change removes it. Enter and Escape in the field
+      belong to it (they neither apply nor cancel the drawer); Escape closes the field.
+    - Sharing: the table knows no users, the app decides who sees what. `SavedFilters.sharing` (off by default) adds a
+      "Share" checkbox to the name row (`Texts.shareFilter`, our native checkbox in the primary color; unchecked for
+      every new name), and `save` gets `{ shared }` (`SaveFilterOptions`) as its third argument (always `false` without
+      `sharing`). A `SavedFilter` may have `shared` (Tabler's `users` after the name, dimmed, named
+      `Texts.sharedFilter`), `owner` (another user's: "by {name}", `Texts.filterOwner`, dimmed and small below the
+      name) and `removable: false` (no ×, its place empty). Sharing and unsharing later: with `sharing` and the
+      optional `setShared(id, shared)`, every removable (own) filter has a toggle in the menu between its name and its
+      ×: Base UI's checkbox item (`menuitemcheckbox`, `Texts.shareSavedFilter`, "Share {name}") showing its state as a
+      round chip with an icon and a word (`.saved-filter-chip`, the small size, a 1px line in its color): "🔒 Private"
       (Tabler's `lock`, `Texts.privateFilter`, dimmed) or "👥 Shared" (`users`, `Texts.sharedFilter`, in the primary
-      color); a click switches it (2026-10-11, the user's wish: first the `users` icon alone, dimmed or in the primary
-      color, which did not say which state was which); the menu stays open; a rejection is only logged. It replaces the plain mark on
-      those lines; another user's keeps the mark. (Weighed: "Save as…" for a saved filter again, replacing it by name.)
-      Not done: sorting the menu into own and shared ones.
-    - `useSavedFilters(store, table)` (2026-10-17, the user's choice, proposed at about 60%: the same hook was in each
-      of the root's five apps, over TanStack Query; in `./react`, not `./react-query`: the cache adds little here): the
+      color; the icon alone does not say which state is which); a click switches it; the menu stays open; a rejection
+      is only logged. It replaces the plain mark on those lines; another user's keeps the mark. (Weighed: "Save as…"
+      for a saved filter again, replacing it by name.) Not done: sorting the menu into own and shared ones.
+    - `useSavedFilters(store, table)` (in `./react`, not `./react-query`: the cache adds little here): the
       `savedFilters` of a table from a store of the app (`SavedFilterStore`: `list`, `save`, `remove`, `setShared` by
       the table's name; its items `StoredFilter`, filters as plain JSON), with sharing; the list is loaded on mount and
       again after each change; a filter with an `owner` (another user's) is not removable. `src/core/
@@ -2443,52 +2286,41 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       that one); the Board Manager's meetings tables in `localStorage`, with sharing and a made-up colleague's shared
       filter. Tests: `data-table.test.tsx` ("saved filters (the filter drawer)"), the element's property.
 
-- Cards in a narrow table (2026-10-05, the first step is done, see "Cards in a narrow table"). TBD:
+- Cards in a narrow table (the first step is done, see "Cards in a narrow table"). TBD:
   - Sorting: there are no column headers; e.g. a sort menu in the toolbar (the sortable columns, ascending or
     descending).
   - Select all: there is no header checkbox; e.g. in the selection bar or a line above the cards.
   - Reordering (`reorder`): no drag handles on cards yet (their rows cannot be moved in card mode).
   - The edit form in a card: it takes the card's place for now, without the folding animation, in the layout of the
     grid's form.
-  - The breakpoint: fixed at 576px (2026-10-06, the user's wish: to the todo, not now). A prop (`cardsBelow`), `'auto'`
-    (cards when the columns do not fit at their minimum widths), or none.
+  - The breakpoint: fixed at 576px (not now). A prop (`cardsBelow`), `'auto'` (cards when the columns do not fit at
+    their minimum widths), or none.
   - Column groups: the labels are the leaf headers only; the group's header could prefix them or head a block.
   - Which columns a card shows: all shown ones now; a column option for "not in cards", or a title line (the first
     column bold, without a label).
   - Keyboard: no focus on cards, like the rows of the grid (only their controls).
-  - Keeping the layout the user chose (with the hidden columns and the widths). The prop `layout` (2026-10-06) fixes the
-    layout instead of starting with it, and hides the choice.
+  - Keeping the layout the user chose (with the hidden columns and the widths). The prop `layout` fixes the layout
+    instead of starting with it, and hides the choice.
   - The custom element: it renders the same view, so it gets cards and the layout choice too; its demo.
   - Look at it in a real browser (only the tests ran).
 
-- The look of the data table (2026-10-04): the user does not like it yet. What exactly is not decided: ask first.
-  Suspects, from what the demo shows in the root's cockpit:
-  - Corners that do not match: the buttons are 5px (`buttonRadius`), the rest of the root page has 1 to 2px now (the
+- The look of the data table: the user does not like it yet. What exactly is not decided: ask first. Suspects, from
+  what the demo shows in the root's cockpit:
+  - Corners that do not match: the buttons are 5px (`buttonRadius`), the rest of the root page has 1 to 2px (the
     modern look of `packages/mantine-themes`).
-  - Too many lines: the full grid (vertical lines between all columns, and the row lines); horizontal lines only?
-  - The header row: the gray, the bold labels, the sort arrows on every column.
+  - The header row: the bold labels, the sort arrows on every column.
   - The toolbar: an icon-only refresh, a bordered search field, outlined "Filters", "Add user", "Export": different
     weights, tight together.
-  - Density and contrast: the row height (about 41px), the striped rows, light text and borders (a step stronger
-    elsewhere now).
-  - Tried 2026-10-04 (the user said go): the default theme's `buttonRadius` 5px → 2px, `colorBorder` one step stronger and
-    a lighter `colorHoverAccent`: reverted the same day, the user's rule: the default theme (the `ui-*` values) is the same
-    in every package and must never be changed in just one (see the root `CLAUDE.md`). A change of the look needs all
-    packages (and the tokens of `ui.css`) together. Not done then: the pills (filter pills, count badge, selection pill)
-    stay round by design. Open: which of the suspects was it, really?
-  - 2026-10-05: improved step by step, seen in the Board Manager's tables on the root page (a "Table Lab" of the root,
-    the meetings table alone, was made and removed the same day: the Board Manager shows the same): step 1, the
-    vertical dividers beside the meta and the action columns are gone (see "Separators"; the one before the action column
-    came back, lighter, later the same day); step 2, lighter lines between
-    the rows (`colorDivider`); step 3, page numbers in the footer instead of the page field, round,
-    the current one filled; step 4, the page size as a ghost button "10 per page" (see the footer).
+  - Density and contrast: the row height (about 41px), the striped rows, light text and borders.
+  - The default theme (the `ui-*` values) is the same in every package and must never be changed in just one (see
+    the root `CLAUDE.md`): a change of the look needs all packages (and the tokens of `ui.css`) together. The pills
+    (filter pills, count badge, selection pill) stay round by design.
 
-- From the design spec of 2026-09-28 (filter popup, pills, selection bar), not done yet:
+- From the design spec (filter popup, pills, selection bar), not done yet:
   - Look at it in a real browser (only written, not run: no Node.js was available to that session).
   - "Show only the selected rows": a click on the selection pill toggles it (the pill then solid, and the footer says
     "N selected shown" with "Show all" instead of the pager). Needs a change of the footer, which was out of scope.
-  - The footer of the spec: "Rows" with the page size, "21–30 of 37". (Its page numbers, the current one in a light
-    accent tint, came 2026-10-05: see the footer.)
+  - The footer of the spec: "Rows" with the page size, "21–30 of 37".
   - The grid as one container with a hairline border and a 12px radius, and a slightly stronger line under the
     header. Out of scope for now (the table body was to stay as it is).
   - A date range with one open side (`Created ≥ Aug 1, 2026`): the calendars always pick both ends.
@@ -2501,7 +2333,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   from the page before.
 - Row reordering: scrolling the rows area while dragging near its top or bottom edge (auto-scroll); moving several
   selected rows at once; a drop onto another page.
-- Inline editing per cell (asked for 2026-09-30, by the board manager's "Sections" drawer, which renders its own
+- Inline editing per cell (asked for by the board manager's "Sections" drawer, which renders its own
   inputs for now): the edit form came first (see "Row editing and new rows"); editing single cells (a double click or
   F2 on a cell) may follow, on the same `edit` of the columns.
 
@@ -2519,8 +2351,8 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 
 - Combobox and autocomplete (Base UI), when a filter needs one. Select and multiple select are unified already.
 
-- Consider replacing Base UI with Zag.js (2026-10-05, the user's idea): the app cockpit uses Zag.js (with Lit), so all
-  packages would have one headless library. Not now: only with a concrete reason, and then step by step.
+- Consider replacing Base UI with Zag.js: all packages would have one headless library. Not now: only with a
+  concrete reason, and then step by step.
   - For it: one library for all packages (the same concepts, keyboard and focus behavior, one dependency to keep up to
     date in the customers' copies); Zag's state machines are framework-independent (Base UI is React only), which fits
     the custom element better (today React on Preact plus Base UI) and a framework-free core (see below); probably a

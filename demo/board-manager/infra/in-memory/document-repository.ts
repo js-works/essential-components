@@ -35,7 +35,7 @@ function createDocumentRepository(): DocumentRepository {
     },
 
     upload(meetingId) {
-      return async (file, { signal, onProgress }) => {
+      return async ({ file, signal, onProgress }) => {
         const duration = Math.min(4000, 800 + file.size / 1000);
         const steps = 10;
 

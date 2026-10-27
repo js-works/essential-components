@@ -1,8 +1,7 @@
 # rich-text
 
-`@local/rich-text`: a rich-text editor for Mantine apps (React), built on BlockNote. Created 2026-10-17 (the user's
-wish: it will be used whenever an app needs a rich-text editor; the Board Manager's minutes editor was its start). The
-rules of the root's `CLAUDE.md` apply.
+`@local/rich-text`: a rich-text editor for Mantine apps (React), built on BlockNote, for whenever an app needs a
+rich-text editor (the Board Manager's minutes use it). The rules of the root's `CLAUDE.md` apply.
 
 ## Conventions
 
@@ -19,12 +18,12 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   `RichTextMentions`, `MentionOption`); `src/index.ts` exports them flat and the two components.
 - Always add the decisions (also small ones) to this file, in the same step as the code.
 
-## Decided (2026-10-17, step by step with the user)
+## Decided
 
 - Tier 2 (built on Mantine, and i18next where texts are needed; see the planned tiers of the conventions in the root's
   `CLAUDE.md`), with BlockNote's UX (a block editor: the `/` menu, drag handles), not Mantine's own `@mantine/tiptap`
   (a classic toolbar editor: another user experience).
-- The name: `@local/rich-text`, `RichTextEditor` (the field) and `RichText` (the read-only view, the user's choice:
+- The name: `@local/rich-text`, `RichTextEditor` (the field) and `RichText` (the read-only view:
   the short form of `RichTextEditor readOnly`, for tables and detail views). Weighed: `rich-text-editor`,
   `mantine-block-note` (names the technology).
 - Dependencies: `@blocknote/core`, `@blocknote/react`, `@blocknote/mantine` (`^0.55.0`, as the root has them); peers

@@ -24,7 +24,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 - No runtime dependencies. Peer dependencies: `react` (`>=19`) and `zod` (`^4`), both outside the build.
 - Tests: Vitest with jsdom, `@testing-library/react` and `@testing-library/user-event` (`src/**/*.test.ts(x)`, with
   `vitest.setup.ts`).
-- A small demo (2026-10-07; `npm run dev`): a React sign-up form with the demo's own field components, the app's
+- A small demo (`npm run dev`): a React sign-up form with the demo's own field components, the app's
   keys in English and German (following `<html lang>`), a made-up server (a taken email, a failing name).
 - npm never runs install scripts of dependencies: `.npmrc` has `ignore-scripts=true`.
 - npm only installs versions that are at least 7 days old: `.npmrc` has `min-release-age=7`.
@@ -33,21 +33,17 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 
 ## Project layout and commands
 
-- `exports` in `package.json` (2026-10-15, the user's choice; proposed at about 70%, over an alias per package and
-  entry in the root): each entry has a `source` condition first, its file in `src/`, then its built file in `dist/`.
+- `exports` in `package.json` (rather than an alias per package and entry in the root): each entry has a `source` condition first, its file in `src/`, then its built file in `dist/`.
   The root's demo resolves the package by name (`@local/…`) to its sources by that condition (its `vite.config.ts`
   and `tsconfig.json`); everywhere else, a customer's copy too, the condition is ignored and `dist/` counts.
 - `src/index.ts`: the public API (`defineUseForm`, `binding`, `formMeta`, `formRegistry`, `catalogs` and the types,
-  all flat: `import type { UseFormOptions } from '@local/form-validation'`; the type namespace `formValidation` for
-  two days until 2026-10-14). Renamed then (`typescript.md`, two words): `Binding` → `FieldBinding`, `BindingConfig`
-  → `FieldBindingConfig`, `PropNames` → `FieldPropNames`, `Fields` → `FormFields`, `Message` → `ValidationMessage`,
-  `LibCatalog` → `BuiltInCatalog`.
+  all flat: `import type { UseFormOptions } from '@local/form-validation'`).
 - `src/define-use-form.ts`: the hook factory: the store (values, errors, dirty and shown fields), events, submit and
   the props of `form()` and `field.x()`.
-- `src/api/`: the public types (2026-10-12; `src/types.ts` before): `fields.ts` (bindings, field options and props),
+- `src/api/`: the public types: `fields.ts` (bindings, field options and props),
   `form.ts` (`UseFormOptions`, `UseFormReturn`, the submit, `FormConfig`, `FormMeta`), `texts.ts` (the messages,
   also `MessageKey` and `BuiltInCatalog`), `i18n.ts` (`I18nAdapter`, `I18nConfig`);
-  `src/index.ts` exports them (no barrel since 2026-10-14).
+  `src/index.ts` exports them (no barrel).
 - `src/schema.ts`: reads the fields from the Zod schema (kind, semantic type, required, default, bounds).
 - `src/issues.ts`: turns Zod issues into message keys with parameters.
 - `src/i18n.ts`: the translator (adapter, app messages, catalogs), `Intl` formatting, plural forms, `humanize`.
@@ -58,7 +54,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 - `demo/`: the demo (not part of the library; typechecked with it). `form-validation-demo.ts`: the whole demo as a light DOM
   custom element (exported, not registered; see "Demo element" in the `CLAUDE.md` of the file upload; the root page
   registers it as `form-validation-demo`). `form-demo.tsx`: the form and the schema. `fields.tsx`: text, select and
-  checkbox field components. `field-message.tsx`: the message of a field as a popover (2026-10-07, the user's wish; a copy of
+  checkbox field components. `field-message.tsx`: the message of a field as a popover (a copy of
   the Board Manager's `FieldError` of the root page, for a plain input: in the top layer, shown while the field has the
   focus, placed by script below the control, the arrow up or down; its CSS in `demo.css`). `use-form.ts`: `defineUseForm` once. `i18n.ts`: texts and adapter. `demo.css`, `ui/` (the
   design language, a copy of `packages/ui-theme/src`), `main.ts` + `index.html` (the standalone page).
@@ -84,8 +80,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 - Edge case of the validation strategy vs. the browser's `:user-invalid`: a user types into a field, restores the old
   value (e.g. types "A" into an empty required field and deletes it) and leaves it. The browser fires no `change`, so
   the field is not "user invalid"; form-validation counts it as changed and shows the error on blur. Possible fix: a
-  field counts as changed on blur only if its value differs from the value it had on focus. Left as it is for now
-  (2026-10-02). Asking the browser (`el.matches(':user-valid, :user-invalid')`) was rejected: not every input component
+  field counts as changed on blur only if its value differs from the value it had on focus. Left as it is for now. Asking the browser (`el.matches(':user-valid, :user-invalid')`) was rejected: not every input component
   is based on a native, form-associated element, and one form would get two different rules.
 
 - "No `any`" (the rule of the other packages: `unknown` and narrow it) is not applied yet. The code uses `any` for
