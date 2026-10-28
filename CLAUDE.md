@@ -158,7 +158,7 @@ and imports the files it needs from its `CLAUDE.md`.
     here, and in each package; no sync script, the user's decision). Read the header of `ui.css` before changing it.
     - Its `ui-*` tokens are the default look: the packages' default themes follow them, and a change of a token is
       made in the packages' defaults too. The radius: `--ui-radius-sm: 2px` for controls (inputs, selects, menus);
-      the data table's `radius` is `2px`, the file upload's small parts `2px` (half of its `borderRadius`, `4px`).
+      the data table's `radius` is `2px`, the file upload's small parts `2px` (its thumbnails and tooltip), its preview dialog `6px`.
       Buttons: `--ui-radius-md: 5px`; the data table's `buttonRadius`, the file upload's `buttonBorderRadius`
       and the overlays' `actionRadius` (dialog buttons) are `5px`. The default theme (the `ui-*` values) is the same in every
       package that has it, and MUST NOT be changed in just one of them (2026-10-04, the user's rule: the data table

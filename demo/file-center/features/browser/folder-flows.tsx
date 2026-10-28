@@ -5,7 +5,6 @@ import { createFileUploadComponent } from '@local/file-upload/react';
 import { MANTINE_THEME } from '@local/file-upload/themes';
 import { useDialogs, useToast } from '@local/overlays/react';
 
-import { createDemoI18n } from '../../../../packages/file-upload/src/demo/i18n.js';
 import type { Folder, MediaFile } from '../../domain/index.js';
 import { countText } from '../../shared/lib/format.js';
 import { MoveForm } from './components/move-form.js';
@@ -29,10 +28,7 @@ export {
 // The flows of a folder's contents, one hook per use case: favorites, a new folder, rename, move, into the trash,
 // upload, download. Every change refreshes all reads.
 
-const uploadI18n = createDemoI18n();
-
 const MediaUpload = createFileUploadComponent({
-  i18n: { type: 'factory', getAdapter: () => uploadI18n },
   theme: MANTINE_THEME,
 });
 

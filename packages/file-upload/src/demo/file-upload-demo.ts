@@ -1,5 +1,6 @@
 import { constant } from '../main/core/utils.js';
 import { createFileUploadClass } from '../main/index.js';
+import { DEFAULT_THEME } from '../main/themes/index.js';
 import './demo.css';
 import { submitted, summarize } from './format.js';
 import { createDemoI18n } from './i18n.js';
@@ -26,7 +27,7 @@ let counter = 0;
 // The whole demo of the file upload, as a light DOM custom element without attributes, so a page can show it alone
 // (index.html) or together with the demos of other components. Like our components, it is exported and not registered:
 // the page registers it under a tag name of its choice. The global switches (language, color scheme) belong to the page,
-// not to the demo: the elements follow `<html lang>` through the demo's i18n adapter.
+// not to the demo: the elements follow `<html lang>` through the demo's i18n adapter (`i18n.ts`).
 class FileUploadDemo extends HTMLElement {
   #rendered = false;
   #cleanups: (() => void)[] = [];
@@ -238,18 +239,29 @@ function apply(switches: HTMLFormElement, elements: readonly (DefaultUpload | Ac
   }
 }
 
-const i18n = createDemoI18n();
-const factory = { type: 'factory', getAdapter: () => i18n } as const;
+const i18n = { type: 'factory', getAdapter: () => demoI18n } as const;
+const demoI18n = createDemoI18n();
 
-class DefaultUpload extends createFileUploadClass({ i18n: factory }) {}
+const ACME_ACCENT = 'light-dark(#0ca678, #20c997)';
+const ACME_SURFACE = 'light-dark(#e6fcf5, #0b3b2e)';
+
+class DefaultUpload extends createFileUploadClass({ i18n }) {}
 
 class AcmeUpload extends createFileUploadClass({
-  i18n: factory,
+  i18n,
   theme: {
-    accentColor: { light: '#0ca678', dark: '#20c997' },
-    surfaceColor: { light: '#e6fcf5', dark: '#0b3b2e' },
+    ...DEFAULT_THEME,
+    focusRingColor: ACME_ACCENT,
+    focusRingOffset: '1px',
+    dragOverBorderColor: ACME_ACCENT,
+    progressColor: ACME_ACCENT,
+    buttonHoverBackgroundColor: ACME_SURFACE,
+    thumbnailBackgroundColor: ACME_SURFACE,
+    progressTrackColor: ACME_SURFACE,
+    previewBackgroundColor: ACME_SURFACE,
     borderRadius: '2px',
     buttonBorderRadius: '2px',
+    previewBorderRadius: '2px',
     fontFamily: 'Georgia, serif',
     fontSize: '0.9375rem',
   },

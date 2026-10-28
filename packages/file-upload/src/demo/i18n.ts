@@ -3,23 +3,24 @@ import type { FileUploadTexts, I18nAdapter } from '../main/index.js';
 
 export { createDemoI18n, createLocaleI18n };
 
-// The demo's translations. English is missing on purpose: the component's own texts are the defaults.
-const GERMAN: Readonly<Partial<Record<keyof FileUploadTexts, string>>> = constant({
+// The demo's translations: the texts with params are functions. English is missing on purpose: the component's own
+// texts are the defaults.
+const GERMAN: FileUploadTexts = constant({
   dropHint: 'Dateien hierher ziehen oder',
   browse: 'Durchsuchen',
-  hintAccept: 'Erlaubt: {types}',
-  hintMaxFiles: 'Maximale Anzahl Dateien: {count}',
-  hintMaxFileSize: 'Maximale Größe pro Datei: {size}',
+  hintAccept: ({ types }) => `Erlaubt: ${types}`,
+  hintMaxFiles: ({ count }) => `Maximale Anzahl Dateien: ${count.toLocaleString('de')}`,
+  hintMaxFileSize: ({ size }) => `Maximale Größe pro Datei: ${size}`,
   fileList: 'Dateien',
   statusReady: 'Bereit zum Hochladen',
   statusQueued: 'Wartet',
-  statusUploading: 'Wird hochgeladen: {percent} %',
+  statusUploading: ({ percent }) => `Wird hochgeladen: ${percent.toLocaleString('de')} %`,
   statusDone: 'Hochgeladen',
   statusError: 'Hochladen fehlgeschlagen',
   statusAborted: 'Abgebrochen',
   rejectedType: 'Dieser Dateityp ist nicht erlaubt',
-  rejectedSize: 'Die Datei ist größer als {size}',
-  rejectedCount: 'Zu viele Dateien, maximal {count}',
+  rejectedSize: ({ size }) => `Die Datei ist größer als ${size}`,
+  rejectedCount: ({ count }) => `Zu viele Dateien, maximal ${count.toLocaleString('de')}`,
   upload: 'Hochladen',
   uploadAll: 'Alle hochladen',
   clear: 'Leeren',
@@ -34,10 +35,9 @@ const GERMAN: Readonly<Partial<Record<keyof FileUploadTexts, string>>> = constan
   validationRequired: 'Bitte eine Datei hinzufügen.',
 });
 
-const TRANSLATIONS: Readonly<Record<string, Readonly<Record<string, string | undefined>>>> = constant({ de: GERMAN });
+const TRANSLATIONS: Readonly<Record<string, FileUploadTexts>> = constant({ de: GERMAN });
 
-// A minimal adapter: the locale is the `lang` of `<html>`, texts are looked up by language (`de-CH` uses `de`), and
-// `{name}` placeholders are filled in, numbers formatted for the locale.
+// A minimal adapter: the locale is the `lang` of `<html>`, texts are looked up by language (`de-CH` uses `de`).
 function createDemoI18n(): I18nAdapter {
   const root = document.documentElement;
   const currentLocale = () => root.lang || 'en-US';
@@ -58,7 +58,7 @@ function createDemoI18n(): I18nAdapter {
   };
 }
 
-// The same texts, in a fixed locale (the React demo creates a new adapter when its locale changes).
+// The texts in a fixed locale (the React demo creates a new adapter when its locale changes).
 function createLocaleI18n(locale: string): I18nAdapter {
   return {
     currentLocale: () => locale,
@@ -73,15 +73,8 @@ function resolveText(
   params: Readonly<Record<string, unknown>> | null,
   defaultValue: string,
 ): string {
-  const text = namespace === 'fileUpload' ? TRANSLATIONS[locale.split('-')[0] ?? '']?.[key] : undefined;
+  const catalog = namespace === 'fileUpload' ? TRANSLATIONS[locale.split('-')[0] ?? ''] : undefined;
+  const text: string | ((params: never) => string) | undefined = catalog?.[key as keyof FileUploadTexts];
 
-  if (text === undefined) {
-    return defaultValue;
-  }
-
-  return text.replace(/\{(\w+)\}/g, (_, name: string) => {
-    const value = params?.[name];
-
-    return typeof value === 'number' ? new Intl.NumberFormat(locale).format(value) : String(value);
-  });
+  return typeof text === 'function' ? text(params as never) : text ?? defaultValue;
 }

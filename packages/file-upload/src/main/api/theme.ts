@@ -1,18 +1,33 @@
-export type { FileUploadTheme, FileUploadThemeColor };
-
-type FileUploadThemeColor = string | { light: string; dark: string };
+export type { FileUploadTheme };
 
 type FileUploadTheme = {
-  accentColor?: FileUploadThemeColor;
-  accentTextColor?: FileUploadThemeColor;
-  textColor?: FileUploadThemeColor;
-  mutedColor?: FileUploadThemeColor;
-  borderColor?: FileUploadThemeColor;
-  surfaceColor?: FileUploadThemeColor;
-  successColor?: FileUploadThemeColor;
-  dangerColor?: FileUploadThemeColor;
-  borderRadius?: string;
-  buttonBorderRadius?: string;
-  fontFamily?: string;
-  fontSize?: string;
+  badgeIconColor: string;
+  borderColor: string;
+  borderRadius: string;
+  buttonBorderColor: string;
+  buttonBorderRadius: string;
+  buttonHoverBackgroundColor: string;
+  dangerColor: string;
+  dividerColor: string;
+  dragOverBackgroundColor: string;
+  dragOverBorderColor: string;
+  focusRingColor: string;
+  focusRingOffset: string;
+  focusRingWidth: string;
+  fontFamily: string;
+  fontSize: string;
+  iconButtonColor: string;
+  mutedTextColor: string;
+  previewBackgroundColor: string;
+  previewBorderRadius: string;
+  progressColor: string;
+  progressTrackColor: string;
+  successColor: string;
+  textColor: string;
+  thumbnailBackgroundColor: string;
+  thumbnailBorderRadius: string;
+  thumbnailIconColor: string;
+  tooltipBackgroundColor: string;
+  tooltipBorderRadius: string;
+  tooltipTextColor: string;
 };

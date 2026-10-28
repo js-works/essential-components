@@ -1,9 +1,8 @@
 import { constant } from '../core/utils.js';
-import type { FileUploadClassConfig, FileUploadDensity, FileUploadTheme, FileUploadThemeColor } from '../index.js';
+import type { FileUploadClassConfig, FileUploadDensity, FileUploadTheme } from '../index.js';
+import { DEFAULT_THEME } from '../themes/default.js';
 
-export { createStyleSheet, DEFAULT_THEME, DENSITY_PADDING };
-
-type ResolvedTheme = Required<FileUploadTheme>;
+export { createStyleSheet, DENSITY_PADDING };
 
 // The vertical padding (in em) of the rows of the list and of the drop line, per density. Only these change. The rows
 // match the data table's (4px, 8px, 16px at 14px).
@@ -15,28 +14,11 @@ const DENSITY_PADDING = constant(
   } as const satisfies Record<FileUploadDensity, { row: number; drop: number }>,
 );
 
-const DEFAULT_THEME = constant(
-  {
-    accentColor: { light: '#228be6', dark: '#1c7ed6' },
-    accentTextColor: '#fff',
-    textColor: 'inherit',
-    mutedColor: { light: '#868e96', dark: '#909296' },
-    borderColor: { light: '#dee2e6', dark: '#424242' },
-    surfaceColor: { light: '#f1f3f5', dark: '#2e2e2e' },
-    successColor: { light: '#2f9e44', dark: '#51cf66' },
-    dangerColor: { light: '#e03131', dark: '#ff6b6b' },
-    borderRadius: '4px',
-    buttonBorderRadius: '5px',
-    fontFamily: 'inherit',
-    fontSize: '0.875rem',
-  } as const satisfies ResolvedTheme,
-);
-
 // The stylesheet of one element class: our CSS with the values of the theme put in, followed by the extra `styles`.
 // With `adoptedStyleSheets` it is shared by all elements of the class; where that is missing, each element gets a copy
 // in a `<style>`.
 function createStyleSheet(config: FileUploadClassConfig): CSSStyleSheet | string {
-  const css = `${createCss({ ...DEFAULT_THEME, ...config.theme })}\n${config.styles ?? ''}`;
+  const css = `${createCss(config.theme ?? DEFAULT_THEME)}\n${config.styles ?? ''}`;
 
   if (typeof CSSStyleSheet === 'function' && 'replaceSync' in CSSStyleSheet.prototype) {
     try {
@@ -53,17 +35,14 @@ function createStyleSheet(config: FileUploadClassConfig): CSSStyleSheet | string
   return css;
 }
 
-function color(value: FileUploadThemeColor): string {
-  return typeof value === 'string' ? value : `light-dark(${value.light}, ${value.dark})`;
-}
-
-function createCss(theme: ResolvedTheme): string {
-  const accent = color(theme.accentColor);
-  const accentText = color(theme.accentTextColor);
-  const muted = color(theme.mutedColor);
-  const border = color(theme.borderColor);
-  const surface = color(theme.surfaceColor);
-  const radius = theme.borderRadius;
+function createCss(theme: FileUploadTheme): string {
+  const mutedText = theme.mutedTextColor;
+  const border = theme.borderColor;
+  const divider = theme.dividerColor;
+  const buttonHover = theme.buttonHoverBackgroundColor;
+  const progress = theme.progressColor;
+  const progressTrack = theme.progressTrackColor;
+  const previewBackground = theme.previewBackgroundColor;
 
   return `
 :host {
@@ -71,7 +50,7 @@ function createCss(theme: ResolvedTheme): string {
      shrinks and its list scrolls, so the line below the list stays visible. Without one, it is as high as its content. */
   display: flex;
   flex-direction: column;
-  color: ${color(theme.textColor)};
+  color: ${theme.textColor};
   font-family: ${theme.fontFamily};
   /* The base size. All sizes and spacings are relative to it (\`em\`), so it scales the whole element. The small texts
      are 6/7 of it: their spacings are relative to their own size. */
@@ -97,7 +76,7 @@ function createCss(theme: ResolvedTheme): string {
    frame turns to the danger color with it. */
 .error {
   margin-block-start: 0.5em;
-  color: ${color(theme.dangerColor)};
+  color: ${theme.dangerColor};
   font-size: 0.857em;
   font-weight: 500;
 }
@@ -112,10 +91,10 @@ function createCss(theme: ResolvedTheme): string {
   /* For the narrow layout (see \`@container\` below). The element takes its width from outside. */
   container: file-upload / inline-size;
   border: 1px solid ${border};
-  border-radius: ${radius};
+  border-radius: ${theme.borderRadius};
 
   &[data-invalid] {
-    border-color: ${color(theme.dangerColor)};
+    border-color: ${theme.dangerColor};
   }
 
   &[inert] {
@@ -123,8 +102,8 @@ function createCss(theme: ResolvedTheme): string {
   }
 
   &[data-dragging] {
-    border-color: ${accent};
-    background-color: color-mix(in srgb, ${accent} 10%, transparent);
+    border-color: ${theme.dragOverBorderColor};
+    background-color: ${theme.dragOverBackgroundColor};
   }
 }
 
@@ -160,7 +139,7 @@ function createCss(theme: ResolvedTheme): string {
 
 .limits {
   margin-inline-start: auto;
-  color: ${muted};
+  color: ${mutedText};
   font-size: 0.857em;
 }
 
@@ -177,8 +156,8 @@ button {
   cursor: pointer;
 
   &:focus-visible {
-    outline: 2px solid ${accent};
-    outline-offset: 2px;
+    outline: ${theme.focusRingWidth} solid ${theme.focusRingColor};
+    outline-offset: ${theme.focusRingOffset};
   }
 }
 
@@ -187,13 +166,13 @@ button {
   padding: 0.333em 1em;
   /* Darker than the other borders, so the button stands out as a control. All text buttons look the same, none in the
      accent color: as harmless as possible, because they rarely match the buttons of the app exactly. */
-  border-color: color-mix(in srgb, ${border}, ${muted});
+  border-color: ${theme.buttonBorderColor};
   /* The size of the prompt next to it (it was 0.857em, too small). */
   font-size: 1em;
   font-weight: 600;
 
   &:hover {
-    background-color: ${surface};
+    background-color: ${buttonHover};
   }
 
   & svg {
@@ -224,7 +203,7 @@ button {
   overscroll-behavior: none;
   margin: 0;
   padding: 0;
-  border-bottom: 1px solid ${border};
+  border-bottom: 1px solid ${divider};
   list-style: none;
 }
 
@@ -244,7 +223,7 @@ button {
   }
 
   & + & {
-    border-top: 1px solid ${border};
+    border-top: 1px solid ${divider};
   }
 }
 
@@ -262,9 +241,9 @@ button {
   justify-content: center;
   width: 1.714em;
   height: 1.714em;
-  border-radius: calc(${radius} / 2);
-  background-color: ${surface};
-  color: ${muted};
+  border-radius: ${theme.thumbnailBorderRadius};
+  background-color: ${theme.thumbnailBackgroundColor};
+  color: ${theme.thumbnailIconColor};
 
   & img {
     width: 100%;
@@ -291,11 +270,11 @@ button {
 
   /* The icon of the status (without a preview). */
   .row[data-status='done'] & {
-    color: ${color(theme.successColor)};
+    color: ${theme.successColor};
   }
 
   .row:is([data-status='error'], [data-status='rejected']) & {
-    color: ${color(theme.dangerColor)};
+    color: ${theme.dangerColor};
   }
 
   & [data-icon='spinner'] {
@@ -313,17 +292,17 @@ button {
     width: 0.75em;
     height: 0.75em;
     border-radius: 50%;
-    background-color: ${color(theme.successColor)};
-    color: ${accentText};
+    background-color: ${theme.successColor};
+    color: ${theme.badgeIconColor};
     pointer-events: none;
 
     .row:is([data-status='error'], [data-status='rejected']) & {
-      background-color: ${color(theme.dangerColor)};
+      background-color: ${theme.dangerColor};
     }
 
     /* While uploading: a dot with a ring that grows and fades. */
     &[data-badge='pulse'] {
-      background-color: ${accent};
+      background-color: ${progress};
       animation: pulse 1.2s ease-out infinite;
     }
 
@@ -343,7 +322,7 @@ button {
 
 @keyframes pulse {
   from {
-    box-shadow: 0 0 0 0 color-mix(in srgb, ${accent} 60%, transparent);
+    box-shadow: 0 0 0 0 color-mix(in srgb, ${progress} 60%, transparent);
   }
 
   to {
@@ -367,7 +346,7 @@ button {
 
 .size {
   grid-column: 3;
-  color: ${muted};
+  color: ${mutedText};
   font-size: 0.857em;
 }
 
@@ -379,34 +358,34 @@ button {
   border: none;
   border-radius: 999px;
   appearance: none;
-  background-color: ${surface};
-  color: ${accent};
+  background-color: ${progressTrack};
+  color: ${progress};
 
   &::-webkit-progress-bar {
-    background-color: ${surface};
+    background-color: ${progressTrack};
   }
 
   &::-webkit-progress-value {
-    background-color: ${accent};
+    background-color: ${progress};
   }
 
   &::-moz-progress-bar {
-    background-color: ${accent};
+    background-color: ${progress};
   }
 }
 
 .status {
   grid-column: 5;
-  color: ${muted};
+  color: ${mutedText};
   font-size: 0.857em;
   font-weight: 500;
 
   .row[data-status='done'] & {
-    color: ${color(theme.successColor)};
+    color: ${theme.successColor};
   }
 
   .row:is([data-status='error'], [data-status='rejected']) & {
-    color: ${color(theme.dangerColor)};
+    color: ${theme.dangerColor};
   }
 }
 
@@ -459,7 +438,7 @@ button {
   width: 2em;
   height: 2em;
   padding: 0;
-  color: ${muted};
+  color: ${theme.iconButtonColor};
 
   & svg {
     width: 1.143em;
@@ -467,7 +446,7 @@ button {
   }
 
   &:hover {
-    background-color: ${surface};
+    background-color: ${buttonHover};
     color: inherit;
   }
 }
@@ -485,9 +464,9 @@ button {
   margin: 0.5em;
   padding: 0.333em 0.667em;
   border: none;
-  border-radius: calc(${radius} / 2);
-  background-color: light-dark(#212529, #f1f3f5);
-  color: light-dark(#fff, #212529);
+  border-radius: ${theme.tooltipBorderRadius};
+  background-color: ${theme.tooltipBackgroundColor};
+  color: ${theme.tooltipTextColor};
   font-size: 0.857em;
   pointer-events: none;
 }
@@ -499,10 +478,9 @@ button {
   padding: 0;
   overflow: hidden;
   border: 1px solid ${border};
-  /* Half of the radius, like the thumbnail it enlarges. */
-  border-radius: calc(${radius} / 2);
-  background-color: ${surface};
-  color: ${color(theme.textColor)};
+  border-radius: ${theme.previewBorderRadius};
+  background-color: ${previewBackground};
+  color: ${theme.textColor};
   /* Fades in and grows a little when it opens (\`@starting-style\` below). When it closes, \`data-closing\` plays the
      same the other way round, and the dialog is closed when that has ended. */
   transition:
@@ -537,12 +515,12 @@ button {
     inset-block-start: 0;
     inset-inline-end: 0;
     border-radius: 0;
-    border-end-start-radius: calc(${radius} / 2);
-    background-color: ${surface};
+    border-end-start-radius: ${theme.previewBorderRadius};
+    background-color: ${previewBackground};
     color: inherit;
 
     &:focus-visible {
-      outline-offset: -2px;
+      outline-offset: calc(-1 * ${theme.focusRingWidth});
     }
   }
 }

@@ -14,7 +14,16 @@
   - The apps may have a handful of their own, each only with the user's explicit permission (ask first, with the name
     and why nothing else does), always with the app's prefix (`--board-manager-accent-color`), never a generic name
     like `--shadow`: they inherit into everything inside and collide with other libraries.
-- Placeholders in a stylesheet source: `var(--param-…)`, e.g. `var(--param-color-text)`.
+- Theme tokens (the keys of a package's theme): `<area><state><cssProperty>` in camelCase, the full name of the CSS
+  property they set last; no area for the whole component: `textColor`, `borderRadius`, `fontSize`,
+  `buttonHoverBackgroundColor`, `dialogBorderRadius`, `toastTitleColor`, `sidebarWidth`.
+  - A part that is only a line, a ring, a bar or a mark ends in `Color` (`dividerColor`, `focusRingColor`,
+    `progressColor`, `badgeIconColor`).
+  - The same pattern in every package, so a theme reads alike everywhere.
+  - Weighed: short words (`radius`, `background`, `text`: the color or the size, the color or the width), the kind
+    first (`colorText`, Ant Design's: fits a few semantic tokens, awkward for concrete ones like
+    `colorButtonHoverBackground`).
+- Placeholders in a stylesheet source: `var(--param-…)`, e.g. `var(--param-text-color)`.
   - Script replaces each by a value (e.g. the theme's) before the browser sees the CSS: no custom property at run time.
   - Valid CSS for the tooling (editors, formatters, linters), unlike Less or Sass variables.
   - No package name in it.

@@ -2,8 +2,9 @@ import type { ReactNode, Ref } from 'react';
 import { createElement, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { constant } from '../core/utils.js';
-import { DEFAULT_THEME, DENSITY_PADDING } from '../element/styles.js';
+import { DENSITY_PADDING } from '../element/styles.js';
 import type { FileUploadDensity, FileUploadElement, I18nAdapter } from '../index.js';
+import { DEFAULT_THEME } from '../themes/default.js';
 import type { FileUploadComponentConfig, FileUploadProps } from './index.js';
 
 export { createFileUploadComponent };
@@ -53,7 +54,7 @@ function createFileUploadComponent(
   config: FileUploadComponentConfig = {},
 ): (props: FileUploadProps) => ReactNode {
   const { i18n, ...rest } = config;
-  const fontSize = config.theme?.fontSize ?? DEFAULT_THEME.fontSize;
+  const fontSize = (config.theme ?? DEFAULT_THEME).fontSize;
   let registration: Promise<Registration> | undefined;
 
   // The union type prevents any other `type`, but not in plain JavaScript or with a cast config.

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { createFileUploadClass } from '../../main/element/create-file-upload-class.js';
 import type { FileUploadElement, I18nAdapter, UploadParams } from '../../main/index.js';
+import { DEFAULT_THEME } from '../../main/themes/index.js';
 
 type Pending = UploadParams & {
   resolve: (result?: string) => void;
@@ -1215,9 +1216,15 @@ describe('file upload element', () => {
       const Plain = class extends createFileUploadClass() {};
       const Themed = class extends createFileUploadClass({
         theme: {
-          accentColor: { light: '#0ca678', dark: '#63e6be' },
+          ...DEFAULT_THEME,
+          progressColor: 'light-dark(#0ca678, #63e6be)',
           borderRadius: '3px',
           buttonBorderRadius: '11px',
+          thumbnailBorderRadius: '7px',
+          tooltipBorderRadius: '8px',
+          previewBorderRadius: '9px',
+          focusRingWidth: '3px',
+          focusRingOffset: '1px',
           fontFamily: 'Georgia, serif',
           fontSize: '17px',
         },
@@ -1234,9 +1241,28 @@ describe('file upload element', () => {
       expect(cssOf(themed)).toContain('light-dark(#0ca678, #63e6be)');
       expect(cssOf(themed)).toContain('3px');
       expect(cssOf(themed)).toMatch(/button \{[^}]*border-radius: 11px;/);
+      expect(cssOf(themed)).toMatch(/outline: 3px solid [^;]*; outline-offset: 1px;/);
+      expect(cssOf(themed)).toContain('outline-offset: calc(-3px)');
+      expect(cssOf(themed)).toMatch(/\.thumbnail \{[^}]*border-radius: 7px;/);
+      expect(cssOf(themed)).toMatch(/\.tooltip \{[^}]*border-radius: 8px;/);
+      expect(cssOf(themed)).toMatch(/\.preview-dialog \{[^}]*border-radius: 9px;/);
+      expect(cssOf(themed)).toContain('border-end-start-radius: 9px');
       expect(cssOf(themed)).toContain('Georgia, serif');
       expect(cssOf(themed)).toContain('17px');
       expect(cssOf(themed)).toContain('border-style: dashed');
+    });
+
+    it('puts every color of the theme into the CSS', () => {
+      const colors = Object.keys(DEFAULT_THEME).filter((key) => key.endsWith('Color'));
+      const Colored = class extends createFileUploadClass({
+        theme: { ...DEFAULT_THEME, ...Object.fromEntries(colors.map((key, index) => [key, `rgb(${index}, 1, 2)`])) },
+      }) {};
+
+      customElements.define('colored-upload', Colored);
+
+      const css = cssOf(new Colored());
+
+      colors.forEach((_, index) => expect(css).toContain(`rgb(${index}, 1, 2)`));
     });
 
     it('shares the stylesheet between the elements of a class', () => {

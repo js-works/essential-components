@@ -20,9 +20,8 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   (what it is, its "none" value or default).
   - Each API decision changes only these files.
   - `base.ts` (`FileUploadElement`, `FileUploadClass`, `FileUploadClassConfig`, `FileUploadDensity`,
-    `UploadFunction`, `UploadParams`, `FileItem`, `FileStatus`, `FileRejection`), `theme.ts` (`FileUploadTheme`,
-    `FileUploadThemeColor`), `texts.ts` (`FileUploadTexts`), `i18n.ts`; no barrel: the entries list them.
-  - The types of the component have the package's prefix (`FileUploadDensity`, `FileUploadThemeColor`); `Upload…`
+    `UploadFunction`, `UploadParams`, `FileItem`, `FileStatus`, `FileRejection`), `theme.ts` (`FileUploadTheme`), `texts.ts` (`FileUploadTexts`), `i18n.ts`; no barrel: the entries list them.
+  - The types of the component have the package's prefix (`FileUploadDensity`, `FileUploadTheme`); `Upload…`
     only for the act of uploading (`UploadFunction`, `UploadParams`).
   - The React entry's own types: `src/main/react/api.ts` (`FileUploadComponentConfig`, the config of
     `createFileUploadComponent`; `FileUploadProps`), in the add-on's folder: the React wrapper is an add-on, removable in one piece;
@@ -77,6 +76,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   - `file-upload-element-base.ts`: `FileUploadElementBase`, the internal base class (attributes, properties, shadow DOM, rendering of the list,
     tooltip, preview dialog, focus).
   - `styles.ts`: the CSS (a template string with the theme values put in) and the shared stylesheet.
+    `DEFAULT_THEME` is in `themes/default.ts`.
   - `icons.ts`: the SVG icons (Tabler, with the license notice, including Tabler's `upload` for the drop area).
 - `src/main/index.ts`: the public API (`createFileUploadClass` and the types, flat).
 - `src/main/react/`: the React wrapper, the subpath `@local/file-upload/react` (built as `dist/react.js`, the main entry as `dist/index.js`).
@@ -85,11 +85,21 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     setter), loaded with `import()` on the first mount, so the wrapper can be imported on the server.
 - `src/main/themes/`: the themes, the subpath `@local/file-upload/themes` (`dist/themes.js`, like the
   data table's): plain data, for the element and the React component.
+  - `index.ts` exports the themes; `default.ts`: `DEFAULT_THEME`, the theme without a config, also used by the
+    element and the React placeholder.
   - `mantine.ts`: `MANTINE_THEME`, the values as Mantine's CSS variables (inherited into the shadow DOM), so it follows
     Mantine's color scheme and the app's Mantine theme. The root's apps with an upload use it.
+  - `antd.ts`: `ANTD_THEME`, the values as antd 6's CSS variables (`--ant-…`, inherited into the shadow DOM), so it
+    follows the app's antd theme; the tooltip and the progress track like antd's own `Tooltip` and `Progress`. antd sets
+    its variables on a class of its own (`css-var-root`), which its components carry: the upload sits inside one of them
+    (a `Form`, `Modal`, `Drawer`, `Card`), as it almost always does; not directly in plain markup.
+  - No XWiki theme: an app embedded in XWiki follows the wiki through its own library's theme (e.g. a Mantine theme on
+    XWiki's CSS properties), and so does the upload through `MANTINE_THEME`. Only an upload directly in a wiki page
+    would need one.
   - An entry for i18next: not here (a tier-1 package names no i18n library, `i18n.md`); an adapter over the app's
     i18next for every tier-1 package belongs to `@local/micro-app` (to be discussed).
-  - Not in the package's demo: it has no Mantine; the root's apps use it.
+  - `MANTINE_THEME` and `ANTD_THEME` are not in the package's demo: it has neither; the root's apps use the first. The demo's `acme-upload`
+    spreads `DEFAULT_THEME`.
 - `src/test/`: the tests, in the folders of what they test.
   - `core/accept.test.ts`, `themes/themes.test.ts`.
   - `element/file-upload-element.test.ts`: the whole element (with the store and the view).
@@ -193,17 +203,47 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     - The code never relies on the tag name (use `:host`, not the tag, in CSS).
   - Styling config (per class):
     - `theme` (type `FileUploadTheme`): typed values (colors, radius, fonts) that are put straight into our CSS when
-      the class is created. No public CSS custom properties, so no token names and no prefix. Every color
-      (`accentColor` too) takes a string or `{ light, dark }` (turned into `light-dark()`). Values may be `var(...)`:
+      the class is created. Always complete (every token required): an app's theme spreads a base,
+      `{ ...DEFAULT_THEME, progressColor: '…' }` or `{ ...MANTINE_THEME, … }` (both from `@local/file-upload/themes`);
+      without a `theme`, `DEFAULT_THEME`. So the base is explicit and nothing is merged inside the package; a new token
+      comes with the spread. Weighed: optional tokens merged over the defaults (one type for two jobs), the config
+      taking a `Partial<FileUploadTheme>`, a `createFileUploadTheme(overrides)` helper (a call in every app for a merge a
+      spread does). Our themes are written `constant<FileUploadTheme>({ … })`: the literal is checked against the type,
+      a misspelled key too. No public CSS custom properties, so no token names and no prefix. Every color is a
+      string, for both color schemes: `light-dark()` where they differ (no `{ light, dark }` object: one form, and a
+      design system's variables follow the color scheme already). Values may be `var(...)`:
       the variables of the app's design system are inherited into the shadow DOM.
     - `styles`: extra CSS, added after our default CSS in the shadow root.
     - A different look for one area of the page: `::part()` or a second class.
-    - Theme values, named like the CSS properties they feed (`…Color`, `borderRadius`, `fontFamily`, `fontSize`):
-      - Colors: `accentColor`, `accentTextColor` (marks on the accent or a status color, e.g. in the preview badges),
-        `textColor` (default: inherited from the page), `mutedColor`, `borderColor` (the text buttons: a darker mix of
-        it with `mutedColor`), `surfaceColor` (hover, thumbnail and progress track), `successColor`, `dangerColor`.
-      - `borderRadius` (default `4px`; thumbnails, the tooltip and the preview dialog use half of it: `2px`, the
-        `--ui-radius-sm` of the design language of the demos, see the root `CLAUDE.md`).
+    - Theme values, named by the pattern of `css.md` (`<area><state><cssProperty>`), in alphabetical order in the type
+      and in every theme (the area first, so each area stays together):
+      - Colors: concrete, one per place they are used, not a few semantic ones (an app can change each place on its
+        own; several of them have the same value in most themes). No base colors that the others fall back to: a theme
+        shares a value with a plain JS variable. Semantic tokens fit a larger component (the data table); here the
+        concrete ones stay few.
+        - `textColor` (default: inherited from the page), `mutedTextColor` (the hints, the size, the status text).
+        - `borderColor` (the frame, the preview dialog), `dividerColor` (the lines between the rows and below the
+          list).
+        - `focusRingColor`, `focusRingWidth` (default `2px`), `focusRingOffset` (default `2px`; the close button of
+          the preview dialog keeps its ring inside, at minus the width). No radius: an outline follows the element's
+          `border-radius`.
+        - `dragOverBorderColor` and `dragOverBackgroundColor`: the whole frame (`root`, the drop target) while files
+          are dragged over it, a state without an area (the DOM's `dragover`). Not `drop…`: that reads like the part
+          `drop-area`, the line with "Browse".
+        - `buttonBorderColor` (the text buttons), `buttonHoverBackgroundColor` (the text and icon buttons), `iconButtonColor`.
+        - `thumbnailBackgroundColor`, `thumbnailIconColor` (the status icon when there is no preview),
+          `badgeIconColor` (the checkmark or warning mark on a preview's badge).
+        - `progressColor` (the bar, and the pulsing badge while uploading), `progressTrackColor`.
+        - `successColor`, `dangerColor`: the statuses `done` and `error`/`rejected` (the status text, the icon, the
+          badge); `dangerColor` also for the error text and the invalid frame.
+        - `tooltipBackgroundColor`, `tooltipTextColor`, `previewBackgroundColor` (the preview dialog and its close
+          button).
+      - Radii, concrete like the colors: `borderRadius` (the frame, default `4px`), `thumbnailBorderRadius`,
+        `tooltipBorderRadius` (`2px` each by default, the `--ui-radius-sm` of the design language of the demos, see the
+        root `CLAUDE.md`), `previewBorderRadius` (the preview dialog and the inner corner of its close button; `6px`,
+        `--ui-radius-lg`, a dialog's).
+      - The default colors are the `ui-*` tokens' values (see `themes/default.ts` for the ones without a token).
+        `MANTINE_THEME`: half of Mantine's default radius for the three.
       - `buttonBorderRadius` (default `5px`, the `--ui-radius-md` of the design language): all buttons (text and
         icon buttons), except the preview (a thumbnail) and the close button of the preview dialog (in its corner).
       - `fontFamily` (default: inherited from the page) and `fontSize`: the base size (default `0.875rem`). All sizes
@@ -219,7 +259,8 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     `off`/`on` for booleans), they set attributes and properties on the elements. The page is styled by the design
     language in `src/demo/ui/`, not by the component. Below each element, its state line (listens to `change`, reads
     `items`). The language switch (English, German) sets `<html lang>`; both classes get the demo's `I18nAdapter`
-    (`src/demo/i18n.ts`: German texts, locale from `<html lang>`, watched with a `MutationObserver`).
+    (`src/demo/i18n.ts`: German texts, locale from `<html lang>`, watched with a `MutationObserver`). The
+    React tab's columns have a fixed locale each (the same file, a `hook` adapter).
   - Demo element (decided): the demo is a light DOM custom element without attributes, so a "meta demo" can combine the
     demos of several components (e.g. with vertical tabs on the left). Rules, for this demo and the demos of other
     components:
@@ -323,6 +364,10 @@ The general rules (copies of the repository's master, `docs/conventions/`):
       refreshes every text, accessible name and formatted size; list, uploads and focus stay. On connect the texts are
       refreshed too.
     - Without an adapter: the English texts, formatted in `en-US`.
+    - No ready adapter of our own (no `createFileUploadI18nAdapter`): an app with an i18n library writes a plain
+      `I18nAdapter` over it (a few lines, e.g. over react-i18next's instance: `t(key, { ns: namespace, ...params,
+      defaultValue })`, its `languageChanged` event), which gives its texts, locale and changes in full; a helper for
+      apps without one could only give part of that. Apps without an i18n library are rare (plain pages).
   - Icons: the SVGs of the Tabler icons, copied into `icons.ts` (with the MIT license notice), no icon dependency. The
     drop area shows Tabler's `upload` (a tray with an arrow up), with a thinner stroke (1.5).
   - Controls: native `<button>` and `<progress>`, styled by us. Icon buttons keep their `aria-label` and get our own
@@ -383,7 +428,7 @@ These are the first proposals behind `src/main/api/` and the element. Each one c
     - The buttons are right-aligned, so remove (always the last one) lines up in every row.
     - Retry starts the upload again with a new signal and progress 0.
   - Text buttons ("Browse", "Clear", "Upload all", decided): all in the same neutral style (border, no fill, the
-    `surfaceColor` on hover), none in the accent color. Their text has the size of the prompt next to them (`1em`). The empty element's height follows (the React placeholder:
+    `buttonHoverBackgroundColor` on hover), none in an accent color. Their text has the size of the prompt next to them (`1em`). The empty element's height follows (the React placeholder:
     content 1.806em, see `create-file-upload-component.tsx`). They look as harmless as possible, because they will rarely
     match the buttons of the app's component library exactly, and the element is a form field, not the page's main
     action. "Upload all" keeps its icon and its place at the end. An app that wants a prominent button styles it with
@@ -412,9 +457,9 @@ These are the first proposals behind `src/main/api/` and the element. Each one c
 - `previews` (default `false`): a thumbnail of image files (an object URL, released when the row goes away or the
   element is removed from the page). Other files show the status icon.
   - On a preview, `uploading`, `done`, `error` and `rejected` show as a small badge in its bottom right corner:
-    - `uploading`: a dot in `accentColor` with a ring that grows and fades (it stands still with
+    - `uploading`: a dot in `progressColor` with a ring that grows and fades (it stands still with
       `prefers-reduced-motion`).
-    - The others: a circle in `successColor` or `dangerColor` with a checkmark or warning mark in `accentTextColor`.
+    - The others: a circle in `successColor` or `dangerColor` with a checkmark or warning mark in `badgeIconColor`.
     - Decorative, like the status icon.
   - A preview is a button ("Show preview", with the tooltip) that opens the image large in a modal `<dialog>` (at most
     90% of the screen, `aria-label` is the file name) with a close button (the X, "Close preview", flush in the top
