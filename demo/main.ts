@@ -2,10 +2,12 @@
 import './ui/ui.css';
 import './demo.css';
 
+import { createInstance } from 'i18next';
+
 import type { CockpitFooter, MenuSection } from '@local/cockpit';
 import { createCockpitClass } from '@local/cockpit';
 import type { MountedLoginScreen } from '@local/login';
-import { mountLoginScreen } from '@local/login';
+import { loginResources, mountLoginScreen } from '@local/login';
 
 import {
   accentSetting,
@@ -14,7 +16,8 @@ import {
   pageSettings,
   USER,
   userMenu,
-} from '../packages/cockpit/demo/footer.js';
+} from '../packages/cockpit/src/demo/footer.js';
+import { DEMO_I18N } from '../packages/cockpit/src/demo/i18n.js';
 
 // The page: an app cockpit, with every demo as one of its mini-apps. The page's settings (in the cockpit's footer) set
 // `<html lang>` and the color scheme for every demo. Each demo is a light DOM custom element of its project, loaded
@@ -75,6 +78,7 @@ const icon = (paths: string) =>
 customElements.define(
   'app-cockpit',
   createCockpitClass({
+    i18n: DEMO_I18N,
     title: 'Back Office',
     subtitle: 'Acme Corporate',
     // The search (Ctrl K), although there are only a few apps.
@@ -294,6 +298,17 @@ customElements.define(
         },
       },
       {
+        id: 'cockpit',
+        title: 'Cockpit',
+        description: 'The shell of this page, and the header of an app',
+        group: 'Internals',
+        subgroup: 'Components',
+        element: 'cockpit-demo',
+        load: async () => {
+          define('cockpit-demo', (await import('../packages/cockpit/src/demo/cockpit-demo.js')).CockpitDemo);
+        },
+      },
+      {
         id: 'autocomplete',
         title: 'Autocomplete',
         description: 'A text input that suggests as you type',
@@ -348,6 +363,20 @@ async function signOut(): Promise<void> {
   signingOut = false;
 }
 
+// The login's texts in the page's language (the footer's language switch sets `<html lang>`): a host gives the login its
+// i18next instance, else it is English.
+const loginI18n = createInstance();
+
+void loginI18n.init({
+  lng: document.documentElement.lang || 'en',
+  fallbackLng: 'en',
+  resources: loginResources,
+  initAsync: false,
+});
+
+new MutationObserver(() => void loginI18n.changeLanguage(document.documentElement.lang || 'en'))
+  .observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
+
 function showLogin(): void {
   cockpitElement.hidden = true;
   loginHost.className = 'login-host';
@@ -390,7 +419,7 @@ function showLogin(): void {
       await new Promise((resolve) => setTimeout(resolve, 500));
       signIn();
     },
-  }, { theme: { primaryColor: loginAccent() } });
+  }, { theme: { primaryColor: loginAccent() }, i18n: loginI18n });
 }
 
 // The login's accent: the page's (the footer's "Accent color", remembered per browser; indigo by default), as one of

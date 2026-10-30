@@ -74,7 +74,7 @@ Started 2026-10-03.
   below it, and a page's table takes the rest of the height (its rows scroll, its toolbar, header and footer stay;
   `DataTable` wraps every table in a `micro-app__table` without a box, the layout's hook). Without a height (a host
   page that scrolls) the app header is sticky.
-- The header (`MicroAppHeader`; the app's own `AppHeader` from 2026-10-08 to 2026-10-17): the app icon
+- The header (`MicroAppHeader`, the cockpit's app header since 2026-10-28, its own before; the app's own `AppHeader` from 2026-10-08 to 2026-10-17): the app icon
   (`TbShieldLock`, also the cockpit's), "User Manager", the modules as tabs (Overview, Users, Groups, Roles, Access,
   Check access, Permissions), Back and Forward; below them the breadcrumb (Home › module › name). See the package's
   `CLAUDE.md`; it switches to a menu below 56rem (60rem with the app's own header, for its seven tabs).

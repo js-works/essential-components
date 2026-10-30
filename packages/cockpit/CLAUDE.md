@@ -11,18 +11,21 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 @docs/conventions/general.md
 @docs/conventions/css.md
 @docs/conventions/typescript.md
+@docs/conventions/i18n.md
 
 ## Working rules
 
-- `src/api/` holds the draft API types we are discussing: `navigation.ts` (`NavItem`, `NavGroup`, `NavSubgroup`,
+- `src/main/api/` holds the draft API types we are discussing: `base.ts` (`CockpitElement`, `CockpitClass`,
+  `CockpitClassConfig`, `NavDensity`), `navigation.ts` (`NavItem`, `NavGroup`, `NavSubgroup`,
   `NavLayout`, `NavScheme`), `menus.ts` (`FooterAction`, `ActionChoice`, `ActionChoices`, `MenuItem`, `MenuSection`,
-  `SignedInUser`, `CockpitFooter`), `theme.ts` (`CockpitTheme`), `config.ts` (`CockpitClassConfig`), `element.ts`
-  (`CockpitElement`, `CockpitClass`, `NavDensity`); no `texts.ts` nor `i18n.ts` (no `I18nAdapter`, see the texts).
-  `src/index.ts` exports them flat (`typescript.md`): `import type { NavItem } from '@local/cockpit'`. The demos'
+  `SignedInUser`, `CockpitFooter`), `header.ts` (the app header's: `AppHeaderElement`, `AppHeaderClass`,
+  `AppHeaderClassConfig`, `AppHeaderLink`, `AppHeaderCrumb`, `AppHeaderStep`, `AppHeaderNavigateDetail`), `theme.ts`
+  (`CockpitTheme`, `AppHeaderTheme`), `texts.ts` (`CockpitTexts`), `i18n.ts` (`I18nAdapter`).
+  `src/main/index.ts` exports them flat (`typescript.md`): `import type { NavItem } from '@local/cockpit'`. The demos'
   variables of the element are `cockpitElement` or `element`.
 - Always add the decisions (also small ones) to this file, in the same step as the code.
 - Lit, with `@floating-ui/dom` (the menus' positions and the tooltips); the menus and the group select are our own
-  `Menu`s (`src/element/menu.ts`), the search and the bottom bar's sheet native modal `<dialog>`s (rather than our own
+  `Menu`s (`src/main/element/menu.ts`), the search and the bottom bar's sheet native modal `<dialog>`s (rather than our own
   `inert`, focus and Escape code). No Zag.js: not needed, and the code must be easy to read.
 - Lit and Floating UI stay: the cockpit bundled with both is 47.0 kB gzip (our own code about 31.8 kB, Lit 7.8 kB,
   Floating UI 7.4 kB).
@@ -39,14 +42,14 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   values as plain values in its CSS (it reads no `--ui-*` tokens: those are for demos only), so the cockpit and the
   packages look like one family, whatever component suite a mini-app uses. Not Mantine (its look).
 - Mini-apps stay agnostic: the contract is only a custom element tag, the URL hash, and `<html lang>` /
-  `data-scheme`.
+  `data-scheme` (for the mini-apps: the cockpit itself takes its language only from its adapter).
 - Kept small: navigation, header, routing, language and color scheme. No auth, permissions or notifications for now.
 - The cockpit's own UI lives in its shadow DOM (its CSS isolated both ways). The active mini-app is a light-DOM child
   of the cockpit, shown through the default slot (`<main><slot></slot></main>`): mini-apps put their CSS globally
   (e.g. into `document.head`), which would not reach into a shadow root. The cockpit replaces that child itself on
   navigation (`load()`, then the element from `NavItem.element`). Named slots for the host's parts (`logo`,
   `sidebar-end`). The popups are rendered inside the shadow root, positioned `fixed`.
-- The menus: `Menu` (`src/element/menu.ts`), one per key (`#menu(key, options)` of the element, made on first use and
+- The menus: `Menu` (`src/main/element/menu.ts`), one per key (`#menu(key, options)` of the element, made on first use and
   kept), with the options of the latest render (`placement`, `anchor`, `sameWidth`, `gutter`, `selected`,
   `onSelect`). The menu keeps its state (`open`, `highlighted`); the templates write its parts out, no spreading: the
   trigger (`id=${menu.triggerId}`, `aria-haspopup`, `aria-expanded`, `aria-controls`, `data-state`,
@@ -152,7 +155,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   "Try again"), then kept: the others get `hidden`, so each keeps its state. Its element gets `data-hash-segment` (its
   id): `ui.ts` counts it as a level of the hash, so tabs inside it write `#app/tab`, and restore that when it is shown
   again.
-- The sidebar adapts to the number of apps (`FEW` = 8, `MANY` = 30 in `cockpit-element.ts`):
+- The sidebar adapts to the number of apps (`FEW` = 8, `MANY` = 30 in `cockpit-element-base.ts`):
   - Up to 8: every app listed, the groups as plain headings; no search, no "Recent".
   - More: a search button (an icon-only button with the tooltip "Search (Ctrl K)", in the title row, at its right end,
     vertically centered on title and subtitle; in the rail below the logo; also Ctrl+K / ⌘K: a command palette, a
@@ -177,7 +180,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   the avatar (an image URL, else the initials on the accent color), the name and a second line (e.g. the email). With
   `userMenu` (sections of menu items, like the footer's menu), the row is a button with a chevron that opens it to the
   right of the sidebar (touching it, its bottom at the row's; also in the rail, where only the avatar shows, the name
-  as the tooltip). The demos: "Jane Doe", with Profile, Settings, Sign out (`userMenu(signOut)` in `demo/footer.ts`;
+  as the tooltip). The demos: "Jane Doe", with Profile, Settings, Sign out (`userMenu(signOut)` in `src/demo/footer.ts`;
   on the root page "Sign out" shows the login screen of `packages/login`; else it logs). The kebab menu keeps Keyboard
   shortcuts and "Reset demo" (the demo as if opened for the very first time: it clears `localStorage`,
   `sessionStorage`, IndexedDB, cookies and the cache storage, all of the origin, then reloads at the start, without
@@ -199,7 +202,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   segments are stacked (the toggle at the bottom), and the footer's menus (the kebab's, the choices) open to the right
   as plain panels like the groups' flyouts (touching the sidebar, square corners, a line between them, the sidebar's
   colors), but only as high as their entries, their bottom at their button's. The demo pages' footer
-  (`demo/footer.ts`, also used by the root page): the page's settings as actions with choices (`pageSettings()`:
+  (`src/demo/footer.ts`, also used by the root page): the page's settings as actions with choices (`pageSettings()`:
   language and color scheme, set on `<html>` and remembered per browser; the cockpit's demo adds the number of apps),
   and a made-up kebab menu (`MENU`, its items only log).
 - The sidebar is resizable: a handle on its right edge (an accent line while hovered, dragged or focused;
@@ -264,7 +267,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     the top line.
   - No `sidebar-end` slot (like the rail). Below 768px of the cockpit's width: the sidebar's rail.
   - The demos (the package's and the root page): a "Navigation" button in the footer (`navigationSetting()` in
-    `demo/footer.ts`) with three sections: "Navigation" (Automatic, Sidebar, Topbar, App switcher, Bottom bar; the key
+    `src/demo/footer.ts`) with three sections: "Navigation" (Automatic, Sidebar, Topbar, App switcher, Bottom bar; the key
     `demo-page:nav`; a stored value no longer known is the default; the root page's default `top`, the package's
     `auto`), "Colors" (Dark, Match page; see `nav-scheme`) and "Density" (Compact, Normal, Comfortable; see `density`;
     Normal by default), remembered per browser.
@@ -425,7 +428,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     needed): `accent` (one color; lighter in a dark scheme, e.g. the dark navigation, by `color-mix(in oklab, <accent>
     60%, white)`; without it the design language's, `light-dark(#0a5cc2, #78b0ff)`), `fontSize` (`14px`), `fontFamily`
     (`system-ui, sans-serif`), `sidebarWidth` (`256px`), `railWidth` (`68px`), `contentPadding` (`16px 20px`).
-    Defaults: `DEFAULT_THEME` in `styles.ts`.
+    Defaults: `DEFAULT_COCKPIT_THEME` (`themes/default-cockpit-theme.ts`, exported, so a host starts from it).
   - No custom properties (they would inherit into the mini-apps): the stylesheet is built from the theme
     (`styles(theme)` in `styles.ts`, its values in `themeValues()`: the theme's and the fixed ones of the design
     language), a `CSSStyleSheet` adopted in the shadow root, rewritten in `willUpdate` when the theme changes. The
@@ -435,11 +438,17 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     panel): a second stylesheet (`layoutStyles()`), with copies of the few rules that use them (the same selectors,
     later, so they win), rewritten when they change. Not inline styles: one of them is in `@starting-style`.
   - The taskbar has a `theme` too (`taskbarStyles(theme)`, the same `themeValues()`); the cockpit passes its own.
-  - The demos' "Accent color" choice (`accentSetting()` in `demo/footer.ts`) sets the cockpit's `theme.accent` (merged
+  - The demos' "Accent color" choice (`accentSetting()` in `src/demo/footer.ts`) sets the cockpit's `theme.accent` (merged
     into its theme, once the element is defined), and `--app-accent-color` on `<html>` for the page (the root page
     maps it to its apps).
-- Texts in English and German, by `<html lang>` (`core/texts.ts`); no `I18nAdapter` like the other packages
-  (`i18n.md`), for now.
+- Texts (`i18n.md`): English only in the package (`core/texts.ts`, `CockpitTexts`), the namespace `'cockpit'`; the
+  app gives an `I18nAdapter` in the config (`i18n: { type: 'factory', getAdapter }`, of `createCockpitClass` and
+  `createAppHeaderClass`; asked once on the first connect, its `onChange` re-renders). Without one: English and
+  `en-US`, the page's language is never read. Params: `items` (`{ count }`; the English singular and plural are the
+  `defaultValue`, a translation's plural is the adapter's), `closeTask` (`{ title }`), `backTo`, `forwardTo`
+  (`{ page }`). The taskbar gets the cockpit's texts as a property (`texts`).
+- The demos' German (`src/demo/i18n.ts`, `DEMO_I18N`): an adapter that follows `<html lang>` (the footer's language
+  switch), used by the cockpit's demo and the root page.
 - Remembered per browser (`localStorage`, `storageKey`, ignored when storage fails): the recent apps, the rail, the
   open groups. The default key is `cockpit`.
 - No `rem` in the cockpit's CSS: a page's root font size must not change the shell. Every length is in `px` (a `rem`
@@ -460,28 +469,75 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 ## Layout and commands
 
 - `exports` in `package.json` (rather than an alias per package and entry in the root): each entry has a `source`
-  condition first, its file in `src/`, then its built file in `dist/`. The root's demo resolves the package by name
+  condition first, its file in `src/main/`, then its built file in `dist/`. The root's demo resolves the package by name
   (`@local/…`) to its sources by that condition (its `vite.config.ts` and `tsconfig.json`); everywhere else, a
   customer's copy too, the condition is ignored and `dist/` counts.
-- `src/api/`: the types (by topic); `src/element/`: the custom element (`cockpit-element.ts`, Lit: shadow root,
+- Three trees in `src/` (`general.md`): `main/`, `demo/`, `test/` (none yet).
+- `src/main/api/`: the types (by topic); `src/main/element/`: the custom element (`cockpit-element-base.ts`, `CockpitElementBase`, Lit: shadow root,
   light-DOM apps, routing, the whole UI; `create-cockpit-class.ts`), `menu.ts` (the menus), `icons.ts`, its CSS
-  (`styles.ts`); the taskbar (`taskbar-element.ts`, `taskbar-styles.ts`); `src/core/`: search, texts, storage.
-- `demo/`: the package's demo (`npm run dev`), with 3, 30 or 100 apps (the "Apps" choice in the footer; `?apps=some`,
+  (`styles.ts`); the taskbar (`taskbar-element.ts`, `taskbar-styles.ts`); `src/main/core/`: search, texts, storage; `src/demo/i18n.ts`: the demos' German.
+- `src/demo/`: the package's demo (`npm run dev`), with 3, 30 or 100 apps (the "Apps" choice in the footer; `?apps=some`,
   `?apps=many`); the 100 apps with `groupDisplay: 'select'`; in the 30 and 100 apps every app has a group and a
-  subgroup (no "Other"); `demo/ui/`: the design language (a copy, like in every package).
+  subgroup (no "Other"); `src/demo/ui/`: the design language (a copy, like in every package). Each made-up app
+  (`demo-app.ts`) has an app header (`<demo-app-header>`, registered by `main.ts`): its icon (the item's, by the
+  attribute `icon`), its title, the modules Overview, Entries (two entries with pages of their own), Settings; "Documents"
+  a switcher (Contracts, Templates, Letters). A made-up router answers it (`app-header-demo.ts`, `wireAppHeader()`, shared
+  with `cockpit-demo.ts`).
+- `src/demo/cockpit-demo.ts` (`CockpitDemo`, light DOM, exported, not registered; its CSS `cockpit-demo.css`): the
+  root page's "Cockpit" (Internals › Components). The app header twice (the default look, an own theme) with a made-up
+  router (its own list of paths), switches (the switcher, its descriptions, the width) and a log of the events; a
+  second tab says where the cockpit is (the page itself: it owns the URL hash, so it cannot run inside it).
 - `npm run typecheck`, `npm run build` (library mode; Lit and Floating UI stay outside), `npm run format`.
-- `npm run loc` (`src`), `npm run loc:all` (also `demo`): the lines (all, code, comments, blank) by kind and by folder,
+- `npm run loc` (`src/main`), `npm run loc:all` (all of `src`): the lines (all, code, comments, blank) by kind and by folder,
   with each one's share of the code as a bar (`scripts/loc.mjs`). sloc counts each file; the kind comes from its name,
   as the CSS and the icons live in TypeScript: `*styles.ts` is "CSS (in TS)", `icons.ts` "SVG (in TS)", other `.ts`
-  TypeScript, `.css` CSS. `demo/ui` is marked as a copy of ui-theme.
+  TypeScript, `.css` CSS. `src/demo/ui` is marked as a copy of ui-theme.
 
 ## Plans
 
+- The app header: the header of a micro-app as a Lit element of this package, `createAppHeaderClass(config?)`
+  (`element/app-header-element-base.ts`, `AppHeaderElementBase`; its CSS `app-header-styles.ts`), the only
+  implementation. `micro-app`'s `AppHeader` is its React wrapper (TanStack Router), used by the Board Manager; it
+  replaces `MicroAppHeader` in the other apps later.
+  - One line (the icon on its tile, the title, the modules as tabs, the slot `end`, Back and Forward), the breadcrumb
+    below ("Home", then `crumbs`); narrow (container queries, its own width): the tabs a menu below 896px, Back and
+    Forward hidden below 640px; sticky. The menus are `Menu`s, their positioners popovers (`popover="manual"`, the top
+    layer: above another sticky header and a frame that cuts its content), the Back and Forward tooltips a popover too
+    (Floating UI). The container of the container queries is the inner `.header` (a container is the containing block
+    of `position: fixed` inside it), the popups are rendered after it.
+  - The switcher's entries: the icon, the label and, with `description`, a muted line below it (two lines at most, at
+    most 280px), the check on the current one; the modules menu shows only the labels.
+  - Slots: `icon`, `end`, `crumb-<index>` (in place of a crumb's label: a framework's content, e.g. a name that is
+    loaded), `back-page` and `forward-page` (their text read when the tooltip shows, "Back to …").
+  - Not canceled, `navigate` lets the browser follow the link (a menu's choice: `location.assign()`), `back` and
+    `forward` call `history.back()` and `forward()`.
+  - `MANTINE_APP_HEADER_THEME` (`themes/mantine-app-header-theme.ts`; CONSTANT_CASE: the constants' rule): Mantine's
+    variables as the theme's values.
+- The themes (`src/main/themes/`, its `index.ts`), plain data, exported by the main entry (not an entry of their own
+  like `file-upload`'s `/themes`): `DEFAULT_COCKPIT_THEME`, `DEFAULT_APP_HEADER_THEME`, `MANTINE_APP_HEADER_THEME`. No
+  Mantine theme for the cockpit itself yet.
+  - The name: `AppHeader` (`createAppHeaderClass()`, `AppHeaderElement`; the host chooses the tag). Weighed:
+    `MicroAppHeader` (the other package's name), `CockpitHeader` (reads like the cockpit's own header).
+  - Its texts ("Home", "Back", "Forward", "Back to …", "Forward to …", "Modules"): like the cockpit's, through its
+    config's `I18nAdapter` (`core/texts.ts`).
+  - Its theme: `AppHeaderTheme` (in `api/theme.ts`, beside `CockpitTheme`), its own keys, defaults from the design
+    language (`DEFAULT_APP_HEADER_THEME`, `themes/default-app-header-theme.ts`, exported). Weighed: `CockpitTheme`
+    extended for both (the header would carry the sidebar's keys).
+  - Router-free: the element never changes the URL; it shows the state (`modules`, `activeModule`, `crumbs`, `back`,
+    `forward`) and fires events. Links are real `<a href>`; a plain click fires the cancelable `navigate` (`{ href }`),
+    which a router adapter cancels to navigate itself; `back` and `forward` likewise.
+  - The title as a switcher (optional, `switcher`): a dropdown of the other apps of an embedded app made of very
+    different ones (expected: a handful; no filter field).
+  - A `mantine` theme (reads Mantine's variables), so it looks almost like Mantine in the apps; `micro-app`'s wrapper
+    passes it.
 - Split into smaller parts: today the cockpit is a launcher for mini-apps; later it shall be built from smaller parts,
   and the launcher for mini-apps will be one incarnation of them.
 
 ## Not set up yet
 
+- Scoped custom element registries (in every target browser now: `new CustomElementRegistry()`), todo: the
+  taskbar in the cockpit's own registry (its shadow root) under a plain name, in place of the global
+  `internal-cockpit-taskbar-<n>`; then the convention for internal elements (`general.md`, the master, and its copies).
 - Tests.
 - Runtime composition (separate deployments: import maps, Module Federation), only when needed.
 - Board Manager and File Center as packages of their own (proposed).

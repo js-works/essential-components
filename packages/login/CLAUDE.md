@@ -1,6 +1,6 @@
 # login
 
-`@local/login`: a generic login screen for apps (React, Mantine); the details are to be discussed. The rules of the root's `CLAUDE.md` apply.
+`@local/login`: a generic login screen for apps (React, Mantine, react-i18next); the details are to be discussed. The rules of the root's `CLAUDE.md` apply.
 
 ## Conventions
 
@@ -9,28 +9,38 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 @docs/conventions/general.md
 @docs/conventions/css.md
 @docs/conventions/typescript.md
+@docs/conventions/i18n.md
 @docs/conventions/react.md
 
 ## Working rules
 
 - `src/api/` holds the API types: `props.ts` (`LoginScreenProps`, `Credentials`, `AccountRegistration`, `PasswordReset`,
-  `LoginProvider`), `texts.ts` (`LoginTexts`), `mount.ts` (`MountOptions`, `MountedLoginScreen`); no theme of its own
-  (a Mantine override) and no `I18nAdapter` (the texts are props). `src/index.ts` exports them flat
+  `LoginProvider`), `mount.ts` (`MountOptions`, `MountedLoginScreen`); no theme of its own (a Mantine override) and no
+  `I18nAdapter` (tier 2: i18next). `src/index.ts` exports them flat
   (`typescript.md`): `import type { LoginScreenProps } from '@local/login'`. The demos' variable of the mounted screen
   is `loginScreen`.
 - Always add the decisions (also small ones) to this file, in the same step as the code.
 
 ## Decided
 
-- React and Mantine (peer dependencies: `react`, `react-dom` `>=19`, `@mantine/core`, `@mantine/hooks` `^9.5.1`;
-  the workspace has 9.5.1, pinned in the dev dependencies like `overlays`).
+- React, Mantine and react-i18next (peer dependencies: `react`, `react-dom` `>=19`, `@mantine/core`, `@mantine/hooks`
+  `^9.5.1`, the workspace has 9.5.1, pinned in the dev dependencies like `overlays`; `i18next` `>=26`, `react-i18next`
+  `>=17`).
+- The texts (`i18n.md`, tier 2): English and German in the namespace `'login'`, exported as `loginResources` (i18next
+  resources the app adds to its instance: `resources: { en: { ...loginResources.en, app: … }, … }`). `LoginScreen`
+  reads them from the app's instance (`I18nextProvider`), following its language, typed by the package's own keys
+  (`useTexts()`, `use-texts.ts`, like `micro-app`'s). An app changes a text in its own resources (`login: { heading:
+  … }`): no `texts` prop (weighed: overrides on top of i18next, two ways to change a text). Placeholders are
+  i18next's (`continueWith`: `{{provider}}`).
 - Generic: the host decides what a login is (`onLogin`); the screen only collects and checks the input.
 - `LoginScreen` (a React component, needs a `MantineProvider` above it) and `mountLoginScreen(element, props)` for a
   host without React: its own Mantine scope (`.login`, Mantine's variables on it, not on `:root`; Mantine's
-  layered styles), returns `{ update(props), unmount() }`.
+  layered styles) and its own i18next instance (the package's texts, English only: `i18n.md`, the page's language is
+  never read), unless the host gives its own (`MountOptions.i18n`, with `loginResources` added); returns
+  `{ update(props), unmount() }`.
 - Props (`LoginScreenProps`): `title`, `subtitle?`, `logo?` (a React node, or a string of markup, e.g. an SVG in
   `currentColor`, drawn in the accent), `hint?` (a small note below the card, e.g. "A demo: any username and
-  password"), `texts?` (each text can be replaced), `onLogin({ username, password })` (may return a promise).
+  password"), `onLogin({ username, password })` (may return a promise).
 - Forgot password and registration: two optional host functions; each switches on its
   part of the screen, so an app without them keeps the plain sign in:
   - `onForgotPassword({ account })` (the username or the email): the link "Forgot password?" under the password input.
@@ -58,8 +68,8 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   While its promise is pending: the button's spinner, the fields read-only. A rejected promise (or a thrown error)
   shows its message in a red alert above the button (an empty message: "Invalid username or password."), and the
   password is selected again.
-- The page's color scheme (`<html>`: its computed `color-scheme`) and language (`<html lang>`: English, German) are
-  followed live.
+- The page's color scheme (`<html>`: its computed `color-scheme`) is followed live; the language is the i18next
+  instance's (with `mountLoginScreen()`'s own: English).
 - The look with `mountLoginScreen()` (open for later): the option
   `theme` (`MountOptions`, a Mantine theme override, e.g. `{ primaryColor: 'teal' }`), merged over the login's
   own (Mantine's indigo, a small radius); `update(props, options)` changes it (not a custom property of the page: no
@@ -79,8 +89,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   there is one; below them the footer. One
   host function at a time: the clicked button shows the spinner, the other buttons and the form are locked (read-only
   fields, disabled button); a rejected promise shows its message (else "The sign in failed. Please try again.") under
-  the buttons. New texts: `continueWith` (`{provider}` is replaced), `or`, `providerFailed` (English and German, each
-  replaceable).
+  the buttons. New texts: `continueWith` (`{{provider}}` is replaced), `or`, `providerFailed` (English and German).
 - `user-select: none` on the screen, like the cockpit's frame; the inputs keep `text` (Safari: a field with `none`
   cannot be typed into).
 - Small screens (`login.css`):
@@ -106,7 +115,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     has been created. You can sign in now.".
   - The same for each submit: required fields first, then the host's function (spinner, read-only fields), a rejected
     promise as the red alert (the error's message, else the text of the screen).
-  - New texts (English and German, each replaceable): `forgotLink`, `forgotHeading`, `forgotIntro`, `account`,
+  - New texts (English and German): `forgotLink`, `forgotHeading`, `forgotIntro`, `account`,
     `forgotSubmit`, `forgotDone`, `registerPrompt`, `registerLink`, `registerHeading`, `registerSubmit`, `registerDone`,
     `email`, `passwordRepeat`, `invalidEmail`, `mismatch`, `back`.
 
@@ -115,14 +124,14 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 - `exports` in `package.json` (rather than an alias per package and entry in the root): each entry has a `source` condition first, its file in `src/`, then its built file in `dist/`.
   The root's demo resolves the package by name (`@local/…`) to its sources by that condition (its `vite.config.ts`
   and `tsconfig.json`); everywhere else, a customer's copy too, the condition is ignored and `dist/` counts.
-- `src/api/` (types), `src/login-screen.tsx`, `src/mount.tsx`, `src/login.css`, `src/texts.ts`, `src/page.ts`
-  (language and scheme of the page).
+- `src/api/` (types), `src/login-screen.tsx`, `src/mount.tsx`, `src/login.css`, `src/texts.ts` (`loginResources`),
+  `src/use-texts.ts`, `src/page.ts` (the page's color scheme).
 - `demo/`: the package's demo (`npm run dev`): any username and password sign in after 600 ms, the password "wrong"
   fails; the account "taken" exists already (registering it fails); reset and register answer after 600 ms; three made-up providers
   (Microsoft and Company SSO with an icon, Google without, which fails) sign in after 700 ms; `?sso=only` shows only
   the providers (`passwordLogin={false}`); signed in, a button signs out again. `demo/ui/`: the design language (a copy, like in every package).
 - `npm run typecheck`, `npm run build` (library mode: `dist/index.js` and `dist/login.css`, also as
-  `@local/login/style.css`; React and Mantine stay outside, also Mantine's styles, imported by `index.js`), `npm run format`.
+  `@local/login/style.css`; React, Mantine and i18next stay outside, also Mantine's styles, imported by `index.js`), `npm run format`.
 
 ## Not set up yet
 

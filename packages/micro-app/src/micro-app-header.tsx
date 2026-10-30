@@ -1,194 +1,169 @@
-import { ActionIcon, Breadcrumbs, Menu, Text, ThemeIcon, Tooltip, UnstyledButton } from '@mantine/core';
-import { Link, useMatches, useMatchRoute, useRouter } from '@tanstack/react-router';
+import { useMatches, useMatchRoute, useRouter } from '@tanstack/react-router';
+import type { i18n as I18nInstance } from 'i18next';
 import type { ReactElement, ReactNode } from 'react';
-import { Trans } from 'react-i18next';
+import { createElement, useEffect, useLayoutEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
-import { AnchorLink } from './anchor-link.js';
-import type { MicroAppCrumb, MicroAppCrumbItem, MicroAppHeaderProps, MicroAppModule } from './api/header.js';
+import type { AppHeaderClass, AppHeaderElement, AppHeaderNavigateDetail, I18nAdapter } from '@local/cockpit';
+import { createAppHeaderClass, MANTINE_APP_HEADER_THEME } from '@local/cockpit';
+
+import type { MicroAppCrumb, MicroAppHeaderProps } from './api/header.js';
+import { moduleOf, trimmed, useCrumbOf } from './crumbs.js';
 import { useHistoryPosition } from './history.js';
-import { ArrowLeftIcon, ArrowRightIcon, ChevronDownIcon, HomeIcon } from './icons.js';
 import { useTexts } from './use-texts.js';
 
 export { MicroAppHeader };
 
-// The header of a micro-app, in two lines: the app's icon and title, its modules as tabs (a menu when the header is
-// narrow), the app's own `actions` (e.g. a user menu) and Back and Forward (hidden when it is narrow); below them the
-// breadcrumb: the crumbs of the current route's matches, or the app's own (`crumbs`, e.g. a folder's path). It reads
-// the router: the active module, the crumbs (`staticData.crumb`), the history. Sticky at the top.
-function MicroAppHeader({ icon, title, modules, actions, crumbs }: MicroAppHeaderProps): ReactElement {
-  return (
-    <header className="micro-app__header">
-      <div className="micro-app__header-line">
-        <ThemeIcon variant="filled" size="lg" radius="sm" className="micro-app__icon" aria-hidden>{icon}</ThemeIcon>
-        <Text fw={700} className="micro-app__title">{title}</Text>
-        <ModuleTabs modules={modules} />
-        <ModuleMenu modules={modules} />
-        <div className="micro-app__end">
-          {actions}
-          <HistoryButtons modules={modules} />
-        </div>
-      </div>
-      <Crumbs given={crumbs} modules={modules} />
-    </header>
-  );
-}
+const tags = new WeakMap<I18nInstance, string>();
 
-function ModuleTabs({ modules }: { modules: readonly MicroAppModule[] }) {
-  return (
-    <nav className="micro-app__modules">
-      {modules.map((module) => (
-        <Link
-          key={module.to}
-          to={module.to}
-          activeOptions={{ exact: module.exact === true }}
-          className="micro-app__module"
-        >
-          {module.label}
-        </Link>
-      ))}
-    </nav>
-  );
-}
+// The element's texts (the namespace `cockpit`) from an app's i18next instance: the translation of the key, else the
+// English text the element gives.
+function adapterOf(i18n: I18nInstance): I18nAdapter {
+  return {
+    currentLocale: () => i18n.language,
+    resolveText: (namespace, key, params, defaultValue) =>
+      String(i18n.t(key, { ns: namespace, ...params, defaultValue, interpolation: { escapeValue: false } } as never)),
+    onChange: (listener) => {
+      i18n.on('languageChanged', listener);
 
-// The modules as a menu, in place of the tabs on a narrow header: the current module and a chevron.
-function ModuleMenu({ modules }: { modules: readonly MicroAppModule[] }) {
-  const { text } = useTexts();
-  const matchRoute = useMatchRoute();
-  const current = modules.find((module) => matchRoute({ to: module.to, fuzzy: module.exact !== true }) !== false);
-
-  return (
-    <Menu position="bottom-start" withinPortal={false}>
-      <Menu.Target>
-        <UnstyledButton className="micro-app__module-menu" aria-label={text('modules')}>
-          {current?.label ?? text('modules')}
-          <ChevronDownIcon />
-        </UnstyledButton>
-      </Menu.Target>
-      <Menu.Dropdown>
-        {modules.map((module) => (
-          <Menu.Item key={module.to} renderRoot={(props) => <Link to={module.to} {...props} />}>
-            {module.label}
-          </Menu.Item>
-        ))}
-      </Menu.Dropdown>
-    </Menu>
-  );
-}
-
-// A path without a trailing slash (an index route's `/boards/` is the module's `/boards`).
-const trimmed = (path: string) => (path.length > 1 ? path.replace(/\/$/, '') : path);
-
-// The module a path belongs to (not the start page's): the one whose path it is or starts with.
-function moduleOf(modules: readonly MicroAppModule[], path: string): MicroAppModule | undefined {
-  return modules.find((module) =>
-    module.exact !== true && (trimmed(path) === module.to || trimmed(path).startsWith(`${module.to}/`))
-  );
-}
-
-// The crumb of the page at a path: the last crumb of its routes, else the module's label where the path is a module's;
-// none for a path without one.
-function useCrumbOf(modules: readonly MicroAppModule[]): (path: string) => ReactNode | undefined {
-  const router = useRouter();
-
-  return (path) => {
-    const matches = router.matchRoutes(path) as readonly {
-      staticData?: { crumb?: MicroAppCrumb };
-      params: Record<string, string>;
-    }[];
-    const match = matches.findLast((candidate) => candidate.staticData?.crumb !== undefined);
-
-    return match?.staticData?.crumb?.(match.params)
-      ?? modules.find((module) => module.exact !== true && module.to === trimmed(path))?.label;
+      return () => i18n.off('languageChanged', listener);
+    },
   };
 }
 
-// Back and Forward through the router's history, disabled at either end; their tooltips name the page ("Back to …").
-function HistoryButtons({ modules }: { modules: readonly MicroAppModule[] }) {
-  const { text, t } = useTexts();
+// The cockpit's app header as an internal element of this package (a package never takes a tag of its own): the first
+// `internal-micro-app-header-<n>` not registered yet, registered on first use, in Mantine's look. One per i18next
+// instance: the element's adapter is given to its class.
+function headerTag(i18n: I18nInstance): string {
+  let tag = tags.get(i18n);
+
+  if (tag === undefined) {
+    const headerClass: AppHeaderClass = createAppHeaderClass({
+      theme: MANTINE_APP_HEADER_THEME,
+      i18n: { type: 'factory', getAdapter: () => adapterOf(i18n) },
+    });
+    let n = 1;
+
+    while (customElements.get(`internal-micro-app-header-${n}`) !== undefined) {
+      n++;
+    }
+
+    tag = `internal-micro-app-header-${n}`;
+    customElements.define(tag, headerClass);
+    tags.set(i18n, tag);
+  }
+
+  return tag;
+}
+
+// A label as text: the element's tabs and menus take strings (a module's label is one in every app so far).
+const textOf = (node: ReactNode) => (typeof node === 'string' || typeof node === 'number' ? String(node) : '');
+
+// The header of a micro-app: the cockpit's app header (`createAppHeaderClass`), fed from the
+// router (the modules' hrefs, the active module, the crumbs of the current route's matches, Back and Forward) and
+// answers its events with the router (`navigate`, `back`, `forward`). What is not text is slotted: the icon, the crumbs
+// (their components, e.g. a board's name), the pages of Back and Forward (read for the tooltips), the `actions`.
+function MicroAppHeader(
+  { icon, title, modules, actions, crumbs, switcher = [], activeSwitcherItem = '' }: MicroAppHeaderProps,
+): ReactElement {
   const router = useRouter();
+  const matchRoute = useMatchRoute();
+  const matches = useMatches();
+  const { text } = useTexts();
+  const { i18n } = useTranslation();
   const { back, forward } = useHistoryPosition();
   const crumbOf = useCrumbOf(modules);
-  const tip = (path: string | undefined, key: 'back' | 'forward') => {
-    const page = path === undefined ? undefined : path === '/' ? text('home') : crumbOf(path);
-
-    return page === undefined
-      ? text(key)
-      : (
-        <Trans
-          t={t}
-          // The package's own key, whatever keys the app declares for its resources.
-          i18nKey={(key === 'back' ? 'backTo' : 'forwardTo') as never}
-          components={{ page: <>{page}</> }}
-        />
-      );
-  };
-
-  return (
-    <div className="micro-app__history">
-      <Tooltip label={tip(back, 'back')} openDelay={400} fz="xs" disabled={back === undefined}>
-        <ActionIcon
-          variant="subtle"
-          color="gray"
-          aria-label={text('back')}
-          disabled={back === undefined}
-          onClick={() => router.history.back()}
-        >
-          <ArrowLeftIcon />
-        </ActionIcon>
-      </Tooltip>
-      <Tooltip label={tip(forward, 'forward')} openDelay={400} fz="xs" disabled={forward === undefined}>
-        <ActionIcon
-          variant="subtle"
-          color="gray"
-          aria-label={text('forward')}
-          disabled={forward === undefined}
-          onClick={() => router.history.forward()}
-        >
-          <ArrowRightIcon />
-        </ActionIcon>
-      </Tooltip>
-    </div>
+  const ref = useRef<AppHeaderElement>(null);
+  const hrefOf = (to: string) => router.buildLocation({ to } as never).href;
+  const active = modules.find((module) =>
+    matchRoute({ to: module.to, fuzzy: module.exact !== true } as never) !== false
   );
-}
 
-// "Home" (a house icon and the text, a link to the start page), then the current module (its label, unless a route
-// has a crumb of its own for the module's path), then one crumb per route with one (or the app's own instead); the
-// last one is the current page, no link. On the start page, "Home" alone, no link.
-function Crumbs({ given, modules }: {
-  given: readonly MicroAppCrumbItem[] | undefined;
-  modules: readonly MicroAppModule[];
-}) {
-  const { text } = useTexts();
-  const matches = useMatches();
+  // The crumbs: the current module (unless a route has a crumb for its path), then one per route with one; or the
+  // app's own (`crumbs`).
   const fromRoutes = matches.flatMap((match) => {
     const crumb = (match.staticData as { crumb?: MicroAppCrumb }).crumb;
 
-    return crumb === undefined ? [] : [{ id: match.id, to: trimmed(match.pathname), label: crumb(match.params) }];
+    return crumb === undefined ? [] : [{ to: trimmed(match.pathname), label: crumb(match.params) }];
   });
   const module = moduleOf(modules, matches.at(-1)?.pathname ?? '/');
   const withModule = module === undefined || fromRoutes.some((crumb) => crumb.to === module.to)
     ? fromRoutes
-    : [{ id: `module:${module.to}`, to: module.to, label: module.label }, ...fromRoutes];
-  const crumbs = given === undefined ? withModule : given.map((crumb) => ({ id: crumb.to, ...crumb }));
-  const home = (
-    <span className="micro-app__home">
-      <HomeIcon />
-      {text('home')}
-    </span>
-  );
+    : [{ to: module.to, label: module.label }, ...fromRoutes];
+  const shown = crumbs ?? withModule;
+  const pageOf = (
+    path: string | undefined,
+  ) => (path === undefined ? undefined : path === '/' ? text('home') : crumbOf(path));
 
-  return (
-    <Breadcrumbs separator="›" separatorMargin={6} className="micro-app__crumbs">
-      {crumbs.length === 0 ? <Text size="sm">{home}</Text> : <AnchorLink to="/" size="sm">{home}</AnchorLink>}
-      {crumbs.map((crumb, index) =>
-        index === crumbs.length - 1
-          ? <Text key={crumb.id} size="sm" className="micro-app__crumb">{crumb.label}</Text>
-          : (
-            <AnchorLink key={crumb.id} to={crumb.to} size="sm" className="micro-app__crumb">
-              {crumb.label}
-            </AnchorLink>
-          )
-      )}
-    </Breadcrumbs>
+  useLayoutEffect(() => {
+    const element = ref.current;
+
+    if (element === null) {
+      return;
+    }
+
+    element.heading = textOf(title);
+    element.switcher = switcher;
+    element.activeSwitcherItem = activeSwitcherItem;
+    element.modules = modules.map((module) => ({
+      id: module.to,
+      label: textOf(module.label),
+      href: hrefOf(module.to),
+    }));
+    element.activeModule = active?.to ?? '';
+    element.homeHref = hrefOf('/');
+    element.crumbs = shown.map((crumb) => ({ label: '', href: hrefOf(crumb.to) }));
+    element.back = back === undefined ? null : {};
+    element.forward = forward === undefined ? null : {};
+  });
+
+  useEffect(() => {
+    const element = ref.current;
+
+    if (element === null) {
+      return;
+    }
+
+    // A switcher's entry leads outside the router: not canceled, the browser follows it.
+    const onNavigate = (event: Event) => {
+      const { href } = (event as CustomEvent<AppHeaderNavigateDetail>).detail;
+
+      if (element.switcher.some((link) => link.href === href)) {
+        return;
+      }
+
+      event.preventDefault();
+      void router.navigate({ href });
+    };
+    const onBack = (event: Event) => {
+      event.preventDefault();
+      router.history.back();
+    };
+    const onForward = (event: Event) => {
+      event.preventDefault();
+      router.history.forward();
+    };
+
+    element.addEventListener('navigate', onNavigate);
+    element.addEventListener('back', onBack);
+    element.addEventListener('forward', onForward);
+
+    return () => {
+      element.removeEventListener('navigate', onNavigate);
+      element.removeEventListener('back', onBack);
+      element.removeEventListener('forward', onForward);
+    };
+  }, [router]);
+
+  return createElement(
+    headerTag(i18n),
+    { ref },
+    <span slot="icon" className="micro-app__header-slot">{icon}</span>,
+    ...shown.map((crumb, index) => (
+      <span key={`crumb-${index}`} slot={`crumb-${index}`} className="micro-app__header-slot">{crumb.label}</span>
+    )),
+    <span key="back" slot="back-page">{pageOf(back)}</span>,
+    <span key="forward" slot="forward-page">{pageOf(forward)}</span>,
+    actions === undefined ? null : <span key="end" slot="end" className="micro-app__header-slot">{actions}</span>,
   );
 }

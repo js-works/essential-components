@@ -1,10 +1,9 @@
-import type { LoginTexts } from './api/texts.js';
+export { loginResources };
 
-export { textsFor };
-
-// The login screen's own texts, in the language of the page (`<html lang>`): German for `de…`, else English. A host
-// can replace each of them (`texts`).
-const EN: LoginTexts = {
+// The login screen's texts, in English and German, as i18next resources under the namespace `login`, which the app
+// adds to its instance (`resources: { en: { ...loginResources.en, app: … }, … }`); it replaces a text in its own
+// resources (`login: { heading: … }`). `{{provider}}` is the provider's label.
+const EN = {
   heading: 'Sign in',
   username: 'Username',
   password: 'Password',
@@ -27,12 +26,12 @@ const EN: LoginTexts = {
   invalidEmail: 'Enter a valid email address.',
   mismatch: 'The passwords do not match.',
   back: 'Back to sign in',
-  continueWith: 'Continue with {provider}',
+  continueWith: 'Continue with {{provider}}',
   or: 'or',
   providerFailed: 'The sign in failed. Please try again.',
-};
+} as const;
 
-const DE: LoginTexts = {
+const DE = {
   heading: 'Anmelden',
   username: 'Benutzername',
   password: 'Passwort',
@@ -57,11 +56,12 @@ const DE: LoginTexts = {
   invalidEmail: 'Geben Sie eine gültige E-Mail-Adresse ein.',
   mismatch: 'Die Passwörter stimmen nicht überein.',
   back: 'Zurück zur Anmeldung',
-  continueWith: 'Weiter mit {provider}',
+  continueWith: 'Weiter mit {{provider}}',
   or: 'oder',
   providerFailed: 'Die Anmeldung ist fehlgeschlagen. Bitte versuchen Sie es erneut.',
-};
+} as const;
 
-function textsFor(lang: string): LoginTexts {
-  return lang.toLowerCase().startsWith('de') ? DE : EN;
-}
+const loginResources = {
+  en: { login: EN },
+  de: { login: DE },
+} as const;

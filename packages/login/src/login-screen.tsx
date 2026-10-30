@@ -16,9 +16,9 @@ import {
 import type { FormEvent, ReactElement, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 
-import type * as Spec from './index.js';
-import { useLang } from './page.js';
-import { textsFor } from './texts.js';
+import type { LoginProvider, LoginScreenProps } from './index.js';
+import type { LoginText } from './use-texts.js';
+import { useTexts } from './use-texts.js';
 
 export { LoginScreen };
 
@@ -43,10 +43,10 @@ type View = 'login' | 'forgot' | 'register';
 // - Every submit checks the fields first ("Required" at the empty ones), then calls the host's function; while its
 //   promise is pending, the button shows a spinner and the fields are read-only. A rejected promise (or a thrown error)
 //   shows its message in a red alert above the button (else a text of the screen).
-// - Texts in English and German, by `<html lang>`; each can be replaced (`texts`).
-function LoginScreen(props: Spec.LoginScreenProps): ReactElement {
-  const { title, subtitle, logo, hint, texts: custom } = props;
-  const texts = { ...textsFor(useLang()), ...custom };
+// - Texts in English and German, from the app's i18next instance (the namespace `login`, `loginResources`).
+function LoginScreen(props: LoginScreenProps): ReactElement {
+  const { title, subtitle, logo, hint } = props;
+  const text = useTexts();
   const [view, setView] = useState<View>('login');
   const [notice, setNotice] = useState<string | undefined>();
   const show = (next: View, message?: string) => {
@@ -56,16 +56,20 @@ function LoginScreen(props: Spec.LoginScreenProps): ReactElement {
   const passwordLogin = props.passwordLogin !== false;
   const providers = props.onProvider === undefined ? [] : props.providers ?? [];
   const [ssoBusy, setSsoBusy] = useState(false);
-  const heading = view === 'login' ? texts.heading : view === 'forgot' ? texts.forgotHeading : texts.registerHeading;
+  const heading = view === 'login'
+    ? text('heading')
+    : view === 'forgot'
+    ? text('forgotHeading')
+    : text('registerHeading');
   const footer = view !== 'login'
-    ? <Anchor component="button" type="button" size="sm" onClick={() => show('login')}>{texts.back}</Anchor>
+    ? <Anchor component="button" type="button" size="sm" onClick={() => show('login')}>{text('back')}</Anchor>
     : props.onRegister === undefined || !passwordLogin
     ? null
     : (
       <Text size="sm">
-        {texts.registerPrompt}{' '}
+        {text('registerPrompt')}{' '}
         <Anchor component="button" type="button" size="sm" onClick={() => show('register')}>
-          {texts.registerLink}
+          {text('registerLink')}
         </Anchor>
       </Text>
     );
@@ -87,29 +91,29 @@ function LoginScreen(props: Spec.LoginScreenProps): ReactElement {
             {notice === undefined ? null : <Alert color="green" variant="light" role="status">{notice}</Alert>}
             {view === 'login' && passwordLogin && (
               <LoginForm
-                texts={texts}
+                text={text}
                 locked={ssoBusy}
                 onLogin={props.onLogin}
                 onForgot={props.onForgotPassword === undefined ? undefined : () => show('forgot')}
               />
             )}
             {view === 'login' && providers.length > 0 && passwordLogin && (
-              <Divider label={texts.or} labelPosition="center" />
+              <Divider label={text('or')} labelPosition="center" />
             )}
             {view === 'login' && providers.length > 0 && props.onProvider !== undefined && (
-              <Providers texts={texts} providers={providers} onProvider={props.onProvider} onBusy={setSsoBusy} />
+              <Providers text={text} providers={providers} onProvider={props.onProvider} onBusy={setSsoBusy} />
             )}
             {view === 'forgot' && props.onForgotPassword !== undefined && (
               <ForgotForm
-                texts={texts}
+                text={text}
                 onForgotPassword={props.onForgotPassword}
               />
             )}
             {view === 'register' && props.onRegister !== undefined && (
               <RegisterForm
-                texts={texts}
+                text={text}
                 onRegister={props.onRegister}
-                onDone={() => show('login', texts.registerDone)}
+                onDone={() => show('login', text('registerDone'))}
               />
             )}
             {footer === null ? null : (
@@ -175,19 +179,19 @@ function useAction(failed: string) {
   return { busy, error, run };
 }
 
-type FormProps = { texts: Spec.LoginTexts };
+type FormProps = { text: LoginText };
 
 function LoginForm(
-  { texts, locked, onLogin, onForgot }: FormProps & {
+  { text, locked, onLogin, onForgot }: FormProps & {
     locked: boolean;
-    onLogin: Spec.LoginScreenProps['onLogin'];
+    onLogin: LoginScreenProps['onLogin'];
     onForgot: (() => void) | undefined;
   },
 ): ReactElement {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [missing, setMissing] = useState<{ username?: boolean; password?: boolean }>({});
-  const { busy, error, run } = useAction(texts.failed);
+  const { busy, error, run } = useAction(text('failed'));
   const passwordRef = useRef<HTMLInputElement>(null);
 
   const submit = async (event: FormEvent) => {
@@ -210,36 +214,36 @@ function LoginForm(
     <form onSubmit={(event) => void submit(event)} noValidate>
       <Stack gap="md">
         <TextInput
-          label={texts.username}
+          label={text('username')}
           name="username"
           autoComplete="username"
           autoFocus
           readOnly={busy || locked}
           value={username}
-          error={missing.username ? texts.required : undefined}
+          error={missing.username ? text('required') : undefined}
           onChange={(event) => setUsername(event.currentTarget.value)}
         />
         <div>
           <PasswordInput
             ref={passwordRef}
-            label={texts.password}
+            label={text('password')}
             name="password"
             autoComplete="current-password"
             readOnly={busy || locked}
             value={password}
-            error={missing.password ? texts.required : undefined}
+            error={missing.password ? text('required') : undefined}
             onChange={(event) => setPassword(event.currentTarget.value)}
           />
           {onForgot === undefined
             ? null
             : (
               <Anchor component="button" type="button" size="sm" className="login__forgot" onClick={onForgot}>
-                {texts.forgotLink}
+                {text('forgotLink')}
               </Anchor>
             )}
         </div>
         {error === undefined ? null : <Alert color="red" variant="light" role="alert">{error}</Alert>}
-        <Button type="submit" fullWidth loading={busy} disabled={locked}>{texts.submit}</Button>
+        <Button type="submit" fullWidth loading={busy} disabled={locked}>{text('submit')}</Button>
       </Stack>
     </form>
   );
@@ -248,13 +252,13 @@ function LoginForm(
 // The provider buttons: one host function at a time (`onProvider(id)`); the clicked button shows the spinner, the
 // others are locked (`onBusy` locks the form too). A rejected promise shows its message.
 function Providers(
-  { texts, providers, onProvider, onBusy }: FormProps & {
-    providers: readonly Spec.LoginProvider[];
-    onProvider: NonNullable<Spec.LoginScreenProps['onProvider']>;
+  { text, providers, onProvider, onBusy }: FormProps & {
+    providers: readonly LoginProvider[];
+    onProvider: NonNullable<LoginScreenProps['onProvider']>;
     onBusy: (busy: boolean) => void;
   },
 ) {
-  const { busy, error, run } = useAction(texts.providerFailed);
+  const { busy, error, run } = useAction(text('providerFailed'));
   const [active, setActive] = useState<string | undefined>();
 
   const choose = async (id: string) => {
@@ -278,7 +282,7 @@ function Providers(
             : <span className="login__provider-icon" aria-hidden>{markup(provider.icon)}</span>}
           onClick={() => void choose(provider.id)}
         >
-          {texts.continueWith.replace('{provider}', provider.label)}
+          {text('continueWith', { provider: provider.label })}
         </Button>
       ))}
       {error === undefined ? null : <Alert color="red" variant="light" role="alert">{error}</Alert>}
@@ -287,14 +291,14 @@ function Providers(
 }
 
 function ForgotForm(
-  { texts, onForgotPassword }: FormProps & {
-    onForgotPassword: NonNullable<Spec.LoginScreenProps['onForgotPassword']>;
+  { text, onForgotPassword }: FormProps & {
+    onForgotPassword: NonNullable<LoginScreenProps['onForgotPassword']>;
   },
 ) {
   const [account, setAccount] = useState('');
   const [missing, setMissing] = useState(false);
   const [done, setDone] = useState(false);
-  const { busy, error, run } = useAction(texts.failed);
+  const { busy, error, run } = useAction(text('failed'));
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -308,23 +312,23 @@ function ForgotForm(
   return (
     <Stack gap="md">
       {done
-        ? <Alert color="green" variant="light" role="status">{texts.forgotDone}</Alert>
+        ? <Alert color="green" variant="light" role="status">{text('forgotDone')}</Alert>
         : (
           <form onSubmit={(event) => void submit(event)} noValidate>
             <Stack gap="md">
-              <Text size="sm" c="dimmed">{texts.forgotIntro}</Text>
+              <Text size="sm" c="dimmed">{text('forgotIntro')}</Text>
               <TextInput
-                label={texts.account}
+                label={text('account')}
                 name="account"
                 autoComplete="username"
                 autoFocus
                 readOnly={busy}
                 value={account}
-                error={missing ? texts.required : undefined}
+                error={missing ? text('required') : undefined}
                 onChange={(event) => setAccount(event.currentTarget.value)}
               />
               {error === undefined ? null : <Alert color="red" variant="light" role="alert">{error}</Alert>}
-              <Button type="submit" fullWidth loading={busy}>{texts.forgotSubmit}</Button>
+              <Button type="submit" fullWidth loading={busy}>{text('forgotSubmit')}</Button>
             </Stack>
           </form>
         )}
@@ -333,8 +337,8 @@ function ForgotForm(
 }
 
 function RegisterForm(
-  { texts, onRegister, onDone }: FormProps & {
-    onRegister: NonNullable<Spec.LoginScreenProps['onRegister']>;
+  { text, onRegister, onDone }: FormProps & {
+    onRegister: NonNullable<LoginScreenProps['onRegister']>;
     onDone: () => void;
   },
 ) {
@@ -342,11 +346,11 @@ function RegisterForm(
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [repeat, setRepeat] = useState('');
-  // The kind of each problem, not its text: it follows a change of the page's language.
+  // The kind of each problem, not its text: it follows a change of the language.
   const [problems, setProblems] = useState<
     Partial<Record<'username' | 'email' | 'password' | 'repeat', 'required' | 'invalidEmail' | 'mismatch'>>
   >({});
-  const { busy, error, run } = useAction(texts.failed);
+  const { busy, error, run } = useAction(text('failed'));
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -387,47 +391,47 @@ function RegisterForm(
     <form onSubmit={(event) => void submit(event)} noValidate>
       <Stack gap="md">
         <TextInput
-          label={texts.username}
+          label={text('username')}
           name="username"
           autoComplete="username"
           autoFocus
           readOnly={busy}
           value={username}
-          error={problems.username && texts[problems.username]}
+          error={problems.username && text(problems.username)}
           onChange={(event) => setUsername(event.currentTarget.value)}
         />
         <TextInput
-          label={texts.email}
+          label={text('email')}
           name="email"
           type="email"
           autoComplete="email"
           readOnly={busy}
           value={email}
-          error={problems.email && texts[problems.email]}
+          error={problems.email && text(problems.email)}
           onChange={(event) => setEmail(event.currentTarget.value)}
         />
         <SimpleGrid cols={2} spacing="sm">
           <PasswordInput
-            label={texts.password}
+            label={text('password')}
             name="new-password"
             autoComplete="new-password"
             readOnly={busy}
             value={password}
-            error={problems.password && texts[problems.password]}
+            error={problems.password && text(problems.password)}
             onChange={(event) => setPassword(event.currentTarget.value)}
           />
           <PasswordInput
-            label={texts.passwordRepeat}
+            label={text('passwordRepeat')}
             name="new-password-repeat"
             autoComplete="new-password"
             readOnly={busy}
             value={repeat}
-            error={problems.repeat && texts[problems.repeat]}
+            error={problems.repeat && text(problems.repeat)}
             onChange={(event) => setRepeat(event.currentTarget.value)}
           />
         </SimpleGrid>
         {error === undefined ? null : <Alert color="red" variant="light" role="alert">{error}</Alert>}
-        <Button type="submit" fullWidth loading={busy}>{texts.registerSubmit}</Button>
+        <Button type="submit" fullWidth loading={busy}>{text('registerSubmit')}</Button>
       </Stack>
     </form>
   );

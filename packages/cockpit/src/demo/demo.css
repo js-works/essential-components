@@ -7,3 +7,8 @@ body {
 app-cockpit {
   height: 100dvh;
 }
+
+/* A made-up app: its app header on top, the page below it. */
+.demo-app__body {
+  padding-block: 16px;
+}

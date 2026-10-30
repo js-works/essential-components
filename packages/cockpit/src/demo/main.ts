@@ -2,11 +2,12 @@
 import './ui/ui.css';
 import './demo.css';
 
-import type { FooterAction } from '../src/index.js';
-import { createCockpitClass } from '../src/index.js';
+import type { FooterAction } from '../main/index.js';
+import { createAppHeaderClass, createCockpitClass } from '../main/index.js';
 import { FEW, GROUPS, MANY, SOME } from './apps.js';
-import { DemoApp } from './demo-app.js';
+import { DEMO_APP_HEADER_TAG, DemoApp } from './demo-app.js';
 import { accentSetting, MENU, navigationSetting, pageSettings, USER, userMenu } from './footer.js';
+import { DEMO_I18N } from './i18n.js';
 
 // The page: a cockpit with 3, 30 or 100 apps (kept in the query string: the apps of a cockpit are fixed, so a change
 // reloads the page). Its footer has the page's settings: the number of apps, the language and the color scheme.
@@ -31,10 +32,12 @@ const appsAction: FooterAction = {
   },
 };
 
+customElements.define(DEMO_APP_HEADER_TAG, createAppHeaderClass({ i18n: DEMO_I18N }));
 customElements.define('demo-app', DemoApp);
 customElements.define(
   'app-cockpit',
   createCockpitClass({
+    i18n: DEMO_I18N,
     title: set === 'few' ? 'My Office' : 'Acme Office',
     subtitle: set === 'few' ? 'Team workspace' : 'Acme Corporation · Headquarters',
     items: SETS[set],

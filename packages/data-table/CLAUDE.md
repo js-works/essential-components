@@ -336,7 +336,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     effect in `useTexts`), and a notification re-renders, so every text and number is refreshed.
   - The params hold raw numbers (`count`, `from`, `to`, `total`, `pages`); the adapter formats them itself.
     Texts without params get `null`.
-  - Without an adapter: the English texts, and the locale of `<html lang>` (else `en-US`).
+  - Without an adapter: the English texts, formatted in `en-US` (`i18n.md`).
   - No i18n library is a dependency. An adapter for react-i18next (or any other library) is a few lines.
   - No hidden `useTranslation('dataTable')` of react-i18next: it would tie every app to one i18n library.
 - Theme: `config.theme`, a typed `DataTableTheme`: the design values in camelCase (`colorText`, `colorSelected`,

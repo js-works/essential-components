@@ -71,7 +71,7 @@ Started 2026-10-08.
 
 - Saved filters (2026-10-11, the user's wish) in Employees, Recruiting (the openings) and Checklists, with colleagues'
   shared filters: see "Saved filters in the root's apps" in the root's `CLAUDE.md` (`useSavedTableFilters` of `@local/micro-app`).
-- The header (`MicroAppHeader` since 2026-10-17; the app's own `AppHeader` from 2026-10-08, "top bar" before): the app icon (`TbUsersGroup`; the cockpit's the same Tabler icon), "Human Resources" ("Personal" in German),
+- The header (`MicroAppHeader`, the cockpit's app header since 2026-10-28, its own before, since 2026-10-17; the app's own `AppHeader` from 2026-10-08, "top bar" before): the app icon (`TbUsersGroup`; the cockpit's the same Tabler icon), "Human Resources" ("Personal" in German),
   the user menu (the viewer's avatar and title, "My page"), Back and Forward.
   - The modules as tabs (2026-10-08, the user's wish: tried here first, then rolled out to the Board Manager, the User
     Manager and the Time Tracker; before, a menu of the modules on the title, the breadcrumb in the same line):

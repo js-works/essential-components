@@ -1,26 +1,14 @@
-import type * as Spec from '../index.js';
+import type { CockpitTheme } from '../index.js';
+import { DEFAULT_COCKPIT_THEME } from '../themes/default-cockpit-theme.js';
 
 export { layoutStyles, styles, themeValues };
-
-// The theme's defaults (2026-10-10): the design language's values (plain values; never its `--ui-*` tokens, which are
-// for demos only). The base size of the cockpit's text and icons is 14px, the size of the apps' normal text (Mantine's
-// sm).
-const DEFAULT_THEME: Required<Spec.CockpitTheme> = {
-  accent: 'light-dark(#0a5cc2, #78b0ff)',
-  fontSize: '14px',
-  fontFamily: 'system-ui, sans-serif',
-  sidebarWidth: '256px',
-  railWidth: '68px',
-  // Around the open app (2026-10-06, the user's wish: 20px 24px before, then 12px 16px for a moment).
-  contentPadding: '16px 20px',
-};
 
 // The cockpit's CSS, in its shadow root: one stylesheet per theme (2026-10-10; static CSS with `--app-cockpit-*`
 // custom properties before), its values put straight in (`v`), so the cockpit defines no custom properties (they
 // would inherit into the mini-apps, its light DOM children). Every `font-size` is a multiple of the theme's `fontSize`
 // (`calc(${v.fontSize} * N / 14)`, N the size in px at 14). No rem anywhere (2026-10-04, the user's rule): a page's root
 // font size must not change the cockpit.
-function styles(theme: Spec.CockpitTheme): string {
+function styles(theme: CockpitTheme): string {
   const v = themeValues(theme);
 
   return /* css */ `
@@ -2881,8 +2869,8 @@ function layoutStyles(sidebarWidth: number | undefined, switcherLeft: number | u
 
 // The values of the stylesheets (the cockpit's and the taskbar's): the theme's, over the defaults, and the fixed ones
 // of the design language.
-function themeValues(theme: Spec.CockpitTheme) {
-  const t = { ...DEFAULT_THEME, ...withoutUndefined(theme) };
+function themeValues(theme: CockpitTheme) {
+  const t = { ...DEFAULT_COCKPIT_THEME, ...withoutUndefined(theme) };
   // The accent: one color, lighter in a dark scheme (e.g. the sidebar) by a mix with white; the default has both.
   const accent = theme.accent === undefined
     ? t.accent
@@ -2928,6 +2916,6 @@ function themeValues(theme: Spec.CockpitTheme) {
 }
 
 // A theme's keys that are set (an `undefined` must not hide a default).
-function withoutUndefined(theme: Spec.CockpitTheme): Spec.CockpitTheme {
+function withoutUndefined(theme: CockpitTheme): CockpitTheme {
   return Object.fromEntries(Object.entries(theme).filter(([, value]) => value !== undefined));
 }

@@ -1,8 +1,9 @@
+import type { I18nAdapter } from './i18n.js';
 import type { CockpitFooter, MenuSection, SignedInUser } from './menus.js';
-import type { NavGroup, NavItem } from './navigation.js';
+import type { NavGroup, NavItem, NavLayout, NavScheme } from './navigation.js';
 import type { CockpitTheme } from './theme.js';
 
-export type { CockpitClassConfig };
+export type { CockpitClass, CockpitClassConfig, CockpitElement, NavDensity };
 
 type CockpitClassConfig = {
   title?: string;
@@ -30,4 +31,28 @@ type CockpitClassConfig = {
   taskbar?: boolean;
   // The first value of the element's `theme`.
   theme?: CockpitTheme;
+  // The texts (the namespace `'cockpit'`, `CockpitTexts`): the adapter, asked once on the first connect with the element
+  // itself. Without one: English and en-US.
+  i18n?: { type: 'factory'; getAdapter: (element: HTMLElement) => I18nAdapter };
 };
+
+// The density of the sidebar (its rows and the gaps between its sections and groups) and of the popups' rows; the
+// same values as the data table's `density`. The topbar's lines and the font sizes stay.
+type NavDensity = 'compact' | 'normal' | 'comfortable';
+
+type CockpitElement = HTMLElement & {
+  nav: NavLayout;
+  navScheme: NavScheme;
+  density: NavDensity;
+  readonly activeItem: NavItem | undefined;
+  open(id: string): void;
+  // Closes an open item (removes its element, so its state is lost); the open one: the one used before it is shown.
+  // The last open item cannot be closed, except with a start page (then that is shown).
+  close(id: string): void;
+  // A start page (the attribute `start-page`; see the config's `startPage`).
+  startPage: boolean;
+  // The look (see `CockpitTheme`); a new object to change it.
+  theme: CockpitTheme;
+};
+
+type CockpitClass = new() => CockpitElement;

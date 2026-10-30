@@ -1,0 +1,17 @@
+/* The demo element of the cockpit package (`cockpit-demo.ts`): each app header in a frame with a page below it. */
+.cockpit-demo__frame {
+  border: 1px solid var(--ui-color-divider);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-color-background);
+  overflow: hidden;
+}
+
+.cockpit-demo__page {
+  min-height: 72px;
+  padding: 12px 16px;
+}
+
+.cockpit-demo__log {
+  min-height: 8lh;
+  white-space: pre;
+}

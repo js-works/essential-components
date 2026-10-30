@@ -1,27 +1,17 @@
 export { microAppResources };
 
 // The texts of the building blocks, in English and German, as i18next resources, which the app adds to its instance
-// (`resources: { en: { ...microAppResources.en, app: … }, … }`): the namespace `microApp` (`<page/>` is the page's
-// crumb), and `dataTable`, the data table's texts (its English ones are its own defaults).
+// (`resources: { en: { ...microAppResources.en, app: … }, … }`): the namespace `microApp`, `dataTable`, the data
+// table's texts, and `cockpit`, the app header's (their English ones are their own defaults).
 const microAppTexts = {
   en: {
     home: 'Home',
-    back: 'Back',
-    forward: 'Forward',
-    backTo: 'Back to <page/>',
-    forwardTo: 'Forward to <page/>',
-    modules: 'Modules',
     open: 'Open',
     edit: 'Edit',
     delete: 'Delete',
   },
   de: {
     home: 'Start',
-    back: 'Zurück',
-    forward: 'Vorwärts',
-    backTo: 'Zurück zu <page/>',
-    forwardTo: 'Weiter zu <page/>',
-    modules: 'Module',
     open: 'Öffnen',
     edit: 'Bearbeiten',
     delete: 'Löschen',
@@ -119,7 +109,20 @@ const dataTableGerman: Readonly<Record<string, string>> = {
   shareSavedFilter: '{name} teilen',
 };
 
+// The app header's texts in German (the namespace `cockpit`, the cockpit's keys; its English ones are its own
+// defaults).
+const cockpitGerman: Readonly<Record<string, string>> = {
+  home: 'Start',
+  back: 'Zurück',
+  forward: 'Vorwärts',
+  backTo: 'Zurück zu {{page}}',
+  forwardTo: 'Weiter zu {{page}}',
+  modules: 'Module',
+  switchApp: 'App wechseln',
+  breadcrumb: 'Navigationspfad',
+};
+
 const microAppResources = {
-  en: { microApp: microAppTexts.en, dataTable: {} },
-  de: { microApp: microAppTexts.de, dataTable: dataTableGerman },
+  en: { microApp: microAppTexts.en, dataTable: {}, cockpit: {} },
+  de: { microApp: microAppTexts.de, dataTable: dataTableGerman, cockpit: cockpitGerman },
 } as const;

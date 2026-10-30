@@ -4552,6 +4552,21 @@ describe('DataTable', () => {
       expect(await screen.findByText('1-10 of 12.345')).toBeTruthy();
     });
 
+    it('formats numbers in en-US without an adapter, whatever the page\'s language', async () => {
+      const Plain = createDataTableComponent({});
+      const many = async (query: Spec.RowQuery) => ({ ...(await createSource()(query)), total: 12345 });
+
+      document.documentElement.lang = 'de-DE';
+
+      try {
+        render(<Plain source={many} rowKey="id" columns={columns} pageSize={10} />);
+
+        expect(await screen.findByText('1-10 of 12,345')).toBeTruthy();
+      } finally {
+        document.documentElement.lang = '';
+      }
+    });
+
     it('refreshes its texts when the adapter reports a change of the language', async () => {
       let language = 'en';
       let notify = () => {};

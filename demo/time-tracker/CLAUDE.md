@@ -111,7 +111,7 @@ Started 2026-10-06.
 - Saved filters (2026-10-11, the user's wish) in Employees and in the team's tab of Leave (`LeaveTable`'s
   `savedFilters`, given by `LeavePage`), with colleagues' shared filters: see "Saved filters in the root's apps" in
   the root's `CLAUDE.md` (`useSavedTableFilters` of `@local/micro-app`).
-- The header (`MicroAppHeader` since 2026-10-17; the app's own `AppHeader` from 2026-10-08, "top bar" before), two lines (2026-10-08, the Human Resources' trial, rolled out; a menu of the modules
+- The header (`MicroAppHeader`, the cockpit's app header since 2026-10-28, its own before, since 2026-10-17; the app's own `AppHeader` from 2026-10-08, "top bar" before), two lines (2026-10-08, the Human Resources' trial, rolled out; a menu of the modules
   on the title, the breadcrumb in the same line before): the app icon (`TbClock`, also the cockpit's), "Time Tracker",
   the modules as tabs (Overview, Time clock, Timesheet, Leave, Sick calls, Team calendar; for a team lead also Approvals
   and Employees; the current one, also on an employee's page, in the accent's light ground; below 56rem of the header

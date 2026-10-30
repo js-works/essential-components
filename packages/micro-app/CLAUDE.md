@@ -42,28 +42,29 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 
 ## MicroAppHeader
 
+- The cockpit's app header (`createAppHeaderClass` of `@local/cockpit`, a dependency), fed from the router: the
+  framework-free element draws it, this component wires it to TanStack Router and React.
 - Props: `icon`, `title`, `modules` (`{ to, label, exact? }[]`, the start page's tab first with `exact: true`),
-  `actions` (the app's own at the end of the first line, before Back and Forward, e.g. a user menu), `crumbs` (`{ to, label }[]`: the app's own breadcrumb in place of the routes'
-  crumbs, e.g. a folder's path in the File Center).
-- Two lines: the icon (Mantine's `ThemeIcon`, light), the title, the modules as tabs (router links; the current one, the
-  router's `data-status="active"`, in the accent's light ground), Back and Forward at the end; below, the breadcrumb.
-- The breadcrumb: "Home" (a house icon and the text) as a link to `/`, then one crumb per matched route with a crumb
-  (`staticData: { crumb: (params) => … }`), the last one plain text (the current page); on the start page "Home" alone,
-  no link. Links through `AnchorLink` (exported: `createLink` of a plain Mantine `Anchor` (`Anchor` is polymorphic: TanStack Router's way); an app uses it for its own links, typed by its registered router).
-  Crumbs end with an ellipsis when it is too short.
-- The current module is a crumb by itself: right after "Home",
-  its label, unless a matched route has a crumb of its own for the module's path (no crumb twice); so a module's
-  route needs no crumb (the package's demo has none). The history's tooltips name a module's path the same way.
-- Back and Forward: the router's history (`history.back()`, `forward()`), disabled at either end. Where they lead is
-  known from the history's index in each entry's state (`__TSR_index`, `history.ts`; a new entry forgets the ones after
-  it). Their tooltips name the page: "Back to <page>" with the last crumb of that path's routes (`router.matchRoutes`;
-  `/` is "Home"), else "Back".
-- Narrow (container queries on the header's own width): below 56rem the tabs become a menu (the current module and a
-  chevron, Mantine's `Menu` without a portal), below 40rem Back and Forward hide.
-- Sticky at the top (`z-index: 100`), on the body's color, with a line between its two lines, none below it; not
-  selectable.
-- Tests: `src/micro-app-header.test.tsx` (a memory router and an i18next instance: the tabs and the active one, the
-  breadcrumb, the module's crumb, German, Back and Forward).
+  `actions` (the app's own at the end of the line, before Back and Forward, e.g. a user menu), `crumbs` (`{ to, label
+  }[]`: the app's own breadcrumb in place of the routes' crumbs, e.g. a folder's path in the File Center), `switcher`
+  and `activeSwitcherItem` (the title as a switcher; its entries lead outside the router: the browser follows them).
+- It sets the element's properties from the router: the modules' hrefs (`router.buildLocation`), the active module,
+  the crumbs, Back and Forward; and answers its events: `navigate` (`router.navigate({ href })`), `back`, `forward`
+  (the router's history).
+- Labels are text (a module's label, the title); what is not (the icon, the crumbs' components, the pages of Back and
+  Forward, `actions`) goes into the element's slots, as `micro-app__header-slot` (`display: contents`).
+- The breadcrumb: one crumb per matched route with a crumb (`staticData: { crumb: (params) => … }`), after "Home"
+  (the element's). The current module is a crumb by itself, right after "Home", unless a matched route has a crumb of
+  its own for the module's path (no crumb twice); so a module's route needs no crumb (the package's demo has none).
+- Back and Forward: where they lead is known from the history's index in each entry's state (`__TSR_index`,
+  `history.ts`; a new entry forgets the ones after it). Their pages (the tooltips' "Back to …") are the last crumb of
+  that path's routes (`router.matchRoutes`, `crumbs.ts`), else the module's label; `/` is "Home".
+- Its element: an internal one (`internal-micro-app-header-<n>`, registered on first use) with
+  `MANTINE_APP_HEADER_THEME`, one class per i18next instance (its `I18nAdapter` over the app's instance: the namespace
+  `cockpit`, the element's keys; the German ones in `microAppResources`, i18next's `{{page}}`). The package's own
+  `home` names the start page in the tooltips.
+- Tests: `src/micro-app-header.test.tsx` (a memory router and an i18next instance; the element's properties and
+  events: the title, the modules and the active one, the crumbs, the module's crumb, the texts in the app's language, `navigate`, Back and Forward).
 
 ## The other building blocks
 
@@ -81,14 +82,15 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   the app's i18next, plus `DialogForm`, the overlays' `<Form>` bound to it; the message of an invalid field as a popover,
   `FieldError`).
 - `createLook({ accent?, danger?, success?, warning?, tokens?, Scope })`: Mantine's theme (the modern theme),
-  its CSS variables and the overlays' config in Mantine's look; the app's custom properties by the names it gives
+  its CSS variables (more contrast: the links, `--mantine-color-anchor`, shade 9 of the accent in the light scheme, so
+  every link and the app header follow) and the overlays' config in Mantine's look; the app's custom properties by the names it gives
   (`tokens: { accent, fontSize, fontFamily, scale }`), the app's Mantine scope for the dialogs' content.
 - `MantineScope({ className, scheme? })`, `usePageScheme()`: the app's Mantine scope with the page's color scheme, or
   the one the app gives (`scheme`, e.g. the Board Manager's `<board-manager>` element, the `color-scheme` of
   the element). Test: `scope.test.tsx`.
 - `mirrorInHash(router, element, prefix)`, `pathFromHash(prefix)`: a router on a memory history mirrored in the URL's
   hash after a prefix, the browser's Back and Forward in step with it (the history's `__TSR_index`).
-- Dependencies of the repository's packages: `@local/data-table`, `@local/form-validation`, `@local/overlays`,
+- Dependencies of the repository's packages: `@local/cockpit` (the app header), `@local/data-table`, `@local/form-validation`, `@local/overlays`,
   `@local/mantine-themes` (the first package that depends on others: its `tsconfig.json` resolves their sources by the
   `source` condition, `customConditions`, and its Vite config too; without `noUncheckedIndexedAccess` and
   `noImplicitOverride`, which the overlays' code is not written for, like the root's). Peer: `zod` (`^4`).

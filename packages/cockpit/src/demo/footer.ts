@@ -8,7 +8,7 @@ import type {
   NavLayout,
   NavScheme,
   SignedInUser,
-} from '../src/index.js';
+} from '../main/index.js';
 
 export { accentSetting, MENU, navigationSetting, pageSettings, USER, userMenu };
 

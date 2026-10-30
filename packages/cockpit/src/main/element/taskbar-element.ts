@@ -3,8 +3,8 @@ import { html, LitElement, nothing } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 
-import { textsFor } from '../core/texts.js';
-import type * as Spec from '../index.js';
+import { textsOf } from '../core/texts.js';
+import type { CockpitTexts, CockpitTheme } from '../index.js';
 import { closeIcon, initialsIcon } from './icons.js';
 import { taskbarStyles } from './taskbar-styles.js';
 
@@ -53,12 +53,15 @@ class TaskbarElement extends LitElement {
     tasks: { attribute: false },
     active: {},
     theme: { attribute: false },
+    texts: { attribute: false },
   };
 
   declare tasks: readonly Task[];
   declare active: string | undefined;
   // The look (2026-10-10): the cockpit passes its own; alone, the defaults. Its stylesheet is built from it.
-  declare theme: Spec.CockpitTheme;
+  declare theme: CockpitTheme;
+  // The cockpit's texts (through its adapter).
+  declare texts: CockpitTexts;
   readonly #themeSheet = new CSSStyleSheet();
 
   // A task was closed from inside: the focus goes to the active task once the host has removed it.
@@ -69,13 +72,13 @@ class TaskbarElement extends LitElement {
   #drag: Drag | undefined;
   // The click that ends a drag does not select.
   #dragged = false;
-  #langObserver: MutationObserver | undefined;
 
   constructor() {
     super();
     this.tasks = [];
     this.active = undefined;
     this.theme = {};
+    this.texts = textsOf(undefined);
   }
 
   // The theme's stylesheet (see `theme`).
@@ -89,15 +92,8 @@ class TaskbarElement extends LitElement {
     return root;
   }
 
-  override connectedCallback(): void {
-    super.connectedCallback();
-    this.#langObserver = new MutationObserver(() => this.requestUpdate());
-    this.#langObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
-  }
-
   override disconnectedCallback(): void {
     super.disconnectedCallback();
-    this.#langObserver?.disconnect();
     this.#endDrag(false);
   }
 
@@ -343,7 +339,7 @@ class TaskbarElement extends LitElement {
   };
 
   protected override render(): TemplateResult {
-    const texts = textsFor(document.documentElement.lang);
+    const texts = this.texts;
     // The one tab stop: the active task, else the first.
     const stop = this.tasks.some((task) => task.id === this.active) ? this.active : this.tasks[0]?.id;
 
@@ -385,8 +381,8 @@ class TaskbarElement extends LitElement {
                 class="task-close"
                 data-id=${task.id}
                 tabindex="-1"
-                aria-label=${texts.closeTask(task.title)}
-                title=${texts.closeTask(task.title)}
+                aria-label=${texts.closeTask({ title: task.title })}
+                title=${texts.closeTask({ title: task.title })}
                 @click=${() => this.#close(task)}
               >${closeIcon()}</button>`
         }

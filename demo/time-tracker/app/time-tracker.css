@@ -7,11 +7,6 @@
   font-size: var(--mantine-font-size-sm);
 }
 
-/* Links are darker than Mantine's primary color in the light scheme (shade 9), like in the Board Manager. */
-.time-tracker[data-mantine-color-scheme='light'] .mantine-Anchor-root {
-  color: var(--mantine-primary-color-9);
-}
-
 /* The app fills the height of its element where that has one (the root page's cockpit gives it its content area): the
    app header stays, the page below it scrolls (`.time-tracker__main`). Without a height, the app is as high as its
    content and the app header is sticky. Like the Board Manager. */

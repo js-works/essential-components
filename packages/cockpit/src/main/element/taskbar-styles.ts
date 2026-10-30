@@ -1,4 +1,4 @@
-import type * as Spec from '../index.js';
+import type { CockpitTheme } from '../index.js';
 import { themeValues } from './styles.js';
 
 export { taskbarStyles };
@@ -7,7 +7,7 @@ export { taskbarStyles };
 // cockpit's `--app-cockpit-*` custom properties, inherited, before): inside a cockpit the cockpit's theme, else the defaults (the design language's
 // values; never its `--ui-*` tokens: those are for demos only). No `rem` (like the cockpit: a page's root font size must
 // not change it).
-function taskbarStyles(theme: Spec.CockpitTheme): string {
+function taskbarStyles(theme: CockpitTheme): string {
   const v = themeValues(theme);
 
   return /* css */ `

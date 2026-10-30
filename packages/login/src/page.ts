@@ -1,8 +1,8 @@
 import { useSyncExternalStore } from 'react';
 
-export { useLang, useScheme };
+export { useScheme };
 
-// The page's language and color scheme, read from `<html>` (`lang`, and the computed `color-scheme`: only `dark` is
+// The page's color scheme, read from `<html>` (its computed `color-scheme`: only `dark` is
 // dark, only `light` is light, anything else follows the system). Any attribute change of `<html>` reads them again;
 // there is no event for a changed computed style.
 
@@ -33,8 +33,4 @@ function currentScheme(): 'light' | 'dark' {
 
 function useScheme(): 'light' | 'dark' {
   return useSyncExternalStore(subscribe, currentScheme);
-}
-
-function useLang(): string {
-  return useSyncExternalStore(subscribe, () => document.documentElement.lang);
 }

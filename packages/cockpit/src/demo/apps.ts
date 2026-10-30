@@ -1,4 +1,4 @@
-import type { NavGroup, NavItem } from '../src/index.js';
+import type { NavGroup, NavItem } from '../main/index.js';
 
 export { FEW, GROUPS, MANY, SOME };
 
@@ -25,11 +25,18 @@ const ICONS = {
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg>',
 };
 
+// An item with an icon: in the navigation, and on its app's header (the attribute `icon`).
+const withIcon = (navItem: NavItem, icon: string): NavItem => ({
+  ...navItem,
+  icon,
+  attributes: { ...navItem.attributes, icon },
+});
+
 // Few items: no groups, every item with an icon.
 const FEW: readonly NavItem[] = [
-  { ...item('Calendar', 'Meetings, rooms and holidays'), icon: ICONS.calendar },
-  { ...item('Mail', 'The shared mailboxes of the office'), icon: ICONS.mail },
-  { ...item('Documents', 'Contracts, templates and letters'), icon: ICONS.folder },
+  withIcon(item('Documents', 'Contracts, templates and letters'), ICONS.folder),
+  withIcon(item('Calendar', 'Meetings, rooms and holidays'), ICONS.calendar),
+  withIcon(item('Mail', 'The shared mailboxes of the office'), ICONS.mail),
 ];
 
 // The groups of the 100 items, each with its subgroups (the second level of the tree).

@@ -2,7 +2,7 @@ import type { FieldPropNames, FormConfig, I18nAdapter, MessageContext, Validatio
 import { catalogs, localeCandidates } from './messages/index.js';
 
 export type { ErrorData };
-export { checkI18nType, createTranslator, documentLocale, humanize, isDev, LIBRARY_NAMESPACE, warnOnce };
+export { checkI18nType, createTranslator, FALLBACK_LOCALE, humanize, isDev, LIBRARY_NAMESPACE, warnOnce };
 
 /** Errors are stored as data and only translated when rendering. */
 interface ErrorData {
@@ -26,12 +26,8 @@ function warnOnce(id: string, text: string) {
 /** The namespace of the library's messages for the adapter. */
 const LIBRARY_NAMESPACE = 'formValidation';
 
-/** Without an adapter: the locale of <html lang>, otherwise the browser language. */
-function documentLocale(): string {
-  return (typeof document !== 'undefined' && document.documentElement.lang)
-    || (typeof navigator !== 'undefined' && navigator.language)
-    || 'en';
-}
+/** Without an adapter: English texts and en-US formatting (`i18n.md`). */
+const FALLBACK_LOCALE = 'en-US';
 
 /** The union type prevents any other `type`, but not in plain JavaScript or with a cast config (e.g. the old form). */
 function checkI18nType(i18n: { type: unknown } | undefined) {

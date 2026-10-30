@@ -122,7 +122,9 @@ function createLook(
 
   // More contrast than Mantine's defaults, for the app and every component in it (their themes use Mantine's
   // variables): the dimmed text (secondary texts, the table headers, the labels) and the placeholders one step darker
-  // (in dark mode: lighter). The text and the lines stay Mantine's (black and `gray.4` already). The error color (the
+  // (in dark mode: lighter); the links (`--mantine-color-anchor`, which Mantine's `Anchor` and the components' themes
+  // read) shade 9 of the accent in the light scheme (Mantine's 6 is too light on white), the dark scheme's Mantine's
+  // (shade 4). The text and the lines stay Mantine's (black and `gray.4` already). The error color (the
   // inputs' errors, the data table's and the file upload's danger) is the danger color, shades 6 and 8 like
   // Mantine's red.
   // The font and the text size follow the app's custom properties (the app's normal text, Mantine's `sm`; live: no JS
@@ -144,6 +146,7 @@ function createLook(
     },
     light: {
       ...accentVars.light,
+      '--mantine-color-anchor': 'var(--mantine-primary-color-9)',
       '--mantine-color-error': 'var(--mantine-color-danger-6)',
     },
     dark: {

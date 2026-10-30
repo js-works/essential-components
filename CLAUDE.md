@@ -84,7 +84,7 @@ and imports the files it needs from its `CLAUDE.md`.
     - "Internals": the folders
       "Components" ("Data table", "File upload", "Dialogs + Toasts", "Form validation" (2026-10-07; a "Planned"
       placeholder before), "Rich text" (2026-10-17, `packages/rich-text/demo/rich-text-demo.tsx`), "Micro-app" (2026-10-17,
-      `packages/micro-app/demo/micro-app-demo.tsx`)) and "Planned" ("Autocomplete"; placeholders of `demo/planned/planned-demo.ts` (`planned-demo`): what it will be, and that there is
+      `packages/micro-app/demo/micro-app-demo.tsx`), "Cockpit" (`packages/cockpit/src/demo/cockpit-demo.ts`: the app header with a made-up router, its switcher, an own theme and an events log; the cockpit itself is this page)) and "Planned" ("Autocomplete"; placeholders of `demo/planned/planned-demo.ts` (`planned-demo`): what it will be, and that there is
       no demo yet, in a light gray box with rounded corners, `demo.css`).
     - The apps of "Apps" are pinned (`placement: 'pinned'`, 2026-10-08, the user's wish; File Center and User Manager
       too for a few hours): entries of
@@ -102,7 +102,7 @@ and imports the files it needs from its `CLAUDE.md`.
       { scheme: 'dark' })` in `demo/main.ts`; a stored choice counts; the cockpit's own demo keeps "Match page" ("Like the page" until 2026-10-08)), the accent color (2026-10-03: one of Mantine's usual colors, indigo by default since 2026-10-07 (violet before; the cockpit's own demo keeps violet), or "Design language", i.e. `ui.css`'s; it sets the cockpit's `theme` (2026-10-10; the cockpit read `--app-accent-color` before) and `--app-accent-color` on `<html>`, which `demo/demo.css` maps to the apps' `--board-manager-accent-color`, `--file-center-accent-color`, `--user-manager-accent-color`, `--time-tracker-accent-color`, `--human-resources-accent-color`, with the design language's accent as the fallback, so the cockpit and the apps have one color; the package demos keep `ui.css`'s) and the page's settings (the language `en-US`/`de-DE` in the kebab menu, 2026-10-03; a section "Prototypes" there, before "Reset demo",
       only on the root page (2026-10-09, `demo/main.ts`): "Filter drawer", a check item that switches every data
       table to the filter drawer, on by default since 2026-10-11 (the user's wish; off before), see the todo in `packages/data-table/CLAUDE.md`; the color scheme: System, Light (the default), Dark, 2026-10-03; from
-      `packages/cockpit/demo/footer.ts`, with a made-up menu), which change `<html>` (`lang`, `data-scheme`) for every
+      `packages/cockpit/src/demo/footer.ts`, with a made-up menu), which change `<html>` (`lang`, `data-scheme`) for every
       demo.
     - Signing out (2026-10-03; the user menu's "Sign out") shows the login screen (`packages/login`; its subtitle "Welcome to Acme Corporate", 2026-10-07) in place of
       the cockpit (`hidden`), animated (2026-10-04): the cockpit fades out (250 ms), then the login screen fades in (350 ms;
@@ -404,6 +404,8 @@ and imports the files it needs from its `CLAUDE.md`.
   user's wish). Open: the contract with
   the cockpit (the signed-in user and the permissions, deep links between micro-apps), and the ready micro-apps as
   packages.
+- A demo example of `MicroAppHeader`'s switcher (the title as a switcher; `@local/micro-app`'s header is the cockpit's
+  app header since 2026-10-28, the user's wish, in all five apps).
 - Decide about the name `TFunction` (2026-10-15, the user's wish; later): i18next's type of its `t`, which the apps'
   translation function has (the Board Manager's `Translate = ReturnType<typeof useTranslate>`, a
   `TFunction<'app', undefined>`). It is no name of ours (none of our files mentions it), but it shows on hover and in

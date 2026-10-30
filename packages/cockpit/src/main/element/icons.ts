@@ -5,11 +5,15 @@ import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import type { NavItem } from '../index.js';
 
 export {
+  arrowLeftIcon,
+  arrowRightIcon,
   checkIcon,
+  chevronDownIcon,
   chevronIcon,
   closeIcon,
   gridIcon,
   groupIcon,
+  homeIcon,
   initialsIcon,
   initialsOf,
   itemIcon,
@@ -33,6 +37,17 @@ const panelIcon = () =>
     svg`<rect x="3.5" y="4.5" width="17" height="15" rx="2.5" /><path d="M9.5 4.5v15" /><path d="m15.5 10-2 2 2 2" />`,
   );
 const selectorIcon = () => line('icon--selector', svg`<path d="m8 9 4-4 4 4" /><path d="m16 15-4 4-4-4" />`);
+// The app header's (Tabler's `chevron-down`, `arrow-left`, `arrow-right`, `home`, MIT).
+const chevronDownIcon = () => line('icon--chevron-down', svg`<path d="M6 9l6 6l6 -6" />`);
+const arrowLeftIcon = () =>
+  line('icon--arrow-left', svg`<path d="M5 12l14 0" /><path d="M5 12l6 6" /><path d="M5 12l6 -6" />`);
+const arrowRightIcon = () =>
+  line('icon--arrow-right', svg`<path d="M5 12l14 0" /><path d="M13 18l6 -6" /><path d="M13 6l6 6" />`);
+const homeIcon = () =>
+  line(
+    'icon--home',
+    svg`<path d="M5 12l-2 0l9 -9l9 9l-2 0" /><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" /><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />`,
+  );
 const checkIcon = () => line('icon--check', svg`<path d="m5 12 5 5L20 7" />`);
 const closeIcon = () => line('icon--close', svg`<path d="M18 6 6 18" /><path d="m6 6 12 12" />`);
 // The bottom bar's "Apps" (the whole navigation): four rounded squares (Tabler's `layout-grid`, MIT).

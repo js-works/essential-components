@@ -47,7 +47,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 - `src/schema.ts`: reads the fields from the Zod schema (kind, semantic type, required, default, bounds).
 - `src/issues.ts`: turns Zod issues into message keys with parameters.
 - `src/i18n.ts`: the translator (adapter, app messages, catalogs), `Intl` formatting, plural forms, `humanize`.
-- `src/messages/`: the bundled catalogs (de, en, fr, es, ru, hu, ar, zh-CN, zh-TW) and `localeCandidates`.
+- `src/messages/`: the bundled catalogs (de, en) and `localeCandidates`.
 - `src/meta.ts`: `formMeta` (an own Zod registry) and `binding`. `src/merge.ts`: `mergeProps` (chained handlers,
   combined refs).
 - `src/define-use-form.test.tsx`: the tests.

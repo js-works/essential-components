@@ -26,6 +26,7 @@
     "format:check": "dprint check"
   },
   "dependencies": {
+    "@local/cockpit": "*",
     "@local/data-table": "*",
     "@local/form-validation": "*",
     "@local/mantine-themes": "*",

@@ -6,7 +6,7 @@
   "type": "module",
   "exports": {
     ".": {
-      "source": "./src/index.ts",
+      "source": "./src/main/index.ts",
       "default": "./dist/index.js"
     }
   },

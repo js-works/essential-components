@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite';
 
-// `vite` serves the demo (index.html), `vite build` builds the library (src/index.ts). Its dependencies (Lit, Floating
+// `vite` serves the demo (index.html), `vite build` builds the library (src/main/index.ts). Its dependencies (Lit, Floating
 // UI) stay outside the build.
 export default defineConfig({
   build: {
@@ -8,7 +8,7 @@ export default defineConfig({
     target: 'es2024',
     cssTarget: 'esnext',
     lib: {
-      entry: { index: 'src/index.ts' },
+      entry: { index: 'src/main/index.ts' },
       formats: ['es'],
     },
     rolldownOptions: {

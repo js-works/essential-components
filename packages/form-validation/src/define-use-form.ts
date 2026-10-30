@@ -2,7 +2,7 @@ import type * as React from 'react';
 import { useEffect, useId, useReducer, useRef, useState } from 'react';
 import type { z } from 'zod';
 
-import { checkI18nType, createTranslator, documentLocale, type ErrorData, warnOnce } from './i18n.js';
+import { checkI18nType, createTranslator, type ErrorData, FALLBACK_LOCALE, warnOnce } from './i18n.js';
 import type {
   FieldArg,
   FieldBindingConfig,
@@ -202,7 +202,7 @@ function defineUseForm<const P extends FieldPropNames = { label: 'label'; error:
     const [factoryAdapter, setFactoryAdapter] = useState<I18nAdapter>();
     const adapter = hookAdapter ?? factoryAdapter;
     const pending = i18n?.type === 'factory' && factoryAdapter === undefined;
-    const locale = adapter?.currentLocale() ?? documentLocale();
+    const locale = adapter?.currentLocale() ?? FALLBACK_LOCALE;
     useEffect(() => adapter?.onChange?.(() => forceRender()), [adapter]);
     const storeRef = useRef<Store | null>(null);
     storeRef.current ??= createStore(schema, options.initial);

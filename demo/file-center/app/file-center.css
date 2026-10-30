@@ -7,11 +7,6 @@
   font-size: var(--mantine-font-size-sm);
 }
 
-/* Links are darker than Mantine's primary color in the light scheme (shade 9), like in the Board Manager. */
-.file-center[data-mantine-color-scheme='light'] .mantine-Anchor-root {
-  color: var(--mantine-primary-color-9);
-}
-
 /* The app fills the height of its element (the root page's cockpit gives it its content area): the app header stays, the
    body below it takes the rest (2026-10-07, the user's wish, like the Board Manager and the Time Tracker). */
 .file-center:has(> .file-center__app),

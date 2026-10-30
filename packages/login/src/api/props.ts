@@ -1,7 +1,5 @@
 import type { ReactNode } from 'react';
 
-import type { LoginTexts } from './texts.js';
-
 export type { AccountRegistration, Credentials, LoginProvider, LoginScreenProps, PasswordReset };
 
 type Credentials = {
@@ -30,7 +28,6 @@ type LoginScreenProps = {
   subtitle?: string;
   logo?: ReactNode | string;
   hint?: ReactNode | string;
-  texts?: Partial<LoginTexts>;
   onLogin: (credentials: Credentials) => void | Promise<void>;
   onForgotPassword?: (reset: PasswordReset) => void | Promise<void>;
   onRegister?: (registration: AccountRegistration) => void | Promise<void>;

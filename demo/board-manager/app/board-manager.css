@@ -6,13 +6,6 @@
   font-size: var(--mantine-font-size-sm);
 }
 
-/* Links are darker than Mantine's primary color (shade 9 instead of 6; 8 until 2026-10-01) in the light scheme; the
-   dark one keeps its own (shade 4). Unlayered, so it wins over Mantine's layered rule; a `c` prop (inline) still wins
-   over this. */
-.board-manager[data-mantine-color-scheme='light'] .mantine-Anchor-root {
-  color: var(--mantine-primary-color-9);
-}
-
 /* The app fills the height of its element where that has one (2026-10-05; the root page's cockpit gives it its content
    area): the app header stays, the page below it scrolls (`.board-manager__main`). On a host page without a height (the
    `<board-manager>` element, e.g. in XWiki) the app is as high as its content and the page scrolls: the app header is

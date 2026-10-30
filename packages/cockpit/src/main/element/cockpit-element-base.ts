@@ -10,9 +10,24 @@ import { html as staticHtml, unsafeStatic } from 'lit/static-html.js';
 import type { Group, Match } from '../core/search.js';
 import { groupsOf, search, subgroupsOf } from '../core/search.js';
 import { readStored, writeStored } from '../core/storage.js';
-import type { Texts } from '../core/texts.js';
-import { textsFor } from '../core/texts.js';
-import type * as Spec from '../index.js';
+import { textsOf } from '../core/texts.js';
+import type {
+  ActionChoices,
+  CockpitClassConfig,
+  CockpitElement,
+  CockpitTexts,
+  CockpitTheme,
+  FooterAction,
+  I18nAdapter,
+  MenuItem,
+  MenuSection,
+  NavDensity,
+  NavItem,
+  NavLayout,
+  NavScheme,
+  NavSubgroup,
+  SignedInUser,
+} from '../index.js';
 import {
   checkIcon,
   chevronIcon,
@@ -34,20 +49,20 @@ import { layoutStyles, styles } from './styles.js';
 import type { Task, TaskEventDetail, TaskMoveEventDetail } from './taskbar-element.js';
 import { taskbarTagFor } from './taskbar-element.js';
 
-export { CockpitElement };
+export { CockpitElementBase };
 
 type Status = 'loading' | 'ready' | 'failed';
 
 // An entry of the topbar's line: an item, a group (with more than one group, or with pinned items: a two-pane menu), or
 // a subgroup (a dropdown of its items).
 type Entry =
-  | { kind: 'item'; item: Spec.NavItem }
+  | { kind: 'item'; item: NavItem }
   | { kind: 'group'; group: Group }
   | { kind: 'subgroup'; parent: string; group: Group };
 
 // A pane of a two-pane menu of the topbar: a subgroup (`key` its name), or a
 // group's items without a subgroup (`key` '', no heading).
-type Pane = { key: string; heading?: string; icon?: string | undefined; items: readonly Spec.NavItem[] };
+type Pane = { key: string; heading?: string; icon?: string | undefined; items: readonly NavItem[] };
 
 // The sidebar adapts to the number of items: up to `FEW` every item is listed, the groups are plain headings, no
 // "Recent"; more: "Recent" on top and the groups collapsible (closed by default above `MANY`, except the open item's).
@@ -62,18 +77,18 @@ const MIN_WIDTH = 200;
 const MAX_WIDTH = 420;
 
 // The sections of a menu with their items, the empty ones left out.
-const sectionsOf = (sections: readonly Spec.MenuSection[]) =>
+const sectionsOf = (sections: readonly MenuSection[]) =>
   sections
     .map((section) =>
       ('items' in section ? section : { label: undefined, items: section }) as {
         label?: string | undefined;
-        items: readonly Spec.MenuItem[];
+        items: readonly MenuItem[];
       }
     )
     .filter((section) => section.items.length > 0);
 
 // Whether any of the items has an icon (a menu of them then has an icon slot).
-const hasIcons = (items: readonly Spec.NavItem[]) => items.some((item) => item.icon !== undefined);
+const hasIcons = (items: readonly NavItem[]) => items.some((item) => item.icon !== undefined);
 
 const clamp = (value: number) => Math.round(Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, value)));
 const isMac = () => /mac|iphone|ipad/i.test(navigator.platform || navigator.userAgent);
@@ -90,7 +105,7 @@ let instances = 0;
 //   entry.
 // - An item is created when it is opened the first time (after its `load()`), and then kept: the others get `hidden`.
 //   Its element gets `data-hash-segment` (its id), so tabs inside it know their level.
-class CockpitElement extends LitElement implements Spec.CockpitElement {
+class CockpitElementBase extends LitElement implements CockpitElement {
   static override properties = {
     nav: { reflect: true },
     navScheme: { attribute: 'nav-scheme', reflect: true },
@@ -102,24 +117,24 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
   // The attribute `nav`: `side` (the default), `top` (one line, two-pane menus), `top-switcher` (one line,
   // one dropdown with the open item), `bottom` (a bar at the bottom) or `auto` (the sidebar, the bottom bar when
   // narrow). An unknown value is the sidebar.
-  declare nav: Spec.NavLayout;
+  declare nav: NavLayout;
   // The attribute `nav-scheme`: the navigation always dark (the default), or like the page (only CSS: `:host([nav-scheme])`).
-  declare navScheme: Spec.NavScheme;
+  declare navScheme: NavScheme;
   // The attribute `density`: the sidebar's rows and gaps, `compact`, `normal` (the default) or `comfortable` (only CSS:
   // `:host([density])`).
-  declare density: Spec.NavDensity;
+  declare density: NavDensity;
   // The attribute `start-page` (2026-10-08): a start page while no item is open; its first value the config's
   // `startPage`, switchable live. Switched off on the start page: `defaultItem`, else the first item, opens.
   declare startPage: boolean;
   // The theme (2026-10-10): its first value the config's `theme`, switchable live (a new object). The stylesheet is
   // built from it (`styles()`, `#themeSheet`); the values only known at run time (the resized sidebar, the switcher's
   // panel) are in a second one (`layoutStyles()`, `#layoutSheet`). No custom properties.
-  declare theme: Spec.CockpitTheme;
+  declare theme: CockpitTheme;
   readonly #themeSheet = new CSSStyleSheet();
   readonly #layoutSheet = new CSSStyleSheet();
   #layoutText = '';
 
-  readonly #config: Spec.CockpitClassConfig;
+  readonly #config: CockpitClassConfig;
   readonly #id = `cockpit${++instances}`;
   // The menus, by key (`#menu`).
   readonly #menuByKey = new Map<string, Menu>();
@@ -159,7 +174,8 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
   #tipTarget: Element | undefined;
   #tipTimer: ReturnType<typeof setTimeout> | undefined;
   #resizeObserver: ResizeObserver | undefined;
-  #langObserver: MutationObserver | undefined;
+  #adapter: I18nAdapter | undefined;
+  #unsubscribe: (() => void) | undefined;
   // How many entries of each line of the topbar do not fit (they go into its "More" menu), by the line's key.
   readonly #overflow = new Map<string, number>();
   // The group of the top line whose two-pane menu is open (`nav="top"`), by its key (`#entryKey`).
@@ -168,7 +184,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
   #paneShown: string | undefined;
   #paneTimer: ReturnType<typeof setTimeout> | undefined;
 
-  constructor(config: Spec.CockpitClassConfig) {
+  constructor(config: CockpitClassConfig) {
     super();
     this.nav = 'side';
     this.navScheme = 'dark';
@@ -188,7 +204,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
     }
   }
 
-  get activeItem(): Spec.NavItem | undefined {
+  get activeItem(): NavItem | undefined {
     return this.#itemOf(this.#active);
   }
 
@@ -244,8 +260,8 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
 
   override connectedCallback(): void {
     super.connectedCallback();
-    this.#langObserver = new MutationObserver(() => this.requestUpdate());
-    this.#langObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
+    this.#adapter ??= this.#config.i18n?.getAdapter(this);
+    this.#unsubscribe = this.#adapter?.onChange?.(() => this.requestUpdate());
     window.addEventListener('hashchange', this.#onHashChange);
     document.addEventListener('keydown', this.#onShortcut);
     document.addEventListener('pointerdown', this.#onPointerDownOutside, true);
@@ -262,7 +278,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
     document.removeEventListener('pointerdown', this.#onPointerDownOutside, true);
     window.removeEventListener('resize', this.#fitDialogs);
     window.removeEventListener('scroll', this.#fitDialogs, { capture: true });
-    this.#langObserver?.disconnect();
+    this.#unsubscribe?.();
     this.#resizeObserver?.disconnect();
     this.#closeMenus();
   }
@@ -442,7 +458,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
       ?? (this.startPage ? undefined : this.#shownItems[0]?.id);
   }
 
-  #itemOf(id: string | undefined): Spec.NavItem | undefined {
+  #itemOf(id: string | undefined): NavItem | undefined {
     return id === undefined ? undefined : this.#config.items.find((item) => item.id === id);
   }
 
@@ -491,7 +507,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
     this.requestUpdate();
   }
 
-  async #create(item: Spec.NavItem): Promise<void> {
+  async #create(item: NavItem): Promise<void> {
     if (this.#status.get(item.id) === 'loading') {
       return;
     }
@@ -528,8 +544,8 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
 
   // --- State helpers -------------------------------------------------------------------------------------------------
 
-  get #texts(): Texts {
-    return textsFor(document.documentElement.lang);
+  get #texts(): CockpitTexts {
+    return textsOf(this.#adapter);
   }
 
   get #many(): boolean {
@@ -537,22 +553,22 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
   }
 
   // The items of the navigation, the search and the start page: all but the hidden ones (`placement`).
-  get #shownItems(): readonly Spec.NavItem[] {
+  get #shownItems(): readonly NavItem[] {
     return this.#config.items.filter((item) => item.placement !== 'hidden');
   }
 
   // The pinned items (`placement: 'pinned'`): entries of their own, first.
-  get #pinnedItems(): readonly Spec.NavItem[] {
+  get #pinnedItems(): readonly NavItem[] {
     return this.#config.items.filter((item) => item.placement === 'pinned');
   }
 
   // The items neither hidden nor pinned themselves (the start page's folders).
-  get #unpinnedItems(): readonly Spec.NavItem[] {
+  get #unpinnedItems(): readonly NavItem[] {
     return this.#config.items.filter((item) => item.placement === undefined);
   }
 
   // The items in the groups of the topbar and the rail: neither hidden nor pinned, nor in a pinned folder.
-  get #groupedItems(): readonly Spec.NavItem[] {
+  get #groupedItems(): readonly NavItem[] {
     return this.#unpinnedItems.filter((item) =>
       item.subgroup === undefined || this.#subgroupOf(item.group ?? '', item.subgroup)?.placement !== 'pinned'
     );
@@ -600,12 +616,12 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
     return !this.#topbar && !this.#bottom && (this.#collapsed || this.#narrow || this.#paletteOpen);
   }
 
-  get #recentItems(): Spec.NavItem[] {
+  get #recentItems(): NavItem[] {
     return this.#recent.flatMap((id) => this.#itemOf(id) ?? []).filter((item) => item.placement !== 'hidden');
   }
 
   // A subgroup's extra data in the config's `groups` (its icon, its placement).
-  #subgroupOf(group: string, subgroup: string): Spec.NavSubgroup | undefined {
+  #subgroupOf(group: string, subgroup: string): NavSubgroup | undefined {
     return this.#config.groups?.find((candidate) => candidate.name === group)?.subgroups?.find((candidate) =>
       candidate.name === subgroup
     );
@@ -872,6 +888,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
       .tasks=${tasks}
       .active=${this.#active}
       .theme=${this.theme}
+      .texts=${this.#texts}
       @task-select=${(event: CustomEvent<TaskEventDetail>) => this.open(event.detail.id)}
       @task-close=${(event: CustomEvent<TaskEventDetail>) => this.close(event.detail.id)}
       @task-move=${(event: CustomEvent<TaskMoveEventDetail>) => this.#moveTask(event.detail.id, event.detail.index)}
@@ -892,7 +909,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
 
   // `sheet`: in the bottom bar's sheet (the whole sidebar, without its resize handle and toggle; a close button in
   // place of the search, which the bottom bar has).
-  #sidebar(texts: Texts, rail: boolean, sheet = false): TemplateResult {
+  #sidebar(texts: CockpitTexts, rail: boolean, sheet = false): TemplateResult {
     return html`<aside class="sidebar">
             ${rail || sheet ? nothing : this.#resizeHandle(texts)}
             <div class="brand">
@@ -924,7 +941,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
   // taskbar), the pinned ones first, then by folder (`#folders`). In the page's scheme. No greeting.
   // The filter hides the cards that do not match (the search panel's matching, `search()`; their order stays), and the
   // folders without one; Enter opens the first card, Escape clears it, Down goes to the first card.
-  #startPageView(texts: Texts): TemplateResult {
+  #startPageView(texts: CockpitTexts): TemplateResult {
     const query = this.#startPageQuery;
     const matching = new Set(search(this.#shownItems, query).map(({ item }) => item.id));
     const sections = [
@@ -1032,7 +1049,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
 
   // The folders of the start page, in the order of the groups: a group's items without a subgroup as one folder
   // ("General"), then its subgroups (their names and icons); the pinned and hidden items left out.
-  #folders(texts: Texts): Array<{ label: string; icon: string | undefined; items: readonly Spec.NavItem[] }> {
+  #folders(texts: CockpitTexts): Array<{ label: string; icon: string | undefined; items: readonly NavItem[] }> {
     return groupsOf(this.#unpinnedItems).flatMap((group) => {
       const { loose, subgroups } = subgroupsOf(group.items);
 
@@ -1059,8 +1076,8 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
   // The bottom bar (`nav="bottom"`, or `auto` in a narrow cockpit; 2026-10-06): the open item takes the whole height,
   // with a bar below it: "Apps" (a sheet with the whole sidebar: the navigation, the user, the footer), the three items
   // used last (in the order of the config, so they do not move with every switch; the open one marked), and the search.
-  #bottomBar(texts: Texts): TemplateResult {
-    const order = (item: Spec.NavItem) => this.#config.items.indexOf(item);
+  #bottomBar(texts: CockpitTexts): TemplateResult {
+    const order = (item: NavItem) => this.#config.items.indexOf(item);
     const items = this.#recentItems.slice(0, 3).sort((a, b) => order(a) - order(b));
 
     return html`<nav class="bottombar" aria-label=${texts.navigation}>
@@ -1093,7 +1110,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
   // The sheet of the bottom bar: the whole sidebar (navigation, user, footer) in a panel from the bottom, a modal dialog
   // (`#syncDialog`: focus inside, on the open item; Escape and a pointer down outside close it). Choosing an item
   // closes it.
-  #sheet(texts: Texts): TemplateResult {
+  #sheet(texts: CockpitTexts): TemplateResult {
     const open = this.#sheetOpen;
     const events = this.#dialogEvents('.sheet', () => this.#sheetOpen, this.#closeSheet);
 
@@ -1118,7 +1135,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
   // With a start page (`startPage`), the logo is a button that opens it, in every layout (2026-10-08, the user's wish: the
   // title for a few hours before; only a pointer, no tooltip). Else, in the sidebar (not when it is always a rail, below
   // 768px), the logo is a button that toggles the sidebar, like the footer's toggle.
-  #brand(texts: Texts, rail?: boolean): TemplateResult {
+  #brand(texts: CockpitTexts, rail?: boolean): TemplateResult {
     const logo = html`<slot name="logo"><span class="brand-logo" aria-hidden="true">${gridIcon()}</span></slot>`;
     const label = rail ? texts.expand : texts.collapse;
 
@@ -1147,7 +1164,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
   }
 
   // The search: an icon button with a tooltip ("Search items (Ctrl K)"); next to the title, or below the logo in the rail.
-  #searchButton(texts: Texts, rail: boolean): TemplateResult {
+  #searchButton(texts: CockpitTexts, rail: boolean): TemplateResult {
     return html`<button
       type="button"
       class="search-button"
@@ -1160,7 +1177,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
 
   // The handle on the sidebar's right edge: drag it to resize the sidebar; Left and Right (Shift: more) do it from the
   // keyboard; a double click goes back to the default width.
-  #resizeHandle(texts: Texts): TemplateResult {
+  #resizeHandle(texts: CockpitTexts): TemplateResult {
     const current = () => this.#el('.sidebar')?.getBoundingClientRect().width ?? MIN_WIDTH;
     const set = (width: number | undefined, done: boolean) => {
       this.#width = width;
@@ -1251,7 +1268,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
     }
   };
 
-  #item(item: Spec.NavItem, rail: boolean): TemplateResult {
+  #item(item: NavItem, rail: boolean): TemplateResult {
     const current = item.id === this.#active;
     return html`<button
       type="button"
@@ -1267,7 +1284,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
   // An item's icon and title. With the taskbar, an open item (one of its tasks) gets a dot, like the open one in the
   // search panel: right after its title (the end of the row is kept for badges); in the rail (`rail`: no titles, the framed
   // initials without an icon) on the corner of its icon. `framed`: the framed initials without an icon (the flyouts).
-  #iconAndTitle(item: Spec.NavItem, rail: boolean, title: unknown, framed = false): TemplateResult {
+  #iconAndTitle(item: NavItem, rail: boolean, title: unknown, framed = false): TemplateResult {
     const dot = this.#config.taskbar === true && this.#opened.includes(item.id)
       ? html`<span class="running-dot" aria-hidden="true"></span>`
       : nothing;
@@ -1340,7 +1357,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
   // The expanded sidebar (and the bottom bar's sheet) ignores pinning (2026-10-08, the user's wish: it shows every item
   // in its group anyway); the rail has the pinned items (`placement`) first, as icons, not in their subgroup's flyout,
   // then the pinned folders, each its flyout button.
-  #navigation(texts: Texts, rail: boolean): TemplateResult {
+  #navigation(texts: CockpitTexts, rail: boolean): TemplateResult {
     const items = this.#shownItems;
     const many = this.#many;
     const groups = groupsOf(rail ? this.#groupedItems : items);
@@ -1441,7 +1458,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
   // tabs, the groups as entries, each opening a two-pane menu, and on the right the search, the footer's actions and
   // menu, and the user. With one group and no pinned items, its items (and subgroup dropdowns) are the entries.
   // Entries that do not fit go into a "More" menu at the end of the line. `top-switcher`: one dropdown in place of them.
-  #topbarParts(texts: Texts): TemplateResult {
+  #topbarParts(texts: CockpitTexts): TemplateResult {
     const groups = groupsOf(this.#groupedItems);
     // The pinned items, then the pinned folders (each a dropdown of its items).
     const pinned: Entry[] = [
@@ -1594,7 +1611,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
   };
 
   // An item of a panel: its icon, its title (the dot of an open one, with the taskbar) and its description.
-  #panelItem(item: Spec.NavItem): TemplateResult {
+  #panelItem(item: NavItem): TemplateResult {
     return html`<li><button
       type="button"
       class="panel-item"
@@ -1619,7 +1636,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
   // "General"), on the right the items of the shown one, with their descriptions. The left pane is a vertical tablist,
   // the right one its tabpanel; all right panes lie in one grid cell (the hidden ones invisible), so the menu keeps its
   // height while switching. A group of one column (e.g. one subgroup): only the right pane, with its heading.
-  #panePanel(entries: Entry[], texts: Texts): TemplateResult {
+  #panePanel(entries: Entry[], texts: CockpitTexts): TemplateResult {
     const group = this.#openGroup(entries);
     const id = `${this.#id}-panel`;
 
@@ -1739,7 +1756,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
   };
 
   // The item switcher: the open item (its icon and title) as a dropdown button; it opens the search panel at it.
-  #switcherButton(texts: Texts): TemplateResult {
+  #switcherButton(texts: CockpitTexts): TemplateResult {
     const active = this.#itemOf(this.#active);
     const label = `${texts.switchItem} (${isMac() ? '⌘K' : 'Ctrl K'})`;
 
@@ -1771,7 +1788,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
 
   // A line of entries; Left and Right (Home, End) move between them. Those that wrap are hidden (the line is one row
   // high) and listed in the "More" menu.
-  #line(key: string, entries: Entry[], texts: Texts): TemplateResult {
+  #line(key: string, entries: Entry[], texts: CockpitTexts): TemplateResult {
     const hidden = Math.min(this.#overflow.get(key) ?? 0, entries.length);
 
     return html`<ul class="line-list" data-overflow=${key}>${
@@ -1867,7 +1884,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
 
   // An item of a dropdown of the line; `icons`: the menu has an icon slot (some of its items have an icon), so the
   // titles stay aligned.
-  #itemMenuEntry(menu: Menu, item: Spec.NavItem, icons: boolean): TemplateResult {
+  #itemMenuEntry(menu: Menu, item: NavItem, icons: boolean): TemplateResult {
     return html`<div
       class="menu-item"
       role="menuitem"
@@ -1885,7 +1902,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
   }
 
   // The "More" menu of the line: its hidden entries (a group or a subgroup lists its items under its name).
-  #lineMore(key: string, entries: Entry[], texts: Texts): TemplateResult {
+  #lineMore(key: string, entries: Entry[], texts: CockpitTexts): TemplateResult {
     const menu = this.#menu(`more:${key}`, {
       placement: 'bottom-end',
       anchor: this.#belowLine,
@@ -1928,7 +1945,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
 
   // The user in the top line: the avatar (the name as the tooltip); with `userMenu` a button that opens it below,
   // with the name and the second line on top.
-  #topUser(texts: Texts, user: Spec.SignedInUser): TemplateResult {
+  #topUser(texts: CockpitTexts, user: SignedInUser): TemplateResult {
     const sections = this.#config.userMenu ?? [];
     const avatar = user.avatar === undefined
       ? html`<span class="avatar" aria-hidden="true">${initialsOf(user.name).toUpperCase()}</span>`
@@ -2027,7 +2044,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
 
   // The sections of a menu, separated by lines, each with its label. An item with `checked` is a radio option (a check
   // in place of its icon, on the checked one).
-  #menuItems(menu: Menu, sections: readonly Spec.MenuSection[]): TemplateResult[] {
+  #menuItems(menu: Menu, sections: readonly MenuSection[]): TemplateResult[] {
     return sectionsOf(sections).flatMap((section, index) => [
       ...(index > 0 ? [html`<div class="menu-separator" role="separator"></div>`] : []),
       ...(section.label === undefined ? [] : [html`<div class="menu-group-label">${section.label}</div>`]),
@@ -2065,7 +2082,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
   }
 
   // The item `value` was chosen: its `onSelect`, and the menu renders again (a choice's check moves).
-  #select(sections: readonly Spec.MenuSection[], value: string): void {
+  #select(sections: readonly MenuSection[], value: string): void {
     for (const section of sectionsOf(sections)) {
       section.items.find((item) => item.id === value)?.onSelect?.();
     }
@@ -2084,7 +2101,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
     const { loose, subgroups } = subgroupsOf(group.items);
     const current = group.items.some((item) => item.id === this.#active);
     // Icons only on the items (2026-10-07), not on the headings: an item without one gets its framed initials.
-    const entry = (item: Spec.NavItem) =>
+    const entry = (item: NavItem) =>
       html`<div
         class="flyout-item"
         role="menuitem"
@@ -2137,7 +2154,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
   // A `Menu` as a list to choose from (`listbox`): it opens at the chosen group.
   // (Until 2026-10-08 also in the top line of the one-line topbar, `nav="top-compact"` then, which has the groups as
   // entries with two-pane menus since.)
-  #groupSelect(texts: Texts, groups: Group[], value: string): TemplateResult {
+  #groupSelect(texts: CockpitTexts, groups: Group[], value: string): TemplateResult {
     const menu = this.#menu('group-select', {
       placement: 'bottom-start',
       gutter: 4,
@@ -2198,7 +2215,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
 
   // The signed-in user, above the footer: the avatar, the name and a second line. With a menu (`userMenu`), the row is a
   // button that opens it to the right of the sidebar, touching it; in the rail only the avatar (the name as the tooltip).
-  #userRow(texts: Texts, rail: boolean, user: Spec.SignedInUser): TemplateResult {
+  #userRow(texts: CockpitTexts, rail: boolean, user: SignedInUser): TemplateResult {
     const sections = this.#config.userMenu ?? [];
     const avatar = user.avatar === undefined
       ? html`<span class="avatar" aria-hidden="true">${initialsOf(user.name).toUpperCase()}</span>`
@@ -2254,7 +2271,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
   // `choices` a menu of options), and a kebab button with the host's menu. Its menus are plain panels: with the sidebar
   // expanded a sheet on top of the footer, as wide as the sidebar; in the rail to the right, touching the sidebar.
   // In the topbar, the same segments (without the toggle) at the right end of the top line, their menus below them.
-  #footer(texts: Texts, rail: boolean, topbar = false): TemplateResult {
+  #footer(texts: CockpitTexts, rail: boolean, topbar = false): TemplateResult {
     const footer = this.#config.footer ?? {};
     const actions = footer.actions ?? [];
     const sections = footer.menu ?? [];
@@ -2289,7 +2306,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
       >${icon}</button>`;
 
     // An action with a menu of sections: like the kebab's menu, at this button.
-    const sectionMenu = (action: Spec.FooterAction, sections: readonly Spec.MenuSection[]) => {
+    const sectionMenu = (action: FooterAction, sections: readonly MenuSection[]) => {
       const menu = this.#menu(`action:${action.id}`, {
         ...where,
         onSelect: (value) => this.#select(sections, value),
@@ -2300,7 +2317,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
       }`;
     };
 
-    const choiceMenu = (action: Spec.FooterAction, choices: Spec.ActionChoices) => {
+    const choiceMenu = (action: FooterAction, choices: ActionChoices) => {
       const menu = this.#menu(`choice:${action.id}`, {
         ...where,
         onSelect: (value) => {
@@ -2387,7 +2404,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
     </div>`;
   }
 
-  #actionIcon(action: Spec.FooterAction): TemplateResult {
+  #actionIcon(action: FooterAction): TemplateResult {
     return html`<span class="footer-icon" aria-hidden="true">${unsafeHTML(action.icon)}</span>${
       action.badge === true ? html`<span class="footer-badge" aria-hidden="true"></span>` : nothing
     }`;
@@ -2399,7 +2416,7 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
   // is open), over the open item (darkened). Without a query: the recent items, then all items by group. Up and Down
   // choose, Enter opens, Escape closes. A modal dialog (`#syncDialog`: focus inside, on the field; Escape and a pointer
   // down outside close it).
-  #palette(texts: Texts): TemplateResult {
+  #palette(texts: CockpitTexts): TemplateResult {
     // The pinned items too, in their groups; not the hidden ones.
     const items = this.#shownItems;
     const recent = this.#config.recent === false ? [] : this.#recentItems;
@@ -2565,7 +2582,9 @@ class CockpitElement extends LitElement implements Spec.CockpitElement {
             <span><kbd class="key">↑</kbd><kbd class="key">↓</kbd> ${texts.move}</span>
             <span><kbd class="key">↵</kbd> ${texts.open}</span>
             <span><kbd class="key">Esc</kbd> ${texts.close}</span>
-            <span class="palette-count">${texts.items(this.#query.trim() === '' ? items.length : flat.length)}</span>
+            <span class="palette-count">${
+      texts.items({ count: this.#query.trim() === '' ? items.length : flat.length })
+    }</span>
           </footer>
         </div>
       </div>

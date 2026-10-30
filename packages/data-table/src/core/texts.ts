@@ -109,16 +109,11 @@ function createNumberFormat(locale: string): Intl.NumberFormat {
   }
 }
 
-// Without an adapter: the language of the page (`<html lang>`), else en-US.
-function pageLocale(): string {
-  return (typeof document === 'undefined' ? '' : document.documentElement.lang) || FALLBACK_LOCALE;
-}
-
-// The locale the texts are in: the adapter's, else the page's. For formatting of our own (e.g. dates with `Intl`).
+// The locale the texts are in: the adapter's, else en-US (`i18n.md`). For formatting of our own (e.g. dates with `Intl`).
 function useLocale(): string {
   const { i18n } = useContext(ConfigContext);
 
-  return i18n?.currentLocale() ?? pageLocale();
+  return i18n?.currentLocale() ?? FALLBACK_LOCALE;
 }
 
 // The texts come from the `I18nAdapter` of the configuration (namespace "dataTable"): it gets the key, the raw params
@@ -130,7 +125,7 @@ function useTexts(): Spec.DataTableTexts {
 
   useEffect(() => i18n?.onChange?.(() => setVersion((current) => current + 1)), [i18n]);
 
-  const locale = i18n?.currentLocale() ?? pageLocale();
+  const locale = i18n?.currentLocale() ?? FALLBACK_LOCALE;
 
   return useMemo(() => {
     const numbers = createNumberFormat(locale);

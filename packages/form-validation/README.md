@@ -45,7 +45,7 @@ const i18nAdapter: formValidation.I18nAdapter = {
   - The app's keys (labels, messages of the schema or the server): the namespace `appNamespace`, params `null` for
     labels.
 - `onChange` is subscribed while the form is mounted: a change of the language renders the form again.
-- Without an adapter (or before the factory is asked): the locale of `<html lang>`, otherwise the browser language.
+- Without an adapter (or before the factory is asked): English texts and `en-US` formatting.
 
 ## Usage
 
@@ -103,7 +103,7 @@ invalid prop (`props.invalid`) gets `true` while the field is marked as invalid,
 Without it, a component sees the mark only in `aria-invalid` and `data-user-invalid`. One prop for both, e.g. Mantine's
 `error` (a text, or `true` for red without one): `props: { label: 'label', error: 'error', invalid: 'error' }`.
 
-**Error messages:** the default errors come from bundled catalogs (de, en, fr, es, ru, hu, ar, zh-CN, zh-TW) with
+**Error messages:** the default errors come from bundled catalogs (de, en) with
 `Intl` formatting and plural rules. `min` and `max` together become "between". Errors are stored as keys and only
 translated when rendering, so a change of the locale applies at once. Order: an explicit message in the schema,
 `messages` from the config, the library catalog (exact locale, base language, fallback); the result goes to the app

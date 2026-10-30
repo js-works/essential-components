@@ -124,7 +124,7 @@ structure completely (`demo/board-manager/STRUCTURE.md`): a reference for its ph
   last modified files (each with its folder as a link). One read, `overview()` of the browser service (all files, by
   `modified`; `browserKeys.overview()`, so every change refreshes it). "Modified", not "uploaded": a file has no date
   of its upload.
-- The header (`MicroAppHeader`, 2026-10-17; the app's own `AppHeader` from 2026-10-08 before): the app icon, "File
+- The header (`MicroAppHeader`, the cockpit's app header since 2026-10-28, its own before, since 2026-10-17; the app's own `AppHeader` from 2026-10-08 before): the app icon, "File
   Center", the modules as tabs (Overview, Files, Recent, Favorites, Trash; a menu below 56rem), Back and Forward
   (tooltips "Back to Logos": the folder route's crumb, the folder's name); below them the breadcrumb: Home, the module,
   and in Files the open folder's path ("Files", then one crumb per folder below the root: the header's `crumbs`, given by

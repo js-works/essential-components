@@ -1,4 +1,4 @@
-// The lines of the package, by kind and by folder: `npm run loc` (src), `npm run loc:all` (also the demo).
+// The lines of the package, by kind and by folder: `npm run loc` (src/main), `npm run loc:all` (all of src).
 // sloc counts each file; the kind comes from the file's name, as the CSS and the SVG icons live in TypeScript files
 // (`styles.ts`, `taskbar-styles.ts`, `icons.ts`).
 import { readdirSync, readFileSync } from 'node:fs';
@@ -6,7 +6,7 @@ import { dirname, extname, join } from 'node:path';
 import sloc from 'sloc';
 
 const ROOT = join(import.meta.dirname, '..');
-const FOLDERS = process.argv.includes('--all') ? ['src', 'demo'] : ['src'];
+const FOLDERS = process.argv.includes('--all') ? ['src'] : ['src/main'];
 
 // The first rule that matches a file gives its kind; files of no kind are not counted.
 const KINDS = [
@@ -17,7 +17,7 @@ const KINDS = [
 ];
 
 // Folders with a note (e.g. a copy, not the package's own code).
-const NOTES = { 'demo/ui': 'a copy of ui-theme' };
+const NOTES = { 'src/demo/ui': 'a copy of ui-theme' };
 
 const COLUMNS = ['Files', 'Lines', 'Code', 'Comments', 'Blank'];
 const BAR = 20;

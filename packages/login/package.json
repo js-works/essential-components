@@ -2,7 +2,7 @@
   "name": "@local/login",
   "version": "0.0.0",
   "private": true,
-  "description": "A generic login screen for apps, with Mantine (React).",
+  "description": "A generic login screen for apps, with Mantine (React) and react-i18next.",
   "type": "module",
   "exports": {
     ".": {
@@ -28,8 +28,10 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
     "dprint": "^0.57.4",
+    "i18next": "^26.4.2",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "react-i18next": "^17.0.15",
     "sloc": "0.3.2",
     "typescript": "^7.0.2",
     "vite": "^8.3.0"
@@ -37,7 +39,9 @@
   "peerDependencies": {
     "@mantine/core": "^9.5.1",
     "@mantine/hooks": "^9.5.1",
+    "i18next": ">=26",
     "react": ">=19",
-    "react-dom": ">=19"
+    "react-dom": ">=19",
+    "react-i18next": ">=17"
   }
 }

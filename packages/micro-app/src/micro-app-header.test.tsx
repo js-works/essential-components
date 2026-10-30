@@ -12,6 +12,8 @@ import { createInstance } from 'i18next';
 import { I18nextProvider, initReactI18next } from 'react-i18next';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 
+import type { AppHeaderElement } from '@local/cockpit';
+
 import { MicroAppHeader } from './micro-app-header.js';
 import { microAppResources } from './texts.js';
 
@@ -84,6 +86,16 @@ function renderApp(path: string, language = 'en', moduleCrumb = true) {
   return router;
 }
 
+// The header's element: its tag is the first `internal-micro-app-header-<n>` not registered yet.
+function header(): AppHeaderElement {
+  return [...document.body.querySelectorAll('*')].find((element) =>
+    element.localName.startsWith('internal-micro-app-header-')
+  ) as AppHeaderElement;
+}
+
+// The slotted content of a crumb (its label, a React node).
+const crumbText = (index: number) => header().querySelector(`[slot="crumb-${index}"]`)?.textContent;
+
 describe('MicroAppHeader', () => {
   it('shows the app\'s own crumbs where it gives them', async () => {
     const i18n = createInstance();
@@ -110,75 +122,82 @@ describe('MicroAppHeader', () => {
       </I18nextProvider>,
     );
 
-    await waitFor(() => expect(screen.getByText('Projects')).toBeTruthy());
-    expect(screen.getByText('Files', { selector: 'a' }).getAttribute('href')).toBe('/files');
+    await waitFor(() => expect(header()?.crumbs).toHaveLength(2));
+    expect(header().crumbs.map((crumb) => crumb.href)).toEqual(['/files', '/files/f1']);
+    expect([crumbText(0), crumbText(1)]).toEqual(['Files', 'Projects']);
   });
 
-  it('shows the icon, the title and the modules, the current one active', async () => {
+  it('sets the title, the modules with their hrefs and the current one', async () => {
     renderApp('/projects/7');
 
     await waitFor(() => expect(screen.getByText('Detail')).toBeTruthy());
 
-    const tabs = document.querySelectorAll('.micro-app__module');
-
-    expect([...tabs].map((tab) => tab.textContent)).toEqual(['Overview', 'Projects']);
-    expect(tabs[1]?.getAttribute('data-status')).toBe('active');
-    expect(tabs[0]?.getAttribute('data-status')).not.toBe('active');
+    expect(header().heading).toBe('Projects');
+    expect(header().modules.map((module) => [module.label, module.href])).toEqual([
+      ['Overview', '/'],
+      ['Projects', '/projects'],
+    ]);
+    expect(header().activeModule).toBe('/projects');
+    expect(header().homeHref).toBe('/');
   });
 
-  it('shows the breadcrumb: Home as a link, the crumbs of the route, the last one no link', async () => {
+  it('sets the crumbs of the route', async () => {
     renderApp('/projects/7');
 
-    await waitFor(() => expect(screen.getByText('Project 7')).toBeTruthy());
-
-    const crumbs = document.querySelector('.micro-app__crumbs')!;
-
-    expect(crumbs.textContent).toContain('Home');
-    expect(screen.getByText('Home').closest('a')?.getAttribute('href')).toBe('/');
-    expect(screen.getByText('Projects', { selector: '.micro-app__crumb' }).closest('a')?.getAttribute('href'))
-      .toBe('/projects');
-    expect(screen.getByText('Project 7').closest('a')).toBeNull();
-    expect(crumbs.querySelectorAll('.micro-app__crumb')).toHaveLength(2);
+    await waitFor(() => expect(header()?.crumbs).toHaveLength(2));
+    expect(header().crumbs.map((crumb) => crumb.href)).toEqual(['/projects', '/projects/7']);
+    expect([crumbText(0), crumbText(1)]).toEqual(['Projects', 'Project 7']);
   });
 
-  it('shows the current module as a crumb where no route has one for its path', async () => {
+  it('sets the current module as a crumb where no route has one for its path', async () => {
     renderApp('/projects/7', 'en', false);
 
-    await waitFor(() => expect(screen.getByText('Project 7')).toBeTruthy());
-
-    const crumbs = document.querySelector('.micro-app__crumbs')!;
-
-    expect([...crumbs.querySelectorAll('.micro-app__crumb')].map((crumb) => crumb.textContent))
-      .toEqual(['Projects', 'Project 7']);
-    expect(screen.getByText('Projects', { selector: '.micro-app__crumb' }).closest('a')?.getAttribute('href'))
-      .toBe('/projects');
+    await waitFor(() => expect(header()?.crumbs).toHaveLength(2));
+    expect([crumbText(0), crumbText(1)]).toEqual(['Projects', 'Project 7']);
   });
 
-  it('shows Home alone, no link, on the start page; in German "Start"', async () => {
-    renderApp('/', 'de');
+  it('sets no crumbs on the start page, its tab the current one', async () => {
+    renderApp('/');
 
-    await waitFor(() => expect(screen.getByText('Start', { selector: 'p' })).toBeTruthy());
-
-    expect(document.querySelector('.micro-app__crumbs a')).toBeNull();
-    expect(document.querySelector('.micro-app__home')?.textContent).toBe('Start');
+    await waitFor(() => expect(screen.getByText('Start')).toBeTruthy());
+    expect(header().crumbs).toEqual([]);
+    expect(header().activeModule).toBe('/');
   });
 
-  it('has Back and Forward through the history, disabled at either end', async () => {
+  it('gives the element its texts in the app\'s language', async () => {
+    renderApp('/projects/7', 'de');
+
+    await waitFor(() => expect(header()?.shadowRoot?.innerHTML).toContain('Navigationspfad'));
+  });
+
+  it('navigates with the router on the element\'s `navigate`', async () => {
     const router = renderApp('/');
-    const back = () => screen.getByRole('button', { name: 'Back' });
-    const forward = () => screen.getByRole('button', { name: 'Forward' });
 
     await waitFor(() => expect(screen.getByText('Start')).toBeTruthy());
 
-    expect(back().hasAttribute('disabled')).toBe(true);
-    expect(forward().hasAttribute('disabled')).toBe(true);
+    const event = new CustomEvent('navigate', { detail: { href: '/projects/3' }, cancelable: true });
 
-    await act(() => router.navigate({ to: '/projects' }));
-    await waitFor(() => expect(back().hasAttribute('disabled')).toBe(false));
+    act(() => void header().dispatchEvent(event));
 
-    await act(async () => back().click());
+    expect(event.defaultPrevented).toBe(true);
+    await waitFor(() => expect(router.state.location.pathname).toBe('/projects/3'));
+  });
+
+  it('has Back and Forward through the history, with the pages they lead to', async () => {
+    const router = renderApp('/');
+
     await waitFor(() => expect(screen.getByText('Start')).toBeTruthy());
-    await waitFor(() => expect(forward().hasAttribute('disabled')).toBe(false));
-    expect(back().hasAttribute('disabled')).toBe(true);
+    expect(header().back).toBeNull();
+    expect(header().forward).toBeNull();
+
+    await act(() => router.navigate({ to: '/projects/7' }));
+    await waitFor(() => expect(header().back).not.toBeNull());
+    expect(header().querySelector('[slot="back-page"]')?.textContent).toBe('Home');
+
+    act(() => void header().dispatchEvent(new CustomEvent('back', { cancelable: true })));
+    await waitFor(() => expect(screen.getByText('Start')).toBeTruthy());
+    await waitFor(() => expect(header().forward).not.toBeNull());
+    expect(header().back).toBeNull();
+    expect(header().querySelector('[slot="forward-page"]')?.textContent).toBe('Project 7');
   });
 });

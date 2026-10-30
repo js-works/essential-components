@@ -246,6 +246,28 @@ describe('defineUseForm', () => {
     }]);
   });
 
+  it('uses English and en-US without an adapter, whatever the page\'s language', async () => {
+    const plainUseForm = defineUseForm({ props: { label: 'label', error: 'errorText' } });
+    document.documentElement.lang = 'de-DE';
+    try {
+      function F() {
+        const { form, field } = plainUseForm(z.object({ n: z.number().min(1000) }), { submit: () => {} });
+        return (
+          <form {...form()}>
+            <TextField {...field.n({ label: 'N' })} />
+          </form>
+        );
+      }
+      render(<F />);
+      const input = screen.getByLabelText('N');
+      await userEvent.setup().type(input, '5');
+      fireEvent.blur(input);
+      expect(screen.getByRole('alert').textContent).toBe('The value must be at least 1,000.');
+    } finally {
+      document.documentElement.lang = '';
+    }
+  });
+
   it('validates everything on submit, focuses the first field and passes the parsed data', async () => {
     setLocale('de');
     const user = userEvent.setup();
@@ -427,10 +449,10 @@ describe('defineUseForm', () => {
     expect(screen.getByRole('alert').textContent).toBe('Five digits, please.');
   });
 
-  it('provides messages in all bundled languages with correct plural forms', async () => {
+  it('provides messages in the bundled languages, English for any other', async () => {
     const user = userEvent.setup();
     const results: Record<string, string> = {};
-    for (const locale of ['ru', 'fr', 'zh-TW', 'zh', 'de-AT', 'xx']) {
+    for (const locale of ['de', 'de-AT', 'xx']) {
       setLocale(locale);
       function F() {
         const { form, field } = useForm(z.object({ s: z.string().min(2) }), { submit: () => {} });
@@ -448,10 +470,7 @@ describe('defineUseForm', () => {
       unmount();
     }
     expect(results).toEqual({
-      ru: 'Пожалуйста, введите не менее 2 символов.',
-      fr: 'Veuillez saisir au moins 2 caractères.',
-      'zh-TW': '請至少輸入 2 個字元。',
-      zh: '请至少输入 2 个字符。',
+      de: 'Bitte geben Sie mindestens 2 Zeichen ein.',
       'de-AT': 'Bitte geben Sie mindestens 2 Zeichen ein.',
       xx: 'Please enter at least 2 characters.',
     });

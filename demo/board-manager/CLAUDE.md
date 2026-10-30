@@ -9,7 +9,7 @@ the root's `CLAUDE.md` apply.
 - File structure (the target, open questions, decisions): `STRUCTURE.md`. Read it before moving or adding files.
 - Built on `@local/micro-app` (2026-10-17, like the other four apps; the app's own copies before: the app header with
   its history, the look, the hash history, the data table's wrapper, the table actions, the saved filters' hook,
-  `FieldError` and the form hook): `MicroAppHeader`, `createLook` (`createBoardManagerLook()` in `board-manager-app.tsx`
+  `FieldError` and the form hook): `MicroAppHeader` (the cockpit's app header), `createLook` (`createBoardManagerLook()` in `board-manager-app.tsx`
   passes the element's colors and the app's custom properties), `MantineScope` (with the element's own color scheme,
   `scheme`), `mirrorInHash`, `DataTable`, `useTableActions`, `useSavedTableFilters`, `defineForm`,
   `AnchorLink`, inside a `MicroAppProvider`. Routing with TanStack Router (React Router before), typed:

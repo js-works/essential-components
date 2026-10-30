@@ -1,14 +1,4 @@
-export {
-  ArrowLeftIcon,
-  ArrowRightIcon,
-  ChevronDownIcon,
-  HomeIcon,
-  MaximizeIcon,
-  MinimizeIcon,
-  PencilIcon,
-  PlusIcon,
-  TrashIcon,
-};
+export { ArrowRightIcon, MaximizeIcon, MinimizeIcon, PencilIcon, PlusIcon, TrashIcon };
 
 // Tabler icons (MIT), drawn in `currentColor`.
 function Icon({ children }: { children: React.ReactNode }) {
@@ -29,33 +19,11 @@ function Icon({ children }: { children: React.ReactNode }) {
   );
 }
 
-const HomeIcon = () => (
-  <Icon>
-    <path d="M5 12l-2 0l9 -9l9 9l-2 0" />
-    <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
-    <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
-  </Icon>
-);
-
-const ArrowLeftIcon = () => (
-  <Icon>
-    <path d="M5 12l14 0" />
-    <path d="M5 12l6 6" />
-    <path d="M5 12l6 -6" />
-  </Icon>
-);
-
 const ArrowRightIcon = () => (
   <Icon>
     <path d="M5 12l14 0" />
     <path d="M13 18l6 -6" />
     <path d="M13 6l6 6" />
-  </Icon>
-);
-
-const ChevronDownIcon = () => (
-  <Icon>
-    <path d="M6 9l6 6l6 -6" />
   </Icon>
 );
 
