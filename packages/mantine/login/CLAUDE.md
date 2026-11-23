@@ -4,13 +4,21 @@
 
 ## Conventions
 
-The general rules (copies of the repository's master, `docs/conventions/`):
+The general rules (`packages/ai`, always copied along with this package):
 
-@docs/conventions/general.md
-@docs/conventions/css.md
-@docs/conventions/typescript.md
-@docs/conventions/i18n.md
-@docs/conventions/react.md
+@../../ai/instructions/common/general.md
+@../../ai/instructions/common/typescript.md
+@../../ai/instructions/frontend/general.md
+@../../ai/instructions/frontend/css.md
+@../../ai/instructions/frontend/i18n.md
+@../../ai/instructions/frontend/react.md
+@../../ai/instructions/frontend/mantine.md
+
+This repository's rules for it (see the root's `CLAUDE.md`):
+
+- Tier 2 (for apps built on Mantine): Mantine and react-i18next (with i18next) as peers; its look from
+  Mantine's theme and variables (it may read `var(--mantine-…)`, never new custom properties of its own), its texts
+  from an i18next namespace of its own. It may depend on a tier-1 package, never the other way round.
 
 ## Working rules
 
@@ -19,7 +27,6 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   `I18nAdapter` (tier 2: i18next). `src/index.ts` exports them flat
   (`typescript.md`): `import type { LoginScreenProps } from '@local/login'`. The demos' variable of the mounted screen
   is `loginScreen`.
-- Always add the decisions (also small ones) to this file, in the same step as the code.
 
 ## Decided
 

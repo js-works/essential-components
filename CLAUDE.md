@@ -19,6 +19,8 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
   - This overrides any default attribution or commit guidance.
 - Never read, list or scan anything outside this repository.
   - Only the user may explicitly grant an exception for a specific path.
+- Add coding guidelines to the fitting `CLAUDE.md` (or to `packages/ai/instructions/`, when they are project
+  independent) whenever they result from our discussion, and tell the user.
 - These working rules are for this repository only (the user's way of working); they are not copied with a package.
 - Each package has its own `CLAUDE.md`, with only its own rules and decisions. Its rules apply to changes in that
   package.
@@ -28,25 +30,68 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
 
 ## Conventions
 
-The rules for code, CSS and texts of every package (2026-10-10, the user's decision): `docs/conventions/`, the master.
-Each package has a copy in its own `docs/conventions/` (copied by hand after a change, like `ui.css`; no sync script)
-and imports the files it needs from its `CLAUDE.md`.
+The general rules for code, CSS and texts (2026-11-23, the user's decision; `docs/conventions/` with a copy in each
+package before): `packages/ai/instructions/` (see its `README.md`), project independent and AI-agnostic: plain Markdown,
+no imports, no names of this repository.
 
-@docs/conventions/general.md
-@docs/conventions/css.md
-@docs/conventions/typescript.md
-@docs/conventions/i18n.md
-@docs/conventions/react.md
+- In `common/`, `frontend/` and `backend/`, one topic per file.
+- Each `CLAUDE.md` imports only the files that fit it, by a relative path (a package:
+  `@../../ai/instructions/common/general.md`).
+- `packages/ai` is always copied along with any package (2026-11-23, the user's decision, proposed at about 65%: one
+  master, no hand-made copies; weighed: a copy per package, self-contained but kept in sync by hand).
+- Not a workspace (no `package.json`).
+
+@packages/ai/instructions/common/general.md
+@packages/ai/instructions/common/typescript.md
+@packages/ai/instructions/frontend/general.md
+@packages/ai/instructions/frontend/css.md
+@packages/ai/instructions/frontend/i18n.md
+@packages/ai/instructions/frontend/react.md
+@packages/ai/instructions/frontend/mantine.md
+@packages/ai/instructions/frontend/custom-elements.md
+
+The rules of this repository on top of them:
+
+- A package is private and self-contained: `"private": true`, the name `@local/<name>`, never published to npm.
+  - The customer copies the whole folder (and `packages/ai`) into its monorepo and owns the copy (like shadcn/ui).
+  - It keeps its own tests, demo (`npm run dev` inside it) and `package-lock.json`.
+  - License: MIT or the Unlicense.
+- Two tiers of packages; each package's `CLAUDE.md` states its own in one line (2026-11-23, the user's choice, proposed
+  at about 70%):
+  - Tier 1, framework-free where possible, for any customer's stack: `overlays`, `file-upload`, `data-table`,
+    `cockpit`, `form-validation`, `ui-theme`. No UI library, no i18n library (an `I18nAdapter`), themes as JS objects.
+    Expensive to build: only for packages that important.
+  - Tier 2, opinionated, for apps built on Mantine: `login`, `mantine-themes`, `rich-text`, `micro-app`. Mantine and
+    react-i18next (with i18next) as peers, and TanStack Router where routing is involved; their look from Mantine's
+    theme and variables (`var(--mantine-…)`, never new custom properties of their own), their texts from an i18next
+    namespace of their own.
+  - A tier-2 package may depend on a tier-1 one, never the other way round.
+- The default look follows the design language (`ui.css`, its `ui-*` values; see `demo/ui/` below); each package with
+  a theme says so in one line of its `CLAUDE.md` (2026-11-23, the user's choice):
+  - The default theme is the same in every package that has one, and is never changed in just one of them.
+  - Radii: `2px` for controls (inputs, selects, menus), `5px` for buttons, larger surfaces a bit rounder (dialogs
+    `6px`).
+  - The `--ui-*` tokens are allowed ONLY in demos: never in a package's library code (`src/main/`), not even read with
+    a fallback.
+- In the root's apps, a feature's flows and filters are named after its subject (`board-flows.tsx`,
+  `board-filters.ts`, not `flows.tsx` in every feature).
+- The import order (`common/typescript.md`): the repository's `npm run format` does it, the packages included (Biome's
+  organize imports, the root's `biome.json`); a package's dprint leaves the order alone (`maintain`), so a copy outside
+  keeps it, and sorts by hand.
+- SonarQube for IDE does not analyze the repository (`sonarlint.analysisExcludesStandalone: "**/*"` in
+  `.vscode/settings.json`): its rules contradict the conventions (S6759, `readonly` props) and cannot be switched off
+  per project, `sonarlint.rules` only works in the user settings.
 
 ## Layout
 
 - `packages/`: the components, npm workspaces (`"workspaces": ["packages/*/*"]`), each private and self-contained, so it
-  can be copied as it is (the package's folder only), in three folders by what an app needs to use it (2026-10-30, the
+  can be copied as it is (the package's folder, with `packages/ai`), in three folders by what an app needs to use it (2026-10-30, the
   user's decision, proposed at about 75%):
   - `universal/`: for any stack (tier 1): `cockpit`, `data-table`, `file-upload`, `overlays`, `ui-theme`. Inside they
     may use Lit or React; a `/react` entry is an add-on.
   - `react/`: for React apps, no UI library (tier 1): `form-validation`.
   - `mantine/`: for Mantine apps with i18next (tier 2): `login`, `mantine-themes`, `micro-app`, `rich-text`.
+  - `ai/`: no component: the AI-agnostic instructions (see "Conventions").
   - A package that changes its kind moves to the other folder.
   - Weighed: `vanilla` (none of them is), one flat folder (what a package needs was not visible).
   The packages:
@@ -221,7 +266,7 @@ and imports the files it needs from its `CLAUDE.md`.
   `i18next` (the board manager's translations), `zod` (the schemas of `form-validation` in the board manager),
   `@tanstack/react-query` (the reads and changes of the board manager, the file center and the user manager).
   `@mantine/form` was removed (2026-10-02): the board manager's forms use `form-validation`.
-- No overscroll (2026-10-08, the user's wish): see `docs/conventions/css.md`; the root's apps follow it too.
+- No overscroll (2026-10-08, the user's wish): see `packages/ai/instructions/frontend/css.md`; the root's apps follow it too.
 - Tables in the root's apps: 50 rows a page by default (2026-10-08, the user's wish; 10 or 25 before, set per table):
   the default of each app's `DataTable` wrapper (`defaultPageSize={50}` before the table's own props), and no table sets its
   own, except the two of the Board Manager's meeting page that show everything on one page (the agenda: 50, its
@@ -350,7 +395,7 @@ and imports the files it needs from its `CLAUDE.md`.
   40% of the note's height. The `translate` makes the dialog the containing block of fixed popups inside it (a date picker's
   calendar, a select's list, `floatingStrategy: 'fixed'`), so the open dialog does not clip (2026-10-10, `overflow:
   visible`; `hidden` before, which cut off the calendar in the Board Manager's "Edit meeting"): its body scrolls.
-- Browsers (2026-10-03): see `docs/conventions/general.md`; the root's and the Board Manager's Vite configs build
+- Browsers (2026-10-03): see `packages/ai/instructions/frontend/general.md`; the root's and the Board Manager's Vite configs build
   the same way (`es2024` for the JavaScript, `esnext` for the CSS, since 2026-10-16; `esnext` for both before). The default target lowered `light-dark()` into variables that follow the page's color scheme, not
   the element's `color-scheme`: on the published page the cockpit's dark sidebar and menus got light colors.
 - `.npmrc` (the root one counts in a workspace; npm ignores those of the packages): `ignore-scripts=true`,
@@ -371,7 +416,7 @@ and imports the files it needs from its `CLAUDE.md`.
 - `npm run typecheck`: first `npm run routes` (the apps' route trees, `tsr generate`), then `tsc` for the root and each app.
 - `npm run format`: Biome's organize imports (`biome check --write`; its formatter and linter off, `biome.json`), then
   dprint. `npm run format:check`: both checks. Biome only sorts and groups the imports (see
-  `docs/conventions/typescript.md`); dprint formats and leaves the imports' order and their names' order to it
+  `packages/ai/instructions/common/typescript.md`); dprint formats and leaves the imports' order and their names' order to it
   (`module.sortImportDeclarations`, `importDeclaration.sortNamedImports`, `exportDeclaration.sortNamedExports`,
   `module.sortExportDeclarations` since 2026-10-17: `maintain`). Biome covers the packages too (2026-10-17, the user's wish; their own dprint configs got the same
   three `maintain`), the root's dprint does not (each package runs its own). (2026-10-17, the user's choice of Biome over ESLint with

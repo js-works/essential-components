@@ -5,13 +5,23 @@ The main goal is a very nice, yet simple, API, designed together with the user.
 
 ## Conventions
 
-The general rules (copies of the repository's master, `docs/conventions/`):
+The general rules (`packages/ai`, always copied along with this package):
 
-@docs/conventions/general.md
-@docs/conventions/css.md
-@docs/conventions/typescript.md
-@docs/conventions/i18n.md
-@docs/conventions/react.md
+@../../ai/instructions/common/general.md
+@../../ai/instructions/common/typescript.md
+@../../ai/instructions/frontend/general.md
+@../../ai/instructions/frontend/css.md
+@../../ai/instructions/frontend/i18n.md
+@../../ai/instructions/frontend/react.md
+@../../ai/instructions/frontend/custom-elements.md
+
+This repository's rules for it (see the root's `CLAUDE.md`):
+
+- Tier 1 (for any stack): no UI library, no i18n library (an `I18nAdapter`), its theme a JS object. A tier-2 package may
+  depend on it, never the other way round.
+- Its default theme follows the design language (`ui.css`, its `ui-*` values; radii: `2px` for controls, `5px` for
+  buttons, larger surfaces a bit rounder, dialogs `6px`): the same in every package that has one, never changed in just
+  one of them. The `--ui-*` tokens only in its demo, never in `src/main/`.
 
 ## Working rules
 
@@ -32,9 +42,7 @@ The general rules (copies of the repository's master, `docs/conventions/`):
     `/react` has the React types too.
     - Do not use namespaces.
 - Do not update `README.md` for now: nobody reads it yet, so it would be wasted time.
-- Do not mention any specific i18n library by name in code, docs or specs, except react-i18next as the example.
 - Always add behavior details we decide (also small ones) to this spec, in the same step as the code.
-- Add coding guidelines to this file whenever they result from our discussion, and tell the user.
 
 ## Stack (decided)
 

@@ -6,12 +6,22 @@ Mantine's `AppShell`). The root's demo page is its first user. The rules of the 
 
 ## Conventions
 
-The general rules (copies of the repository's master, `docs/conventions/`):
+The general rules (`packages/ai`, always copied along with this package):
 
-@docs/conventions/general.md
-@docs/conventions/css.md
-@docs/conventions/typescript.md
-@docs/conventions/i18n.md
+@../../ai/instructions/common/general.md
+@../../ai/instructions/common/typescript.md
+@../../ai/instructions/frontend/general.md
+@../../ai/instructions/frontend/css.md
+@../../ai/instructions/frontend/i18n.md
+@../../ai/instructions/frontend/custom-elements.md
+
+This repository's rules for it (see the root's `CLAUDE.md`):
+
+- Tier 1 (for any stack): no UI library, no i18n library (an `I18nAdapter`), its theme a JS object. A tier-2 package may
+  depend on it, never the other way round.
+- Its default theme follows the design language (`ui.css`, its `ui-*` values; radii: `2px` for controls, `5px` for
+  buttons, larger surfaces a bit rounder, dialogs `6px`): the same in every package that has one, never changed in just
+  one of them. The `--ui-*` tokens only in its demo, never in `src/main/`.
 
 ## Working rules
 
@@ -23,7 +33,6 @@ The general rules (copies of the repository's master, `docs/conventions/`):
   (`CockpitTheme`, `AppHeaderTheme`), `texts.ts` (`CockpitTexts`), `i18n.ts` (`I18nAdapter`).
   `src/main/index.ts` exports them flat (`typescript.md`): `import type { NavItem } from '@local/cockpit'`. The demos'
   variables of the element are `cockpitElement` or `element`.
-- Always add the decisions (also small ones) to this file, in the same step as the code.
 - Lit, with `@floating-ui/dom` (the menus' positions and the tooltips); the menus and the group select are our own
   `Menu`s (`src/main/element/menu.ts`), the search and the bottom bar's sheet native modal `<dialog>`s (rather than our own
   `inert`, focus and Escape code). No Zag.js: not needed, and the code must be easy to read.

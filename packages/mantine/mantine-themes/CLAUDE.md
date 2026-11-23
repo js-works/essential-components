@@ -5,20 +5,27 @@
 
 ## Conventions
 
-The general rules (copies of the repository's master, `docs/conventions/`):
+The general rules (`packages/ai`, always copied along with this package):
 
-@docs/conventions/general.md
-@docs/conventions/css.md
-@docs/conventions/typescript.md
-@docs/conventions/react.md
+@../../ai/instructions/common/general.md
+@../../ai/instructions/common/typescript.md
+@../../ai/instructions/frontend/general.md
+@../../ai/instructions/frontend/css.md
+@../../ai/instructions/frontend/react.md
+@../../ai/instructions/frontend/mantine.md
+
+This repository's rules for it (see the root's `CLAUDE.md`):
+
+- Tier 2 (for apps built on Mantine): Mantine and react-i18next (with i18next) as peers; its look from
+  Mantine's theme and variables (it may read `var(--mantine-…)`, never new custom properties of its own), its texts
+  from an i18next namespace of its own. It may depend on a tier-1 package, never the other way round.
 
 ## Working rules
 
 - This package knows nothing of the root's design language (`ui.css`, its `--ui-*` tokens): it depends only on
-  Mantine (an exception to the design language rule of `css.md`).
+  Mantine (an exception to the design language rule of the root's `CLAUDE.md`).
 - `src/api/theme.ts` holds the API types: all of them are about the theme, so one file (no barrel). `src/index.ts`
   exports them flat: `ThemeOptions`, `ThemeSize`, `ThemeVariant`, `ColorSetupName`, `ColorSetup`, `ThemeBundle`.
-- Always add the decisions (also small ones) to this file, in the same step as the code.
 
 ## Decided
 

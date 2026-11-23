@@ -2,7 +2,7 @@
   // Generated files (e.g. the apps' route trees, `.generated/`): not checked in, not shown.
   "files.exclude": { "**/.generated": true },
   // SonarQube for IDE: no analysis in this project. Its rules contradict the repository's conventions
-  // (`docs/conventions/`), e.g. S6759 "Mark the props of the component readonly", and they cannot be switched off per
+  // (`packages/ai/instructions/`), e.g. S6759 "Mark the props of the component readonly", and they cannot be switched off per
   // project (`sonarlint.rules` is read from the user settings only); file exclusions can.
   "sonarlint.analysisExcludesStandalone": "**/*"
 }

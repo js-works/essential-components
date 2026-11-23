@@ -5,14 +5,19 @@ the root's `CLAUDE.md` apply.
 
 ## Conventions
 
-The general rules (copies of the repository's master, `docs/conventions/`):
+The general rules (`packages/ai`, always copied along with this package):
 
-@docs/conventions/general.md
-@docs/conventions/css.md
+@../../ai/instructions/common/general.md
+@../../ai/instructions/frontend/general.md
+@../../ai/instructions/frontend/css.md
+
+This repository's rules for it (see the root's `CLAUDE.md`):
+
+- Tier 1 (for any stack): no UI library, no i18n library (an `I18nAdapter`), its theme a JS object. A tier-2 package may
+  depend on it, never the other way round.
 
 ## Working rules
 
-- Always add the decisions (also small ones) to this file, in the same step as the code.
 
 ## Decided
 

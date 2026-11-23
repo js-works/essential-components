@@ -4,13 +4,23 @@
 
 ## Conventions
 
-The general rules (copies of the repository's master, `docs/conventions/`):
+The general rules (`packages/ai`, always copied along with this package):
 
-@docs/conventions/general.md
-@docs/conventions/css.md
-@docs/conventions/typescript.md
-@docs/conventions/i18n.md
-@docs/conventions/react.md
+@../../ai/instructions/common/general.md
+@../../ai/instructions/common/typescript.md
+@../../ai/instructions/frontend/general.md
+@../../ai/instructions/frontend/css.md
+@../../ai/instructions/frontend/i18n.md
+@../../ai/instructions/frontend/react.md
+@../../ai/instructions/frontend/custom-elements.md
+
+This repository's rules for it (see the root's `CLAUDE.md`):
+
+- Tier 1 (for any stack): no UI library, no i18n library (an `I18nAdapter`), its theme a JS object. A tier-2 package may
+  depend on it, never the other way round.
+- Its default theme follows the design language (`ui.css`, its `ui-*` values; radii: `2px` for controls, `5px` for
+  buttons, larger surfaces a bit rounder, dialogs `6px`): the same in every package that has one, never changed in just
+  one of them. The `--ui-*` tokens only in its demo, never in `src/main/`.
 
 ## Working rules
 
@@ -65,7 +75,6 @@ The general rules (copies of the repository's master, `docs/conventions/`):
 - The default dialog theme reads no custom properties of the page: plain values (`primaryText` `#ffffff`,
   `primaryBackground` `#007EC6`, `secondaryText` `#1f2430`, `successAccent` `#00883c`). The vanilla demo sets its blue
   through the theme (`DEMO_PRIMARY` in `src/demo/demo.ts`).
-- Always add the decisions (also small ones) to this file, in the same step as the code.
 - The change between a form and its question in place (`FormAttempt.ask`, e.g. the discard question): the box takes
   its new size at once, its content is gone for a moment and then fades in, like a fade out and in without delaying
   the change (300 ms, `ease-out`, the first 30% empty; `#morphQuestion` in `src/main/dialogs/element/element.ts`).

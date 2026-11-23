@@ -5,18 +5,25 @@ rich-text editor (the Board Manager's minutes use it). The rules of the root's `
 
 ## Conventions
 
-The general rules (copies of the repository's master, `docs/conventions/`):
+The general rules (`packages/ai`, always copied along with this package):
 
-@docs/conventions/general.md
-@docs/conventions/css.md
-@docs/conventions/typescript.md
-@docs/conventions/react.md
+@../../ai/instructions/common/general.md
+@../../ai/instructions/common/typescript.md
+@../../ai/instructions/frontend/general.md
+@../../ai/instructions/frontend/css.md
+@../../ai/instructions/frontend/react.md
+@../../ai/instructions/frontend/mantine.md
+
+This repository's rules for it (see the root's `CLAUDE.md`):
+
+- Tier 2 (for apps built on Mantine): Mantine and react-i18next (with i18next) as peers; its look from
+  Mantine's theme and variables (it may read `var(--mantine-…)`, never new custom properties of its own), its texts
+  from an i18next namespace of its own. It may depend on a tier-1 package, never the other way round.
 
 ## Working rules
 
 - `src/api/props.ts` holds the API types (`RichTextEditorProps`, `RichTextProps`, `RichTextFormat`,
   `RichTextMentions`, `MentionOption`); `src/index.ts` exports them flat and the two components.
-- Always add the decisions (also small ones) to this file, in the same step as the code.
 
 ## Decided
 

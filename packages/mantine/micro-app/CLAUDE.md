@@ -7,19 +7,26 @@ TODO list.
 
 ## Conventions
 
-The general rules (copies of the repository's master, `docs/conventions/`):
+The general rules (`packages/ai`, always copied along with this package):
 
-@docs/conventions/general.md
-@docs/conventions/css.md
-@docs/conventions/typescript.md
-@docs/conventions/i18n.md
-@docs/conventions/react.md
+@../../ai/instructions/common/general.md
+@../../ai/instructions/common/typescript.md
+@../../ai/instructions/frontend/general.md
+@../../ai/instructions/frontend/css.md
+@../../ai/instructions/frontend/i18n.md
+@../../ai/instructions/frontend/react.md
+@../../ai/instructions/frontend/mantine.md
+
+This repository's rules for it (see the root's `CLAUDE.md`):
+
+- Tier 2 (for apps built on Mantine): Mantine and react-i18next (with i18next) as peers, and TanStack Router; its look from
+  Mantine's theme and variables (it may read `var(--mantine-…)`, never new custom properties of its own), its texts
+  from an i18next namespace of its own. It may depend on a tier-1 package, never the other way round.
 
 ## Working rules
 
 - `src/api/` holds the API types (`header.ts`: `MicroAppHeaderProps`, `MicroAppModule`, `MicroAppCrumb`, and the crumb
   in TanStack Router's `StaticDataRouteOption`); `src/index.ts` exports them flat, the components and `microAppTexts`.
-- Always add the decisions (also small ones) to this file, in the same step as the code.
 - The prefix `MicroApp` only where the thing is the micro-app's own: `MicroAppHeader`, `MicroAppProvider`,
   `microAppResources`. The others are named for what they are: `DataTable` (the data table exports no component of
   that name, only its factory), `MantineScope`, `createLook`, `defineForm` (not `defineUseForm`, form-validation's). The types keep the prefix (`MicroAppLook`, `MicroAppLookOptions`: the type names' rule).
