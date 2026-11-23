@@ -161,7 +161,7 @@ function SectionTable({ meetingId, agenda, initial, onChange }: {
         columns={columns}
         actions={actions}
         empty={t('meetings.sections.none')}
-        pageSize={100}
+        defaultPageSize={100}
         pageSizeOptions={[100]}
       />
     </Box>

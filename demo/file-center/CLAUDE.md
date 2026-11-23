@@ -63,7 +63,7 @@ structure completely (`demo/board-manager/STRUCTURE.md`): a reference for its ph
 - `app/`: the wiring and the frame: `file-center-demo.tsx` (the element, light DOM, registered as
   `file-center-demo`; it creates the repositories, the service and the query client, and provides them; the look),
   `app.tsx` (the routes, the layout, the header's folder crumbs, the hash), `router-types.ts`, `file-center.css`.
-  - The theme (2026-10-04): `modernTheme` of `packages/mantine-themes` merged with the app's own, like the Board Manager's:
+  - The theme (2026-10-04): `modernTheme` of `packages/mantine/mantine-themes` merged with the app's own, like the Board Manager's:
     smaller corners and a bit more contrast (see its `CLAUDE.md`).
   - The accent (2026-10-03): `--file-center-accent-color` (any CSS color, set by the host page's CSS; the root page
     maps its `--app-accent-color` to it), live in CSS (the `tokens` of `createLook`, also the font size, the

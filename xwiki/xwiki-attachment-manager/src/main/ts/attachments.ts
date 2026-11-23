@@ -1,4 +1,4 @@
-import type { DataTable } from '../../../../../packages/data-table/src';
+import type { DataTable } from '../../../../../packages/universal/data-table/src';
 import type { Attachment } from './xwiki/rest';
 
 export type { AttachmentRow };

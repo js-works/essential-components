@@ -1,8 +1,8 @@
 import { css, html, LitElement } from 'lit';
 import { property, state } from 'lit/decorators.js';
 
-import type { DataTable } from '../../../../../packages/data-table/src';
-import { dateRangeColumnFilter, selectColumnFilter, textColumnFilter } from '../../../../../packages/data-table/src';
+import type { DataTable } from '../../../../../packages/universal/data-table/src';
+import { dateRangeColumnFilter, selectColumnFilter, textColumnFilter } from '../../../../../packages/universal/data-table/src';
 import type { AttachmentRow } from './attachments';
 import { authorOf, formatDate, formatSize, queryAttachments, rowsOf, SIZES } from './attachments';
 import { icons } from './icons';

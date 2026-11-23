@@ -38,7 +38,7 @@
 - State as attributes (`data-*`, `inert`, `hidden`), not as conditional inline styles.
 - No overscroll: every scroll area has `overscroll-behavior: none` (sideways-only ones `overscroll-behavior-x: none`):
   no bounce at the ends, and the page does not scroll on.
-- The default look follows the design language (`ui.css`, its `ui-*` values; the master is `packages/ui-theme/src/`).
+- The default look follows the design language (`ui.css`, its `ui-*` values; the master is `packages/universal/ui-theme/src/`).
   - The default theme is the same in every package that has one, and is never changed in just one of them.
   - Radii: `2px` for controls (inputs, selects, menus), `5px` for buttons, larger surfaces a bit rounder (dialogs
     `6px`).

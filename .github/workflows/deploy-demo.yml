@@ -32,7 +32,7 @@ jobs:
       # The tests of the packages. file-upload without its browser-mode project (it needs a Chromium install).
       - run: npm test -w @local/data-table
       - run: npx vitest run --project jsdom --project server
-        working-directory: packages/file-upload
+        working-directory: packages/universal/file-upload
       - run: npm run build:pages
       # The frozen demos of older versions (`npm run freeze-demo`), served at …/old-demos/<version>/.
       - run: cp -r old-demos dist/

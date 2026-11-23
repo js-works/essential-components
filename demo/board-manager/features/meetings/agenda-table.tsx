@@ -156,7 +156,7 @@ function AgendaTable({ meeting }: { meeting: Meeting }) {
       actions={actions}
       renderDetail={(row) => <AgendaDetail row={row} />}
       // One page for the whole agenda: with `footer="auto"`, the footer comes only for more than 50 items.
-      pageSize={50}
+      defaultPageSize={50}
       pageSizeOptions={[50]}
     />
   );

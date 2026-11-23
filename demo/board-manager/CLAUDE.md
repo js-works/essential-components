@@ -356,7 +356,7 @@ the root's `CLAUDE.md` apply.
     `--board-manager-danger-color` (any CSS color), the `accent` and `danger` of `createBoardManagerLook()`. Without them, or with
     an invalid color, Mantine's indigo and red. Read once, on connect (`getComputedStyle`; there is no event for a
     changed custom property). The accent also live, for the demo element too: see below.
-  - The theme is `modernTheme` of `packages/mantine-themes` merged with the app's own (2026-10-04): smaller corners
+  - The theme is `modernTheme` of `packages/mantine/mantine-themes` merged with the app's own (2026-10-04): smaller corners
     (`2 3 6 8 10px` since 2026-10-06, the default radius 3px; `1 2 5 6 8px` before) and a bit more contrast (the borders, the dimmed text and the placeholders one
     step stronger, which this look had partly itself before); the toasts and the dialogs take the radii too. The app's
     own settings win (the Board Manager: the colors, the font and the size by custom properties, the button weight 400). A `var()` in them is resolved by the browser (custom properties are computed with it).

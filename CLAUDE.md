@@ -40,8 +40,16 @@ and imports the files it needs from its `CLAUDE.md`.
 
 ## Layout
 
-- `packages/`: the components, npm workspaces (`"workspaces": ["packages/*"]`), each private and self-contained, so it
-  can be copied as it is:
+- `packages/`: the components, npm workspaces (`"workspaces": ["packages/*/*"]`), each private and self-contained, so it
+  can be copied as it is (the package's folder only), in three folders by what an app needs to use it (2026-10-30, the
+  user's decision, proposed at about 75%):
+  - `universal/`: for any stack (tier 1): `cockpit`, `data-table`, `file-upload`, `overlays`, `ui-theme`. Inside they
+    may use Lit or React; a `/react` entry is an add-on.
+  - `react/`: for React apps, no UI library (tier 1): `form-validation`.
+  - `mantine/`: for Mantine apps with i18next (tier 2): `login`, `mantine-themes`, `micro-app`, `rich-text`.
+  - A package that changes its kind moves to the other folder.
+  - Weighed: `vanilla` (none of them is), one flat folder (what a package needs was not visible).
+  The packages:
   - `data-table` (`@local/data-table`, 2026-10-10; the data navigator, `@local/data-navigator`, before: it was planned
     for npm): a data table: a custom element, and a React component (`/react`). Not "data grid": that means a
     spreadsheet (cell-by-cell editing, the ARIA `grid` role).
@@ -72,7 +80,7 @@ and imports the files it needs from its `CLAUDE.md`.
   - A package keeps its own tests, demo (`npm run dev` inside it) and `package-lock.json` (unused in the workspace,
     where the root lock file counts; it matters again in a standalone copy).
 - The root is the demo page of all packages:
-  - `index.html`: an `<app-cockpit>` (2026-10-03, `packages/cockpit`) that fills the window: the demos are its
+  - `index.html`: an `<app-cockpit>` (2026-10-03, `packages/universal/cockpit`) that fills the window: the demos are its
     mini-apps, in two sections (groups, 2026-10-07, the user's wish), each with folders (subgroups: collapsible, with a count, their apps indented along a guide line):
     - "Main" (2026-10-07; "Apps" before): the folders "Apps" with "Human Resources" (2026-10-08),
       "Time Tracker" (2026-10-06), "Board Manager", and "Administration" (gear icon) with "File Center" (2026-10-08;
@@ -83,8 +91,8 @@ and imports the files it needs from its `CLAUDE.md`.
       decided 2026-10-03.
     - "Internals": the folders
       "Components" ("Data table", "File upload", "Dialogs + Toasts", "Form validation" (2026-10-07; a "Planned"
-      placeholder before), "Rich text" (2026-10-17, `packages/rich-text/demo/rich-text-demo.tsx`), "Micro-app" (2026-10-17,
-      `packages/micro-app/demo/micro-app-demo.tsx`), "Cockpit" (`packages/cockpit/src/demo/cockpit-demo.ts`: the app header with a made-up router, its switcher, an own theme and an events log; the cockpit itself is this page)) and "Planned" ("Autocomplete"; placeholders of `demo/planned/planned-demo.ts` (`planned-demo`): what it will be, and that there is
+      placeholder before), "Rich text" (2026-10-17, `packages/mantine/rich-text/demo/rich-text-demo.tsx`), "Micro-app" (2026-10-17,
+      `packages/mantine/micro-app/demo/micro-app-demo.tsx`), "Cockpit" (`packages/universal/cockpit/src/demo/cockpit-demo.ts`: the app header with a made-up router, its switcher, an own theme and an events log; the cockpit itself is this page)) and "Planned" ("Autocomplete"; placeholders of `demo/planned/planned-demo.ts` (`planned-demo`): what it will be, and that there is
       no demo yet, in a light gray box with rounded corners, `demo.css`).
     - The apps of "Apps" are pinned (`placement: 'pinned'`, 2026-10-08, the user's wish; File Center and User Manager
       too for a few hours): entries of
@@ -101,10 +109,10 @@ and imports the files it needs from its `CLAUDE.md`.
       and its colors, dark or like the page; dark by default since 2026-10-08, the user's wish: `navigationSetting(…,
       { scheme: 'dark' })` in `demo/main.ts`; a stored choice counts; the cockpit's own demo keeps "Match page" ("Like the page" until 2026-10-08)), the accent color (2026-10-03: one of Mantine's usual colors, indigo by default since 2026-10-07 (violet before; the cockpit's own demo keeps violet), or "Design language", i.e. `ui.css`'s; it sets the cockpit's `theme` (2026-10-10; the cockpit read `--app-accent-color` before) and `--app-accent-color` on `<html>`, which `demo/demo.css` maps to the apps' `--board-manager-accent-color`, `--file-center-accent-color`, `--user-manager-accent-color`, `--time-tracker-accent-color`, `--human-resources-accent-color`, with the design language's accent as the fallback, so the cockpit and the apps have one color; the package demos keep `ui.css`'s) and the page's settings (the language `en-US`/`de-DE` in the kebab menu, 2026-10-03; a section "Prototypes" there, before "Reset demo",
       only on the root page (2026-10-09, `demo/main.ts`): "Filter drawer", a check item that switches every data
-      table to the filter drawer, on by default since 2026-10-11 (the user's wish; off before), see the todo in `packages/data-table/CLAUDE.md`; the color scheme: System, Light (the default), Dark, 2026-10-03; from
-      `packages/cockpit/src/demo/footer.ts`, with a made-up menu), which change `<html>` (`lang`, `data-scheme`) for every
+      table to the filter drawer, on by default since 2026-10-11 (the user's wish; off before), see the todo in `packages/universal/data-table/CLAUDE.md`; the color scheme: System, Light (the default), Dark, 2026-10-03; from
+      `packages/universal/cockpit/src/demo/footer.ts`, with a made-up menu), which change `<html>` (`lang`, `data-scheme`) for every
       demo.
-    - Signing out (2026-10-03; the user menu's "Sign out") shows the login screen (`packages/login`; its subtitle "Welcome to Acme Corporate", 2026-10-07) in place of
+    - Signing out (2026-10-03; the user menu's "Sign out") shows the login screen (`packages/mantine/login`; its subtitle "Welcome to Acme Corporate", 2026-10-07) in place of
       the cockpit (`hidden`), animated (2026-10-04): the cockpit fades out (250 ms), then the login screen fades in (350 ms;
       `demo/demo.css`, `signOut()` in `demo/main.ts`; none with reduced motion); any username and password sign in again (after 500 ms); with "Forgot password?" and "Create an account" (made-up
       server: the username "taken" exists already) and made-up providers ("Continue with Microsoft", "Google", "Company SSO"),
@@ -121,7 +129,7 @@ and imports the files it needs from its `CLAUDE.md`.
   - `demo/main.ts`: creates the cockpit (`createCockpitClass`, title "Back Office", subtitle "Acme Corporate" (2026-10-03; "App Center" without a subtitle before), with the search, a made-up
     signed-in user) with
     the demos. Each is loaded when it is opened
-    the first time (`load`: a dynamic `import()` by a relative path, e.g. `../packages/file-upload/src/demo/file-upload-demo.js`)
+    the first time (`load`: a dynamic `import()` by a relative path, e.g. `../packages/universal/file-upload/src/demo/file-upload-demo.js`)
     and registered then (`data-table-demo`, `file-upload-demo`, `overlays-demo`; the root's own `file-center-demo`,
     `board-manager-demo`, `user-manager-demo`, `time-tracker-demo` and `human-resources-demo`). Each demo element is a light DOM custom element of its package (see "Demo element" in
     the package's `CLAUDE.md`), exported and not registered.
@@ -154,7 +162,7 @@ and imports the files it needs from its `CLAUDE.md`.
   - `demo/demo.css`: (2026-10-04: the apps' own text size, `--board-manager-font-size` and the like, the same `14px` as the cockpit's `theme.fontSize` in `demo/main.ts`: one text size for the shell and the apps; it read the cockpit's `--app-cockpit-font-size` until 2026-10-10) only what is specific to this page: the cockpit fills the window (`100dvh`). (Its frame is not
     selectable, by the cockpit's own CSS; inside the demos, selecting stays as their packages have it.)
   - `demo/ui/`: the design language (`ui.css`, `ui.ts`), the same files as in every package. The master is
-    `packages/ui-theme/src/` (2026-10-06): change it there, then copy the change into all copies by hand (`demo/ui/`
+    `packages/universal/ui-theme/src/` (2026-10-06): change it there, then copy the change into all copies by hand (`demo/ui/`
     here, and in each package; no sync script, the user's decision). Read the header of `ui.css` before changing it.
     - Its `ui-*` tokens are the default look: the packages' default themes follow them, and a change of a token is
       made in the packages' defaults too. The radius: `--ui-radius-sm: 2px` for controls (inputs, selects, menus);
@@ -184,7 +192,7 @@ and imports the files it needs from its `CLAUDE.md`.
   (their files in `src/`) before `dist/`; `vite.config.ts` and `vite.board-manager.config.ts` resolve it
   (`resolve.conditions: ['source', ...defaultClientConditions]`), `tsconfig.json` too (`customConditions`). So no
   package needs a build for the demo. Weighed: an alias per package and entry in the Vite config and `paths` (two
-  places to keep in sync). The package demos (`packages/*/demo/…`, their `i18n.js` too) stay relative: they are no
+  places to keep in sync). The package demos (`packages/*/*/demo/…`, their `i18n.js` too) stay relative: they are no
   entries.
 - `tsconfig.json`: `tsc` also checks the imported demo files, so the compiler options are the loosest common set: like
   `data-table`/`file-upload`, but with `experimentalDecorators`, `ES2025`/`ESNext`, and without
@@ -198,7 +206,7 @@ and imports the files it needs from its `CLAUDE.md`.
   `data-table` and `file-upload` (without its browser-mode project, which needs Chromium), builds the page
   (`build:pages`) and publishes it on GitHub Pages: https://js-works.github.io/essential-components/
   - The repository needs "Settings → Pages → Build and deployment → Source: GitHub Actions".
-  - Workflows only run from the root: the one inside `packages/data-table/.github/` does nothing here (it is kept for
+  - Workflows only run from the root: the one inside `packages/universal/data-table/.github/` does nothing here (it is kept for
     a standalone copy).
 
 ## Stack
@@ -215,12 +223,12 @@ and imports the files it needs from its `CLAUDE.md`.
   `@mantine/form` was removed (2026-10-02): the board manager's forms use `form-validation`.
 - No overscroll (2026-10-08, the user's wish): see `docs/conventions/css.md`; the root's apps follow it too.
 - Tables in the root's apps: 50 rows a page by default (2026-10-08, the user's wish; 10 or 25 before, set per table):
-  the default of each app's `DataTable` wrapper (`pageSize={50}` before the table's own props), and no table sets its
+  the default of each app's `DataTable` wrapper (`defaultPageSize={50}` before the table's own props), and no table sets its
   own, except the two of the Board Manager's meeting page that show everything on one page (the agenda: 50, its
   sections: 100). The package's own default stays 25.
 - No `useMemo` around a table's `columns`, `actions` or `source` in the root's apps (2026-10-14, the user's rule: more
   work in a package, no boilerplate in the apps): the data table takes new ones on every render (see "No `useMemo`
-  needed" in `packages/data-table/CLAUDE.md`). `useMemo` stays only for real computations (e.g. a list of options
+  needed" in `packages/universal/data-table/CLAUDE.md`). `useMemo` stays only for real computations (e.g. a list of options
   from the data, the Board Manager's sections draft).
 - Names of table components in the root's apps (2026-10-15, the user's decision): the singular stem, like every other
   name of the concept (`MemberTable` with `MemberRow`, `MemberForm`; an English compound: "member table"), not the
@@ -333,7 +341,7 @@ and imports the files it needs from its `CLAUDE.md`.
   others secondary (a danger one stays danger; File Center's Files: `tertiary`, ghost buttons, 2026-10-11, the user's
   wish). Every "New …" and "Add …" action has the plus icon (`appIcons.add`,
   Tabler's `TbPlus`), not a specific one (a user plus, a folder plus).
-- The vertical position of the overlays' dialogs (2026-10-08, the user's wish; `packages/overlays/src/main/dialogs/
+- The vertical position of the overlays' dialogs (2026-10-08, the user's wish; `packages/universal/overlays/src/main/dialogs/
   element/styles.ts`): every centered dialog (not a drawer, not maximized) sits a bit above the middle, the free
   space split 40/60 above and below it, never closer than 2em to the top, and never past the bottom (its
   `max-height`). CSS only: the top edge at `50dvh`, then `translate: 0 max(calc(2em - 50dvh), calc(-40% - 10dvh))`
@@ -423,7 +431,7 @@ and imports the files it needs from its `CLAUDE.md`.
   (`0.11em` wide) down the rest. Not the whole arrow scaled up: its width cannot follow its stretched height in CSS
   (scaling it would need a line of script in `FieldError`, measuring the lines). The upload's error badge
   (`::part(error)`, inline) keeps the short arrow.
-- A demo page for `packages/ui-theme` (2026-10-06, the user's wish; later): every `ui-*` class and token on one page,
+- A demo page for `packages/universal/ui-theme` (2026-10-06, the user's wish; later): every `ui-*` class and token on one page,
   so a change to the design language can be seen at once.
 - The look of the data table (the user does not like it yet; details in its `CLAUDE.md`, "Todo (later)").
 - Maybe rename the file upload to file uploader (2026-10-06, the user's idea; not decided): `@local/file-uploader`,
@@ -436,7 +444,7 @@ and imports the files it needs from its `CLAUDE.md`.
 - Discuss the CSS rules in more detail (2026-10-07, the user's wish; later): BEM for CSS without shadow DOM and
   without CSS modules is the rule, the details are open (block names, prefixes per package and app, how far it goes
   in the root's apps, which still style Mantine's classes under their root class, e.g. `.board-manager
-  .mantine-InputWrapper-error`). Cause: the overlays' React demo CSS (`packages/overlays/src/demo/react.css`) was
+  .mantine-InputWrapper-error`). Cause: the overlays' React demo CSS (`packages/universal/overlays/src/demo/react.css`) was
   global, and its error badge of Mantine's `TextInput` (red, with a warning triangle and a nose) appeared in the
   Board Manager's validation popovers once "Dialogs + Toasts" had been opened. Fixed 2026-10-07: its rules are
   scoped to the block `overlays-react-demo-fields`, the wrapper of the dialog's fields (`display: contents`).

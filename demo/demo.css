@@ -19,7 +19,7 @@ app-cockpit {
   }
 }
 
-/* The login screen (packages/login), signed out (its accent: a Mantine theme from `main.ts`). */
+/* The login screen (packages/mantine/login), signed out (its accent: a Mantine theme from `main.ts`). */
 .login-host {
   animation: login-fade-in 350ms ease-out;
 }

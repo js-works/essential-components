@@ -52,7 +52,7 @@ Started 2026-10-03.
   tables' source through `useQuerySource` of `@local/data-table/react-query`.
 - `app/`: `user-manager-demo.tsx` (the element `user-manager-demo`; the wiring, the look), `app.tsx` (the routes, the
   header, the hash), `router-types.ts`, `user-manager.css`.
-  - The theme (2026-10-04): `modernTheme` of `packages/mantine-themes` merged with the app's own, like the Board Manager's:
+  - The theme (2026-10-04): `modernTheme` of `packages/mantine/mantine-themes` merged with the app's own, like the Board Manager's:
     smaller corners and a bit more contrast (see its `CLAUDE.md`).
   - The accent (2026-10-03): `--user-manager-accent-color` (any CSS color, set by the host page's CSS; the root page
     maps its `--app-accent-color` to it), live in CSS (the `tokens` of `createLook`, also the font size, the

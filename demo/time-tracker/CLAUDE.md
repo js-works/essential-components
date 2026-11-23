@@ -73,7 +73,7 @@ Started 2026-10-06.
 
 ## Look
 
-- The theme: `modernTheme` of `packages/mantine-themes` merged with the app's own, like the Board Manager's.
+- The theme: `modernTheme` of `packages/mantine/mantine-themes` merged with the app's own, like the Board Manager's.
 - Two custom properties of its own (2026-10-06, allowed by the user), set by the host page's CSS (the root page maps the
   cockpit's onto them in `demo/demo.css`): `--time-tracker-accent-color` (Mantine's ten accent shades as mixes of it,
   straight in Mantine's own variables; without it, mixes of indigo) and `--time-tracker-font-size` (the app's normal

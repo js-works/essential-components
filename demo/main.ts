@@ -16,8 +16,8 @@ import {
   pageSettings,
   USER,
   userMenu,
-} from '../packages/cockpit/src/demo/footer.js';
-import { DEMO_I18N } from '../packages/cockpit/src/demo/i18n.js';
+} from '../packages/universal/cockpit/src/demo/footer.js';
+import { DEMO_I18N } from '../packages/universal/cockpit/src/demo/i18n.js';
 
 // The page: an app cockpit, with every demo as one of its mini-apps. The page's settings (in the cockpit's footer) set
 // `<html lang>` and the color scheme for every demo. Each demo is a light DOM custom element of its project, loaded
@@ -36,7 +36,7 @@ const planned = async () => {
 // Prototypes to try out, in a section of the kebab menu (2026-10-09, the user's wish), before "Reset demo": a check
 // item each, remembered per browser. "Filter drawer": the data table's filters in a drawer at the right edge
 // instead of the filter view, for every table (the attribute `data-data-table-filter-drawer` on `<html>`, which every
-// table follows live; a page flag of the prototype, not an API, see the todo in `packages/data-table/CLAUDE.md`). On
+// table follows live; a page flag of the prototype, not an API, see the todo in `packages/universal/data-table/CLAUDE.md`). On
 // by default (2026-10-11, the user's wish; off before): only an "off" remembered turns it off.
 const FILTER_DRAWER = 'data-data-table-filter-drawer';
 const FILTER_DRAWER_KEY = 'demo-page:filter-drawer';
@@ -232,7 +232,7 @@ customElements.define(
         load: async () => {
           define(
             'data-table-demo',
-            (await import('../packages/data-table/demo/data-table-demo.js')).DataTableDemo,
+            (await import('../packages/universal/data-table/demo/data-table-demo.js')).DataTableDemo,
           );
         },
       },
@@ -246,7 +246,7 @@ customElements.define(
         load: async () => {
           define(
             'file-upload-demo',
-            (await import('../packages/file-upload/src/demo/file-upload-demo.js')).FileUploadDemo,
+            (await import('../packages/universal/file-upload/src/demo/file-upload-demo.js')).FileUploadDemo,
           );
         },
       },
@@ -258,7 +258,7 @@ customElements.define(
         subgroup: 'Components',
         element: 'overlays-demo',
         load: async () => {
-          define('overlays-demo', (await import('../packages/overlays/src/demo/overlays-demo.js')).OverlaysDemo);
+          define('overlays-demo', (await import('../packages/universal/overlays/src/demo/overlays-demo.js')).OverlaysDemo);
         },
       },
       {
@@ -271,7 +271,7 @@ customElements.define(
         load: async () => {
           define(
             'form-validation-demo',
-            (await import('../packages/form-validation/demo/form-validation-demo.js')).FormValidationDemo,
+            (await import('../packages/react/form-validation/demo/form-validation-demo.js')).FormValidationDemo,
           );
         },
       },
@@ -283,7 +283,7 @@ customElements.define(
         subgroup: 'Components',
         element: 'rich-text-demo',
         load: async () => {
-          define('rich-text-demo', (await import('../packages/rich-text/demo/rich-text-demo.js')).RichTextDemo);
+          define('rich-text-demo', (await import('../packages/mantine/rich-text/demo/rich-text-demo.js')).RichTextDemo);
         },
       },
       {
@@ -294,7 +294,7 @@ customElements.define(
         subgroup: 'Components',
         element: 'micro-app-demo',
         load: async () => {
-          define('micro-app-demo', (await import('../packages/micro-app/demo/micro-app-demo.js')).MicroAppDemo);
+          define('micro-app-demo', (await import('../packages/mantine/micro-app/demo/micro-app-demo.js')).MicroAppDemo);
         },
       },
       {
@@ -305,7 +305,7 @@ customElements.define(
         subgroup: 'Components',
         element: 'cockpit-demo',
         load: async () => {
-          define('cockpit-demo', (await import('../packages/cockpit/src/demo/cockpit-demo.js')).CockpitDemo);
+          define('cockpit-demo', (await import('../packages/universal/cockpit/src/demo/cockpit-demo.js')).CockpitDemo);
         },
       },
       {

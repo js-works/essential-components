@@ -2,7 +2,7 @@
   ui.css: a small, general-purpose design language, plain CSS without dependencies.
 
   Currently it styles the demo pages of components (the page around the component under test, never the component
-  itself). The master is `packages/ui-theme` (`@local/ui-theme`; no package depends on it): it is copied into each
+  itself). The master is `packages/universal/ui-theme` (`@local/ui-theme`; no package depends on it): it is copied into each
   project that needs it. Its behavior (tabs) is in `ui.ts`, next to this file.
 
   Principles
