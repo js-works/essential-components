@@ -24,7 +24,7 @@ import type { TimeService } from '../features/tracker/index.js';
 import { createTimeService, TimeServiceContext } from '../features/tracker/index.js';
 import { ViewerProvider } from '../features/viewer/index.js';
 import { createInMemoryRepositories, createInMemorySavedFilters, VIEWER_ID } from '../infra/in-memory/index.js';
-import { i18n, useLanguage } from '../shared/lib/i18n/index.js';
+import { i18n, i18nAdapter, useLanguage } from '../shared/lib/i18n/index.js';
 import { createAppRouter } from './app.js';
 
 export { TimeTrackerDemo };
@@ -80,7 +80,7 @@ function App({ router, service, savedFilters, queryClient }: {
               getRootElement={() => undefined}
             >
               <Dates>
-                <OverlaysProvider config={LOOK.overlaysConfig}>
+                <OverlaysProvider config={{ ...LOOK.overlaysConfig, i18n: i18nAdapter }}>
                   <Scope>
                     <RouterProvider router={router} />
                   </Scope>

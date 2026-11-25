@@ -30,15 +30,13 @@ customer's monorepo, and the customer owns those copies (like shadcn/ui); nothin
 
 ## Conventions
 
-The general rules for code, CSS and texts (2026-11-23, the user's decision; `docs/conventions/` with a copy in each
-package before): `packages/ai/instructions/` (see its `README.md`), project independent and AI-agnostic: plain Markdown,
-no imports, no names of this repository.
+The general rules for code, CSS and texts: `packages/ai/instructions/` (see its `README.md`), project independent and
+AI-agnostic: plain Markdown, no imports, no names of this repository.
 
 - In `common/`, `frontend/` and `backend/`, one topic per file.
 - Each `CLAUDE.md` imports only the files that fit it, by a relative path (a package:
   `@../../ai/instructions/common/general.md`).
-- `packages/ai` is always copied along with any package (2026-11-23, the user's decision, proposed at about 65%: one
-  master, no hand-made copies; weighed: a copy per package, self-contained but kept in sync by hand).
+- `packages/ai` is always copied along with any package: one master, no copies per package.
 - Not a workspace (no `package.json`).
 
 @packages/ai/instructions/common/general.md
@@ -56,18 +54,17 @@ The rules of this repository on top of them:
   - The customer copies the whole folder (and `packages/ai`) into its monorepo and owns the copy (like shadcn/ui).
   - It keeps its own tests, demo (`npm run dev` inside it) and `package-lock.json`.
   - License: MIT or the Unlicense.
-- Two tiers of packages; each package's `CLAUDE.md` states its own in one line (2026-11-23, the user's choice, proposed
-  at about 70%):
+- Two tiers of packages; each package's `CLAUDE.md` states its own in one line:
   - Tier 1, framework-free where possible, for any customer's stack: `overlays`, `file-upload`, `data-table`,
-    `cockpit`, `form-validation`, `ui-theme`. No UI library, no i18n library (an `I18nAdapter`), themes as JS objects.
+    `cockpit`, `form-validation`. No UI library, no i18n library (an `I18nAdapter`), themes as JS objects.
     Expensive to build: only for packages that important.
   - Tier 2, opinionated, for apps built on Mantine: `login`, `mantine-themes`, `rich-text`, `micro-app`. Mantine and
-    react-i18next (with i18next) as peers, and TanStack Router where routing is involved; their look from Mantine's
+    react-i18next (with i18next and `i18next-icu`: ICU messages everywhere) as peers, and TanStack Router where routing is involved; their look from Mantine's
     theme and variables (`var(--mantine-…)`, never new custom properties of their own), their texts from an i18next
     namespace of their own.
   - A tier-2 package may depend on a tier-1 one, never the other way round.
 - The default look follows the design language (`ui.css`, its `ui-*` values; see `demo/ui/` below); each package with
-  a theme says so in one line of its `CLAUDE.md` (2026-11-23, the user's choice):
+  a theme says so in one line of its `CLAUDE.md`:
   - The default theme is the same in every package that has one, and is never changed in just one of them.
   - Radii: `2px` for controls (inputs, selects, menus), `5px` for buttons, larger surfaces a bit rounder (dialogs
     `6px`).
@@ -87,14 +84,14 @@ The rules of this repository on top of them:
 - `packages/`: the components, npm workspaces (`"workspaces": ["packages/*/*"]`), each private and self-contained, so it
   can be copied as it is (the package's folder, with `packages/ai`), in three folders by what an app needs to use it (2026-10-30, the
   user's decision, proposed at about 75%):
-  - `universal/`: for any stack (tier 1): `cockpit`, `data-table`, `file-upload`, `overlays`, `ui-theme`. Inside they
+  - `universal/`: for any stack (tier 1): `cockpit`, `data-table`, `file-upload`, `overlays`. Inside they
     may use Lit or React; a `/react` entry is an add-on.
   - `react/`: for React apps, no UI library (tier 1): `form-validation`.
   - `mantine/`: for Mantine apps with i18next (tier 2): `login`, `mantine-themes`, `micro-app`, `rich-text`.
   - `ai/`: no component: the AI-agnostic instructions (see "Conventions").
   - A package that changes its kind moves to the other folder.
   - Weighed: `vanilla` (none of them is), one flat folder (what a package needs was not visible).
-  The packages:
+    The packages:
   - `data-table` (`@local/data-table`, 2026-10-10; the data navigator, `@local/data-navigator`, before: it was planned
     for npm): a data table: a custom element, and a React component (`/react`). Not "data grid": that means a
     spreadsheet (cell-by-cell editing, the ARIA `grid` role).
@@ -119,9 +116,9 @@ The rules of this repository on top of them:
     TanStack Router, react-i18next): the header, the look, the scope, the hash history, the table with its actions and
     saved filters, the form hook (see its `CLAUDE.md`). All five root apps are built on it (2026-10-17). A demo
     (`npm run dev` inside it). See the TODO.
-  - `ui-theme` (`@local/ui-theme`, 2026-10-06): the master of the design language (`ui.css`, `ui.ts`) in `src/`. No
-    package depends on it (nothing is imported from it): the copies stay in each project (see `demo/ui/` below). No
-    demo page yet (see the TODO).
+  - No package for what is only types or a shared file: their masters are in `packages/ai/instructions/`, copied
+    verbatim into each package that needs them (TypeScript compares types by their shape, so the copies fit
+    together): the i18n adapter's types (`frontend/i18n.md`), the design language (`frontend/design-language.md`).
   - A package keeps its own tests, demo (`npm run dev` inside it) and `package-lock.json` (unused in the workspace,
     where the root lock file counts; it matters again in a standalone copy).
 - The root is the demo page of all packages:
@@ -207,8 +204,8 @@ The rules of this repository on top of them:
   - `demo/demo.css`: (2026-10-04: the apps' own text size, `--board-manager-font-size` and the like, the same `14px` as the cockpit's `theme.fontSize` in `demo/main.ts`: one text size for the shell and the apps; it read the cockpit's `--app-cockpit-font-size` until 2026-10-10) only what is specific to this page: the cockpit fills the window (`100dvh`). (Its frame is not
     selectable, by the cockpit's own CSS; inside the demos, selecting stays as their packages have it.)
   - `demo/ui/`: the design language (`ui.css`, `ui.ts`), the same files as in every package. The master is
-    `packages/universal/ui-theme/src/` (2026-10-06): change it there, then copy the change into all copies by hand (`demo/ui/`
-    here, and in each package; no sync script, the user's decision). Read the header of `ui.css` before changing it.
+    `packages/ai/instructions/frontend/design-language.md`: change it there, then copy the change into all copies by
+    hand (`demo/ui/` here, and in each package; no sync script). Read the header of `ui.css` before changing it.
     - Its `ui-*` tokens are the default look: the packages' default themes follow them, and a change of a token is
       made in the packages' defaults too. The radius: `--ui-radius-sm: 2px` for controls (inputs, selects, menus);
       the data table's `radius` is `2px`, the file upload's small parts `2px` (its thumbnails and tooltip), its preview dialog `6px`.
@@ -476,7 +473,7 @@ The rules of this repository on top of them:
   (`0.11em` wide) down the rest. Not the whole arrow scaled up: its width cannot follow its stretched height in CSS
   (scaling it would need a line of script in `FieldError`, measuring the lines). The upload's error badge
   (`::part(error)`, inline) keeps the short arrow.
-- A demo page for `packages/universal/ui-theme` (2026-10-06, the user's wish; later): every `ui-*` class and token on one page,
+- A demo page for the design language (`frontend/design-language.md`; later): every `ui-*` class and token on one page,
   so a change to the design language can be seen at once.
 - The look of the data table (the user does not like it yet; details in its `CLAUDE.md`, "Todo (later)").
 - Maybe rename the file upload to file uploader (2026-10-06, the user's idea; not decided): `@local/file-uploader`,

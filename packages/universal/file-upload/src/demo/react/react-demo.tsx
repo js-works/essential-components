@@ -15,13 +15,10 @@ const Locale = createContext('en-US');
 
 // Each instance follows the nearest `Locale`: the hook runs in the component on every render.
 const Upload = createFileUploadComponent({
-  i18n: {
-    type: 'hook',
-    useAdapter: () => {
-      const locale = useContext(Locale);
+  useI18n: () => {
+    const locale = useContext(Locale);
 
-      return useMemo(() => createLocaleI18n(locale), [locale]);
-    },
+    return useMemo(() => createLocaleI18n(locale), [locale]);
   },
 });
 

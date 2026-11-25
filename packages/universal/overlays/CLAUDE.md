@@ -32,20 +32,33 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   the package by name (`@local/…`) to its sources by that condition (its `vite.config.ts` and `tsconfig.json`);
   everywhere else, a customer's copy too, the condition is ignored and `dist/` counts.
 - The API types live in `src/main/api/` (`typescript.md`):
-  - `dialogs/` (`dialog.ts`, `adapter.ts`, `content.ts`, `theme.ts`, `texts.ts`), `toasts/` (`toast.ts`, `adapter.ts`,
-    `theme.ts`, `texts.ts`), `theme.ts` (`ThemePalette`, `Themes`: both features); `index.ts` re-exports them.
+  - `dialogs/` (`dialog.ts`, `adapter.ts`, `content.ts`, `theme.ts`), `toasts/` (`toast.ts`, `adapter.ts`, `theme.ts`),
+    `theme.ts` (`ThemePalette`, `Themes`: both features), `texts.ts` (`OverlaysTextKey`, `OverlaysParams`, read from
+    the English texts), `i18n.ts` (`I18nAdapter`, `TextParams`: a verbatim copy of those in `frontend/i18n.md`);
+    `index.ts` re-exports them.
   - Per binding entry: `dom/`, `lit/`, `react/` (its `content.ts`, React's `provider.ts` too), each with an `index.ts`
     that re-exports `../index.js` and its own files.
-  - The runtime code is beside its feature: `dialogs/theme.ts`, `dialogs/texts.ts` (the defaults; `TextKey` stays
-    internal there), `dialogs/form-data.ts`, `dialogs/view.ts` (the internal view types), `toasts/theme.ts`,
-    `toasts/texts.ts`, `toasts/view.ts` (the policy helpers).
+  - The runtime code is beside its feature: `dialogs/theme.ts`, `dialogs/texts.ts` (the internal `TextKey`),
+    `dialogs/form-data.ts`, `dialogs/view.ts` (the internal view types), `toasts/theme.ts`, `toasts/view.ts` (the
+    policy helpers).
   - Every entry exports values and types flat (`import type { DialogTheme } from "@local/overlays/react"`).
   - Public: all exports of `api/dialogs/dialog.ts` (`DialogAborted`, `DialogAnswered`, `DialogDismissed`,
     `AnyDialogResult`, the parts of the result types).
   - `OverlaysConfig` keeps its name.
 - Not yet following the conventions (older than them; to be discussed, not changed on the side):
   - Exports on the declarations (`export function …`) and TypeScript `private` in places (`typescript.md`).
-  - i18n through picolingo namespaces (`createNamespace()`), not the `I18nAdapter` of `i18n.md`.
+- Texts (`frontend/i18n.md`): the English ones of both features in `src/main/texts/en.ts` (the master; no values),
+  the namespace `'overlays'`; `textOf(i18n, key)` (`src/main/i18n/texts.ts`) asks the adapter's `translate`, `null`
+  (or no adapter): English. The page's language is never read.
+  - The adapter: `i18n` of `createDialogsController` and `createToastController` (a value; the configs are live,
+    `configure()` of the toasts too), `config.i18n` of the React `OverlaysProvider` for both: the provider is rendered
+    by the app, so the app builds the adapter with its own hooks (no `useI18n` here).
+  - Its `onChange`: a dialog scope subscribes while its element is mounted and rebuilds the dialog on screen (content
+    and input stay); the toasts' controller subscribes for its life and re-renders the stack. The provider also
+    rebuilds the dialog on screen when its `i18n` is a new object (an i18n that only exists inside React), and
+    compares it by identity for the toasts.
+  - The translations: ICU messages, `locales/en.json`, `locales/de.json` (exported as `@local/overlays/locales/*.json`),
+    derived from the master by hand (or the AI); `src/test/texts/texts.test.ts` checks them (`npm test`, Vitest).
 - The dialogs' theme: its values are put straight into the dialog's stylesheet (`styleText(theme)` in
   `src/main/dialogs/element/styles.ts`, built once per theme), no `--dialog-*` custom properties on the host (they
   would inherit into the slotted content). The controller merges the caller's tokens over `defaultDialogTheme` once

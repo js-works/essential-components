@@ -1,14 +1,15 @@
-import type { FieldPropNames, FormConfig, I18nAdapter, MessageContext, ValidationMessage } from './index.js';
-import { catalogs, localeCandidates } from './messages/index.js';
+import type { FormConfig, FormValidationTextKey, I18nAdapter } from './index.js';
+import { EN } from './texts/en.js';
 
 export type { ErrorData };
-export { checkI18nType, createTranslator, FALLBACK_LOCALE, humanize, isDev, LIBRARY_NAMESPACE, warnOnce };
+export { createTranslator, humanize, isDev, LIBRARY_NAMESPACE, warnOnce };
 
 /** Errors are stored as data and only translated when rendering. */
 interface ErrorData {
+  /** A key of the library's messages, or (`custom`) an explicit message of the schema or the server. */
   key: string;
   params?: Record<string, unknown>;
-  /** An explicit message (schema, server): a key if it can be translated, otherwise a literal text. */
+  /** An explicit message (schema, server): a key of the app if it can be translated, otherwise a literal text. */
   custom?: boolean;
 }
 
@@ -26,85 +27,32 @@ function warnOnce(id: string, text: string) {
 /** The namespace of the library's messages for the adapter. */
 const LIBRARY_NAMESPACE = 'formValidation';
 
-/** Without an adapter: English texts and en-US formatting (`i18n.md`). */
-const FALLBACK_LOCALE = 'en-US';
+/** Without an adapter: English and `en-US` formatting (`i18n.md`). */
+const DEFAULT_LOCALE = 'en-US';
 
-/** The union type prevents any other `type`, but not in plain JavaScript or with a cast config (e.g. the old form). */
-function checkI18nType(i18n: { type: unknown } | undefined) {
-  if (i18n !== undefined && i18n.type !== 'factory' && i18n.type !== 'hook') {
-    throw new TypeError(`Unknown i18n type: ${String(i18n.type)} (expected 'factory' or 'hook').`);
-  }
-}
-
-function formatParams(params: Record<string, unknown>, locale: string): Record<string, string> {
-  const num = new Intl.NumberFormat(locale);
-  const date = new Intl.DateTimeFormat(locale, { dateStyle: 'medium' });
-  const out: Record<string, string> = {};
-  for (const [k, v] of Object.entries(params)) {
-    if (typeof v === 'number' || typeof v === 'bigint') out[k] = num.format(v);
-    else if (v instanceof Date) out[k] = date.format(v);
-    else out[k] = String(v);
-  }
-  return out;
-}
-
-function render(msg: ValidationMessage, params: Record<string, unknown>, locale: string): string {
-  if (typeof msg === 'string') return msg;
-  const formatted = formatParams(params, locale);
-  const rules = new Intl.PluralRules(locale);
-  const ctx: MessageContext = {
-    locale,
-    count(param, forms) {
-      const n = Number(params[param]);
-      const form = forms[rules.select(n)] ?? forms.other ?? '#';
-      return form.replace('#', formatted[param] ?? String(n));
-    },
-  };
-  return msg(formatted, ctx);
-}
-
-function createTranslator<P extends FieldPropNames>(config: FormConfig<P>) {
-  const fallback = config.fallbackLocale ?? 'en';
+/**
+ * The texts come from the adapter. Without one, or without a translation (`null`), the library's own: its English
+ * messages (formatted for the adapter's locale), the humanized field name, the literal text of a schema or the server.
+ */
+function createTranslator(config: FormConfig) {
   const appNamespace = config.appNamespace ?? 'app';
 
-  /** The app messages, then the library catalog (exact, base language, fallback). The adapter comes after it. */
-  function lookup(key: string, params: Record<string, unknown>, locale: string): string | undefined {
-    const candidates = [...localeCandidates(locale), ...localeCandidates(fallback)];
-    for (const loc of candidates) {
-      const msg = config.messages?.[loc]?.[key] ?? catalogs[loc]?.[key];
-      if (msg != null) return render(msg, params, loc);
-    }
-    return undefined;
+  /** A message of the library, or of the schema or the server: a key of the app if translated, else a literal text. */
+  function message(err: ErrorData, adapter: I18nAdapter | undefined): string {
+    const params = err.params ?? null;
+    if (err.custom) return adapter?.translate(appNamespace, err.key, params) ?? err.key;
+    // The keys and their values come from `issues.ts`, which only gives keys of `EN` with their values.
+    const english = (EN[err.key as FormValidationTextKey] ?? EN.invalid) as (values: unknown, locale: string) => string;
+    return adapter?.translate(LIBRARY_NAMESPACE, err.key, params)
+      ?? english(params ?? {}, adapter?.currentLocale() ?? DEFAULT_LOCALE);
   }
 
-  /**
-   * The text of the library (or the app messages) goes to the adapter as `defaultValue`, so the adapter has the last
-   * word. A message of the schema or the server is an app key, or a literal text if nothing translates it. `quiet`: no
-   * warning (the adapter of a factory is not there yet).
-   */
-  function message(err: ErrorData, locale: string, adapter: I18nAdapter | undefined, quiet = false): string {
-    const text = lookup(err.key, err.params ?? {}, locale);
-    const defaultValue = text ?? err.key;
-    const namespace = err.custom ? appNamespace : LIBRARY_NAMESPACE;
-    const result = adapter?.resolveText(namespace, err.key, err.params ?? null, defaultValue) ?? defaultValue;
-    if (!quiet && text == null && !err.custom && result === defaultValue) {
-      warnOnce(`msg:${err.key}`, `No translation for the message "${err.key}".`);
-    }
-    return result;
-  }
-
-  /**
-   * Without a translation (the adapter returns the `defaultValue`), the humanized field name. The warning only without
-   * an adapter: a translation may equal the humanized name ("Name"), and an i18n library reports missing keys itself.
-   */
-  function label(key: string, path: string, locale: string, adapter: I18nAdapter | undefined, quiet = false): string {
-    const text = lookup(key, {}, locale);
-    const defaultValue = text ?? humanize(path.split('.').pop() ?? path);
-    const result = adapter?.resolveText(appNamespace, key, null, defaultValue) ?? defaultValue;
-    if (!quiet && !adapter && text == null) {
-      warnOnce(`label:${key}:${locale}`, `No translation for the label "${key}" (${locale}).`);
-    }
-    return result;
+  /** The label's translation, else the humanized field name, with a warning. */
+  function label(key: string, path: string, adapter: I18nAdapter | undefined): string {
+    const translated = adapter?.translate(appNamespace, key, null);
+    if (translated != null) return translated;
+    warnOnce(`label:${key}`, `No translation for the label "${key}".`);
+    return humanize(path.split('.').pop() ?? path);
   }
 
   return { message, label };

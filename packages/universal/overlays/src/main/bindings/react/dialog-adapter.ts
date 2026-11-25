@@ -27,11 +27,11 @@ import type { PortalStore } from "./portals.js";
  * The factory, plus a `refresh()` that asks the core for a fresh spec for every dialog
  * this adapter has on screen.
  *
- * The core resolves `getText` and `icons` while building a spec, so a language change
- * only reaches an open dialog if something rebuilds it. React cannot notice that on its
- * own: re-rendering `DialogHost` re-renders the *same* spec, and calling back into the
- * core from a render would loop. So the trigger is explicit — see the provider's
- * `refreshKey`.
+ * The core resolves the texts (the i18n adapter) and `icons` while building a spec, so a
+ * new adapter only reaches an open dialog if something rebuilds it. React cannot notice
+ * that on its own: re-rendering `DialogHost` re-renders the *same* spec, and calling back
+ * into the core from a render would loop. So the provider calls it when its `i18n`
+ * changes (a change the adapter reports itself, the core follows).
  */
 export interface ReactDialogAdapter {
   factory: DialogAdapterFactory<ReactContent>;

@@ -258,7 +258,10 @@ customElements.define(
         subgroup: 'Components',
         element: 'overlays-demo',
         load: async () => {
-          define('overlays-demo', (await import('../packages/universal/overlays/src/demo/overlays-demo.js')).OverlaysDemo);
+          define(
+            'overlays-demo',
+            (await import('../packages/universal/overlays/src/demo/overlays-demo.js')).OverlaysDemo,
+          );
         },
       },
       {

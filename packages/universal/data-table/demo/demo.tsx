@@ -29,7 +29,7 @@ import type { User } from './data.js';
 import { countries, createUser, fetchNothing, fetchUsers, newUser, roles, saveUser, suggestEmails } from './data.js';
 import { badge, fixedHeight, note, selectedLine, suggestion } from './demo.module.css';
 import { DemoControls } from './demo-controls.js';
-import { i18n } from './i18n.js';
+import { useI18n } from './i18n.js';
 import { icons } from './icons.js';
 import { createActions } from './shared.js';
 import { useToasts } from './toasts.js';
@@ -43,10 +43,10 @@ export { Demo };
 const DEFAULTS: DataTableDefaults = { pageSize: 10, pageSizeOptions: [10, 25, 50] };
 
 const tables: Record<DemoTheme, DataTableComponent> = {
-  default: createDataTableComponent({ i18n, theme: defaultTheme, defaults: DEFAULTS }),
-  soft: createDataTableComponent({ i18n, theme: softTheme, defaults: DEFAULTS }),
-  mantine: createDataTableComponent({ i18n, theme: mantineTheme, defaults: DEFAULTS }),
-  antd: createDataTableComponent({ i18n, theme: antdTheme, defaults: DEFAULTS }),
+  default: createDataTableComponent({ useI18n, theme: defaultTheme, defaults: DEFAULTS }),
+  soft: createDataTableComponent({ useI18n, theme: softTheme, defaults: DEFAULTS }),
+  mantine: createDataTableComponent({ useI18n, theme: mantineTheme, defaults: DEFAULTS }),
+  antd: createDataTableComponent({ useI18n, theme: antdTheme, defaults: DEFAULTS }),
 };
 
 // The Mantine and antd themes read the variables of their library, which a real app gets from the library. The demo

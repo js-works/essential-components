@@ -197,7 +197,7 @@ describe('content', () => {
     let language = 'en';
     const i18n: DataTable.I18nAdapter = {
       currentLocale: () => (language === 'en' ? 'en-US' : 'de-DE'),
-      resolveText: (_namespace, _key, _params, defaultValue) => defaultValue,
+      translate: () => null,
       onChange: (listener) => {
         listeners.add(listener);
 
@@ -205,7 +205,7 @@ describe('content', () => {
       },
     };
     const [ElementClass, createController] = setupDataTable({
-      i18n: { type: 'factory', getAdapter: () => i18n },
+      i18n,
     });
     const element = create(ElementClass);
 
@@ -225,16 +225,13 @@ describe('content', () => {
     expect(screen.getByRole('columnheader', { name: 'Vorname' })).toBeTruthy();
   });
 
-  it('asks the i18n factory once per element, with the element, on its first connect', async () => {
+  it('renders the texts of its i18n adapter, English where it has none', async () => {
     const i18n: DataTable.I18nAdapter = {
       currentLocale: () => 'de-DE',
-      resolveText: (_namespace, key, _params, defaultValue) => (key === 'perPage' ? '10 pro Seite' : defaultValue),
+      translate: (_namespace, key) => (key === 'perPage' ? '10 pro Seite' : null),
     };
-    const getAdapter = vi.fn((_element: HTMLElement) => i18n);
-    const [ElementClass, createController] = setupDataTable({ i18n: { type: 'factory', getAdapter } });
+    const [ElementClass, createController] = setupDataTable({ i18n });
     const element = create(ElementClass);
-
-    expect(getAdapter).not.toHaveBeenCalled();
 
     element.controller = createController({
       source: createSource(),
@@ -243,22 +240,7 @@ describe('content', () => {
     });
     await mount(element);
     await waitFor(() => expect(screen.getByRole('button', { name: '10 pro Seite' })).toBeTruthy());
-
-    await act(async () => {
-      element.remove();
-      document.body.append(element);
-    });
-
-    expect(getAdapter).toHaveBeenCalledTimes(1);
-    expect(getAdapter).toHaveBeenCalledWith(element);
-  });
-
-  it('throws a TypeError for an unknown i18n type (e.g. an adapter given directly)', () => {
-    const i18n = { currentLocale: () => 'en-US', resolveText: () => '' };
-
-    expect(() => setupDataTable({ i18n: i18n as unknown as DataTable.DataTableSetupConfig['i18n'] })).toThrow(
-      TypeError,
-    );
+    expect(screen.getByText(/^1-\d+ of \d+$/)).toBeTruthy();
   });
 
   it('renders action icons and tips, and a tip may be a function', async () => {

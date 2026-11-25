@@ -14,14 +14,14 @@ import { defaultTheme } from '../src/themes/index.js';
 import type { User } from './data.js';
 import { fetchUsersByCountry, roles } from './data.js';
 import { badge, fixedHeight, note } from './demo.module.css';
-import { i18n } from './i18n.js';
+import { useI18n } from './i18n.js';
 import { icons } from './icons.js';
 import { fullName } from './shared.js';
 import { useToasts } from './toasts.js';
 
 export { GroupingDemo };
 
-const DataTable = createDataTableComponent({ i18n, theme: defaultTheme });
+const DataTable = createDataTableComponent({ useI18n, theme: defaultTheme });
 
 // The country is the group, so it has no column of its own. Typed by `defineColumns` (and the actions by
 // `defineActions`): no type annotation.

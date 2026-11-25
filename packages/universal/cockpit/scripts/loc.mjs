@@ -17,7 +17,7 @@ const KINDS = [
 ];
 
 // Folders with a note (e.g. a copy, not the package's own code).
-const NOTES = { 'src/demo/ui': 'a copy of ui-theme' };
+const NOTES = { 'src/demo/ui': 'a copy of the design language' };
 
 const COLUMNS = ['Files', 'Lines', 'Code', 'Comments', 'Blank'];
 const BAR = 20;

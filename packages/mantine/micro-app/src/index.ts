@@ -7,6 +7,7 @@ export type * from './api/table.js';
 export { FieldError } from './field-error.js';
 export { defineForm } from './form.js';
 export { mirrorInHash, pathFromHash } from './hash-history.js';
+export { i18nAdapterOf, useI18nAdapter } from './i18n-adapter.js';
 export { createLook } from './look.js';
 export { MicroAppHeader } from './micro-app-header.js';
 export { MicroAppProvider } from './provider.js';

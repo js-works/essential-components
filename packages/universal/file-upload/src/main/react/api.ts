@@ -1,12 +1,6 @@
 import type { AriaAttributes, CSSProperties, ReactNode, Ref } from 'react';
 
-import type {
-  FileItem,
-  FileUploadClassConfig,
-  FileUploadDensity,
-  FileUploadElement,
-  UploadFunction,
-} from '../api/base.js';
+import type { FileItem, FileUploadDensity, FileUploadElement, UploadFunction } from '../api/base.js';
 import type { I18nAdapter } from '../api/i18n.js';
 import type { FileUploadTheme } from '../api/theme.js';
 
@@ -15,7 +9,7 @@ export type { FileUploadComponentConfig, FileUploadProps };
 type FileUploadComponentConfig = {
   theme?: FileUploadTheme;
   styles?: string;
-  i18n?: NonNullable<FileUploadClassConfig['i18n']> | { type: 'hook'; useAdapter: () => I18nAdapter };
+  useI18n?: () => I18nAdapter;
 };
 
 type FileUploadProps = AriaAttributes & {

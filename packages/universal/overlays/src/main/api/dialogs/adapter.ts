@@ -153,7 +153,7 @@ export type DialogAdapterFactory<C extends object> = (context: {
   /**
    * Ask the core for a fresh spec and render it. The adapter owns *when* — it knows its
    * framework's reactivity — and the core owns *what*: it rebuilds the spec, re-reading
-   * `getText` and `icons`. Use it when something outside the core changed the answers
+   * the texts and `icons`. Use it when something outside the core changed the answers
    * those give, e.g. the app switched language. No-op when nothing is on screen.
    */
   requestRender(): void;

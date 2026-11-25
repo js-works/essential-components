@@ -5,8 +5,14 @@ import type { DataTable } from '../../../../../packages/universal/data-table/src
 import { setupDataTable } from '../../../../../packages/universal/data-table/src';
 import { defaultTheme } from '../../../../../packages/universal/data-table/src/themes';
 import { createFileUploadClass } from '../../../../../packages/universal/file-upload/src/main';
-import { litDialogAdapter, litToastAdapter } from '../../../../../packages/universal/overlays/src/main/bindings/lit/index';
-import { createDialogsController, createToastController } from '../../../../../packages/universal/overlays/src/main/index';
+import {
+  litDialogAdapter,
+  litToastAdapter,
+} from '../../../../../packages/universal/overlays/src/main/bindings/lit/index';
+import {
+  createDialogsController,
+  createToastController,
+} from '../../../../../packages/universal/overlays/src/main/index';
 
 export { createTableController, dialogs, FileUploadElement, TableElement, toasts };
 

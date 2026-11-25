@@ -18,7 +18,7 @@ import type { SavedFilterRepository } from '../domain/index.js';
 import type { BrowserService } from '../features/browser/index.js';
 import { BrowserServiceContext, createBrowserService } from '../features/browser/index.js';
 import { createInMemoryRepositories, createInMemorySavedFilters } from '../infra/in-memory/index.js';
-import { i18n } from '../shared/lib/i18n.js';
+import { i18n, i18nAdapter } from '../shared/lib/i18n.js';
 import { createAppRouter } from './app.js';
 
 export { FileCenterDemo };
@@ -64,7 +64,7 @@ function App({ router, service, savedFilters, queryClient }: {
             deduplicateCssVariables={false}
             getRootElement={() => undefined}
           >
-            <OverlaysProvider config={LOOK.overlaysConfig}>
+            <OverlaysProvider config={{ ...LOOK.overlaysConfig, i18n: i18nAdapter }}>
               <Scope>
                 <RouterProvider router={router} />
               </Scope>

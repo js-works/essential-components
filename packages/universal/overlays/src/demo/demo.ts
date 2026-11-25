@@ -123,7 +123,7 @@ function reconfigureToasts(): void {
   toasts.configure(toastOptions());
 }
 
-// A single controller for the whole page. getText / icons are optional;
+// A single controller for the whole page. i18n / icons are optional;
 // omitting them uses the library's built-in English texts and default icons, and the
 // library's own (native) action buttons.
 // The demo's primary color: the dialogs' primary buttons, and the focus of the form fields below.

@@ -16,7 +16,7 @@ export type {
 type FileUploadClassConfig = {
   theme?: FileUploadTheme;
   styles?: string;
-  i18n?: { type: 'factory'; getAdapter: (element: FileUploadElement) => I18nAdapter };
+  i18n?: I18nAdapter;
 };
 
 type FileUploadClass = {

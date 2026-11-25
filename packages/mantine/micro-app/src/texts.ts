@@ -1,8 +1,19 @@
+import cockpitDe from '@local/cockpit/locales/de.json' with { type: 'json' };
+import cockpitEn from '@local/cockpit/locales/en.json' with { type: 'json' };
+import dataTableDe from '@local/data-table/locales/de.json' with { type: 'json' };
+import dataTableEn from '@local/data-table/locales/en.json' with { type: 'json' };
+import formValidationDe from '@local/form-validation/locales/de.json' with { type: 'json' };
+import formValidationEn from '@local/form-validation/locales/en.json' with { type: 'json' };
+import overlaysDe from '@local/overlays/locales/de.json' with { type: 'json' };
+import overlaysEn from '@local/overlays/locales/en.json' with { type: 'json' };
+
 export { microAppResources };
 
-// The texts of the building blocks, in English and German, as i18next resources, which the app adds to its instance
-// (`resources: { en: { ...microAppResources.en, app: … }, … }`): the namespace `microApp`, `dataTable`, the data
-// table's texts, and `cockpit`, the app header's (their English ones are their own defaults).
+// The texts of the building blocks, in English and German, as i18next resources (ICU messages: the app's i18next uses
+// `i18next-icu`), which the app adds to its instance (`resources: { en: { ...microAppResources.en, app: … }, … }`):
+// the namespace `microApp`, and the translations of the tier-1 packages it uses, as they ship them (`cockpit`, the app
+// header's; `dataTable`; `formValidation`; `overlays`). An app with another of them (e.g. `fileUpload`) adds its
+// `locales/*.json` the same way.
 const microAppTexts = {
   en: {
     home: 'Home',
@@ -18,111 +29,19 @@ const microAppTexts = {
   },
 } as const;
 
-// The data table's texts in German (the namespace `dataTable`, its keys).
-const dataTableGerman: Readonly<Record<string, string>> = {
-  selectedCount: '{count} ausgewählt',
-  itemRange: '{from}-{to} von {total}',
-  itemSingle: '{item} von {total}',
-  pageSize: 'Seitengröße',
-  perPage: '{count} pro Seite',
-  pageOf: '{page} von {pages}',
-  goToPage: 'Seite {page}',
-  previousPage: 'Vorherige Seite',
-  nextPage: 'Nächste Seite',
-  empty: 'Keine Einträge',
-  emptySearch: 'Keine Ergebnisse gefunden',
-  searchPlaceholder: 'Suchen',
-  clearFilter: 'Filter löschen',
-  filterAll: 'Alle',
-  filterPlaceholder: 'Filtern',
-  clearSearch: 'Suche löschen',
-  reload: 'Neu laden',
-  loading: 'Lädt…',
-  selectAll: 'Alle Zeilen auswählen',
-  deselectAll: 'Auswahl aller Zeilen aufheben',
-  selectRow: 'Zeile auswählen',
-  deselectRow: 'Zeilenauswahl aufheben',
-  expandAllDetails: 'Alle Details anzeigen',
-  collapseAllDetails: 'Alle Details ausblenden',
-  expandDetails: 'Details anzeigen',
-  collapseDetails: 'Details ausblenden',
-  sortAsc: 'Aufsteigend sortieren',
-  sortDesc: 'Absteigend sortieren',
-  calendarPrevious: 'Zurück',
-  calendarNext: 'Weiter',
-  clear: 'Löschen',
-  filters: 'Filter',
-  activeFilters: '{count} aktiv',
-  resetFilters: 'Zurücksetzen',
-  applyFilters: 'Anwenden',
-  cancelFilters: 'Abbrechen',
-  clearAllFilters: 'Alle entfernen',
-  removeFilter: 'Filter entfernen',
-  emptyFilters: 'Keine Zeilen passen zu diesen Filtern',
-  clearFilters: 'Filter entfernen',
-  textMatch: 'Vergleich',
-  textContains: 'enthält',
-  textStartsWith: 'beginnt mit',
-  textEndsWith: 'endet mit',
-  rangeFrom: 'Von',
-  rangeTo: 'Bis',
-  filterYes: 'Ja',
-  filterNo: 'Nein',
-  typeToSearch: 'Zum Suchen tippen',
-  loadFailed: 'Konnte nicht geladen werden',
-  removeValue: '{label} entfernen',
-  clearSelection: 'Auswahl aufheben',
-  columns: 'Spalten',
-  resetColumnWidths: 'Spaltenbreiten zurücksetzen',
-  optimizeColumnWidths: 'Spaltenbreiten optimieren',
-  layout: 'Darstellung',
-  layoutAuto: 'Automatisch',
-  layoutTable: 'Tabelle',
-  layoutCards: 'Karten',
-  moveRow: 'Zeile verschieben',
-  emptyGroup: '(Leer)',
-  movedTo: 'Auf Position {position} verschoben',
-  expandGroup: 'Gruppe anzeigen',
-  collapseGroup: 'Gruppe ausblenden',
-  selectGroup: 'Gruppe auswählen',
-  deselectGroup: 'Auswahl der Gruppe aufheben',
-  groupCount: '{count}',
-  groupPartial: '{shown} von {total}',
-  totalCount: '{count}',
-  confirmEdit: 'OK',
-  confirmNew: 'Hinzufügen',
-  cancelEdit: 'Abbrechen',
-  saveFailed: 'Die Zeile konnte nicht gespeichert werden',
-  editRow: 'Zeile bearbeiten',
-  newRow: 'Neue Zeile',
-  savedFilters: 'Gespeicherte Filter',
-  saveFilter: 'Speichern unter…',
-  filterName: 'Name',
-  confirmSaveFilter: 'Speichern',
-  cancelSaveFilter: 'Abbrechen',
-  saveFilterFailed: 'Der Filter konnte nicht gespeichert werden',
-  deleteSavedFilter: '{name} löschen',
-  shareFilter: 'Teilen',
-  sharedFilter: 'Geteilt',
-  privateFilter: 'Privat',
-  filterOwner: 'von {name}',
-  shareSavedFilter: '{name} teilen',
-};
-
-// The app header's texts in German (the namespace `cockpit`, the cockpit's keys; its English ones are its own
-// defaults).
-const cockpitGerman: Readonly<Record<string, string>> = {
-  home: 'Start',
-  back: 'Zurück',
-  forward: 'Vorwärts',
-  backTo: 'Zurück zu {{page}}',
-  forwardTo: 'Weiter zu {{page}}',
-  modules: 'Module',
-  switchApp: 'App wechseln',
-  breadcrumb: 'Navigationspfad',
-};
-
 const microAppResources = {
-  en: { microApp: microAppTexts.en, dataTable: {}, cockpit: {} },
-  de: { microApp: microAppTexts.de, dataTable: dataTableGerman, cockpit: cockpitGerman },
+  en: {
+    microApp: microAppTexts.en,
+    cockpit: cockpitEn,
+    dataTable: dataTableEn,
+    formValidation: formValidationEn,
+    overlays: overlaysEn,
+  },
+  de: {
+    microApp: microAppTexts.de,
+    cockpit: cockpitDe,
+    dataTable: dataTableDe,
+    formValidation: formValidationDe,
+    overlays: overlaysDe,
+  },
 } as const;

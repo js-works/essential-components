@@ -30,7 +30,8 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   `NavLayout`, `NavScheme`), `menus.ts` (`FooterAction`, `ActionChoice`, `ActionChoices`, `MenuItem`, `MenuSection`,
   `SignedInUser`, `CockpitFooter`), `header.ts` (the app header's: `AppHeaderElement`, `AppHeaderClass`,
   `AppHeaderClassConfig`, `AppHeaderLink`, `AppHeaderCrumb`, `AppHeaderStep`, `AppHeaderNavigateDetail`), `theme.ts`
-  (`CockpitTheme`, `AppHeaderTheme`), `texts.ts` (`CockpitTexts`), `i18n.ts` (`I18nAdapter`).
+  (`CockpitTheme`, `AppHeaderTheme`), `texts.ts` (`CockpitTextKey`, `CockpitParams`, read from the English texts), `i18n.ts`
+  (`I18nAdapter`, `TextParams`: a verbatim copy of those in `frontend/i18n.md`).
   `src/main/index.ts` exports them flat (`typescript.md`): `import type { NavItem } from '@local/cockpit'`. The demos'
   variables of the element are `cockpitElement` or `element`.
 - Lit, with `@floating-ui/dom` (the menus' positions and the tooltips); the menus and the group select are our own
@@ -450,12 +451,17 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   - The demos' "Accent color" choice (`accentSetting()` in `src/demo/footer.ts`) sets the cockpit's `theme.accent` (merged
     into its theme, once the element is defined), and `--app-accent-color` on `<html>` for the page (the root page
     maps it to its apps).
-- Texts (`i18n.md`): English only in the package (`core/texts.ts`, `CockpitTexts`), the namespace `'cockpit'`; the
-  app gives an `I18nAdapter` in the config (`i18n: { type: 'factory', getAdapter }`, of `createCockpitClass` and
-  `createAppHeaderClass`; asked once on the first connect, its `onChange` re-renders). Without one: English and
-  `en-US`, the page's language is never read. Params: `items` (`{ count }`; the English singular and plural are the
-  `defaultValue`, a translation's plural is the adapter's), `closeTask` (`{ title }`), `backTo`, `forwardTo`
-  (`{ page }`). The taskbar gets the cockpit's texts as a property (`texts`).
+- Texts (`i18n.md`): English only in the package, as functions of their values and the locale (`src/main/texts/en.ts`,
+  the master), the namespace `'cockpit'`; the app gives an `I18nAdapter` in the config (`i18n: i18nAdapter`, of
+  `createCockpitClass` and `createAppHeaderClass`, the same for every element of the class; its `onChange`
+  re-renders). `textsOf` (`core/texts.ts`) asks `translate(namespace, key, params)`; `null` (or no adapter): the English
+  text, formatted in the adapter's locale (`en-US` without one; the page's language is never read). Params: `items`
+  (`{ count }`, the English plural by `count === 1`), `closeTask` (`{ title }`), `backTo`, `forwardTo` (`{ page }`).
+  The taskbar gets the cockpit's texts as a property (`texts`).
+  - The translations: ICU messages, `locales/en.json`, `locales/de.json` (exported as
+    `@local/cockpit/locales/*.json`), which the app loads into its i18n under the namespace `cockpit`. Derived from
+    the master by hand (or the AI) after every change; `src/test/texts/texts.test.ts` checks their keys and
+    placeholders (`npm test`, Vitest).
 - The demos' German (`src/demo/i18n.ts`, `DEMO_I18N`): an adapter that follows `<html lang>` (the footer's language
   switch), used by the cockpit's demo and the root page.
 - Remembered per browser (`localStorage`, `storageKey`, ignored when storage fails): the recent apps, the rail, the
@@ -484,7 +490,7 @@ This repository's rules for it (see the root's `CLAUDE.md`):
 - Three trees in `src/` (`general.md`): `main/`, `demo/`, `test/` (none yet).
 - `src/main/api/`: the types (by topic); `src/main/element/`: the custom element (`cockpit-element-base.ts`, `CockpitElementBase`, Lit: shadow root,
   light-DOM apps, routing, the whole UI; `create-cockpit-class.ts`), `menu.ts` (the menus), `icons.ts`, its CSS
-  (`styles.ts`); the taskbar (`taskbar-element.ts`, `taskbar-styles.ts`); `src/main/core/`: search, texts, storage; `src/demo/i18n.ts`: the demos' German.
+  (`styles.ts`); the taskbar (`taskbar-element.ts`, `taskbar-styles.ts`); `src/main/core/`: search, texts, storage; `src/main/texts/en.ts`: the English texts; `locales/`: the ICU messages; `src/demo/i18n.ts`: the demos' German.
 - `src/demo/`: the package's demo (`npm run dev`), with 3, 30 or 100 apps (the "Apps" choice in the footer; `?apps=some`,
   `?apps=many`); the 100 apps with `groupDisplay: 'select'`; in the 30 and 100 apps every app has a group and a
   subgroup (no "Other"); `src/demo/ui/`: the design language (a copy, like in every package). Each made-up app
@@ -500,7 +506,7 @@ This repository's rules for it (see the root's `CLAUDE.md`):
 - `npm run loc` (`src/main`), `npm run loc:all` (all of `src`): the lines (all, code, comments, blank) by kind and by folder,
   with each one's share of the code as a bar (`scripts/loc.mjs`). sloc counts each file; the kind comes from its name,
   as the CSS and the icons live in TypeScript: `*styles.ts` is "CSS (in TS)", `icons.ts` "SVG (in TS)", other `.ts`
-  TypeScript, `.css` CSS. `src/demo/ui` is marked as a copy of ui-theme.
+  TypeScript, `.css` CSS. `src/demo/ui` is marked as a copy of the design language.
 
 ## Plans
 

@@ -1,8 +1,10 @@
 import i18next from 'i18next';
+import ICU from 'i18next-icu';
 import { useTranslation } from 'react-i18next';
 
-import type { I18nAdapter } from '@local/file-upload';
-import { microAppResources } from '@local/micro-app';
+import fileUploadDe from '@local/file-upload/locales/de.json' with { type: 'json' };
+import fileUploadEn from '@local/file-upload/locales/en.json' with { type: 'json' };
+import { i18nAdapterOf, microAppResources } from '@local/micro-app';
 
 import { de } from './locales/de.js';
 import { en } from './locales/en.js';
@@ -29,7 +31,7 @@ const i18n = i18next.createInstance();
 
 const pageLanguage = () => document.documentElement.lang || 'en';
 
-void i18n.init({
+void i18n.use(ICU).init({
   // The resources are inline, so `init` finishes synchronously.
   initAsync: false,
   lng: pageLanguage(),
@@ -37,10 +39,12 @@ void i18n.init({
   // Only these two; `de-DE` and `en-US` are `de` and `en`.
   supportedLngs: ['en', 'de'],
   nonExplicitSupportedLngs: true,
-  ns: ['app', 'microApp', 'dataTable'],
   defaultNS: 'app',
-  // The building blocks' texts (`@local/micro-app`: its own and the data table's) beside the app's.
-  resources: { en: { ...microAppResources.en, app: en }, de: { ...microAppResources.de, app: de } },
+  // The building blocks' texts (`@local/micro-app`: its own and its packages'; the file upload's) beside the app's.
+  resources: {
+    en: { ...microAppResources.en, fileUpload: fileUploadEn, app: en },
+    de: { ...microAppResources.de, fileUpload: fileUploadDe, app: de },
+  },
   interpolation: { escapeValue: false }, // React escapes
 });
 
@@ -73,14 +77,6 @@ function translateKey(key: string, params?: object): string {
   return resolve(key, { ...params });
 }
 
-// The adapter of the components (the file upload): a namespace i18next does not know (e.g. 'fileUpload') gives the
-// `defaultValue`, the text of the component.
-const i18nAdapter: I18nAdapter = {
-  currentLocale: () => i18n.language,
-  resolveText: (namespace, key, params, defaultValue) => resolve(key, { ns: namespace, ...params, defaultValue }),
-  onChange: (listener) => {
-    i18n.on('languageChanged', listener);
-
-    return () => i18n.off('languageChanged', listener);
-  },
-};
+// The adapter of the tier-1 packages (the file upload, form-validation, the overlays): `@local/micro-app`'s, over this
+// instance.
+const i18nAdapter = i18nAdapterOf(i18n);

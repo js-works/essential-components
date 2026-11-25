@@ -5,6 +5,7 @@ import { Fragment, useContext, useEffect, useId, useLayoutEffect, useRef, useSta
 import type * as Spec from '../../api/react/index.js';
 import { useThemed } from '../config.js';
 import { sameValue, withoutKey } from '../filters.js';
+import type { Texts } from '../texts.js';
 import { useLocale } from '../texts.js';
 import { flag } from '../utils.js';
 import * as styles from './classes.js';
@@ -50,7 +51,7 @@ const FILTER_DRAWER_CLOSE_TIME = 500;
 type FilterButtonProps = {
   count: number;
   open: boolean;
-  texts: Spec.DataTableTexts;
+  texts: Texts;
   buttonRef: Ref<HTMLButtonElement>;
   onToggle: () => void;
   // Removes all filters at once (the × after the button).
@@ -98,7 +99,7 @@ function FilterButton({ count, open, texts, buttonRef, onToggle, onClear }: Filt
 type FilterViewProps = {
   columns: readonly FilterColumn[];
   filters: Filters;
-  texts: Spec.DataTableTexts;
+  texts: Texts;
   // The filter to focus when the view opens (a pill was clicked), else the first one.
   focusKey: string | undefined;
   // Closed, but still rolling up (its animation).
@@ -473,7 +474,7 @@ function FilterView(props: FilterViewProps) {
 type FilterPillsProps = {
   columns: readonly FilterColumn[];
   filters: Filters;
-  texts: Spec.DataTableTexts;
+  texts: Texts;
   // Undefined while the selection bar is shown: the filter button is not there then.
   onOpen: ((key: string) => void) | undefined;
   onRemove: (key: string) => void;
@@ -549,7 +550,7 @@ function FilterPills(props: FilterPillsProps) {
 type FilterDrawerProps = {
   columns: readonly FilterColumn[];
   filters: Filters;
-  texts: Spec.DataTableTexts;
+  texts: Texts;
   // The filter to focus when the drawer opens (a pill was clicked), else the first one.
   focusKey: string | undefined;
   // Closed, but still being covered up (its animation): gone for the user already.
@@ -839,7 +840,7 @@ function FilterSidebar(props: FilterDrawerProps) {
 type SavedFilterMenuProps = {
   savedFilters: Spec.SavedFilters;
   draft: Filters;
-  texts: Spec.DataTableTexts;
+  texts: Texts;
   onLoad: (filters: Filters) => void;
 };
 
@@ -957,7 +958,7 @@ type SaveFilterFooterProps = {
   width?: string;
   savedFilters: Spec.SavedFilters;
   draft: Filters;
-  texts: Spec.DataTableTexts;
+  texts: Texts;
   onLoad: (filters: Filters) => void;
 };
 

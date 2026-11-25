@@ -1,6 +1,7 @@
 import { MantineProvider } from '@mantine/core';
 import { cleanup, render, renderHook, screen, waitFor } from '@testing-library/react';
 import { createInstance } from 'i18next';
+import ICU from 'i18next-icu';
 import type { ReactNode } from 'react';
 import { initReactI18next } from 'react-i18next';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
@@ -42,7 +43,7 @@ const store: SavedFilterStore = {
 function wrapper(language: string) {
   const i18n = createInstance();
 
-  void i18n.use(initReactI18next).init({ lng: language, resources: microAppResources, initAsync: false });
+  void i18n.use(ICU).use(initReactI18next).init({ lng: language, resources: microAppResources, initAsync: false });
 
   return ({ children }: { children: ReactNode }) => (
     <MicroAppProvider i18n={i18n} savedFilters={store}>

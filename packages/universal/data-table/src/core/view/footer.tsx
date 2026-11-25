@@ -1,13 +1,13 @@
-import type * as Spec from '../../api/react/index.js';
 import { useThemed } from '../config.js';
 import { pagerSlots } from '../pager.js';
+import type { Texts } from '../texts.js';
 import * as classes from './classes.js';
 import { PageButton, PagerButton, PageSizeField } from './widgets.js';
 
 export { Footer };
 
 type FooterProps = {
-  texts: Spec.DataTableTexts;
+  texts: Texts;
   total: number;
   page: number;
   pageCount: number;

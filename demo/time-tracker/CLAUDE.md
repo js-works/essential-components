@@ -99,7 +99,8 @@ Started 2026-10-06.
 
 - English and German with i18next (its own instance; `shared/lib/i18n/`), following `<html lang>`, like the Board
   Manager. The keys are flat (`'leave.title'`, `keySeparator: false`) and typed by `en.ts` (`TextKey`); `de.ts` has the
-  same keys (its type says so). Plurals as `_one` and `_other`. No declaration of i18next's types
+  same keys (its type says so). The texts are ICU messages (`i18next-icu`; a plural `{count, plural, one {…} other
+  {…}}`). No declaration of i18next's types
   (`CustomTypeOptions`): it is global, and the Board Manager's would clash.
 - The labels of the forms: `<form>.<field>` (form-validation's `labels`); the server's refusals and the schemas' own
   messages: `errors.<key>`.

@@ -20,7 +20,8 @@
     "./react-query": {
       "source": "./src/react-query/index.ts",
       "default": "./dist/react-query.js"
-    }
+    },
+    "./locales/*.json": "./locales/*.json"
   },
   "scripts": {
     "dev": "vite",

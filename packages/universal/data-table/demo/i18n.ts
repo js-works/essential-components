@@ -1,9 +1,10 @@
-import type { DataTableTexts, I18nAdapter } from '../src/react/index.js';
+import type { DataTableTextKey, I18nAdapter } from '../src/react/index.js';
 
-export { i18n };
+export { i18n, useI18n };
 
-// The demo's translations. English is missing on purpose: the component's own texts are the defaults.
-const GERMAN: Readonly<Record<keyof DataTableTexts, string>> = {
+// The demo's translations, with `{name}` placeholders (the demo has no ICU; an app loads `locales/de.json` into its
+// i18n). English is missing on purpose: the component's own texts are the defaults.
+const GERMAN: Readonly<Record<DataTableTextKey, string>> = {
   selectedCount: '{count} ausgewählt',
   itemRange: '{from}-{to} von {total}',
   itemSingle: '{item} von {total}',
@@ -105,12 +106,13 @@ const currentLocale = () => root.lang || 'en-US';
 const adapter: I18nAdapter = {
   currentLocale,
 
-  resolveText: (namespace, key, params, defaultValue) => {
+  // `null` without a translation: then the component uses its English text.
+  translate: (namespace, key, params) => {
     const locale = currentLocale();
     const text = namespace === 'dataTable' ? TRANSLATIONS[locale.split('-')[0] ?? '']?.[key] : undefined;
 
     if (text === undefined) {
-      return defaultValue;
+      return null;
     }
 
     return text.replace(/\{(\w+)\}/g, (_, name: string) => {
@@ -130,6 +132,6 @@ const adapter: I18nAdapter = {
   },
 };
 
-// The i18n config of the demos (the React component and the element alike): every data table shares the one
-// adapter.
-const i18n = { type: 'factory', getAdapter: () => adapter } as const;
+// The i18n adapter of the demos (the React component and the element alike): every data table shares it.
+const i18n = adapter;
+const useI18n = () => adapter;

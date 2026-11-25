@@ -15,8 +15,9 @@
     "verbatimModuleSyntax": true,
     "allowArbitraryExtensions": true,
     "isolatedModules": true,
+    "resolveJsonModule": true,
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["src", "vite.config.ts"]
+  "include": ["src", "locales", "vite.config.ts"]
 }

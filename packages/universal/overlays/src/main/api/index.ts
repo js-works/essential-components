@@ -1,10 +1,10 @@
 export type * from "./dialogs/adapter.js";
 export type * from "./dialogs/content.js";
 export type * from "./dialogs/dialog.js";
-export type * from "./dialogs/texts.js";
 export type * from "./dialogs/theme.js";
+export type * from "./i18n.js";
+export type * from "./texts.js";
 export type * from "./theme.js";
 export type * from "./toasts/adapter.js";
-export type * from "./toasts/texts.js";
 export type * from "./toasts/theme.js";
 export type * from "./toasts/toast.js";

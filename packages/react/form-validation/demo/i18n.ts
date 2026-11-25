@@ -6,7 +6,8 @@ export { adapter, text, useLocale };
 
 // The demo's i18n: the texts of the demo and the app's keys for the form (labels, messages of the schema and the
 // server), in English and German. It follows `<html lang>`, which the page's switch sets (a MutationObserver reports
-// a change). The messages of the library come from its own catalogs.
+// a change). The library's messages stay English, its default (formatted for the page's language): its German ICU
+// messages (`locales/de.json`) need an i18n with ICU, which this small demo has not.
 const TEXTS: Readonly<Record<'en' | 'de', Readonly<Record<string, string>>>> = {
   en: {
     'demo.intro': 'The schema is the only place that says what a valid value is. The fields only render.',
@@ -82,6 +83,6 @@ const useLocale = (): string => useSyncExternalStore(subscribe, () => document.d
 
 const adapter: I18nAdapter = {
   currentLocale: () => document.documentElement.lang || 'en',
-  resolveText: (_namespace, key, _params, defaultValue) => TEXTS[language()][key] ?? defaultValue,
+  translate: (namespace, key) => (namespace === 'formValidation' ? null : (TEXTS[language()][key] ?? null)),
   onChange: subscribe,
 };

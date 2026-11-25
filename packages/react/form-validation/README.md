@@ -10,7 +10,7 @@ truth, the rendering stays with your own field components.
 import { defineUseForm } from '@local/form-validation';
 
 export const useForm = defineUseForm({
-  i18n: { type: 'factory', getAdapter: () => i18nAdapter }, // or { type: 'hook', useAdapter }
+  useI18n: () => i18nAdapter, // optional, a hook: the adapter of the app's i18n
   appNamespace: 'myapp', // optional, the namespace of the app's keys (default: 'app')
   props: { label: 'label', error: 'errorText', invalid: 'invalid' }, // invalid: optional
   bindings: { date: fancyDate }, // optional, per semantic type
@@ -19,33 +19,59 @@ export const useForm = defineUseForm({
 
 ## Localization
 
-The adapter has the same shape as the one of the data table and the file upload, so one object fits all of them:
+The adapter's type is the same in every library with texts, so one object fits them all:
 
 ```ts
-import type { formValidation } from '@local/form-validation';
+import type { I18nAdapter } from '@local/form-validation';
 
-const i18nAdapter: formValidation.I18nAdapter = {
+const i18nAdapter: I18nAdapter = {
   currentLocale: () => myI18n.language,
-  resolveText: (namespace, key, params, defaultValue) => myI18n.t(key, { ns: namespace, ...params, defaultValue }),
+  translate: (namespace, key, params) => (myI18n.exists(key, namespace) ? myI18n.t(key, namespace, params) : null),
   onChange: (listener) => myI18n.subscribe(listener), // returns the unsubscribe function
 };
 ```
 
-- `i18n` says where the adapter comes from:
-  - `{ type: 'factory', getAdapter: (element) => I18nAdapter }`: asked once per form, with its `<form>` element (the
-    one `form()` is spread on), when it is committed, before the first paint (the texts are rendered once more). So an
-    adapter can read e.g. the `lang` of an ancestor (two parts of a page in two languages). A shared adapter:
-    `getAdapter: () => i18nAdapter`. Without `form()` on a `<form>`, the factory is never asked (a warning in
-    development mode).
-  - `{ type: 'hook', useAdapter: () => I18nAdapter }`: called in `useForm` on every render (e.g. for a React context).
-  - Another `type` (e.g. the old `{ useLocale, translate }`) makes `defineUseForm` throw a `TypeError`.
-- `resolveText` gets the text the library would show as `defaultValue` (already filled in) and returns it if it has no
-  translation.
-  - The library's messages: namespace `'formValidation'`, the key (`'number.min'`, ...) and the raw params.
+- `useI18n` gives the adapter: a hook, called in `useForm` on every render. A global instance: `() => i18nAdapter`. An
+  i18n that only exists inside React (a provider, a library with only a hook) builds it there; keep it the same object
+  while nothing changes:
+  ```ts
+  useI18n: () => {
+    const translator = useXyzTranslator();
+    return useMemo(() => toAdapter(translator), [translator]);
+  },
+  ```
+- `translate` returns the translation, or `null` when there is none: then the library uses its own text.
+  - The library's messages (its English text without a translation, `en-US` formatting): namespace `'formValidation'`, the key (`'number.min'`, ...) and the raw params (numbers,
+    dates; a length that drives a plural as `count`). Their types: `FormValidationTextKey`, `FormValidationParams`.
   - The app's keys (labels, messages of the schema or the server): the namespace `appNamespace`, params `null` for
-    labels.
+    labels. Without a translation: the humanized field name, the literal text of the schema or the server.
 - `onChange` is subscribed while the form is mounted: a change of the language renders the form again.
-- Without an adapter (or before the factory is asked): English texts and `en-US` formatting.
+- Without an adapter: English texts and `en-US` formatting.
+
+The translations: ICU messages as JSON, one file per language (`locales/en.json`, `locales/de.json`), for an i18n with ICU
+(FormatJS, i18next with `i18next-icu`), under the namespace `formValidation`, e.g. loaded on demand:
+
+```ts
+i18n
+  .use(ICU)
+  .use(
+    resourcesToBackend((lng, ns) =>
+      ns === 'formValidation'
+        ? import(`@local/form-validation/locales/${lng}.json`)
+        : import(`./locales/${lng}/${ns}.json`)
+    ),
+  )
+  .init({ ns: ['app', 'formValidation'], fallbackLng: 'en' });
+```
+
+- The adapter's `onChange` listens to i18next's `loaded` too, not only `languageChanged`: until a file arrives, the
+  form shows its English texts.
+- `en.json` is American English, the same texts as the library's default (`src/texts/en.ts`, functions of the values
+  and the locale, the master); with it, the app's i18n knows every key (no missing keys). Another variant (`en-GB`,
+  `de-CH`) only for keys whose wording differs; the formatting follows the locale anyway.
+- An app without ICU translates the messages in its own format (the keys and values: `FormValidationParams`), or keeps
+  the English ones.
+- A test checks that the files match the master (keys, values).
 
 ## Usage
 
@@ -87,9 +113,8 @@ is required automatically.
 
 **Labels by convention:** `labels: 'signup'` plus the field path gives `signup.email`, translated by the adapter.
 Different keys with `formMeta(schema, { labelKey })` (applies everywhere) or `field.x({ labelKey })` or
-`field.x({ label })` (only here). If a translation is missing (the adapter returns the `defaultValue`), the field name
-is humanized. Without an adapter, a missing label is also reported as a warning in development mode; with one, the i18n
-library reports its missing keys itself (a translation may equal the humanized name).
+`field.x({ label })` (only here). If a translation is missing (the adapter returns `null`, or there is no adapter), the
+field name is humanized, and reported as a warning in development mode.
 
 **Validation strategy:** a field shows errors only after a change and a blur, then live on every input. On submit,
 everything is shown and the first invalid field is focused. Per field differently with `validateOn: 'change'`.
@@ -103,11 +128,11 @@ invalid prop (`props.invalid`) gets `true` while the field is marked as invalid,
 Without it, a component sees the mark only in `aria-invalid` and `data-user-invalid`. One prop for both, e.g. Mantine's
 `error` (a text, or `true` for red without one): `props: { label: 'label', error: 'error', invalid: 'error' }`.
 
-**Error messages:** the default errors come from bundled catalogs (de, en) with
-`Intl` formatting and plural rules. `min` and `max` together become "between". Errors are stored as keys and only
-translated when rendering, so a change of the locale applies at once. Order: an explicit message in the schema,
-`messages` from the config, the library catalog (exact locale, base language, fallback); the result goes to the app
-adapter as `defaultValue`, so the adapter has the last word.
+**Error messages:** the default errors are keys with raw values, translated by the app's adapter; the library's
+English text (`en-US` formatting, English's plural) is the default. `min` and `max` together become "between".
+Errors are stored as keys and only translated when rendering, so a change of the locale applies at once. An explicit
+message in the schema (or of the server) is a key of the app (`appNamespace`), or a literal text if nothing translates
+it.
 
 **Variadic field arguments:** `field.x(binding, { onBlur }, condition && extra)` is merged from left to right. Handlers
 are chained (the library first), refs combined, everything else overrides. `false`, `null` and `undefined` are ignored.

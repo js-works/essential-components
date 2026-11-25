@@ -3,8 +3,9 @@ import { html, LitElement, nothing } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 
+import type { Texts } from '../core/texts.js';
 import { textsOf } from '../core/texts.js';
-import type { CockpitTexts, CockpitTheme } from '../index.js';
+import type { CockpitTheme } from '../index.js';
 import { closeIcon, initialsIcon } from './icons.js';
 import { taskbarStyles } from './taskbar-styles.js';
 
@@ -61,7 +62,7 @@ class TaskbarElement extends LitElement {
   // The look (2026-10-10): the cockpit passes its own; alone, the defaults. Its stylesheet is built from it.
   declare theme: CockpitTheme;
   // The cockpit's texts (through its adapter).
-  declare texts: CockpitTexts;
+  declare texts: Texts;
   readonly #themeSheet = new CSSStyleSheet();
 
   // A task was closed from inside: the focus goes to the active task once the host has removed it.

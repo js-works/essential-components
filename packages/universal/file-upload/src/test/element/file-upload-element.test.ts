@@ -1088,15 +1088,10 @@ describe('file upload element', () => {
 
       const i18n = {
         currentLocale: () => locale,
-        resolveText: vi.fn((
-          _namespace: string,
-          key: string,
-          params: Readonly<Record<string, unknown>> | null,
-          defaultValue: string,
-        ) => {
+        translate: vi.fn((_namespace: string, key: string, params: Readonly<Record<string, unknown>> | null) => {
           const text = locale.startsWith('de') ? german[key] : undefined;
 
-          return text?.replace(/\{(\w+)\}/g, (_, name: string) => String(params?.[name])) ?? defaultValue;
+          return text?.replace(/\{(\w+)\}/g, (_, name: string) => String(params?.[name])) ?? null;
         }),
         onChange: vi.fn((listener: () => void) => {
           listeners.add(listener);
@@ -1118,7 +1113,7 @@ describe('file upload element', () => {
 
       customElements.define(
         tag,
-        class extends createFileUploadClass({ i18n: { type: 'factory', getAdapter: () => i18n } }) {},
+        class extends createFileUploadClass({ i18n }) {},
       );
 
       const { upload, pending } = createUpload();
@@ -1130,18 +1125,23 @@ describe('file upload element', () => {
       return { element, upload, pending, ...queries(element) };
     }
 
-    it('asks the adapter for every text, with the namespace, the params and the English default', () => {
+    it('asks the adapter for every text, with the namespace and the raw params; without a translation, English', () => {
       const { i18n } = createI18n();
-      const { ui } = mountWith(i18n, { maxFiles: 3 });
+      const { ui } = mountWith(i18n, { maxFiles: 3000 });
 
       expect(ui.getByRole('button', { name: 'Browse' })).toBeTruthy();
-      expect(i18n.resolveText).toHaveBeenCalledWith('fileUpload', 'browse', null, 'Browse');
-      expect(i18n.resolveText).toHaveBeenCalledWith(
-        'fileUpload',
-        'hintMaxFiles',
-        { count: 3 },
-        'Maximum number of files: 3',
-      );
+      expect(i18n.translate).toHaveBeenCalledWith('fileUpload', 'browse', null);
+      expect(i18n.translate).toHaveBeenCalledWith('fileUpload', 'hintMaxFiles', { count: 3000 });
+      expect(ui.getByText(/Maximum number of files: 3,000/)).toBeTruthy();
+    });
+
+    it('formats the English texts in the adapter\'s locale', () => {
+      const { i18n, setLocale } = createI18n();
+      const { ui } = mountWith(i18n, { maxFiles: 3000 });
+
+      setLocale('en-IN');
+      expect(ui.getByText(`Maximum number of files: ${(3000).toLocaleString('en-IN')}`, { exact: false }))
+        .toBeTruthy();
     });
 
     it('refreshes all texts and sizes when the adapter reports a change', () => {
@@ -1173,25 +1173,6 @@ describe('file upload element', () => {
 
       expect(listeners.size).toBe(1);
       expect(ui.getByRole('button', { name: 'Durchsuchen' })).toBeTruthy();
-    });
-
-    it('asks the factory once per element, on its first connect, with the element', () => {
-      const { i18n } = createI18n();
-      const getAdapter = vi.fn((_element: FileUploadElement) => i18n);
-      const tag = `i18n-upload-${crypto.randomUUID()}`;
-
-      customElements.define(tag, class extends createFileUploadClass({ i18n: { type: 'factory', getAdapter } }) {});
-
-      const first = document.createElement(tag) as FileUploadElement;
-      const second = document.createElement(tag) as FileUploadElement;
-
-      expect(getAdapter).not.toHaveBeenCalled();
-
-      document.body.append(first, second);
-      first.remove();
-      document.body.append(first);
-
-      expect(getAdapter.mock.calls.map(([element]) => element)).toEqual([first, second]);
     });
 
     it('formats in en-US when the locale is invalid', () => {

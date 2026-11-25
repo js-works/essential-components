@@ -1,7 +1,7 @@
 export { en };
 
-// The English texts (the default and the fallback). The structure (and the keys of the plurals, `_one`/`_other`) is the
-// type of every other language: a missing text is an error of `tsc` (see `de.ts`, `index.ts`).
+// The English texts (the default and the fallback). The structure is the type of every other language, the texts
+// ICU messages (a plural: `{count, plural, one {…} other {…}}`): a missing text is an error of `tsc` (see `de.ts`, `index.ts`).
 const en = {
   // The labels of the forms (form-validation: `labels: '<form>'`, keys like `person.email`).
   organization: {
@@ -77,13 +77,13 @@ const en = {
     uploadFailed: 'Retry or remove the files that failed.',
     urlInvalid: 'Not a valid URL',
     nameRequired: 'The name is required.',
-    organizationExists: 'There is already an organization "{{name}}".',
+    organizationExists: 'There is already an organization "{name}".',
     websiteInvalid: 'The website is not a valid URL.',
     nameEmpty: 'The name must not be empty.',
     documentMissing: 'The document does not exist anymore.',
   },
 
-  // Boards (the list, a board's page, its members). Plurals: `_one` is a single one (with its name), `_other` the
+  // Boards (the list, a board's page, its members). Plurals: `one` is a single one (with its name), `other` the
   // selected ones (with their number).
   boards: {
     listSubtitle: 'The boards and committees. Open one for its meetings and members.',
@@ -105,27 +105,21 @@ const en = {
     new: 'New board',
     created: 'Board created',
     editTitle: 'Edit board',
-    saved: '"{{name}}" saved',
-    deleteTitle_one: 'Delete board',
-    deleteTitle_other: 'Delete boards',
-    deleteContent_one:
-      'Delete "{{name}}", including its meetings ({{meetings}}), agendas, minutes and documents?\nThis cannot be undone.',
-    deleteContent_other:
-      'Delete the {{count}} selected boards, including their meetings ({{meetings}}), agendas, minutes and documents?\nThis cannot be undone.',
-    deleted_one: '"{{name}}" deleted',
-    deleted_other: '{{count}} boards deleted',
+    saved: '"{name}" saved',
+    deleteTitle: '{count, plural, one {Delete board} other {Delete boards}}',
+    deleteContent:
+      '{count, plural, one {Delete "{name}", including its meetings ({meetings}), agendas, minutes and documents?\nThis cannot be undone.} other {Delete the # selected boards, including their meetings ({meetings}), agendas, minutes and documents?\nThis cannot be undone.}}',
+    deleted: '{count, plural, one {"{name}" deleted} other {# boards deleted}}',
     addMember: 'Add member',
     allAreMembers: 'Everyone is a member of this board already.',
     memberAdded: 'Member added',
     changeRole: 'Change role',
-    roleOf: 'Role of {{name}}',
+    roleOf: 'Role of {name}',
     roleChanged: 'Role changed',
-    removeTitle_one: 'Remove member',
-    removeTitle_other: 'Remove members',
-    removeContent_one: 'Remove {{name}} from "{{board}}"?',
-    removeContent_other: 'Remove the {{count}} selected members from "{{board}}"?',
-    removed_one: '"{{name}}" removed',
-    removed_other: '{{count}} members removed',
+    removeTitle: '{count, plural, one {Remove member} other {Remove members}}',
+    removeContent:
+      '{count, plural, one {Remove {name} from "{board}"?} other {Remove the # selected members from "{board}"?}}',
+    removed: '{count, plural, one {"{name}" removed} other {# members removed}}',
   },
 
   members: {
@@ -146,17 +140,14 @@ const en = {
     created: 'Member created',
     editTitle: 'Edit member',
     saved: 'Member saved',
-    deleteTitle_one: 'Delete member',
-    deleteTitle_other: 'Delete members',
-    deleteQuestion_one: 'Delete "{{name}}"?',
-    deleteQuestion_other: 'Delete the {{count}} selected members?',
-    alsoRemoved_one: 'This also removes them from {{count}} board.',
-    alsoRemoved_other: 'This also removes them from {{count}} boards.',
-    deleted_one: '"{{name}}" deleted',
-    deleted_other: '{{count}} members deleted',
+    deleteTitle: '{count, plural, one {Delete member} other {Delete members}}',
+    deleteQuestion: '{count, plural, one {Delete "{name}"?} other {Delete the # selected members?}}',
+    alsoRemoved:
+      '{count, plural, one {This also removes them from # board.} other {This also removes them from # boards.}}',
+    deleted: '{count, plural, one {"{name}" deleted} other {# members deleted}}',
     openBoard: 'Open board',
     boardsSubtitle: 'The boards of this member. Memberships are changed on the page of a board.',
-    meetingsSubtitle: 'The meetings of the boards of {{name}}, the latest first.',
+    meetingsSubtitle: 'The meetings of the boards of {name}, the latest first.',
   },
 
   organizations: {
@@ -171,19 +162,16 @@ const en = {
     },
     overview: { name: 'Name', zipCity: 'ZIP code, city', people: 'People' },
     people: 'People',
-    peopleSubtitle: 'The people of {{name}}. A new one belongs to it.',
+    peopleSubtitle: 'The people of {name}. A new one belongs to it.',
     new: 'New organization',
     created: 'Organization created',
     editTitle: 'Edit organization',
-    saved: '"{{name}}" saved',
-    deleteTitle_one: 'Delete organization',
-    deleteTitle_other: 'Delete organizations',
-    deleteQuestion_one: 'Delete "{{name}}"?',
-    deleteQuestion_other: 'Delete the {{count}} selected organizations?',
-    leaves_one: 'This leaves {{count}} person without an organization.',
-    leaves_other: 'This leaves {{count}} people without an organization.',
-    deleted_one: '"{{name}}" deleted',
-    deleted_other: '{{count}} organizations deleted',
+    saved: '"{name}" saved',
+    deleteTitle: '{count, plural, one {Delete organization} other {Delete organizations}}',
+    deleteQuestion: '{count, plural, one {Delete "{name}"?} other {Delete the # selected organizations?}}',
+    leaves:
+      '{count, plural, one {This leaves # person without an organization.} other {This leaves # people without an organization.}}',
+    deleted: '{count, plural, one {"{name}" deleted} other {# organizations deleted}}',
     opensInNewTab: '(opens in a new tab)',
   },
 
@@ -208,26 +196,23 @@ const en = {
     editTitle: 'Edit meeting',
     saved: 'Meeting saved',
     cancel: 'Cancel meeting',
-    cannotCancel: '"{{title}}" is {{status}}.\nOnly a planned meeting can be cancelled.',
-    cancelContent: 'Cancel "{{title}}" on {{date}}?',
+    cannotCancel: '"{title}" is {status}.\nOnly a planned meeting can be cancelled.',
+    cancelContent: 'Cancel "{title}" on {date}?',
     keep: 'Keep',
-    cancelled: '"{{title}}" cancelled',
-    deleteTitle_one: 'Delete meeting',
-    deleteTitle_other: 'Delete meetings',
-    deleteContent_one: 'Delete "{{name}}", with the agenda, the minutes and the documents?\nThis cannot be undone.',
-    deleteContent_other:
-      'Delete the {{count}} selected meetings, with the agendas, the minutes and the documents?\nThis cannot be undone.',
-    deleted_one: '"{{name}}" deleted',
-    deleted_other: '{{count}} meetings deleted',
+    cancelled: '"{title}" cancelled',
+    deleteTitle: '{count, plural, one {Delete meeting} other {Delete meetings}}',
+    deleteContent:
+      '{count, plural, one {Delete "{name}", with the agenda, the minutes and the documents?\nThis cannot be undone.} other {Delete the # selected meetings, with the agendas, the minutes and the documents?\nThis cannot be undone.}}',
+    deleted: '{count, plural, one {"{name}" deleted} other {# meetings deleted}}',
     // A meeting's page.
     tabs: { agenda: 'Agenda', minutes: 'Minutes', documents: 'Documents' },
-    durationMin: '{{count}} min',
+    durationMin: '{count} min',
     approveTitle: 'Approve minutes',
-    approveContent: 'Approve the minutes of "{{title}}"?\nThey are final then.',
+    approveContent: 'Approve the minutes of "{title}"?\nThey are final then.',
     approve: 'Approve',
     markHeldTitle: 'Mark as held',
-    markHeldContent: 'Mark "{{title}}" as held?\nThen its minutes can be approved.',
-    markHeldDone: '"{{title}}" held',
+    markHeldContent: 'Mark "{title}" as held?\nThen its minutes can be approved.',
+    markHeldDone: '"{title}" held',
     overview: {
       title: 'Title',
       board: 'Board',
@@ -237,10 +222,8 @@ const en = {
       agenda: 'Agenda',
       documents: 'Documents',
     },
-    agendaItems_one: '{{count}} item',
-    agendaItems_other: '{{count}} items',
-    inSections_one: 'in {{count}} section',
-    inSections_other: 'in {{count}} sections',
+    agendaItems: '{count, plural, one {# item} other {# items}}',
+    inSections: '{count, plural, one {in # section} other {in # sections}}',
     // The agenda.
     agenda: {
       title: 'Agenda',
@@ -253,14 +236,12 @@ const en = {
       editItem: 'Edit agenda item',
       itemSaved: 'Agenda item saved',
       minutesSaved: 'Minutes saved',
-      deleteTitle_one: 'Delete agenda item',
-      deleteTitle_other: 'Delete agenda items',
-      deleteContent_one: 'Delete "{{name}}", with its minutes?\nThis cannot be undone.',
-      deleteContent_other: 'Delete the {{count}} selected agenda items, with their minutes?\nThis cannot be undone.',
-      deleted_one: '"{{name}}" deleted',
-      deleted_other: '{{count}} agenda items deleted',
+      deleteTitle: '{count, plural, one {Delete agenda item} other {Delete agenda items}}',
+      deleteContent:
+        '{count, plural, one {Delete "{name}", with its minutes?\nThis cannot be undone.} other {Delete the # selected agenda items, with their minutes?\nThis cannot be undone.}}',
+      deleted: '{count, plural, one {"{name}" deleted} other {# agenda items deleted}}',
       other: 'Other',
-      decision: 'Decision: {{decision}}',
+      decision: 'Decision: {decision}',
       noMinutesYet: 'No minutes recorded yet.',
     },
     sections: {
@@ -276,8 +257,8 @@ const en = {
     minutesView: {
       cancelled: 'The meeting was cancelled: there are no minutes.',
       planned: 'The minutes are recorded per agenda item ("Minutes" in the agenda), during or after the meeting.',
-      title: 'Minutes of the {{title}}',
-      members: 'Members: {{names}}',
+      title: 'Minutes of the {title}',
+      members: 'Members: {names}',
       approved: 'Approved',
       draft: 'Draft: not approved yet',
       none: '(No minutes.)',
@@ -289,20 +270,17 @@ const en = {
       columns: { document: 'Document', type: 'Type', size: 'Size', user: 'Uploaded by', uploaded: 'Uploaded' },
       upload: 'Upload',
       uploadTitle: 'Upload documents',
-      uploaded_one: '"{{name}}" uploaded',
-      uploaded_other: '{{count}} documents uploaded',
+      uploaded: '{count, plural, one {"{name}" uploaded} other {# documents uploaded}}',
       download: 'Download',
       notAvailable: 'Downloading is not available in this demo.\nThere is no real content behind the documents.',
       rename: 'Rename',
       renameTitle: 'Rename document',
-      renamed: '"{{name}}" renamed',
+      renamed: '"{name}" renamed',
       deleteTip: 'Delete document',
-      deleteTitle_one: 'Delete document',
-      deleteTitle_other: 'Delete documents',
-      deleteContent_one: 'Delete "{{name}}"?\nThis cannot be undone.',
-      deleteContent_other: 'Delete the {{count}} selected documents?\nThis cannot be undone.',
-      deleted_one: '"{{name}}" deleted',
-      deleted_other: '{{count}} documents deleted',
+      deleteTitle: '{count, plural, one {Delete document} other {Delete documents}}',
+      deleteContent:
+        '{count, plural, one {Delete "{name}"?\nThis cannot be undone.} other {Delete the # selected documents?\nThis cannot be undone.}}',
+      deleted: '{count, plural, one {"{name}" deleted} other {# documents deleted}}',
     },
   },
 
@@ -330,13 +308,10 @@ const en = {
     title: 'Overview',
     intro:
       'Boards and committees, their meetings, agendas and minutes. All data is made up and lives in this page only.',
-    boards_one: '{{count}} board or committee',
-    boards_other: '{{count}} boards and committees',
-    meetings: '{{planned}} planned, {{total}} in all',
-    people_one: '{{count}} person',
-    people_other: '{{count}} people',
-    organizations_one: '{{count}} organization',
-    organizations_other: '{{count}} organizations',
+    boards: '{count, plural, one {# board or committee} other {# boards and committees}}',
+    meetings: '{planned} planned, {total} in all',
+    people: '{count, plural, one {# person} other {# people}}',
+    organizations: '{count, plural, one {# organization} other {# organizations}}',
     tabUpNext: 'Up next',
     tabAttention: 'Attention',
     attention: {
@@ -349,7 +324,7 @@ const en = {
       noOrganization: 'People without an organization',
       noOrganizationHint: 'Not assigned to any organization.',
       allGood: 'Nothing to do.',
-      more: 'and {{count}} more',
+      more: 'and {count} more',
     },
     nextMeetings: 'Next meetings',
     noPlannedMeetings: 'No planned meetings.',

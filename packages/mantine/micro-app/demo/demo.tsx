@@ -11,6 +11,7 @@ import {
   RouterProvider,
 } from '@tanstack/react-router';
 import { createInstance } from 'i18next';
+import ICU from 'i18next-icu';
 import type { ComponentPropsWithRef } from 'react';
 import { useEffect, useState } from 'react';
 import { I18nextProvider, initReactI18next } from 'react-i18next';
@@ -31,7 +32,7 @@ const PROJECTS = [
 // The demo's i18next instance: the building blocks' texts (`microApp`), the language of `<html lang>`.
 const i18n = createInstance();
 
-void i18n.use(initReactI18next).init({
+void i18n.use(ICU).use(initReactI18next).init({
   lng: document.documentElement.lang.startsWith('de') ? 'de' : 'en',
   fallbackLng: 'en',
   resources: microAppResources,

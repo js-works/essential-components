@@ -1,5 +1,5 @@
+import type { I18nAdapter } from "../i18n.js";
 import type { ToastAdapterFactory, ToastAppearance } from "./adapter.js";
-import type { ToastTextResolver } from "./texts.js";
 import type { ToastTheme } from "./theme.js";
 
 export type {
@@ -83,7 +83,11 @@ interface ToastsControllerOptions<C> {
   mountTarget?: () => ParentNode | null | undefined;
   theme?: Partial<ToastTheme>;
   size?: ToastSize;
-  getText?: ToastTextResolver;
+  /**
+   * The app's i18n (`frontend/i18n.md`): the texts of the toasts (the namespace `'overlays'`), read when they render;
+   * its `onChange` renders the stack again. Without it: English.
+   */
+  i18n?: I18nAdapter;
   autoTitles?: boolean | ToastType[];
   autoIcons?: boolean | ToastType[];
   maxVisible?: number;

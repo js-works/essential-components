@@ -53,21 +53,11 @@ const useNoI18nAdapter = (): I18nAdapter | undefined => undefined;
 function createFileUploadComponent(
   config: FileUploadComponentConfig = {},
 ): (props: FileUploadProps) => ReactNode {
-  const { i18n, ...rest } = config;
+  const { useI18n = useNoI18nAdapter, ...elementConfig } = config;
   const fontSize = (config.theme ?? DEFAULT_THEME).fontSize;
   let registration: Promise<Registration> | undefined;
 
-  // The union type prevents any other `type`, but not in plain JavaScript or with a cast config.
-  if (i18n !== undefined && i18n.type !== 'factory' && i18n.type !== 'hook') {
-    throw new TypeError(
-      `Unknown i18n type: ${String((i18n as { type: unknown }).type)} (expected 'factory' or 'hook').`,
-    );
-  }
-
-  // A factory goes to the element class, a hook runs in the component.
-  const elementConfig = i18n?.type === 'factory' ? { ...rest, i18n } : rest;
-  const useI18nAdapter = i18n?.type === 'hook' ? i18n.useAdapter : useNoI18nAdapter;
-
+  // The hook runs in the component; its adapter is set on the element (the class has none).
   const register = () =>
     registration ??= import('./client.js').then(({ createFileUploadClass, setElementI18nAdapter }) => {
       const elementClass = createFileUploadClass(elementConfig);
@@ -81,7 +71,7 @@ function createFileUploadComponent(
   function FileUpload(props: FileUploadProps): ReactNode {
     const { ref, onChange, lang, id, className, style, maxParallel, label, error, icon, prompt, limits, ...rest } =
       props;
-    const adapter = useI18nAdapter();
+    const adapter = useI18n();
     const [registered, setRegistered] = useState<Registration>();
     const [failure, setFailure] = useState<{ error: unknown }>();
     const [element, setElement] = useState<FileUploadElement | null>(null);

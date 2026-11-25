@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import type * as Spec from '../../api/react/index.js';
 import { useThemed } from '../config.js';
+import type { Texts } from '../texts.js';
 import { flag } from '../utils.js';
 import * as classes from './classes.js';
 import { icons } from './icons.js';
@@ -20,7 +21,7 @@ type EditFormProps<Row> = {
   closing: boolean;
   error: string | undefined;
   fields: readonly Spec.EditField<Row>[];
-  texts: Spec.DataTableTexts;
+  texts: Texts;
   fieldId: (key: string) => string;
   onChange: (patch: Partial<Row>) => void;
   onSave: () => void;

@@ -43,10 +43,12 @@ function issueToError(iss: z.core.$ZodIssue, info: FieldInfo | undefined, value:
         case 'string': {
           const { minLength, maxLength } = info ?? {};
           if (minLength != null && maxLength != null) {
-            if (minLength === maxLength) return { key: 'string.length', params: { length: minLength } };
+            if (minLength === maxLength) return { key: 'string.length', params: { count: minLength } };
             return { key: 'string.between', params: { min: minLength, max: maxLength } };
           }
-          return small ? { key: 'string.min', params: { min: bound } } : { key: 'string.max', params: { max: bound } };
+          return small
+            ? { key: 'string.min', params: { count: bound } }
+            : { key: 'string.max', params: { count: bound } };
         }
         case 'number':
         case 'int':

@@ -39,7 +39,8 @@ This repository's rules for it (see the root's `CLAUDE.md`):
 - Tier 2: Mantine, react-i18next, and TanStack Router (code-based routes, not file-based: no dictated files; weighed
   against React Router 8: untyped params and links in its data and declarative modes). Peers: `react`, `react-dom`
   (`>=19`), `@mantine/core`, `@mantine/hooks` (`^9.5.1`), `@tanstack/react-router` (`^1.170.0`; 1.170.41 in the dev
-  dependencies), `i18next` (`>=26`), `react-i18next` (`>=17`). Icons: inline SVGs (Tabler's paths), no icon library.
+  dependencies), `i18next` (`>=26`), `i18next-icu` (`>=2.7`: the texts are ICU messages, `i18n.md`), `react-i18next`
+  (`>=17`). Icons: inline SVGs (Tabler's paths), no icon library.
 - Embeddable where possible (not a high priority): the building blocks read the app's router (a memory history works
   the same), and the header's narrow layout follows its own width.
 - The texts: English and German in the namespace `'microApp'`, exported as `microAppTexts` (i18next resources the app
@@ -67,8 +68,8 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   `history.ts`; a new entry forgets the ones after it). Their pages (the tooltips' "Back to …") are the last crumb of
   that path's routes (`router.matchRoutes`, `crumbs.ts`), else the module's label; `/` is "Home".
 - Its element: an internal one (`internal-micro-app-header-<n>`, registered on first use) with
-  `MANTINE_APP_HEADER_THEME`, one class per i18next instance (its `I18nAdapter` over the app's instance: the namespace
-  `cockpit`, the element's keys; the German ones in `microAppResources`, i18next's `{{page}}`). The package's own
+  `MANTINE_APP_HEADER_THEME`, one class per i18next instance (its `I18nAdapter`: `i18nAdapterOf(i18n)`, the namespace
+  `cockpit`; the translations are the cockpit's `locales/*.json`, in `microAppResources`). The package's own
   `home` names the start page in the tooltips.
 - Tests: `src/micro-app-header.test.tsx` (a memory router and an i18next instance; the element's properties and
   events: the title, the modules and the active one, the crumbs, the module's crumb, the texts in the app's language, `navigate`, Back and Forward).
@@ -77,11 +78,18 @@ This repository's rules for it (see the root's `CLAUDE.md`):
 
 - `MicroAppProvider({ i18n, savedFilters?, children })`: around the whole app, the app's i18next instance (as
   `I18nextProvider`) and the store of the saved filters.
-- `microAppResources`: the i18next resources of the package (`microApp`, and `dataTable`, the data table's German
-  texts); the app spreads them into its instance's `resources`.
+- `microAppResources`: the i18next resources of the package, ICU messages: `microApp`, and the translations of the
+  tier-1 packages it uses, as they ship them (`locales/en.json`, `de.json` of `cockpit`, `dataTable`,
+  `formValidation`, `overlays`); the app spreads them into its instance's `resources`, and adds those of another
+  package it uses (e.g. `fileUpload`) the same way.
+- `i18nAdapterOf(i18n)` and `useI18nAdapter()` (`i18n-adapter.ts`): the `I18nAdapter` of the tier-1 packages
+  (`frontend/i18n.md`) over an i18next instance with ICU, one per instance: `exists` then `t`, else `null`; its
+  `onChange` on `languageChanged` and `loaded`. The hook reads the instance of the nearest `I18nextProvider`. Used by
+  the header, `DataTable` and `defineForm`; an app uses it for the other packages (`useI18n: useI18nAdapter`, the
+  overlays' `config.i18n`, a file upload's `i18n`).
 - `DataTable`: the data table in Mantine's look, compact, `footer="auto"`, `showTotal`, 50 rows a page, in a
-  `micro-app__table` (`display: contents`); its texts from the app's i18next (a hook adapter: the namespace
-  `dataTable`, `{name}` placeholders filled in, numbers in the locale; else the data table's English default).
+  `micro-app__table` (`display: contents`); its texts from the app's i18next (`useI18n: useI18nAdapter`, the
+  namespace `dataTable`; else the data table's English default).
 - `useTableActions()`: the standard actions (`newAction`, `openAction`, `editAction`, `deleteAction`) with the
   package's texts and icons; a hook (their texts follow the language). `useSavedTableFilters(table)`: the data table's
   `useSavedFilters` over the provider's store.

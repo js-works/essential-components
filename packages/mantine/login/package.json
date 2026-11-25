@@ -29,6 +29,8 @@
     "@vitejs/plugin-react": "^6.1.1",
     "dprint": "^0.57.4",
     "i18next": "^26.4.2",
+    "i18next-icu": "^2.7.0",
+    "intl-messageformat": "^12.2.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-i18next": "^17.0.15",
@@ -40,6 +42,7 @@
     "@mantine/core": "^9.5.1",
     "@mantine/hooks": "^9.5.1",
     "i18next": ">=26",
+    "i18next-icu": ">=2.7",
     "react": ">=19",
     "react-dom": ">=19",
     "react-i18next": ">=17"

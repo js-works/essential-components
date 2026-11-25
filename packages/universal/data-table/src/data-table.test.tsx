@@ -4490,18 +4490,18 @@ describe('DataTable', () => {
   });
 
   describe('texts', () => {
-    // A small adapter: German texts with `{name}` placeholders, English (the default value) for the rest.
+    // A small adapter: German texts with `{name}` placeholders, `null` (English) for the rest.
     const adapterOf = (texts: Readonly<Record<string, string>>, locale = 'de-DE'): Spec.I18nAdapter => ({
       currentLocale: () => locale,
-      resolveText: (_, key, params, defaultValue) =>
-        texts[key]?.replace(/\{(\w+)\}/g, (__, name: string) => String(params?.[name])) ?? defaultValue,
+      translate: (_, key, params) =>
+        texts[key]?.replace(/\{(\w+)\}/g, (__, name: string) => String(params?.[name])) ?? null,
     });
     // One adapter for every instance.
-    const shared = (adapter: Spec.I18nAdapter) => ({ type: 'factory', getAdapter: () => adapter }) as const;
+    const shared = (adapter: Spec.I18nAdapter) => () => adapter;
 
     it('uses the translations of the adapter and falls back to English for missing ones', async () => {
       const German = createDataTableComponent({
-        i18n: shared(adapterOf({ perPage: '{count} pro Seite', pageOf: '{page} von {pages}' })),
+        useI18n: shared(adapterOf({ perPage: '{count} pro Seite', pageOf: '{page} von {pages}' })),
       });
 
       render(<German source={createSource()} rowKey="id" columns={columns} defaultPageSize={10} />);
@@ -4511,26 +4511,21 @@ describe('DataTable', () => {
       expect(screen.getByText('1-10 of 60')).toBeTruthy();
     });
 
-    it('asks the adapter with the namespace, the key, the raw params and the English text filled in', async () => {
-      const resolveText = vi.fn((_: string, __: string, ___: unknown, defaultValue: string) => defaultValue);
+    it('asks the adapter with the namespace, the key and the raw params', async () => {
+      const translate = vi.fn((_: string, __: string, ___: unknown): string | null => null);
       const Tracked = createDataTableComponent({
-        i18n: shared({ currentLocale: () => 'en-US', resolveText }),
+        useI18n: shared({ currentLocale: () => 'en-US', translate }),
       });
 
       render(<Tracked source={createSource()} rowKey="id" columns={columns} defaultPageSize={10} />);
       await loaded();
 
-      expect(resolveText).toHaveBeenCalledWith('dataTable', 'pageSize', null, 'Page Size');
-      expect(resolveText).toHaveBeenCalledWith(
-        'dataTable',
-        'itemRange',
-        { from: 1, to: 10, total: 60 },
-        '1-10 of 60',
-      );
+      expect(translate).toHaveBeenCalledWith('dataTable', 'pageSize', null);
+      expect(translate).toHaveBeenCalledWith('dataTable', 'itemRange', { from: 1, to: 10, total: 60 });
     });
 
     it('translates the default placeholder of a text filter', async () => {
-      const German = createDataTableComponent({ i18n: shared(adapterOf({ filterPlaceholder: 'Filtern' })) });
+      const German = createDataTableComponent({ useI18n: shared(adapterOf({ filterPlaceholder: 'Filtern' })) });
       const filtered: readonly Spec.TableColumn<Person>[] = [
         { key: 'name', header: 'Name' },
       ];
@@ -4544,7 +4539,7 @@ describe('DataTable', () => {
     });
 
     it('formats numbers in the locale of the adapter', async () => {
-      const German = createDataTableComponent({ i18n: shared(adapterOf({}, 'de-DE')) });
+      const German = createDataTableComponent({ useI18n: shared(adapterOf({}, 'de-DE')) });
       const many = async (query: Spec.RowQuery) => ({ ...(await createSource()(query)), total: 12345 });
 
       render(<German source={many} rowKey="id" columns={columns} defaultPageSize={10} />);
@@ -4586,10 +4581,9 @@ describe('DataTable', () => {
       let language = 'en';
       let notify = () => {};
       const Switching = createDataTableComponent({
-        i18n: shared({
+        useI18n: shared({
           currentLocale: () => language,
-          resolveText: (_, key, __, defaultValue) =>
-            language === 'de' && key === 'perPage' ? '10 pro Seite' : defaultValue,
+          translate: (_, key) => (language === 'de' && key === 'perPage' ? '10 pro Seite' : null),
           onChange: (listener) => {
             notify = listener;
 
@@ -4608,21 +4602,10 @@ describe('DataTable', () => {
       expect(await screen.findByRole('button', { name: / pro Seite$/ })).toBeTruthy();
     });
 
-    it('asks an i18n factory once per instance, with its root element, and renders its texts', async () => {
-      const getAdapter = vi.fn((_element: HTMLElement) => adapterOf({ perPage: '{count} pro Seite' }));
-      const German = createDataTableComponent({ i18n: { type: 'factory', getAdapter } });
-
-      render(<German source={createSource()} rowKey="id" columns={columns} defaultPageSize={10} />);
-
-      expect(await screen.findByRole('button', { name: / pro Seite$/ })).toBeTruthy();
-      expect(getAdapter).toHaveBeenCalledTimes(1);
-      expect(getAdapter.mock.calls[0]?.[0].contains(screen.getByRole('button', { name: / pro Seite$/ }))).toBe(true);
-    });
-
     it('calls an i18n hook in each instance, so each one follows its nearest provider', async () => {
       const Language = createContext<Readonly<Record<string, string>>>({});
       const Localized = createDataTableComponent({
-        i18n: { type: 'hook', useAdapter: () => adapterOf(useContext(Language)) },
+        useI18n: () => adapterOf(useContext(Language)),
       });
 
       render(
@@ -4636,15 +4619,6 @@ describe('DataTable', () => {
 
       expect(await screen.findByRole('button', { name: / pro Seite$/ })).toBeTruthy();
       expect(screen.getByRole('button', { name: / per page$/ })).toBeTruthy();
-    });
-
-    it('throws a TypeError for an unknown i18n type (e.g. an adapter given directly)', () => {
-      const adapter = adapterOf({});
-
-      expect(() => createDataTableComponent({ i18n: adapter as unknown as Spec.DataTableComponentConfig['i18n'] }))
-        .toThrow(
-          TypeError,
-        );
     });
   });
 });

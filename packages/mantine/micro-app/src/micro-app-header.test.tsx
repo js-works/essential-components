@@ -9,6 +9,7 @@ import {
 } from '@tanstack/react-router';
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import { createInstance } from 'i18next';
+import ICU from 'i18next-icu';
 import { I18nextProvider, initReactI18next } from 'react-i18next';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 
@@ -36,7 +37,7 @@ afterEach(cleanup);
 function renderApp(path: string, language = 'en', moduleCrumb = true) {
   const i18n = createInstance();
 
-  void i18n.use(initReactI18next).init({
+  void i18n.use(ICU).use(initReactI18next).init({
     lng: language,
     resources: microAppResources,
     initAsync: false,
@@ -100,7 +101,7 @@ describe('MicroAppHeader', () => {
   it('shows the app\'s own crumbs where it gives them', async () => {
     const i18n = createInstance();
 
-    void i18n.use(initReactI18next).init({ lng: 'en', resources: microAppResources, initAsync: false });
+    void i18n.use(ICU).use(initReactI18next).init({ lng: 'en', resources: microAppResources, initAsync: false });
 
     const root = createRootRoute({
       component: () => (

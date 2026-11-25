@@ -31,14 +31,15 @@ This repository's rules for it (see the root's `CLAUDE.md`):
 ## Decided
 
 - React, Mantine and react-i18next (peer dependencies: `react`, `react-dom` `>=19`, `@mantine/core`, `@mantine/hooks`
-  `^9.5.1`, the workspace has 9.5.1, pinned in the dev dependencies like `overlays`; `i18next` `>=26`, `react-i18next`
-  `>=17`).
+  `^9.5.1`, the workspace has 9.5.1, pinned in the dev dependencies like `overlays`; `i18next` `>=26`, `i18next-icu`
+  `>=2.7`, `react-i18next` `>=17`).
 - The texts (`i18n.md`, tier 2): English and German in the namespace `'login'`, exported as `loginResources` (i18next
   resources the app adds to its instance: `resources: { en: { ...loginResources.en, app: … }, … }`). `LoginScreen`
   reads them from the app's instance (`I18nextProvider`), following its language, typed by the package's own keys
   (`useTexts()`, `use-texts.ts`, like `micro-app`'s). An app changes a text in its own resources (`login: { heading:
-  … }`): no `texts` prop (weighed: overrides on top of i18next, two ways to change a text). Placeholders are
-  i18next's (`continueWith`: `{{provider}}`).
+  … }`): no `texts` prop (weighed: overrides on top of i18next, two ways to change a text). The texts are ICU
+  messages (`i18n.md`: i18next always with `i18next-icu`; `continueWith`: `{provider}`). The login's own instance (for
+  a host without one, `mount.tsx`) uses ICU too.
 - Generic: the host decides what a login is (`onLogin`); the screen only collects and checks the input.
 - `LoginScreen` (a React component, needs a `MantineProvider` above it) and `mountLoginScreen(element, props)` for a
   host without React: its own Mantine scope (`.login`, Mantine's variables on it, not on `:root`; Mantine's
@@ -96,7 +97,7 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   there is one; below them the footer. One
   host function at a time: the clicked button shows the spinner, the other buttons and the form are locked (read-only
   fields, disabled button); a rejected promise shows its message (else "The sign in failed. Please try again.") under
-  the buttons. New texts: `continueWith` (`{{provider}}` is replaced), `or`, `providerFailed` (English and German).
+  the buttons. New texts: `continueWith` (`{provider}` is replaced), `or`, `providerFailed` (English and German).
 - `user-select: none` on the screen, like the cockpit's frame; the inputs keep `text` (Safari: a field with `none`
   cannot be typed into).
 - Small screens (`login.css`):

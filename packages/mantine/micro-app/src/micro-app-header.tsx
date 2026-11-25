@@ -4,32 +4,18 @@ import type { ReactElement, ReactNode } from 'react';
 import { createElement, useEffect, useLayoutEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { AppHeaderClass, AppHeaderElement, AppHeaderNavigateDetail, I18nAdapter } from '@local/cockpit';
+import type { AppHeaderClass, AppHeaderElement, AppHeaderNavigateDetail } from '@local/cockpit';
 import { createAppHeaderClass, MANTINE_APP_HEADER_THEME } from '@local/cockpit';
 
 import type { MicroAppCrumb, MicroAppHeaderProps } from './api/header.js';
 import { moduleOf, trimmed, useCrumbOf } from './crumbs.js';
 import { useHistoryPosition } from './history.js';
+import { i18nAdapterOf } from './i18n-adapter.js';
 import { useTexts } from './use-texts.js';
 
 export { MicroAppHeader };
 
 const tags = new WeakMap<I18nInstance, string>();
-
-// The element's texts (the namespace `cockpit`) from an app's i18next instance: the translation of the key, else the
-// English text the element gives.
-function adapterOf(i18n: I18nInstance): I18nAdapter {
-  return {
-    currentLocale: () => i18n.language,
-    resolveText: (namespace, key, params, defaultValue) =>
-      String(i18n.t(key, { ns: namespace, ...params, defaultValue, interpolation: { escapeValue: false } } as never)),
-    onChange: (listener) => {
-      i18n.on('languageChanged', listener);
-
-      return () => i18n.off('languageChanged', listener);
-    },
-  };
-}
 
 // The cockpit's app header as an internal element of this package (a package never takes a tag of its own): the first
 // `internal-micro-app-header-<n>` not registered yet, registered on first use, in Mantine's look. One per i18next
@@ -40,7 +26,7 @@ function headerTag(i18n: I18nInstance): string {
   if (tag === undefined) {
     const headerClass: AppHeaderClass = createAppHeaderClass({
       theme: MANTINE_APP_HEADER_THEME,
-      i18n: { type: 'factory', getAdapter: () => adapterOf(i18n) },
+      i18n: i18nAdapterOf(i18n),
     });
     let n = 1;
 

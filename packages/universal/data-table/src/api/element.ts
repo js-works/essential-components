@@ -9,7 +9,7 @@ export type { DataTableClass, DataTableDefaults, DataTableElement, DataTableSetu
 
 type DataTableSetupConfig<C = Node> = {
   theme?: DataTableTheme;
-  i18n?: { type: 'factory'; getAdapter: (element: HTMLElement) => I18nAdapter };
+  i18n?: I18nAdapter;
   content?: ContentAdapter<C>;
   // The defaults of every element of this setup, where the element has no attribute (or property) of its own: e.g.
   // `{ selectionAppearance: 'neutral' }` for the whole app. Only the settings with values: a boolean attribute

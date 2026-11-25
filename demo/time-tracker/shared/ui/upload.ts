@@ -6,6 +6,6 @@ import { i18nAdapter } from '../lib/i18n/index.js';
 export { CertificateUpload };
 
 const CertificateUpload = createFileUploadComponent({
-  i18n: { type: 'factory', getAdapter: () => i18nAdapter },
+  useI18n: () => i18nAdapter,
   theme: MANTINE_THEME,
 });

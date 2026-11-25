@@ -1,7 +1,8 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
-// `vite build` builds the library (src/index.ts). React and Zod stay outside the build (peer dependencies).
+// `vite build` builds the library (src/index.ts). React and Zod stay outside the build (peer dependencies). The
+// translations (`locales/*.json`) are no part of the build: the package's `exports` give them as they are.
 const config = defineConfig({
   plugins: [react()],
   build: {

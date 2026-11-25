@@ -48,10 +48,11 @@ const OverlaysContext = createContext<Overlays | null>(null);
  * breaks it, and comparing *by value* is what makes an inline `config={{…}}` (a fresh
  * object every render) free.
  *
- * Functions compare equal regardless of identity, deliberately: an inline `getText`
- * arrow is new on every render and would otherwise re-open the loop. The cost is that a
- * changed `getText` alone reaches toasts already on screen only at their next render —
- * far cheaper than the alternative, and new toasts always read the current one.
+ * Functions compare equal regardless of identity, deliberately: an inline callback
+ * is new on every render and would otherwise re-open the loop. The cost is that a
+ * changed function alone reaches toasts already on screen only at their next render —
+ * far cheaper than the alternative, and new toasts always read the current one. The i18n
+ * adapter is the exception: the caller compares it by identity.
  */
 function sameToastConfig(a: unknown, b: unknown, depth = 2): boolean {
   if (Object.is(a, b)) return true;
@@ -132,7 +133,9 @@ function createToastHolder(
     // been built has nothing to re-apply to, and building one just to configure it would
     // put an empty container in the document for an app that never toasts.
     configure: (next) => {
-      const changed = !sameToastConfig(options, next);
+      // The adapter by identity: compared by value, a new one (an i18n that only exists inside React, after a
+      // language switch) would count as the same, its functions being equal by the rule above.
+      const changed = options.i18n !== next.i18n || !sameToastConfig(options, next);
       options = next;
       if (changed) {
         live?.configure({ mountTarget, ...next });
@@ -147,7 +150,6 @@ function createToastHolder(
 
 export function OverlaysProvider({
   config,
-  refreshKey,
   children,
 }: OverlaysProviderProps): ReactElement {
   // Built once. The options are read when a controller is created, so changing them later
@@ -208,18 +210,18 @@ export function OverlaysProvider({
     for (const key of Object.keys(target)) {
       if (key !== "adapter") delete target[key];
     }
-    Object.assign(target, { mountTarget: instance.mountTarget }, config?.dialogs);
+    Object.assign(target, { mountTarget: instance.mountTarget, i18n: config?.i18n }, config?.dialogs);
 
-    instance.configureToasts(config?.toasts ?? {});
+    instance.configureToasts({ ...config?.toasts, i18n: config?.i18n });
   });
 
-  // Rebuild the spec of every dialog on screen when `refreshKey` changes, so the chrome
-  // follows whatever it depends on (a language switch, typically). Runs after the effect
-  // above, so the fresh config is already in place. The mount-time run is a no-op —
-  // nothing is on screen yet.
+  // Rebuild the spec of every dialog on screen when the adapter changes (an i18n that only exists inside React gives a
+  // new one on a language switch), so the chrome follows. Runs after the effect above, so the fresh config is already
+  // in place. The mount-time run is a no-op — nothing is on screen yet. A change the adapter reports itself
+  // (`onChange`) is followed by the controller.
   useLayoutEffect(() => {
     instance.refreshDialogs();
-  }, [instance, refreshKey]);
+  }, [instance, config?.i18n]);
 
   // Both features put DOM into the mount point, outside React's own rendering — a provider
   // that goes away has to take it with it, and settle anything its callers are still

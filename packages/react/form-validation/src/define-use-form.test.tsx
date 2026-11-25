@@ -4,7 +4,7 @@ import { createContext, useContext, useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
-import { binding, defineUseForm, formMeta, type I18nAdapter, type I18nConfig } from './index.js';
+import { binding, defineUseForm, formMeta, type I18nAdapter } from './index.js';
 
 /* A minimal locale store as a stand-in for the app adapter */
 let currentLocale = 'de';
@@ -18,10 +18,24 @@ const labels: Record<string, Record<string, string>> = {
   en: { 'signup.email': 'Email', 'signup.age': 'Age' },
 };
 
-/* The app adapter: labels from the table above, everything else as the library has it */
+/* The library's messages in German, as an app's i18n would give them (only those the tests need) */
+const GERMAN: Readonly<Record<string, (params: Record<string, unknown>) => string>> = {
+  required: () => 'Bitte füllen Sie dieses Feld aus.',
+  email: () => 'Bitte geben Sie eine gültige E-Mail-Adresse an.',
+  'number.between': (p) => `Der Wert muss zwischen ${p.min} und ${p.max} liegen.`,
+  'string.min': (p) => `Bitte geben Sie mindestens ${p.count} Zeichen ein.`,
+};
+
+/* The app adapter: the library's messages in German, labels from the table above, else no translation */
 const adapter: I18nAdapter = {
   currentLocale: () => currentLocale,
-  resolveText: (_ns, key, _params, defaultValue) => labels[currentLocale]?.[key] ?? defaultValue,
+  translate: (ns, key, params) => {
+    if (ns === 'formValidation') {
+      const german = currentLocale.startsWith('de') ? GERMAN[key] : undefined;
+      return german ? german(params ?? {}) : null;
+    }
+    return labels[currentLocale]?.[key] ?? null;
+  },
   onChange: (listener) => {
     listeners.add(listener);
     return () => listeners.delete(listener);
@@ -29,7 +43,7 @@ const adapter: I18nAdapter = {
 };
 
 const useForm = defineUseForm({
-  i18n: { type: 'factory', getAdapter: () => adapter },
+  useI18n: () => adapter,
   props: { label: 'label', error: 'errorText' },
 });
 
@@ -449,7 +463,7 @@ describe('defineUseForm', () => {
     expect(screen.getByRole('alert').textContent).toBe('Five digits, please.');
   });
 
-  it('provides messages in the bundled languages, English for any other', async () => {
+  it('shows the messages the adapter translates, the English default for any other language', async () => {
     const user = userEvent.setup();
     const results: Record<string, string> = {};
     for (const locale of ['de', 'de-AT', 'xx']) {
@@ -489,30 +503,16 @@ describe('i18n adapter', () => {
     );
   }
 
-  it('asks the factory once per form, with its <form> element', async () => {
-    const getAdapter = vi.fn((_el: HTMLElement) => adapter);
-    const use = defineUseForm({ i18n: { type: 'factory', getAdapter }, props: { label: 'label', error: 'errorText' } });
-    setLocale('de');
-    const { container, rerender } = render(<AgeForm use={use} />);
-    rerender(<AgeForm use={use} />);
-    expect(screen.getByLabelText('Alter')).toBeTruthy();
-    expect(getAdapter).toHaveBeenCalledTimes(1);
-    expect(getAdapter).toHaveBeenCalledWith(container.querySelector('form'));
-  });
-
   it('calls the hook on every render, so each form follows its nearest provider', () => {
     const Language = createContext('en');
     const use = defineUseForm({
-      i18n: {
-        type: 'hook',
-        useAdapter: () => {
-          const locale = useContext(Language);
-          return {
-            ...adapter,
-            currentLocale: () => locale,
-            resolveText: (_n, key, _p, d) => labels[locale]?.[key] ?? d,
-          };
-        },
+      useI18n: () => {
+        const locale = useContext(Language);
+        return {
+          ...adapter,
+          currentLocale: () => locale,
+          translate: (_n, key) => labels[locale]?.[key] ?? null,
+        };
       },
       props: { label: 'label', error: 'errorText' },
     });
@@ -528,27 +528,25 @@ describe('i18n adapter', () => {
     expect(screen.getByLabelText('Alter')).toBeTruthy();
   });
 
-  it('passes the namespace, the key, the raw params and the text of the library', async () => {
-    const resolveText = vi.fn((_n: string, _k: string, _p: unknown, defaultValue: string) => defaultValue);
+  it('asks with the namespace, the key and the raw params; without a translation, its own texts', async () => {
+    const translate = vi.fn((_n: string, _k: string, _p: unknown): string | null => null);
     const use = defineUseForm({
       appNamespace: 'myapp',
-      i18n: { type: 'hook', useAdapter: () => ({ currentLocale: () => 'en', resolveText }) },
+      useI18n: () => ({ currentLocale: () => 'en', translate }),
       props: { label: 'label', error: 'errorText' },
     });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const user = userEvent.setup();
     render(<AgeForm use={use} />);
     await user.type(screen.getByLabelText('Age'), '5');
     await user.tab();
-    expect(resolveText).toHaveBeenCalledWith('myapp', 'signup.age', null, 'Age');
-    expect(resolveText).toHaveBeenCalledWith(
-      'formValidation',
-      'number.min',
-      { min: 18 },
-      screen.getByRole('alert').textContent,
-    );
+    expect(translate).toHaveBeenCalledWith('myapp', 'signup.age', null);
+    expect(translate).toHaveBeenCalledWith('formValidation', 'number.min', { min: 18 });
+    expect(screen.getByRole('alert').textContent).toBe('The value must be at least 18.');
+    warn.mockRestore();
   });
 
-  it('warns about a missing label only without an adapter', () => {
+  it('warns about a missing label, with an adapter too', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const schemaOf = () => z.object({ title: z.string() });
     function Title({ use, labels }: { use: typeof useForm; labels: string }) {
@@ -559,20 +557,20 @@ describe('i18n adapter', () => {
         </form>
       );
     }
-    const withAdapter = defineUseForm({
-      i18n: { type: 'hook', useAdapter: () => ({ currentLocale: () => 'en', resolveText: (_n, _k, _p, d) => d }) },
+    const adapterOf = (translate: I18nAdapter['translate']) => () => ({ currentLocale: () => 'en', translate });
+    const translating = defineUseForm({
+      useI18n: adapterOf((_n, key) => (key === 'adapted.title' ? 'Title' : null)),
       props: { label: 'label', error: 'errorText' },
     });
+    const missing = defineUseForm({ useI18n: adapterOf(() => null), props: { label: 'label', error: 'errorText' } });
     const without = defineUseForm({ props: { label: 'label', error: 'errorText' } });
-    render(<Title use={withAdapter} labels="adapted" />);
-    expect(warn.mock.calls.some((c) => String(c[0]).includes('adapted.title'))).toBe(false);
+    const warned = (key: string) => warn.mock.calls.some((c) => String(c[0]).includes(key));
+    render(<Title use={translating} labels="adapted" />);
+    expect(warned('adapted.title')).toBe(false);
+    render(<Title use={missing} labels="missing" />);
+    expect(warned('missing.title')).toBe(true);
     render(<Title use={without} labels="plain" />);
-    expect(warn.mock.calls.some((c) => String(c[0]).includes('plain.title'))).toBe(true);
+    expect(warned('plain.title')).toBe(true);
     warn.mockRestore();
-  });
-
-  it('throws a TypeError for an unknown i18n type (e.g. the old form)', () => {
-    const old = { useLocale: () => 'en' } as unknown as I18nConfig;
-    expect(() => defineUseForm({ i18n: old })).toThrow(TypeError);
   });
 });

@@ -56,7 +56,7 @@
     `deepFreeze` ("deep" looks odd at a flat list).
 - "Not set" (a missing value) in plain objects (configs, items) and React props: an optional field, left out
   (`maxFiles?: number`), so `undefined`. `null` there only for an argument that is always passed and explicitly has no
-  value (`params` of `resolveText`).
+  value (`params` of the i18n adapter's `translate`).
   - Never a magic number (`-1`, `NaN`) for "not set".
 - Class members are either public or `#private` (ECMAScript private fields). Never the TypeScript `private` or
   `protected` keywords.

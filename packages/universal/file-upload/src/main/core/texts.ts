@@ -1,16 +1,15 @@
-import type { FileUploadTexts, I18nAdapter } from '../index.js';
+import type { FileUploadTextKey, I18nAdapter } from '../index.js';
+import { EN } from '../texts/en.js';
 import { constant } from './utils.js';
 
 export type { Localizer, TextKey };
 export { createLocalizer };
 
-type TextKey = keyof FileUploadTexts;
+type TextKey = FileUploadTextKey;
 
 // The params of a text (`null` for a text without params).
-type TextParams<K extends TextKey> = FileUploadTexts[K] extends (
-  params: infer P extends Readonly<Record<string, unknown>>,
-) => string ? P
-  : null;
+type TextArgs<K extends TextKey> = Parameters<(typeof EN)[K]>[0] extends infer P ? undefined extends P ? null : P
+  : never;
 
 // The namespace of our texts in an `I18nAdapter`.
 const NAMESPACE = 'fileUpload';
@@ -19,66 +18,35 @@ const FALLBACK_LOCALE = 'en-US';
 
 const SIZE_UNITS = constant(['byte', 'kilobyte', 'megabyte', 'gigabyte', 'terabyte']);
 
-// The English texts of last resort. Numbers are formatted in the current locale.
-const DEFAULT_TEXTS: {
-  readonly [K in TextKey]: (params: TextParams<K>, numbers: Intl.NumberFormat) => string;
-} = constant({
-  dropHint: () => 'Drag files here or',
-  browse: () => 'Browse',
-  hintAccept: ({ types }) => `Allowed: ${types}`,
-  hintMaxFiles: ({ count }, numbers) => `Maximum number of files: ${numbers.format(count)}`,
-  hintMaxFileSize: ({ size }) => `Maximum size per file: ${size}`,
-  fileList: () => 'Files',
-  statusReady: () => 'Ready to upload',
-  statusQueued: () => 'Waiting',
-  statusUploading: ({ percent }, numbers) => `Uploading ${numbers.format(percent)}%`,
-  statusDone: () => 'Uploaded',
-  statusError: () => 'Upload failed',
-  statusAborted: () => 'Canceled',
-  rejectedType: () => 'This file type is not allowed',
-  rejectedSize: ({ size }) => `The file is larger than ${size}`,
-  rejectedCount: ({ count }, numbers) => `Too many files, the maximum is ${numbers.format(count)}`,
-  upload: () => 'Upload',
-  uploadAll: () => 'Upload all',
-  clear: () => 'Clear',
-  cancel: () => 'Cancel',
-  stop: () => 'Stop',
-  retry: () => 'Retry',
-  remove: () => 'Remove',
-  showPreview: () => 'Show preview',
-  closePreview: () => 'Close preview',
-  validationFailed: () => 'Retry or remove the files that failed.',
-  validationPending: () => 'Wait until all uploads are finished.',
-  validationRequired: () => 'Please add a file.',
-});
-
 // Texts and formatting for one render, in the locale that the adapter reports right now.
 type Localizer = {
-  readonly text: <K extends TextKey>(key: K, params: TextParams<K>) => string;
+  readonly text: <K extends TextKey>(key: K, params: TextArgs<K>) => string;
   readonly formatSize: (bytes: number) => string;
 };
 
-// Without an adapter: the English texts, formatted in en-US.
+// Without an adapter, or without a translation (`null`): the English texts, formatted in the adapter's locale (en-US
+// without one).
 function createLocalizer(i18n: I18nAdapter | undefined): Localizer {
-  const locale = i18n?.currentLocale() ?? FALLBACK_LOCALE;
-  const numbers = numberFormat(locale);
+  const locale = validLocale(i18n?.currentLocale() ?? FALLBACK_LOCALE);
 
   return {
     text: (key, params) => {
-      const defaultValue = DEFAULT_TEXTS[key](params, numbers);
+      const english = EN[key] as (params: unknown, locale: string) => string;
 
-      return i18n === undefined ? defaultValue : i18n.resolveText(NAMESPACE, key, params, defaultValue);
+      return i18n?.translate(NAMESPACE, key, params) ?? english(params ?? {}, locale);
     },
     formatSize: (bytes) => formatSize(bytes, locale),
   };
 }
 
-// An invalid locale falls back to en-US instead of throwing.
-function numberFormat(locale: string, options?: Intl.NumberFormatOptions): Intl.NumberFormat {
+// An invalid tag falls back to en-US instead of throwing.
+function validLocale(locale: string): string {
   try {
-    return new Intl.NumberFormat(locale, options);
+    new Intl.NumberFormat(locale);
+
+    return locale;
   } catch {
-    return new Intl.NumberFormat(FALLBACK_LOCALE, options);
+    return FALLBACK_LOCALE;
   }
 }
 
@@ -92,7 +60,7 @@ function formatSize(bytes: number, locale: string): string {
     unit++;
   }
 
-  return numberFormat(locale, {
+  return new Intl.NumberFormat(locale, {
     style: 'unit',
     unit: SIZE_UNITS[unit] ?? 'byte',
     unitDisplay: 'short',

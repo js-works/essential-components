@@ -16,7 +16,8 @@
     "./themes": {
       "source": "./src/main/themes/index.ts",
       "default": "./dist/themes.js"
-    }
+    },
+    "./locales/*.json": "./locales/*.json"
   },
   "scripts": {
     "dev": "vite",

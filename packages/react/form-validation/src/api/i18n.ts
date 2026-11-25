@@ -1,31 +1,26 @@
-export type { I18nAdapter, I18nConfig };
+export type { I18nAdapter, TextParams };
+
+// A verbatim copy of the types in `packages/ai/instructions/frontend/i18n.md`: change them there first, then here.
 
 /**
- * The app's i18n system, the same shape as the adapters of the other components (data table, file upload), so one
- * adapter object fits all of them.
+ * The app's i18n system, as a library sees it. The app writes one adapter and gives it to every library that has texts.
  */
 interface I18nAdapter {
+  /** The current locale, e.g. `'de-DE'`. */
   currentLocale: () => string;
   /**
-   * The namespace is `'formValidation'` for the messages of the library, and the app namespace (see
-   * `FormConfig.appNamespace`) for the app's keys (labels, messages of the schema or the server). `defaultValue` is the
-   * text the library would show (from `messages` or its catalog, already filled in): return it if there is no
-   * translation.
+   * The translation of a key in the current language, or `null` when there is none: then the library uses its own
+   * English text. `namespace`: the library's (its name in camelCase, e.g. `'formValidation'`) or one the app names for
+   * its own keys. `params`: the raw values (numbers, dates), `null` for none; the translation formats them and picks
+   * the plural (by `count`).
    */
-  resolveText: (
-    namespace: string,
-    key: string,
-    params: Readonly<Record<string, unknown>> | null,
-    defaultValue: string,
-  ) => string;
-  /** Reports a change of the language: the form renders again. */
+  translate: (namespace: string, key: string, params: Readonly<Record<string, unknown>> | null) => string | null;
+  /** Reports a change of the language; returns the function that ends the subscription. */
   onChange?: (listener: () => void) => () => void;
 }
 
 /**
- * Where the adapter comes from: a factory, asked once per form with its `<form>` element (rendered with `form()`), or a
- * React hook, called on every render (e.g. for a React context). A shared adapter: `getAdapter: () => adapter`.
+ * The values of each text of a library's English texts (functions of their values and the locale):
+ * `TextParams<typeof EN>` gives `{ 'number.min': { min: number }, … }`.
  */
-type I18nConfig =
-  | { type: 'factory'; getAdapter: (element: HTMLElement) => I18nAdapter }
-  | { type: 'hook'; useAdapter: () => I18nAdapter };
+type TextParams<T> = { [K in keyof T]: T[K] extends (params: infer P, locale: string) => string ? P : never };

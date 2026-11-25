@@ -2,7 +2,7 @@ export { loginResources };
 
 // The login screen's texts, in English and German, as i18next resources under the namespace `login`, which the app
 // adds to its instance (`resources: { en: { ...loginResources.en, app: … }, … }`); it replaces a text in its own
-// resources (`login: { heading: … }`). `{{provider}}` is the provider's label.
+// resources (`login: { heading: … }`). ICU messages (the app's i18next uses `i18next-icu`): `{provider}` is the provider's label.
 const EN = {
   heading: 'Sign in',
   username: 'Username',
@@ -26,7 +26,7 @@ const EN = {
   invalidEmail: 'Enter a valid email address.',
   mismatch: 'The passwords do not match.',
   back: 'Back to sign in',
-  continueWith: 'Continue with {{provider}}',
+  continueWith: 'Continue with {provider}',
   or: 'or',
   providerFailed: 'The sign in failed. Please try again.',
 } as const;
@@ -56,7 +56,7 @@ const DE = {
   invalidEmail: 'Geben Sie eine gültige E-Mail-Adresse ein.',
   mismatch: 'Die Passwörter stimmen nicht überein.',
   back: 'Zurück zur Anmeldung',
-  continueWith: 'Weiter mit {{provider}}',
+  continueWith: 'Weiter mit {provider}',
   or: 'oder',
   providerFailed: 'Die Anmeldung ist fehlgeschlagen. Bitte versuchen Sie es erneut.',
 } as const;

@@ -6,20 +6,10 @@ import { createLocalizer } from '../core/texts.js';
 import { constant } from '../core/utils.js';
 import type { Action, Limits } from '../core/view.js';
 import { actionsOf, hintsOf, invalidityOf, statusIconOf, statusTextOf } from '../core/view.js';
-import type {
-  FileItem,
-  FileUploadClassConfig,
-  FileUploadDensity,
-  FileUploadElement,
-  I18nAdapter,
-  UploadFunction,
-} from '../index.js';
+import type { FileItem, FileUploadDensity, FileUploadElement, I18nAdapter, UploadFunction } from '../index.js';
 import { createIcon } from './icons.js';
 
-export type { GetI18nAdapter };
 export { FileUploadElementBase, setElementI18nAdapter };
-
-type GetI18nAdapter = NonNullable<FileUploadClassConfig['i18n']>['getAdapter'];
 
 type Row = {
   readonly li: HTMLLIElement;
@@ -34,7 +24,7 @@ type Row = {
 };
 
 // Internal, not part of the public API: sets an adapter for one element, which replaces the one of the class config
-// (`undefined` goes back to it). The React wrapper uses it for the adapter of its hook (`i18n.useAdapter`).
+// (`undefined` goes back to it). The React wrapper uses it for the adapter of its hook (`useI18n`).
 const setI18nAdapter = Symbol('setI18nAdapter');
 
 // On hover, a tooltip appears only after this delay (ms), so a pointer passing over the buttons shows none.
@@ -82,10 +72,8 @@ class FileUploadElementBase extends HTMLElement implements FileUploadElement {
   ] as const;
 
   #upload: UploadFunction | null = null;
-  readonly #getI18nAdapter: GetI18nAdapter | undefined;
-  // The adapter of the class config: asked for once, on the first connect.
-  #classI18n: I18nAdapter | undefined;
-  #classI18nAsked = false;
+  // The adapter of the class config.
+  readonly #classI18n: I18nAdapter | undefined;
   #instanceI18n: I18nAdapter | undefined;
   #localizer: Localizer;
   #unsubscribeI18n: (() => void) | undefined;
@@ -125,10 +113,10 @@ class FileUploadElementBase extends HTMLElement implements FileUploadElement {
   #formDisabled = false;
   #customValidity = '';
 
-  constructor(styles: CSSStyleSheet | string, getI18nAdapter: GetI18nAdapter | undefined) {
+  constructor(styles: CSSStyleSheet | string, i18n: I18nAdapter | undefined) {
     super();
 
-    this.#getI18nAdapter = getI18nAdapter;
+    this.#classI18n = i18n;
     this.#localizer = createLocalizer(undefined);
     this.#internals = this.attachInternals();
     // A group: a `<label>` of the element, `aria-label` or our own label names all of it.
@@ -388,11 +376,6 @@ class FileUploadElementBase extends HTMLElement implements FileUploadElement {
 
   // The language may have changed while the element was not on the page.
   connectedCallback(): void {
-    if (!this.#classI18nAsked) {
-      this.#classI18nAsked = true;
-      this.#classI18n = this.#getI18nAdapter?.(this);
-    }
-
     this.#subscribeI18n();
     this.#refreshTexts();
   }

@@ -6,9 +6,9 @@
 // -------------------------------------------------------------------
 
 import type { FormDialogData } from "../../dialogs/form-data.js";
+import type { I18nAdapter } from "../i18n.js";
 import type { DialogAdapterFactory } from "./adapter.js";
 import type { OverlayContent } from "./content.js";
-import type { DialogTexts } from "./texts.js";
 import type { DialogTheme } from "./theme.js";
 
 export type DialogType =
@@ -162,7 +162,11 @@ export interface DialogsControllerConfig<C extends object> {
    * the tokens you don't name from the defaults. One way to make a theme instead of two.
    */
   theme?: DialogTheme;
-  getText?(textKey: keyof DialogTexts): string | undefined;
+  /**
+   * The app's i18n (`frontend/i18n.md`): the texts of the dialogs (the namespace `'overlays'`), read when a dialog's
+   * spec is built; its `onChange` re-renders the dialog on screen. Without it: English.
+   */
+  i18n?: I18nAdapter;
   /**
    * Header-icon policy for this controller's dialogs, overridden per dialog by
    * {@link DialogViewConfig.icon}. `true` uses the built-in icon for each type, `false`

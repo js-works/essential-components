@@ -1,4 +1,5 @@
 import type * as Spec from '../api/react/index.js';
+import type { Texts } from './texts.js';
 
 export type { FilterSummary, NormalizedOption, SummaryContext };
 export { fallbackSummary, isRecord, optionsOf, sameValue, withoutKey };
@@ -20,7 +21,7 @@ type FilterSummary = {
 
 // What a summary may need: the locale (numbers, dates) and the texts (Yes, No).
 // `labels`: the labels of the values chosen in the column's filter (see filter-labels.ts).
-type SummaryContext = { locale: string; texts: Spec.DataTableTexts; labels: ReadonlyMap<string, string> };
+type SummaryContext = { locale: string; texts: Texts; labels: ReadonlyMap<string, string> };
 
 function optionsOf(options: readonly Spec.FilterOption[]): NormalizedOption[] {
   return options.map((option) => (typeof option === 'string' ? { value: option, label: option } : option));

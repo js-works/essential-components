@@ -147,7 +147,8 @@ the root's `CLAUDE.md` apply.
     loaded on demand. Only `en` and `de` (`supportedLngs`; `de-DE` is `de`).
   - The language is `<html lang>`, observed (a `MutationObserver` changes the language), like the packages' adapters.
   - The keys are typed by `en.ts`; `de.ts` has the type `Catalog<typeof en>`, so a missing or an extra German text is
-    an error of `tsc`. Plurals: `_one` and `_other` (`t('home.boards', { count })`).
+    an error of `tsc`. The texts are ICU messages (`i18next-icu`): a plural is `{count, plural, one {…} other {…}}`
+    (`t('home.boards', { count })`).
   - In a component: `const t = useTranslate();` (`useTranslation('app', { i18n })`: the instance is given, no provider,
     so it also works in the content of the overlays' dialogs and toasts and in the shadow root). Outside React (flows,
     the fake server's errors): `translate('key')`. Rich text: `<Trans i18n={i18n} t={t} …>`.
@@ -158,9 +159,9 @@ the root's `CLAUDE.md` apply.
   - The fake server does not know the language: it throws an `AppError` (`shared/lib/app-error.ts` since 2026-10-16, `infra/in-memory/errors.ts` before: a key of
     `errors` and its values), and `use-form.tsx` makes the text (`errorMessage`, `translateKey`). The `ErrorKey` type
     is the keys of `en.errors` (the only import of infra from the UI, a type).
-  - The dialogs' own texts (buttons, titles, "Maximize") come from the overlays package, which has English and German
-    and follows `<html lang>` itself; `OverlaysProvider` gets `refreshKey={useLanguage()}`, so a dialog that is open
-    follows a switch. The close button's label is ours (`common.close`, `translate()`: a render function, no hook).
+  - The dialogs' own texts (buttons, titles, "Maximize") come from the overlays package through the app's i18next
+    (`OverlaysProvider`'s `config.i18n`, the app's `i18nAdapter`, `@local/micro-app`'s `i18nAdapterOf`), so a dialog
+    that is open follows a switch. The close button's label is ours (`common.close`, `translate()`: a render function, no hook).
   - The pages of a feature: the tables follow "The structure of a table in the root's apps" in the root's `CLAUDE.md`
     (2026-10-15, worked out on the board page's members table, `MemberTable`, then rolled out): `useColumns()`,
     `useFilters()`, `useActions(…)` (hooks of the table's file), the flows one hook per use case in a feature's
@@ -176,7 +177,7 @@ the root's `CLAUDE.md` apply.
     (`newAction`, `openAction`, `editAction`, `deleteAction` of `useTableActions()`, `@local/micro-app`, since 2026-10-17;
     `shared/ui/table-actions.ts` before). A filter of a feature's `<subject>-filters.ts` is a function of `t` or of data (`roleFilter(t)`), called in `useFilters()`. The actions and their dialogs use `t`; the
     texts of a feature are under its key (`boards.*`), the words every feature shares under `common`. A sentence with a
-    number or a name is one key with the plural forms (`_one`: a single one, with its name; `_other`: the number), not
+    number or a name is one key with the plural forms (`one`: a single one, with its name; `other`: the number), not
     pieces glued together (`countText` is replaced where it is used, and removed with its last use). Outside
     components (flows) `translate()`.
   - A route's crumb is a component (`staticData.crumb`, e.g. `<BoardCrumb id={…} />`; a module's by the header; `crumb(params, t)` of React Router's `handle` before 2026-10-17): it follows the language where the breadcrumb or a tooltip renders.
@@ -254,8 +255,8 @@ the root's `CLAUDE.md` apply.
     Resources): `DialogForm` passes form-validation's `isDirty` to the overlays' `<Form dirty>`, so Cancel, Escape
     and the close button ask first, in place of the dialog's content ("Discard your changes?", Discard, Keep editing; the
     overlays' texts), when a value differs from its initial one; the dialog shakes briefly. Escape there answers Discard (2026-10-09, the user's wish: Escape, Escape leaves a changed form), said in a line below the question ("Press Esc to discard them.", the overlays' text; only with a keyboard).
-  - The labels are translated (`labels: '<form>'`, keys like `person.email`) by the app's i18next (see "Languages"). The adapter is given as a hook (in a dialog the form has no
-    `<form>` of its own for a factory). The messages come from the library's catalogs in the same language
+  - The labels are translated (`labels: '<form>'`, keys like `person.email`) by the app's i18next (see "Languages"). The adapter is `@local/micro-app`'s (`defineForm`). The messages come from the library's translations
+    (`locales/*.json`, in `microAppResources`) in the same language
     ("Please fill out this field." instead of the former "Required"); the schemas' own messages are keys of `errors` (see "Languages").
 - The message of an invalid input is a badge below it (`board-manager.css`, 2026-10-02, taken from the overlays' React
   demo): white text on the danger color (2026-10-10, the user's wish, in all four apps and form-validation's demo; white with a border and text in the danger color from 2026-10-06, filled before), and a shadow, an arrow pointing up (a CSS mask; a warning triangle until 2026-10-06, the user's wish), no nose (removed 2026-10-06, the user's wish; it pointed up at the field); shown only while the

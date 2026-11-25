@@ -239,8 +239,7 @@ function apply(switches: HTMLFormElement, elements: readonly (DefaultUpload | Ac
   }
 }
 
-const i18n = { type: 'factory', getAdapter: () => demoI18n } as const;
-const demoI18n = createDemoI18n();
+const i18n = createDemoI18n();
 
 const ACME_ACCENT = 'light-dark(#0ca678, #20c997)';
 const ACME_SURFACE = 'light-dark(#e6fcf5, #0b3b2e)';

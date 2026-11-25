@@ -4,6 +4,7 @@ import '@mantine/core/styles.layer.css';
 import { createTheme, MantineProvider, mergeThemeOverrides } from '@mantine/core';
 import type { i18n as I18nInstance } from 'i18next';
 import { createInstance } from 'i18next';
+import ICU from 'i18next-icu';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
@@ -31,7 +32,7 @@ const THEME = createTheme({
 function ownI18n(): I18nInstance {
   const i18n = createInstance();
 
-  void i18n.init({
+  void i18n.use(ICU).init({
     lng: 'en',
     resources: loginResources,
     initAsync: false,

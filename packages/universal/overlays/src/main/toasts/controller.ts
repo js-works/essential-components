@@ -4,8 +4,8 @@
 // the bound adapter a fully-resolved list of ToastViews to project (see api/toasts/adapter.ts).
 // -------------------------------------------------------------------
 
+import type { OverlaysTextKey as ToastTextKey } from "../api/texts.js";
 import type { ToastAppearance, ToastView } from "../api/toasts/adapter.js";
-import type { ToastTexts } from "../api/toasts/texts.js";
 import type { ToastTheme } from "../api/toasts/theme.js";
 import type {
   ToastAction,
@@ -19,7 +19,7 @@ import type {
   ToastsControllerOptions,
   ToastType,
 } from "../api/toasts/toast.js";
-import { bundledToastText } from "../i18n/texts.js";
+import { textOf } from "../i18n/texts.js";
 import { DISMISS_EVENT, ensureElementRegistered, setToastsPaused, setToastTheme } from "./element.js";
 import { applyPlacement, splitPlacement } from "./placement.js";
 import { injectContainerStyles, TOAST_GAP_PX, themedContainerStyles } from "./styles.js";
@@ -129,10 +129,21 @@ export function createToastController<C>(
 
   const tag = ensureElementRegistered();
 
-  // A caller's resolver still wins outright. Without one — or for a key it declines — the
-  // bundled table for <html lang> answers, and English behind that.
-  function text(key: keyof ToastTexts): string {
-    return opts.getText?.(key) ?? bundledToastText(key);
+  // The adapter's translation, else English (read at render time, so `configure()` and a change of the language
+  // reach the stack on screen).
+  function text(key: ToastTextKey): string {
+    return textOf(opts.i18n, key);
+  }
+
+  // The subscription to the adapter's `onChange`, renewed when `configure()` brings another adapter.
+  let i18nOf: ToastsControllerOptions<C>["i18n"];
+  let stopI18n: (() => void) | undefined;
+  function subscribeI18n(): void {
+    if (opts.i18n === i18nOf) return;
+    stopI18n?.();
+    i18nOf = opts.i18n;
+    stopI18n = i18nOf?.onChange?.(() => update());
+    // `update` re-renders every toast on screen with the current texts.
   }
 
   const reducedMotionQuery =
@@ -1071,6 +1082,8 @@ export function createToastController<C>(
     return show({ type, ...normalizeSpec(spec) });
   }
 
+  subscribeI18n();
+
   return {
     show,
     info(spec) {
@@ -1124,6 +1137,7 @@ export function createToastController<C>(
       // is what lets a caller — or a React provider pushing its current config — hand it
       // over without having to work out what changed.
       opts = { ...next, adapter } as ToastsControllerOptions<C>;
+      subscribeI18n();
       applyContainerOptions();
       // The per-toast settings (icons, titles, appearance, texts) are read at render
       // time, so re-rendering is all it takes for the stack already on screen to pick
@@ -1161,6 +1175,7 @@ export function createToastController<C>(
       document.removeEventListener("pointerdown", onPointerDownOutside);
       document.removeEventListener("pointermove", onPointerMoveOutside);
 
+      stopI18n?.();
       renderer.destroy?.();
       container.remove();
     },

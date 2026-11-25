@@ -7,8 +7,8 @@ export type { CrudFlows };
 export { useCrudFlows };
 
 type CrudFlowConfig<R extends { id: string }, V, C> = {
-  // The prefix of the record's texts: `<texts>.new`, `.created`, `.editTitle`, `.saved` (`{{name}}`), `.deleteTitle`
-  // (`{{count}}`), `.deleted` (`{{count}}`, `{{name}}`).
+  // The prefix of the record's texts: `<texts>.new`, `.created`, `.editTitle`, `.saved` (`{name}`), `.deleteTitle`
+  // (`{count}`), `.deleted` (`{count}`, `{name}`).
   texts: string;
   // The record's form (`record` to edit, none for a new one); it saves itself before the dialog closes.
   form: (props: { record?: R; save: (values: V) => Promise<void> }) => ReactElement;

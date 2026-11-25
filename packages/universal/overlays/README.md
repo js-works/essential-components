@@ -12,7 +12,7 @@ The idea is modest: most apps need a handful of well-behaved dialogs and a decen
 - **Your framework does the rendering.** You hand the controller a small *rendering adapter*, and your framework renders the content and reconciles it. That's what lets an open dialog be updated: change the title while someone is filling in the form and the form is diffed, not rebuilt — what they typed stays. The framework stays a detail on your side of the boundary and never becomes a dependency of the library.
 - **Two focused features.** Dialogs and toasts are developed together but kept cleanly separated, each behind its own entry point.
 - **Themeable, per feature.** Each feature has its own small theme type with sensible, dark-mode-aware defaults. You override only the tokens you care about.
-- **Optional i18n.** Text is overridable directly, and there's optional wiring for the [`picolingo`](https://www.npmjs.com/package/picolingo) translation library if you already use it.
+- **Optional i18n.** The app's i18n through a small adapter (`I18nAdapter`), with the translations as ICU messages (`locales/*.json`).
 - **SSR-friendly imports.** Importing the package never touches the DOM, so it's safe to pull into a server/SSR module graph; the DOM is only needed once you actually create a controller in the browser.
 - **ESM, typed, no fuss.** Ships as an ESM package with TypeScript types and per-feature subpath exports.
 
@@ -177,7 +177,9 @@ The exact theming *mechanism* is one of the parts still being cleaned up, so exp
 
 ## Internationalisation (optional)
 
-All user-facing text can be overridden directly on the controller. On top of that, there are optional entry points that wire the built-in text namespaces into [`picolingo`](https://www.npmjs.com/package/picolingo) (a peer dependency) — import them only if you're already using it.
+The library's own texts (button labels, default titles, the toasts' names) come from the app's i18n through an `I18nAdapter`: `i18n` in the config of `createDialogsController` and `createToastController`, or `config.i18n` of the `OverlaysProvider`. The namespace is `overlays`. `translate` returns `null` where there is no translation, and the library uses its English text; its `onChange` re-renders what is on screen. Without an adapter: English.
+
+The translations are ICU messages, one JSON file per language (`@local/overlays/locales/en.json`, `de.json`), for the app to load into its i18n under the namespace `overlays`.
 
 ## Server-side rendering
 
@@ -185,14 +187,13 @@ Importing the package is side-effect-free with respect to the DOM: no globals li
 
 ## Package layout
 
-The package root re-exports both features, and there are subpath exports for the optional i18n wiring:
+The package root re-exports both features, and there are subpath exports:
 
 - `@local/overlays` — the main entry (dialogs + toasts)
 - `@local/overlays/dom` — the framework-free adapters for both features, plus `h()` for building content
 - `@local/overlays/lit` — the lit-html adapters for both features
 - `@local/overlays/react` — `OverlaysProvider`, `useDialogs`, `useToast`
-- `@local/overlays/picolingo`, `@local/overlays/picolingo/english`, `@local/overlays/picolingo/german` — optional picolingo namespaces
-- `@local/overlays/picolingo/xwiki` — an integration stub (work in progress)
+- `@local/overlays/locales/<language>.json` — the translations (ICU messages)
 
 ## Development
 

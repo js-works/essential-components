@@ -26,7 +26,7 @@ This repository's rules for it (see the root's `CLAUDE.md`):
 ## Stack (decided)
 
 - TypeScript (strict), Vite (library mode), npm. React hook, no custom element.
-- No runtime dependencies. Peer dependencies: `react` (`>=19`) and `zod` (`^4`), both outside the build.
+- No dependencies. Peer dependencies: `react` (`>=19`) and `zod` (`^4`), both outside the build.
 - Tests: Vitest with jsdom, `@testing-library/react` and `@testing-library/user-event` (`src/**/*.test.ts(x)`, with
   `vitest.setup.ts`).
 - A small demo (`npm run dev`): a React sign-up form with the demo's own field components, the app's
@@ -41,28 +41,32 @@ This repository's rules for it (see the root's `CLAUDE.md`):
 - `exports` in `package.json` (rather than an alias per package and entry in the root): each entry has a `source` condition first, its file in `src/`, then its built file in `dist/`.
   The root's demo resolves the package by name (`@local/…`) to its sources by that condition (its `vite.config.ts`
   and `tsconfig.json`); everywhere else, a customer's copy too, the condition is ignored and `dist/` counts.
-- `src/index.ts`: the public API (`defineUseForm`, `binding`, `formMeta`, `formRegistry`, `catalogs` and the types,
+- `src/index.ts`: the public API (`defineUseForm`, `binding`, `formMeta`, `formRegistry` and the types,
   all flat: `import type { UseFormOptions } from '@local/form-validation'`).
 - `src/define-use-form.ts`: the hook factory: the store (values, errors, dirty and shown fields), events, submit and
   the props of `form()` and `field.x()`.
 - `src/api/`: the public types: `fields.ts` (bindings, field options and props),
-  `form.ts` (`UseFormOptions`, `UseFormReturn`, the submit, `FormConfig`, `FormMeta`), `texts.ts` (the messages,
-  also `MessageKey` and `BuiltInCatalog`), `i18n.ts` (`I18nAdapter`, `I18nConfig`);
+  `form.ts` (`UseFormOptions`, `UseFormReturn`, the submit, `FormConfig`, `FormMeta`), `texts.ts`
+  (`FormValidationTextKey`, `FormValidationParams`, read from the English messages), `i18n.ts` (`I18nAdapter`, `TextParams`: a
+  verbatim copy of those in `frontend/i18n.md`);
   `src/index.ts` exports them (no barrel).
 - `src/schema.ts`: reads the fields from the Zod schema (kind, semantic type, required, default, bounds).
 - `src/issues.ts`: turns Zod issues into message keys with parameters.
-- `src/i18n.ts`: the translator (adapter, app messages, catalogs), `Intl` formatting, plural forms, `humanize`.
-- `src/messages/`: the bundled catalogs (de, en) and `localeCandidates`.
+- `src/i18n.ts`: the translator (the adapter, the English default of `texts/en.ts`), `humanize`.
+- `src/texts/en.ts`: the English (en-US) texts as functions of their values and the locale (typed), the library's
+  default and the master.
+- `locales/`: the translations as ICU messages (`en.json`, `de.json`), derived from the master, by hand (or the AI) after
+  every change; exported as they are (`@local/form-validation/locales/de.json`), no part of the build.
 - `src/meta.ts`: `formMeta` (an own Zod registry) and `binding`. `src/merge.ts`: `mergeProps` (chained handlers,
   combined refs).
-- `src/define-use-form.test.tsx`: the tests.
+- `src/define-use-form.test.tsx`: the tests. `src/texts.test.ts`: the files in `locales/` match the master (keys, values).
 - `demo/`: the demo (not part of the library; typechecked with it). `form-validation-demo.ts`: the whole demo as a light DOM
   custom element (exported, not registered; see "Demo element" in the `CLAUDE.md` of the file upload; the root page
   registers it as `form-validation-demo`). `form-demo.tsx`: the form and the schema. `fields.tsx`: text, select and
   checkbox field components. `field-message.tsx`: the message of a field as a popover (a copy of
   the Board Manager's `FieldError` of the root page, for a plain input: in the top layer, shown while the field has the
   focus, placed by script below the control, the arrow up or down; its CSS in `demo.css`). `use-form.ts`: `defineUseForm` once. `i18n.ts`: texts and adapter. `demo.css`, `ui/` (the
-  design language, a copy of `packages/universal/ui-theme/src`), `main.ts` + `index.html` (the standalone page).
+  design language, a copy of `frontend/design-language.md`), `main.ts` + `index.html` (the standalone page).
 - Commands:
   - `npm run dev`: the demo
   - `npm run build`: typecheck + library build (`dist/index.js`)
@@ -71,12 +75,25 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   - `npm run format`: dprint. `npm run format:check`
 - Run `npm run format` and `npm run typecheck` after changes.
 
+## Texts (decided)
+
+- The texts come only from the app's adapter (`translate(…)`, `frontend/i18n.md`); without one, or without a
+  translation (`null`), the library's English default: functions of the values and the locale (`Intl`, the plural by
+  `count === 1`). The library renders English only, never ICU or another format, and has no translations of its own
+  at run time.
+- The params go raw to the adapter, so the translation formats them and picks the plural (the value of a plural is
+  `count`: `string.min`, `string.max`, `string.length`).
+- The translations as ICU JSON (`locales/en.json`, `locales/de.json`), for the app's i18n with ICU; `en.json` (American
+  English) too, so the app's i18n knows every key.
+
 ## Code rules
 
 - No `export ... from` re-exports (import, then export). Except the types (`typescript.md`):
   the entry's `export type * from './api/….js'`.
 
 ## TODO
+
+- The demo shows the messages in English only (its small adapter has no ICU).
 
 - `requestSubmit` in the overlays' form dialog (`<Form confirm>`), to check in a real dialog: on `{ ok: false }` both
   focus the first invalid field, form-validation at once (`focusFirstInvalid()`), the dialog by `aria-invalid="true"`,

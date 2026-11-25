@@ -2,7 +2,8 @@ import type { I18nAdapter } from '../main/index.js';
 
 export { DEMO_I18N };
 
-// The demo's translations of the cockpit's texts (German; `{name}` a param, `_one`/`_other` the plural by `count`).
+// The demo's translations of the cockpit's texts (German; `{name}` a param, `_one`/`_other` the plural by `count`;
+// the demo has no ICU: an app loads `locales/de.json` into its i18n).
 const GERMAN: Readonly<Record<string, string>> = {
   navigation: 'Menü',
   group: 'Gruppe',
@@ -49,16 +50,17 @@ const isGerman = () => document.documentElement.lang.toLowerCase().startsWith('d
 
 const ADAPTER: I18nAdapter = {
   currentLocale: () => document.documentElement.lang || 'en-US',
-  resolveText: (_, key, params, defaultValue) => {
+  // `null` without a translation: then the cockpit uses its English text.
+  translate: (_, key, params) => {
     if (!isGerman()) {
-      return defaultValue;
+      return null;
     }
 
     const plural = typeof params?.['count'] === 'number' ? (params['count'] === 1 ? '_one' : '_other') : '';
     const text = GERMAN[`${key}${plural}`];
 
     return text === undefined
-      ? defaultValue
+      ? null
       : text.replace(/\{(\w+)\}/g, (_match, name: string) => String(params?.[name] ?? ''));
   },
   onChange: (listener) => {
@@ -71,4 +73,4 @@ const ADAPTER: I18nAdapter = {
 };
 
 // The cockpit's and the app header's `i18n` on the demo pages.
-const DEMO_I18N = { type: 'factory', getAdapter: () => ADAPTER } as const;
+const DEMO_I18N = ADAPTER;

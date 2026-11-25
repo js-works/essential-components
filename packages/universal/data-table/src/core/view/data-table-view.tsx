@@ -101,7 +101,7 @@ const LAYOUT_MODES: readonly LayoutMode[] = ['auto', 'table', 'cards'];
 // the id of its theme (`data-data-table-theme`), which its stylesheet is scoped to (see stylesheet.ts).
 function DataTableView<Row>(props: Spec.DataTableProps<Row>) {
   const { title, subtitle, empty } = props;
-  const { stylesheet, onRoot } = useContext(ConfigContext);
+  const { stylesheet } = useContext(ConfigContext);
   const nav = useDataTable<Row>(props);
   // Where the widgets render their popups (see layer.ts).
   const [layer, setLayer] = useState<HTMLDivElement | null>(null);
@@ -112,7 +112,7 @@ function DataTableView<Row>(props: Spec.DataTableProps<Row>) {
   const drag = useRowDrag(nav.lines.length, nav.canReorder, nav.moveLine);
   const rootRef = useRef<HTMLDivElement>(null);
   const [rootElement, setRootElement] = useState<HTMLDivElement | null>(null);
-  // The root element, also for an i18n factory of the created component (see create-data-table-component.tsx).
+  // The root element.
   const setRoot = useCallback((root: HTMLDivElement | null) => {
     rootRef.current = root;
     setRootElement(root);
@@ -120,9 +120,8 @@ function DataTableView<Row>(props: Spec.DataTableProps<Row>) {
     if (root !== null) {
       // Before the first paint (a ref is set in the commit).
       provideStylesheet(root, stylesheet);
-      onRoot?.(root);
     }
-  }, [onRoot, stylesheet]);
+  }, [stylesheet]);
   // The layout (the "Layout" choice of the column menu, 2026-10-05): automatic (cards in a narrow table, see
   // `renderCard`), always the table, or always cards. A matter of the view: not kept after a remount.
   // Set by the app (`layout`): fixed, and no choice in the menu (2026-10-06, the user's wish).

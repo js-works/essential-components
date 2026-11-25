@@ -19,7 +19,7 @@ import { createMeetingService, MeetingServiceContext } from '../features/meeting
 import { createMemberService, MemberServiceContext } from '../features/members/member-data.js';
 import { OrganizationServiceContext } from '../features/organizations/organization-data.js';
 import { createInMemoryRepositories } from '../infra/in-memory/index.js';
-import { i18n, useLanguage } from '../shared/lib/i18n/index.js';
+import { i18n, i18nAdapter } from '../shared/lib/i18n/index.js';
 import { withChanges } from '../shared/lib/with-changes.js';
 import { SCOPE_CLASS, Scope, useScheme } from '../shared/shared.js';
 import type { createAppRouter } from './router.js';
@@ -104,8 +104,8 @@ function App({ router, look = DEFAULT_LOOK }: AppProps) {
         deduplicateCssVariables={false}
         getRootElement={() => undefined}
       >
-        {/* The language: a dialog that is open follows a switch (its buttons, which the package makes). */}
-        <OverlaysProvider config={look.overlaysConfig} refreshKey={useLanguage()}>
+        {/* The texts of the dialogs and toasts from the app's i18next (a dialog that is open follows a switch). */}
+        <OverlaysProvider config={{ ...look.overlaysConfig, i18n: i18nAdapter }}>
           <Scope>
             <RouterProvider router={router} />
           </Scope>

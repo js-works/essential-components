@@ -10,7 +10,9 @@ Project-independent instructions for AI agents: plain Markdown, for any AI tool.
 - `instructions/frontend/`: for frontend code.
   - `general.md`: browsers and builds, one name per component.
   - `css.md`: custom properties, themes, BEM, CSS rules.
-  - `i18n.md`: texts, with or without an i18n library.
+  - `i18n.md`: texts, with or without an i18n library; the adapter's types (the master, copied into each package).
+  - `design-language.md`: the master of `ui.css` and `ui.ts`, the look of demo pages (copied into each project;
+    long: read it when needed, not imported).
   - `react.md`: components, props, peer dependencies.
   - `mantine.md`: apps built on Mantine.
   - `custom-elements.md`: tags, names and property values of custom elements.

@@ -13,7 +13,7 @@ function createFileUploadClass(config: FileUploadClassConfig = {}): FileUploadCl
 
   return class extends FileUploadElementBase {
     constructor() {
-      super(styles ??= createStyleSheet(config), config.i18n?.getAdapter);
+      super(styles ??= createStyleSheet(config), config.i18n);
     }
   };
 }

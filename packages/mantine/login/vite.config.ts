@@ -14,7 +14,14 @@ export default defineConfig({
       formats: ['es'],
     },
     rolldownOptions: {
-      external: [/^react($|\/)/, /^react-dom($|\/)/, /^@mantine\//, /^i18next($|\/)/, /^react-i18next($|\/)/],
+      external: [
+        /^react($|\/)/,
+        /^react-dom($|\/)/,
+        /^@mantine\//,
+        /^i18next($|\/)/,
+        /^i18next-icu($|\/)/,
+        /^react-i18next($|\/)/,
+      ],
     },
   },
 });

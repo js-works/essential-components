@@ -1,11 +1,13 @@
 import { constant } from '../main/core/utils.js';
-import type { FileUploadTexts, I18nAdapter } from '../main/index.js';
+import type { FileUploadParams, FileUploadTextKey, I18nAdapter } from '../main/index.js';
 
 export { createDemoI18n, createLocaleI18n };
 
-// The demo's translations: the texts with params are functions. English is missing on purpose: the component's own
-// texts are the defaults.
-const GERMAN: FileUploadTexts = constant({
+// The demo's translations, as plain functions (the demo has no ICU; an app loads `locales/de.json` into its i18n).
+// English is missing on purpose: the component's own texts are the defaults.
+type DemoTexts = { readonly [K in FileUploadTextKey]: string | ((params: FileUploadParams[K]) => string) };
+
+const GERMAN: DemoTexts = constant({
   dropHint: 'Dateien hierher ziehen oder',
   browse: 'Durchsuchen',
   hintAccept: ({ types }) => `Erlaubt: ${types}`,
@@ -35,7 +37,7 @@ const GERMAN: FileUploadTexts = constant({
   validationRequired: 'Bitte eine Datei hinzufügen.',
 });
 
-const TRANSLATIONS: Readonly<Record<string, FileUploadTexts>> = constant({ de: GERMAN });
+const TRANSLATIONS: Readonly<Record<string, DemoTexts>> = constant({ de: GERMAN });
 
 // A minimal adapter: the locale is the `lang` of `<html>`, texts are looked up by language (`de-CH` uses `de`).
 function createDemoI18n(): I18nAdapter {
@@ -44,8 +46,7 @@ function createDemoI18n(): I18nAdapter {
 
   return {
     currentLocale,
-    resolveText: (namespace, key, params, defaultValue) =>
-      resolveText(currentLocale(), namespace, key, params, defaultValue),
+    translate: (namespace, key, params) => translate(currentLocale(), namespace, key, params),
 
     // Every change of `<html lang>` is a language change.
     onChange: (listener) => {
@@ -62,19 +63,19 @@ function createDemoI18n(): I18nAdapter {
 function createLocaleI18n(locale: string): I18nAdapter {
   return {
     currentLocale: () => locale,
-    resolveText: (namespace, key, params, defaultValue) => resolveText(locale, namespace, key, params, defaultValue),
+    translate: (namespace, key, params) => translate(locale, namespace, key, params),
   };
 }
 
-function resolveText(
+// `null` without a translation: then the component uses its English text.
+function translate(
   locale: string,
   namespace: string,
   key: string,
   params: Readonly<Record<string, unknown>> | null,
-  defaultValue: string,
-): string {
+): string | null {
   const catalog = namespace === 'fileUpload' ? TRANSLATIONS[locale.split('-')[0] ?? ''] : undefined;
-  const text: string | ((params: never) => string) | undefined = catalog?.[key as keyof FileUploadTexts];
+  const text: string | ((params: never) => string) | undefined = catalog?.[key as FileUploadTextKey];
 
-  return typeof text === 'function' ? text(params as never) : text ?? defaultValue;
+  return typeof text === 'function' ? text(params as never) : text ?? null;
 }

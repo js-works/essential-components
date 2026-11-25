@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client';
 
 import type * as DataTable from '../api/index.js';
 import type { ResolvedConfig } from '../core/config.js';
-import { ConfigContext, checkI18nType, resolveConfig } from '../core/config.js';
+import { ConfigContext, resolveConfig } from '../core/config.js';
 import { DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS } from '../core/use-data-table.js';
 import { contentRendererOf, nodeContent } from './content.js';
 import type { ElementSettings } from './controller.js';
@@ -47,17 +47,14 @@ const UPGRADED_PROPERTIES = [
   'savedFilters',
 ] as const;
 
-// Called once per app, with the app's theme, i18n factory, content adapter and the defaults of its elements. Returns an element class (not
+// Called once per app, with the app's theme, i18n adapter, content adapter and the defaults of its elements. Returns an element class (not
 // registered: the app registers it under a tag name of its choice) and the factory of its controllers, both bound to
 // this configuration. The element wraps the React view, rendered into its light DOM.
 function setupDataTable<C = Node>(
   config: DataTable.DataTableSetupConfig<C> = {},
 ): readonly [DataTable.DataTableClass<C>, DataTable.CreateTableController<C>] {
-  checkI18nType(config.i18n, ['factory']);
-
   const resolved = resolveConfig(config.theme);
   const defaults = config.defaults ?? {};
-  const getI18nAdapter = config.i18n?.getAdapter;
   // Without an adapter, `C` is `Node` (the default of the type parameter), and the default adapter renders nodes.
   const content = contentRendererOf((config.content ?? nodeContent) as DataTable.ContentAdapter<unknown>);
   // The identity of this setup: its controllers are only accepted by its element class.
@@ -79,7 +76,7 @@ function setupDataTable<C = Node>(
     ];
 
     #controller: DataTable.TableController<unknown, C> | undefined;
-    // With the i18n adapter of this element: the factory is asked once, on the first connect, with the element.
+    // With the i18n adapter of the setup.
     #config: ResolvedConfig | undefined;
     // The page size set by the property (see `pageSize`).
     #pageSize: number | undefined;
@@ -271,7 +268,7 @@ function setupDataTable<C = Node>(
       this.setAttribute(HOST_ATTRIBUTE, '');
       provideStyles(this);
 
-      this.#config ??= { ...resolved, i18n: getI18nAdapter?.(this) };
+      this.#config ??= { ...resolved, i18n: config.i18n };
 
       // Moved within one task (removed and added again): the root is still there.
       if (this.#root === undefined) {

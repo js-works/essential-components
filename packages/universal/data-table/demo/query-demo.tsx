@@ -9,11 +9,11 @@ import { defaultTheme } from '../src/themes/index.js';
 import type { User } from './data.js';
 import { fetchUsers } from './data.js';
 import { note } from './demo.module.css';
-import { i18n } from './i18n.js';
+import { useI18n } from './i18n.js';
 
 export { QueryDemo };
 
-const DataTable = createDataTableComponent({ i18n, theme: defaultTheme });
+const DataTable = createDataTableComponent({ useI18n, theme: defaultTheme });
 
 const columns = defineColumns<User>([
   { key: 'firstName', header: 'First name', width: 2, sortable: true },

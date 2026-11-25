@@ -1,8 +1,10 @@
 import i18next from 'i18next';
+import ICU from 'i18next-icu';
 import { useTranslation } from 'react-i18next';
 
-import type { I18nAdapter } from '@local/form-validation';
-import { microAppResources } from '@local/micro-app';
+import fileUploadDe from '@local/file-upload/locales/de.json' with { type: 'json' };
+import fileUploadEn from '@local/file-upload/locales/en.json' with { type: 'json' };
+import { i18nAdapterOf, microAppResources } from '@local/micro-app';
 
 import { de } from './locales/de.js';
 import { en } from './locales/en.js';
@@ -18,12 +20,11 @@ export { i18n, i18nAdapter, translate, translateKey, useLanguage, useTranslate }
 // - Outside a component (flows, toasts): `translate('key')`.
 //
 // The keys are flat (`'leave.title'`, no nesting: `keySeparator: false`) and typed by the English texts; `de.ts` must
-// have the same ones. Plurals are i18next's: `key_one`, `key_other`, called as `key` with a `count`. No declaration of
+// have the same ones. The texts are ICU messages (`i18next-icu`): `{name}` a value, a plural `{count, plural, one {…}
+// other {…}}`, called with a `count`. No declaration of
 // i18next's own types (`CustomTypeOptions`): it is global, and the Board Manager has one for its texts.
 
-type StripPlural<K> = K extends `${infer Base}_one` ? Base : K extends `${infer Base}_other` ? Base : K;
-
-type TextKey = StripPlural<keyof typeof en>;
+type TextKey = keyof typeof en;
 
 type Translate = (key: TextKey, params?: Readonly<Record<string, unknown>>) => string;
 
@@ -31,16 +32,18 @@ const i18n = i18next.createInstance();
 
 const pageLanguage = () => document.documentElement.lang || 'en';
 
-void i18n.init({
+void i18n.use(ICU).init({
   initAsync: false,
   lng: pageLanguage(),
   fallbackLng: 'en',
   supportedLngs: ['en', 'de'],
   nonExplicitSupportedLngs: true,
-  ns: ['app', 'microApp', 'dataTable'],
   defaultNS: 'app',
   keySeparator: false,
-  resources: { en: { ...microAppResources.en, app: en }, de: { ...microAppResources.de, app: de } },
+  resources: {
+    en: { ...microAppResources.en, fileUpload: fileUploadEn, app: en },
+    de: { ...microAppResources.de, fileUpload: fileUploadDe, app: de },
+  },
   interpolation: { escapeValue: false }, // React escapes
 });
 
@@ -87,14 +90,6 @@ function translateKey(key: string, params?: object): string {
   return resolve(key, { ...params });
 }
 
-// The adapter of the components (form-validation): a namespace i18next does not know (e.g. 'formValidation') gives the
-// `defaultValue`, the text of the component.
-const i18nAdapter: I18nAdapter = {
-  currentLocale: () => i18n.language,
-  resolveText: (namespace, key, params, defaultValue) => resolve(key, { ns: namespace, ...params, defaultValue }),
-  onChange: (listener) => {
-    i18n.on('languageChanged', listener);
-
-    return () => i18n.off('languageChanged', listener);
-  },
-};
+// The adapter of the tier-1 packages (the file upload, form-validation, the overlays): `@local/micro-app`'s, over this
+// instance.
+const i18nAdapter = i18nAdapterOf(i18n);

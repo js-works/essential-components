@@ -32,7 +32,7 @@ import type {
   FormDialogResult,
   MessageDialogResult,} from "../../api/dialogs/dialog.js";
 import type { DialogTheme } from "../../api/dialogs/theme.js";
-import { bundledDialogText } from "../../i18n/texts.js";
+import { textOf } from "../../i18n/texts.js";
 import { mountDialog } from "../element/element.js";
 import { defaultDialogIcon } from "../element/icons.js";
 import { BUTTON_SPINNER_DELAY_MS, SPINNER_DIALOG_DELAY_MS } from "../element/styles.js";
@@ -275,14 +275,27 @@ function createDialogScope<C extends object>(
   // Rebuilds the spec of whatever is on screen. Set when a dialog is shown, cleared when
   // it goes away — the adapter reaches it through `requestRender`.
   let currentRefresh: (() => void) | null = null;
+  // The subscription to the adapter's `onChange` while the scope's element is mounted: a change of the language
+  // rebuilds the dialog on screen, its content and what is typed into it stay.
+  let stopI18n: (() => void) | undefined;
 
-  const ensureHandle = (): DialogMount =>
-    (handle ??= mountDialog(
-      dialogId,
-      adapterFactory,
-      () => currentRefresh?.(),
-      config.mountTarget?.() ?? document.body,
-    ));
+  const ensureHandle = (): DialogMount => {
+    if (handle === null) {
+      handle = mountDialog(
+        dialogId,
+        adapterFactory,
+        () => currentRefresh?.(),
+        config.mountTarget?.() ?? document.body,
+      );
+      stopI18n = config.i18n?.onChange?.(() => currentRefresh?.());
+    }
+    return handle;
+  };
+
+  const releaseI18n = (): void => {
+    stopI18n?.();
+    stopI18n = undefined;
+  };
 
   const noop = (): void => {};
 
@@ -346,6 +359,7 @@ function createDialogScope<C extends object>(
     clearPendingSpinner?.();
     clearPendingSpinner = null;
     currentRefresh = null;
+    releaseI18n();
     const current = handle;
     handle = null;
     void current?.close();
@@ -364,7 +378,7 @@ function createDialogScope<C extends object>(
   // A caller's resolver still wins outright. Without one — or for a key it declines — the
   // bundled table for <html lang> answers, and English behind that.
   function getText(textKey: TextKey): string {
-    return config.getText?.(textKey) ?? bundledDialogText(textKey);
+    return textOf(config.i18n, textKey);
   }
 
   // `true` -> the built-in icon for this type, `false` -> none, content -> as-is,
@@ -1160,6 +1174,7 @@ function createDialogScope<C extends object>(
       clearTimeout(spinnerTimer);
       clearPendingSpinner?.();
       clearPendingSpinner = null;
+      releaseI18n();
       void handle?.close();
       handle = null;
       onClosed?.();

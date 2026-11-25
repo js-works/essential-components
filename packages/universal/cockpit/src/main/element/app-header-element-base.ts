@@ -4,6 +4,7 @@ import { html, LitElement, nothing } from 'lit';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 
+import type { Texts } from '../core/texts.js';
 import { textsOf } from '../core/texts.js';
 import type {
   AppHeaderClassConfig,
@@ -13,7 +14,6 @@ import type {
   AppHeaderNavigateDetail,
   AppHeaderStep,
   AppHeaderTheme,
-  CockpitTexts,
   I18nAdapter,
 } from '../index.js';
 import { appHeaderStyles } from './app-header-styles.js';
@@ -64,8 +64,7 @@ class AppHeaderElementBase extends LitElement implements AppHeaderElement {
   readonly #id = `app-header${++instances}`;
   readonly #switcherMenu: Menu;
   readonly #modulesMenu: Menu;
-  readonly #getAdapter: ((element: HTMLElement) => I18nAdapter) | undefined;
-  #adapter: I18nAdapter | undefined;
+  readonly #adapter: I18nAdapter | undefined;
   #unsubscribe: (() => void) | undefined;
   #tip: { text: string; target: HTMLElement } | undefined;
   #tipTarget: HTMLElement | undefined;
@@ -84,7 +83,7 @@ class AppHeaderElementBase extends LitElement implements AppHeaderElement {
     this.back = null;
     this.forward = null;
     this.theme = config.theme ?? {};
-    this.#getAdapter = config.i18n?.getAdapter;
+    this.#adapter = config.i18n;
     this.#switcherMenu = new Menu(this, `${this.#id}-switcher`, {
       placement: 'bottom-start',
       gutter: 4,
@@ -101,7 +100,6 @@ class AppHeaderElementBase extends LitElement implements AppHeaderElement {
 
   override connectedCallback(): void {
     super.connectedCallback();
-    this.#adapter ??= this.#getAdapter?.(this);
     this.#unsubscribe = this.#adapter?.onChange?.(() => this.requestUpdate());
   }
 
@@ -159,7 +157,7 @@ class AppHeaderElementBase extends LitElement implements AppHeaderElement {
     return this.icon !== '' || this.querySelector(':scope > [slot=\'icon\']') !== null;
   }
 
-  get #texts(): CockpitTexts {
+  get #texts(): Texts {
     return textsOf(this.#adapter);
   }
 
@@ -355,7 +353,7 @@ class AppHeaderElementBase extends LitElement implements AppHeaderElement {
   }
 
   // The modules as a menu on a narrow header (CSS shows it in place of the tabs): the current one and a chevron.
-  #modulesTrigger(texts: CockpitTexts): TemplateResult | typeof nothing {
+  #modulesTrigger(texts: Texts): TemplateResult | typeof nothing {
     const menu = this.#modulesMenu;
 
     if (this.modules.length === 0) {
@@ -378,7 +376,7 @@ class AppHeaderElementBase extends LitElement implements AppHeaderElement {
     }${chevronDownIcon()}</button>`;
   }
 
-  #history(texts: CockpitTexts): TemplateResult {
+  #history(texts: Texts): TemplateResult {
     return html`<div class="history">
       <button
         type="button"
@@ -401,7 +399,7 @@ class AppHeaderElementBase extends LitElement implements AppHeaderElement {
 
   // "Home" (a link to the start page), then the crumbs; the last one is the current page (no link). Without crumbs,
   // "Home" is the current page.
-  #crumbs(texts: CockpitTexts): TemplateResult {
+  #crumbs(texts: Texts): TemplateResult {
     const home = html`${homeIcon()}<span>${texts.home}</span>`;
     const last = this.crumbs.length - 1;
 

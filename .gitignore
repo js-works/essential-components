@@ -5,3 +5,6 @@ dist-board-manager/
 
 # Generated files (the apps' route trees, `npm run routes`)
 .generated/
+
+# The settings of JetBrains IDEs
+.idea/

@@ -12,15 +12,13 @@
 //   a real app. Read the language from a prop instead of from context and the content
 //   stays in the language it opened with, no matter what else you do.
 //
-// # The library's own chrome follows because of `refreshKey`
+// # The library's own chrome follows because of the adapter
 //
-//   Button labels and the default title come from `getText`, which the core reads while
-//   building a spec - so something has to ask it to build a new one. React cannot notice a
-//   language change on its own, and calling back into the core from a render would loop.
-//   That is what the prop is for.
-//
-//   Drop either half and you get a half-translated dialog. The switch is worth trying with
-//   `refreshKey` commented out.
+//   Button labels and the default title come from the i18n adapter (`config.i18n`), which
+//   the core reads while building a spec. A new adapter (here: one per language, built in
+//   the component, as with an i18n that only exists inside React) makes the provider
+//   rebuild the dialog on screen; an adapter that reports its changes (`onChange`) needs no
+//   new identity.
 //
 // # The button is inside the dialog on purpose
 //
@@ -33,12 +31,12 @@ import { createContext, use, useState } from "react";
 import { createRoot } from "react-dom/client";
 
 import { OverlaysProvider, useDialogs } from "../main/bindings/react/index.js";
-import type { DialogTexts } from "../main/index.js";
+import type { I18nAdapter, OverlaysTextKey } from "../main/index.js";
 
 type Lang = "en" | "de";
 
-/** What the library asks for. Missing keys fall back to the built-in English. */
-const CHROME: Record<Lang, Partial<DialogTexts>> = {
+/** What the library asks for (the demo has no ICU: plain texts). Missing keys fall back to the built-in English. */
+const CHROME: Record<Lang, Partial<Record<OverlaysTextKey, string>>> = {
   en: {},
   de: {
     buttonOk: "Ok",
@@ -133,18 +131,28 @@ function Page() {
   );
 }
 
+// One adapter per language, the same object while the language stays (a new one on a switch).
+const ADAPTERS: Record<Lang, I18nAdapter> = {
+  en: adapterFor("en"),
+  de: adapterFor("de"),
+};
+const adapterOf = (lang: Lang): I18nAdapter => ADAPTERS[lang];
+
+function adapterFor(lang: Lang): I18nAdapter {
+  return {
+    currentLocale: () => lang,
+    translate: (namespace, key) =>
+      namespace === "overlays" ? (CHROME[lang][key as OverlaysTextKey] ?? null) : null,
+  };
+}
+
 function App() {
   const [lang, setLang] = useState<Lang>("en");
   const toggle = () => setLang(lang === "en" ? "de" : "en");
 
   return (
     <LangContext value={{ lang, toggle }}>
-      <OverlaysProvider
-        // Without this the title and the buttons would keep the language the dialog
-        // opened with, while the paragraph above them changed.
-        refreshKey={lang}
-        config={{ dialogs: { icons: true, getText: (key) => CHROME[lang][key] } }}
-      >
+      <OverlaysProvider config={{ i18n: adapterOf(lang), dialogs: { icons: true } }}>
         <Page />
       </OverlaysProvider>
     </LangContext>

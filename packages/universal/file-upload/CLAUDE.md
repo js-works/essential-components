@@ -25,18 +25,18 @@ This repository's rules for it (see the root's `CLAUDE.md`):
 
 ## Working rules
 
-- `src/main/api/` holds the API types. Types only, no comments for now (comments come later); except `FileUploadTexts`,
-  with the English text as a comment after each line, and `FileUploadElement`, with a short comment after each member
-  (what it is, its "none" value or default).
+- `src/main/api/` holds the API types. Types only, no comments for now (comments come later); except
+  `FileUploadElement`, with a short comment after each member (what it is, its "none" value or default), and `i18n.ts`,
+  a verbatim copy of the types in `frontend/i18n.md` (with their comments).
   - Each API decision changes only these files.
   - `base.ts` (`FileUploadElement`, `FileUploadClass`, `FileUploadClassConfig`, `FileUploadDensity`,
-    `UploadFunction`, `UploadParams`, `FileItem`, `FileStatus`, `FileRejection`), `theme.ts` (`FileUploadTheme`), `texts.ts` (`FileUploadTexts`), `i18n.ts`; no barrel: the entries list them.
+    `UploadFunction`, `UploadParams`, `FileItem`, `FileStatus`, `FileRejection`), `theme.ts` (`FileUploadTheme`), `texts.ts` (`FileUploadTextKey`, `FileUploadParams`, read from the English texts), `i18n.ts` (`I18nAdapter`, `TextParams`); no barrel: the entries list them.
   - The types of the component have the package's prefix (`FileUploadDensity`, `FileUploadTheme`); `Upload…`
     only for the act of uploading (`UploadFunction`, `UploadParams`).
   - The React entry's own types: `src/main/react/api.ts` (`FileUploadComponentConfig`, the config of
     `createFileUploadComponent`; `FileUploadProps`), in the add-on's folder: the React wrapper is an add-on, removable in one piece;
     `src/main/react/index.ts` re-exports `../index` and them.
-  - `FileUploadComponentConfig` lists its members itself (`theme`, `styles`, `i18n`), not as an `Omit` of the class
+  - `FileUploadComponentConfig` lists its members itself (`theme`, `styles`, `useI18n`), not as an `Omit` of the class
     config: every option in view, and a new member of the class config is a decision for React too.
   - Both entries export the types flat (`typescript.md`): `import type { FileItem } from '@local/file-upload'`;
     `/react` has the React types too.
@@ -75,8 +75,8 @@ This repository's rules for it (see the root's `CLAUDE.md`):
 - `src/main/core/`: plain TypeScript, no DOM rendering.
   - `store.ts`: `FileUploadStore`, all state and behavior (validation, list, queue, abort), with `subscribe` and
     `getItems`. It calls its listeners only when the list really changes.
-  - `accept.ts` (the `accept` matcher), `texts.ts` (the English default texts, `createLocalizer`: texts via the
-    `I18nAdapter` and sizes formatted in its locale), `view.ts` (hints, status text,
+  - `accept.ts` (the `accept` matcher), `texts.ts` (`createLocalizer`: the texts via the `I18nAdapter`, else the
+    English ones, and sizes formatted in its locale), `view.ts` (hints, status text,
     actions per status), `preview.ts` (object URL for image previews), `utils.ts`
     (`clamp`, `constant`: the constants of `typescript.md`, also used by the tests and the demo).
 - `src/main/element/`: the custom element.
@@ -86,6 +86,10 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   - `styles.ts`: the CSS (a template string with the theme values put in) and the shared stylesheet.
     `DEFAULT_THEME` is in `themes/default.ts`.
   - `icons.ts`: the SVG icons (Tabler, with the license notice, including Tabler's `upload` for the drop area).
+- `src/main/texts/en.ts`: the English (en-US) texts as functions of their values and the locale (typed), the library's
+  default and the master.
+- `locales/`: the translations as ICU messages (`en.json`, `de.json`), derived from the master, by hand (or the AI)
+  after every change; exported as they are (`@local/file-upload/locales/de.json`), no part of the build.
 - `src/main/index.ts`: the public API (`createFileUploadClass` and the types, flat).
 - `src/main/react/`: the React wrapper, the subpath `@local/file-upload/react` (built as `dist/react.js`, the main entry as `dist/index.js`).
   - `index.ts` exports `createFileUploadComponent` and the types (the main entry's and `api.ts`), flat.
@@ -105,11 +109,12 @@ This repository's rules for it (see the root's `CLAUDE.md`):
     XWiki's CSS properties), and so does the upload through `MANTINE_THEME`. Only an upload directly in a wiki page
     would need one.
   - An entry for i18next: not here (a tier-1 package names no i18n library, `i18n.md`); an adapter over the app's
-    i18next for every tier-1 package belongs to `@local/micro-app` (to be discussed).
+    i18next for every tier-1 package belongs to `@local/micro-app`.
   - `MANTINE_THEME` and `ANTD_THEME` are not in the package's demo: it has neither; the root's apps use the first. The demo's `acme-upload`
     spreads `DEFAULT_THEME`.
 - `src/test/`: the tests, in the folders of what they test.
-  - `core/accept.test.ts`, `themes/themes.test.ts`.
+  - `core/accept.test.ts`, `themes/themes.test.ts`, `texts/texts.test.ts` (the JSON's keys and placeholders against
+    the master, the English functions).
   - `element/file-upload-element.test.ts`: the whole element (with the store and the view).
     `element/file-upload-element.browser.test.ts`: form association.
   - `react/create-file-upload-component.test.tsx` (jsdom), `react/create-file-upload-component.server.test.tsx`
@@ -126,7 +131,7 @@ This repository's rules for it (see the root's `CLAUDE.md`):
     a `<form>` (`name="attachments"`) with a line with the state of its list and a submit that shows what the form
     sends. The fake server (`upload.ts`) answers with an id. `format.ts`: the state line and the sent values.
   - `react/react-demo.tsx`: the React tab (`mountReactDemo(container)`, returns the unmount). Two columns, each with its
-    own language (a React context read by the `hook` of `i18n`, adapter `createLocaleI18n`), a `required` switch and a
+    own language (a React context read by `useI18n`, adapter `createLocaleI18n`), a `required` switch and a
     `<form>` whose submit shows the `FormData`. The second one has a JSX label and fills the `prompt` slot.
   - `demo.css`: only what is specific to this demo.
 - `src/demo/ui/`: `ui.css` and `ui.ts`, a small general-purpose design language (BEM classes and tokens with the prefix
@@ -299,16 +304,11 @@ This repository's rules for it (see the root's `CLAUDE.md`):
       thrown during rendering, so an error boundary gets it.
       - The placeholder: an empty `div` with the same `className`, `style` and `id`, `aria-busy="true"`, and the
         `min-height` of the empty element (the drop line only, computed from the theme's `fontSize` and the `density` prop).
-    - Localization: `i18n` is a discriminated union on `type` (only inside `i18n`, so the top level of the config stays
-      flat). Without `i18n`: the English defaults. Another `type` makes `createFileUploadComponent` throw a `TypeError`
-      (for plain JavaScript and cast configs).
-      - `i18n: { type: 'factory', getAdapter }` (for i18n libraries that read the DOM, e.g. `lang`): passed on to the
-        element class unchanged. A factory may return a shared adapter or a new one per element.
-      - `i18n: { type: 'hook', useAdapter: () => I18nAdapter }` (for i18n libraries with a React context): the
-        component calls it on every render, so each instance follows the nearest provider, with nothing extra at the
-        place of use. The `use` prefix keeps the hooks lint rules working.
+    - Localization: `useI18n?: () => I18nAdapter` (`frontend/i18n.md`), called in the component on every render, so
+      each instance can follow the nearest provider (a React context), with nothing extra at the place of use. A
+      global adapter: `useI18n: () => i18nAdapter`. Without it: the English texts.
       - The wrapper sets that adapter on its element through a hidden, internal per-instance mechanism (not public
-        API): it replaces the adapter of the class config, and the element subscribes to its `onChange` instead.
+        API): the element class has none, and the element subscribes to its `onChange`.
     - The props (decided): one camelCase prop per element property (`upload`, `accept`, `maxFiles`, `maxFileSize`,
       `maxParallel`, `multiple`, `manualUpload`, `previews`, `disabled`, `name`, `required`), plus `lang`,
       `onChange(items)` (gets `items` directly; the native event stays reachable via the ref) and `ref` to the element
@@ -341,41 +341,19 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   - A plain `change` event (like `<input>`, bubbling): it only says that the list changed (see `change` below). The app
     reads the list from the read-only property `items` (`readonly FileItem[]`, not `files`, to avoid confusion with
     `input.files`). The `change` event of the inner `<input>` stays inside the shadow DOM.
-  - Localization: an `I18nAdapter` per element, from `i18n: { type: 'factory', getAdapter: (element) => I18nAdapter }`
-    in the class config (`createFileUploadClass({ i18n: { type: 'factory', getAdapter } })`). Nested and with a `type`,
-    so that the React config can add `{ type: 'hook', useAdapter }` as a discriminated union inside `i18n`. The element calls it once, on its first connect, with itself (so an
-    adapter can read e.g. the element's `lang`). It may return one shared adapter or a new one per element. No i18n
-    library as a dependency; an adapter for any i18n library must stay a few lines.
-    ```ts
-    type I18nAdapter = {
-      currentLocale: () => string;
-      resolveText: (
-        namespace: string,
-        key: string,
-        params: Readonly<Record<string, unknown>> | null,
-        defaultValue: string,
-      ) => string;
-      onChange?: (listener: () => void) => () => void;
-    };
-    ```
-    - Reusable by other components without sharing the type (structural typing): only `string`, `unknown`, `Record`,
-      `null` and functions, nothing component-specific. A component types only the members it needs; a fuller adapter
-      (e.g. with `hasText`) is a subtype and fits. Never change it incompatibly, only add optional members.
-    - `namespace` is `'fileUpload'`. `key` is a key of `FileUploadTexts` (like the data table's
-      `DataTableTexts`: the catalog of the texts, the English text as a comment after each line); `params` are the function's (`null` for a text that
-      is a plain string). Params hold raw numbers (`count`, `percent`) and already formatted
-      strings (`size`, `types`).
-    - `defaultValue` is the English text, already filled in (numbers formatted in the current locale). For a missing
-      text the adapter returns it.
+  - Localization: the `I18nAdapter` of `frontend/i18n.md` (a verbatim copy in `src/main/api/i18n.ts`), a value in the
+    class config: `createFileUploadClass({ i18n: i18nAdapter })`, the same adapter for every element of the class.
+    - `translate('fileUpload', key, params)`: `key` a `FileUploadTextKey`, `params` raw numbers (`count`, `percent`),
+      `null` for a text without values; `size` and `types` come formatted (a size with its unit chosen by magnitude, a
+      list: ICU cannot format them). `null` from the adapter: the English text (`src/main/texts/en.ts`), formatted in
+      the adapter's locale.
     - `currentLocale()` is read once per render, for `Intl` (sizes, numbers). An invalid tag falls back to `en-US`.
     - `onChange`: the element subscribes while connected (and unsubscribes when disconnected). A notification
       refreshes every text, accessible name and formatted size; list, uploads and focus stay. On connect the texts are
       refreshed too.
     - Without an adapter: the English texts, formatted in `en-US`.
-    - No ready adapter of our own (no `createFileUploadI18nAdapter`): an app with an i18n library writes a plain
-      `I18nAdapter` over it (a few lines, e.g. over react-i18next's instance: `t(key, { ns: namespace, ...params,
-      defaultValue })`, its `languageChanged` event), which gives its texts, locale and changes in full; a helper for
-      apps without one could only give part of that. Apps without an i18n library are rare (plain pages).
+    - The translations: ICU messages, `locales/en.json`, `locales/de.json`, which the app loads into its i18n under the
+      namespace `fileUpload`.
   - Icons: the SVGs of the Tabler icons, copied into `icons.ts` (with the MIT license notice), no icon dependency. The
     drop area shows Tabler's `upload` (a tray with an arrow up), with a thinner stroke (1.5).
   - Controls: native `<button>` and `<progress>`, styled by us. Icon buttons keep their `aria-label` and get our own
@@ -480,9 +458,9 @@ These are the first proposals behind `src/main/api/` and the element. Each one c
       animations have finished; this works in every browser. Closes the user did not ask for are instant. No
       animation with `prefers-reduced-motion`.
 - `disabled`: the whole component is `inert`, and dropped files are ignored.
-- Texts (English defaults in `texts.ts`, translations via the `I18nAdapter`): every visible text and every accessible
-  name. Sizes are formatted with `Intl` (unit style, `1 kB = 1024 bytes`) in the adapter's locale. There is no plural
-  handling in the defaults: they are worded so that they do not need it (an adapter gets `count` and can pluralize).
+- Texts (English defaults in `texts/en.ts`, translations via the `I18nAdapter`): every visible text and every
+  accessible name. Sizes are formatted with `Intl` (unit style, `1 kB = 1024 bytes`) in the adapter's locale. There is
+  no plural handling in the defaults: they are worded so that they do not need it.
 - Accessibility: the list is a `ul` with an accessible name, the progress bar has one, and everything works with the
   keyboard (the "Browse" button is the way to add files without a mouse).
   - Label (decided): as flexible as reasonable, both ways work.

@@ -1,8 +1,10 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
 
-import type * as Spec from '../api/react/index.js';
+import type { DataTableTextKey } from '../api/react/index.js';
+import { EN } from '../texts/en.js';
 import { ConfigContext } from './config.js';
 
+export type { Texts };
 export { useLocale, useTexts };
 
 // The namespace of our texts in an `I18nAdapter`.
@@ -10,102 +12,23 @@ const NAMESPACE = 'dataTable';
 
 const FALLBACK_LOCALE = 'en-US';
 
-// The English texts of last resort, with `{name}` placeholders. Numbers are formatted in the current locale.
-const defaultTexts = {
-  selectedCount: '{count} selected',
-  itemRange: '{from}-{to} of {total}',
-  itemSingle: '{item} of {total}',
-  pageSize: 'Page Size',
-  perPage: '{count} per page',
-  pageOf: '{page} of {pages}',
-  goToPage: 'Page {page}',
-  previousPage: 'Previous page',
-  nextPage: 'Next page',
-  empty: 'No entries',
-  emptySearch: 'No results found',
-  searchPlaceholder: 'Search',
-  clearFilter: 'Clear filter',
-  filterAll: 'All',
-  filterPlaceholder: 'Filter',
-  clearSearch: 'Clear search',
-  reload: 'Reload',
-  loading: 'Loading…',
-  selectAll: 'Select all rows',
-  deselectAll: 'Deselect all rows',
-  selectRow: 'Select row',
-  deselectRow: 'Deselect row',
-  expandAllDetails: 'Show all details',
-  collapseAllDetails: 'Hide all details',
-  expandDetails: 'Show details',
-  collapseDetails: 'Hide details',
-  sortAsc: 'Sort ascending',
-  sortDesc: 'Sort descending',
-  calendarPrevious: 'Previous',
-  calendarNext: 'Next',
-  clear: 'Clear',
-  filters: 'Filters',
-  activeFilters: '{count} active',
-  resetFilters: 'Reset',
-  applyFilters: 'Apply',
-  cancelFilters: 'Cancel',
-  clearAllFilters: 'Clear all',
-  removeFilter: 'Remove filter',
-  emptyFilters: 'No rows match these filters',
-  clearFilters: 'Clear filters',
-  textMatch: 'Match',
-  textContains: 'contains',
-  textStartsWith: 'starts with',
-  textEndsWith: 'ends with',
-  rangeFrom: 'From',
-  rangeTo: 'To',
-  filterYes: 'Yes',
-  filterNo: 'No',
-  typeToSearch: 'Type to search',
-  loadFailed: 'Could not load',
-  removeValue: 'Remove {label}',
-  clearSelection: 'Clear selection',
-  columns: 'Columns',
-  resetColumnWidths: 'Reset column widths',
-  optimizeColumnWidths: 'Optimize column widths',
-  layout: 'Layout',
-  layoutAuto: 'Automatic',
-  layoutTable: 'Table',
-  layoutCards: 'Cards',
-  moveRow: 'Move row',
-  emptyGroup: '(Blank)',
-  movedTo: 'Moved to position {position}',
-  expandGroup: 'Show group',
-  collapseGroup: 'Hide group',
-  selectGroup: 'Select group',
-  deselectGroup: 'Deselect group',
-  groupCount: '{count}',
-  groupPartial: '{shown} of {total}',
-  totalCount: '{count}',
-  confirmEdit: 'OK',
-  confirmNew: 'Add',
-  cancelEdit: 'Cancel',
-  saveFailed: 'The row could not be saved',
-  editRow: 'Edit row',
-  newRow: 'New row',
-  savedFilters: 'Saved filters',
-  saveFilter: 'Save as…',
-  filterName: 'Name',
-  confirmSaveFilter: 'Save',
-  cancelSaveFilter: 'Cancel',
-  saveFilterFailed: 'The filter could not be saved',
-  deleteSavedFilter: 'Delete {name}',
-  shareFilter: 'Share',
-  sharedFilter: 'Shared',
-  privateFilter: 'Private',
-  filterOwner: 'by {name}',
-  shareSavedFilter: 'Share {name}',
-} as const satisfies Record<keyof Spec.DataTableTexts, string>;
+const KEYS = Object.keys(EN) as DataTableTextKey[];
 
-function createNumberFormat(locale: string): Intl.NumberFormat {
+// The texts of one render: a string for a text without values, else a function of them.
+type Texts = {
+  readonly [K in DataTableTextKey]: Parameters<(typeof EN)[K]>[0] extends infer P
+    ? undefined extends P ? string : (params: P) => string
+    : never;
+};
+
+// An invalid tag falls back to en-US instead of throwing.
+function validLocale(locale: string): string {
   try {
-    return new Intl.NumberFormat(locale);
+    new Intl.NumberFormat(locale);
+
+    return locale;
   } catch {
-    return new Intl.NumberFormat(FALLBACK_LOCALE);
+    return FALLBACK_LOCALE;
   }
 }
 
@@ -113,124 +36,32 @@ function createNumberFormat(locale: string): Intl.NumberFormat {
 function useLocale(): string {
   const { i18n } = useContext(ConfigContext);
 
-  return i18n?.currentLocale() ?? FALLBACK_LOCALE;
+  return validLocale(i18n?.currentLocale() ?? FALLBACK_LOCALE);
 }
 
-// The texts come from the `I18nAdapter` of the configuration (namespace "dataTable"): it gets the key, the raw params
-// and the English text, already filled in, and returns the translation (or that English text). Without an adapter, the
-// English texts are used. The component re-renders when the adapter reports a change of the language.
-function useTexts(): Spec.DataTableTexts {
+// The texts come from the `I18nAdapter` of the configuration (namespace "dataTable"): it gets the key and the raw
+// params, and returns the translation, or `null`: then the English text (`texts/en.ts`), formatted in the adapter's
+// locale. Without an adapter, the English texts in en-US. The component re-renders when the adapter reports a change.
+function useTexts(): Texts {
   const { i18n } = useContext(ConfigContext);
   const [version, setVersion] = useState(0);
 
   useEffect(() => i18n?.onChange?.(() => setVersion((current) => current + 1)), [i18n]);
 
-  const locale = i18n?.currentLocale() ?? FALLBACK_LOCALE;
+  const locale = useLocale();
 
   return useMemo(() => {
-    const numbers = createNumberFormat(locale);
+    const text = (key: DataTableTextKey, params: Readonly<Record<string, unknown>> | null): string => {
+      const english = EN[key] as (params: unknown, locale: string) => string;
 
-    const translate = (
-      key: keyof typeof defaultTexts,
-      params: Readonly<Record<string, number | string>> | null = null,
-    ): string => {
-      const defaultValue = defaultTexts[key].replace(/\{(\w+)\}/g, (_, name: string) => {
-        const value = params?.[name];
-
-        return typeof value === 'number' ? numbers.format(value) : String(value ?? '');
-      });
-
-      return i18n === undefined ? defaultValue : i18n.resolveText(NAMESPACE, key, params, defaultValue);
+      return i18n?.translate(NAMESPACE, key, params) ?? english(params ?? {}, locale);
     };
 
-    return {
-      selectedCount: (params) => translate('selectedCount', params),
-      itemRange: (params) => translate('itemRange', params),
-      itemSingle: (params) => translate('itemSingle', params),
-      pageSize: translate('pageSize'),
-      perPage: (params) => translate('perPage', params),
-      pageOf: (params) => translate('pageOf', params),
-      goToPage: (params) => translate('goToPage', params),
-      previousPage: translate('previousPage'),
-      nextPage: translate('nextPage'),
-      empty: translate('empty'),
-      emptySearch: translate('emptySearch'),
-      searchPlaceholder: translate('searchPlaceholder'),
-      clearFilter: translate('clearFilter'),
-      filterAll: translate('filterAll'),
-      filterPlaceholder: translate('filterPlaceholder'),
-      clearSearch: translate('clearSearch'),
-      reload: translate('reload'),
-      loading: translate('loading'),
-      selectAll: translate('selectAll'),
-      deselectAll: translate('deselectAll'),
-      selectRow: translate('selectRow'),
-      deselectRow: translate('deselectRow'),
-      expandAllDetails: translate('expandAllDetails'),
-      collapseAllDetails: translate('collapseAllDetails'),
-      expandDetails: translate('expandDetails'),
-      collapseDetails: translate('collapseDetails'),
-      sortAsc: translate('sortAsc'),
-      sortDesc: translate('sortDesc'),
-      calendarPrevious: translate('calendarPrevious'),
-      calendarNext: translate('calendarNext'),
-      clear: translate('clear'),
-      filters: translate('filters'),
-      activeFilters: (params) => translate('activeFilters', params),
-      resetFilters: translate('resetFilters'),
-      applyFilters: translate('applyFilters'),
-      cancelFilters: translate('cancelFilters'),
-      clearAllFilters: translate('clearAllFilters'),
-      removeFilter: translate('removeFilter'),
-      emptyFilters: translate('emptyFilters'),
-      clearFilters: translate('clearFilters'),
-      textMatch: translate('textMatch'),
-      textContains: translate('textContains'),
-      textStartsWith: translate('textStartsWith'),
-      textEndsWith: translate('textEndsWith'),
-      rangeFrom: translate('rangeFrom'),
-      rangeTo: translate('rangeTo'),
-      filterYes: translate('filterYes'),
-      filterNo: translate('filterNo'),
-      typeToSearch: translate('typeToSearch'),
-      loadFailed: translate('loadFailed'),
-      removeValue: (params) => translate('removeValue', params),
-      clearSelection: translate('clearSelection'),
-      columns: translate('columns'),
-      resetColumnWidths: translate('resetColumnWidths'),
-      optimizeColumnWidths: translate('optimizeColumnWidths'),
-      layout: translate('layout'),
-      layoutAuto: translate('layoutAuto'),
-      layoutTable: translate('layoutTable'),
-      layoutCards: translate('layoutCards'),
-      moveRow: translate('moveRow'),
-      emptyGroup: translate('emptyGroup'),
-      movedTo: (params) => translate('movedTo', params),
-      expandGroup: translate('expandGroup'),
-      collapseGroup: translate('collapseGroup'),
-      selectGroup: translate('selectGroup'),
-      deselectGroup: translate('deselectGroup'),
-      groupCount: (params) => translate('groupCount', params),
-      groupPartial: (params) => translate('groupPartial', params),
-      totalCount: (params) => translate('totalCount', params),
-      confirmEdit: translate('confirmEdit'),
-      confirmNew: translate('confirmNew'),
-      cancelEdit: translate('cancelEdit'),
-      saveFailed: translate('saveFailed'),
-      editRow: translate('editRow'),
-      newRow: translate('newRow'),
-      savedFilters: translate('savedFilters'),
-      saveFilter: translate('saveFilter'),
-      filterName: translate('filterName'),
-      confirmSaveFilter: translate('confirmSaveFilter'),
-      cancelSaveFilter: translate('cancelSaveFilter'),
-      saveFilterFailed: translate('saveFilterFailed'),
-      deleteSavedFilter: (params) => translate('deleteSavedFilter', params),
-      shareFilter: translate('shareFilter'),
-      sharedFilter: translate('sharedFilter'),
-      privateFilter: translate('privateFilter'),
-      filterOwner: (params) => translate('filterOwner', params),
-      shareSavedFilter: (params) => translate('shareSavedFilter', params),
-    };
+    return Object.fromEntries(
+      KEYS.map((
+        key,
+      ) => [key, EN[key].length === 0 ? text(key, null) : (params: Record<string, unknown>) => text(key, params)]),
+    ) as unknown as Texts;
+    // `version`: a new object after a change of the language.
   }, [i18n, locale, version]);
 }

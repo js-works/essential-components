@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import type * as Spec from '../../api/react/index.js';
 import type { ActionItem } from '../actions.js';
 import { variantOf } from '../actions.js';
+import type { Texts } from '../texts.js';
 import type { SearchBox } from '../use-data-table.js';
 import { flag, hasContent, textFieldKeys } from '../utils.js';
 import { ActionList } from './actions.js';
@@ -22,7 +23,7 @@ type ToolbarProps<Row> = {
   pinnedActions: readonly ActionItem<Row>[];
   selectionActions: readonly ActionItem<Row>[];
   invoke: (action: Spec.TableAction<Row>) => void;
-  texts: Spec.DataTableTexts;
+  texts: Texts;
   search: SearchBox | undefined;
   reload: (() => void) | undefined;
   // The filter button with its popup, when a column has a filter.

@@ -2,7 +2,7 @@ import type * as React from 'react';
 import { useEffect, useId, useReducer, useRef, useState } from 'react';
 import type { z } from 'zod';
 
-import { checkI18nType, createTranslator, type ErrorData, FALLBACK_LOCALE, warnOnce } from './i18n.js';
+import { createTranslator, type ErrorData, warnOnce } from './i18n.js';
 import type {
   FieldArg,
   FieldBindingConfig,
@@ -43,8 +43,6 @@ interface Store {
   refs: Map<string, (el: Element | null) => void>;
   rendered: Set<string>;
   formEl: HTMLFormElement | null;
-  /** The i18n factory has been asked (once per form, with its <form> element). */
-  i18nAsked: boolean;
   idBase: string;
 }
 
@@ -75,7 +73,6 @@ function createStore(schema: z.ZodObject<any>, initialValues: unknown): Store {
     refs: new Map(),
     rendered: new Set(),
     formEl: null,
-    i18nAsked: false,
     idBase: '',
   };
   validate(store);
@@ -184,11 +181,9 @@ function defineUseForm<const P extends FieldPropNames = { label: 'label'; error:
   config: FormConfig<P> = {},
 ) {
   const names: FieldPropNames = { label: 'label', error: 'error', ...config.props };
-  const { i18n } = config;
-  checkI18nType(i18n);
   const t = createTranslator(config);
   // Chosen once, so every render calls the same hooks.
-  const useHookAdapter = i18n?.type === 'hook' ? i18n.useAdapter : noAdapter;
+  const useI18n = config.useI18n ?? noAdapter;
 
   return function useForm<S extends z.ZodObject<any>>(schema: S, options: UseFormOptions<S>): UseFormReturn<S, P> {
     const idBase = useId();
@@ -196,13 +191,7 @@ function defineUseForm<const P extends FieldPropNames = { label: 'label'; error:
     // `requestSubmit` is stable: it always runs the submit of the latest render.
     const runRef = useRef<() => Promise<SubmitOutcome>>(null!);
     const [requestSubmit] = useState(() => () => runRef.current());
-    // A hook runs on every render; a factory is asked once, with the <form> element (see formRef), before the first
-    // paint. Until then (the first render), the texts are those without an adapter, and no warnings.
-    const hookAdapter = useHookAdapter();
-    const [factoryAdapter, setFactoryAdapter] = useState<I18nAdapter>();
-    const adapter = hookAdapter ?? factoryAdapter;
-    const pending = i18n?.type === 'factory' && factoryAdapter === undefined;
-    const locale = adapter?.currentLocale() ?? FALLBACK_LOCALE;
+    const adapter = useI18n();
     useEffect(() => adapter?.onChange?.(() => forceRender()), [adapter]);
     const storeRef = useRef<Store | null>(null);
     storeRef.current ??= createStore(schema, options.initial);
@@ -221,10 +210,7 @@ function defineUseForm<const P extends FieldPropNames = { label: 'label'; error:
     useEffect(() => {
       for (const [path, el] of store.elements) {
         const err = store.serverErrors.get(path) ?? store.errors.get(path);
-        (el as HTMLInputElement).setCustomValidity?.(err ? t.message(err, locale, adapter, pending) : '');
-      }
-      if (i18n?.type === 'factory' && !store.formEl) {
-        warnOnce('i18n:form', 'The i18n factory needs the <form> element: spread form() on it.');
+        (el as HTMLInputElement).setCustomValidity?.(err ? t.message(err, adapter) : '');
       }
       for (const path of store.rendered) {
         if (!store.elements.has(path)) {
@@ -335,7 +321,7 @@ function defineUseForm<const P extends FieldPropNames = { label: 'label'; error:
       }
       if (store.serverErrors.size > 0) focusFirstInvalid();
       if (store.serverFormError) {
-        return { ok: false, error: t.message(store.serverFormError, locale, adapter, pending) };
+        return { ok: false, error: t.message(store.serverFormError, adapter) };
       }
       return store.serverErrors.size > 0 ? { ok: false } : { ok: true };
     }
@@ -393,7 +379,7 @@ function defineUseForm<const P extends FieldPropNames = { label: 'label'; error:
         id: idOf(path),
         ref: refFor(path),
         required: info.required,
-        [bind.labelProp ?? names.label]: opts.label ?? t.label(labelKey, path, locale, adapter, pending),
+        [bind.labelProp ?? names.label]: opts.label ?? t.label(labelKey, path, adapter),
         [bind.changeProp ?? 'onChange']: (...a: unknown[]) =>
           handleChange(info, coerce(info, from(...a)), validateOn, controlled),
         [bind.blurProp ?? 'onBlur']: () => handleBlur(info),
@@ -402,7 +388,7 @@ function defineUseForm<const P extends FieldPropNames = { label: 'label'; error:
       // Mantine's `error`): the message, or `true` without one.
       const errorProp = bind.errorProp ?? names.error;
       const invalidProp = bind.invalidProp ?? names.invalid;
-      const text = err && messageVisible(store, path) ? t.message(err, locale, adapter, pending) : undefined;
+      const text = err && messageVisible(store, path) ? t.message(err, adapter) : undefined;
       if (invalidProp) base[invalidProp] = err ? true : undefined;
       base[errorProp] = text ?? (invalidProp === errorProp && err ? true : undefined);
       if (controlled) base[bind.valueProp!] = to(store.values[path]);
@@ -428,11 +414,6 @@ function defineUseForm<const P extends FieldPropNames = { label: 'label'; error:
 
     const formRef = (el: HTMLFormElement | null) => {
       store.formEl = el;
-      if (el && i18n?.type === 'factory' && !store.i18nAsked) {
-        store.i18nAsked = true;
-        const created = i18n.getAdapter(el);
-        setFactoryAdapter(() => created);
-      }
     };
 
     function form(...args: Array<Record<string, unknown> | false | null | undefined>) {
@@ -449,7 +430,7 @@ function defineUseForm<const P extends FieldPropNames = { label: 'label'; error:
       field: field as UseFormReturn<S, P>['field'],
       submitting: store.submitting,
       valid: isValid(store),
-      formError: formErr ? t.message(formErr, locale, adapter, pending) : undefined,
+      formError: formErr ? t.message(formErr, adapter) : undefined,
       reset,
       requestSubmit,
       isDirty,

@@ -30,7 +30,8 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   - Shared by both entries: `query.ts` (`RowQuery`, `RowPage`, `RowSource`, `ColumnSort`, `GroupTotal`,
     `FilterValue`, `GroupBy`, `RowGroup`), `rows.ts` (`RowMove`, `ReorderRows`, `SaveRow`, `CreateRow`), `filters.ts`,
     `editors.ts`, `saved-filters.ts`, `settings.ts` (`TableDensity`, `TableLayout`, `FooterMode`, `ColumnAlign`,
-    `ActionVariant`, …), `theme.ts` (`DataTableTheme`), `texts.ts` (`DataTableTexts`), `i18n.ts`.
+    `ActionVariant`, …), `theme.ts` (`DataTableTheme`), `texts.ts` (`DataTableTextKey`, `DataTableParams`, read from the English texts), `i18n.ts` (`I18nAdapter`,
+    `TextParams`: a verbatim copy of those in `frontend/i18n.md`).
   - The element's own: `columns.ts` (`TableColumn`, …), `actions.ts` (`TableAction`, …), `autocomplete.ts` (content
     `string | C`, `string | Node`), `content.ts`, `controller.ts`, `element.ts` (`DataTableSetupConfig`,
     `DataTableElement`, `DataTableClass`, `DataTableDefaults`, `SetupDataTable`).
@@ -45,7 +46,7 @@ This repository's rules for it (see the root's `CLAUDE.md`):
     `typescript.md`).
   - Inside the package: `import type * as Spec from '../api/react/index.js'` (the React code), `import type * as
     DataTable from '../api/index.js'` (the element's).
-  - Exception: `DataTableTexts` (`src/api/texts.ts`) has the en-US text as a comment after each line.
+  - Exception: `i18n.ts`, a verbatim copy with its comments.
   - Each API decision changes only these files.
   - No namespaces in the public API.
 - Do not update `README.md` for now: nobody reads it yet, so it would be wasted time.
@@ -183,7 +184,7 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   - Shared types (`Theme`, `I18nAdapter`, `Query`, ...) are in both entries, so a React app needs only `/react`.
   - Needs the built files (`exports` to `dist/`), else the app's bundler resolves `react` itself.
     (Under the `source` condition, e.g. in the root's demo, it is the sources, with the app's React.)
-- `setupDataTable(config)` is called once per app with the config (theme, i18n factory, content adapter, and
+- `setupDataTable(config)` is called once per app with the config (theme, i18n adapter, content adapter, and
   `defaults`: the settings of every element where it has no attribute or property of its
   own, e.g. `{ selectionAppearance: 'neutral' }`; only those with values (density, layout, footer, rowActionLook,
   selectionAppearance, pageSize, pageSizeOptions): a boolean attribute cannot say "off", so a default `true` could not
@@ -237,11 +238,8 @@ This repository's rules for it (see the root's `CLAUDE.md`):
     - Functions, because a DOM node can be in one place only (a row action's icon is in every row), and to follow the
       locale: the element calls every text and content function again when its i18n adapter reports a change
       (`onChange`). Plain strings stay fixed.
-- Localization of the element: `i18n: { type: 'factory', getAdapter: (element: HTMLElement) => I18nAdapter }`, as in
-  the `file-upload` project (`createFileUploadClass({ i18n: { type: 'factory', getAdapter } })`). The element calls it
-  once, on its first connect, with itself (so an adapter can read e.g. the `lang` of the element or of an ancestor). It
-  may return one shared adapter or a new one per element. Another `type` (e.g. an adapter given directly) makes
-  `setupDataTable` throw a `TypeError`.
+- Localization of the element: `i18n: I18nAdapter` in the setup's config (`setupDataTable({ i18n })`), the same
+  adapter for every element of the setup (`frontend/i18n.md`).
 - Column filters: the element's entry exports the same factories as the React entry (`textFilter()`,
   `selectFilter({ options, multiple })`, `dateRangeFilter()`, `numberRangeFilter()`,
   `booleanFilter()`, `autocompleteFilter()`); internally they use the React filters.
@@ -320,11 +318,12 @@ This repository's rules for it (see the root's `CLAUDE.md`):
 
 - The component is not exported directly. The app creates it once, with a factory, and uses the result everywhere:
   ```tsx
-  const DataTable = createDataTableComponent({ i18n, theme }); // once, at module level
+  const DataTable = createDataTableComponent({ useI18n, theme }); // once, at module level
   <DataTable source={source} rowKey="id" columns={columns} />; // no localization or theme in sight
   ```
-  - The same model as the `file-upload` project (`createFileUploadClass({ i18n })`), so both are configured alike.
-  - `createDataTableComponent(config?: DataTableComponentConfig)`. All parts are optional: `i18n`, `theme`,
+  - The same model as the `file-upload` project (`createFileUploadComponent({ useI18n })`), so both are configured
+    alike.
+  - `createDataTableComponent(config?: DataTableComponentConfig)`. All parts are optional: `useI18n`, `theme`,
     `defaults`.
   - `defaults` (`DataTableDefaults`, the element's: `density`, `layout`, `footer`, `rowActionLook`,
     `selectionAppearance`, `pageSize`, `pageSizeOptions`): the settings of every table of this component where the
@@ -335,31 +334,22 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   - It is the only way to get the component: no ready-made, unconfigured `DataTable` next to it.
   - Several looks or languages in one app: several factory calls.
   - Internally the created component passes its config down with a private context (e.g. to the built-in filters).
-- Localization: `config.i18n`, a discriminated union on `type`, the same as the `file-upload` React wrapper's (both
-  packages alike). Without `i18n`: the English defaults. Another `type` (e.g. an adapter given directly) makes `createDataTableComponent` throw a `TypeError`.
-  - `{ type: 'factory', getAdapter: (element: HTMLElement) => I18nAdapter }` (for i18n libraries that read the DOM, e.g.
-    `lang`): asked once per instance, with the root element of the table, when it is committed (a ref callback, before
-    the first paint; the texts are rendered once more, in the adapter's language). The same config object works for
-    `setupDataTable`. A shared adapter: `{ type: 'factory', getAdapter: () => i18n }`.
-    - Also in React: e.g. two parts of a page in two languages, told apart by `lang` on a
-      container and not by a React context. No `{ type: 'adapter' }` for a fixed adapter: `getAdapter: () => i18n` is
-      short enough, and written once per app.
-  - `{ type: 'hook', useAdapter: () => I18nAdapter }` (for i18n libraries with a React context): called in the
-    component on every render, so each instance follows the nearest provider. The `use` prefix keeps the hooks lint
-    rules working.
-  - Internally the adapter goes into the private `ConfigContext` per instance (with `onRoot`, the callback the view's
-    root ref calls for the factory).
-- The `I18nAdapter`: exactly the shape of `file-upload`'s (`currentLocale`,
-  `resolveText(namespace, key, params, defaultValue)`, optional `onChange`).
-  - Only `string`, `unknown`, `Record`, `null` and functions, nothing component-specific, so one adapter object fits
-    both components (structural typing). Never change it incompatibly, only add optional members.
-  - Our namespace is `'dataTable'`, the keys are the keys of `DataTableTexts`. `defaultValue` is the English text,
-    already filled in.
-  - `currentLocale()` is read on every render, for `Intl` (numbers). `onChange` is subscribed while mounted (an
-    effect in `useTexts`), and a notification re-renders, so every text and number is refreshed.
-  - The params hold raw numbers (`count`, `from`, `to`, `total`, `pages`); the adapter formats them itself.
-    Texts without params get `null`.
+- Localization: `config.useI18n?: () => I18nAdapter` (`frontend/i18n.md`), called in the component on every render,
+  so each instance can follow the nearest provider (a React context). A global adapter: `useI18n: () => i18nAdapter`.
+  Without it: the English defaults.
+  - Internally the adapter goes into the private `ConfigContext` per instance.
+- The `I18nAdapter`: the one of `frontend/i18n.md` (`currentLocale`, `translate(namespace, key, params)`, optional
+  `onChange`), a verbatim copy in `src/api/i18n.ts`, so one adapter object fits every package.
+  - Our namespace is `'dataTable'`, the keys are `DataTableTextKey`. `null` from the adapter: the English text
+    (`src/texts/en.ts`), formatted in the adapter's locale.
+  - `currentLocale()` is read on every render, for `Intl` (numbers); an invalid tag falls back to `en-US`. `onChange`
+    is subscribed while mounted (an effect in `useTexts`), and a notification re-renders, so every text and number is
+    refreshed.
+  - The params hold raw numbers (`count`, `from`, `to`, `total`, `pages`) and strings (`label`, `name`); the
+    translation formats them. Texts without params get `null`.
   - Without an adapter: the English texts, formatted in `en-US` (`i18n.md`).
+  - The translations: ICU messages, `locales/en.json`, `locales/de.json` (exported as
+    `@local/data-table/locales/*.json`), which the app loads into its i18n under the namespace `dataTable`.
   - No i18n library is a dependency. An adapter for react-i18next (or any other library) is a few lines.
   - No hidden `useTranslation('dataTable')` of react-i18next: it would tie every app to one i18n library.
 - Theme: `config.theme`, a typed `DataTableTheme`: the design values in camelCase (`colorText`, `colorSelected`,
@@ -408,7 +398,7 @@ This repository's rules for it (see the root's `CLAUDE.md`):
 - One generic implementation with native elements. Themes for Mantine 9 and Ant Design 6. `@mantine/core` and `antd`
   are dev dependencies only, for `scripts/library-variables.mjs` (the variable snapshots of the demo); no library code
   runs in the demo.
-- i18n: no library. The app gives an `I18nAdapter` through a factory or a hook in the configuration (namespace
+- i18n: no library. The app gives an `I18nAdapter`: a value in the element's setup, a hook in the component's config (namespace
   `dataTable`, see Configuration).
 - npm never runs install scripts of dependencies: `.npmrc` has `ignore-scripts=true`. (Our own `npm run` scripts are
   not affected.)
@@ -461,7 +451,7 @@ This repository's rules for it (see the root's `CLAUDE.md`):
     stylesheet), and `useThemed`. `stylesheet.ts`: the stylesheet of a theme, and adding it where a table is.
   - `actions.ts` (which actions are visible where), `layout.ts` (column groups), `grouping.ts` (row groups: the page
     as runs and lines, and the moves between groups; with `grouping.test.ts`), `texts.ts` (`useTexts`: texts via the
-    adapter, en-US defaults), `filters.ts`, `hooks.ts`, `utils.ts`.
+    adapter, else the English ones of `src/texts/en.ts`), `filters.ts`, `hooks.ts`, `utils.ts`.
   - `view/`: the whole rendering. `data-table-view.tsx` (grid, header rows, data rows, detail rows, empty state),
     `toolbar.tsx` (the bar and the selection bar), `filter-panel.tsx` (the filter button, the filter view, the pills),
     `footer.tsx`, `actions.tsx`, `column-filters.tsx` (the built-in filters and the summaries for their pills).
@@ -512,15 +502,15 @@ This repository's rules for it (see the root's `CLAUDE.md`):
     page. Items are moved within a section or into another one. "Delete section" (a group action, a trash icon)
     deletes one, its items go to the blank group (section `''`, "(Blank)", at the end); a line with the last move.
   - `element-demo.ts` (+ `element-demo.css`): the custom element tab, plain TypeScript with DOM nodes as content: the
-    same users, `setupDataTable` with the demo's i18n factory, text, select and autocomplete filters, a role badge (a node per
+    same users, `setupDataTable` with the demo's i18n adapter, text, select and autocomplete filters, a role badge (a node per
     row, styled by the demo's global CSS), a rows action, switches for density, striped and searchable, and reload,
     clear selection and the selected rows (`onSelectionChange`). Titles, headers and labels are functions, so they
     follow the language.
   - One plain demo (`demo.tsx`) for all themes, with no UI library: plain elements, a small toast for the actions
     (`toasts.tsx`) and inline SVG icons (`icons.tsx`, Tabler paths).
   - The Theme selector at the top switches between Default, Soft, Mantine and Ant Design. It starts with Default.
-    - The demo creates one data table per theme at module level (`createDataTableComponent({ i18n, theme })`,
-      all with the same adapter: `demo/i18n.ts` exports `i18n` as `{ type: 'factory', getAdapter: () => adapter }`) and
+    - The demo creates one data table per theme at module level (`createDataTableComponent({ useI18n, theme })`,
+      all with the same adapter: `demo/i18n.ts` exports it as `i18n`, and `useI18n` returning it) and
       shows the one of the chosen theme.
     - The Mantine and antd themes read the variables of their library, which a real app gets from the library at
       runtime. The demo runs no library code, so it adds static snapshots of exactly the variables the two themes read
@@ -1122,13 +1112,11 @@ This repository's rules for it (see the root's `CLAUDE.md`):
 
 - The component must be localizable (i18n).
   - No hard-coded user-visible strings.
-  - The needed texts are defined by the type `Texts` in `src/api/texts.ts`, with the en-US text after each line.
-    - A text without parameters is a `string`. A text with parameters is `(params: { ... }) => string`.
-    - The en-US comments use the simplest valid ICU MessageFormat, e.g. `{count} selected`.
-      Full ICU syntax (plural, select) only where a text really needs it.
-    - The comments are a neutral notation. The English defaults in `texts.ts` use the same `{count}` placeholders.
+  - The texts: the English (en-US) ones as functions of their values and the locale, `src/texts/en.ts`, the master
+    (`frontend/i18n.md`); their translations as ICU messages in `locales/` (`src/texts/texts.test.ts` checks their
+    keys and placeholders against the master).
   - There is no `messages` prop and no i18n in `Props`: the texts come from the `I18nAdapter` of the configuration.
-    - Numbers are formatted in the locale of the adapter (`Intl`), or of `<html lang>` without one.
+    - Numbers are formatted in the locale of the adapter (`Intl`), `en-US` without one.
   - The tests check that every text is provided.
 
 - Loading state:
@@ -2228,7 +2216,7 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   follows from that, so there is no list of interactive elements to keep up to date. The data row and the detail row
   share one `rowHandlers(key)` in the view, so they cannot drift apart.
 - Texts: `useTexts` reads the `I18nAdapter` of the instance from the private `ConfigContext`. Without an adapter, or
-  without a translation, the en-US defaults (in `texts.ts`) are used. Numbers in texts are formatted with `Intl.NumberFormat`.
+  without a translation (`null`), the English texts (`src/texts/en.ts`) are used. Numbers in texts are formatted with `Intl.NumberFormat`.
 - Popups (the list of a select, a menu, a tooltip) are Base UI's: it positions them (flipped when there is no room,
   kept inside the viewport, following scrolling). They are all rendered into the layer of the root (`LayerContext`).
 - Tests choose an option of a Base UI select with the pointer sequence of a real mouse (`chooseIn` in the test file):
@@ -2400,7 +2388,7 @@ This repository's rules for it (see the root's `CLAUDE.md`):
 - `Query.filters` with keys typed against the row type (`Query<Row>`), a possible later safety net.
 - Controlled query state (`query` and `onQueryChange`), e.g. for URL sync or "reset all" from outside.
   - Design it as one unit, together with `pageSize` and the selection reset.
-- Error state: what happens when `source` rejects (display, retry, texts in `DataTableTexts`).
+- Error state: what happens when `source` rejects (display, retry, its texts).
   - Not specified yet, and not part of the component or the demo yet.
 - `rowKey` as a function `(row) => string`, for rows with a composite key. For now it is only a property name.
 - To discuss: keep the details toggle column and the action column while there are no rows. Today both go away

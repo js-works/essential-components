@@ -10,12 +10,12 @@ import { html as staticHtml, unsafeStatic } from 'lit/static-html.js';
 import type { Group, Match } from '../core/search.js';
 import { groupsOf, search, subgroupsOf } from '../core/search.js';
 import { readStored, writeStored } from '../core/storage.js';
+import type { Texts } from '../core/texts.js';
 import { textsOf } from '../core/texts.js';
 import type {
   ActionChoices,
   CockpitClassConfig,
   CockpitElement,
-  CockpitTexts,
   CockpitTheme,
   FooterAction,
   I18nAdapter,
@@ -174,7 +174,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   #tipTarget: Element | undefined;
   #tipTimer: ReturnType<typeof setTimeout> | undefined;
   #resizeObserver: ResizeObserver | undefined;
-  #adapter: I18nAdapter | undefined;
+  readonly #adapter: I18nAdapter | undefined;
   #unsubscribe: (() => void) | undefined;
   // How many entries of each line of the topbar do not fit (they go into its "More" menu), by the line's key.
   readonly #overflow = new Map<string, number>();
@@ -192,6 +192,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
     this.startPage = config.startPage === true;
     this.theme = config.theme ?? {};
     this.#config = config;
+    this.#adapter = config.i18n;
     this.#key = config.storageKey ?? 'cockpit';
     this.#recent = readStored<string[]>(`${this.#key}:recent`, []);
     this.#collapsed = readStored(`${this.#key}:collapsed`, false);
@@ -260,7 +261,6 @@ class CockpitElementBase extends LitElement implements CockpitElement {
 
   override connectedCallback(): void {
     super.connectedCallback();
-    this.#adapter ??= this.#config.i18n?.getAdapter(this);
     this.#unsubscribe = this.#adapter?.onChange?.(() => this.requestUpdate());
     window.addEventListener('hashchange', this.#onHashChange);
     document.addEventListener('keydown', this.#onShortcut);
@@ -544,7 +544,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
 
   // --- State helpers -------------------------------------------------------------------------------------------------
 
-  get #texts(): CockpitTexts {
+  get #texts(): Texts {
     return textsOf(this.#adapter);
   }
 
@@ -909,7 +909,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
 
   // `sheet`: in the bottom bar's sheet (the whole sidebar, without its resize handle and toggle; a close button in
   // place of the search, which the bottom bar has).
-  #sidebar(texts: CockpitTexts, rail: boolean, sheet = false): TemplateResult {
+  #sidebar(texts: Texts, rail: boolean, sheet = false): TemplateResult {
     return html`<aside class="sidebar">
             ${rail || sheet ? nothing : this.#resizeHandle(texts)}
             <div class="brand">
@@ -941,7 +941,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   // taskbar), the pinned ones first, then by folder (`#folders`). In the page's scheme. No greeting.
   // The filter hides the cards that do not match (the search panel's matching, `search()`; their order stays), and the
   // folders without one; Enter opens the first card, Escape clears it, Down goes to the first card.
-  #startPageView(texts: CockpitTexts): TemplateResult {
+  #startPageView(texts: Texts): TemplateResult {
     const query = this.#startPageQuery;
     const matching = new Set(search(this.#shownItems, query).map(({ item }) => item.id));
     const sections = [
@@ -1049,7 +1049,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
 
   // The folders of the start page, in the order of the groups: a group's items without a subgroup as one folder
   // ("General"), then its subgroups (their names and icons); the pinned and hidden items left out.
-  #folders(texts: CockpitTexts): Array<{ label: string; icon: string | undefined; items: readonly NavItem[] }> {
+  #folders(texts: Texts): Array<{ label: string; icon: string | undefined; items: readonly NavItem[] }> {
     return groupsOf(this.#unpinnedItems).flatMap((group) => {
       const { loose, subgroups } = subgroupsOf(group.items);
 
@@ -1076,7 +1076,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   // The bottom bar (`nav="bottom"`, or `auto` in a narrow cockpit; 2026-10-06): the open item takes the whole height,
   // with a bar below it: "Apps" (a sheet with the whole sidebar: the navigation, the user, the footer), the three items
   // used last (in the order of the config, so they do not move with every switch; the open one marked), and the search.
-  #bottomBar(texts: CockpitTexts): TemplateResult {
+  #bottomBar(texts: Texts): TemplateResult {
     const order = (item: NavItem) => this.#config.items.indexOf(item);
     const items = this.#recentItems.slice(0, 3).sort((a, b) => order(a) - order(b));
 
@@ -1110,7 +1110,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   // The sheet of the bottom bar: the whole sidebar (navigation, user, footer) in a panel from the bottom, a modal dialog
   // (`#syncDialog`: focus inside, on the open item; Escape and a pointer down outside close it). Choosing an item
   // closes it.
-  #sheet(texts: CockpitTexts): TemplateResult {
+  #sheet(texts: Texts): TemplateResult {
     const open = this.#sheetOpen;
     const events = this.#dialogEvents('.sheet', () => this.#sheetOpen, this.#closeSheet);
 
@@ -1135,7 +1135,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   // With a start page (`startPage`), the logo is a button that opens it, in every layout (2026-10-08, the user's wish: the
   // title for a few hours before; only a pointer, no tooltip). Else, in the sidebar (not when it is always a rail, below
   // 768px), the logo is a button that toggles the sidebar, like the footer's toggle.
-  #brand(texts: CockpitTexts, rail?: boolean): TemplateResult {
+  #brand(texts: Texts, rail?: boolean): TemplateResult {
     const logo = html`<slot name="logo"><span class="brand-logo" aria-hidden="true">${gridIcon()}</span></slot>`;
     const label = rail ? texts.expand : texts.collapse;
 
@@ -1164,7 +1164,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   }
 
   // The search: an icon button with a tooltip ("Search items (Ctrl K)"); next to the title, or below the logo in the rail.
-  #searchButton(texts: CockpitTexts, rail: boolean): TemplateResult {
+  #searchButton(texts: Texts, rail: boolean): TemplateResult {
     return html`<button
       type="button"
       class="search-button"
@@ -1177,7 +1177,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
 
   // The handle on the sidebar's right edge: drag it to resize the sidebar; Left and Right (Shift: more) do it from the
   // keyboard; a double click goes back to the default width.
-  #resizeHandle(texts: CockpitTexts): TemplateResult {
+  #resizeHandle(texts: Texts): TemplateResult {
     const current = () => this.#el('.sidebar')?.getBoundingClientRect().width ?? MIN_WIDTH;
     const set = (width: number | undefined, done: boolean) => {
       this.#width = width;
@@ -1357,7 +1357,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   // The expanded sidebar (and the bottom bar's sheet) ignores pinning (2026-10-08, the user's wish: it shows every item
   // in its group anyway); the rail has the pinned items (`placement`) first, as icons, not in their subgroup's flyout,
   // then the pinned folders, each its flyout button.
-  #navigation(texts: CockpitTexts, rail: boolean): TemplateResult {
+  #navigation(texts: Texts, rail: boolean): TemplateResult {
     const items = this.#shownItems;
     const many = this.#many;
     const groups = groupsOf(rail ? this.#groupedItems : items);
@@ -1458,7 +1458,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   // tabs, the groups as entries, each opening a two-pane menu, and on the right the search, the footer's actions and
   // menu, and the user. With one group and no pinned items, its items (and subgroup dropdowns) are the entries.
   // Entries that do not fit go into a "More" menu at the end of the line. `top-switcher`: one dropdown in place of them.
-  #topbarParts(texts: CockpitTexts): TemplateResult {
+  #topbarParts(texts: Texts): TemplateResult {
     const groups = groupsOf(this.#groupedItems);
     // The pinned items, then the pinned folders (each a dropdown of its items).
     const pinned: Entry[] = [
@@ -1636,7 +1636,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   // "General"), on the right the items of the shown one, with their descriptions. The left pane is a vertical tablist,
   // the right one its tabpanel; all right panes lie in one grid cell (the hidden ones invisible), so the menu keeps its
   // height while switching. A group of one column (e.g. one subgroup): only the right pane, with its heading.
-  #panePanel(entries: Entry[], texts: CockpitTexts): TemplateResult {
+  #panePanel(entries: Entry[], texts: Texts): TemplateResult {
     const group = this.#openGroup(entries);
     const id = `${this.#id}-panel`;
 
@@ -1756,7 +1756,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   };
 
   // The item switcher: the open item (its icon and title) as a dropdown button; it opens the search panel at it.
-  #switcherButton(texts: CockpitTexts): TemplateResult {
+  #switcherButton(texts: Texts): TemplateResult {
     const active = this.#itemOf(this.#active);
     const label = `${texts.switchItem} (${isMac() ? '⌘K' : 'Ctrl K'})`;
 
@@ -1788,7 +1788,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
 
   // A line of entries; Left and Right (Home, End) move between them. Those that wrap are hidden (the line is one row
   // high) and listed in the "More" menu.
-  #line(key: string, entries: Entry[], texts: CockpitTexts): TemplateResult {
+  #line(key: string, entries: Entry[], texts: Texts): TemplateResult {
     const hidden = Math.min(this.#overflow.get(key) ?? 0, entries.length);
 
     return html`<ul class="line-list" data-overflow=${key}>${
@@ -1902,7 +1902,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   }
 
   // The "More" menu of the line: its hidden entries (a group or a subgroup lists its items under its name).
-  #lineMore(key: string, entries: Entry[], texts: CockpitTexts): TemplateResult {
+  #lineMore(key: string, entries: Entry[], texts: Texts): TemplateResult {
     const menu = this.#menu(`more:${key}`, {
       placement: 'bottom-end',
       anchor: this.#belowLine,
@@ -1945,7 +1945,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
 
   // The user in the top line: the avatar (the name as the tooltip); with `userMenu` a button that opens it below,
   // with the name and the second line on top.
-  #topUser(texts: CockpitTexts, user: SignedInUser): TemplateResult {
+  #topUser(texts: Texts, user: SignedInUser): TemplateResult {
     const sections = this.#config.userMenu ?? [];
     const avatar = user.avatar === undefined
       ? html`<span class="avatar" aria-hidden="true">${initialsOf(user.name).toUpperCase()}</span>`
@@ -2154,7 +2154,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   // A `Menu` as a list to choose from (`listbox`): it opens at the chosen group.
   // (Until 2026-10-08 also in the top line of the one-line topbar, `nav="top-compact"` then, which has the groups as
   // entries with two-pane menus since.)
-  #groupSelect(texts: CockpitTexts, groups: Group[], value: string): TemplateResult {
+  #groupSelect(texts: Texts, groups: Group[], value: string): TemplateResult {
     const menu = this.#menu('group-select', {
       placement: 'bottom-start',
       gutter: 4,
@@ -2215,7 +2215,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
 
   // The signed-in user, above the footer: the avatar, the name and a second line. With a menu (`userMenu`), the row is a
   // button that opens it to the right of the sidebar, touching it; in the rail only the avatar (the name as the tooltip).
-  #userRow(texts: CockpitTexts, rail: boolean, user: SignedInUser): TemplateResult {
+  #userRow(texts: Texts, rail: boolean, user: SignedInUser): TemplateResult {
     const sections = this.#config.userMenu ?? [];
     const avatar = user.avatar === undefined
       ? html`<span class="avatar" aria-hidden="true">${initialsOf(user.name).toUpperCase()}</span>`
@@ -2271,7 +2271,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   // `choices` a menu of options), and a kebab button with the host's menu. Its menus are plain panels: with the sidebar
   // expanded a sheet on top of the footer, as wide as the sidebar; in the rail to the right, touching the sidebar.
   // In the topbar, the same segments (without the toggle) at the right end of the top line, their menus below them.
-  #footer(texts: CockpitTexts, rail: boolean, topbar = false): TemplateResult {
+  #footer(texts: Texts, rail: boolean, topbar = false): TemplateResult {
     const footer = this.#config.footer ?? {};
     const actions = footer.actions ?? [];
     const sections = footer.menu ?? [];
@@ -2416,7 +2416,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   // is open), over the open item (darkened). Without a query: the recent items, then all items by group. Up and Down
   // choose, Enter opens, Escape closes. A modal dialog (`#syncDialog`: focus inside, on the field; Escape and a pointer
   // down outside close it).
-  #palette(texts: CockpitTexts): TemplateResult {
+  #palette(texts: Texts): TemplateResult {
     // The pinned items too, in their groups; not the hidden ones.
     const items = this.#shownItems;
     const recent = this.#config.recent === false ? [] : this.#recentItems;

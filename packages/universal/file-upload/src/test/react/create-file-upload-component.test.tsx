@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { FileItem, FileUploadElement, I18nAdapter } from '../../main/index.js';
 import { createFileUploadComponent } from '../../main/react/create-file-upload-component.js';
-import type { FileUploadComponentConfig, FileUploadProps } from '../../main/react/index.js';
+import type { FileUploadProps } from '../../main/react/index.js';
 
 afterEach(cleanup);
 
@@ -38,8 +38,7 @@ function choose(element: FileUploadElement, ...files: File[]) {
 // An adapter with German texts for `browse`, when the locale is German.
 const adapterFor = (locale: string): I18nAdapter => ({
   currentLocale: () => locale,
-  resolveText: (_namespace, key, _params, defaultValue) =>
-    locale === 'de' && key === 'browse' ? 'Durchsuchen' : defaultValue,
+  translate: (_namespace, key) => (locale === 'de' && key === 'browse' ? 'Durchsuchen' : null),
 });
 
 describe('createFileUploadComponent', () => {
@@ -175,27 +174,13 @@ describe('createFileUploadComponent', () => {
     expect(element.getAttribute('data-testid')).toBe('upload');
   });
 
-  it('passes an adapter factory on to the element', async () => {
-    const getAdapter = vi.fn((element: FileUploadElement) => adapterFor(element.lang));
-    const Upload = createFileUploadComponent({ i18n: { type: 'factory', getAdapter } });
-    const { container } = render(<Upload lang="de" />);
-    const element = await elementIn(container);
-
-    expect(getAdapter).toHaveBeenCalledWith(element);
-    expect(within(element.shadowRoot as unknown as HTMLElement).getByRole('button', { name: 'Durchsuchen' }))
-      .toBeTruthy();
-  });
-
   it('follows the nearest provider with an adapter hook', async () => {
     const Locale = createContext('en');
     const Upload = createFileUploadComponent({
-      i18n: {
-        type: 'hook',
-        useAdapter: () => {
-          const locale = useContext(Locale);
+      useI18n: () => {
+        const locale = useContext(Locale);
 
-          return useMemo(() => adapterFor(locale), [locale]);
-        },
+        return useMemo(() => adapterFor(locale), [locale]);
       },
     });
     const app = (second: string) => (
@@ -225,14 +210,5 @@ describe('createFileUploadComponent', () => {
     rerender(app('de'));
 
     expect(browseOf('second')).toBe('Durchsuchen');
-  });
-
-  it('throws a TypeError for an unknown i18n type', () => {
-    // A cast config, as plain JavaScript would pass it.
-    const config = {
-      i18n: { type: 'other', useAdapter: () => adapterFor('en') },
-    } as unknown as FileUploadComponentConfig;
-
-    expect(() => createFileUploadComponent(config)).toThrow(TypeError);
   });
 });

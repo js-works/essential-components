@@ -1,6 +1,6 @@
 import type { ReactElement, ReactNode } from 'react';
 
-import type { DataTableDefaults, DataTableSetupConfig } from '../element.js';
+import type { DataTableDefaults } from '../element.js';
 import type { I18nAdapter } from '../i18n.js';
 import type { ColumnSort, FilterValue, GroupBy, RowGroup, RowSource } from '../query.js';
 import type { CreateRow, ReorderRows, SaveRow } from '../rows.js';
@@ -48,7 +48,7 @@ type DataTableProps<Row> = {
 };
 
 type DataTableComponentConfig = {
-  i18n?: NonNullable<DataTableSetupConfig['i18n']> | { type: 'hook'; useAdapter: () => I18nAdapter };
+  useI18n?: () => I18nAdapter;
   theme?: DataTableTheme;
   // The defaults of every table of this component, where the table has no prop of its own (`pageSize` is the default
   // of `defaultPageSize`): the same as the element's.

@@ -6,13 +6,13 @@ import { defaultTheme } from '../src/themes/index.js';
 import type { AgendaItem } from './agenda.js';
 import { deleteSection, fetchAgenda, moveAgendaItem } from './agenda.js';
 import { fixedHeight, selectedLine } from './demo.module.css';
-import { i18n } from './i18n.js';
+import { useI18n } from './i18n.js';
 import { icons } from './icons.js';
 import { useToasts } from './toasts.js';
 
 export { GroupedReorderDemo };
 
-const DataTable = createDataTableComponent({ i18n, theme: defaultTheme });
+const DataTable = createDataTableComponent({ useI18n, theme: defaultTheme });
 
 const columns: TableColumns<AgendaItem> = [
   { key: 'title', header: 'Item', width: 5 },

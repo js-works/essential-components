@@ -2,8 +2,7 @@ import type * as React from 'react';
 import type { z } from 'zod';
 
 import type { FieldBinding, FieldPropNames, FormFields } from './fields.js';
-import type { I18nConfig } from './i18n.js';
-import type { MessageCatalog } from './texts.js';
+import type { I18nAdapter } from './i18n.js';
 
 export type {
   FormConfig,
@@ -83,7 +82,11 @@ type SubmitOutcome = { ok: true } | { ok: false; error?: string };
 /* ---------------------------------------------------------------- Config */
 
 interface FormConfig<P extends FieldPropNames = FieldPropNames> {
-  i18n?: I18nConfig;
+  /**
+   * The adapter of the app's i18n: a hook, called in `useForm` on every render. A global instance:
+   * `() => i18nAdapter`; or built from a React context (keep it the same object while nothing changes, e.g. `useMemo`).
+   */
+  useI18n?: () => I18nAdapter;
   /** The namespace of the app's keys (labels, messages of the schema or the server) for the adapter (default: "app"). */
   appNamespace?: string;
   /**
@@ -94,10 +97,6 @@ interface FormConfig<P extends FieldPropNames = FieldPropNames> {
   props?: P;
   /** Bindings per semantic field type ("date", "email", "number", ... or set with formMeta). */
   bindings?: Record<string, FieldBinding>;
-  /** Additional or overriding messages per locale. */
-  messages?: Record<string, MessageCatalog>;
-  /** The locale used when nothing is found for the current one (default: "en"). */
-  fallbackLocale?: string;
 }
 
 interface FormMeta {

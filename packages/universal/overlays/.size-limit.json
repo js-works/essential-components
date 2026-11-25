@@ -18,16 +18,16 @@
   {
     "name": "Core + lit bindings",
     "path": "scripts/size/app-lit.js",
-    "ignore": ["lit-html"]
+    "ignore": [
+      "lit-html"
+    ]
   },
   {
     "name": "Core + React bindings",
     "path": "scripts/size/app-react.js",
-    "ignore": ["react", "react-dom"]
-  },
-  {
-    "name": "Core + picolingo i18n",
-    "path": "scripts/size/app-picolingo.js",
-    "ignore": ["picolingo"]
+    "ignore": [
+      "react",
+      "react-dom"
+    ]
   }
 ]
