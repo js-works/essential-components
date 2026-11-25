@@ -29,6 +29,8 @@ This repository's rules for it (see the root's `CLAUDE.md`):
 - No dependencies. Peer dependencies: `react` (`>=19`) and `zod` (`^4`), both outside the build.
 - Tests: Vitest with jsdom, `@testing-library/react` and `@testing-library/user-event` (`src/**/*.test.ts(x)`, with
   `vitest.setup.ts`).
+  Mantine (`@mantine/core`, `@mantine/hooks`, `@mantine/dates`, `dayjs`) as dev dependencies only, for the tests with
+  its real components.
 - A small demo (`npm run dev`): a React sign-up form with the demo's own field components, the app's
   keys in English and German (following `<html lang>`), a made-up server (a taken email, a failing name).
 - npm never runs install scripts of dependencies: `.npmrc` has `ignore-scripts=true`.
@@ -41,12 +43,12 @@ This repository's rules for it (see the root's `CLAUDE.md`):
 - `exports` in `package.json` (rather than an alias per package and entry in the root): each entry has a `source` condition first, its file in `src/`, then its built file in `dist/`.
   The root's demo resolves the package by name (`@local/…`) to its sources by that condition (its `vite.config.ts`
   and `tsconfig.json`); everywhere else, a customer's copy too, the condition is ignored and `dist/` counts.
-- `src/index.ts`: the public API (`defineUseForm`, `binding`, `formMeta`, `formRegistry` and the types,
+- `src/index.ts`: the public API (`defineUseForm`, `binding` and the types,
   all flat: `import type { UseFormOptions } from '@local/form-validation'`).
 - `src/define-use-form.ts`: the hook factory: the store (values, errors, dirty and shown fields), events, submit and
   the props of `form()` and `field.x()`.
 - `src/api/`: the public types: `fields.ts` (bindings, field options and props),
-  `form.ts` (`UseFormOptions`, `UseFormReturn`, the submit, `FormConfig`, `FormMeta`), `texts.ts`
+  `form.ts` (`UseFormOptions`, `UseFormReturn`, the submit, `FormConfig`), `texts.ts`
   (`FormValidationTextKey`, `FormValidationParams`, read from the English messages), `i18n.ts` (`I18nAdapter`, `TextParams`: a
   verbatim copy of those in `frontend/i18n.md`);
   `src/index.ts` exports them (no barrel).
@@ -57,9 +59,10 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   default and the master.
 - `locales/`: the translations as ICU messages (`en.json`, `de.json`), derived from the master, by hand (or the AI) after
   every change; exported as they are (`@local/form-validation/locales/de.json`), no part of the build.
-- `src/meta.ts`: `formMeta` (an own Zod registry) and `binding`. `src/merge.ts`: `mergeProps` (chained handlers,
+- `src/binding.ts`: `binding`. `src/merge.ts`: `mergeProps` (chained handlers,
   combined refs).
-- `src/define-use-form.test.tsx`: the tests. `src/texts.test.ts`: the files in `locales/` match the master (keys, values).
+- `src/define-use-form.test.tsx`: the tests. `src/mantine.test.tsx`: Mantine's real components with the defaults (no bindings, only
+  Mantine's prop names): the value each gives, its message, the initial values. `src/texts.test.ts`: the files in `locales/` match the master (keys, values).
 - `demo/`: the demo (not part of the library; typechecked with it). `form-validation-demo.ts`: the whole demo as a light DOM
   custom element (exported, not registered; see "Demo element" in the `CLAUDE.md` of the file upload; the root page
   registers it as `form-validation-demo`). `form-demo.tsx`: the form and the schema. `fields.tsx`: text, select and

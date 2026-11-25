@@ -1088,7 +1088,7 @@ describe('file upload element', () => {
 
       const i18n = {
         currentLocale: () => locale,
-        translate: vi.fn((_namespace: string, key: string, params: Readonly<Record<string, unknown>> | null) => {
+        translate: vi.fn((_namespace: string | null, key: string, params: Readonly<Record<string, unknown>> | null) => {
           const text = locale.startsWith('de') ? german[key] : undefined;
 
           return text?.replace(/\{(\w+)\}/g, (_, name: string) => String(params?.[name])) ?? null;

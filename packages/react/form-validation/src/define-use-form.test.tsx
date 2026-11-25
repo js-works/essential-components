@@ -4,7 +4,7 @@ import { createContext, useContext, useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
-import { binding, defineUseForm, formMeta, type I18nAdapter } from './index.js';
+import { binding, defineUseForm, type I18nAdapter } from './index.js';
 
 /* A minimal locale store as a stand-in for the app adapter */
 let currentLocale = 'de';
@@ -329,8 +329,8 @@ describe('defineUseForm', () => {
       valueProp: 'selected',
       changeProp: 'onPick',
       errorProp: 'problem',
-      fromComponent: (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null),
-      toComponent: (v) => (typeof v === 'string' ? new Date(v) : null),
+      parse: (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null),
+      format: (v) => (typeof v === 'string' ? new Date(v) : null),
     });
     function Picker(p: { label: string; selected: Date | null; onPick(d: Date | null): void; problem?: string }) {
       return (
@@ -360,6 +360,45 @@ describe('defineUseForm', () => {
     expect(screen.queryByRole('alert')).toBeNull();
     await user.click(screen.getByText('Go'));
     expect(onData.mock.calls[0]?.[0]).toEqual({ dob: '2026-10-01' });
+  });
+
+  it('reads a date string without a zone as local time for z.date()', async () => {
+    setLocale('en');
+    const tz = process.env.TZ;
+    process.env.TZ = 'America/New_York'; // west of UTC: a date read as UTC would be the day before
+    try {
+      const onData = vi.fn();
+      function Picker(p: { label: string; onChange(v: string | null): void }) {
+        return (
+          <>
+            <button type="button" onClick={() => p.onChange('2026-11-25')}>{p.label}</button>
+            <button type="button" onClick={() => p.onChange('2026-11-25 14:30:00')}>Time</button>
+          </>
+        );
+      }
+      function F() {
+        const { form, field } = useForm(z.object({ day: z.date() }), { submit: onData });
+        const { onChange, label } = field.day({ label: 'Day' });
+        return (
+          <form {...form()}>
+            <Picker label={label} onChange={onChange} />
+            <button type="submit">Go</button>
+          </form>
+        );
+      }
+      const user = userEvent.setup();
+      render(<F />);
+      await user.click(screen.getByText('Day'));
+      await user.click(screen.getByText('Go'));
+      const day: Date = onData.mock.calls[0]?.[0].day;
+      expect([day.getFullYear(), day.getMonth(), day.getDate(), day.getHours()]).toEqual([2026, 10, 25, 0]);
+      await user.click(screen.getByText('Time'));
+      await user.click(screen.getByText('Go'));
+      const time: Date = onData.mock.calls[1]?.[0].day;
+      expect([time.getDate(), time.getHours(), time.getMinutes()]).toEqual([25, 14, 30]);
+    } finally {
+      process.env.TZ = tz;
+    }
   });
 
   it('shows server errors as translatable keys and tells submit buttons apart', async () => {
@@ -442,17 +481,17 @@ describe('defineUseForm', () => {
     expect(document.activeElement).toBe(screen.getByLabelText('Username'));
   });
 
-  it('respects explicit schema messages and formMeta labels', async () => {
+  it('respects explicit schema messages and label keys of a field', async () => {
     setLocale('de');
     const user = userEvent.setup();
     function F() {
       const { form, field } = useForm(
-        z.object({ code: formMeta(z.string().regex(/^\d{5}$/, 'Five digits, please.'), { labelKey: 'x.code' }) }),
+        z.object({ code: z.string().regex(/^\d{5}$/, 'Five digits, please.') }),
         { submit: () => {} },
       );
       return (
         <form {...form()}>
-          <TextField {...field.code()} />
+          <TextField {...field.code({ labelKey: 'x.code' })} />
         </form>
       );
     }
@@ -529,7 +568,7 @@ describe('i18n adapter', () => {
   });
 
   it('asks with the namespace, the key and the raw params; without a translation, its own texts', async () => {
-    const translate = vi.fn((_n: string, _k: string, _p: unknown): string | null => null);
+    const translate = vi.fn((_n: string | null, _k: string, _p: unknown): string | null => null);
     const use = defineUseForm({
       appNamespace: 'myapp',
       useI18n: () => ({ currentLocale: () => 'en', translate }),
@@ -543,6 +582,18 @@ describe('i18n adapter', () => {
     expect(translate).toHaveBeenCalledWith('myapp', 'signup.age', null);
     expect(translate).toHaveBeenCalledWith('formValidation', 'number.min', { min: 18 });
     expect(screen.getByRole('alert').textContent).toBe('The value must be at least 18.');
+    warn.mockRestore();
+  });
+
+  it('asks for the app\'s keys with null, the app\'s default namespace, without an appNamespace', async () => {
+    const translate = vi.fn((_n: string | null, _k: string, _p: unknown): string | null => null);
+    const use = defineUseForm({
+      useI18n: () => ({ currentLocale: () => 'en', translate }),
+      props: { label: 'label', error: 'errorText' },
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(<AgeForm use={use} />);
+    expect(translate).toHaveBeenCalledWith(null, 'signup.age', null);
     warn.mockRestore();
   });
 

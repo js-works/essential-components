@@ -2,6 +2,7 @@ import type * as React from 'react';
 import { useEffect, useId, useReducer, useRef, useState } from 'react';
 import type { z } from 'zod';
 
+import { isBinding } from './binding.js';
 import { createTranslator, type ErrorData, warnOnce } from './i18n.js';
 import type {
   FieldArg,
@@ -17,7 +18,6 @@ import type {
 } from './index.js';
 import { DEFAULT_MESSAGE, issueToError } from './issues.js';
 import { mergeProps } from './merge.js';
-import { formRegistry, isBinding } from './meta.js';
 import { collectFields, type FieldInfo, getPath, setPath } from './schema.js';
 
 export { defineUseForm };
@@ -165,8 +165,19 @@ function coerce(info: FieldInfo, raw: unknown): unknown {
     const n = Number(normalized);
     return Number.isNaN(n) ? raw : n; // an invalid number stays a string, Zod reports "number.type"
   }
-  if (info.kind === 'date' && typeof raw === 'string') return new Date(raw);
+  if (info.kind === 'date' && typeof raw === 'string') return toDate(raw);
   return raw;
+}
+
+// A date or date-time without a zone (e.g. `2026-11-25`, `2026-11-25 14:30:00`) in local time: `new Date()` reads a
+// date alone as UTC (the day before, west of UTC), and a date-time with a space differently per browser.
+const LOCAL_DATE_TIME = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?$/;
+
+function toDate(raw: string): Date {
+  const m = LOCAL_DATE_TIME.exec(raw.trim());
+  if (!m) return new Date(raw);
+  const [, y, mo, d, h = '0', mi = '0', s = '0'] = m;
+  return new Date(Number(y), Number(mo) - 1, Number(d), Number(h), Number(mi), Number(s));
 }
 
 const identity = (v: unknown) => v;
@@ -202,7 +213,7 @@ function defineUseForm<const P extends FieldPropNames = { label: 'label'; error:
     const optionsRef = useRef(options);
     optionsRef.current = options;
 
-    const prefix = options.labels ?? formRegistry.get(schema)?.labels;
+    const prefix = options.labels;
     const idOf = (path: string) => `${store.idBase}${path.replace(/\./g, '-')}`;
     store.rendered.clear();
 
@@ -367,12 +378,12 @@ function defineUseForm<const P extends FieldPropNames = { label: 'label'; error:
 
       const isBool = info.kind === 'boolean';
       const controlled = bind.valueProp != null;
-      const from = bind.fromComponent ?? readValue;
-      const to = bind.toComponent ?? (controlled ? (v: unknown) => v ?? (isBool ? false : '') : identity);
+      const parse = bind.parse ?? readValue;
+      const format = bind.format ?? (controlled ? (v: unknown) => v ?? (isBool ? false : '') : identity);
       const validateOn = opts.validateOn ?? 'blur';
 
       const err = displayed(store, path);
-      const labelKey = opts.labelKey ?? info.meta.labelKey ?? (prefix ? `${prefix}.${path}` : path);
+      const labelKey = opts.labelKey ?? (prefix ? `${prefix}.${path}` : path);
 
       const base: Record<string, unknown> = {
         name: path,
@@ -381,7 +392,7 @@ function defineUseForm<const P extends FieldPropNames = { label: 'label'; error:
         required: info.required,
         [bind.labelProp ?? names.label]: opts.label ?? t.label(labelKey, path, adapter),
         [bind.changeProp ?? 'onChange']: (...a: unknown[]) =>
-          handleChange(info, coerce(info, from(...a)), validateOn, controlled),
+          handleChange(info, coerce(info, parse(...a)), validateOn, controlled),
         [bind.blurProp ?? 'onBlur']: () => handleBlur(info),
       };
       // Marked as invalid (red) and the visible message are separate (see handleChange). One prop for both (e.g.
@@ -391,8 +402,8 @@ function defineUseForm<const P extends FieldPropNames = { label: 'label'; error:
       const text = err && messageVisible(store, path) ? t.message(err, adapter) : undefined;
       if (invalidProp) base[invalidProp] = err ? true : undefined;
       base[errorProp] = text ?? (invalidProp === errorProp && err ? true : undefined);
-      if (controlled) base[bind.valueProp!] = to(store.values[path]);
-      else base[bind.defaultValueProp ?? (isBool ? 'defaultChecked' : 'defaultValue')] = to(store.initial[path]);
+      if (controlled) base[bind.valueProp!] = format(store.values[path]);
+      else base[bind.defaultValueProp ?? (isBool ? 'defaultChecked' : 'defaultValue')] = format(store.initial[path]);
       if (info.min != null) base.min = info.min;
       if (info.max != null) base.max = info.max;
       if (info.minLength != null) base.minLength = info.minLength;

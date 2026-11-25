@@ -70,7 +70,7 @@ function createLocaleI18n(locale: string): I18nAdapter {
 // `null` without a translation: then the component uses its English text.
 function translate(
   locale: string,
-  namespace: string,
+  namespace: string | null,
   key: string,
   params: Readonly<Record<string, unknown>> | null,
 ): string | null {

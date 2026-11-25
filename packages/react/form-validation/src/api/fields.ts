@@ -29,10 +29,13 @@ interface FieldBindingConfig {
   invalidProp?: string;
   /** Overrides the globally configured name of the label prop. */
   labelProp?: string;
-  /** Reads the value from the arguments of the change callback (default: an event or a bare value). */
-  fromComponent?: (...args: any[]) => unknown;
-  /** Prepares the value for the component (e.g. an ISO string to a dayjs object). */
-  toComponent?: (value: unknown) => unknown;
+  /**
+   * The component's value for the form, from the arguments of the change callback (default: an event or a bare
+   * value).
+   */
+  parse?: (...args: any[]) => unknown;
+  /** The form's value for the component (e.g. an ISO string to a dayjs object). */
+  format?: (value: unknown) => unknown;
 }
 
 declare const bindingBrand: unique symbol;

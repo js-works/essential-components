@@ -35,7 +35,7 @@ const DEFAULT_LOCALE = 'en-US';
  * messages (formatted for the adapter's locale), the humanized field name, the literal text of a schema or the server.
  */
 function createTranslator(config: FormConfig) {
-  const appNamespace = config.appNamespace ?? 'app';
+  const appNamespace = config.appNamespace ?? null;
 
   /** A message of the library, or of the schema or the server: a key of the app if translated, else a literal text. */
   function message(err: ErrorData, adapter: I18nAdapter | undefined): string {

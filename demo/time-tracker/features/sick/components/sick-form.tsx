@@ -57,7 +57,7 @@ const certificateSchema = z.object({
 });
 
 const uploadFiles = binding({
-  fromComponent: (items: readonly FileItem[]) => {
+  parse: (items: readonly FileItem[]) => {
     const files = items
       .filter((item) => item.status !== 'rejected')
       .map(({ status, result }) => ({ status, result }));

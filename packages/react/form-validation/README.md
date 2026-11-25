@@ -11,7 +11,7 @@ import { defineUseForm } from '@local/form-validation';
 
 export const useForm = defineUseForm({
   useI18n: () => i18nAdapter, // optional, a hook: the adapter of the app's i18n
-  appNamespace: 'myapp', // optional, the namespace of the app's keys (default: 'app')
+  appNamespace: 'myapp', // optional, the namespace of the app's keys (default: null, the app's default namespace)
   props: { label: 'label', error: 'errorText', invalid: 'invalid' }, // invalid: optional
   bindings: { date: fancyDate }, // optional, per semantic type
 });
@@ -43,8 +43,9 @@ const i18nAdapter: I18nAdapter = {
 - `translate` returns the translation, or `null` when there is none: then the library uses its own text.
   - The library's messages (its English text without a translation, `en-US` formatting): namespace `'formValidation'`, the key (`'number.min'`, ...) and the raw params (numbers,
     dates; a length that drives a plural as `count`). Their types: `FormValidationTextKey`, `FormValidationParams`.
-  - The app's keys (labels, messages of the schema or the server): the namespace `appNamespace`, params `null` for
-    labels. Without a translation: the humanized field name, the literal text of the schema or the server.
+  - The app's keys (labels, messages of the schema or the server): the namespace `appNamespace`, else `null` (the app's
+    default namespace, i18next's `defaultNS`), params `null` for labels. Without a translation: the humanized field
+    name, the literal text of the schema or the server.
 - `onChange` is subscribed while the form is mounted: a change of the language renders the form again.
 - Without an adapter: English texts and `en-US` formatting.
 
@@ -61,7 +62,7 @@ i18n
         : import(`./locales/${lng}/${ns}.json`)
     ),
   )
-  .init({ ns: ['app', 'formValidation'], fallbackLng: 'en' });
+  .init({ ns: ['app', 'formValidation'], defaultNS: 'app', fallbackLng: 'en' });
 ```
 
 - The adapter's `onChange` listens to i18next's `loaded` too, not only `languageChanged`: until a file arrives, the
@@ -112,8 +113,7 @@ that differs gets a `binding()`.
 is required automatically.
 
 **Labels by convention:** `labels: 'signup'` plus the field path gives `signup.email`, translated by the adapter.
-Different keys with `formMeta(schema, { labelKey })` (applies everywhere) or `field.x({ labelKey })` or
-`field.x({ label })` (only here). If a translation is missing (the adapter returns `null`, or there is no adapter), the
+Different keys with `field.x({ labelKey })`, or a finished text with `field.x({ label })`. If a translation is missing (the adapter returns `null`, or there is no adapter), the
 field name is humanized, and reported as a warning in development mode.
 
 **Validation strategy:** a field shows errors only after a change and a blur, then live on every input. On submit,
@@ -159,6 +159,10 @@ return <Form confirm={requestSubmit}>…</Form>; // Form from @local/overlays/re
 its initial one (`initial`, else the schema's default), e.g. to ask before a dialog discards the form. A value changed
 and changed back does not count; empty values (`undefined`, `null`, `''`) are alike, dates compare by time.
 
+**Dates:** for a `z.date()` field, a string from the component becomes a `Date`. A date or date-time without a zone
+(`2026-11-25`, `2026-11-25 14:30:00`, as Mantine's date inputs give them) is local time, not UTC; any other string goes
+to `new Date()`.
+
 **invalid and user-invalid:** native elements get the Zod result with `setCustomValidity()`, so `:invalid` and
 `:user-invalid` also work for regexes or `.refine()`. In addition, the library sets `aria-invalid`, `data-invalid` and
 `data-user-invalid`. `valid` returns the current overall state.
@@ -169,10 +173,13 @@ and changed back does not count; empty values (`undefined`, `null`, `''`) are al
 export const fancyDate = binding({
   valueProp: 'selected', // set = controlled
   changeProp: 'onPick',
-  fromComponent: (d: Dayjs | null) => d?.format('YYYY-MM-DD') ?? null,
-  toComponent: (v) => (v ? dayjs(v as string) : null),
+  parse: (d: Dayjs | null) => d?.format('YYYY-MM-DD') ?? null,
+  format: (v) => (v ? dayjs(v as string) : null),
 });
 ```
+
+`parse`: the component's value for the form (from the arguments of the change callback). `format`: the form's
+value for the component.
 
 More options: `defaultValueProp`, `blurProp`, `errorProp`, `invalidProp`, `labelProp`.
 

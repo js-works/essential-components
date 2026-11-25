@@ -4,16 +4,7 @@ import type { z } from 'zod';
 import type { FieldBinding, FieldPropNames, FormFields } from './fields.js';
 import type { I18nAdapter } from './i18n.js';
 
-export type {
-  FormConfig,
-  FormMeta,
-  FormProps,
-  SubmitContext,
-  SubmitOutcome,
-  SubmitResult,
-  UseFormOptions,
-  UseFormReturn,
-};
+export type { FormConfig, FormProps, SubmitContext, SubmitOutcome, SubmitResult, UseFormOptions, UseFormReturn };
 
 /* ------------------------------------------------------------------ Form */
 
@@ -87,7 +78,10 @@ interface FormConfig<P extends FieldPropNames = FieldPropNames> {
    * `() => i18nAdapter`; or built from a React context (keep it the same object while nothing changes, e.g. `useMemo`).
    */
   useI18n?: () => I18nAdapter;
-  /** The namespace of the app's keys (labels, messages of the schema or the server) for the adapter (default: "app"). */
+  /**
+   * The namespace of the app's keys (labels, messages of the schema or the server) for the adapter. Without it, the
+   * adapter gets `null`: the app's default namespace.
+   */
   appNamespace?: string;
   /**
    * The form-wide message of a `submit` that throws (e.g. a server error with a text for the user): a text, or a key of
@@ -95,14 +89,6 @@ interface FormConfig<P extends FieldPropNames = FieldPropNames> {
    */
   errorMessage?: (error: unknown) => string | undefined;
   props?: P;
-  /** Bindings per semantic field type ("date", "email", "number", ... or set with formMeta). */
+  /** Bindings per semantic field type of the schema ("date", "email", "number", ...). */
   bindings?: Record<string, FieldBinding>;
-}
-
-interface FormMeta {
-  labelKey?: string;
-  /** The semantic type, if it cannot be derived from the schema (e.g. "richtext"). */
-  type?: string;
-  /** On the object schema: the label prefix, if not given to useForm. */
-  labels?: string;
 }

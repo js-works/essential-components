@@ -4512,7 +4512,7 @@ describe('DataTable', () => {
     });
 
     it('asks the adapter with the namespace, the key and the raw params', async () => {
-      const translate = vi.fn((_: string, __: string, ___: unknown): string | null => null);
+      const translate = vi.fn((_: string | null, __: string, ___: unknown): string | null => null);
       const Tracked = createDataTableComponent({
         useI18n: shared({ currentLocale: () => 'en-US', translate }),
       });

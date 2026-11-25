@@ -17,10 +17,14 @@ function i18nAdapterOf(i18n: I18nInstance): I18nAdapter {
   if (adapter === undefined) {
     adapter = {
       currentLocale: () => i18n.language,
-      translate: (namespace, key, params) =>
-        i18n.exists(key, { ns: namespace } as never)
-          ? String(i18n.t(key, { ns: namespace, ...params, interpolation: { escapeValue: false } } as never))
-          : null,
+      // `null`: the app's default namespace (i18next's `defaultNS`).
+      translate: (namespace, key, params) => {
+        const ns = namespace ?? undefined;
+
+        return i18n.exists(key, { ns } as never)
+          ? String(i18n.t(key, { ns, ...params, interpolation: { escapeValue: false } } as never))
+          : null;
+      },
       onChange: (listener) => {
         i18n.on('languageChanged', listener);
         i18n.on('loaded', listener);

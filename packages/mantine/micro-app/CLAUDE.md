@@ -83,10 +83,10 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   `formValidation`, `overlays`); the app spreads them into its instance's `resources`, and adds those of another
   package it uses (e.g. `fileUpload`) the same way.
 - `i18nAdapterOf(i18n)` and `useI18nAdapter()` (`i18n-adapter.ts`): the `I18nAdapter` of the tier-1 packages
-  (`frontend/i18n.md`) over an i18next instance with ICU, one per instance: `exists` then `t`, else `null`; its
-  `onChange` on `languageChanged` and `loaded`. The hook reads the instance of the nearest `I18nextProvider`. Used by
-  the header, `DataTable` and `defineForm`; an app uses it for the other packages (`useI18n: useI18nAdapter`, the
-  overlays' `config.i18n`, a file upload's `i18n`).
+  (`frontend/i18n.md`) over an i18next instance with ICU, one per instance: `exists` then `t`, else `null`; the
+  namespace `null` is the instance's `defaultNS`; its `onChange` on `languageChanged` and `loaded`. The hook reads the
+  instance of the nearest `I18nextProvider`. Used by the header, `DataTable` and `defineForm`; an app uses it for the
+  other packages (`useI18n: useI18nAdapter`, the overlays' `config.i18n`, a file upload's `i18n`).
 - `DataTable`: the data table in Mantine's look, compact, `footer="auto"`, `showTotal`, 50 rows a page, in a
   `micro-app__table` (`display: contents`); its texts from the app's i18next (`useI18n: useI18nAdapter`, the
   namespace `dataTable`; else the data table's English default).

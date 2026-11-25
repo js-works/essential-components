@@ -10,11 +10,15 @@ interface I18nAdapter {
   currentLocale: () => string;
   /**
    * The translation of a key in the current language, or `null` when there is none: then the library uses its own
-   * English text. `namespace`: the library's (its name in camelCase, e.g. `'formValidation'`) or one the app names for
-   * its own keys. `params`: the raw values (numbers, dates), `null` for none; the translation formats them and picks
-   * the plural (by `count`).
+   * English text. `namespace`: the library's (its name in camelCase, e.g. `'formValidation'`), one the app names for
+   * its own keys, or `null` for the app's default namespace. `params`: the raw values (numbers, dates), `null` for
+   * none; the translation formats them and picks the plural (by `count`).
    */
-  translate: (namespace: string, key: string, params: Readonly<Record<string, unknown>> | null) => string | null;
+  translate: (
+    namespace: string | null,
+    key: string,
+    params: Readonly<Record<string, unknown>> | null,
+  ) => string | null;
   /** Reports a change of the language; returns the function that ends the subscription. */
   onChange?: (listener: () => void) => () => void;
 }

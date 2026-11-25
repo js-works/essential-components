@@ -1,8 +1,5 @@
 import type { z } from 'zod';
 
-import type { FormMeta } from './index.js';
-import { formRegistry } from './meta.js';
-
 export type { FieldInfo, FieldKind };
 export { collectFields, getPath, setPath, unwrap };
 
@@ -16,7 +13,6 @@ interface FieldInfo {
   type: string;
   required: boolean;
   defaultValue: unknown;
-  meta: FormMeta;
   min?: number;
   max?: number;
   minLength?: number;
@@ -29,27 +25,23 @@ function def(schema: z.ZodType): any {
   return (schema as any)._zod.def;
 }
 
-/** Removes the wrappers (optional, default, ...) and collects their metadata. */
-function unwrap(schema: z.ZodType): { inner: z.ZodType; meta: FormMeta } {
+/** Removes the wrappers (optional, default, ...). */
+function unwrap(schema: z.ZodType): z.ZodType {
   let current = schema;
-  const metas: FormMeta[] = [];
   for (;;) {
-    const m = formRegistry.get(current);
-    if (m) metas.push(m);
     const d = def(current);
     if (WRAPPERS.has(d.type)) current = d.innerType;
     else if (d.type === 'pipe') current = d.in;
     else break;
   }
-  // The inner metadata first, the outer ones override.
-  return { inner: current, meta: Object.assign({}, ...metas.reverse()) };
+  return current;
 }
 
 const bounded = (n: unknown): n is number =>
   typeof n === 'number' && Number.isFinite(n) && Math.abs(n) < Number.MAX_SAFE_INTEGER;
 
 function describe(path: string, schema: z.ZodType): FieldInfo {
-  const { inner, meta } = unwrap(schema);
+  const inner = unwrap(schema);
   const d = def(inner);
   const probe = schema.safeParse(undefined);
   const info: FieldInfo = {
@@ -59,7 +51,6 @@ function describe(path: string, schema: z.ZodType): FieldInfo {
     type: d.type,
     required: !probe.success,
     defaultValue: probe.success ? probe.data : undefined,
-    meta,
   };
 
   switch (d.type) {
@@ -93,7 +84,6 @@ function describe(path: string, schema: z.ZodType): FieldInfo {
       break;
   }
 
-  if (meta.type) info.type = meta.type;
   return info;
 }
 
@@ -102,7 +92,7 @@ function collectFields(schema: z.ZodObject<any>, prefix = ''): FieldInfo[] {
   const result: FieldInfo[] = [];
   for (const [key, child] of Object.entries(schema.shape as Record<string, z.ZodType>)) {
     const path = prefix ? `${prefix}.${key}` : key;
-    const { inner } = unwrap(child);
+    const inner = unwrap(child);
     if (def(inner).type === 'object') result.push(...collectFields(inner as z.ZodObject<any>, path));
     else result.push(describe(path, child));
   }
