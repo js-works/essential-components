@@ -1,4 +1,5 @@
-/* The demo element of the cockpit package (`cockpit-demo.ts`): each app header in a frame with a page below it. */
+/* The demo element of the cockpit package (`cockpit-demo.ts`): each app header in a frame with a page below it, the nav
+   tree in a sidebar-like frame. */
 .cockpit-demo__frame {
   border: 1px solid var(--ui-color-divider);
   border-radius: var(--ui-radius-lg);
@@ -14,4 +15,15 @@
 .cockpit-demo__log {
   min-height: 8lh;
   white-space: pre;
+}
+
+/* The nav tree's frame: a sidebar's width; 12px inside, where the active item's mark sits. */
+.cockpit-demo__tree {
+  box-sizing: border-box;
+  width: 260px;
+  padding: 12px;
+  border: 1px solid var(--ui-color-divider);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-color-subtle);
+  font-family: system-ui, sans-serif;
 }

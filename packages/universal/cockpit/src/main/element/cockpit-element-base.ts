@@ -6,8 +6,10 @@ import { styleMap } from 'lit/directives/style-map.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { html as staticHtml, unsafeStatic } from 'lit/static-html.js';
 
-import type { Group, Match } from '../core/search.js';
-import { groupsOf, search, subgroupsOf } from '../core/search.js';
+import type { Group } from '../core/groups.js';
+import { groupsOf, subgroupsOf } from '../core/groups.js';
+import type { Match } from '../core/search.js';
+import { search } from '../core/search.js';
 import { readStored, writeStored } from '../core/storage.js';
 import type { Texts } from '../core/texts.js';
 import { textsOf } from '../core/texts.js';
@@ -25,8 +27,12 @@ import type {
   NavLayout,
   NavScheme,
   NavSubgroup,
+  NavTreeItem,
+  NavTreeNavigateDetail,
+  NavTreeTheme,
   SignedInUser,
 } from '../index.js';
+import { navTreeTagFor } from '../nav-tree/nav-tree-tag.js';
 import { addAnchorName, removeAnchorName, TIP_ANCHOR } from './anchors.js';
 import {
   checkIcon,
@@ -68,6 +74,9 @@ type Pane = { key: string; heading?: string; icon?: string | undefined; items: r
 // "Recent"; more: "Recent" on top and the groups collapsible (closed by default above `MANY`, except the open item's).
 const FEW = 8;
 const MANY = 30;
+
+// The icons of the sidebar: white strokes in the dark sidebar (`sidebarIcon` of `themeValues()`), for the nav tree.
+const SIDEBAR_ICON_COLOR = 'light-dark(#1f2328, #fff)';
 // Narrower than this (the cockpit's own width), the sidebar is always a rail.
 const NARROW = 768;
 // How many items "Recent" keeps.
@@ -143,6 +152,10 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   readonly #key: string;
   // The tag of the taskbar (`taskbar: true`): an internal one of this cockpit class.
   readonly #taskbarTag: string | undefined;
+  // The nav tree's tag (the expanded sidebar's items, the sheet's): internal, once per cockpit class.
+  readonly #navTreeTag: string;
+  // The nav tree's theme, made from the cockpit's (`#treeTheme`).
+  #navTreeTheme: { of: CockpitTheme; theme: NavTreeTheme } | undefined;
 
   #active: string | undefined;
   // The open items (created, or being loaded), the one used last first: closing the open one shows the next.
@@ -152,7 +165,6 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   #recent: string[];
   #collapsed: boolean;
   #width: number | undefined;
-  #openGroups: Record<string, boolean>;
   #narrow = false;
   #resizing = false;
   #paletteOpen = false;
@@ -199,7 +211,10 @@ class CockpitElementBase extends LitElement implements CockpitElement {
     this.#recent = readStored<string[]>(`${this.#key}:recent`, []);
     this.#collapsed = readStored(`${this.#key}:collapsed`, false);
     this.#width = readStored<number | undefined>(`${this.#key}:width`, undefined);
-    this.#openGroups = readStored(`${this.#key}:groups`, {});
+    this.#navTreeTag = navTreeTagFor(this.constructor, {
+      storageKey: this.#key,
+      ...(config.i18n === undefined ? {} : { i18n: config.i18n }),
+    });
 
     // The taskbar's tag: internal, registered once per cockpit class (see `taskbarTagFor`).
     if (config.taskbar === true) {
@@ -341,7 +356,17 @@ class CockpitElementBase extends LitElement implements CockpitElement {
     this.#syncDialog(
       '.sheet-dialog',
       this.#bottom && this.#sheetOpen,
-      () => this.#el('.sheet .item[aria-current]') ?? this.#el('.sheet-close'),
+      // The close button, then the open item once the nav tree has rendered (in its shadow root; a tree made with the
+      // sheet renders after it).
+      () => {
+        const tree = this.#el('.sheet .nav-tree') as (HTMLElement & { updateComplete?: Promise<unknown> }) | null;
+
+        void tree?.updateComplete?.then(() =>
+          tree.shadowRoot?.querySelector<HTMLElement>('.item[aria-current]')?.focus()
+        );
+
+        return this.#el('.sheet-close');
+      },
     );
     this.#syncDialog(
       '.palette-dialog',
@@ -635,12 +660,6 @@ class CockpitElementBase extends LitElement implements CockpitElement {
 
   #labelOf(group: Group): string {
     return group.name === '' ? this.#texts.other : group.name;
-  }
-
-  #setOpenGroup(key: string, open: boolean): void {
-    this.#openGroups = { ...this.#openGroups, [key]: open };
-    writeStored(`${this.#key}:groups`, this.#openGroups);
-    this.requestUpdate();
   }
 
   #toggleCollapsed = () => {
@@ -1240,17 +1259,26 @@ class CockpitElementBase extends LitElement implements CockpitElement {
 
   // Up and Down move between the buttons of the navigation, Home and End to the first and the last.
   readonly #onNavKeyDown = (event: KeyboardEvent) => {
+    // A nav tree moves inside itself (it prevents the key); at its ends the key comes here, to go on to the next one.
+    if (event.defaultPrevented) {
+      return;
+    }
+
     const nav = event.currentTarget as HTMLElement;
-    const buttons = [...nav.querySelectorAll<HTMLButtonElement>('button')].filter((button) =>
-      button.offsetParent !== null
-    );
-    const index = buttons.indexOf(event.composedPath()[0] as HTMLButtonElement);
+    const buttons = [...nav.querySelectorAll<HTMLElement>('button, .nav-tree')]
+      .flatMap((target) =>
+        target.classList.contains('nav-tree')
+          ? [...(target.shadowRoot?.querySelectorAll<HTMLElement>('.item, button') ?? [])]
+          : [target]
+      )
+      .filter((button) => button.offsetParent !== null);
+    const index = buttons.indexOf(event.composedPath()[0] as HTMLElement);
     const next = ({
       ArrowDown: buttons[index + 1],
       ArrowUp: buttons[index - 1],
       Home: buttons[0],
       End: buttons.at(-1),
-    } as Record<string, HTMLButtonElement | undefined>)[event.key];
+    } as Record<string, HTMLElement | undefined>)[event.key];
 
     if (index >= 0 && next !== undefined) {
       event.preventDefault();
@@ -1291,57 +1319,75 @@ class CockpitElementBase extends LitElement implements CockpitElement {
     </section>`;
   }
 
-  // The items of a group as a tree: the items without a subgroup, then each subgroup (collapsible, open by default) with
-  // its items. In the rail: the items without a subgroup as icons, each subgroup as one button with a flyout.
-  #tree(group: Group, rail: boolean): TemplateResult[] {
+  // The items of a group in the rail: the items without a subgroup as icons, each subgroup as one button with a flyout.
+  // (The expanded sidebar's tree is the nav tree: `#navTree`.)
+  #railTree(group: Group): TemplateResult[] {
     const { loose, subgroups } = subgroupsOf(group.items);
-    const looseItems = loose.map((item) => html`<li>${this.#item(item, rail)}</li>`);
-
-    if (rail) {
-      return [
-        ...looseItems,
-        ...subgroups.map((subgroup) =>
-          html`<li>${
-            this.#flyout(
-              `sub:${group.name}/${subgroup.name}`,
-              { name: subgroup.name, items: subgroup.items.map(({ subgroup: _subgroup, ...item }) => item) },
-              subgroup.name,
-              this.#subgroupIcon(group.name, subgroup.name),
-            )
-          }</li>`
-        ),
-      ];
-    }
 
     return [
-      ...looseItems,
-      ...subgroups.map((subgroup) => {
-        const key = `${group.name}/${subgroup.name}`;
-        const open = this.#openGroups[key] ?? true;
-        const icon = this.#subgroupIcon(group.name, subgroup.name);
-
-        return html`<li>
-          <div class="subgroup">
-            <button
-              type="button"
-              class="subgroup-trigger"
-              aria-expanded=${open}
-              ?data-panel-open=${open}
-              @click=${() => this.#setOpenGroup(key, !open)}
-            >
-              ${chevronIcon()} ${icon === undefined ? nothing : groupIcon(icon)}
-              <span class="subgroup-name">${subgroup.name}</span>
-              <span class="subgroup-count">${subgroup.items.length}</span>
-            </button>
-            <div class="group-panel" ?hidden=${!open}>
-              <ul class="list subgroup-list">${
-          subgroup.items.map((item) => html`<li>${this.#item(item, rail)}</li>`)
-        }</ul>
-            </div>
-          </div>
-        </li>`;
-      }),
+      ...loose.map((item) => html`<li>${this.#item(item, true)}</li>`),
+      ...subgroups.map((subgroup) =>
+        html`<li>${
+          this.#flyout(
+            `sub:${group.name}/${subgroup.name}`,
+            { name: subgroup.name, items: subgroup.items.map(({ subgroup: _subgroup, ...item }) => item) },
+            subgroup.name,
+            this.#subgroupIcon(group.name, subgroup.name),
+          )
+        }</li>`
+      ),
     ];
+  }
+
+  // The nav tree of the expanded sidebar and the sheet (an internal element, `navTreeTagFor`): the items as links
+  // (`#<id>`); a click opens the item (`open()`: its history entry), the link itself is not followed. The open items
+  // (with the taskbar) are marked.
+  #navTree(items: readonly NavItem[], collapsibleGroups: boolean): TemplateResult {
+    const tag = unsafeStatic(this.#navTreeTag);
+    const treeItems = items.map((item): NavTreeItem => ({
+      id: item.id,
+      title: item.title,
+      href: `#${item.id}`,
+      ...(item.icon === undefined ? {} : { icon: item.icon }),
+      ...(item.description === undefined ? {} : { description: item.description }),
+      ...(item.group === undefined ? {} : { group: item.group }),
+      ...(item.subgroup === undefined ? {} : { subgroup: item.subgroup }),
+    }));
+
+    return staticHtml`<${tag}
+      class="nav-tree"
+      .items=${treeItems}
+      .groups=${this.#config.groups ?? []}
+      .active=${this.#active ?? ''}
+      .marked=${this.#config.taskbar === true ? this.#opened : []}
+      .collapsibleGroups=${collapsibleGroups}
+      .density=${this.density}
+      .theme=${this.#treeTheme()}
+      @navigate=${(event: CustomEvent<NavTreeNavigateDetail>) => {
+      event.preventDefault();
+      this.open(event.detail.id);
+    }}
+    ></${tag}>`;
+  }
+
+  // The nav tree's theme: the cockpit's, its icons in the sidebar's white strokes. A new object only with a new theme
+  // (the tree rewrites its stylesheet for a new one).
+  #treeTheme(): NavTreeTheme {
+    if (this.#navTreeTheme?.of !== this.theme) {
+      const { accentColor, fontSize, fontFamily } = this.theme;
+
+      this.#navTreeTheme = {
+        of: this.theme,
+        theme: {
+          ...(accentColor === undefined ? {} : { accentColor }),
+          ...(fontSize === undefined ? {} : { fontSize }),
+          ...(fontFamily === undefined ? {} : { fontFamily }),
+          iconColor: SIDEBAR_ICON_COLOR,
+        },
+      };
+    }
+
+    return this.#navTreeTheme.theme;
   }
 
   // The expanded sidebar (and the bottom bar's sheet) ignores pinning (2026-10-08, the user's wish: it shows every item
@@ -1379,7 +1425,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
         return nav(
           html`<ul class="list">${
             groups.map((group, index) =>
-              html`${index === 0 ? nothing : html`<li><hr class="section-rule" /></li>`}${this.#tree(group, rail)}`
+              html`${index === 0 ? nothing : html`<li><hr class="section-rule" /></li>`}${this.#railTree(group)}`
             )
           }</ul>`,
         );
@@ -1395,50 +1441,29 @@ class CockpitElementBase extends LitElement implements CockpitElement {
       return nav(html`<ul class="list">${shown.map((item) => html`<li>${this.#item(item, rail)}</li>`)}</ul>`);
     }
 
-    // One group at a time: the select on top, the items of the chosen group below it.
-    if (this.#config.groupDisplay === 'select' && !rail && groups.length > 1) {
+    // The rail of a few items: each group a section without a heading (a rule between them).
+    if (rail) {
+      return nav(html`${groups.map((group) => this.#section('', this.#railTree(group)))}`);
+    }
+
+    // One group at a time: the select on top, the items of the chosen group below it (without its heading).
+    if (this.#config.groupDisplay === 'select' && groups.length > 1) {
       const group = groups.find((candidate) => candidate.name === this.#selectedGroup) ?? groups[0];
 
       return html`${this.#groupSelect(texts, groups, group?.name ?? '')}
-      ${nav(group === undefined ? nothing : html`<ul class="list">${this.#tree(group, rail)}</ul>`)}`;
-    }
-
-    const recent = this.#config.recent === false ? [] : this.#recentItems;
-
-    return nav(html`
       ${
-      many && recent.length > 0
-        ? this.#section(texts.recent, recent.map((item) => html`<li>${this.#item(item, rail)}</li>`))
-        : nothing
+        nav(group === undefined ? nothing : this.#navTree(group.items.map(({ group: _group, ...item }) => item), false))
+      }`;
     }
-      ${
-      groups.map((group) => {
-        const label = group.name === '' ? (groups.length > 1 && many ? texts.other : '') : group.name;
-        const list = this.#tree(group, rail);
 
-        if (rail || !many || label === '' || this.#config.collapsibleGroups === false) {
-          return this.#section(rail ? '' : label, list);
-        }
+    // With many items, "Recent" first: a nav tree of its own, its items under one heading (without their folders).
+    const recent = many && this.#config.recent !== false ? this.#recentItems : [];
 
-        const open = this.#openGroups[group.name]
-          ?? (items.length <= MANY || group.name === (this.#itemOf(this.#active)?.group ?? '') || group.name === '');
-        return html`<div class="group">
-          <button
-            type="button"
-            class="group-trigger"
-            aria-expanded=${open}
-            ?data-panel-open=${open}
-            @click=${() => this.#setOpenGroup(group.name, !open)}
-          >
-            ${chevronIcon()}
-            <span class="group-name">${label}</span>
-            <span class="group-count">${group.items.length}</span>
-          </button>
-          <div class="group-panel" ?hidden=${!open}><ul class="list">${list}</ul></div>
-        </div>`;
-      })
-    }
-    `);
+    return nav(html`${
+      recent.length === 0
+        ? nothing
+        : this.#navTree(recent.map(({ subgroup: _subgroup, ...item }) => ({ ...item, group: texts.recent })), false)
+    }${this.#navTree(items, many && this.#config.collapsibleGroups !== false)}`);
   }
 
   // --- Topbar --------------------------------------------------------------------------------------------------------

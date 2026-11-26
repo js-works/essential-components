@@ -1,49 +1,10 @@
 import type { NavItem } from '../index.js';
 
-export type { Group, Match };
-export { groupsOf, search, subgroupsOf };
-
-// A group of the navigation: its name (`''` for the items without a group) and its items, in the order of the config.
-type Group = { name: string; items: readonly NavItem[] };
+export type { Match };
+export { search };
 
 // A search result: the item, and where the query is in its title (for the highlight), if it is there.
 type Match = { item: NavItem; title?: { start: number; end: number } };
-
-// The groups in the order of their first item; the items without a group come first.
-function groupsOf(items: readonly NavItem[]): Group[] {
-  const groups = new Map<string, NavItem[]>([['', []]]);
-
-  for (const item of items) {
-    const name = item.group ?? '';
-    const list = groups.get(name);
-
-    if (list === undefined) {
-      groups.set(name, [item]);
-    } else {
-      list.push(item);
-    }
-  }
-
-  return [...groups].map(([name, list]) => ({ name, items: list })).filter((group) => group.items.length > 0);
-}
-
-// The second level of a group: its items without a subgroup first (`loose`), then its subgroups, in the order of their
-// first item.
-function subgroupsOf(items: readonly NavItem[]): { loose: readonly NavItem[]; subgroups: Group[] } {
-  const [first, ...rest] = groupsOf(items.map((item) => ({ ...item, group: item.subgroup ?? '' })));
-  const original = (list: readonly NavItem[]) =>
-    list.map((item) => items.find((other) => other.id === item.id) ?? item);
-
-  if (first === undefined) {
-    return { loose: [], subgroups: [] };
-  }
-
-  const groups = [first, ...rest].map((group) => ({ name: group.name, items: original(group.items) }));
-
-  return first.name === ''
-    ? { loose: groups[0]?.items ?? [], subgroups: groups.slice(1) }
-    : { loose: [], subgroups: groups };
-}
 
 // The items that match every word of the query (ignoring the case), best first: the title starts with the query, a
 // word of the title starts with it, the title contains it, then a match in the description or the group only.

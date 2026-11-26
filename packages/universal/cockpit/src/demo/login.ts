@@ -9,7 +9,7 @@ import { accentColor } from './footer.js';
 import { DEMO_I18N } from './i18n.js';
 
 export type { LoginContent };
-export { DEMO_SERVER, loginDemo, plainContent, PROVIDERS };
+export { DEMO_SERVER, loginDemo, PROVIDERS, plainContent };
 
 type LoginDemoOptions = {
   title: string;

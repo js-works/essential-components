@@ -345,6 +345,11 @@ button {
   margin-top: 12px;
 }
 
+/* The nav trees of the expanded sidebar ("Recent", then all items): the gap of their sections. */
+.nav-tree + .nav-tree {
+  margin-top: 12px;
+}
+
 .section-label {
   margin: 0 0 4px;
   padding: 0 10px;
@@ -449,115 +454,6 @@ button {
   position: relative;
 }
 
-.group-trigger {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  height: 28px;
-  margin-bottom: 2px;
-  padding: 0 8px 0 6px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: ${v.muted};
-  font-size: ${v.sidebarFontSizeTiny};
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  cursor: pointer;
-
-  &:hover {
-    background: ${v.hover};
-    color: ${v.text};
-  }
-
-  &:focus-visible {
-    outline-offset: -2px;
-  }
-
-  .icon--chevron {
-    font-size: calc(${v.fontSize} * 14 / 14);
-    stroke-width: 2.25;
-    transition: rotate 150ms ${v.ease};
-  }
-
-  &[data-panel-open] .icon--chevron {
-    rotate: 90deg;
-  }
-}
-
-/* The second level: a subgroup in a group, its apps indented along a guide line. */
-
-.subgroup-trigger {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  min-height: 32px;
-  padding: 0 8px 0 7px;
-  border: 0;
-  border-radius: 7px;
-  background: transparent;
-  color: ${v.text};
-  font-size: ${v.sidebarFontSize};
-  font-weight: 600;
-  cursor: pointer;
-
-  &:hover {
-    background: ${v.hover};
-  }
-
-  &:focus-visible {
-    outline-offset: -2px;
-  }
-
-  .icon--chevron {
-    font-size: calc(${v.fontSize} * 14 / 14);
-    color: ${v.muted};
-    stroke-width: 2.25;
-    transition: rotate 150ms ${v.ease};
-  }
-
-  &[data-panel-open] .icon--chevron {
-    rotate: 90deg;
-  }
-}
-
-.subgroup-name {
-  flex: 1;
-  overflow: hidden;
-  text-align: left;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.subgroup-count {
-  color: ${v.muted};
-  font-size: ${v.sidebarFontSizeTiny};
-  font-weight: 500;
-}
-
-.subgroup-list {
-  margin: 1px 0 4px 14px;
-  padding-left: 6px;
-  border-left: 1px solid ${v.divider};
-
-  .item[aria-current='page']::before {
-    left: -7px;
-    top: 6px;
-    bottom: 6px;
-  }
-}
-
-.group-name {
-  flex: 1;
-  overflow: hidden;
-  text-align: left;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
 .group-count {
   min-width: 22px;
   padding: 0 6px;
@@ -623,24 +519,6 @@ button {
 
   .select-item & {
     grid-column: 2;
-  }
-
-  .subgroup-trigger & {
-    width: 18px;
-    height: 18px;
-
-    svg {
-      font-size: calc(${v.fontSize} * 16 / 14);
-    }
-  }
-
-  .group-trigger & {
-    width: 16px;
-    height: 16px;
-
-    svg {
-      font-size: calc(${v.fontSize} * 15 / 14);
-    }
   }
 }
 
@@ -1276,23 +1154,6 @@ ${MENU_PLACEMENT_STYLES}
   :is(.flyout, .select-popup) :is(.tile, .group-icon) {
     color: ${v.accent};
   }
-}
-
-/* The icons of the expanded sidebar a bit smaller (2026-10-09, the user's wish, like the topbar's tabs): an app's 17 at 14
-   (20 before), a subgroup's 16 (18). Their boxes stay, so the titles do not move. Not in the rail, where the icon is all
-   there is, nor in its flyouts. */
-.sidebar {
-  .item > .tile svg {
-    font-size: calc(${v.fontSize} * 17 / 14);
-  }
-
-  .subgroup-trigger > .group-icon svg {
-    font-size: calc(${v.fontSize} * 16 / 14);
-  }
-}
-
-.frame[data-rail] .sidebar .item > .tile svg {
-  font-size: calc(${v.fontSize} * 20 / 14);
 }
 
 /* The handle on the sidebar's right edge (not in the rail): a thin line in the accent color while hovered, dragged
@@ -2768,14 +2629,6 @@ ${MENU_PLACEMENT_STYLES}
     padding-block: 2px;
   }
 
-  .group-trigger {
-    height: 26px;
-  }
-
-  .subgroup-trigger {
-    min-height: 30px;
-  }
-
   .section + .section,
   .section + .group,
   .group + .section,
@@ -2785,6 +2638,10 @@ ${MENU_PLACEMENT_STYLES}
 
   .section-rule {
     margin-bottom: 8px;
+  }
+
+  .nav-tree + .nav-tree {
+    margin-top: 8px;
   }
 
   .menu-item,
@@ -2800,14 +2657,6 @@ ${MENU_PLACEMENT_STYLES}
     padding-block: 6px;
   }
 
-  .group-trigger {
-    height: 30px;
-  }
-
-  .subgroup-trigger {
-    min-height: 34px;
-  }
-
   .section + .section,
   .section + .group,
   .group + .section,
@@ -2817,6 +2666,10 @@ ${MENU_PLACEMENT_STYLES}
 
   .section-rule {
     margin-bottom: 16px;
+  }
+
+  .nav-tree + .nav-tree {
+    margin-top: 16px;
   }
 
   .menu-item,

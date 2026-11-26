@@ -1,5 +1,12 @@
-import type { AppHeaderElement, AppHeaderLink, AppHeaderTheme } from '../main/index.js';
-import { createAppHeaderClass } from '../main/index.js';
+import type {
+  AppHeaderElement,
+  AppHeaderLink,
+  AppHeaderTheme,
+  NavDensity,
+  NavTreeElement,
+  NavTreeItem,
+} from '../main/index.js';
+import { createAppHeaderClass, createNavTreeClass } from '../main/index.js';
 import { wireAppHeader } from './app-header-demo.js';
 import { DEMO_I18N } from './i18n.js';
 import './cockpit-demo.css';
@@ -58,6 +65,43 @@ const OWN_THEME: AppHeaderTheme = Object.freeze({
   borderRadius: '999px',
 });
 
+// The nav tree's made-up items: one without a group, two groups, folders with and without an icon.
+const TREE_ITEMS: readonly NavTreeItem[] = Object.freeze([
+  {
+    id: 'dashboard',
+    title: 'Dashboard',
+    href: '/dashboard',
+    icon: svg('<path d="M4 4h6v8h-6z"/><path d="M4 16h6v4h-6z"/><path d="M14 12h6v8h-6z"/><path d="M14 4h6v4h-6z"/>'),
+  },
+  {
+    id: 'projects',
+    title: 'Projects',
+    href: '/projects',
+    icon: ICON,
+    group: 'Work',
+    description: 'Projects and their tasks',
+  },
+  { id: 'tasks', title: 'Tasks', href: '/tasks', group: 'Work', subgroup: 'Planning' },
+  { id: 'calendar', title: 'Calendar', href: '/calendar', group: 'Work', subgroup: 'Planning' },
+  { id: 'timesheets', title: 'Timesheets', href: '/timesheets', group: 'Work', subgroup: 'Planning' },
+  { id: 'invoices', title: 'Invoices', href: '/invoices', group: 'Finance', subgroup: 'Billing' },
+  { id: 'payments', title: 'Payments', href: '/payments', group: 'Finance', subgroup: 'Billing' },
+  { id: 'reports', title: 'Reports', href: '/reports', group: 'Finance' },
+]);
+
+// The folders' icons (only "Billing" has one).
+const TREE_GROUPS = Object.freeze([
+  {
+    name: 'Finance',
+    subgroups: [{
+      name: 'Billing',
+      icon: svg(
+        '<path d="M3 5m0 3a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z"/><path d="M3 10l18 0"/>',
+      ),
+    }],
+  },
+]);
+
 let counter = 0;
 
 // The demo of the cockpit package, as a light DOM custom element without attributes (exported, not registered: the
@@ -93,6 +137,7 @@ class CockpitDemo extends HTMLElement {
   <div class="ui-stack">
     <nav class="ui-tabs" aria-label="Cockpit">
       <button class="ui-tabs__tab" type="button">App header</button>
+      <button class="ui-tabs__tab" type="button">Nav tree</button>
       <button class="ui-tabs__tab" type="button">Cockpit</button>
     </nav>
     <section class="ui-tabs__panel ui-stack">
@@ -123,6 +168,34 @@ class CockpitDemo extends HTMLElement {
       </div>
       <h2 class="ui-heading">Events</h2>
       <output class="ui-result cockpit-demo__log" data-log></output>
+    </section>
+    <section class="ui-tabs__panel ui-stack" hidden>
+      <p class="ui-note">The navigation tree of the cockpit's sidebar on its own (<code>createNavTreeClass()</code>): the
+        groups as headings, the folders (collapsible, remembered per browser), the items as links. A click fires
+        <code>navigate</code>, which a router cancels to navigate itself (here: the item becomes the active one); a middle
+        click opens a new tab. The host gives the width and wraps it in a <code>&lt;nav&gt;</code>.</p>
+      <form class="ui-toolbar" data-tree-switches>
+        <label class="ui-field">Groups
+          <select class="ui-select" name="display">
+            <option value="sections" selected>As sections</option>
+            <option value="select">One at a time (a dropdown)</option>
+          </select>
+        </label>
+        <label class="ui-field"><input class="ui-checkbox" type="checkbox" name="collapsible"> Collapsible groups</label>
+        <label class="ui-field"><input class="ui-checkbox" type="checkbox" name="marked" checked> Marked items</label>
+        <label class="ui-field">Density
+          <select class="ui-select" name="density">
+            <option value="compact">Compact</option>
+            <option value="normal" selected>Normal</option>
+            <option value="comfortable">Comfortable</option>
+          </select>
+        </label>
+      </form>
+      <nav class="cockpit-demo__tree" aria-label="Demo navigation">
+        <${tags.tree} data-tree></${tags.tree}>
+      </nav>
+      <h2 class="ui-heading">Events</h2>
+      <output class="ui-result cockpit-demo__log" data-tree-log></output>
     </section>
     <section class="ui-tabs__panel ui-stack" hidden>
       <p class="ui-note">The cockpit (<code>createCockpitClass()</code>) is this page: the navigation (sidebar, topbar,
@@ -168,16 +241,50 @@ class CockpitDemo extends HTMLElement {
 
     switches.addEventListener('change', applySwitches);
     applySwitches();
+    this.#wireTree();
+  }
+
+  // The nav tree with a made-up router: `navigate` canceled, the item becomes the active one; the switches set its
+  // attributes.
+  #wireTree(): void {
+    const tree = this.querySelector<NavTreeElement>('[data-tree]')!;
+    const log = this.querySelector<HTMLOutputElement>('[data-tree-log]')!;
+    const switches = this.querySelector<HTMLFormElement>('[data-tree-switches]')!;
+
+    tree.items = TREE_ITEMS;
+    tree.groups = TREE_GROUPS;
+    tree.active = 'projects';
+    tree.addEventListener('navigate', (event) => {
+      const { id, href } = (event as CustomEvent<{ id: string; href: string }>).detail;
+
+      event.preventDefault();
+      tree.active = id;
+      log.textContent = `navigate ${href} (canceled: the router's)\n${log.textContent ?? ''}`.split('\n').slice(0, 8)
+        .join('\n');
+    });
+
+    const apply = () => {
+      const data = new FormData(switches);
+
+      tree.groupDisplay = data.get('display') === 'select' ? 'select' : 'sections';
+      tree.collapsibleGroups = data.get('collapsible') !== null;
+      tree.marked = data.get('marked') === null ? [] : ['tasks', 'invoices'];
+      tree.density = String(data.get('density')) as NavDensity;
+    };
+
+    switches.addEventListener('change', apply);
+    apply();
   }
 }
 
-// The headers' classes, registered once under tags of the demo.
-function defineHeaders(): { plain: string; themed: string } {
-  const tags = { plain: 'cockpit-demo-header', themed: 'cockpit-demo-header-themed' };
+// The classes of the headers and the nav tree, registered once under tags of the demo.
+function defineHeaders(): { plain: string; themed: string; tree: string } {
+  const tags = { plain: 'cockpit-demo-header', themed: 'cockpit-demo-header-themed', tree: 'cockpit-demo-nav-tree' };
 
   if (customElements.get(tags.plain) === undefined) {
     customElements.define(tags.plain, createAppHeaderClass({ i18n: DEMO_I18N }));
     customElements.define(tags.themed, createAppHeaderClass({ theme: OWN_THEME, i18n: DEMO_I18N }));
+    customElements.define(tags.tree, createNavTreeClass({ i18n: DEMO_I18N, storageKey: 'cockpit-demo-nav-tree' }));
   }
 
   return tags;

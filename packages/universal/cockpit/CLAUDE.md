@@ -30,7 +30,8 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   `NavLayout`, `NavScheme`), `menus.ts` (`FooterAction`, `ActionChoice`, `ActionChoices`, `MenuItem`, `MenuSection`,
   `SignedInUser`, `CockpitFooter`), `header.ts` (the app header's: `AppHeaderElement`, `AppHeaderClass`,
   `AppHeaderClassConfig`, `AppHeaderLink`, `AppHeaderCrumb`, `AppHeaderStep`, `AppHeaderNavigateDetail`), `theme.ts`
-  (`CockpitTheme`, `AppHeaderTheme`, `LoginTheme`), `login.ts` (the login's: `LoginElement`, `LoginClass`,
+  (`CockpitTheme`, `AppHeaderTheme`, `LoginTheme`, `NavTreeTheme`), `nav-tree.ts` (`NavTreeElement`, `NavTreeClass`, `NavTreeClassConfig`, `NavTreeItem`,
+  `NavTreeNavigateDetail`), `login.ts` (the login's: `LoginElement`, `LoginClass`,
   `LoginClassConfig`, `LoginProvider`), `texts.ts` (`CockpitTextKey`, `CockpitParams`, read from the English texts), `i18n.ts`
   (`I18nAdapter`, `TextParams`: a verbatim copy of those in `frontend/i18n.md`).
   `src/main/index.ts` exports them flat (`typescript.md`): `import type { NavItem } from '@local/cockpit'`. The demos'
@@ -552,6 +553,47 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   line, the hint, the providers: shown, the line "or", running, failed; the submit button: the host's form submitted by it and by
   Enter, not when an input used Enter, none without a label, the spinner).
 
+## The nav tree
+
+- `createNavTreeClass({ theme?, i18n?, storageKey? })`, `NavTreeElement` (not "sidebar": no rail, search, user or
+  footer): the navigation tree of the cockpit's sidebar as an element of its own
+  (`src/main/nav-tree/`), for the cockpit and standalone in any app: `createNavTreeClass` in the main entry, its types
+  in `api/nav-tree.ts`. The cockpit uses it under an internal tag (`navTreeTagFor()`, `internal-cockpit-nav-tree-<n>`,
+  like the taskbar).
+- `items` (`NavTreeItem`: `id`, `title`, `href`, `icon?`, `description?` (the tooltip), `group?`, `subgroup?`),
+  `groups` (the folders' icons, `NavGroup`), `active` (attribute), `marked` (ids: a dot after the title),
+  `collapsible-groups`, `density`, `theme` (`NavTreeTheme`: `accentColor`, `fontSize`, `fontFamily`, `iconColor`;
+  live). The grouping is `core/groups.ts` (generic over the item type).
+- The items are links (`<a href>`); a plain click fires the cancelable `navigate` (`{ id, href }`, bubbling, composed),
+  like the app header: a router cancels it and navigates itself; middle and modified clicks stay the browser's.
+- The groups as headings (the items without a group first, a line in place of their heading); with
+  `collapsible-groups` toggles with a count ("Other" for the items without a group), open by default: the active
+  item's group, the one without a name, and all when there are at most 30 items. The folders always collapsible,
+  open by default, with an icon (only when the config has one) and a count, their items along a guide line. Open and
+  closed remembered under `<storageKey>:groups` (in the cockpit: its own `storageKey`).
+- `group-display="select"` (`groupDisplay`; `sections` by default): one group at a time, chosen in a dropdown on top
+  (the chosen group and its count; its list all groups with their counts, the chosen one checked; "Other" for the items
+  without a group), the chosen group's items below it without its heading. With one group only: as sections. The
+  chosen group follows the active item and is remembered under `<storageKey>:group`. The dropdown is the cockpit's
+  `Menu` (a listbox: its keys, typing, a click outside), its positioner a popover (the top layer, like the app
+  header's), placed by CSS anchor positioning below the select, as wide as it.
+- Up and Down (Home, End) move between its links and toggles; at an end the key is left to the host (the cockpit
+  goes on to its next tree).
+- No landmark of its own: the host wraps it in a `<nav>`. No resizing (the host's layout gives its width). Its text
+  color and font inherited.
+- In the cockpit: the expanded sidebar and the bottom bar's sheet (the rail keeps its own icons and flyouts). Items
+  `href: '#<id>'`; `navigate` canceled, `open(id)`. "Recent" is a tree of its own (its items in one group named
+  "Recent", without their folders); with the cockpit's own group select (`groupDisplay: 'select'`), a tree of the chosen
+  group's items (without their group); to be replaced by the tree's `group-display="select"`. `collapsible-groups` with more than `FEW` items (unless `collapsibleGroups: false`), `marked` the open items
+  (with the taskbar), its icons the sidebar's white strokes (`iconColor`). The sheet's first focus: the close button,
+  then the open item once the tree has rendered.
+- The demo: the tab "Nav tree" of `src/demo/cockpit-demo.ts` (the root page's Internals › Cockpit): made-up items
+  (one without a group, two groups, folders with and without an icon) in a sidebar-like frame (260px), a made-up
+  router (`navigate` canceled, the item becomes the active one), switches for `group-display`, `collapsible-groups`,
+  `marked` and `density`, a log of the events; remembered under `cockpit-demo-nav-tree`.
+- Tests: `src/test/nav-tree/nav-tree-element.test.ts` (headings, folders, order, tooltip, active, marked, `navigate`
+  and modified clicks, folders remembered, collapsible groups and "Other", the group select following the active item).
+
 ## Layout and commands
 
 - `exports` in `package.json` (rather than an alias per package and entry in the root): each entry has a `source`
@@ -561,8 +603,10 @@ This repository's rules for it (see the root's `CLAUDE.md`):
 - Three trees in `src/` (`general.md`): `main/`, `demo/`, `test/`.
 - `src/main/api/`: the types (by topic); `src/main/element/`: the custom element (`cockpit-element-base.ts`, `CockpitElementBase`, Lit: shadow root,
   light-DOM apps, routing, the whole UI; `create-cockpit-class.ts`), `menu.ts` (the menus), `icons.ts`, its CSS
-  (`styles.ts`); the taskbar (`taskbar-element.ts`, `taskbar-styles.ts`); `src/main/login/`: the login (`create-login-class.ts`, `login-element-base.ts`, `login-styles.ts`);
-  `src/main/core/`: search, texts, storage; `src/main/texts/en.ts`: the English texts; `locales/`: the ICU messages; `src/demo/i18n.ts`: the demos' German.
+  (`styles.ts`); the taskbar (`taskbar-element.ts`, `taskbar-styles.ts`); `src/main/nav-tree/`: the nav tree (`create-nav-tree-class.ts`, `nav-tree-element-base.ts`,
+  `nav-tree-styles.ts`, `nav-tree-tag.ts`); `src/main/login/`: the login (`create-login-class.ts`, `login-element-base.ts`, `login-styles.ts`);
+  `src/main/core/`: groups (`groupsOf`, `subgroupsOf`: the groups and folders of the navigation), search, texts,
+  storage; `src/main/texts/en.ts`: the English texts; `locales/`: the ICU messages; `src/demo/i18n.ts`: the demos' German.
 - `src/demo/`: the package's demo (`npm run dev`), with 3, 30 or 100 apps (the "Apps" choice in the footer; `?apps=some`,
   `?apps=many`); the 100 apps with `groupDisplay: 'select'`; in the 30 and 100 apps every app has a group and a
   subgroup (no "Other"); `src/demo/ui/`: the design language (a copy, like in every package). Each made-up app
@@ -573,7 +617,7 @@ This repository's rules for it (see the root's `CLAUDE.md`):
 - `src/demo/cockpit-demo.ts` (`CockpitDemo`, light DOM, exported, not registered; its CSS `cockpit-demo.css`): the
   root page's "Cockpit" (Internals › Components). The app header twice (the default look, an own theme) with a made-up
   router (its own list of paths), switches (the switcher, its descriptions, the width) and a log of the events; a
-  second tab says where the cockpit is (the page itself: it owns the URL hash, so it cannot run inside it).
+  second tab the nav tree (see "The nav tree"); a third says where the cockpit is (the page itself: it owns the URL hash, so it cannot run inside it).
 - `npm run typecheck`, `npm run build` (library mode; Lit stays outside), `npm run format`.
 - `npm test` (Vitest, in jsdom; `src/test/setup.ts` adds what jsdom lacks: `adoptedStyleSheets`).
 - `npm run loc` (`src/main`), `npm run loc:all` (all of `src`): the lines (all, code, comments, blank) by kind and by folder,

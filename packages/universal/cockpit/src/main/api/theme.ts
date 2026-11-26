@@ -1,4 +1,4 @@
-export type { AppHeaderTheme, CockpitTheme, LoginTheme };
+export type { AppHeaderTheme, CockpitTheme, LoginTheme, NavTreeTheme };
 
 // The cockpit's look, a few values (the colors are the design language's). Without a key, its default. The element's
 // `theme` can be switched live (a new object).
@@ -57,4 +57,16 @@ type LoginTheme = {
   // The base size of the text (default `14px`); the other sizes follow it.
   fontSize?: string;
   fontFamily?: string;
+};
+
+// The nav tree's look. Without a key, the cockpit's default (`DEFAULT_COCKPIT_THEME`); the other colors are the design
+// language's.
+type NavTreeTheme = {
+  // The active item, the marks, the focus rings; lighter in a dark scheme by a mix with white.
+  accentColor?: string;
+  // The base size of the text and the icons (default `14px`); the items' text is 13/14 of it.
+  fontSize?: string;
+  fontFamily?: string;
+  // The icons of the items and folders (default: the accent).
+  iconColor?: string;
 };
