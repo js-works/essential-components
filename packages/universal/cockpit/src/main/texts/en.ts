@@ -1,6 +1,6 @@
 export { EN };
 
-// The English (en-US) texts of the cockpit and the app header as functions of their values and the locale: the
+// The English (en-US) texts of the cockpit, the app header and the login as functions of their values and the locale: the
 // default when the adapter has no translation, and the master of the ICU messages in `locales/`. Only what ICU can
 // express: values, `number()`, and the plural by `count === 1`. `locale` is always a valid tag (`textsOf` checks it).
 
@@ -44,4 +44,8 @@ const EN = {
   modules: () => 'Modules',
   switchApp: () => 'Switch app',
   breadcrumb: () => 'Breadcrumb',
+  // The login's provider buttons.
+  loginContinueWith: ({ provider }: { provider: string }) => `Continue with ${provider}`,
+  loginOr: () => 'or',
+  loginProviderFailed: () => 'The sign in failed. Please try again.',
 };

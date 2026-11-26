@@ -30,7 +30,8 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   `NavLayout`, `NavScheme`), `menus.ts` (`FooterAction`, `ActionChoice`, `ActionChoices`, `MenuItem`, `MenuSection`,
   `SignedInUser`, `CockpitFooter`), `header.ts` (the app header's: `AppHeaderElement`, `AppHeaderClass`,
   `AppHeaderClassConfig`, `AppHeaderLink`, `AppHeaderCrumb`, `AppHeaderStep`, `AppHeaderNavigateDetail`), `theme.ts`
-  (`CockpitTheme`, `AppHeaderTheme`), `texts.ts` (`CockpitTextKey`, `CockpitParams`, read from the English texts), `i18n.ts`
+  (`CockpitTheme`, `AppHeaderTheme`, `LoginTheme`), `login.ts` (the login's: `LoginElement`, `LoginClass`,
+  `LoginClassConfig`, `LoginProvider`), `texts.ts` (`CockpitTextKey`, `CockpitParams`, read from the English texts), `i18n.ts`
   (`I18nAdapter`, `TextParams`: a verbatim copy of those in `frontend/i18n.md`).
   `src/main/index.ts` exports them flat (`typescript.md`): `import type { NavItem } from '@local/cockpit'`. The demos'
   variables of the element are `cockpitElement` or `element`.
@@ -53,7 +54,8 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   packages look like one family, whatever component suite a mini-app uses. Not Mantine (its look).
 - Mini-apps stay agnostic: the contract is only a custom element tag, the URL hash, and `<html lang>` /
   `data-scheme` (for the mini-apps: the cockpit itself takes its language only from its adapter).
-- Kept small: navigation, header, routing, language and color scheme. No auth, permissions or notifications for now.
+- Kept small: navigation, header, routing, language and color scheme, and a login screen (below). No auth of its own
+  (the host signs in), no permissions or notifications for now.
 - The cockpit's own UI lives in its shadow DOM (its CSS isolated both ways). The active mini-app is a light-DOM child
   of the cockpit, shown through the default slot (`<main><slot></slot></main>`): mini-apps put their CSS globally
   (e.g. into `document.head`), which would not reach into a shadow root. The cockpit replaces that child itself on
@@ -199,7 +201,7 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   `userMenu` (sections of menu items, like the footer's menu), the row is a button with a chevron that opens it to the
   right of the sidebar (touching it, its bottom at the row's; also in the rail, where only the avatar shows, the name
   as the tooltip). The demos: "Jane Doe", with Profile, Settings, Sign out (`userMenu(signOut)` in `src/demo/footer.ts`;
-  on the root page "Sign out" shows the login screen of `packages/mantine/login`; else it logs). The kebab menu keeps Keyboard
+  on both pages "Sign out" shows the login screen, `loginDemo()` of `src/demo/login.ts`). The kebab menu keeps Keyboard
   shortcuts and "Reset demo" (the demo as if opened for the very first time: it clears `localStorage`,
   `sessionStorage`, IndexedDB, cookies and the cache storage, all of the origin, then reloads at the start, without
   hash and query).
@@ -443,7 +445,7 @@ This repository's rules for it (see the root's `CLAUDE.md`):
 - The theme: the element's property `theme` (`CockpitTheme`, no attribute), its first value the config's `theme`,
   switchable live (a new object).
   - Its keys (what a host can override, and the accent; the colors stay the design language's, a key is added when
-    needed): `accent` (one color; lighter in a dark scheme, e.g. the dark navigation, by `color-mix(in oklab, <accent>
+    needed): `accentColor` (one color; lighter in a dark scheme, e.g. the dark navigation, by `color-mix(in oklab, <accent>
     60%, white)`; without it the design language's, `light-dark(#0a5cc2, #78b0ff)`), `fontSize` (`14px`), `fontFamily`
     (`system-ui, sans-serif`), `sidebarWidth` (`256px`), `railWidth` (`68px`), `contentPadding` (`16px 20px`).
     Defaults: `DEFAULT_COCKPIT_THEME` (`themes/default-cockpit-theme.ts`, exported, so a host starts from it).
@@ -456,7 +458,7 @@ This repository's rules for it (see the root's `CLAUDE.md`):
     panel): a second stylesheet (`layoutStyles()`), with copies of the few rules that use them (the same selectors,
     later, so they win), rewritten when they change. Not inline styles: one of them is in `@starting-style`.
   - The taskbar has a `theme` too (`taskbarStyles(theme)`, the same `themeValues()`); the cockpit passes its own.
-  - The demos' "Accent color" choice (`accentSetting()` in `src/demo/footer.ts`) sets the cockpit's `theme.accent` (merged
+  - The demos' "Accent color" choice (`accentSetting()` in `src/demo/footer.ts`) sets the cockpit's `theme.accentColor` (merged
     into its theme, once the element is defined), and `--app-accent-color` on `<html>` for the page (the root page
     maps it to its apps).
 - Texts (`i18n.md`): English only in the package, as functions of their values and the locale (`src/main/texts/en.ts`,
@@ -489,16 +491,78 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   `16px 20px`). In the topbars and beside the rail a plain `12px 16px` (less room there); not the theme's, so the
   host's value counts only beside the expanded sidebar and the bottom bar.
 
+## The login
+
+- `createLoginClass({ theme?, i18n? })`: a login screen, a Lit element of its own (the host chooses the tag; the demos
+  register `<app-login>`). In the main entry, not an entry of its own: the package has no side effects
+  (`"sideEffects": false`), so a host that imports only the login does not get the cockpit. The cockpit does not know
+  it: the host shows it in place of the cockpit and back.
+- The layout and the buttons (the submit button, the providers'); the host gives the rest of the content and owns it (its forms, the views and
+  their logic). The element adds no children of its own (an element's light DOM is its user's), so the host's inputs
+  stay in the light DOM, where password managers and autofill find them (they do not find inputs in a shadow root
+  everywhere: Safari, Firefox, 1Password). It fits the host's stack: Mantine's inputs in a Mantine app, plain ones
+  elsewhere. No built-in forms: an element that renders into its own light DOM breaks when the host replaces its
+  children, and its inputs would never match the host's.
+- Attributes: `app-title` (not `title`: the browser's tooltip), `subtitle`, `heading` (the view's, none when empty),
+  `submit-label`, `submitting` (below).
+- The submit button (`submit-label`: its text, e.g. "Sign in", none when empty): the element's, in its shadow root,
+  below the default slot, full width in the accent. A button in a shadow root cannot submit a form in the light DOM
+  natively (`form="…"` does not cross the boundary), so it calls `requestSubmit()` on the host's form (the first
+  `<form>` in the default slot, slotted or inside a slotted element): a real submit event, the host's checks and handler,
+  what password managers listen for. The host's form has no submit button of its own. Enter in an input of that form
+  submits it too (a `keydown` listener on the element: natively, Enter does nothing in a form of two inputs without a
+  submit button), unless the input used it itself (`defaultPrevented`, e.g. a select's list), an IME composes, or the
+  form has a submit button of its own. `submitting` (boolean, reflected): set by the host while its handler runs: the
+  button's spinner, the providers disabled; a provider running disables the button.
+- Slots: the default one (the view), `logo` (default: the cockpit's logo, four squares in the accent, from the shadow
+  root), `footer` (below a line, centered; no line without it), `hint` (small and muted, below the card). Whether a
+  slot has content: `slotchange` (an element, or text that is not only white space).
+- The providers (OIDC, SSO): `providers` (`LoginProvider`: `{ id, label, icon? }`, the icon SVG markup) and
+  `signInWith(id)` (`null`: no buttons; the host signs in: a redirect, a popup; nothing of OIDC in the package). Below
+  the default slot, after a line "or" when the slot has content, full width, outlined, "Continue with {provider}" with
+  the icon. The clicked button shows a spinner while its promise is pending, the others are disabled; a rejected
+  promise shows its message below them (else "The sign in failed. Please try again."). The host's form is not locked
+  meanwhile (its own function: it knows). A host with views shows them on its sign in view only (`providers` set per
+  view). Plain verbs, not `onSignIn`: React 19 takes every `on…` prop of a custom element as an event listener.
+- The theme: `LoginTheme` (`accentColor`, `fontSize`, `fontFamily`), fixed per class (no `theme` property); without
+  a key the cockpit's default. The rest is the design language's (`light-dark()`; the buttons `5px`, the card `6px`;
+  the error color the login's own, `light-dark(#c92a2a, #ff8787)`). Pressed, the buttons darken a step
+  more than on hover (the submit button the accent with 24% black, 12% on hover; the providers `light-dark(#e9ecef,
+  #383838)`), no transition. The accent: the default logo, the submit button,
+  the buttons' focus ring. The host's content inherits the card's font and color (a slotted element inherits from its slot).
+- Texts (the cockpit's adapter and namespace): `loginContinueWith` (`{ provider }`), `loginOr`, `loginProviderFailed`.
+- The layout: a card (440px) on a light gray screen, at least the window's height, a bit above the middle (three rows,
+  `minmax(32px, 2fr) auto minmax(16px, 3fr)`): the logo with the title and the subtitle (small, on top), the heading
+  (large), the view, the submit button, the providers, the footer; the hint below the card. Narrow (up to 480px): the card is the page,
+  edge to edge, from the top; short (up to 640px high): less room; narrow or touch: the buttons 44px. The safe areas as
+  padding. `user-select: none` on the screen (an input of the host's sets its own).
+- The demos' login (`src/demo/login.ts`, `loginDemo({ title, subtitle, accent, storageKey, content? })`, used by the
+  package's demo and the root page; `content` renders the views into the element and returns what removes them
+  (`LoginContent`; the package's `plainContent`, the root page's Mantine forms); one made-up server for both
+  (`DEMO_SERVER`, with `PROVIDERS`); its CSS `src/demo/login-demo.css`, BEM `login-demo`, the design language's tokens and the
+  page's `--app-accent-color`): the host of the element, an example of the content. "Sign out" fades the cockpit out
+  (`data-fading`, the page's CSS) and shows `<app-login>` in its place, signed out remembered per browser
+  (`restore()`). Three views rendered by Lit into the element (sign in, reset password, register), with the checks
+  (required, an email, the passwords equal), the pending states (the spinner, read-only fields), the errors, the password inputs' eye (show or hide), no suggestions of the browser (`autocomplete="off"`); the
+  shell sets `signInWith`, each content `submitLabel` and `submitting` per view and `providers` on its sign in view
+  (`PROVIDERS`, three made-up ones). Any username and password sign in after 500 ms, the password "wrong" fails; reset and register
+  answer after 600 ms (the account "taken" exists already); Microsoft and Company SSO sign in after 700 ms, Google
+  fails. English only. The class is defined when the login is shown the first time, with the page's accent then.
+- Tests: `src/test/login/login-element.test.ts` (jsdom: the texts, no children of its own, the logo, the footer's
+  line, the hint, the providers: shown, the line "or", running, failed; the submit button: the host's form submitted by it and by
+  Enter, not when an input used Enter, none without a label, the spinner).
+
 ## Layout and commands
 
 - `exports` in `package.json` (rather than an alias per package and entry in the root): each entry has a `source`
   condition first, its file in `src/main/`, then its built file in `dist/`. The root's demo resolves the package by name
   (`@local/…`) to its sources by that condition (its `vite.config.ts` and `tsconfig.json`); everywhere else, a
   customer's copy too, the condition is ignored and `dist/` counts.
-- Three trees in `src/` (`general.md`): `main/`, `demo/`, `test/` (none yet).
+- Three trees in `src/` (`general.md`): `main/`, `demo/`, `test/`.
 - `src/main/api/`: the types (by topic); `src/main/element/`: the custom element (`cockpit-element-base.ts`, `CockpitElementBase`, Lit: shadow root,
   light-DOM apps, routing, the whole UI; `create-cockpit-class.ts`), `menu.ts` (the menus), `icons.ts`, its CSS
-  (`styles.ts`); the taskbar (`taskbar-element.ts`, `taskbar-styles.ts`); `src/main/core/`: search, texts, storage; `src/main/texts/en.ts`: the English texts; `locales/`: the ICU messages; `src/demo/i18n.ts`: the demos' German.
+  (`styles.ts`); the taskbar (`taskbar-element.ts`, `taskbar-styles.ts`); `src/main/login/`: the login (`create-login-class.ts`, `login-element-base.ts`, `login-styles.ts`);
+  `src/main/core/`: search, texts, storage; `src/main/texts/en.ts`: the English texts; `locales/`: the ICU messages; `src/demo/i18n.ts`: the demos' German.
 - `src/demo/`: the package's demo (`npm run dev`), with 3, 30 or 100 apps (the "Apps" choice in the footer; `?apps=some`,
   `?apps=many`); the 100 apps with `groupDisplay: 'select'`; in the 30 and 100 apps every app has a group and a
   subgroup (no "Other"); `src/demo/ui/`: the design language (a copy, like in every package). Each made-up app
@@ -511,6 +575,7 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   router (its own list of paths), switches (the switcher, its descriptions, the width) and a log of the events; a
   second tab says where the cockpit is (the page itself: it owns the URL hash, so it cannot run inside it).
 - `npm run typecheck`, `npm run build` (library mode; Lit stays outside), `npm run format`.
+- `npm test` (Vitest, in jsdom; `src/test/setup.ts` adds what jsdom lacks: `adoptedStyleSheets`).
 - `npm run loc` (`src/main`), `npm run loc:all` (all of `src`): the lines (all, code, comments, blank) by kind and by folder,
   with each one's share of the code as a bar (`scripts/loc.mjs`). sloc counts each file; the kind comes from its name,
   as the CSS and the icons live in TypeScript: `*styles.ts` is "CSS (in TS)", `icons.ts` "SVG (in TS)", other `.ts`
@@ -561,6 +626,5 @@ This repository's rules for it (see the root's `CLAUDE.md`):
 - Scoped custom element registries (in every target browser now: `new CustomElementRegistry()`), todo: the
   taskbar in the cockpit's own registry (its shadow root) under a plain name, in place of the global
   `internal-cockpit-taskbar-<n>`; then the convention for internal elements (`general.md`, the master, and its copies).
-- Tests.
 - Runtime composition (separate deployments: import maps, Module Federation), only when needed.
 - Board Manager and File Center as packages of their own (proposed).

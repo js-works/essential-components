@@ -56,9 +56,9 @@ The rules of this repository on top of them:
   - License: MIT or the Unlicense.
 - Two tiers of packages; each package's `CLAUDE.md` states its own in one line:
   - Tier 1, framework-free where possible, for any customer's stack: `overlays`, `file-upload`, `data-table`,
-    `cockpit`, `form-validation`. No UI library, no i18n library (an `I18nAdapter`), themes as JS objects.
+    `cockpit` (with the login), `form-validation`. No UI library, no i18n library (an `I18nAdapter`), themes as JS objects.
     Expensive to build: only for packages that important.
-  - Tier 2, opinionated, for apps built on Mantine: `login`, `mantine-themes`, `rich-text`, `micro-app`. Mantine and
+  - Tier 2, opinionated, for apps built on Mantine: `mantine-themes`, `rich-text`, `micro-app`. Mantine and
     react-i18next (with i18next and `i18next-icu`: ICU messages everywhere) as peers, and TanStack Router where routing is involved; their look from Mantine's
     theme and variables (`var(--mantine-…)`, never new custom properties of their own), their texts from an i18next
     namespace of their own.
@@ -87,7 +87,7 @@ The rules of this repository on top of them:
   - `universal/`: for any stack (tier 1): `cockpit`, `data-table`, `file-upload`, `overlays`. Inside they
     may use Lit or React; a `/react` entry is an add-on.
   - `react/`: for React apps, no UI library (tier 1): `form-validation`.
-  - `mantine/`: for Mantine apps with i18next (tier 2): `login`, `mantine-themes`, `micro-app`, `rich-text`.
+  - `mantine/`: for Mantine apps with i18next (tier 2): `mantine-themes`, `micro-app`, `rich-text`.
   - `ai/`: no component: the AI-agnostic instructions (see "Conventions").
   - A package that changes its kind moves to the other folder.
   - Weighed: `vanilla` (none of them is), one flat folder (what a package needs was not visible).
@@ -103,8 +103,7 @@ The rules of this repository on top of them:
     chooses the tag; the root page registers `<app-cockpit>`): an admin panel shell for office mini-apps
     (micro-frontends): only a sidebar with the apps (search, recent, groups; from a few apps up to hundreds); the
     open app fills the rest. Lit in its shadow DOM (its own menus and native `<dialog>`s since 2026-10-08; Zag.js before), styled with the `ui-*` tokens. The root's demo page uses it.
-  - `login` (`@local/login`, 2026-10-03; `app-login` until 2026-10-10, the user's wish: the "app" added nothing): a generic login screen for apps (React, Mantine): `LoginScreen`, and
-    `mountLoginScreen()` for a host without React. The root page shows it when signed out.
+  - The login screen: a Lit element of `cockpit` (`createLoginClass`); the root page shows it when signed out.
   - `mantine-themes` (`@local/mantine-themes`, 2026-10-04): a few nicer Mantine themes, to be used easily:
     `createMantineTheme({ colors, size, variant })` gives the theme and the CSS variables resolver for a
     `MantineProvider`; named color setups; `modernTheme` (small corners, a bit more contrast), which the root's three
@@ -154,13 +153,18 @@ The rules of this repository on top of them:
       table to the filter drawer, on by default since 2026-10-11 (the user's wish; off before), see the todo in `packages/universal/data-table/CLAUDE.md`; the color scheme: System, Light (the default), Dark, 2026-10-03; from
       `packages/universal/cockpit/src/demo/footer.ts`, with a made-up menu), which change `<html>` (`lang`, `data-scheme`) for every
       demo.
-    - Signing out (2026-10-03; the user menu's "Sign out") shows the login screen (`packages/mantine/login`; its subtitle "Welcome to Acme Corporate", 2026-10-07) in place of
+    - Signing out (2026-10-03; the user menu's "Sign out") shows the login screen (`<app-login>`, the cockpit's `createLoginClass`; its subtitle "Welcome to Acme Corporate", 2026-10-07) in place of
       the cockpit (`hidden`), animated (2026-10-04): the cockpit fades out (250 ms), then the login screen fades in (350 ms;
-      `demo/demo.css`, `signOut()` in `demo/main.ts`; none with reduced motion); any username and password sign in again (after 500 ms); with "Forgot password?" and "Create an account" (made-up
-      server: the username "taken" exists already) and made-up providers ("Continue with Microsoft", "Google", "Company SSO"),
-      which sign in after 700 ms. Signed out is remembered per
-      browser (`demo-page:signed-in`). Its accent is the page's, as one of Mantine's colors (`loginAccent()` in `demo/main.ts`, the login's `theme`
-      option; the design language's: Mantine's blue; `--app-login-accent-color` in `demo/demo.css` until 2026-10-10).
+      `demo/demo.css`; none with reduced motion): the cockpit's demo login (`loginDemo()` of
+      `packages/universal/cockpit/src/demo/login.ts`, its behavior there), signed out remembered under `demo-page:signed-in`.
+      Its content is the root's own (`demo/login/`, `content: mantineContent`): Mantine's inputs and buttons (the submit button and the provider buttons are the element's: `useSubmitButton()` sets its label and spinner) rendered by
+      React into `<app-login>` (a fragment, so they are its slotted children; the element is the Mantine scope,
+      `.login-mantine`, the look of `createLook` with the page's accent), the checks by the apps' form hook (`defineForm()` of `@local/micro-app`: form-validation with Zod, an invalid
+      field's message as the floating popover, `FieldError`), no suggestions of the browser in its inputs
+      (`autoComplete="off"`: a demo), the texts
+      in English and German by an i18next instance of its own (ICU, form-validation's `locales/` too; the page's
+      language), read through a typed hook (`useText()`, not react-i18next's `t`: the Board Manager types i18next's
+      resources globally).
     - The URL hash: the app's id first, then one segment per level of tabs inside it: `#file-upload/react`,
       `#dialogs-toasts/react-i18n`, `#board-manager/boards/b1`. No hash: Human Resources (the cockpit's `defaultItem`, 2026-10-08, the user's wish; the start page for a few hours that day, Human Resources before, the Board Manager since 2026-10-03 before that). The cockpit's start page (the attribute `start-page`, set by the footer's "Navigation" menu, "Start page": On by default, Off switchable; 2026-10-08, the user's wish: the title, the filter, the apps as cards by folder) shows when every app is closed, and by the logo.
       - The browser's Back and Forward (2026-10-07, the user's wish; before, the apps only replaced the hash): opening a
@@ -236,7 +240,7 @@ The rules of this repository on top of them:
   package needs a build for the demo. Weighed: an alias per package and entry in the Vite config and `paths` (two
   places to keep in sync). The package demos (`packages/*/*/demo/…`, their `i18n.js` too) stay relative: they are no
   entries.
-- `tsconfig.json`: `tsc` also checks the imported demo files, so the compiler options are the loosest common set: like
+- `tsconfig.json` (`resolveJsonModule`: the root login's import of form-validation's `locales/*.json`): `tsc` also checks the imported demo files, so the compiler options are the loosest common set: like
   `data-table`/`file-upload`, but with `experimentalDecorators`, `ES2025`/`ESNext`, and without
   `noUncheckedIndexedAccess` and `noImplicitOverride` (the `overlays` code is not written for them; each package still
   checks its own code strictly). It excludes the apps' `app/router-types.ts`: each of the five apps has a

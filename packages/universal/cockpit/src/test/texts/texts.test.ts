@@ -11,7 +11,12 @@ const LANGUAGES: Readonly<Record<string, Readonly<Record<string, string>>>> = { 
 // The values of an ICU message: its arguments (`{count, plural, …}`, `{title}`), not the plural options.
 const icuNames = (text: string) => new Set([...text.matchAll(/\{\s*(\w+)\s*[,}]/g)].map((m) => m[1]));
 
-const SAMPLES: Readonly<Record<string, unknown>> = { count: 3, title: 'Board Manager', page: 'Meetings' };
+const SAMPLES: Readonly<Record<string, unknown>> = {
+  count: 3,
+  title: 'Board Manager',
+  page: 'Meetings',
+  provider: 'Microsoft',
+};
 
 const english = (key: string) => EN[key as keyof typeof EN] as (values: unknown, locale: string) => string;
 const icu = (key: string) => EN_ICU[key as keyof typeof EN_ICU];

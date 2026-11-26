@@ -34,5 +34,8 @@
   "forwardTo": "Forward to {page}",
   "modules": "Modules",
   "switchApp": "Switch app",
-  "breadcrumb": "Breadcrumb"
+  "breadcrumb": "Breadcrumb",
+  "loginContinueWith": "Continue with {provider}",
+  "loginOr": "or",
+  "loginProviderFailed": "The sign in failed. Please try again."
 }

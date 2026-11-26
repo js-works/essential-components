@@ -42,6 +42,9 @@ const GERMAN: Readonly<Record<string, string>> = {
   modules: 'Module',
   switchApp: 'App wechseln',
   breadcrumb: 'Navigationspfad',
+  loginContinueWith: 'Weiter mit {provider}',
+  loginOr: 'oder',
+  loginProviderFailed: 'Die Anmeldung ist fehlgeschlagen. Bitte versuchen Sie es erneut.',
 };
 
 // The demo's adapter: the page's language (`<html lang>`, set by the footer's language switch), German for `de…`,

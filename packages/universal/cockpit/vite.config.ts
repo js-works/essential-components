@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 
 // `vite` serves the demo (index.html), `vite build` builds the library (src/main/index.ts). Its dependency (Lit) stays
 // outside the build.
@@ -14,5 +14,10 @@ export default defineConfig({
     rolldownOptions: {
       external: [/^lit($|\/)/],
     },
+  },
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    include: ['src/test/**/*.test.ts'],
   },
 });

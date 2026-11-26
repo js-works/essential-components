@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "description": "An admin panel shell: a navigation on the left, the chosen mini-app (a custom element) on the right.",
+  "sideEffects": false,
   "type": "module",
   "exports": {
     ".": {
@@ -27,6 +28,7 @@
   },
   "devDependencies": {
     "dprint": "^0.57.4",
+    "jsdom": "^30.1.0",
     "sloc": "0.3.2",
     "typescript": "^7.0.2",
     "vite": "^8.3.0",

@@ -34,5 +34,8 @@
   "forwardTo": "Weiter zu {page}",
   "modules": "Module",
   "switchApp": "App wechseln",
-  "breadcrumb": "Navigationspfad"
+  "breadcrumb": "Navigationspfad",
+  "loginContinueWith": "Weiter mit {provider}",
+  "loginOr": "oder",
+  "loginProviderFailed": "Die Anmeldung ist fehlgeschlagen. Bitte versuchen Sie es erneut."
 }

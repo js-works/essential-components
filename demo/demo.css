@@ -19,8 +19,8 @@ app-cockpit {
   }
 }
 
-/* The login screen (packages/mantine/login), signed out (its accent: a Mantine theme from `main.ts`). */
-.login-host {
+/* The login screen (the cockpit's `createLoginClass`), signed out. */
+app-login {
   animation: login-fade-in 350ms ease-out;
 }
 
@@ -35,7 +35,7 @@ app-cockpit {
     transition: none;
   }
 
-  .login-host {
+  app-login {
     animation: none;
   }
 }

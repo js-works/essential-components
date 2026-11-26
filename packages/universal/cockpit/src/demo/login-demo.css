@@ -1,0 +1,153 @@
+/* The demos' login content (`login.ts`): the host's forms inside the login element, in the design language's tokens
+   (a demo may use them), the page's accent (`--app-accent-color`, the footer's "Accent color") where it has one. It
+   inherits the card's font and color. */
+
+.login-demo__form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+}
+
+.login-demo__intro {
+  margin: 0;
+  color: var(--ui-color-muted);
+}
+
+.login-demo__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+/* The register view's passwords side by side: they belong together. */
+.login-demo__pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* "Forgot password?" under the password, at its right end. */
+.login-demo__password {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .login-demo__link {
+    align-self: end;
+  }
+}
+
+.login-demo__label {
+  font-weight: 500;
+}
+
+.login-demo__input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-color-field);
+  color: var(--ui-color-field-text);
+  font: inherit;
+  -webkit-user-select: text;
+  user-select: text;
+
+  &:focus-visible {
+    border-color: var(--app-accent-color, var(--ui-color-accent));
+    outline: 1px solid var(--app-accent-color, var(--ui-color-accent));
+  }
+
+  &[aria-invalid='true'] {
+    border-color: light-dark(#c92a2a, #ff8787);
+  }
+}
+
+/* A password input with its eye at the right end. */
+.login-demo__secret {
+  position: relative;
+
+  .login-demo__input {
+    padding-right: 38px;
+  }
+}
+
+.login-demo__eye {
+  display: grid;
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ui-radius-sm);
+  background: none;
+  color: var(--ui-color-muted);
+  cursor: pointer;
+  translate: 0 -50%;
+
+  &:hover {
+    color: var(--ui-color-field-text);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--app-accent-color, var(--ui-color-accent));
+  }
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.login-demo__problem {
+  color: light-dark(#c92a2a, #ff8787);
+  font-size: 0.75rem;
+}
+
+.login-demo__alert {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--ui-radius-md);
+
+  &[data-tone='danger'] {
+    background: light-dark(#fdecec, #3a2222);
+    color: light-dark(#c92a2a, #ff8787);
+  }
+
+  &[data-tone='success'] {
+    background: light-dark(#e9f7ec, #1f3324);
+    color: light-dark(#2b8a3e, #8ce99a);
+  }
+}
+
+.login-demo__link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--app-accent-color, var(--ui-color-accent));
+  font: inherit;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--app-accent-color, var(--ui-color-accent));
+    outline-offset: 2px;
+  }
+}
+
+/* Narrow or touch: bigger targets, and the inputs' text 16px (iOS zooms into a focused input with a smaller one). */
+@media (max-width: 480px), (pointer: coarse) {
+  .login-demo__input {
+    height: 44px;
+    font-size: 16px;
+  }
+}

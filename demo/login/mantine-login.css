@@ -1,0 +1,7 @@
+/* The root page's login content (`mantine-login.tsx`), in the login element (the Mantine scope `.login-mantine`). */
+
+/* The login screen is not selectable; its inputs are (in Safari, a field with none cannot be typed into). */
+.login-mantine input {
+  -webkit-user-select: text;
+  user-select: text;
+}

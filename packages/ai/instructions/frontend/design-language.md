@@ -107,6 +107,8 @@ styles the demo pages of components (the page around the component under test, n
   /* Lines between areas, e.g. under the tabs. */
   --ui-color-divider: light-dark(#dee2e6, #424242);
   --ui-color-hover: light-dark(#f5f5f5, #1d1d1d);
+  /* A pressed button: a step beyond the hover. */
+  --ui-color-active: light-dark(#e9ecef, #262626);
   /* A light background that sets one item apart, e.g. the selected vertical tab. */
   --ui-color-subtle: light-dark(#f7f7f7, #1a1a1a);
   /* Focus rings, links, the selected tab. */
@@ -285,6 +287,10 @@ body {
 
   &:hover {
     background-color: var(--ui-color-hover);
+  }
+
+  &:active:not(:disabled) {
+    background-color: var(--ui-color-active);
   }
 
   /* See "Focus" in the principles. */

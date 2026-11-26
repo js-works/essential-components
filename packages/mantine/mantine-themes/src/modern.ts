@@ -30,15 +30,23 @@ const modernOverride: MantineThemeOverride = {
   components: {
     Badge: Badge.extend({ defaultProps: { tt: 'none' } }),
     Button: Button.extend({ defaultProps: { fw: 500 } }),
-    // The border of the inputs: Mantine hard-codes `gray-4` / `dark-4` per variant and ignores `default-border`, so the
-    // default variant gets its own: two steps stronger than Mantine's, `gray-6` / `dark-2` (2026-10-10, the user's wish:
-    // about 3.3:1 on white, the contrast WCAG asks of a control's border; `default-border`, one step, before). The lines
-    // (`default-border`) stay one step stronger. `light-dark()` follows the CSS `color-scheme` (Mantine sets it from its
-    // color scheme; a scoped app's scope follows the page's). The filled and unstyled ones keep their transparent one.
+    // The border of the inputs: Mantine hard-codes `gray-4` / `dark-4` for the default variant and ignores
+    // `default-border`, so the default variant gets a stronger one: two steps, `gray-6` / `dark-2` (about 3.3:1 on white,
+    // the contrast WCAG asks of a control's border). The lines (`default-border`) stay one step stronger. Not by setting
+    // `--input-bd`: Mantine's styles are inline, which would beat its `:focus` rule (the accent border of a focused
+    // input). Instead the two colors are remapped on the input's wrapper (where Mantine's stylesheet sets `--input-bd` from
+    // them; inside it, they are used for nothing but that border); its own rules then give the stronger gray, and the
+    // accent on focus. The filled and
+    // unstyled ones keep their transparent one.
     Input: Input.extend({
       styles: (_theme, props) =>
         props.variant === undefined || props.variant === 'default'
-          ? { input: { '--input-bd': 'light-dark(var(--mantine-color-gray-6), var(--mantine-color-dark-2))' } }
+          ? {
+            wrapper: {
+              '--mantine-color-gray-4': 'var(--mantine-color-gray-6)',
+              '--mantine-color-dark-4': 'var(--mantine-color-dark-2)',
+            },
+          }
           : {},
     }),
     // The labels of the inputs: a bit smaller (13px at the base text size of 14px, proportional to it: it follows the

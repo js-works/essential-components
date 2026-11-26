@@ -57,10 +57,11 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   - a bit more contrast, each one step stronger than Mantine's: the borders (`gray.5`, dark `dark.3`), the secondary text
     (`gray.7`, dark `dark.1`) and the placeholders (`gray.6`, dark `dark.2`);
   - the borders of the inputs: Mantine's inputs ignore `--mantine-color-default-border` (their CSS sets
-    `--input-bd` to `gray-4` / `dark-4` per variant), so the `Input` component's `styles` set `--input-bd` on the default
-    variant to `light-dark(gray.6, dark.2)` (about 3.3:1 on
-    white, the contrast WCAG asks of a control's border; only the inputs, the lines stay `gray.5`; `light-dark()`
-    follows the CSS `color-scheme`, which Mantine sets, and a scoped app's scope inherits the page's). The filled and unstyled
+    `--input-bd` to `gray-4` / `dark-4` per variant), so the default variant's border is `gray.6`, dark `dark.2` (about
+    3.3:1 on white, the contrast WCAG asks of a control's border; only the inputs, the lines stay `gray.5`). Not by
+    setting `--input-bd` (Mantine's `styles` are inline and would beat its `:focus` rule, so a focused input lost its
+    accent border): the `Input` component's `styles` remap `--mantine-color-gray-4` and `--mantine-color-dark-4` on the
+    input's wrapper only (where Mantine sets `--input-bd` from them; inside it, they are used for nothing else). The filled and unstyled
     variants keep their transparent borders. It reaches `TextInput`, `Select`, `PasswordInput`, `NumberInput`,
     `Textarea` (checked by rendering them);
   - the danger color (Mantine's `red.6`, `#fa5252`, looks odd): `#c92a2a` (Mantine's

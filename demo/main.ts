@@ -2,12 +2,8 @@
 import './ui/ui.css';
 import './demo.css';
 
-import { createInstance } from 'i18next';
-
 import type { CockpitFooter, MenuSection } from '@local/cockpit';
 import { createCockpitClass } from '@local/cockpit';
-import type { MountedLoginScreen } from '@local/login';
-import { loginResources, mountLoginScreen } from '@local/login';
 
 import {
   accentSetting,
@@ -18,6 +14,8 @@ import {
   userMenu,
 } from '../packages/universal/cockpit/src/demo/footer.js';
 import { DEMO_I18N } from '../packages/universal/cockpit/src/demo/i18n.js';
+import { loginDemo } from '../packages/universal/cockpit/src/demo/login.js';
+import { mantineContent } from './login/mantine-login.js';
 
 // The page: an app cockpit, with every demo as one of its mini-apps. The page's settings (in the cockpit's footer) set
 // `<html lang>` and the color scheme for every demo. Each demo is a light DOM custom element of its project, loaded
@@ -329,128 +327,14 @@ customElements.define(
   }),
 );
 
-// Signing out (the user menu's "Sign out") shows the login screen in place of the cockpit; any username and password
-// sign in again (a demo: it is about the look). Signed out is remembered per browser, so a reload stays there.
-const cockpitElement = document.querySelector<HTMLElement>('app-cockpit')!;
-const loginHost = document.createElement('div');
-let loginScreen: MountedLoginScreen | undefined;
-
-const LOGO =
-  '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2" opacity="0.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2" opacity="0.6"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></svg>';
-
-function remember(signedIn: boolean): void {
-  try {
-    localStorage.setItem('demo-page:signed-in', String(signedIn));
-  } catch {
-    // Not remembered.
-  }
-}
-
-// Signing out: the cockpit fades out (its CSS transition, `data-fading`), then the login screen is shown, which fades
-// in by itself (the animation of `.login-host`, when it is added).
-let signingOut = false;
-
-async function signOut(): Promise<void> {
-  if (signingOut) {
-    return;
-  }
-
-  signingOut = true;
-  remember(false);
-  cockpitElement.dataset['fading'] = '';
-  await new Promise((resolve) =>
-    setTimeout(resolve, parseFloat(getComputedStyle(cockpitElement).transitionDuration) * 1000 || 0)
-  );
-  delete cockpitElement.dataset['fading'];
-  showLogin();
-  signingOut = false;
-}
-
-// The login's texts in the page's language (the footer's language switch sets `<html lang>`): a host gives the login its
-// i18next instance, else it is English.
-const loginI18n = createInstance();
-
-void loginI18n.init({
-  lng: document.documentElement.lang || 'en',
-  fallbackLng: 'en',
-  resources: loginResources,
-  initAsync: false,
+// Signing out (the user menu's "Sign out") shows the login screen in place of the cockpit (the cockpit's demo login),
+// with Mantine's forms in it (`login/mantine-login.tsx`).
+const { signOut, restore } = loginDemo({
+  title: 'Back Office',
+  subtitle: 'Welcome to Acme Corporate',
+  accent: 'indigo',
+  storageKey: 'demo-page:signed-in',
+  content: mantineContent,
 });
 
-new MutationObserver(() => void loginI18n.changeLanguage(document.documentElement.lang || 'en'))
-  .observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
-
-function showLogin(): void {
-  cockpitElement.hidden = true;
-  loginHost.className = 'login-host';
-  document.body.append(loginHost);
-  loginScreen ??= mountLoginScreen(loginHost, {
-    title: 'Back Office',
-    subtitle: 'Welcome to Acme Corporate',
-    logo: LOGO,
-    hint: 'A demo: any username and password sign in.',
-    // Made-up identity providers (OIDC or SSO): the host would redirect to them. Here they sign in after a moment.
-    providers: [
-      {
-        id: 'microsoft',
-        label: 'Microsoft',
-        icon:
-          '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="8.5" height="8.5" fill="#f25022"/><rect x="12.5" y="3" width="8.5" height="8.5" fill="#7fba00"/><rect x="3" y="12.5" width="8.5" height="8.5" fill="#00a4ef"/><rect x="12.5" y="12.5" width="8.5" height="8.5" fill="#ffb900"/></svg>',
-      },
-      { id: 'google', label: 'Google' },
-      {
-        id: 'sso',
-        label: 'Company SSO',
-        icon:
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M10.85 12.15 19 4M18 5l3 3M15 8l2 2"/></svg>',
-      },
-    ],
-    onProvider: async () => {
-      await new Promise((resolve) => setTimeout(resolve, 700));
-      signIn();
-    },
-    // The made-up server: both answer after a moment (the account "taken" exists already).
-    onForgotPassword: () => new Promise((resolve) => setTimeout(resolve, 600)),
-    onRegister: async ({ username }) => {
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      if (username.toLowerCase() === 'taken') {
-        throw new Error('This username is already taken.');
-      }
-    },
-    onLogin: async () => {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      signIn();
-    },
-  }, { theme: { primaryColor: loginAccent() }, i18n: loginI18n });
-}
-
-// The login's accent: the page's (the footer's "Accent color", remembered per browser; indigo by default), as one of
-// Mantine's colors (the menu's colors are Mantine's, shade 6); the design language's: Mantine's blue, the closest.
-function loginAccent(): string {
-  let accent = 'indigo';
-
-  try {
-    accent = localStorage.getItem('demo-page:accent') ?? accent;
-  } catch {
-    // The default.
-  }
-
-  return accent === 'design' ? 'blue' : accent;
-}
-
-function signIn(): void {
-  remember(true);
-  loginScreen?.unmount();
-  loginScreen = undefined;
-  loginHost.remove();
-  cockpitElement.hidden = false;
-}
-
-try {
-  if (localStorage.getItem('demo-page:signed-in') === 'false') {
-    showLogin();
-  }
-} catch {
-  // Signed in.
-}
+restore();

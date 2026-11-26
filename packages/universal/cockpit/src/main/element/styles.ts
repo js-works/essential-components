@@ -2880,9 +2880,9 @@ function layoutStyles(sidebarWidth: number | undefined, switcherLeft: number | u
 function themeValues(theme: CockpitTheme) {
   const t = { ...DEFAULT_COCKPIT_THEME, ...withoutUndefined(theme) };
   // The accent: one color, lighter in a dark scheme (e.g. the sidebar) by a mix with white; the default has both.
-  const accent = theme.accent === undefined
-    ? t.accent
-    : `light-dark(${t.accent}, color-mix(in oklab, ${t.accent} 60%, white))`;
+  const accent = theme.accentColor === undefined
+    ? t.accentColor
+    : `light-dark(${t.accentColor}, color-mix(in oklab, ${t.accentColor} 60%, white))`;
 
   return {
     accent,

@@ -6,6 +6,38 @@ body {
 
 app-cockpit {
   height: 100dvh;
+  transition: opacity 250ms ease;
+
+  /* Signed out (the login screen instead): the element's own `display` (its :host rule) would win over `hidden`. */
+  &[hidden] {
+    display: none;
+  }
+
+  /* Signing out: it fades out first (`data-fading`, `src/demo/login.ts`), then the login screen fades in. */
+  &[data-fading] {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+app-login {
+  animation: demo-login-fade-in 350ms ease-out;
+}
+
+@keyframes demo-login-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  app-cockpit {
+    transition: none;
+  }
+
+  app-login {
+    animation: none;
+  }
 }
 
 /* A made-up app: its app header on top, the page below it. */

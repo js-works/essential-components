@@ -8,12 +8,21 @@ import { FEW, GROUPS, MANY, SOME } from './apps.js';
 import { DEMO_APP_HEADER_TAG, DemoApp } from './demo-app.js';
 import { accentSetting, MENU, navigationSetting, pageSettings, USER, userMenu } from './footer.js';
 import { DEMO_I18N } from './i18n.js';
+import { loginDemo } from './login.js';
 
 // The page: a cockpit with 3, 30 or 100 apps (kept in the query string: the apps of a cockpit are fixed, so a change
 // reloads the page). Its footer has the page's settings: the number of apps, the language and the color scheme.
 const SETS = { few: FEW, some: SOME, many: MANY } as const;
 const param = new URLSearchParams(location.search).get('apps');
 const set: keyof typeof SETS = param === 'some' || param === 'many' ? param : 'few';
+
+// "Sign out" shows the login screen (`createLoginClass`); any username and password sign in again.
+const { signOut, restore } = loginDemo({
+  title: set === 'few' ? 'My Office' : 'Acme Office',
+  subtitle: set === 'few' ? 'Team workspace' : 'Acme Corporation · Headquarters',
+  accent: 'violet',
+  storageKey: 'cockpit-demo:signed-in',
+});
 
 const appsAction: FooterAction = {
   id: 'apps',
@@ -57,7 +66,9 @@ customElements.define(
       menu: MENU,
     },
     user: USER,
-    userMenu: userMenu(),
+    userMenu: userMenu(() => void signOut()),
     storageKey: `cockpit-demo-${set}`,
   }),
 );
+
+restore();

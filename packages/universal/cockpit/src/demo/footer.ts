@@ -10,7 +10,7 @@ import type {
   SignedInUser,
 } from '../main/index.js';
 
-export { accentSetting, MENU, navigationSetting, pageSettings, USER, userMenu };
+export { accentColor, accentSetting, MENU, navigationSetting, pageSettings, USER, userMenu };
 
 // The footer of the demo pages: the page's settings (the color scheme; the language in the kebab menu) as actions with choices, and a made-up
 // menu (its items only log). Icons after Tabler icons, MIT.
@@ -83,6 +83,23 @@ const ACCENTS = [
 // page uses indigo (2026-10-07). The cockpit's `theme` (2026-10-10; it reads no custom property of the page), and for
 // the page the custom property `--app-accent-color` on `<html>`, which the root page maps to the apps' own tokens
 // (its `demo/demo.css`).
+// The color of the remembered accent (`initial` without one), `undefined` for the design language's: for a part with a
+// theme of its own (the root page's login).
+function accentColor(initial = 'violet'): string | undefined {
+  let id = initial;
+
+  try {
+    id = localStorage.getItem('demo-page:accent') ?? initial;
+  } catch {
+    // The initial one.
+  }
+
+  const color =
+    (ACCENTS.find(([candidate]) => candidate === id) ?? ACCENTS.find(([candidate]) => candidate === initial))?.[2];
+
+  return color === '' ? undefined : color;
+}
+
 function accentSetting(initial = 'violet', selector = 'app-cockpit'): FooterAction {
   const root = document.documentElement;
   let accent = initial;
@@ -104,8 +121,8 @@ function accentSetting(initial = 'violet', selector = 'app-cockpit'): FooterActi
     // before) does not replace the config's theme.
     void customElements.whenDefined(selector).then(() => {
       document.querySelectorAll<CockpitElement>(selector).forEach((element) => {
-        const { accent: _, ...rest } = element.theme;
-        element.theme = color === '' ? rest : { ...rest, accent: color };
+        const { accentColor: _, ...rest } = element.theme;
+        element.theme = color === '' ? rest : { ...rest, accentColor: color };
       });
     });
   };

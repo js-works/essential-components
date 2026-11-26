@@ -1,10 +1,10 @@
-export type { AppHeaderTheme, CockpitTheme };
+export type { AppHeaderTheme, CockpitTheme, LoginTheme };
 
 // The cockpit's look, a few values (the colors are the design language's). Without a key, its default. The element's
 // `theme` can be switched live (a new object).
 type CockpitTheme = {
   // One color, lighter in the dark navigation by a mix with white (default: the design language's).
-  accent?: string;
+  accentColor?: string;
   // The base size of the cockpit's text and icons (default `14px`, the apps' normal text).
   fontSize?: string;
   // Default `system-ui, sans-serif`: the cockpit's own, so a mini-app's global CSS does not change it.
@@ -47,4 +47,14 @@ type AppHeaderTheme = {
   // Tabs and buttons (not the icon's tile: `iconBorderRadius`).
   borderRadius?: string;
   focusRingColor?: string;
+};
+
+// The login's look (`createLoginClass({ theme })`, fixed per class). Without a key, the cockpit's default
+// (`DEFAULT_COCKPIT_THEME`), so both look alike; the other colors and the radii are the design language's.
+type LoginTheme = {
+  // The button, the links, the focus rings and the logo; lighter in a dark scheme by a mix with white.
+  accentColor?: string;
+  // The base size of the text (default `14px`); the other sizes follow it.
+  fontSize?: string;
+  fontFamily?: string;
 };
