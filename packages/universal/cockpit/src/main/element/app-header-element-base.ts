@@ -1,4 +1,3 @@
-import { computePosition, flip, offset, shift } from '@floating-ui/dom';
 import type { PropertyValues, TemplateResult } from 'lit';
 import { html, LitElement, nothing } from 'lit';
 import { ifDefined } from 'lit/directives/if-defined.js';
@@ -16,6 +15,7 @@ import type {
   AppHeaderTheme,
   I18nAdapter,
 } from '../index.js';
+import { addAnchorName, removeAnchorName, TIP_ANCHOR } from './anchors.js';
 import { appHeaderStyles } from './app-header-styles.js';
 import { arrowLeftIcon, arrowRightIcon, checkIcon, chevronDownIcon, homeIcon } from './icons.js';
 import { Menu } from './menu.js';
@@ -69,6 +69,8 @@ class AppHeaderElementBase extends LitElement implements AppHeaderElement {
   #tip: { text: string; target: HTMLElement } | undefined;
   #tipTarget: HTMLElement | undefined;
   #tipTimer: ReturnType<typeof setTimeout> | undefined;
+  // The element that has the tooltip's anchor name.
+  #tipAnchor: HTMLElement | undefined;
 
   constructor(config: AppHeaderClassConfig) {
     super();
@@ -86,13 +88,11 @@ class AppHeaderElementBase extends LitElement implements AppHeaderElement {
     this.#adapter = config.i18n;
     this.#switcherMenu = new Menu(this, `${this.#id}-switcher`, {
       placement: 'bottom-start',
-      gutter: 4,
       selected: () => this.activeSwitcherItem || undefined,
       onSelect: (id) => this.#follow(this.switcher.find((link) => link.id === id)?.href),
     });
     this.#modulesMenu = new Menu(this, `${this.#id}-modules`, {
       placement: 'bottom-start',
-      gutter: 4,
       selected: () => this.activeModule || undefined,
       onSelect: (id) => this.#follow(this.modules.find((link) => link.id === id)?.href),
     });
@@ -259,24 +259,31 @@ class AppHeaderElementBase extends LitElement implements AppHeaderElement {
     return page === '' ? texts[key] : key === 'back' ? texts.backTo({ page }) : texts.forwardTo({ page });
   }
 
+  // Placed by CSS anchor positioning at its target (its anchor name, `TIP_ANCHOR`).
   #placeTip(): void {
+    const target = this.#tip?.target;
+
+    if (this.#tipAnchor !== target) {
+      if (this.#tipAnchor !== undefined) {
+        removeAnchorName(this.#tipAnchor, TIP_ANCHOR);
+      }
+
+      if (target !== undefined) {
+        addAnchorName(target, TIP_ANCHOR);
+      }
+
+      this.#tipAnchor = target;
+    }
+
     const tooltip = this.renderRoot.querySelector<HTMLElement>('.tooltip');
 
-    if (this.#tip === undefined || tooltip === null || !this.#tip.target.isConnected) {
+    if (target === undefined || tooltip === null || !target.isConnected) {
       return;
     }
 
     if (!tooltip.matches(':popover-open')) {
       tooltip.showPopover();
     }
-
-    void computePosition(this.#tip.target, tooltip, {
-      placement: 'bottom',
-      strategy: 'fixed',
-      middleware: [offset(6), flip(), shift({ padding: 4 })],
-    }).then(({ x, y }) => {
-      Object.assign(tooltip.style, { left: `${x}px`, top: `${y}px` });
-    });
   }
 
   // --- Render --------------------------------------------------------------------------------------------------------
@@ -442,7 +449,12 @@ class AppHeaderElementBase extends LitElement implements AppHeaderElement {
   // A menu of links (the switcher, the modules): the current one checked; with `details`, each link's icon and
   // description.
   #menuPopup(menu: Menu, links: readonly AppHeaderLink[], current: string, details: boolean): TemplateResult {
-    return html`<div class="menu-positioner" id=${menu.positionerId} popover="manual">
+    return html`<div
+      class="menu-positioner"
+      id=${menu.positionerId}
+      data-placement=${menu.options.placement}
+      popover="manual"
+    >
       <div
         class="menu-popup"
         id=${menu.popupId}

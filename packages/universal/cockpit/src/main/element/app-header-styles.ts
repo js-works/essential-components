@@ -1,5 +1,7 @@
 import type { AppHeaderTheme } from '../index.js';
 import { DEFAULT_APP_HEADER_THEME } from '../themes/default-app-header-theme.js';
+import { TIP_ANCHOR } from './anchors.js';
+import { MENU_PLACEMENT_STYLES } from './placement-styles.js';
 
 export { appHeaderStyles };
 
@@ -255,22 +257,24 @@ a {
   }
 }
 
-/* The menus: the switcher's and the narrow modules menu. */
+/* The menus: the switcher's and the narrow modules menu. Placed by MENU_PLACEMENT_STYLES (below); a popover, so the
+   browser's popover look is taken off. 4px between it and its trigger. */
+${MENU_PLACEMENT_STYLES}
+
 .menu-positioner {
-  position: fixed;
-  inset: auto;
-  top: 0;
-  left: 0;
-  margin: 0;
-  padding: 0;
+  padding: 4px 0;
   border: 0;
   overflow: visible;
   background: none;
+
+  /* MENU_PLACEMENT_STYLES sets its 'display', which would show it closed. */
+  &:not(:popover-open) {
+    display: none;
+  }
 }
 
 .menu-popup {
   min-width: 200px;
-  max-height: inherit;
   padding: 4px;
   overflow: auto;
   overscroll-behavior: none;
@@ -369,12 +373,14 @@ a {
   }
 }
 
+/* Below its target, else above it; moved into the window at its edges. */
 .tooltip {
   position: fixed;
   inset: auto;
-  top: 0;
-  left: 0;
-  margin: 0;
+  margin: 6px 0 0;
+  position-anchor: ${TIP_ANCHOR};
+  position-area: bottom;
+  position-try-fallbacks: flip-block;
   border: 0;
   padding: 5px 8px;
   border-radius: ${v.tooltipBorderRadius};

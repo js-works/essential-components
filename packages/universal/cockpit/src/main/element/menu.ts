@@ -1,5 +1,6 @@
-import { autoUpdate, computePosition, flip, offset, shift, size } from '@floating-ui/dom';
 import type { LitElement } from 'lit';
+
+import { addAnchorName, MENU_ANCHOR, MENU_EDGE, removeAnchorName } from './anchors.js';
 
 export type { MenuOptions, MenuPlacement };
 export { Menu };
@@ -8,12 +9,13 @@ type MenuPlacement = 'right-start' | 'right-end' | 'top-start' | 'bottom-start' 
 
 type MenuOptions = {
   placement: MenuPlacement;
-  // Where it opens, if not at its trigger (e.g. at the sidebar's edge): a rect from the trigger.
-  anchor?: (trigger: Element) => DOMRect;
+  // What it opens at, if not at its trigger: the closest element around the trigger that matches (e.g. the footer).
+  anchor?: string;
+  // The edge it touches in place of its anchor's: the closest element around the trigger that matches; its right edge
+  // for a placement `right-…` (the sidebar), its bottom for `bottom-…` (the topbar's line).
+  edge?: string;
   // As wide as the anchor.
   sameWidth?: boolean;
-  // The gap to the anchor, in px.
-  gutter?: number;
   // A list to choose from (the group select): the value of the chosen item, highlighted when it opens.
   selected?: () => string | undefined;
   onSelect: (value: string) => void;
@@ -21,12 +23,14 @@ type MenuOptions = {
 
 // A menu (or a list to choose from, like the group select): a trigger button and a popup with items. Our own code
 // (2026-10-08; Zag.js before). The element renders them with the ids and attributes below; the menu keeps the state
-// (open, the highlighted item), handles the keys, the pointer and a click outside, and places the popup (Floating UI).
+// (open, the highlighted item), handles the keys, the pointer and a click outside, and names the anchors of the popup
+// (CSS anchor positioning places it: `placement-styles.ts`).
 //
 // - The trigger (`id=${menu.triggerId}`): a click toggles it (from the keyboard, Enter or Space: at the first item);
 //   Down opens it at the first item, Up at the last.
-// - The positioner (`id=${menu.positionerId}`, hidden while closed): placed at the trigger (or `anchor`), `position:
-//   fixed`; its `max-height` is the room left in the window (a popup that scrolls takes it with `max-height: inherit`).
+// - The positioner (`id=${menu.positionerId}`, hidden while closed): `data-placement=${menu.options.placement}`,
+//   `?data-edge=${menu.options.edge !== undefined}`, `?data-same-width=${menu.options.sameWidth === true}`; placed by
+//   CSS at the trigger (or `anchor`), its panel at most as high as the room on its side (a panel that scrolls shrinks).
 // - The popup (`id=${menu.popupId}`, its first child): has the focus while open, the highlighted item by
 //   `aria-activedescendant`. Up and Down (Home, End) move, typing jumps to an item by its first letters, Enter or Space
 //   choose, Escape and Tab close it (the focus back on the trigger), so does a pointer down outside.
@@ -43,9 +47,9 @@ class Menu {
   readonly popupId: string;
 
   readonly #host: LitElement;
-  // The trigger it was placed at, and how to stop following it (Floating UI's `autoUpdate`).
+  // The trigger it was opened at, and the elements it gave an anchor name (removed when it closes).
   #placedAt: Element | undefined;
-  #stopPlacing: (() => void) | undefined;
+  #named: [ElementCSSInlineStyle, string][] = [];
   #typed = '';
   #typedAt = 0;
 
@@ -63,18 +67,24 @@ class Menu {
 
   // Opens it; `at`: the item highlighted first (from the keyboard), else none (a list: its chosen item).
   show(at?: 'first' | 'last'): void {
+    const trigger = this.#trigger();
+
+    if (trigger === null) {
+      return;
+    }
+
     const values = this.#values();
 
     this.highlighted = this.options.selected?.()
       ?? (at === 'first' ? values[0] : at === 'last' ? values.at(-1) : undefined);
     this.open = true;
+    this.#nameAnchors(trigger);
     document.addEventListener('pointerdown', this.#onPointerDownOutside, true);
     this.#host.requestUpdate();
 
     void this.#host.updateComplete.then(() => {
       if (this.open) {
         this.#popup()?.focus({ preventScroll: true });
-        this.#startPlacing();
       }
     });
   }
@@ -87,9 +97,13 @@ class Menu {
 
     this.open = false;
     this.highlighted = undefined;
-    this.#stopPlacing?.();
-    this.#stopPlacing = undefined;
     this.#placedAt = undefined;
+
+    for (const [element, name] of this.#named) {
+      removeAnchorName(element, name);
+    }
+
+    this.#named = [];
     document.removeEventListener('pointerdown', this.#onPointerDownOutside, true);
     this.#host.requestUpdate();
 
@@ -229,53 +243,23 @@ class Menu {
     }
   }
 
-  // Places the positioner now, and again whenever the trigger, the window or a scroll container changes.
-  #startPlacing(): void {
-    const trigger = this.#trigger();
-    const positioner = this.#find(this.positionerId);
+  // The anchor names of the popup's CSS: its anchor (the trigger, or the element of `anchor`), and its edge.
+  #nameAnchors(trigger: HTMLElement): void {
+    const { anchor, edge } = this.options;
+    const anchorElement = anchor === undefined ? trigger : trigger.closest<HTMLElement>(anchor) ?? trigger;
+    const edgeElement = edge === undefined ? null : trigger.closest<HTMLElement>(edge);
 
-    if (trigger === null || positioner === null) {
-      this.close();
-      return;
+    this.#named = [[anchorElement, MENU_ANCHOR]];
+
+    if (edgeElement !== null) {
+      this.#named.push([edgeElement, MENU_EDGE]);
     }
 
-    const anchor = this.options.anchor;
-    const reference = anchor === undefined
-      ? trigger
-      : { getBoundingClientRect: () => anchor(trigger), contextElement: trigger };
+    for (const [element, name] of this.#named) {
+      addAnchorName(element, name);
+    }
 
     this.#placedAt = trigger;
-    this.#stopPlacing = autoUpdate(reference, positioner, () => void this.#place(reference, positioner));
-  }
-
-  async #place(reference: Element | { getBoundingClientRect: () => DOMRect }, positioner: HTMLElement): Promise<void> {
-    const { placement, sameWidth = false, gutter = 0 } = this.options;
-    const result = await computePosition(reference, positioner, {
-      placement,
-      strategy: 'fixed',
-      middleware: [
-        offset(gutter),
-        flip(),
-        shift(),
-        size({
-          apply: ({ availableHeight, rects }) => {
-            Object.assign(positioner.style, {
-              width: sameWidth ? `${rects.reference.width}px` : '',
-              minWidth: sameWidth ? '' : 'max-content',
-              maxHeight: `${Math.max(0, Math.floor(availableHeight))}px`,
-            });
-          },
-        }),
-      ],
-    });
-
-    Object.assign(positioner.style, { left: `${result.x}px`, top: `${result.y}px` });
-
-    const popup = this.#popup();
-
-    if (popup !== null) {
-      popup.style.transformOrigin = originOf(result.placement);
-    }
   }
 
   readonly #valueAt = (event: Event) =>
@@ -300,18 +284,4 @@ class Menu {
   #find(id: string): HTMLElement | null {
     return this.#host.renderRoot.querySelector<HTMLElement>(`#${CSS.escape(id)}`);
   }
-}
-
-// Where a popup grows from (its open animation): the side and the corner at its anchor, e.g. `bottom-start`: `left top`.
-function originOf(placement: string): string {
-  const [side = 'bottom', align] = placement.split('-');
-  const opposite = ({ top: 'bottom', bottom: 'top', left: 'right', right: 'left' } as Record<string, string>)[side];
-  const vertical = side === 'top' || side === 'bottom';
-  const corner = align === 'start'
-    ? (vertical ? 'left' : 'top')
-    : align === 'end'
-    ? (vertical ? 'right' : 'bottom')
-    : 'center';
-
-  return vertical ? `${corner} ${opposite}` : `${opposite} ${corner}`;
 }

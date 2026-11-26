@@ -34,13 +34,13 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   (`I18nAdapter`, `TextParams`: a verbatim copy of those in `frontend/i18n.md`).
   `src/main/index.ts` exports them flat (`typescript.md`): `import type { NavItem } from '@local/cockpit'`. The demos'
   variables of the element are `cockpitElement` or `element`.
-- Lit, with `@floating-ui/dom` (the menus' positions and the tooltips); the menus and the group select are our own
+- Lit; the menus and the tooltips placed by CSS anchor positioning (no script); the menus and the group select are our own
   `Menu`s (`src/main/element/menu.ts`), the search and the bottom bar's sheet native modal `<dialog>`s (rather than our own
   `inert`, focus and Escape code). No Zag.js: not needed, and the code must be easy to read.
-- Lit and Floating UI stay: the cockpit bundled with both is 47.0 kB gzip (our own code about 31.8 kB, Lit 7.8 kB,
-  Floating UI 7.4 kB).
-  - Not now: Floating UI by CSS anchor positioning (in every target browser, but young; no exact `shift()`), revisit
-    later. Only `lit-html` with a base class of our own (about 2 kB less): not worth owning it. Lit as a whole: it is
+- Lit stays (7.8 kB gzip).
+  - No Floating UI: CSS anchor positioning does its work in every target browser (checked in Chromium, Firefox and
+    WebKit). What it cannot do: grow a flipped popup from the side it flipped to (its `transform-origin` is the asked
+    placement's), and `shift()` with a padding from the window's edge. Only `lit-html` with a base class of our own (about 2 kB less): not worth owning it. Lit as a whole: it is
     the base of every template and of the rendering. Every decision is checked for that: is it doable without a
     framework with reasonable effort? Say so when a feature would make that much harder.
 
@@ -73,11 +73,18 @@ This repository's rules for it (see the root's `CLAUDE.md`):
     chooses. A list to choose from (the group select, `selected`) opens at the chosen item.
   - The highlighted item has the focus ring (the accent, 2px inside) while the popup matches `:focus-visible`. CSS
     only; the browser's heuristic decides: after keyboard input yes, opened and moved with the mouse only no.
-  - Placing: Floating UI's `computePosition` (`offset`, `flip`, `shift`, `size`) and `autoUpdate` while open; `anchor`
-    gives a rect from the trigger (the sidebar's edge, the bottom of the topbar's line, the footer). The positioner gets
-    `left`, `top`, `width` (with `sameWidth`; else `min-width: max-content`) and `max-height` (the room left in the
-    window: a popup that scrolls takes it with `max-height: inherit`, the flyouts and the group select); the panel its
-    `transform-origin` (from the final placement). No custom properties.
+  - Placing: CSS anchor positioning (`element/placement-styles.ts`, in both stylesheets), no script; it follows its
+    anchor by itself (a scroll, a resize). The positioner has `data-placement` (`bottom-start`, `bottom-end`,
+    `top-start`, `right-start`, `right-end`), `data-edge`, `data-same-width`. While open, the menu gives anchor names
+    (`element/anchors.ts`, inline `anchor-name`, a list: a button can be the anchor of a menu and of the tooltip):
+    `--menu-anchor` to its trigger, or to the element of `anchor` (a selector, the closest around the trigger: the
+    footer), and `--menu-edge` to the element of `edge` (the sidebar: a popup to its right touches its right edge; the
+    topbar's line: a dropdown's top at its bottom). Below or above: its own height on its side, else the side with more
+    room as high as that room (`position-try-order: most-height`), aligned to the trigger's other edge at the window's
+    edge (`flip-inline`). To the right: the other alignment (`flip-block`), else moved into the window, at most as high
+    as it. A panel that scrolls shrinks to the room (the positioner a flex column). The gap of the group select and
+    the app header's menus (4px): the positioner's padding. `transform-origin` from the asked placement. No custom
+    properties (anchor names are none).
   - A menu whose trigger is gone after a render (another layout) closes; opening the search closes every menu.
 - The dialogs: the search and the bottom bar's sheet are `<dialog>`s, opened with `showModal()` (`#syncDialog` after
   each render): the browser keeps the focus inside, makes the rest of the page inert (also the open app; no `inert` of
@@ -86,8 +93,9 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   layer, panel) lie in the cockpit; its own `::backdrop` is transparent. Escape (`cancel`, prevented: the cockpit
   closes it itself, e.g. after the slide out) and a pointer down outside its panel close it. The first focus: the
   search's field, the sheet's open item (else its close button).
-- Tooltips: one element for all, on hover (300 ms) or focus of anything with `data-tip` (`data-tip-side`), positioned
-  by Floating UI; not on a button whose menu is open (`data-state="open"`). A popover (`popover="manual"`), so it shows
+- Tooltips: one element for all, on hover (300 ms) or focus of anything with `data-tip` (`data-tip-side`), placed by
+  CSS at its target (the anchor name `--tip-anchor`; on the other side when there is no room, moved into the window at
+  its edges); not on a button whose menu is open (`data-state="open"`). A popover (`popover="manual"`), so it shows
   above an open dialog too (the top layer).
 - Closed popups are `hidden` (forced by `[hidden] { display: none !important }`); open animations by
   `@starting-style` (none on closing, except the search in the sidebar layout, see there).
@@ -502,7 +510,7 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   root page's "Cockpit" (Internals › Components). The app header twice (the default look, an own theme) with a made-up
   router (its own list of paths), switches (the switcher, its descriptions, the width) and a log of the events; a
   second tab says where the cockpit is (the page itself: it owns the URL hash, so it cannot run inside it).
-- `npm run typecheck`, `npm run build` (library mode; Lit and Floating UI stay outside), `npm run format`.
+- `npm run typecheck`, `npm run build` (library mode; Lit stays outside), `npm run format`.
 - `npm run loc` (`src/main`), `npm run loc:all` (all of `src`): the lines (all, code, comments, blank) by kind and by folder,
   with each one's share of the code as a bar (`scripts/loc.mjs`). sloc counts each file; the kind comes from its name,
   as the CSS and the icons live in TypeScript: `*styles.ts` is "CSS (in TS)", `icons.ts` "SVG (in TS)", other `.ts`
@@ -518,7 +526,7 @@ This repository's rules for it (see the root's `CLAUDE.md`):
     below ("Home", then `crumbs`); narrow (container queries, its own width): the tabs a menu below 896px, Back and
     Forward hidden below 640px; sticky. The menus are `Menu`s, their positioners popovers (`popover="manual"`, the top
     layer: above another sticky header and a frame that cuts its content), the Back and Forward tooltips a popover too
-    (Floating UI). The container of the container queries is the inner `.header` (a container is the containing block
+    (below the button, CSS anchor positioning). The container of the container queries is the inner `.header` (a container is the containing block
     of `position: fixed` inside it), the popups are rendered after it.
   - The switcher's entries: the icon, the label and, with `description`, a muted line below it (two lines at most, at
     most 280px), the check on the current one; the modules menu shows only the labels.

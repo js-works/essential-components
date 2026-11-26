@@ -1,5 +1,7 @@
 import type { CockpitTheme } from '../index.js';
 import { DEFAULT_COCKPIT_THEME } from '../themes/default-cockpit-theme.js';
+import { TIP_ANCHOR } from './anchors.js';
+import { MENU_PLACEMENT_STYLES } from './placement-styles.js';
 
 export { layoutStyles, styles, themeValues };
 
@@ -666,11 +668,10 @@ button {
   }
 }
 
+/* Placed by MENU_PLACEMENT_STYLES; 4px between it and its trigger. */
 .select-positioner {
-  position: fixed;
-  top: 0;
-  left: 0;
   z-index: 1000;
+  padding: 4px 0;
   outline: none;
 }
 
@@ -683,7 +684,6 @@ button {
   /* As wide as its positioner (the trigger's width), and its list scrolls in the room left in the window. */
   display: flex;
   flex-direction: column;
-  max-height: inherit;
   padding: 4px;
   border: 1px solid ${v.divider};
   border-radius: 8px;
@@ -933,11 +933,10 @@ button {
 
 /* The menu of the kebab button. */
 
-/* Placed by its menu (menu.ts: left, top, width, max-height). */
+/* The menus' placing (CSS anchor positioning; the anchor names by menu.ts). */
+${MENU_PLACEMENT_STYLES}
+
 .menu-positioner {
-  position: fixed;
-  top: 0;
-  left: 0;
   z-index: 1000;
   outline: none;
 }
@@ -1177,8 +1176,6 @@ button {
   flex-direction: column;
   box-sizing: border-box;
   width: 240px;
-  /* The room left in the window (its positioner's). */
-  max-height: inherit;
   padding: 12px 8px;
   overflow-y: auto;
   overscroll-behavior: none;
@@ -1724,15 +1721,15 @@ button {
   }
 }
 
-/* Tooltips (the labels of the rail): a popover, in the top layer (also above an open dialog). */
+/* Tooltips (the labels of the rail): a popover, in the top layer (also above an open dialog). At its target
+   (data-tip-side), else on the other side; moved into the window at its edges. */
 
 .tooltip {
   position: fixed;
   inset: auto;
-  top: 0;
-  left: 0;
   z-index: 1100;
   margin: 0;
+  position-anchor: ${TIP_ANCHOR};
   overflow: visible;
   border: 0;
   pointer-events: none;
@@ -1750,16 +1747,27 @@ button {
     translate: -4px 0;
   }
 
+  &[data-side='right'] {
+    position-area: right;
+    margin-left: 10px;
+    position-try-fallbacks: flip-inline;
+  }
+
   &[data-side='top'] {
+    position-area: top;
+    margin-bottom: 8px;
+    position-try-fallbacks: flip-block;
+
     @starting-style {
       translate: 0 4px;
     }
   }
-}
 
-/* Not shown until Floating UI has placed it. */
-.tooltip:not([data-open]) {
-  visibility: hidden;
+  &[data-side='bottom'] {
+    position-area: bottom;
+    margin-top: 8px;
+    position-try-fallbacks: flip-block;
+  }
 }
 
 /* The search and the bottom bar's sheet are modal <dialog>s (2026-10-08; Zag.js before), in the top layer: the element

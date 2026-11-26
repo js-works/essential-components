@@ -1,4 +1,3 @@
-import { computePosition, flip, offset, shift } from '@floating-ui/dom';
 import type { PropertyValues, TemplateResult } from 'lit';
 import { html, LitElement, nothing } from 'lit';
 import { ifDefined } from 'lit/directives/if-defined.js';
@@ -28,6 +27,7 @@ import type {
   NavSubgroup,
   SignedInUser,
 } from '../index.js';
+import { addAnchorName, removeAnchorName, TIP_ANCHOR } from './anchors.js';
 import {
   checkIcon,
   chevronIcon,
@@ -97,8 +97,8 @@ let instances = 0;
 
 // The cockpit, a Lit element. Its own UI in its shadow root (styled by `STYLES`); the mini-apps are its light-DOM
 // children, shown through the default slot (their CSS is often global, which would not reach into a shadow root).
-// The menus and the group select are `Menu`s (`menu.ts`), positioned by Floating UI; the search and the bottom bar's
-// sheet are modal `<dialog>`s; the tooltips are one element positioned by Floating UI.
+// The menus and the group select are `Menu`s (`menu.ts`), placed by CSS anchor positioning; the search and the bottom
+// bar's sheet are modal `<dialog>`s; the tooltips are one element, placed the same way.
 //
 // - The first segment of the URL hash is the id of the open item (`#board-manager/…`; the rest belongs to the item). No
 //   hash, or an unknown first segment at the start: `defaultItem`, else the first item. Opening an item pushes a history
@@ -170,8 +170,10 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   #startPageQuery = '';
   // The group of the select (`groupDisplay: 'select'`): the open item's, and the user may look into another one.
   #selectedGroup: string | undefined;
-  #tip: { text: string; target: Element; side: 'right' | 'top' | 'bottom' } | undefined;
-  #tipTarget: Element | undefined;
+  #tip: { text: string; target: HTMLElement; side: 'right' | 'top' | 'bottom' } | undefined;
+  #tipTarget: HTMLElement | undefined;
+  // The element that has the tooltip's anchor name.
+  #tipAnchor: HTMLElement | undefined;
   #tipTimer: ReturnType<typeof setTimeout> | undefined;
   #resizeObserver: ResizeObserver | undefined;
   readonly #adapter: I18nAdapter | undefined;
@@ -715,29 +717,12 @@ class CockpitElementBase extends LitElement implements CockpitElement {
     return this.renderRoot.querySelector<HTMLElement>(selector);
   }
 
-  // A menu's anchor: from the sidebar's right edge, as high as its trigger (a popup to the right touches the sidebar,
-  // level with its button).
-  readonly #besideSidebar = (trigger: Element): DOMRect => {
-    const rect = trigger.getBoundingClientRect();
-    const right = this.#el('.sidebar')?.getBoundingClientRect().right ?? rect.right;
-
-    return new DOMRect(right, rect.top, 0, rect.height);
-  };
-
-  // A menu's anchor: as wide as its trigger, at the bottom of its line of the topbar (a dropdown touches the line).
-  readonly #belowLine = (trigger: Element): DOMRect => {
-    const rect = trigger.getBoundingClientRect();
-    const bottom = trigger.closest('.top-line')?.getBoundingClientRect().bottom ?? rect.bottom;
-
-    return new DOMRect(rect.left, bottom, rect.width, 0);
-  };
-
   // --- Tooltips ------------------------------------------------------------------------------------------------------
 
   // One tooltip for every element with `data-tip` (its text; `data-tip-side`: where), after a short delay on hover or
-  // focus. Positioned by Floating UI.
+  // focus. Placed by CSS anchor positioning at its target (its anchor name, `TIP_ANCHOR`).
   readonly #onTipEnter = (event: Event) => {
-    const target = (event.target as Element).closest?.('[data-tip]') ?? null;
+    const target = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-tip]') : null;
 
     // Moving inside the same element (e.g. onto its icon) changes nothing.
     if (target === this.#tipTarget) {
@@ -783,9 +768,23 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   };
 
   #placeTip(): void {
+    const target = this.#tip?.target;
+
+    if (this.#tipAnchor !== target) {
+      if (this.#tipAnchor !== undefined) {
+        removeAnchorName(this.#tipAnchor, TIP_ANCHOR);
+      }
+
+      if (target !== undefined) {
+        addAnchorName(target, TIP_ANCHOR);
+      }
+
+      this.#tipAnchor = target;
+    }
+
     const tooltip = this.#el('.tooltip');
 
-    if (this.#tip === undefined || tooltip === null || !this.#tip.target.isConnected) {
+    if (target === undefined || tooltip === null || !target.isConnected) {
       return;
     }
 
@@ -793,15 +792,6 @@ class CockpitElementBase extends LitElement implements CockpitElement {
     if (!tooltip.matches(':popover-open')) {
       tooltip.showPopover();
     }
-
-    void computePosition(this.#tip.target, tooltip, {
-      placement: this.#tip.side,
-      strategy: 'fixed',
-      middleware: [offset(this.#tip.side === 'right' ? 10 : 8), flip(), shift({ padding: 4 })],
-    }).then(({ x, y }) => {
-      Object.assign(tooltip.style, { left: `${x}px`, top: `${y}px` });
-      tooltip.setAttribute('data-open', '');
-    });
   }
 
   // --- Render --------------------------------------------------------------------------------------------------------
@@ -1855,7 +1845,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
     const { parent, group } = entry;
     const menu = this.#menu(`tab:${parent}/${group.name}`, {
       placement: 'bottom-start',
-      anchor: this.#belowLine,
+      edge: '.top-line',
       onSelect: (id) => this.open(id),
     });
     const current = group.items.some((item) => item.id === this.#active);
@@ -1905,7 +1895,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   #lineMore(key: string, entries: Entry[], texts: Texts): TemplateResult {
     const menu = this.#menu(`more:${key}`, {
       placement: 'bottom-end',
-      anchor: this.#belowLine,
+      edge: '.top-line',
       onSelect: (id) => this.open(id),
     });
     const current = entries.some((entry) =>
@@ -1957,7 +1947,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
 
     const menu = this.#menu('user', {
       placement: 'bottom-end',
-      anchor: this.#belowLine,
+      edge: '.top-line',
       onSelect: (value) => this.#select(sections, value),
     });
 
@@ -2022,6 +2012,9 @@ class CockpitElementBase extends LitElement implements CockpitElement {
     return html`<div
       class=${panel.listbox === true ? 'select-positioner' : 'menu-positioner'}
       id=${menu.positionerId}
+      data-placement=${menu.options.placement}
+      ?data-edge=${menu.options.edge !== undefined}
+      ?data-same-width=${menu.options.sameWidth === true}
       ?hidden=${!menu.open}
     >
       <div
@@ -2095,7 +2088,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   #flyout(key: string, group: Group, label: string, icon: string | undefined): TemplateResult {
     const menu = this.#menu(key, {
       placement: 'right-start',
-      anchor: this.#besideSidebar,
+      edge: '.sidebar',
       onSelect: (id) => this.open(id),
     });
     const { loose, subgroups } = subgroupsOf(group.items);
@@ -2157,7 +2150,6 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   #groupSelect(texts: Texts, groups: Group[], value: string): TemplateResult {
     const menu = this.#menu('group-select', {
       placement: 'bottom-start',
-      gutter: 4,
       sameWidth: true,
       selected: () => value,
       onSelect: (next) => {
@@ -2240,7 +2232,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
       // In the bottom bar's sheet (the sidebar as wide as the screen): above the user row, as wide as it.
       ...(this.#bottom
         ? { placement: 'top-start' as const, sameWidth: true }
-        : { placement: 'right-end' as const, anchor: this.#besideSidebar }),
+        : { placement: 'right-end' as const, edge: '.sidebar' }),
       onSelect: (value) => this.#select(sections, value),
     });
 
@@ -2277,15 +2269,11 @@ class CockpitElementBase extends LitElement implements CockpitElement {
     const sections = footer.menu ?? [];
     const side = topbar ? 'bottom' : rail ? 'right' : 'top';
     // Where its menus open: below the top line; to the right of the rail; on top of the footer, as wide as it.
-    const where: Pick<MenuOptions, 'placement' | 'anchor' | 'sameWidth'> = topbar
-      ? { placement: 'bottom-end', anchor: this.#belowLine }
+    const where: Pick<MenuOptions, 'placement' | 'anchor' | 'edge' | 'sameWidth'> = topbar
+      ? { placement: 'bottom-end', edge: '.top-line' }
       : rail
-      ? { placement: 'right-end', anchor: this.#besideSidebar }
-      : {
-        placement: 'top-start',
-        anchor: (trigger) => trigger.closest('.footer')?.getBoundingClientRect() ?? new DOMRect(),
-        sameWidth: true,
-      };
+      ? { placement: 'right-end', edge: '.sidebar' }
+      : { placement: 'top-start', anchor: '.footer', sameWidth: true };
     const look = { drop: topbar, flush: !topbar, sheet: !rail && !topbar };
 
     // A button of the footer that opens `menu`.
