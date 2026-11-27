@@ -34,9 +34,6 @@ type NavTreeClassConfig = {
   // The texts ("Other": the heading of the items without a group; the namespace `'cockpit'`): the adapter, the same for
   // every element of the class. Without one: English and en-US.
   i18n?: I18nAdapter;
-  // Where the open and closed groups and folders are remembered per browser (`<storageKey>:groups`); without one, not
-  // remembered.
-  storageKey?: string;
 };
 
 type NavTreeClass = new() => NavTreeElement;
@@ -70,8 +67,7 @@ type NavTreeElement = HTMLElement & {
   // The attribute `collapsible-groups`: the group headings are toggles with a count. Open by default: the group of the
   // active item, the items without a group, and every group when there are at most 30 items.
   collapsibleGroups: boolean;
-  // The attribute `group-display` (`sections` by default). With `select`, the chosen group follows the active item and is
-  // remembered per browser (`<storageKey>:group`).
+  // The attribute `group-display` (`sections` by default). With `select`, the chosen group follows the active item.
   groupDisplay: NavTreeGroupDisplay;
   // The rows' height and the gaps: `compact`, `normal` (the default), `comfortable`; the attribute `density`.
   density: NavDensity;

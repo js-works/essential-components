@@ -14,7 +14,7 @@ export { DEMO_SERVER, loginDemo, PROVIDERS, plainContent };
 type LoginDemoOptions = {
   title: string;
   subtitle: string;
-  // The page's initial accent (the footer's "Accent color", `accentSetting()`).
+  // The page's initial accent (the footer's theme menu, `applyAccent()`).
   accent: string;
   // Where signed out is remembered per browser (`false`).
   storageKey: string;
@@ -373,8 +373,8 @@ function loginDemo(options: LoginDemoOptions): { signOut: () => Promise<void>; r
 
     cockpit().hidden = true;
     login = document.createElement('app-login') as LoginElement;
-    login.appTitle = options.title;
-    login.subtitle = options.subtitle;
+    login.headline = options.title;
+    login.subheadline = options.subtitle;
     // The providers' buttons are the element's (the content shows them on its sign in view: `PROVIDERS`); the made-up
     // server signs in after a moment (Google fails).
     login.signInWith = async (id) => {

@@ -52,5 +52,20 @@
   "statusViewEmptyMessage": "Sobald etwas hinzugefügt wird, erscheint es hier.",
   "statusViewNoResults": "Keine Treffer",
   "statusViewNoResultsMessage": "Versuchen Sie andere Suchbegriffe oder Filter.",
-  "systemBannerDismiss": "Ausblenden"
+  "systemBannerDismiss": "Ausblenden",
+  "appearancePickerScheme": "Farbschema",
+  "appearancePickerLight": "Hell",
+  "appearancePickerSystem": "System",
+  "appearancePickerDark": "Dunkel",
+  "appearancePickerAccent": "Akzentfarbe",
+  "themeMenu": "Darstellung",
+  "themeMenuScheme": "Farbschema",
+  "themeMenuLight": "Hell",
+  "themeMenuSystem": "System",
+  "themeMenuDark": "Dunkel",
+  "themeMenuAccent": "Akzentfarbe",
+  "themeMenuDensity": "Dichte",
+  "themeMenuCompact": "Kompakt",
+  "themeMenuNormal": "Normal",
+  "themeMenuComfortable": "Komfortabel"
 }

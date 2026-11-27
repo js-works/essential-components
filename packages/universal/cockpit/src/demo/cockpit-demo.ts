@@ -1,4 +1,6 @@
 import type {
+  AppearanceAccent,
+  AppearancePickerElement,
   AppHeaderElement,
   AppHeaderLink,
   CockpitTheme,
@@ -11,6 +13,7 @@ import type {
   SystemBannerTone,
 } from '../main/index.js';
 import {
+  createAppearancePickerClass,
   createAppHeaderClass,
   createNavTreeClass,
   createStatusViewClass,
@@ -109,6 +112,16 @@ const TREE_GROUPS = Object.freeze([
   },
 ]);
 
+// The appearance picker's accents: a few of Mantine's colors.
+const APPEARANCE_ACCENTS: readonly AppearanceAccent[] = Object.freeze([
+  { id: 'indigo', label: 'Indigo', color: '#4c6ef5' },
+  { id: 'blue', label: 'Blue', color: '#228be6' },
+  { id: 'violet', label: 'Violet', color: '#7950f2' },
+  { id: 'pink', label: 'Pink', color: '#e64980' },
+  { id: 'orange', label: 'Orange', color: '#fd7e14' },
+  { id: 'teal', label: 'Teal', color: '#12b886' },
+]);
+
 let counter = 0;
 
 // The demo of the cockpit package, as a light DOM custom element without attributes (exported, not registered: the
@@ -147,6 +160,7 @@ class CockpitDemo extends HTMLElement {
       <button class="ui-tabs__tab" type="button">Nav tree</button>
       <button class="ui-tabs__tab" type="button">Status view</button>
       <button class="ui-tabs__tab" type="button">System banner</button>
+      <button class="ui-tabs__tab" type="button">Appearance</button>
       <button class="ui-tabs__tab" type="button">React</button>
       <button class="ui-tabs__tab" type="button">Cockpit</button>
     </nav>
@@ -181,7 +195,7 @@ class CockpitDemo extends HTMLElement {
     </section>
     <section class="ui-tabs__panel ui-stack" hidden>
       <p class="ui-note">The navigation tree of the cockpit's sidebar on its own (<code>createNavTreeClass()</code>): the
-        groups as headings, the folders (collapsible, remembered per browser), the items as links. A click fires
+        groups as headings, the folders (collapsible), the items as links. A click fires
         <code>navigate</code>, which a router cancels to navigate itself (here: the item becomes the active one); a middle
         click opens a new tab. The host gives the width and wraps it in a <code>&lt;nav&gt;</code>; with a height (here
         420px), the list scrolls between the slots <code>top</code> and <code>bottom</code>.</p>
@@ -269,6 +283,30 @@ class CockpitDemo extends HTMLElement {
       <output class="ui-result cockpit-demo__log" data-banner-log></output>
     </section>
     <section class="ui-tabs__panel ui-stack" hidden>
+      <p class="ui-note">The user's choice of the look (<code>createAppearancePickerClass()</code>): the color scheme
+        and, with <code>accents</code>, the accent color; no density (most UI libraries have none). It applies nothing
+        itself: it fires <code>change</code>, and the host applies it, here to the preview on the right (its
+        <code>color-scheme</code>, the nav tree's <code>theme</code>, the button's color). Arrow keys choose within a
+        group.</p>
+      <div class="cockpit-demo__appearance">
+        <div class="cockpit-demo__frame cockpit-demo__appearance-picker">
+          <${tags.appearance} data-appearance></${tags.appearance}>
+        </div>
+        <div class="cockpit-demo__frame cockpit-demo__appearance-preview" data-preview>
+          <nav class="cockpit-demo__tree" aria-label="Preview navigation">
+            <${tags.tree} data-preview-tree></${tags.tree}>
+          </nav>
+          <div class="cockpit-demo__appearance-page">
+            <h3>Projects</h3>
+            <p>A preview: the colors follow the picker.</p>
+            <button type="button" class="cockpit-demo__appearance-button" data-preview-button>New project</button>
+          </div>
+        </div>
+      </div>
+      <h2 class="ui-heading">Events</h2>
+      <output class="ui-result cockpit-demo__log" data-appearance-log></output>
+    </section>
+    <section class="ui-tabs__panel ui-stack" hidden>
       <p class="ui-note">The React components of <code>@local/cockpit/react</code>
         (<code>createNavTreeComponent()</code>, <code>createStatusViewComponent()</code>, …): the elements' properties
         as props, their slots as nodes (<code>top</code>), their events as callbacks (<code>onNavigate</code>), the
@@ -323,6 +361,40 @@ class CockpitDemo extends HTMLElement {
     this.#wireTree();
     this.#wireStatus();
     this.#wireBanner();
+    this.#wireAppearance();
+  }
+
+  // The appearance picker: its choice applied to the preview (its color scheme, the nav tree's accent, the button).
+  #wireAppearance(): void {
+    const picker = this.querySelector<AppearancePickerElement>('[data-appearance]')!;
+    const preview = this.querySelector<HTMLElement>('[data-preview]')!;
+    const tree = this.querySelector<NavTreeElement>('[data-preview-tree]')!;
+    const button = this.querySelector<HTMLElement>('[data-preview-button]')!;
+    const log = this.querySelector<HTMLOutputElement>('[data-appearance-log]')!;
+
+    picker.accents = APPEARANCE_ACCENTS;
+    picker.accent = 'indigo';
+    tree.items = TREE_ITEMS.slice(0, 5);
+    tree.active = 'projects';
+    tree.addEventListener('navigate', (event) => {
+      event.preventDefault();
+      tree.active = (event as CustomEvent<{ id: string }>).detail.id;
+    });
+
+    const apply = () => {
+      const color = APPEARANCE_ACCENTS.find((accent) => accent.id === picker.accent)?.color;
+
+      preview.style.colorScheme = picker.scheme === 'system' ? 'light dark' : picker.scheme;
+      tree.theme = color === undefined ? {} : { accentColor: color };
+      button.style.backgroundColor = color ?? '';
+    };
+
+    picker.addEventListener('change', () => {
+      log.textContent = `change (scheme: ${picker.scheme}, accent: ${picker.accent})\n${log.textContent ?? ''}`
+        .split('\n').slice(0, 8).join('\n');
+      apply();
+    });
+    apply();
   }
 
   // The system banner: the switches set its tone, its button and its close button; a dismissed banner comes back after
@@ -392,8 +464,8 @@ class CockpitDemo extends HTMLElement {
       view.layout = data.get('layout') === 'screen' ? 'screen' : 'inline';
       view.kind = String(data.get('kind')) as StatusViewKind;
       view.actionLabel = data.get('action') === null ? '' : labels[view.kind];
-      view.appTitle = data.get('brand') === null ? '' : 'Back Office';
-      view.subtitle = data.get('brand') === null ? '' : 'Acme Corporate';
+      view.headline = data.get('brand') === null ? '' : 'Back Office';
+      view.subheadline = data.get('brand') === null ? '' : 'Acme Corporate';
       view.heading = own ? 'No projects yet' : '';
       view.message = own ? 'Projects group the tasks and the people working on them.' : '';
       view.innerHTML = (own ? ICON.replace('<svg ', '<svg slot="icon" ') : '') + (extras
@@ -445,22 +517,31 @@ class CockpitDemo extends HTMLElement {
   }
 }
 
-// The classes of the headers, the nav tree, the status view and the system banner, registered once under tags of the demo.
-function defineHeaders(): { plain: string; themed: string; tree: string; status: string; banner: string } {
+// The classes of the headers, the nav tree, the status view, the system banner and the appearance picker, registered once under tags of the demo.
+function defineHeaders(): {
+  plain: string;
+  themed: string;
+  tree: string;
+  status: string;
+  banner: string;
+  appearance: string;
+} {
   const tags = {
     plain: 'cockpit-demo-header',
     themed: 'cockpit-demo-header-themed',
     tree: 'cockpit-demo-nav-tree',
     status: 'cockpit-demo-status-view',
     banner: 'cockpit-demo-system-banner',
+    appearance: 'cockpit-demo-appearance-picker',
   };
 
   if (customElements.get(tags.plain) === undefined) {
     customElements.define(tags.plain, createAppHeaderClass({ i18n: DEMO_I18N }));
     customElements.define(tags.themed, createAppHeaderClass({ theme: OWN_THEME, i18n: DEMO_I18N }));
-    customElements.define(tags.tree, createNavTreeClass({ i18n: DEMO_I18N, storageKey: 'cockpit-demo-nav-tree' }));
+    customElements.define(tags.tree, createNavTreeClass({ i18n: DEMO_I18N }));
     customElements.define(tags.status, createStatusViewClass({ i18n: DEMO_I18N }));
     customElements.define(tags.banner, createSystemBannerClass({ i18n: DEMO_I18N }));
+    customElements.define(tags.appearance, createAppearancePickerClass({ i18n: DEMO_I18N }));
   }
 
   return tags;

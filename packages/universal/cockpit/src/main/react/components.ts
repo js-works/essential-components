@@ -1,4 +1,6 @@
 import type {
+  AppearancePickerComponentConfig,
+  AppearancePickerProps,
   AppHeaderComponentConfig,
   AppHeaderProps,
   CockpitComponentConfig,
@@ -15,6 +17,7 @@ import type {
 import { defineComponent } from './define-component.js';
 
 export {
+  createAppearancePickerComponent,
   createAppHeaderComponent,
   createCockpitComponent,
   createLoginComponent,
@@ -26,6 +29,18 @@ export {
 // The React components of the package's elements, one factory per element class (`createNavTreeClass` …), with the
 // same config, its `i18n` a hook (`useI18n`). Each call makes a component of its own (a class of its own, under an
 // internal tag); the call has no side effect.
+
+function createAppearancePickerComponent(config: AppearancePickerComponentConfig = {}) {
+  const { useI18n, ...classConfig } = config;
+
+  return defineComponent<AppearancePickerProps>({
+    name: 'appearance-picker',
+    createClass: (client) => client.createAppearancePickerClass(classConfig),
+    properties: { scheme: 'system', accents: [], accent: '' },
+    events: { onChange: 'change' },
+    slots: {},
+  }, useI18n);
+}
 
 function createNavTreeComponent(config: NavTreeComponentConfig = {}) {
   const { useI18n, ...classConfig } = config;
@@ -57,8 +72,8 @@ function createStatusViewComponent(config: StatusViewComponentConfig = {}) {
     properties: {
       layout: 'inline',
       kind: 'default',
-      appTitle: '',
-      subtitle: '',
+      headline: '',
+      subheadline: '',
       heading: '',
       message: '',
       actionLabel: '',
@@ -87,8 +102,8 @@ function createLoginComponent(config: LoginComponentConfig = {}) {
     name: 'login',
     createClass: (client) => client.createLoginClass(classConfig),
     properties: {
-      appTitle: '',
-      subtitle: '',
+      headline: '',
+      subheadline: '',
       heading: '',
       submitLabel: '',
       submitting: false,
@@ -127,20 +142,35 @@ function createAppHeaderComponent(config: AppHeaderComponentConfig = {}) {
   }, useI18n);
 }
 
-function createCockpitComponent(config: CockpitComponentConfig) {
+function createCockpitComponent(config: CockpitComponentConfig = {}) {
   const { useI18n, ...classConfig } = config;
 
   return defineComponent<CockpitProps>({
     name: 'cockpit',
     createClass: (client) => client.createCockpitClass(classConfig),
     properties: {
+      headline: '',
+      subheadline: '',
+      items: [],
+      groups: [],
+      groupDisplay: 'sections',
+      actions: [],
+      menu: [],
+      user: null,
+      userMenu: [],
+      defaultItem: '',
+      search: 'auto',
+      collapsibleGroups: 'auto',
+      recentCount: 5,
+      taskbar: false,
+      active: '',
       nav: 'side',
       navScheme: 'dark',
       density: 'normal',
-      startPage: classConfig.startPage === true,
+      startPage: false,
       theme: classConfig.theme ?? {},
     },
-    events: {},
+    events: { onNavigate: 'navigate' },
     slots: { logo: 'logo', sidebarEnd: 'sidebar-end' },
   }, useI18n);
 }

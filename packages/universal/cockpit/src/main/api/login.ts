@@ -28,9 +28,9 @@ type LoginProvider = {
 // default: the cockpit's logo, four squares), `footer` (below a line, centered, e.g. "Not yet registered? Create an
 // account"; no line without it), `hint` (a small note below the card).
 type LoginElement = HTMLElement & {
-  // The attribute `app-title` (not `title`: the browser would show it as a tooltip).
-  appTitle: string;
-  subtitle: string;
+  // The attribute `headline` (not `title`: the browser would show it as a tooltip).
+  headline: string;
+  subheadline: string;
   // The view's heading, e.g. "Sign in" (none when empty).
   heading: string;
   // The attribute `submit-label`: the submit button below the host's content (e.g. "Sign in"; none when empty). It

@@ -1,4 +1,4 @@
-export type { ActionChoice, ActionChoices, CockpitFooter, FooterAction, MenuItem, MenuSection, SignedInUser };
+export type { ActionChoice, ActionChoices, CockpitAction, MenuItem, MenuSection, SignedInUser };
 
 type ActionChoice = {
   value: string;
@@ -11,7 +11,9 @@ type ActionChoices = {
   onChange: (value: string) => void;
 };
 
-type FooterAction = {
+// One of the host's buttons of the cockpit (its icon, its label as the tooltip): in the sidebar's footer, on the right
+// of the topbar's line, in the bottom bar's sheet. A click: `onSelect`, a menu of `choices` or one of sections (`menu`).
+type CockpitAction = {
   id: string;
   label: string;
   icon: string;
@@ -27,7 +29,7 @@ type MenuItem = {
   label: string;
   icon?: string;
   shortcut?: string;
-  // A choice: checked or not, read whenever the menu renders (the host keeps the state); a check in place of the icon.
+  // A choice: checked or not, read whenever the menu renders (the host keeps the state); a check before its icon.
   checked?: () => boolean;
   onSelect?: () => void;
 };
@@ -39,9 +41,4 @@ type SignedInUser = {
   name: string;
   detail?: string;
   avatar?: string;
-};
-
-type CockpitFooter = {
-  actions?: readonly FooterAction[];
-  menu?: readonly MenuSection[];
 };

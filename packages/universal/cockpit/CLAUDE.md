@@ -27,14 +27,17 @@ This repository's rules for it (see the root's `CLAUDE.md`):
 
 - `src/main/api/` holds the draft API types we are discussing: `base.ts` (`CockpitElement`, `CockpitClass`,
   `CockpitClassConfig`, `NavDensity`), `navigation.ts` (`NavItem`, `NavGroup`, `NavSubgroup`,
-  `NavLayout`, `NavScheme`), `menus.ts` (`FooterAction`, `ActionChoice`, `ActionChoices`, `MenuItem`, `MenuSection`,
-  `SignedInUser`, `CockpitFooter`), `header.ts` (the app header's: `AppHeaderElement`, `AppHeaderClass`,
+  `NavLayout`, `NavScheme`), `menus.ts` (`CockpitAction`, `ActionChoice`, `ActionChoices`, `MenuItem`, `MenuSection`,
+  `SignedInUser`), `header.ts` (the app header's: `AppHeaderElement`, `AppHeaderClass`,
   `AppHeaderClassConfig`, `AppHeaderLink`, `AppHeaderCrumb`, `AppHeaderStep`, `AppHeaderNavigateDetail`), `theme.ts`
   (`CockpitTheme`: one theme for every element), `nav-tree.ts` (`NavTreeElement`, `NavTreeClass`, `NavTreeClassConfig`, `NavTreeItem`,
   `NavTreeNavigateDetail`), `login.ts` (the login's: `LoginElement`, `LoginClass`,
   `LoginClassConfig`, `LoginProvider`), `status-view.ts` (`StatusViewElement`, `StatusViewClass`,
   `StatusViewClassConfig`, `StatusViewKind`, `StatusViewLayout`), `system-banner.ts` (`SystemBannerElement`,
-  `SystemBannerClass`, `SystemBannerClassConfig`, `SystemBannerTone`), the React entry's in `src/main/react/api/`, `texts.ts` (`CockpitTextKey`, `CockpitParams`, read from the English texts), `i18n.ts`
+  `SystemBannerClass`, `SystemBannerClassConfig`, `SystemBannerTone`), `appearance-picker.ts`
+  (`AppearancePickerElement`, `AppearancePickerClass`, `AppearancePickerClassConfig`, `AppearanceScheme`,
+  `AppearanceAccent`), `theme-menu.ts` (`ThemeMenu`, `ThemeMenuOptions`, `ThemeMenuValue`,
+  `ThemeMenuScheme`, `ThemeMenuAccent`), the React entry's in `src/main/react/api/`, `texts.ts` (`CockpitTextKey`, `CockpitParams`, read from the English texts), `i18n.ts`
   (`I18nAdapter`, `TextParams`: a verbatim copy of those in `frontend/i18n.md`).
   `src/main/index.ts` exports them flat (`typescript.md`): `import type { NavItem } from '@local/cockpit'`. The demos'
   variables of the element are `cockpitElement` or `element`.
@@ -55,8 +58,8 @@ This repository's rules for it (see the root's `CLAUDE.md`):
 - Inside: Lit (a `LitElement`), its own menus (`menu.ts`) and native `<dialog>`s, styled with the design language's
   values as plain values in its CSS (it reads no `--ui-*` tokens: those are for demos only), so the cockpit and the
   packages look like one family, whatever component suite a mini-app uses. Not Mantine (its look).
-- Mini-apps stay agnostic: the contract is only a custom element tag, the URL hash, and `<html lang>` /
-  `data-scheme` (for the mini-apps: the cockpit itself takes its language only from its adapter).
+- Mini-apps stay agnostic: the contract is only a custom element tag, the URL hash (with `routeByHash()`), and `<html
+  lang>` / `data-scheme` (for the mini-apps: the cockpit itself takes its language only from its adapter).
 - Kept small: navigation, header, routing, language and color scheme, and a login screen (below). No auth of its own
   (the host signs in), no permissions or notifications for now.
 - The cockpit's own UI lives in its shadow DOM (its CSS isolated both ways). The active mini-app is a light-DOM child
@@ -111,14 +114,24 @@ This repository's rules for it (see the root's `CLAUDE.md`):
 - The terms of the navigation (the sidebar does not know what an entry is, so it is not called an app): **group**
   (level 1; a section with a heading, or an option of the group select), **subgroup** (level 2; a folder:
   collapsible, with an icon and a count), **item** (`NavItem`, the leaf: it opens a custom element; config `items`,
-  `defaultItem`, `activeItem`). Other words: the **group select** (`groupDisplay: 'select'`), **Recent** (the last
+  `defaultItem`, `activeItem`). Other words: the **group select** (`groupDisplay` `select`), **Recent** (the last
   items used), a **flyout** (a group or subgroup in the rail), the **rail** (the narrow sidebar), the **topbar
   lines**. "Mini-app" is only what a host puts behind an item.
-- `createCockpitClass(config)`, like `createFileUploadClass`: `{ title?, subtitle?, search?, user?, userMenu?, items,
-  groups?, groupDisplay?, footer?, defaultItem?, startPage?, storageKey?, taskbar? }`; `groups`: `{ name, subgroups?:
-  { name, icon?, placement? }[] }[]`, extra data of the groups and their subgroups (by the `group` and `subgroup` of
-  the items), for now the icons of the subgroups (a group has no icon). The host registers the class itself
-  (`customElements.define('app-cockpit', …)`).
+- `createCockpitClass(config?)`: the config only what is per class, `{ theme?, i18n? }` (the same shape
+  as the package's other classes; `theme` the first value of the element's). The host registers the class itself
+  (`customElements.define('app-cockpit', …)`). The data and the parts are the element's properties, all switchable
+  live (a new array or object to change one; `CockpitElement`): `headline`, `subheadline` (attributes; the brand; not
+  `title`: the browser's tooltip; the same pair in the login and the status view), `items`, `groups`, `groupDisplay`
+  (`group-display`), `actions`, `menu`, `user` (`null`: none), `userMenu`, `defaultItem` (`default-item`), `search`
+  (`auto`, `always`, `never`), `collapsibleGroups` (`collapsible-groups`: `auto`, `never`), `recentCount`
+  (`recent-count`, 5; 0: no "Recent"), `taskbar` (boolean), `startPage` (`start-page`), `nav`, `navScheme`,
+  `density`, `theme`. The routing waits for the first `items` (`#route()`: on connect, else in `willUpdate` when they
+  come); an open item no longer in `items` is closed (its element removed; the open one: the one used before it,
+  else the default). The taskbar's tag is registered on first use. Weighed: the data in the class config (a class per
+  set of data; nothing changeable at run time; a host's callback had to look the element up, and the theme and the
+  start page were in two places). `groups`: `{ name, subgroups?: { name, icon?, placement? }[] }[]`, extra data of
+  the groups and their subgroups (by the `group` and `subgroup` of the items), for now the icons of the subgroups (a
+  group has no icon).
 - `NavItem`: `id` (the first hash segment), `title`, `description?` (search, sidebar tooltip), `icon?` (SVG markup,
   drawn in `currentColor`, the accent color; without one: no icon, only in the rail its initials), `group?`,
   `subgroup?` (the second level inside its group), `element` (the tag), `attributes?` (set on the element), `load?`
@@ -144,30 +157,40 @@ This repository's rules for it (see the root's `CLAUDE.md`):
 - Composition at build time (one Vite build; `load` gives lazy chunks).
 - No navigation groups of its own: the host groups its apps (`group`); the root page uses two groups, "Main" (the
   folders "Apps" and "Administration") and "Internals" (the folders "Components" and "Planned", the tree with the guide
-  line). `collapsibleGroups: false` keeps the groups plain headings with many apps too (the subgroups stay
-  collapsible); the root page does. `recent: false` switches the "Recent" section off (sidebar and search panel); the
-  root page does.
+  line). `collapsibleGroups: 'never'` keeps the groups plain headings with many apps too (the subgroups stay
+  collapsible); the root page does. `recentCount: 0` switches the "Recent" section off (sidebar and search panel);
+  the root page does.
 
 ## Behavior
 
-- Routing: the first segment of the URL hash is the open app's id; the rest belongs to the app. No hash (or an unknown
-  first segment at the start): the app `defaultItem` (an app's id), else the start page if it is on, else the first
-  app. Opening an app pushes a history entry (Back and Forward go through the apps); an unknown first segment later
-  (e.g. a host's anchor) is ignored.
+- Routing is the host's: the cockpit never touches the URL (no `location`, `history`, `hashchange`). The open item is
+  the property and attribute `active`; when the user opens one (the navigation, the search, the taskbar, the start
+  page's cards, the logo for the start page with the id `''`, closing the open one, and `open(id)` by code), the
+  cockpit fires `navigate` (`CustomEvent<CockpitNavigateDetail>`, `{ id }`, bubbling, cancelable): not canceled, it
+  sets `active` itself (so it works without a router); a router cancels it and sets `active` once it has navigated.
+  `active` empty or unknown: at the start the default item (`defaultItem`, else the first app, or the start page),
+  which `active` then becomes; later the start page (with `startPage`), else the default item. Like the nav tree's
+  and the app header's `navigate`.
+- `routeByHash(cockpit)` (`src/main/routing/route-by-hash.ts`, in the main entry; returns the function that stops it):
+  the URL's hash as the router, for a host without one: its first segment is the open app's id, the rest the app's;
+  `navigate` becomes a history entry (Back and Forward go through the apps), a change of the hash (Back, Forward, a
+  link, a typed hash) sets `active`; a first segment that is no item later (a host's anchor) is left alone. Both
+  demos use it. Weighed: the hash routing in the element (the cockpit owned the URL: two cockpits, or a host's own
+  router, could not coexist), an opt-in attribute for it (`routing="hash"`).
 - The start page (the root page has it, with Human Resources as its `defaultItem`, so the start page shows only when
   every app is closed, or by the logo): the attribute and property `start-page` / `startPage` (boolean, reflected,
-  switchable live; its first value the config's `startPage`; not `home`: vague, the apps' breadcrumbs say "Home").
-  Switched off while it is shown: `defaultItem`, else the first app opens. The demos' "Navigation" menu has a section
-  "Start page" (On, Off; `navigationSetting(…, { startPage })`, the key `demo-page:start-page`; only where
-  `startPage` is given: the root page, on by default; it sets the attribute, so the root page's config has no
-  `startPage`: a stored "Off" must win). Shown while no app is open (no hash, and when the last one is closed; opening
-  it removes the hash, a history entry). In the main area (the page's scheme), centered, at most 1080px: the title
-  (large) and the subtitle, a filter (36rem; only with the search on), then the apps as cards, the pinned ones first
-  (no heading), then by folder (`#folders`: the subgroups of all groups, a group's apps without a subgroup as
-  "General"; a folder's name small and uppercase with its icon), in a grid (at least 240px a card): the icon on a light
-  accent ground (initials in a frame without one), the title (the running dot with the taskbar), the description (two
-  lines at most); hovered: an accent border and the shadow. No greeting. The logo (all layouts) is a button that opens
-  it (only a pointer, no tooltip); it does not toggle the sidebar then (the footer's toggle does).
+  switchable live; not `home`: vague, the apps' breadcrumbs say "Home"). Switched off while it is shown: `defaultItem`,
+  else the first app opens. The demos' "Navigation" menu has a section "Start page" (On, Off; `navigationSetting(…, {
+  startPage })`, the key `demo-page:start-page`; only where `startPage` is given: the root page, on by default; it sets
+  the attribute, so the root page sets no `startPage` itself: a stored "Off" must win). Shown while no app is open
+  (`active` empty after the start, and when the last one is closed; opening it is a `navigate` with the id `''`). In the
+  main area (the page's scheme), centered, at most 1080px: the title (large) and the subtitle, a filter (36rem; only
+  with the search on), then the apps as cards, the pinned ones first (no heading), then by folder (`#folders`: the
+  subgroups of all groups, a group's apps without a subgroup as "General"; a folder's name small and uppercase with its
+  icon), in a grid (at least 240px a card): the icon on a light accent ground (initials in a frame without one), the
+  title (the running dot with the taskbar), the description (two lines at most); hovered: an accent border and the
+  shadow. No greeting. The logo (all layouts) is a button that opens it (only a pointer, no tooltip); it does not toggle
+  the sidebar then (the footer's toggle does).
   - The filter hides the cards that do not match (the search panel's matching, `search()`: every word in the title,
     description, group or subgroup; the cards keep their order, no ranking), and the folders without a match;
     "Nothing matches your search." when none is left. A clear button ("×", "Clear search") while there is text. Enter
@@ -183,9 +206,9 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   - More: a search button (an icon-only button with the tooltip "Search (Ctrl K)", in the title row, at its right end,
     vertically centered on title and subtitle; in the rail below the logo; also Ctrl+K / ⌘K: a command palette, a
     modal `<dialog>`; ranked: title starts with the query, a word of the title starts with it, the title contains it,
-    then description or group), "Recent" (the last 5 opened, per browser), the groups collapsible with a count (closed
+    then description or group), "Recent" (the last 5 opened), the groups collapsible with a count (closed
     by default above 30 apps, except the open app's group and the apps without a group, "Other").
-- `groupDisplay: 'select'` (default `'sections'`): one group at a time. A select (a `Menu` as a listbox) at the top of
+- `groupDisplay` `select` (default `'sections'`): one group at a time. A select (a `Menu` as a listbox) at the top of
   the list (below the search) switches the group, with each group's count; the list shows only that group's apps,
   without "Recent" (the search has it). The chosen group follows the open app (opening an app from the search shows
   its group). Only with more than one group and not in the rail. The package's 100-app demo uses it.
@@ -196,7 +219,7 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   an item's icon): in the tree's subgroup nodes, between the chevron and the name, and on a subgroup's button in the
   rail. The 100-item demo has an icon for each subgroup, none for its items.
 - Second level (`subgroup`): inside a group, its apps without a subgroup come first, then each subgroup as a
-  collapsible node of a tree (open by default, remembered per browser), with its count; its apps are indented along a
+  collapsible node of a tree (open by default), with its count; its apps are indented along a
   guide line. In both group displays; flat in the rail. The search also matches the subgroup and shows "Group ›
   Subgroup". Every group of the 100-app demo has subgroups.
 - The signed-in user (`user: { name, detail?, avatar? }`): a row above the footer, from edge to edge (a line on top):
@@ -208,31 +231,39 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   shortcuts and "Reset demo" (the demo as if opened for the very first time: it clears `localStorage`,
   `sessionStorage`, IndexedDB, cookies and the cache storage, all of the origin, then reloads at the start, without
   hash and query).
+- The host's buttons are the config's `actions` (`CockpitAction`) and its kebab menu the config's `menu`, named for
+  every layout: in the sidebar they sit in its footer, in the topbar on the right of its line, with the bottom bar in
+  its sheet's footer. Weighed: `footer: { actions, menu }` and `FooterAction` (only the sidebar has a footer),
+  `toolbar` and `ToolbarAction`.
 - Footer: a dark gray bar at the bottom of the sidebar (a bit lighter than the dark sidebar), flush with its edges, in
-  segments (`role="toolbar"`): on the left the sidebar's toggle, in the middle the host's actions (`footer.actions`:
-  `{ id, label, icon, badge?, onSelect?, choices? }`, icon buttons with a tooltip that share the room between the
-  toggle and the kebab (they grow), a red dot for `badge`; with `choices` (`{ options: { value, label }[], value(),
-  onChange }`) the button opens a menu with the options, the current one checked, read from `value()` whenever it
-  renders, so the host keeps the state), on the right a kebab button with the host's menu (`footer.menu`: sections of
-  `{ id, label, icon?, shortcut?, checked?, onSelect? }`, separated by lines; a `Menu`). A section (`MenuSection`) is
-  an array of items, or `{ label?, items }` with a small uppercase label on top; an item with `checked` (a function,
-  read whenever the menu renders, so the host keeps the state) is a radio option with a check in place of its icon
-  (also in `userMenu`). The demos' kebab: the page's language as such a section ("Language": English, Deutsch; not a
-  footer action: too many buttons). A footer action can have such a menu too (`menu`, sections, in place of
-  `choices`), e.g. several settings behind one button. With the sidebar expanded, the footer's menus (the kebab's, the
-  choices) open as a sheet on top of the footer: as wide as the sidebar, square corners, a line on top, the sidebar's
-  colors, only as high as their entries. Without actions or menu, those segments are left out. In the rail, the
-  segments are stacked (the toggle at the bottom), and the footer's menus (the kebab's, the choices) open to the right
-  as plain panels like the groups' flyouts (touching the sidebar, square corners, a line between them, the sidebar's
-  colors), but only as high as their entries, their bottom at their button's. The demo pages' footer
-  (`src/demo/footer.ts`, also used by the root page): the page's settings as actions with choices (`pageSettings()`:
-  language and color scheme, set on `<html>` and remembered per browser; the cockpit's demo adds the number of apps),
-  and a made-up kebab menu (`MENU`, its items only log).
+  segments (`role="toolbar"`): on the left the sidebar's toggle, in the middle the host's actions (the config's
+  `actions`, `CockpitAction`: `{ id, label, icon, badge?, onSelect?, choices?, menu? }`; icon buttons with a tooltip
+  that share the room between the toggle and the kebab (they grow), a red dot for `badge`; with `choices` (`{ options: {
+  value, label }[], value(), onChange }`) the button opens a menu with the options, the current one checked, read from
+  `value()` whenever it renders, so the host keeps the state), on the right a kebab button with the host's menu (the
+  config's `menu`: sections of `{ id, label, icon?, shortcut?, checked?, onSelect? }`, separated by lines; a `Menu`). A
+  section (`MenuSection`) is an array of items, or `{ label?, items }` with a small uppercase label on top; an item with
+  `checked` (a function, read whenever the menu renders, so the host keeps the state) is a radio option: the check (on
+  the checked one) in a column of its own, then its icon when it has one (4px closer to the check than to the label),
+  then the label (also in `userMenu`). Weighed: the check in place of the icon (a color swatch as the icon disappeared
+  on the chosen one), a field `color` for a swatch (only colors would use it), the swatch as the marker (a choice marked
+  differently from the other sections of the same menu). The demos' kebab: the page's language as such a section
+  ("Language": English, Deutsch; not a footer action: too many buttons). A footer action can have such a menu too
+  (`menu`, sections, in place of `choices`), e.g. several settings behind one button. With the sidebar expanded, the
+  footer's menus (the kebab's, the choices) open as a sheet on top of the footer: as wide as the sidebar, square
+  corners, a line on top, the sidebar's colors, only as high as their entries. Without actions or menu, those segments
+  are left out. In the rail, the segments are stacked (the toggle at the bottom), and the footer's menus (the kebab's,
+  the choices) open to the right as plain panels like the groups' flyouts (touching the sidebar, square corners, a line
+  between them, the sidebar's colors), but only as high as their entries, their bottom at their button's. The demo
+  pages' footer (`src/demo/footer.ts`, also used by the root page): the navigation's settings (`navigationSetting()`),
+  the look as a theme menu (`createThemeMenu()`, created by each page: see "The theme menu"; the accents
+  `THEME_ACCENTS`, `applyAccent()`), the page's language (remembered, `restoreLanguage()`; in the kebab menu; the
+  cockpit's demo adds the number of apps), and a made-up kebab menu (`MENU`, its items only log).
 - The sidebar is resizable: a handle on its right edge (an accent line while hovered, dragged or focused;
   `role="separator"`): drag it, or Left/Right (Shift: more) when focused; a double click goes back to the default. 200
-  to 420 px, remembered per browser (`storageKey`). The default is 256px (`sidebarWidth`). No handle in the rail.
+  to 420 px. The default is 256px (`sidebarWidth`). No handle in the rail.
 - The sidebar collapses to a rail of icons (the toggle in the footer, and the logo without a start page: a button with
-  the same tooltip, not below 768px nor in the topbar; remembered per browser; always below 768px of the cockpit's own
+  the same tooltip, not below 768px nor in the topbar; always below 768px of the cockpit's own
   width, then without the toggle), with tooltips. The rail: the structure of the sidebar without the headings (one
   flyout button per group would be pointless without group icons). The items as icons (without an icon: their framed
   initials, like the taskbar's, with the title as the tooltip), each subgroup as one button (its icon, else its framed
@@ -362,11 +393,11 @@ This repository's rules for it (see the root's `CLAUDE.md`):
     30px (32px).
   - `comfortable`: 40px, 34px, 30px, 16px; the popups' rows 34px.
   - Unchanged: the font sizes, the topbar's lines (heights and text), the brand, the user row, the footer, the widths.
-- `search`: the search button and Ctrl+K also with few apps (`true`), or never (`false`); without it, only with more
-  than 8 apps. The root page uses `true`.
+- `search`: the search button and Ctrl+K also with few apps (`always`), or never (`never`); `auto` (the default):
+  only with more than 8 apps. The root page uses `always`.
 - A subtle line (`--app-cockpit-divider`) below the header (logo, title, search), from edge to edge of the sidebar,
   also in the rail.
-- The title at the top of the sidebar, next to the logo; an optional `subtitle` under it, small and muted (one line
+- The `headline` at the top of the sidebar, next to the logo; an optional `subheadline` under it, small and muted (one line
   each, cut with an ellipsis). The two lines are close together (line height 1.15, the subtitle 1px closer; a bit of
   room for the descenders below each, as the ellipsis needs `overflow: hidden`). Both hidden in the rail. The demos
   have one (e.g. "Acme Corporation · Headquarters").
@@ -405,7 +436,7 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   - Private (a package never takes a tag name of its own): the tag `internal-cockpit-taskbar-<n>`, `n` the first
     number not registered yet, registered on first use with a class of its own, once per cockpit class
     (`taskbarTagFor()`, by `createCockpitClass()` call), rendered with Lit's `unsafeStatic`.
-  - The cockpit uses it with `taskbar: true` (config): below the open item, in the sidebar layout and the topbars, not
+  - The cockpit uses it with `taskbar` (the property, the attribute `taskbar`): below the open item, in the sidebar layout and the topbars, not
     with the bottom bar.
   - The entries: the open items (created, being loaded, or failed), in the order they were opened. A click opens one
     (a history entry, like the navigation). Closing (`close(id)` of the element, public) removes its element, so its
@@ -429,7 +460,7 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   - Its values: its `theme` (the cockpit passes its own), else the defaults; no custom properties. Texts: `taskbarLabel`,
     `taskbarClose` in `core/texts.ts`.
   - The open items are marked in the navigation: a dot in the accent, like the open one in the search panel
-    (`running-dot`, `#iconAndTitle()`), only with `taskbar: true`. Right after the title, with or without an icon (also
+    (`running-dot`, `#iconAndTitle()`), only with `taskbar`. Right after the title, with or without an icon (also
     in the flyouts; the corner of the icon was tried), 5px, raised by 4px like a superscript. In the rail, which has no
     titles, on the bottom right corner of the icon (a ring in the sidebar's color; also on the initials). Not at the end
     of the row: that is kept for badges (later).
@@ -441,13 +472,26 @@ This repository's rules for it (see the root's `CLAUDE.md`):
     place (its focus kept). Then `task-move` (`{ id, index }`, the index in the new order); the cockpit reorders its
     open items (`#moveTask()`). Not remembered across reloads; no scrolling of a full bar while dragging.
   - Not built (later topics): a context menu (close others), remembering the open items across reloads.
-  - The demos: the root page and the package's demo have `taskbar: true`.
+  - The demos: the root page and the package's demo set `taskbar`.
 - No overscroll: every scroll area (the navigation, the open app's area, the search list, the group select's list, the
   flyouts) has `overscroll-behavior: none` (not `contain`, which keeps Firefox's elastic bounce); the taskbar
   `overscroll-behavior-x: none` (sideways only).
+- The sidebar's scrollbar (`.nav`: the sidebar, the bottom bar's sheet; and the nav tree's own list, `.scroll`), like an
+  overlay scrollbar (`overlayScrollbarStyles(selector, color)` in `element/scrollbar-styles.ts`, one CSS for both):
+  only while the pointer is over the area or the focus is inside (`:hover`, `:focus-within`: then one can scroll),
+  transparent otherwise but always there, so nothing shifts when it shows.
+  - Firefox: the standard properties, thin (`scrollbar-width: thin`, `scrollbar-color`).
+  - Chrome, Edge, Safari (`@supports selector(::-webkit-scrollbar)`): `::-webkit-scrollbar` (ignored while
+    `scrollbar-width` or `scrollbar-color` is set: `auto` there), a fixed width of 10px with the thumb drawn narrow
+    inside it (a 3px transparent border, `background-clip: padding-box`), wider while the pointer is on it (a 1px
+    border): no standard CSS can widen it on hover, and a change of the width would shift the content. Firefox
+    stays thin.
+  - The menus and the search list keep theirs (open only briefly: they show at once that there is more). Weighed:
+    only while scrolling (a script; a mouse user would not see that it scrolls, and a scrollbar cannot fade), a
+    scrollbar of our own.
 - The theme: one type for every element of the package, `CockpitTheme` (the cockpit, the taskbar, the nav tree, the
   app header, the login, the status view): a host makes one object and gives it to each class; each element reads
-  the keys it needs. The cockpit's property `theme` (no attribute), its first value the config's `theme`, switchable
+  the keys it needs. The cockpit's property `theme` (no attribute), its first value the class config's `theme`, switchable
   live (a new object).
   - Its keys (what a host can override, and the accent; the colors stay the design language's, a key is added when
     needed). Shared: `accentColor` (one color; lighter in a dark scheme, e.g. the dark navigation, by `color-mix(in
@@ -479,9 +523,9 @@ This repository's rules for it (see the root's `CLAUDE.md`):
     panel): a second stylesheet (`layoutStyles()`), with copies of the few rules that use them (the same selectors,
     later, so they win), rewritten when they change. Not inline styles: one of them is in `@starting-style`.
   - The taskbar has a `theme` too (`taskbarStyles(theme)`, the same `themeValues()`); the cockpit passes its own.
-  - The demos' "Accent color" choice (`accentSetting()` in `src/demo/footer.ts`) sets the cockpit's `theme.accentColor` (merged
-    into its theme, once the element is defined), and `--app-accent-color` on `<html>` for the page (the root page
-    maps it to its apps).
+  - The demos' accent (their theme menu, `applyAccent()` in `src/demo/footer.ts`) sets the cockpit's
+    `theme.accentColor` (merged into its theme, once the element is defined), and `--app-accent-color` on `<html>` for
+    the page (the root page maps it to its apps).
 - Texts (`i18n.md`): English only in the package, as functions of their values and the locale (`src/main/texts/en.ts`,
   the master), the namespace `'cockpit'`; the app gives an `I18nAdapter` in the config (`i18n: i18nAdapter`, of
   `createCockpitClass` and `createAppHeaderClass`, the same for every element of the class; its `onChange`
@@ -499,8 +543,14 @@ This repository's rules for it (see the root's `CLAUDE.md`):
     placeholders (`npm test`, Vitest).
 - The demos' German (`src/demo/i18n.ts`, `DEMO_I18N`): an adapter that follows `<html lang>` (the footer's language
   switch), used by the cockpit's demo and the root page.
-- Remembered per browser (`localStorage`, `storageKey`, ignored when storage fails): the recent apps, the rail, the
-  open groups. The default key is `cockpit`.
+- Nothing is remembered across visits: nothing of the package stores anything (no `localStorage`, no storage key; also
+  not `createThemeMenu`).
+  The recent items, the rail, the sidebar's width, the open groups and folders last while the element lives; a new
+  visit starts fresh. A host that wants more keeps it itself. Inside the cockpit its nav trees (the sidebar's, the
+  sheet's, "Recent", one made again for another layout) share the user's choices in memory
+  (`embedNavTree()`, internal). Weighed: a `storageKey` (storage in the element), the state as properties
+  with events (`statechange`, or `toggle` like `<details>`) for a host to save (a menu or navigation reports what the
+  user does, not its state).
 - No `rem` in the cockpit's CSS: a page's root font size must not change the shell. Every length is in `px` (a `rem`
   quoted in this file is 16px). Every `font-size` (the texts and the icons, which are sized by it) is a multiple of
   the theme's `fontSize` (default `14px`, the apps' normal text: Mantine's `sm`): `calc(${v.fontSize} * N / 14)` with N
@@ -528,7 +578,7 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   everywhere: Safari, Firefox, 1Password). It fits the host's stack: Mantine's inputs in a Mantine app, plain ones
   elsewhere. No built-in forms: an element that renders into its own light DOM breaks when the host replaces its
   children, and its inputs would never match the host's.
-- Attributes: `app-title` (not `title`: the browser's tooltip), `subtitle`, `heading` (the view's, none when empty),
+- Attributes: `headline` (the brand; not `title`: the browser's tooltip), `subheadline`, `heading` (the view's, none when empty),
   `submit-label`, `submitting` (below).
 - The submit button (`submit-label`: its text, e.g. "Sign in", none when empty): the element's, in its shadow root,
   below the default slot, full width in the accent. A button in a shadow root cannot submit a form in the light DOM
@@ -588,7 +638,7 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   session, maintenance, an error). One element for both (`src/main/status-view/`, in the main entry): the layout
   only decides the frame. Weighed: two elements, a status screen and an empty state (every part is optional, so nothing
   of one would be dead in the other, and most kinds are useful in both layouts).
-- Every part only when given: the brand (`app-title`, `subtitle`, the slot `logo`; only with `app-title`), the icon
+- Every part only when given: the brand (`headline`, `subheadline`, the slot `logo`; only with `headline`), the icon
   (the kind's or the slot `icon`'s; its ground only with one), the heading and the message (the kind's or the host's),
   the host's extras (the default slot), the button (`action-label`), the footer (the slot `footer`, below a line), the
   hint (the slot `hint`). Without a kind and texts: nothing.
@@ -631,16 +681,71 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   slot, the attribute, `action`, `dismiss` canceled or not, the cockpit's slot); `src/test/setup.ts` stubs
   `ResizeObserver` for the cockpit in jsdom.
 
+## The theme menu
+
+- `createThemeMenu(options)` (`src/main/theme-menu/`, in the main entry): the look in a menu of the cockpit, with
+  little code for the host. Options: `accents?` (`ThemeMenuAccent`: `{ id, label, color }`; the section "Accent color",
+  none without), `densities?` (the section "Density": only when every part of the app follows it, most UI libraries
+  have none), `initial?` (also a choice the host kept: the menu remembers nothing), `i18n?`, `icon?`, `onChange(value)`
+  (`ThemeMenuValue`: `{ scheme, accent, density }`; the host applies it, in one place).
+- It returns `ThemeMenu`: `action` (a button, "Appearance", with the menu, for the cockpit's `actions`), `sections` (the
+  same for another menu, e.g. the user menu), `value()`, `set(partial)` (a choice by code: `onChange` called).
+- The sections: "Color scheme" (Light, System, Dark: always), "Accent color", "Density", each of radio items (the
+  cockpit's `checked`; the check, then the icon): the schemes with Tabler's `sun`, `device-desktop`, `moon`, each
+  accent with a filled circle in its color (a thin ring in the text color, so a light one shows; the color escaped,
+  it goes into SVG markup). The labels are getters (`themeMenu…` texts through the adapter), read
+  whenever the menu renders, so a change of the language shows at once.
+- `onChange` once at the start (in a microtask: after the module's code, so the host's elements are defined), then
+  after every choice. A value not offered (e.g. one the host kept, then taken out) is the default (`system`, the first
+  accent, `normal`). Nothing is remembered: a host that wants it saves the value in `onChange` and gives it back as
+  `initial`.
+- The package's demo uses it (`src/demo/main.ts`): the page's scheme, the accent (`applyAccent()` of
+  `src/demo/footer.ts`: the page's and the cockpit's), the cockpit's density, kept by the page under `demo-page:theme`
+  (`storedTheme()`, `storeTheme()` of `src/demo/footer.ts`; an accent no longer offered dropped, so the page's initial
+  one counts); in place of its footer's "Accent color" and "Color scheme" buttons, and the "Navigation" menu without its
+  "Density" (`navigationSetting(…, { density: false })`). The root page uses it too (`demo/main.ts`): the scheme (light
+  by default) and the accent (indigo), no density (its apps, Mantine, have none; the cockpit's own stays in its
+  "Navigation" menu).
+- Tests: `src/test/theme-menu/create-theme-menu.test.ts` (the sections, the start, a choice (nothing stored), a value
+  not offered, `set()`, the labels through the adapter).
+
+## The appearance picker
+
+- `createAppearancePickerClass({ theme?, i18n? })`, `AppearancePickerElement` (suggested `<app-appearance-picker>`;
+  not "theme picker": in this package a theme is the `CockpitTheme` object, which it does not pick), in
+  `src/main/appearance-picker/`, in the main entry: the user's choice of the look, for a settings page or a popover
+  (standalone; a cockpit footer action that opens an element as its panel would be a change of the cockpit: later).
+- Only what every part of an app can follow: the color scheme, and the accent when the host can apply it (`accents`).
+  No density: most UI libraries have none, so the cockpit would change and the apps not.
+- `scheme` (reflected; `AppearanceScheme`): `light`, `system` (the default), `dark`, in this order (from light to dark,
+  the system's in the middle); an invalid attribute is the default, an invalid value a `RangeError`. `accents`
+  (`AppearanceAccent`: `{ id, label, color }`, `color` any CSS color; `[]`: no accent section), `accent` (the chosen
+  `id`; `''` or an unknown id: none).
+- It applies nothing: a choice updates `scheme` or `accent`, then fires `change` (an `Event`, bubbling, like an
+  input's; only on a change); the host applies them (`<html data-scheme>`, the cockpit's `theme`, the apps' accent).
+- Its look: two labeled sections, no background of its own. The schemes a segmented control (a track, the chosen one
+  raised on it, its icon in the accent; Tabler's `sun`, `device-desktop`, `moon`), the accents round swatches (their
+  color an inline style, a value only known at run time; the chosen one with a ring in the text color and a check).
+  Each a radio group with one tab stop (the chosen one, else the first swatch); the arrow keys (Home, End) choose
+  within it, wrapping around. A swatch's name: its `label` (`aria-label`, `title`). Touch: 44px and 40px targets.
+- Texts: `appearancePickerScheme`, `appearancePickerLight`, `appearancePickerSystem`, `appearancePickerDark`,
+  `appearancePickerAccent`.
+- The demo: the tab "Appearance" of `src/demo/cockpit-demo.ts`: the picker (six of Mantine's colors) beside a preview
+  that follows it (its `color-scheme`, a nav tree's `theme`, a button's color), a log of the events.
+- Tests: `src/test/appearance-picker/appearance-picker-element.test.ts` (the order and the default, a click and
+  `change`, the keys, the swatches, the attribute, the adapter).
+
 ## The React components
 
 - The entry `@local/cockpit/react` (`src/main/react/`, an add-on: removable in one piece; React an optional peer
   dependency, `>=19`): one factory per element class, with the class's config and the i18n as a hook (`useI18n`,
   `i18n.md`): `createNavTreeComponent`, `createStatusViewComponent`, `createLoginComponent`,
-  `createAppHeaderComponent`, `createCockpitComponent`, `createSystemBannerComponent` (`onAction`, `onDismiss`). Its types in `src/main/react/api/` (`NavTreeProps`,
+  `createAppHeaderComponent`, `createCockpitComponent`, `createSystemBannerComponent` (`onAction`, `onDismiss`),
+  `createAppearancePickerComponent` (`onChange`). Its types in `src/main/react/api/` (`NavTreeProps`,
   `NavTreeComponentConfig`, …, `CockpitCommonProps`); the entry also exports the main entry's types.
 - One generic wrapper (`define-component.tsx`, `defineComponent(spec, useI18n)`), each factory a spec
   (`components.ts`): the props set as properties (only the changed ones; a missing prop is the element's default,
-  `theme` and the cockpit's `startPage` the config's), the callback props and their events (`onNavigate`, `onAction`,
+  `theme` the config's), the callback props and their events (`onNavigate`, `onAction`,
   `onBack`, `onForward`: the DOM event, `preventDefault()` cancels it; the latest callback without listening again),
   the slots (a node per named slot, in a `<span slot="…" style="display: contents">`; `children` straight into the
   element, its default slot: the login's form in its light DOM; the app header's `crumbLabels` as `crumb-<index>`),
@@ -662,7 +767,7 @@ This repository's rules for it (see the root's `CLAUDE.md`):
 
 ## The nav tree
 
-- `createNavTreeClass({ theme?, i18n?, storageKey? })`, `NavTreeElement` (not "sidebar": no rail, search, user or
+- `createNavTreeClass({ theme?, i18n? })`, `NavTreeElement` (not "sidebar": no rail, search, user or
   footer): the navigation tree of the cockpit's sidebar as an element of its own
   (`src/main/nav-tree/`), for the cockpit and standalone in any app: `createNavTreeClass` in the main entry, its types
   in `api/nav-tree.ts`. The cockpit uses it under an internal tag (`navTreeTagFor()`, `internal-cockpit-nav-tree-<n>`,
@@ -677,38 +782,50 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   `collapsible-groups` toggles with a count ("Other" for the items without a group), open by default: the active
   item's group, the one without a name, and all when there are at most 30 items. The folders always collapsible,
   open by default, with an icon (only when the config has one) and a count, their items along a guide line. Open and
-  closed remembered under `<storageKey>:groups` (in the cockpit: its own `storageKey`).
+  closed kept while the tree lives.
 - `group-display="select"` (`groupDisplay`; `sections` by default): one group at a time, chosen in a dropdown on top
   (the chosen group and its count; its list all groups with their counts, the chosen one checked; "Other" for the items
   without a group), the chosen group's items below it without its heading. With one group only: as sections. The
-  chosen group follows the active item and is remembered under `<storageKey>:group`. The dropdown is the cockpit's
+  chosen group follows the active item. The dropdown is the cockpit's
   `Menu` (a listbox: its keys, typing, a click outside), its positioner a popover (the top layer, like the app
   header's), placed by CSS anchor positioning below the select, as wide as it.
+- Opening and closing a group or folder: its items slide open and closed (`.collapse`, a one-row grid from `0fr` to
+  `1fr`, 180 ms, the items fading in; nothing with reduced motion), the chevron turns (150 ms). Closed, the items are
+  `inert` and `aria-hidden` (not `hidden`, which could not animate); the inner box (`.collapse-inner`) cuts them off
+  while it slides, 12px out on both sides, so the active item's mark and the focus rings stay whole. The arrow keys
+  (the tree's and the cockpit's) skip what is inside `[inert]`. Weighed: a height transition to `auto`
+  (`interpolate-size`: only Chrome and Edge animate it).
 - Up and Down (Home, End) move between its links and toggles; at an end the key is left to the host (the cockpit
   goes on to its next tree).
+- Right and Left as in a tree (the WAI-ARIA tree pattern; in a right-to-left page the other way round, by the
+  element's computed `direction`): on a closed group or folder Right opens it, Left goes to its parent's toggle; on an
+  open one Right goes to its first item, Left closes it; on an item Left goes to its group's or folder's toggle. Enter
+  and Space toggle as before (buttons).
 - No landmark of its own: the host wraps it in a `<nav>`. No resizing (the host's layout gives its width). Its text
   color and font inherited.
-- Slots `top` and `bottom` (the host's title, filter, links, user row): fixed above and below the list, the group
-  select between `top` and the list; each with 12px to the list, its room only with content (`slotchange`). The tree
-  is a flex column: with a height from the host (a flex item, or `height`), only the list scrolls (`.scroll`,
-  `overscroll-behavior: none`, a thin scrollbar); without one, it is as tall as its content (the cockpit's trees,
-  in its own scrolling sidebar). The list reaches 12px out on both sides (the host's padding), so its `overflow` does
-  not cut off the active item's mark at the left edge.
+- Slots `top` and `bottom` (the host's title, filter, links, user row): fixed above and below the list, the group select
+  between `top` and the list; each with 12px to the list, its room only with content (`slotchange`). The tree is a flex
+  column: with a height from the host (a flex item, or `height`), only the list scrolls (`.scroll`,
+  `overscroll-behavior: none`, a thin scrollbar); without one, it is as tall as its content (the cockpit's trees, in its
+  own scrolling sidebar). The list reaches 12px out on both sides (the host's padding), so its `overflow` does not cut
+  off the active item's mark at the left edge. Inside the cockpit (`embedNavTree()`, internal) the list is no scroll
+  area (`overflow: visible`): the cockpit's sidebar scrolls, and a scroll area that cannot scroll, with
+  `overscroll-behavior: none`, would keep the wheel from it (the sidebar scrolled only over its scrollbar).
 - In the cockpit: the expanded sidebar and the bottom bar's sheet (the rail keeps its own icons and flyouts). Items
   `href: '#<id>'`; `navigate` canceled, `open(id)`. "Recent" is a tree of its own (its items in one group named
-  "Recent", without their folders); with the cockpit's own group select (`groupDisplay: 'select'`), a tree of the chosen
-  group's items (without their group); to be replaced by the tree's `group-display="select"`. `collapsible-groups`
-  with more than `FEW` items (unless `collapsibleGroups: false`), `marked` the open items (with the taskbar), its icons
-  the sidebar's white strokes (`navTreeIconColor`), its theme the cockpit's. The sheet's first focus: the close
-  button, then the open item once the tree has rendered.
+  "Recent", without their folders); with the cockpit's own group select (`groupDisplay` `select`), a tree of the chosen
+  group's items (without their group); to be replaced by the tree's `group-display="select"`. `collapsible-groups` with
+  more than `FEW` items (unless `collapsibleGroups` is `never`), `marked` the open items (with the taskbar), its icons
+  the sidebar's white strokes (`navTreeIconColor`), its theme the cockpit's. The sheet's first focus: the close button,
+  then the open item once the tree has rendered.
 - The demo: the tab "Nav tree" of `src/demo/cockpit-demo.ts` (the root page's Internals › Cockpit): made-up items
   (one without a group, two groups, folders with and without an icon) in a sidebar-like frame (260px wide, 420px
   high, so the list scrolls; a title in `top`, a link in `bottom`, switchable), a made-up
   router (`navigate` canceled, the item becomes the active one), switches for `group-display`, `collapsible-groups`,
-  `marked` and `density`, a log of the events; remembered under `cockpit-demo-nav-tree`.
-- Tests: `src/test/nav-tree/nav-tree-element.test.ts` (headings, folders, order, tooltip, active, marked, `navigate`
-  and modified clicks, folders remembered, collapsible groups and "Other", the group select following the active item,
-  the slots `top` and `bottom`).
+  `marked` and `density`, a log of the events.
+- Tests: `src/test/nav-tree/nav-tree-element.test.ts` (headings, folders, order, tooltip, active, marked, `navigate` and
+  modified clicks, folders opened and closed (nothing remembered), collapsible groups and "Other", the group select
+  following the active item, the slots `top` and `bottom`).
 
 ## Layout and commands
 
@@ -722,20 +839,24 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   (`styles.ts`); the taskbar (`taskbar-element.ts`, `taskbar-styles.ts`); `src/main/nav-tree/`: the nav tree (`create-nav-tree-class.ts`, `nav-tree-element-base.ts`,
   `nav-tree-styles.ts`, `nav-tree-tag.ts`); `src/main/login/`: the login (`create-login-class.ts`, `login-element-base.ts`, `login-styles.ts`);
   `src/main/status-view/`: the status view (`create-status-view-class.ts`, `status-view-element-base.ts`,
-  `status-view-styles.ts`); `src/main/system-banner/`: the system banner; `src/main/react/`: the React components (see there); `src/main/screen/screen-styles.ts`: the CSS they share;
-  `src/main/core/`: groups (`groupsOf`, `subgroupsOf`: the groups and folders of the navigation), search, texts,
-  storage; `src/main/texts/en.ts`: the English texts; `locales/`: the ICU messages; `src/demo/i18n.ts`: the demos' German.
+  `status-view-styles.ts`); `src/main/system-banner/`: the system banner; `src/main/appearance-picker/`: the appearance picker; `src/main/theme-menu/`: the theme
+  menu; `src/main/react/`: the React components (see there); `src/main/screen/screen-styles.ts`: the CSS they share;
+  `src/main/core/`: groups (`groupsOf`, `subgroupsOf`: the groups and folders of the navigation), search, texts, the
+  elements' i18n adapter (`i18n-controller.ts`); `src/main/texts/en.ts`: the English texts; `locales/`: the ICU
+  messages; `src/demo/i18n.ts`: the demos' German.
 - `src/demo/`: the package's demo (`npm run dev`), with 3, 30 or 100 apps (the "Apps" choice in the footer; `?apps=some`,
-  `?apps=many`); the 100 apps with `groupDisplay: 'select'`; in the 30 and 100 apps every app has a group and a
+  `?apps=many`); the 100 apps with `groupDisplay` `select`; in the 30 and 100 apps every app has a group and a
   subgroup (no "Other"); `src/demo/ui/`: the design language (a copy, like in every package). Each made-up app
   (`demo-app.ts`) has an app header (`<demo-app-header>`, registered by `main.ts`): its icon (the item's, by the
   attribute `icon`), its title, the modules Overview, Entries (two entries with pages of their own), Settings; "Documents"
   a switcher (Contracts, Templates, Letters). A made-up router answers it (`app-header-demo.ts`, `wireAppHeader()`, shared
   with `cockpit-demo.ts`).
-- `src/demo/cockpit-demo.ts` (`CockpitDemo`, light DOM, exported, not registered; its CSS `cockpit-demo.css`): the
-  root page's "Cockpit" (Internals › Components). The app header twice (the default look, an own theme) with a made-up
-  router (its own list of paths), switches (the switcher, its descriptions, the width) and a log of the events; a
-  second tab the nav tree (see "The nav tree"), a third the status view, a fourth the system banner, a fifth the React components; a sixth says where the cockpit is (the page itself: it owns the URL hash, so it cannot run inside it).
+- `src/demo/cockpit-demo.ts` (`CockpitDemo`, light DOM, exported, not registered; its CSS `cockpit-demo.css`): the root
+  page's "Cockpit" (Internals › Components). The app header twice (the default look, an own theme) with a made-up router
+  (its own list of paths), switches (the switcher, its descriptions, the width) and a log of the events; a second tab
+  the nav tree (see "The nav tree"), a third the status view, a fourth the system banner, a fifth the appearance picker,
+  a sixth the React components; a seventh says where the cockpit is (the page itself, with `routeByHash()`: a second one
+  in it would share the URL's hash).
 - `npm run typecheck`, `npm run build` (library mode; Lit stays outside), `npm run format`.
 - `npm test` (Vitest, in jsdom; `src/test/setup.ts` adds what jsdom lacks: `adoptedStyleSheets`).
 - `npm run loc` (`src/main`), `npm run loc:all` (all of `src`): the lines (all, code, comments, blank) by kind and by folder,

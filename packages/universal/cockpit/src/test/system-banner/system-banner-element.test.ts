@@ -86,7 +86,7 @@ describe('the system banner', () => {
   });
 
   it('the cockpit\'s slot banner, above everything', async () => {
-    customElements.define('test-banner-cockpit', createCockpitClass({ items: [] }));
+    customElements.define('test-banner-cockpit', createCockpitClass());
 
     const cockpit = document.createElement('test-banner-cockpit') as HTMLElement & { updateComplete: Promise<unknown> };
 

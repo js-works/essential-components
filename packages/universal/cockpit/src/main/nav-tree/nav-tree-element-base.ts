@@ -6,7 +6,6 @@ import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import type { Group } from '../core/groups.js';
 import { groupsOf, subgroupsOf } from '../core/groups.js';
 import { I18nController } from '../core/i18n-controller.js';
-import { readStored, writeStored } from '../core/storage.js';
 import { textsOf } from '../core/texts.js';
 import { checkIcon, selectorIcon } from '../element/icons.js';
 import { Menu } from '../element/menu.js';
@@ -22,12 +21,18 @@ import type {
 } from '../index.js';
 import { navTreeStyles } from './nav-tree-styles.js';
 
-export { NavTreeElementBase };
+export type { NavTreeChoices };
+export { embedNavTree, NavTreeElementBase };
 
 // Above this many items, collapsible groups start closed (but the active item's and the one without a name).
 const MANY = 30;
 
 let instances = 0;
+
+// What the user chose in a tree, kept while it lives (see `#choices`).
+type NavTreeChoices = { open: Record<string, boolean>; chosen: string | undefined };
+
+const embed = Symbol('embed');
 
 // The navigation tree, a Lit element (see `NavTreeElement`). The grouping is the cockpit's (`core/groups.ts`).
 class NavTreeElementBase extends LitElement implements NavTreeElement {
@@ -53,11 +58,13 @@ class NavTreeElementBase extends LitElement implements NavTreeElement {
 
   readonly #sheet = new CSSStyleSheet();
   readonly #i18n: I18nController;
-  readonly #storageKey: string | undefined;
-  // The groups and folders opened or closed by the user (`group`, `group/folder`), remembered per browser.
-  #open: Record<string, boolean> = {};
-  // The group shown with `group-display="select"`: the user's choice, else the active item's (remembered per browser).
-  #chosen: string | undefined;
+  // What the user chose, while the element lives (nothing is remembered across visits): the groups and folders opened
+  // or closed (`open`, by `group` and `group/folder`), the group shown with `group-display="select"` (`chosen`, else
+  // the active item's). The cockpit gives its trees one, so they agree (`embedNavTree`, internal).
+  #choices: NavTreeChoices = { open: {}, chosen: undefined };
+  // Inside the cockpit (`embedNavTree`): its list no scroll area of its own (the cockpit's sidebar scrolls; a scroll
+  // area that cannot scroll, with `overscroll-behavior: none`, would keep the wheel from it).
+  #embedded = false;
   // Whether the slots `top` and `bottom` have content.
   #hasTop = false;
   #hasBottom = false;
@@ -76,7 +83,6 @@ class NavTreeElementBase extends LitElement implements NavTreeElement {
     this.density = 'normal';
     this.theme = config.theme ?? {};
     this.#i18n = new I18nController(this, config.i18n);
-    this.#storageKey = config.storageKey;
     this.#select = new Menu(this, `nav-tree${++instances}-group`, {
       placement: 'bottom-start',
       sameWidth: true,
@@ -84,14 +90,13 @@ class NavTreeElementBase extends LitElement implements NavTreeElement {
     });
   }
 
-  override connectedCallback(): void {
-    super.connectedCallback();
-    // Read again on every connect: another tree of the same key (e.g. the cockpit's sidebar and its sheet) may have
-    // changed it.
-    this.#open = this.#storageKey === undefined ? {} : readStored(`${this.#storageKey}:groups`, {});
-    this.#chosen = this.#storageKey === undefined
-      ? undefined
-      : readStored<string | undefined>(`${this.#storageKey}:group`, undefined);
+  // Internal (`embedNavTree`): a tree of the cockpit, its choices shared with the cockpit's other trees.
+  [embed](choices: NavTreeChoices): void {
+    if (choices !== this.#choices || !this.#embedded) {
+      this.#choices = choices;
+      this.#embedded = true;
+      this.requestUpdate();
+    }
   }
 
   override disconnectedCallback(): void {
@@ -140,11 +145,7 @@ class NavTreeElementBase extends LitElement implements NavTreeElement {
   }
 
   #choose(group: string, render = true): void {
-    this.#chosen = group;
-
-    if (this.#storageKey !== undefined) {
-      writeStored(`${this.#storageKey}:group`, group);
-    }
+    this.#choices.chosen = group;
 
     if (render) {
       this.requestUpdate();
@@ -152,11 +153,7 @@ class NavTreeElementBase extends LitElement implements NavTreeElement {
   }
 
   #setOpen(key: string, open: boolean): void {
-    this.#open = { ...this.#open, [key]: open };
-
-    if (this.#storageKey !== undefined) {
-      writeStored(`${this.#storageKey}:groups`, this.#open);
-    }
+    this.#choices.open = { ...this.#choices.open, [key]: open };
 
     this.requestUpdate();
   }
@@ -184,8 +181,13 @@ class NavTreeElementBase extends LitElement implements NavTreeElement {
   // Up and Down (Home, End) move between the links and the toggles that are shown. At an end the key is left alone (not
   // prevented), so a host can go on (the cockpit: to its next tree).
   readonly #onKeyDown = (event: KeyboardEvent) => {
+    if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+      this.#onSideKey(event);
+      return;
+    }
+
     const targets = [...this.renderRoot.querySelectorAll<HTMLElement>('.item, button')].filter((target) =>
-      target.offsetParent !== null
+      target.offsetParent !== null && target.closest('[inert]') === null
     );
     const index = targets.indexOf(event.composedPath()[0] as HTMLElement);
     const next = ({
@@ -200,6 +202,46 @@ class NavTreeElementBase extends LitElement implements NavTreeElement {
       next.focus();
     }
   };
+
+  // Right and Left, as in a tree (in a right-to-left page the other way round): on a closed group or folder Right opens
+  // it, Left goes to its parent's toggle; on an open one Right goes to its first item, Left closes it; on an item Left
+  // goes to its group's or folder's toggle.
+  #onSideKey(event: KeyboardEvent): void {
+    const target = event.composedPath()[0];
+
+    if (!(target instanceof HTMLElement) || !this.renderRoot.contains(target)) {
+      return;
+    }
+
+    const rtl = getComputedStyle(this).direction === 'rtl';
+    const inward = (event.key === 'ArrowRight') !== rtl;
+    // The toggle of the group or folder around an element: the one before its items' box.
+    const parentToggle = (element: HTMLElement) =>
+      element.parentElement?.closest('.collapse')?.previousElementSibling as HTMLElement | null | undefined;
+    const isToggle = target.matches('.group-trigger, .subgroup-trigger');
+    let next: HTMLElement | null | undefined;
+
+    if (isToggle) {
+      const open = target.getAttribute('aria-expanded') === 'true';
+
+      if (inward && !open) {
+        target.click();
+      } else if (inward) {
+        next = target.nextElementSibling?.querySelector<HTMLElement>('.item, button');
+      } else if (open) {
+        target.click();
+      } else {
+        next = parentToggle(target);
+      }
+    } else if (target.matches('.item') && !inward) {
+      next = parentToggle(target);
+    } else {
+      return;
+    }
+
+    event.preventDefault();
+    next?.focus();
+  }
 
   // Whether the slots `top` and `bottom` have content (an element, or text that is not only white space): their room
   // only then.
@@ -228,7 +270,7 @@ class NavTreeElementBase extends LitElement implements NavTreeElement {
     return html`<div class="layout" @keydown=${this.#onKeyDown}>
       <div class="top" ?hidden=${!this.#hasTop}><slot name="top" @slotchange=${this.#slotChange}></slot></div>
       ${select}
-      <div class="scroll">${tree}</div>
+      <div class="scroll" ?data-embedded=${this.#embedded}>${tree}</div>
       <div class="bottom" ?hidden=${!this.#hasBottom}><slot name="bottom" @slotchange=${this.#slotChange}></slot></div>
     </div>`;
   }
@@ -240,7 +282,7 @@ class NavTreeElementBase extends LitElement implements NavTreeElement {
 
     // One group at a time: the select on top, the chosen group's items below it (without its heading).
     if (this.groupDisplay === 'select' && groups.length > 1) {
-      const chosen = groups.find((group) => group.name === this.#chosen) ?? groups[0]!;
+      const chosen = groups.find((group) => group.name === this.#choices.chosen) ?? groups[0]!;
 
       return {
         select: this.#groupSelect(groups, chosen, other),
@@ -264,7 +306,7 @@ class NavTreeElementBase extends LitElement implements NavTreeElement {
           </section>`;
           }
 
-          const open = this.#open[group.name]
+          const open = this.#choices.open[group.name]
             ?? (this.items.length <= MANY || group.name === activeGroup || group.name === '');
 
           return html`<div class="group">
@@ -274,7 +316,7 @@ class NavTreeElementBase extends LitElement implements NavTreeElement {
             <span class="group-name">${label}</span>
             <span class="group-count">${group.items.length}</span>
           </button>
-          <ul class="list" ?hidden=${!open}>${list}</ul>
+          ${collapse(open, html`<ul class="list">${list}</ul>`)}
         </div>`;
         })
       }</div>`,
@@ -359,7 +401,7 @@ class NavTreeElementBase extends LitElement implements NavTreeElement {
       ...loose.map((item) => html`<li>${this.#item(item)}</li>`),
       ...subgroups.map((folder) => {
         const key = `${group.name}/${folder.name}`;
-        const open = this.#open[key] ?? true;
+        const open = this.#choices.open[key] ?? true;
         const icon = this.#folderIcon(group.name, folder.name);
 
         return html`<li>
@@ -372,9 +414,12 @@ class NavTreeElementBase extends LitElement implements NavTreeElement {
             <span class="subgroup-name">${folder.name}</span>
             <span class="subgroup-count">${folder.items.length}</span>
           </button>
-          <ul class="list subgroup-list" ?hidden=${!open}>${
-          folder.items.map((item) => html`<li>${this.#item(item)}</li>`)
-        }</ul>
+          ${
+          collapse(
+            open,
+            html`<ul class="list subgroup-list">${folder.items.map((item) => html`<li>${this.#item(item)}</li>`)}</ul>`,
+          )
+        }
         </li>`;
       }),
     ];
@@ -396,5 +441,21 @@ class NavTreeElementBase extends LitElement implements NavTreeElement {
 }
 
 // Tabler's `chevron-right` (MIT): turned down while open.
+// The items of a group or a folder, sliding open and closed (`.collapse`, a grid row from `0fr` to `1fr`); closed, not
+// reachable (`inert`) and hidden from assistive technology.
+const collapse = (open: boolean, content: TemplateResult) =>
+  html`<div class="collapse" ?data-open=${open} ?inert=${!open} aria-hidden=${open ? 'false' : 'true'}>
+    <div class="collapse-inner">${content}</div>
+  </div>`;
+
 const chevron = () =>
   html`<svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">${svg`<path d="m9 6 6 6-6 6" />`}</svg>`;
+
+// Internal, not part of the public API: a tree inside the cockpit. Its list is no scroll area (the cockpit's sidebar
+// scrolls), and one object of choices for its trees (the sidebar's, its sheet's, "Recent"), so a folder opened in one
+// is open in the others, also in a tree made again (another layout).
+function embedNavTree(tree: Element, choices: NavTreeChoices): void {
+  if (tree instanceof NavTreeElementBase) {
+    tree[embed](choices);
+  }
+}

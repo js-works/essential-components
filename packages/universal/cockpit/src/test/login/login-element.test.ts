@@ -35,10 +35,10 @@ async function settle(login: LoginElement): Promise<void> {
 }
 
 describe('the login element', () => {
-  it('the title, the subtitle and the heading', async () => {
+  it('the title, the subheadline and the heading', async () => {
     const login = await mount('', (element) => {
-      element.appTitle = 'Back Office';
-      element.subtitle = 'Acme Corporate';
+      element.headline = 'Back Office';
+      element.subheadline = 'Acme Corporate';
       element.heading = 'Sign in';
     });
 
@@ -47,7 +47,7 @@ describe('the login element', () => {
     expect(shadow(login).querySelector('.heading')?.textContent).toBe('Sign in');
     expect(login.getAttribute('title')).toBeNull();
 
-    login.subtitle = '';
+    login.subheadline = '';
     login.heading = '';
     await login.updateComplete;
     expect(shadow(login).querySelector('.subtitle')).toBeNull();

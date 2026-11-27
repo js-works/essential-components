@@ -62,15 +62,15 @@ class StatusViewElementBase extends LitElement implements StatusViewElement {
   static override properties = {
     layout: { noAccessor: true, reflect: true },
     kind: { noAccessor: true },
-    appTitle: { attribute: 'app-title' },
-    subtitle: {},
+    headline: {},
+    subheadline: {},
     heading: {},
     message: {},
     actionLabel: { attribute: 'action-label' },
   };
 
-  declare appTitle: string;
-  declare subtitle: string;
+  declare headline: string;
+  declare subheadline: string;
   declare heading: string;
   declare message: string;
   declare actionLabel: string;
@@ -85,8 +85,8 @@ class StatusViewElementBase extends LitElement implements StatusViewElement {
 
   constructor(config: StatusViewClassConfig, sheet: CSSStyleSheet) {
     super();
-    this.appTitle = '';
-    this.subtitle = '';
+    this.headline = '';
+    this.subheadline = '';
     this.heading = '';
     this.message = '';
     this.actionLabel = '';
@@ -185,7 +185,7 @@ class StatusViewElementBase extends LitElement implements StatusViewElement {
       : html`<svg viewBox="0 0 24 24" width="1em" height="1em">${KIND_ICONS[kind]}</svg>`;
 
     return html`
-      ${this.appTitle === '' ? nothing : this.#brand()}
+      ${this.headline === '' ? nothing : this.#brand()}
       <div class="status" data-kind=${kind}>
         <span class="status-icon" aria-hidden="true" ?hidden=${kind === 'default' && !this.#hasIcon}>
           <slot name="icon" @slotchange=${this.#slotChange}>${icon}</slot>
@@ -216,8 +216,8 @@ class StatusViewElementBase extends LitElement implements StatusViewElement {
       <div class="brand">
         <span class="logo" aria-hidden="true"><slot name="logo">${gridIcon()}</slot></span>
         <div>
-          <p class="title">${this.appTitle}</p>
-          ${this.subtitle === '' ? nothing : html`<p class="subtitle">${this.subtitle}</p>`}
+          <p class="title">${this.headline}</p>
+          ${this.subheadline === '' ? nothing : html`<p class="subtitle">${this.subheadline}</p>`}
         </div>
       </div>
     `;

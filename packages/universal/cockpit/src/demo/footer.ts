@@ -1,72 +1,38 @@
 import type {
-  CockpitClassConfig,
+  CockpitAction,
   CockpitElement,
-  CockpitFooter,
-  FooterAction,
   MenuSection,
   NavDensity,
   NavLayout,
   NavScheme,
   SignedInUser,
+  ThemeMenuAccent,
+  ThemeMenuValue,
 } from '../main/index.js';
 
-export { accentColor, accentSetting, MENU, navigationSetting, pageSettings, USER, userMenu };
+export {
+  accentColor,
+  applyAccent,
+  MENU,
+  navigationSetting,
+  restoreLanguage,
+  storedTheme,
+  storeTheme,
+  THEME_ACCENTS,
+  USER,
+  userMenu,
+};
 
-// The footer of the demo pages: the page's settings (the color scheme; the language in the kebab menu) as actions with choices, and a made-up
-// menu (its items only log). Icons after Tabler icons, MIT.
+// The footer of the demo pages: the navigation's settings, the accents for the theme menu (`createThemeMenu`, which
+// the pages create), the page's language (in the kebab menu), and a made-up menu (its items only log). Icons after
+// Tabler icons, MIT.
 const svg = (paths: string) =>
   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
 
 const log = (label: string) => () => console.info(`cockpit demo: "${label}" chosen`);
 
-// The page's settings: they set `<html lang>` and `data-scheme` for everything on the page (applied at once, and
-// remembered per browser).
-function pageSettings(
-  { schemes, scheme }: { schemes: readonly ('system' | 'light' | 'dark')[]; scheme: 'system' | 'light' | 'dark' },
-): FooterAction[] {
-  const root = document.documentElement;
-  // Remembered per browser (a demo page may reload), if storage works.
-  const stored = (key: string, fallback: string) => {
-    try {
-      return localStorage.getItem(`demo-page:${key}`) ?? fallback;
-    } catch {
-      return fallback;
-    }
-  };
-  const store = (key: string, value: string) => {
-    try {
-      localStorage.setItem(`demo-page:${key}`, value);
-    } catch {
-      // Not remembered.
-    }
-  };
-
-  root.lang = stored('language', 'en-US');
-  root.dataset['scheme'] = schemes.includes(stored('scheme', scheme) as never) ? stored('scheme', scheme) : scheme;
-
-  return [
-    {
-      id: 'scheme',
-      label: 'Color scheme',
-      icon: svg(
-        '<circle cx="12" cy="12" r="9"/><path d="M12 3v18M12 9l4.65-4.65M12 14.3l7.37-7.37M12 19.6l8.85-8.85"/>',
-      ),
-      choices: {
-        options: schemes.map((value) => ({ value, label: value.charAt(0).toUpperCase() + value.slice(1) })),
-        value: () => root.dataset['scheme'] ?? scheme,
-        onChange: (value) => {
-          root.dataset['scheme'] = value;
-          store('scheme', value);
-        },
-      },
-    },
-  ];
-}
-
-// The accent colors of the menu: Mantine's (shade 6), violet by default; "design" is the design language's
-// (`--ui-color-accent`).
+// The accent colors of the theme menu: Mantine's (shade 6), violet by default.
 const ACCENTS = [
-  ['design', 'Design language', ''],
   ['blue', 'Blue', '#228be6'],
   ['indigo', 'Indigo', '#4c6ef5'],
   ['violet', 'Violet', '#7950f2'],
@@ -79,13 +45,9 @@ const ACCENTS = [
   ['cyan', 'Cyan', '#15aabf'],
 ] as const;
 
-// The page's accent color (none for "Design language"), remembered per browser; `initial` (violet) by default, the root
-// page uses indigo (2026-10-07). The cockpit's `theme` (2026-10-10; it reads no custom property of the page), and for
-// the page the custom property `--app-accent-color` on `<html>`, which the root page maps to the apps' own tokens
-// (its `demo/demo.css`).
-// The color of the remembered accent (`initial` without one), `undefined` for the design language's: for a part with a
-// theme of its own (the root page's login).
-function accentColor(initial = 'violet'): string | undefined {
+// The color of the remembered accent (`initial` without one, or with one no longer offered): for a part with a theme of
+// its own (the root page's login).
+function accentColor(initial = 'violet'): string {
   let id = initial;
 
   try {
@@ -94,65 +56,69 @@ function accentColor(initial = 'violet'): string | undefined {
     // The initial one.
   }
 
-  const color =
-    (ACCENTS.find(([candidate]) => candidate === id) ?? ACCENTS.find(([candidate]) => candidate === initial))?.[2];
-
-  return color === '' ? undefined : color;
+  return (ACCENTS.find(([candidate]) => candidate === id) ?? ACCENTS.find(([candidate]) => candidate === initial)!)[2];
 }
 
-function accentSetting(initial = 'violet', selector = 'app-cockpit'): FooterAction {
+// The page's accent color (an id of `ACCENTS`, else `initial`): `--app-accent-color` on `<html>` and the cockpit's
+// `theme.accentColor`, remembered under `demo-page:accent` (read by `accentColor()`, the login's); returns the id
+// applied.
+function applyAccent(value: string, initial = 'violet', selector = 'app-cockpit'): string {
   const root = document.documentElement;
-  let accent = initial;
+  const [id, , color] = ACCENTS.find(([candidate]) => candidate === value)
+    ?? ACCENTS.find(([candidate]) => candidate === initial)!;
 
-  // An unknown value (e.g. "default", remembered before 2026-10-03): the initial one.
-  const apply = (value: string) => {
-    const [id, , color] = ACCENTS.find(([candidate]) => candidate === value)
-      ?? ACCENTS.find(([candidate]) => candidate === initial)!;
-
-    accent = id;
-
-    if (color === '') {
-      root.style.removeProperty('--app-accent-color');
-    } else {
-      root.style.setProperty('--app-accent-color', color);
-    }
-
-    // Into the cockpit's theme (its other values kept): once the element is defined, so the first apply (from the config,
-    // before) does not replace the config's theme.
-    void customElements.whenDefined(selector).then(() => {
-      document.querySelectorAll<CockpitElement>(selector).forEach((element) => {
-        const { accentColor: _, ...rest } = element.theme;
-        element.theme = color === '' ? rest : { ...rest, accentColor: color };
-      });
-    });
-  };
+  root.style.setProperty('--app-accent-color', color);
 
   try {
-    apply(localStorage.getItem('demo-page:accent') ?? initial);
+    localStorage.setItem('demo-page:accent', id);
   } catch {
-    apply(initial);
+    // Not remembered.
   }
 
-  return {
-    id: 'accent',
-    label: 'Accent color',
-    icon: svg(
-      '<path d="M12 21a9 9 0 0 1 0 -18c4.97 0 9 3.582 9 8c0 1.06 -.474 2.078 -1.318 2.828c-.844 .75 -1.989 1.172 -3.182 1.172h-2.5a2 2 0 0 0 -1 3.75a1.3 1.3 0 0 1 -1 2.25"/><path d="M8.5 10.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M12.5 7.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M16.5 10.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/>',
-    ),
-    choices: {
-      options: ACCENTS.map(([value, label]) => ({ value, label })),
-      value: () => accent,
-      onChange: (value) => {
-        apply(value);
+  // Into the cockpit's theme (its other values kept): once the element is defined, so the first apply (from the config,
+  // before) does not replace the config's theme.
+  void customElements.whenDefined(selector).then(() => {
+    document.querySelectorAll<CockpitElement>(selector).forEach((element) => {
+      element.theme = { ...element.theme, accentColor: color };
+    });
+  });
 
-        try {
-          localStorage.setItem('demo-page:accent', accent);
-        } catch {
-          // Not remembered.
-        }
-      },
-    },
-  };
+  return id;
+}
+
+// The accents for `createThemeMenu()` (the package's demo): those of the menu above.
+const THEME_ACCENTS: readonly ThemeMenuAccent[] = Object.freeze(
+  ACCENTS.map(([id, label, color]) => ({ id, label, color })),
+);
+
+// The theme menu's choice, kept per browser by the demo pages (the package remembers nothing): read back as the menu's
+// `initial` (an accent no longer offered dropped, so the page's own initial one counts), saved in its `onChange`.
+function storedTheme(): Partial<ThemeMenuValue> {
+  try {
+    const value = JSON.parse(localStorage.getItem('demo-page:theme') ?? '{}') as Partial<ThemeMenuValue>;
+    const { accent, ...rest } = value;
+
+    return THEME_ACCENTS.some((each) => each.id === accent) ? value : rest;
+  } catch {
+    return {};
+  }
+}
+
+function storeTheme(value: ThemeMenuValue): void {
+  try {
+    localStorage.setItem('demo-page:theme', JSON.stringify(value));
+  } catch {
+    // Not kept.
+  }
+}
+
+// The page's language, remembered per browser (the kebab menu's "Language").
+function restoreLanguage(): void {
+  try {
+    document.documentElement.lang = localStorage.getItem('demo-page:language') ?? 'en-US';
+  } catch {
+    document.documentElement.lang = 'en-US';
+  }
 }
 
 // The cockpit's navigation (2026-10-03, one button for two settings): which navigation (the attribute `nav`: `side`,
@@ -180,12 +146,19 @@ const DENSITIES: { value: NavDensity; label: string }[] = [
 // Off) in the menu (2026-10-08, the root page: on); without it, no section, and the attribute is left alone.
 function navigationSetting(
   selector = 'app-cockpit',
-  { scheme: defaultScheme = 'page', nav: defaultNav = 'auto', startPage: defaultStartPage }: {
+  {
+    scheme: defaultScheme = 'page',
+    nav: defaultNav = 'auto',
+    startPage: defaultStartPage,
+    density: withDensity = true,
+  }: {
     scheme?: NavScheme;
     nav?: NavLayout;
     startPage?: boolean;
+    // The section "Density" (the package's demo: in its theme menu instead).
+    density?: boolean;
   } = {},
-): FooterAction {
+): CockpitAction {
   const cockpitElement = () => document.querySelector<CockpitElement>(selector);
   const stored = (key: string) => {
     try {
@@ -262,15 +235,17 @@ function navigationSetting(
           }),
         ),
       },
-      {
-        label: 'Density',
-        items: DENSITIES.map(({ value, label }) => ({
-          id: `density:${value}`,
-          label,
-          checked: () => currentDensity() === value,
-          onSelect: () => set('density', 'density', value),
-        })),
-      },
+      ...(withDensity
+        ? [{
+          label: 'Density',
+          items: DENSITIES.map(({ value, label }) => ({
+            id: `density:${value}`,
+            label,
+            checked: () => currentDensity() === value,
+            onSelect: () => set('density', 'density', value),
+          })),
+        }]
+        : []),
       ...(defaultStartPage === undefined ? [] : [{
         label: 'Start page',
         items: [{ value: true, label: 'On' }, { value: false, label: 'Off' }].map(({ value, label }) => ({
@@ -285,7 +260,7 @@ function navigationSetting(
 }
 
 // A made-up menu (the kebab menu of the footer): its items only log.
-// The page's language (`<html lang>`, set by `pageSettings()`), a section of the kebab menu (2026-10-03; an action of
+// The page's language (`<html lang>`, restored by `restoreLanguage()`), a section of the kebab menu (2026-10-03; an action of
 // the footer before): the current one checked.
 const LANGUAGES = [{ value: 'en-US', label: 'English' }, { value: 'de-DE', label: 'Deutsch' }];
 
@@ -346,7 +321,7 @@ async function resetDemo(): Promise<void> {
   location.reload();
 }
 
-const MENU: CockpitFooter['menu'] = [
+const MENU: readonly MenuSection[] = [
   [
     {
       id: 'shortcuts',
@@ -375,7 +350,7 @@ const MENU: CockpitFooter['menu'] = [
 const USER: SignedInUser = { name: 'Jane Doe', detail: 'jane.doe@acme.example' };
 
 // `signOut`: what "Sign out" does (the root page shows its login screen; else it only logs).
-const userMenu = (signOut: () => void = log('Sign out')): CockpitClassConfig['userMenu'] => [
+const userMenu = (signOut: () => void = log('Sign out')): readonly MenuSection[] => [
   [{
     id: 'profile',
     label: 'Profile',

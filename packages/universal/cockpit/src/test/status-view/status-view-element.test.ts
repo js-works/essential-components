@@ -77,11 +77,11 @@ describe('the status view', () => {
     expect(part(view, '.status-icon')?.hidden).toBe(false);
   });
 
-  it('the layout screen: a card, the brand with app-title, the heading a h2', async () => {
+  it('the layout screen: a card, the brand with headline, the heading a h2', async () => {
     const view = await mount('', (each) => {
       each.layout = 'screen';
       each.kind = 'not-found';
-      each.appTitle = 'Back Office';
+      each.headline = 'Back Office';
     });
 
     expect(view.getAttribute('layout')).toBe('screen');

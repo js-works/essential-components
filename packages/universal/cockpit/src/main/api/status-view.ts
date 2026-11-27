@@ -29,7 +29,7 @@ type StatusViewKind =
 type StatusViewLayout = 'inline' | 'screen';
 
 // Why there is nothing (else) to show: an empty list, no results, a page that does not exist, no access, an expired
-// session, maintenance, an error. Every part is shown only when given: the brand (with `app-title`), the icon (the
+// session, maintenance, an error. Every part is shown only when given: the brand (with `headline`), the icon (the
 // kind's or the slot's), the heading and the message (the kind's or the host's), the host's extras, the button, the
 // footer, the hint. The element adds no children of its own.
 //
@@ -43,10 +43,10 @@ type StatusViewElement = HTMLElement & {
   // invalid value a `RangeError`.
   layout: StatusViewLayout;
   kind: StatusViewKind;
-  // The attribute `app-title` (not `title`: the browser would show it as a tooltip): the brand, with `subtitle` and the
+  // The attribute `headline` (not `title`: the browser would show it as a tooltip): the brand, with `subheadline` and the
   // logo; none when empty.
-  appTitle: string;
-  subtitle: string;
+  headline: string;
+  subheadline: string;
   // In place of the kind's heading and message (the kind's when empty).
   heading: string;
   message: string;

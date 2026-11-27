@@ -17,8 +17,8 @@ type StatusViewComponentConfig = Omit<StatusViewClassConfig, 'i18n'> & CockpitCo
 type StatusViewProps = CockpitCommonProps<StatusViewElement> & {
   layout?: StatusViewLayout;
   kind?: StatusViewKind;
-  appTitle?: string;
-  subtitle?: string;
+  headline?: string;
+  subheadline?: string;
   heading?: string;
   message?: string;
   actionLabel?: string;

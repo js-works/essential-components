@@ -2,11 +2,27 @@
 import './ui/ui.css';
 import './demo.css';
 
-import type { FooterAction } from '../main/index.js';
-import { createAppHeaderClass, createCockpitClass, createSystemBannerClass } from '../main/index.js';
+import type { CockpitAction, CockpitElement } from '../main/index.js';
+import {
+  createAppHeaderClass,
+  createCockpitClass,
+  createSystemBannerClass,
+  createThemeMenu,
+  routeByHash,
+} from '../main/index.js';
 import { FEW, GROUPS, MANY, SOME } from './apps.js';
 import { DEMO_APP_HEADER_TAG, DemoApp } from './demo-app.js';
-import { accentSetting, MENU, navigationSetting, pageSettings, USER, userMenu } from './footer.js';
+import {
+  applyAccent,
+  MENU,
+  navigationSetting,
+  restoreLanguage,
+  storedTheme,
+  storeTheme,
+  THEME_ACCENTS,
+  USER,
+  userMenu,
+} from './footer.js';
 import { DEMO_I18N } from './i18n.js';
 import { loginDemo } from './login.js';
 
@@ -24,7 +40,7 @@ const { signOut, restore } = loginDemo({
   storageKey: 'cockpit-demo:signed-in',
 });
 
-const appsAction: FooterAction = {
+const appsAction: CockpitAction = {
   id: 'apps',
   label: 'Apps',
   icon:
@@ -41,35 +57,52 @@ const appsAction: FooterAction = {
   },
 };
 
+restoreLanguage();
+
 customElements.define(DEMO_APP_HEADER_TAG, createAppHeaderClass({ i18n: DEMO_I18N }));
 customElements.define('demo-app', DemoApp);
 customElements.define('app-system-banner', createSystemBannerClass({ i18n: DEMO_I18N }));
-customElements.define(
-  'app-cockpit',
-  createCockpitClass({
-    i18n: DEMO_I18N,
-    title: set === 'few' ? 'My Office' : 'Acme Office',
-    subtitle: set === 'few' ? 'Team workspace' : 'Acme Corporation · Headquarters',
+customElements.define('app-cockpit', createCockpitClass({ i18n: DEMO_I18N }));
+
+const cockpitElement = document.querySelector<CockpitElement>('app-cockpit')!;
+
+// The look in one menu (`createThemeMenu`): the page's color scheme, the accent (the page's and the cockpit's), the
+// cockpit's density; kept per browser by the page (`storedTheme()`).
+const themeMenu = createThemeMenu({
+  accents: THEME_ACCENTS,
+  densities: true,
+  initial: { accent: 'violet', ...storedTheme() },
+  i18n: DEMO_I18N,
+  onChange: (value) => {
+    const { scheme, accent, density } = value;
+
+    storeTheme(value);
+    document.documentElement.dataset['scheme'] = scheme;
+    applyAccent(accent);
+    cockpitElement.density = density;
+  },
+});
+
+// The cockpit's data and parts: properties of the element.
+Object.assign(
+  cockpitElement,
+  {
+    headline: set === 'few' ? 'My Office' : 'Acme Office',
+    subheadline: set === 'few' ? 'Team workspace' : 'Acme Corporation · Headquarters',
     items: SETS[set],
-    // The 100 apps: icons for their groups.
-    ...(set === 'many' ? { groups: GROUPS } : {}),
-    // The 100 apps: one group at a time (a select on top of the list).
+    // The 100 apps: icons for their groups, one group at a time (a select on top of the list).
+    groups: set === 'many' ? GROUPS : [],
     groupDisplay: set === 'many' ? 'select' : 'sections',
-    // The open apps below the open one (2026-10-07).
+    // The open apps below the open one.
     taskbar: true,
-    footer: {
-      actions: [
-        appsAction,
-        navigationSetting(),
-        accentSetting(),
-        ...pageSettings({ schemes: ['system', 'light', 'dark'], scheme: 'system' }),
-      ],
-      menu: MENU,
-    },
+    actions: [appsAction, navigationSetting('app-cockpit', { density: false }), themeMenu.action],
+    menu: MENU,
     user: USER,
     userMenu: userMenu(() => void signOut()),
-    storageKey: `cockpit-demo-${set}`,
-  }),
+  } satisfies Partial<CockpitElement>,
 );
+
+// The open app in the URL's hash (the cockpit itself never touches the URL).
+routeByHash(cockpitElement);
 
 restore();

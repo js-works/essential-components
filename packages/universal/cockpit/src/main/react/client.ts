@@ -1,3 +1,4 @@
+import { createAppearancePickerClass } from '../appearance-picker/create-appearance-picker-class.js';
 import { I18nController, setElementI18nAdapter } from '../core/i18n-controller.js';
 import { createAppHeaderClass } from '../element/create-app-header-class.js';
 import { createCockpitClass } from '../element/create-cockpit-class.js';
@@ -9,6 +10,7 @@ import { createSystemBannerClass } from '../system-banner/create-system-banner-c
 // The part of the elements that needs the DOM (Lit). The React wrappers load it with `import()` on the first mount on
 // the client, so importing them on the server never touches `HTMLElement`.
 export {
+  createAppearancePickerClass,
   createAppHeaderClass,
   createCockpitClass,
   createLoginClass,

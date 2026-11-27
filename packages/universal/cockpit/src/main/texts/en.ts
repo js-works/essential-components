@@ -65,4 +65,21 @@ const EN = {
   statusViewErrorMessage: () => 'An unexpected error occurred. Please try again.',
   // The system banner's close button.
   systemBannerDismiss: () => 'Dismiss',
+  // The appearance picker's.
+  appearancePickerScheme: () => 'Color scheme',
+  appearancePickerLight: () => 'Light',
+  appearancePickerSystem: () => 'System',
+  appearancePickerDark: () => 'Dark',
+  appearancePickerAccent: () => 'Accent color',
+  // The theme menu's (`createThemeMenu`).
+  themeMenu: () => 'Appearance',
+  themeMenuScheme: () => 'Color scheme',
+  themeMenuLight: () => 'Light',
+  themeMenuSystem: () => 'System',
+  themeMenuDark: () => 'Dark',
+  themeMenuAccent: () => 'Accent color',
+  themeMenuDensity: () => 'Density',
+  themeMenuCompact: () => 'Compact',
+  themeMenuNormal: () => 'Normal',
+  themeMenuComfortable: () => 'Comfortable',
 };

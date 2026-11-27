@@ -1,4 +1,5 @@
 import { MENU_PLACEMENT_STYLES } from '../element/placement-styles.js';
+import { overlayScrollbarStyles } from '../element/scrollbar-styles.js';
 import type { CockpitTheme } from '../index.js';
 import { accentOf, DEFAULT_COCKPIT_THEME } from '../themes/default-cockpit-theme.js';
 
@@ -84,7 +85,11 @@ button {
   padding-inline: 12px;
   overflow-y: auto;
   overscroll-behavior: none;
-  scrollbar-width: thin;
+
+  /* Inside the cockpit: no scroll area (its sidebar scrolls). */
+  &[data-embedded] {
+    overflow: visible;
+  }
 }
 
 :focus-visible {
@@ -283,6 +288,28 @@ button {
   text-align: center;
 }
 
+/* The items of a group or a folder, sliding open and closed: a grid row from \`0fr\` to \`1fr\`, the items fading in.
+   The inner box cuts them off while it slides, reaching 12px out on both sides, so the active item's mark at the
+   left edge and the focus rings stay whole. */
+.collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 180ms ${v.ease}, opacity 180ms ${v.ease};
+
+  &[data-open] {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+}
+
+.collapse-inner {
+  min-height: 0;
+  margin-inline: -12px;
+  padding-inline: 12px;
+  overflow: hidden;
+}
+
 /* A folder: its items indented along a guide line. */
 .subgroup-trigger {
   display: flex;
@@ -325,6 +352,9 @@ button {
     left: -7px;
   }
 }
+
+/* Its scrollbar like an overlay scrollbar: only over the list, wider on the pointer (\`overlayScrollbarStyles\`). */
+${overlayScrollbarStyles('.scroll', v.divider)}
 
 /* The group select (\`group-display="select"\`), fixed above the list: the chosen group and its count; 12px below
    it. */
@@ -531,7 +561,8 @@ ${MENU_PLACEMENT_STYLES}
 
 @media (prefers-reduced-motion: reduce) {
   .item,
-  .chevron {
+  .chevron,
+  .collapse {
     transition: none;
   }
 }

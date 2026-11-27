@@ -2,6 +2,7 @@ import type { CockpitTheme } from '../index.js';
 import { accentOf, DEFAULT_COCKPIT_THEME, withoutUndefined } from '../themes/default-cockpit-theme.js';
 import { TIP_ANCHOR } from './anchors.js';
 import { MENU_PLACEMENT_STYLES } from './placement-styles.js';
+import { overlayScrollbarStyles } from './scrollbar-styles.js';
 
 export { layoutStyles, styles, themeValues };
 
@@ -335,9 +336,10 @@ button {
   /* No bounce at its ends (Firefox's elastic overscroll), and the page does not scroll on (2026-10-08; "contain"
      before, which kept the bounce). The same for every scroll area of the cockpit. */
   overscroll-behavior: none;
-  scrollbar-width: thin;
-  scrollbar-color: ${v.divider} transparent;
 }
+
+/* Its scrollbar like an overlay scrollbar: only over the sidebar, wider on the pointer (\`overlayScrollbarStyles\`). */
+${overlayScrollbarStyles('.nav', v.divider)}
 
 .list {
   display: flex;
@@ -1040,6 +1042,11 @@ ${MENU_PLACEMENT_STYLES}
 }
 
 /* The check of a choice: only on the chosen one (the space stays, so the labels stay aligned). */
+/* A radio item's icon after its check: a bit closer to it than to the label. */
+.menu-check + .menu-icon {
+  margin-inline-start: -4px;
+}
+
 .menu-check {
   color: ${v.accent};
 

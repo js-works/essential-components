@@ -11,15 +11,15 @@ import type { LoginClassConfig, LoginElement, LoginProvider } from '../index.js'
 export { LoginElementBase };
 
 // The login screen, a Lit element (see `LoginElement`): the layout and its buttons. The screen fills the
-// element (at least the window's height); on it a card with the logo, the app's title and subtitle, the view's heading,
+// element (at least the window's height); on it a card with the logo, the app's title and subheadline, the view's heading,
 // the host's content, the submit button, the providers and the footer; the hint below the card. The host owns its
 // content (its forms, their logic): the element never adds children of its own, so the host's inputs are in the light
 // DOM, where password managers and autofill find them. The buttons are the element's, in its shadow root: the submit
 // button (it submits the host's form) and the providers'.
 class LoginElementBase extends LitElement implements LoginElement {
   static override properties = {
-    appTitle: { attribute: 'app-title' },
-    subtitle: {},
+    headline: {},
+    subheadline: {},
     heading: {},
     submitLabel: { attribute: 'submit-label' },
     submitting: { type: Boolean, reflect: true },
@@ -27,8 +27,8 @@ class LoginElementBase extends LitElement implements LoginElement {
     signInWith: { attribute: false },
   };
 
-  declare appTitle: string;
-  declare subtitle: string;
+  declare headline: string;
+  declare subheadline: string;
   declare heading: string;
   declare submitLabel: string;
   declare submitting: boolean;
@@ -47,8 +47,8 @@ class LoginElementBase extends LitElement implements LoginElement {
 
   constructor(config: LoginClassConfig, sheet: CSSStyleSheet) {
     super();
-    this.appTitle = '';
-    this.subtitle = '';
+    this.headline = '';
+    this.subheadline = '';
     this.heading = '';
     this.submitLabel = '';
     this.submitting = false;
@@ -161,8 +161,8 @@ class LoginElementBase extends LitElement implements LoginElement {
             <div class="brand">
               <span class="logo" aria-hidden="true"><slot name="logo">${gridIcon()}</slot></span>
               <div>
-                <h1 class="title">${this.appTitle}</h1>
-                ${this.subtitle === '' ? nothing : html`<p class="subtitle">${this.subtitle}</p>`}
+                <h1 class="title">${this.headline}</h1>
+                ${this.subheadline === '' ? nothing : html`<p class="subtitle">${this.subheadline}</p>`}
               </div>
             </div>
             ${this.heading === '' ? nothing : html`<h2 class="heading">${this.heading}</h2>`}

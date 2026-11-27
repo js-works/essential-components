@@ -11,18 +11,19 @@ import { groupsOf, subgroupsOf } from '../core/groups.js';
 import { I18nController, setElementI18nAdapter } from '../core/i18n-controller.js';
 import type { Match } from '../core/search.js';
 import { search } from '../core/search.js';
-import { readStored, writeStored } from '../core/storage.js';
 import type { Texts } from '../core/texts.js';
 import { textsOf } from '../core/texts.js';
 import type {
   ActionChoices,
+  CockpitAction,
   CockpitClassConfig,
   CockpitElement,
+  CockpitNavigateDetail,
   CockpitTheme,
-  FooterAction,
   MenuItem,
   MenuSection,
   NavDensity,
+  NavGroup,
   NavItem,
   NavLayout,
   NavScheme,
@@ -31,6 +32,8 @@ import type {
   NavTreeNavigateDetail,
   SignedInUser,
 } from '../index.js';
+import type { NavTreeChoices } from '../nav-tree/nav-tree-element-base.js';
+import { embedNavTree } from '../nav-tree/nav-tree-element-base.js';
 import { navTreeTagFor } from '../nav-tree/nav-tree-tag.js';
 import { addAnchorName, removeAnchorName, TIP_ANCHOR } from './anchors.js';
 import {
@@ -78,8 +81,9 @@ const MANY = 30;
 const SIDEBAR_ICON_COLOR = 'light-dark(#1f2328, #fff)';
 // Narrower than this (the cockpit's own width), the sidebar is always a rail.
 const NARROW = 768;
-// How many items "Recent" keeps.
+// How many items "Recent" shows by default (`recentCount`), and how many it remembers.
 const RECENT = 5;
+const RECENT_STORED = 20;
 // The sidebar's width when resized: between these, in px.
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 420;
@@ -115,6 +119,21 @@ let instances = 0;
 //   Its element gets `data-hash-segment` (its id), so tabs inside it know their level.
 class CockpitElementBase extends LitElement implements CockpitElement {
   static override properties = {
+    headline: {},
+    subheadline: {},
+    items: { attribute: false },
+    groups: { attribute: false },
+    groupDisplay: { attribute: 'group-display' },
+    actions: { attribute: false },
+    menu: { attribute: false },
+    user: { attribute: false },
+    userMenu: { attribute: false },
+    defaultItem: { attribute: 'default-item' },
+    search: {},
+    collapsibleGroups: { attribute: 'collapsible-groups' },
+    recentCount: { attribute: 'recent-count', type: Number },
+    taskbar: { type: Boolean, reflect: true },
+    active: {},
     nav: { reflect: true },
     navScheme: { attribute: 'nav-scheme', reflect: true },
     density: { reflect: true },
@@ -122,6 +141,23 @@ class CockpitElementBase extends LitElement implements CockpitElement {
     theme: { attribute: false },
   };
 
+  // The data and the parts of the cockpit (see `CockpitElement`), all switchable live.
+  declare headline: string;
+  declare subheadline: string;
+  declare items: readonly NavItem[];
+  declare groups: readonly NavGroup[];
+  declare groupDisplay: 'sections' | 'select';
+  declare actions: readonly CockpitAction[];
+  declare menu: readonly MenuSection[];
+  declare user: SignedInUser | null;
+  declare userMenu: readonly MenuSection[];
+  declare defaultItem: string;
+  declare search: 'auto' | 'always' | 'never';
+  declare collapsibleGroups: 'auto' | 'never';
+  declare recentCount: number;
+  declare taskbar: boolean;
+  // The attribute `active`: the open item's id (see `CockpitElement`).
+  declare active: string;
   // The attribute `nav`: `side` (the default), `top` (one line, two-pane menus), `top-switcher` (one line,
   // one dropdown with the open item), `bottom` (a bar at the bottom) or `auto` (the sidebar, the bottom bar when
   // narrow). An unknown value is the sidebar.
@@ -131,8 +167,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   // The attribute `density`: the sidebar's rows and gaps, `compact`, `normal` (the default) or `comfortable` (only CSS:
   // `:host([density])`).
   declare density: NavDensity;
-  // The attribute `start-page` (2026-10-08): a start page while no item is open; its first value the config's
-  // `startPage`, switchable live. Switched off on the start page: `defaultItem`, else the first item, opens.
+  // The attribute `start-page`: a start page while no item is open, switchable live. Switched off on the start page: `defaultItem`, else the first item, opens.
   declare startPage: boolean;
   // The theme (2026-10-10): its first value the config's `theme`, switchable live (a new object). The stylesheet is
   // built from it (`styles()`, `#themeSheet`); the values only known at run time (the resized sidebar, the switcher's
@@ -142,15 +177,17 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   readonly #layoutSheet = new CSSStyleSheet();
   #layoutText = '';
 
-  readonly #config: CockpitClassConfig;
   readonly #id = `cockpit${++instances}`;
   // The menus, by key (`#menu`).
   readonly #menuByKey = new Map<string, Menu>();
   readonly #elements = new Map<string, HTMLElement>();
   readonly #status = new Map<string, Status>();
-  readonly #key: string;
-  // The tag of the taskbar (`taskbar: true`): an internal one of this cockpit class.
-  readonly #taskbarTag: string | undefined;
+  // The tag of the taskbar (`taskbar`): an internal one of this cockpit class, registered on first use.
+  #taskbarTag: string | undefined;
+  // The choices in the nav trees (their open folders), shared by all of them while the cockpit lives.
+  readonly #treeChoices: NavTreeChoices = { open: {}, chosen: undefined };
+  // Whether an item was shown yet: `active` empty is the default item at the start, the start page later.
+  #shownOnce = false;
   // The nav tree's tag (the expanded sidebar's items, the sheet's): internal, once per cockpit class.
   readonly #navTreeTag: string;
   // The nav tree's theme, made from the cockpit's (`#treeTheme`).
@@ -201,40 +238,51 @@ class CockpitElementBase extends LitElement implements CockpitElement {
     this.nav = 'side';
     this.navScheme = 'dark';
     this.density = 'normal';
-    this.startPage = config.startPage === true;
+    this.headline = '';
+    this.subheadline = '';
+    this.items = [];
+    this.groups = [];
+    this.groupDisplay = 'sections';
+    this.actions = [];
+    this.menu = [];
+    this.user = null;
+    this.userMenu = [];
+    this.defaultItem = '';
+    this.search = 'auto';
+    this.collapsibleGroups = 'auto';
+    this.recentCount = RECENT;
+    this.taskbar = false;
+    this.active = '';
+    this.startPage = false;
     this.theme = config.theme ?? {};
-    this.#config = config;
     this.#i18n = new I18nController(this, config.i18n);
-    this.#key = config.storageKey ?? 'cockpit';
-    this.#recent = readStored<string[]>(`${this.#key}:recent`, []);
-    this.#collapsed = readStored(`${this.#key}:collapsed`, false);
-    this.#width = readStored<number | undefined>(`${this.#key}:width`, undefined);
-    this.#navTreeTag = navTreeTagFor(this.constructor, {
-      storageKey: this.#key,
-      ...(config.i18n === undefined ? {} : { i18n: config.i18n }),
-    });
-
-    // The taskbar's tag: internal, registered once per cockpit class (see `taskbarTagFor`).
-    if (config.taskbar === true) {
-      this.#taskbarTag = taskbarTagFor(this.constructor);
-    }
+    this.#recent = [];
+    this.#collapsed = false;
+    this.#navTreeTag = navTreeTagFor(this.constructor, config.i18n === undefined ? {} : { i18n: config.i18n });
   }
 
   get activeItem(): NavItem | undefined {
     return this.#itemOf(this.#active);
   }
 
-  // Opens an item (from the navigation, the search, or the host's code).
+  // Opens an item (from the navigation, the search, or the host's code): `navigate`, then (not canceled) `active`.
   open(id: string): void {
-    if (this.#itemOf(id) === undefined) {
-      return;
+    if (this.#itemOf(id) !== undefined) {
+      this.#navigate(id);
+    }
+  }
+
+  // The user (or `open()`) asks for an item (`''`: the start page): a cancelable `navigate`; not canceled, the cockpit
+  // opens it itself (`active`). A router cancels it and sets `active` once it has navigated.
+  #navigate(id: string): boolean {
+    const detail: CockpitNavigateDetail = { id };
+    const go = this.dispatchEvent(new CustomEvent('navigate', { detail, bubbles: true, cancelable: true }));
+
+    if (go) {
+      this.active = id;
     }
 
-    if (this.#segment() !== id) {
-      history.pushState(null, '', `${location.pathname}${location.search}#${id}`);
-    }
-
-    this.#show(id);
+    return go;
   }
 
   // Closes an open item: its element is removed (its state is lost). The open one: the one used before it is shown. The
@@ -251,7 +299,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
     this.#status.delete(id);
 
     if (this.#active === id && this.#used[0] !== undefined) {
-      this.open(this.#used[0]);
+      this.#navigate(this.#used[0]);
     } else if (this.#active === id) {
       this.#openStartPage();
     } else {
@@ -259,35 +307,74 @@ class CockpitElementBase extends LitElement implements CockpitElement {
     }
   }
 
-  // The start page (`startPage`): no item open; the hash goes (a history entry, like opening an item). Its filter gets the
+  // The start page (`startPage`): no item open (`navigate` with the id `''`, like opening an item). Its filter gets the
   // focus.
   #openStartPage(): void {
     if (!this.startPage) {
       return;
     }
 
-    if (location.hash !== '') {
-      history.pushState(null, '', `${location.pathname}${location.search}`);
-    }
-
-    this.#show(undefined);
+    this.#navigate('');
     void this.updateComplete.then(() => this.#el('.start-page-search-input')?.focus());
   }
 
   override connectedCallback(): void {
     super.connectedCallback();
-    window.addEventListener('hashchange', this.#onHashChange);
     document.addEventListener('keydown', this.#onShortcut);
     document.addEventListener('pointerdown', this.#onPointerDownOutside, true);
     window.addEventListener('resize', this.#fitDialogs);
     window.addEventListener('scroll', this.#fitDialogs, { capture: true, passive: true });
-    this.#show(this.#itemOf(this.#segment())?.id ?? this.#defaultItem);
+    this.#sync();
+  }
+
+  // Shows what `active` asks for, once there are items: its item; empty or unknown, at the start the default item
+  // (`defaultItem`, else the first, or the start page; `active` then set to it), later the start page (with
+  // `startPage`), else the default item.
+  #sync(): void {
+    if (this.items.length === 0) {
+      return;
+    }
+
+    const asked = this.#itemOf(this.active)?.id;
+    const target = asked ?? (this.#shownOnce && this.startPage ? undefined : this.#defaultItem);
+
+    if (target !== this.#active || !this.#shownOnce) {
+      this.#show(target);
+    }
+
+    if (asked === undefined && target !== undefined && !this.#shownOnce) {
+      this.active = target;
+    }
+
+    this.#shownOnce = true;
+  }
+
+  // New items: the open items no longer there are closed (the open one: the one used before it, else the default, by
+  // `navigate`).
+  #itemsChanged(): void {
+    const gone = this.#used.filter((id) => this.#itemOf(id) === undefined);
+
+    if (gone.length === 0) {
+      return;
+    }
+
+    for (const id of gone) {
+      this.#elements.get(id)?.remove();
+      this.#elements.delete(id);
+      this.#status.delete(id);
+    }
+
+    this.#used = this.#used.filter((id) => !gone.includes(id));
+    this.#opened = this.#opened.filter((id) => !gone.includes(id));
+
+    if (this.#active !== undefined && gone.includes(this.#active)) {
+      this.#navigate(this.#used[0] ?? this.#defaultItem ?? '');
+    }
   }
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.#closed();
-    window.removeEventListener('hashchange', this.#onHashChange);
     document.removeEventListener('keydown', this.#onShortcut);
     document.removeEventListener('pointerdown', this.#onPointerDownOutside, true);
     window.removeEventListener('resize', this.#fitDialogs);
@@ -328,6 +415,14 @@ class CockpitElementBase extends LitElement implements CockpitElement {
 
   // The start page switched off while it is shown (after the start: `connectedCallback` chose already): an item opens.
   protected override willUpdate(changed: PropertyValues<this>): void {
+    if (changed.has('items') && this.isConnected && this.#shownOnce) {
+      this.#itemsChanged();
+    }
+
+    if ((changed.has('items') || changed.has('active')) && this.isConnected) {
+      this.#sync();
+    }
+
     if (changed.has('theme')) {
       this.#themeSheet.replaceSync(styles(this.theme));
     }
@@ -343,15 +438,17 @@ class CockpitElementBase extends LitElement implements CockpitElement {
       const id = this.#defaultItem;
 
       if (id !== undefined) {
-        this.open(id);
+        this.#navigate(id);
       }
     }
   }
 
   protected override updated(): void {
-    // The nav trees take the cockpit's adapter (also one set for this element, e.g. by the React wrapper).
+    // The nav trees take the cockpit's adapter (also one set for this element, e.g. by the React wrapper), and share the
+    // user's choices (the open folders: the sidebar's, the sheet's, "Recent", also a tree made again).
     for (const tree of this.renderRoot.querySelectorAll<HTMLElement>('.nav-tree')) {
       setElementI18nAdapter(tree, this.#i18n.adapter);
+      embedNavTree(tree, this.#treeChoices);
     }
 
     this.#syncDialog(
@@ -466,28 +563,14 @@ class CockpitElementBase extends LitElement implements CockpitElement {
 
   // --- Apps and routing ----------------------------------------------------------------------------------------------
 
-  readonly #onHashChange = () => {
-    const item = this.#itemOf(this.#segment());
-
-    if (item !== undefined) {
-      this.#show(item.id);
-    } else if (location.hash === '') {
-      this.#show(this.#defaultItem);
-    }
-  };
-
-  #segment(): string {
-    return decodeURIComponent(location.hash.slice(1).split('/')[0] ?? '');
-  }
-
-  // The item opened without a hash: the config's `defaultItem`, else the first item; with a start page (`startPage`), that.
+  // The default item (`active` empty at the start): `defaultItem`, else the first item; with a start page, that.
   get #defaultItem(): string | undefined {
-    return this.#itemOf(this.#config.defaultItem)?.id
+    return this.#itemOf(this.defaultItem)?.id
       ?? (this.startPage ? undefined : this.#shownItems[0]?.id);
   }
 
   #itemOf(id: string | undefined): NavItem | undefined {
-    return id === undefined ? undefined : this.#config.items.find((item) => item.id === id);
+    return id === undefined ? undefined : this.items.find((item) => item.id === id);
   }
 
   // Shows an item; none (an unknown id), with a start page (`startPage`): that.
@@ -516,8 +599,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
     // An item chosen in the bottom bar's sheet closes it, one chosen in a two-pane menu that.
     this.#sheetOpen = false;
     this.#panelOpen = undefined;
-    this.#recent = [item.id, ...this.#recent.filter((other) => other !== item.id)].slice(0, RECENT);
-    writeStored(`${this.#key}:recent`, this.#recent);
+    this.#recent = [item.id, ...this.#recent.filter((other) => other !== item.id)].slice(0, RECENT_STORED);
     this.#used = [item.id, ...this.#used.filter((other) => other !== item.id)];
 
     if (!this.#opened.includes(item.id)) {
@@ -582,17 +664,17 @@ class CockpitElementBase extends LitElement implements CockpitElement {
 
   // The items of the navigation, the search and the start page: all but the hidden ones (`placement`).
   get #shownItems(): readonly NavItem[] {
-    return this.#config.items.filter((item) => item.placement !== 'hidden');
+    return this.items.filter((item) => item.placement !== 'hidden');
   }
 
   // The pinned items (`placement: 'pinned'`): entries of their own, first.
   get #pinnedItems(): readonly NavItem[] {
-    return this.#config.items.filter((item) => item.placement === 'pinned');
+    return this.items.filter((item) => item.placement === 'pinned');
   }
 
   // The items neither hidden nor pinned themselves (the start page's folders).
   get #unpinnedItems(): readonly NavItem[] {
-    return this.#config.items.filter((item) => item.placement === undefined);
+    return this.items.filter((item) => item.placement === undefined);
   }
 
   // The items in the groups of the topbar and the rail: neither hidden nor pinned, nor in a pinned folder.
@@ -612,9 +694,9 @@ class CockpitElementBase extends LitElement implements CockpitElement {
     );
   }
 
-  // The search panel: by the config, else with more than `FEW` items; always with the item switcher (it is its list).
+  // The search panel: by `search` (`auto`: with more than `FEW` items); always with the item switcher (it is its list).
   get #searchable(): boolean {
-    return this.#switcher || (this.#config.search ?? this.#many);
+    return this.#switcher || this.search === 'always' || (this.search === 'auto' && this.#many);
   }
 
   // The item switcher (`nav="top-switcher"`): one dropdown with the open item in the top line; it opens the search
@@ -645,12 +727,13 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   }
 
   get #recentItems(): NavItem[] {
-    return this.#recent.flatMap((id) => this.#itemOf(id) ?? []).filter((item) => item.placement !== 'hidden');
+    return this.#recent.flatMap((id) => this.#itemOf(id) ?? []).filter((item) => item.placement !== 'hidden')
+      .slice(0, Math.max(0, this.recentCount));
   }
 
   // A subgroup's extra data in the config's `groups` (its icon, its placement).
   #subgroupOf(group: string, subgroup: string): NavSubgroup | undefined {
-    return this.#config.groups?.find((candidate) => candidate.name === group)?.subgroups?.find((candidate) =>
+    return this.groups.find((candidate) => candidate.name === group)?.subgroups?.find((candidate) =>
       candidate.name === subgroup
     );
   }
@@ -665,7 +748,6 @@ class CockpitElementBase extends LitElement implements CockpitElement {
 
   #toggleCollapsed = () => {
     this.#collapsed = !this.#collapsed;
-    writeStored(`${this.#key}:collapsed`, this.#collapsed);
     this.requestUpdate();
   };
 
@@ -863,7 +945,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
         : nothing
     }
           </main>
-          ${this.#config.taskbar === true && !bottom ? this.#taskbar() : nothing}
+          ${this.taskbar && !bottom ? this.#taskbar() : nothing}
           ${bottom ? this.#bottomBar(texts) : nothing}
         </div>
         ${bottom ? this.#sheet(texts) : nothing}
@@ -880,7 +962,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   // The taskbar below the open item (`taskbar: true`, 2026-10-07): the open items in the order they were opened; the
   // last one cannot be closed, except with a start page (`startPage`). None open: no taskbar.
   #taskbar(): TemplateResult | typeof nothing {
-    if (this.#opened.length === 0 || this.#taskbarTag === undefined) {
+    if (this.#opened.length === 0) {
       return nothing;
     }
 
@@ -893,7 +975,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
         : [{ id: item.id, title: item.title, ...(item.icon === undefined ? {} : { icon: item.icon }), closable }];
     });
 
-    const tag = unsafeStatic(this.#taskbarTag);
+    const tag = unsafeStatic(this.#taskbarTag ??= taskbarTagFor(this.constructor));
 
     return staticHtml`<${tag}
       class="taskbar"
@@ -941,7 +1023,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
             </div>
             ${this.#searchable && rail ? this.#searchButton(texts, rail) : nothing} ${this.#navigation(texts, rail)}
             <div class="sidebar-end"><slot name="sidebar-end"></slot></div>
-            ${this.#config.user === undefined ? nothing : this.#userRow(texts, rail, this.#config.user)}
+            ${this.user === null ? nothing : this.#userRow(texts, rail, this.user)}
             ${this.#footer(texts, rail)}
           </aside>`;
   }
@@ -986,10 +1068,8 @@ class CockpitElementBase extends LitElement implements CockpitElement {
     return html`<section class="start-page" aria-label=${texts.startPage}>
       <div class="start-page-inner">
         <header class="start-page-header">
-          <h1 class="start-page-title">${this.#config.title ?? texts.navigation}</h1>
-          ${
-      this.#config.subtitle === undefined ? nothing : html`<p class="start-page-subtitle">${this.#config.subtitle}</p>`
-    }
+          <h1 class="start-page-title">${this.headline || texts.navigation}</h1>
+          ${this.subheadline === '' ? nothing : html`<p class="start-page-subtitle">${this.subheadline}</p>`}
           ${
       this.#searchable
         ? html`<div class="start-page-search">
@@ -1041,7 +1121,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
                 ${itemIcon(item, 'framed')}
                 <span class="start-page-card-text">
                   <span class="start-page-card-title">${item.title}${
-              this.#config.taskbar === true && this.#opened.includes(item.id)
+              this.taskbar && this.#opened.includes(item.id)
                 ? html`<span class="running-dot" aria-hidden="true"></span>`
                 : nothing
             }</span>
@@ -1091,7 +1171,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   // with a bar below it: "Apps" (a sheet with the whole sidebar: the navigation, the user, the footer), the three items
   // used last (in the order of the config, so they do not move with every switch; the open one marked), and the search.
   #bottomBar(texts: Texts): TemplateResult {
-    const order = (item: NavItem) => this.#config.items.indexOf(item);
+    const order = (item: NavItem) => this.items.indexOf(item);
     const items = this.#recentItems.slice(0, 3).sort((a, b) => order(a) - order(b));
 
     return html`<nav class="bottombar" aria-label=${texts.navigation}>
@@ -1170,10 +1250,8 @@ class CockpitElementBase extends LitElement implements CockpitElement {
         >${logo}</button>`
     }
       <span class="brand-text">
-        <span class="brand-title">${this.#config.title ?? texts.navigation}</span>
-        ${
-      this.#config.subtitle === undefined ? nothing : html`<span class="brand-subtitle">${this.#config.subtitle}</span>`
-    }
+        <span class="brand-title">${this.headline || texts.navigation}</span>
+        ${this.subheadline === '' ? nothing : html`<span class="brand-subtitle">${this.subheadline}</span>`}
       </span>`;
   }
 
@@ -1193,13 +1271,8 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   // keyboard; a double click goes back to the default width.
   #resizeHandle(texts: Texts): TemplateResult {
     const current = () => this.#el('.sidebar')?.getBoundingClientRect().width ?? MIN_WIDTH;
-    const set = (width: number | undefined, done: boolean) => {
+    const set = (width: number | undefined, _done: boolean) => {
       this.#width = width;
-
-      if (done) {
-        writeStored(`${this.#key}:width`, width);
-      }
-
       this.requestUpdate();
     };
 
@@ -1276,7 +1349,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
           ? [...(target.shadowRoot?.querySelectorAll<HTMLElement>('.item, button') ?? [])]
           : [target]
       )
-      .filter((button) => button.offsetParent !== null);
+      .filter((button) => button.offsetParent !== null && button.closest('[inert]') === null);
     const index = buttons.indexOf(event.composedPath()[0] as HTMLElement);
     const next = ({
       ArrowDown: buttons[index + 1],
@@ -1308,7 +1381,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   // search panel: right after its title (the end of the row is kept for badges); in the rail (`rail`: no titles, the framed
   // initials without an icon) on the corner of its icon. `framed`: the framed initials without an icon (the flyouts).
   #iconAndTitle(item: NavItem, rail: boolean, title: unknown, framed = false): TemplateResult {
-    const dot = this.#config.taskbar === true && this.#opened.includes(item.id)
+    const dot = this.taskbar && this.#opened.includes(item.id)
       ? html`<span class="running-dot" aria-hidden="true"></span>`
       : nothing;
 
@@ -1362,9 +1435,9 @@ class CockpitElementBase extends LitElement implements CockpitElement {
     return staticHtml`<${tag}
       class="nav-tree"
       .items=${treeItems}
-      .groups=${this.#config.groups ?? []}
+      .groups=${this.groups}
       .active=${this.#active ?? ''}
-      .marked=${this.#config.taskbar === true ? this.#opened : []}
+      .marked=${this.taskbar ? this.#opened : []}
       .collapsibleGroups=${collapsibleGroups}
       .density=${this.density}
       .theme=${this.#treeTheme()}
@@ -1442,7 +1515,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
     }
 
     // One group at a time: the select on top, the items of the chosen group below it (without its heading).
-    if (this.#config.groupDisplay === 'select' && groups.length > 1) {
+    if (this.groupDisplay === 'select' && groups.length > 1) {
       const group = groups.find((candidate) => candidate.name === this.#selectedGroup) ?? groups[0];
 
       return html`${this.#groupSelect(texts, groups, group?.name ?? '')}
@@ -1452,13 +1525,13 @@ class CockpitElementBase extends LitElement implements CockpitElement {
     }
 
     // With many items, "Recent" first: a nav tree of its own, its items under one heading (without their folders).
-    const recent = many && this.#config.recent !== false ? this.#recentItems : [];
+    const recent = many ? this.#recentItems : [];
 
     return nav(html`${
       recent.length === 0
         ? nothing
         : this.#navTree(recent.map(({ subgroup: _subgroup, ...item }) => ({ ...item, group: texts.recent })), false)
-    }${this.#navTree(items, many && this.#config.collapsibleGroups !== false)}`);
+    }${this.#navTree(items, many && this.collapsibleGroups !== 'never')}`);
   }
 
   // --- Topbar --------------------------------------------------------------------------------------------------------
@@ -1487,7 +1560,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
         ? []
         : this.#entries(group)),
     ];
-    const user = this.#config.user;
+    const user = this.user;
 
     return html`<header class="topbar" ?data-panes=${panes}>
       <div class="top-line">
@@ -1503,7 +1576,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
         ${this.#searchable && !switcher ? this.#searchButton(texts, false) : nothing} ${
       this.#footer(texts, false, true)
     }
-        ${user === undefined ? nothing : this.#topUser(texts, user)}
+        ${user === null ? nothing : this.#topUser(texts, user)}
       </div>
       ${panes ? this.#panePanel(top, texts) : nothing}
     </header>`;
@@ -1628,7 +1701,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
       aria-current=${ifDefined(item.id === this.#active ? 'page' : undefined)}
       @click=${() => this.open(item.id)}
     >${itemIcon(item)}<span class="panel-text"><span class="panel-title">${item.title}${
-      this.#config.taskbar === true && this.#opened.includes(item.id)
+      this.taskbar && this.#opened.includes(item.id)
         ? html`<span class="running-dot" aria-hidden="true"></span>`
         : nothing
     }</span>${
@@ -1956,7 +2029,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   // The user in the top line: the avatar (the name as the tooltip); with `userMenu` a button that opens it below,
   // with the name and the second line on top.
   #topUser(texts: Texts, user: SignedInUser): TemplateResult {
-    const sections = this.#config.userMenu ?? [];
+    const sections = this.userMenu;
     const avatar = user.avatar === undefined
       ? html`<span class="avatar" aria-hidden="true">${initialsOf(user.name).toUpperCase()}</span>`
       : html`<img class="avatar" src=${user.avatar} alt="" />`;
@@ -2055,8 +2128,8 @@ class CockpitElementBase extends LitElement implements CockpitElement {
     </div>`;
   }
 
-  // The sections of a menu, separated by lines, each with its label. An item with `checked` is a radio option (a check
-  // in place of its icon, on the checked one).
+  // The sections of a menu, separated by lines, each with its label. An item with `checked` is a radio option: the
+  // check (on the checked one) in a column of its own, then its icon (when it has one), then its label.
   #menuItems(menu: Menu, sections: readonly MenuSection[]): TemplateResult[] {
     return sectionsOf(sections).flatMap((section, index) => [
       ...(index > 0 ? [html`<div class="menu-separator" role="separator"></div>`] : []),
@@ -2075,6 +2148,11 @@ class CockpitElementBase extends LitElement implements CockpitElement {
             ?data-checked=${checked}
           >
             <span class="menu-icon menu-check" ?data-checked=${checked}>${checkIcon()}</span>
+            ${
+            item.icon === undefined
+              ? nothing
+              : html`<span class="menu-icon" aria-hidden="true">${unsafeHTML(item.icon)}</span>`
+          }
             <span class="menu-label">${item.label}</span>
           </div>`;
         }
@@ -2228,7 +2306,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   // The signed-in user, above the footer: the avatar, the name and a second line. With a menu (`userMenu`), the row is a
   // button that opens it to the right of the sidebar, touching it; in the rail only the avatar (the name as the tooltip).
   #userRow(texts: Texts, rail: boolean, user: SignedInUser): TemplateResult {
-    const sections = this.#config.userMenu ?? [];
+    const sections = this.userMenu;
     const avatar = user.avatar === undefined
       ? html`<span class="avatar" aria-hidden="true">${initialsOf(user.name).toUpperCase()}</span>`
       : html`<img class="avatar" src=${user.avatar} alt="" />`;
@@ -2284,9 +2362,8 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   // expanded a sheet on top of the footer, as wide as the sidebar; in the rail to the right, touching the sidebar.
   // In the topbar, the same segments (without the toggle) at the right end of the top line, their menus below them.
   #footer(texts: Texts, rail: boolean, topbar = false): TemplateResult {
-    const footer = this.#config.footer ?? {};
-    const actions = footer.actions ?? [];
-    const sections = footer.menu ?? [];
+    const actions = this.actions;
+    const sections = this.menu;
     const side = topbar ? 'bottom' : rail ? 'right' : 'top';
     // Where its menus open: below the top line; to the right of the rail; on top of the footer, as wide as it.
     const where: Pick<MenuOptions, 'placement' | 'anchor' | 'edge' | 'sameWidth'> = topbar
@@ -2314,7 +2391,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
       >${icon}</button>`;
 
     // An action with a menu of sections: like the kebab's menu, at this button.
-    const sectionMenu = (action: FooterAction, sections: readonly MenuSection[]) => {
+    const sectionMenu = (action: CockpitAction, sections: readonly MenuSection[]) => {
       const menu = this.#menu(`action:${action.id}`, {
         ...where,
         onSelect: (value) => this.#select(sections, value),
@@ -2325,7 +2402,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
       }`;
     };
 
-    const choiceMenu = (action: FooterAction, choices: ActionChoices) => {
+    const choiceMenu = (action: CockpitAction, choices: ActionChoices) => {
       const menu = this.#menu(`choice:${action.id}`, {
         ...where,
         onSelect: (value) => {
@@ -2412,7 +2489,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
     </div>`;
   }
 
-  #actionIcon(action: FooterAction): TemplateResult {
+  #actionIcon(action: CockpitAction): TemplateResult {
     return html`<span class="footer-icon" aria-hidden="true">${unsafeHTML(action.icon)}</span>${
       action.badge === true ? html`<span class="footer-badge" aria-hidden="true"></span>` : nothing
     }`;
@@ -2427,7 +2504,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   #palette(texts: Texts): TemplateResult {
     // The pinned items too, in their groups; not the hidden ones.
     const items = this.#shownItems;
-    const recent = this.#config.recent === false ? [] : this.#recentItems;
+    const recent = this.#recentItems;
     const events = this.#dialogEvents('.palette', () => this.#paletteOpen, this.#closePalette);
     const sections: { label: string; matches: readonly Match[] }[] = this.#query.trim() !== ''
       ? [{ label: '', matches: search(items, this.#query) }]

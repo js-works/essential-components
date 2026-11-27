@@ -2,14 +2,17 @@
 import './ui/ui.css';
 import './demo.css';
 
-import type { CockpitFooter, MenuSection } from '@local/cockpit';
-import { createCockpitClass } from '@local/cockpit';
+import type { CockpitElement, MenuSection } from '@local/cockpit';
+import { createCockpitClass, createThemeMenu, routeByHash } from '@local/cockpit';
 
 import {
-  accentSetting,
+  applyAccent,
   MENU,
   navigationSetting,
-  pageSettings,
+  restoreLanguage,
+  storedTheme,
+  storeTheme,
+  THEME_ACCENTS,
   USER,
   userMenu,
 } from '../packages/universal/cockpit/src/demo/footer.js';
@@ -25,6 +28,22 @@ function define(tag: string, element: CustomElementConstructor): void {
     customElements.define(tag, element);
   }
 }
+
+restoreLanguage();
+
+// The look (`createThemeMenu` of the cockpit): the page's color scheme (light by default) and the accent of the page,
+// the cockpit and the apps (indigo by default), kept per browser by the page (`storedTheme()`). No density: the apps
+// (Mantine) have none; the cockpit's own stays in the "Navigation" menu.
+const themeMenu = createThemeMenu({
+  accents: THEME_ACCENTS,
+  initial: { scheme: 'light', accent: 'indigo', ...storedTheme() },
+  i18n: DEMO_I18N,
+  onChange: (value) => {
+    storeTheme(value);
+    document.documentElement.dataset['scheme'] = value.scheme;
+    applyAccent(value.accent, 'indigo');
+  },
+});
 
 // The placeholder of the planned components (one element for all, told apart by its attributes).
 const planned = async () => {
@@ -65,9 +84,7 @@ const prototypesSection: MenuSection = {
 };
 
 // The made-up kebab menu of the cockpit's demo, with the prototypes before its last section ("Reset demo").
-const menu: CockpitFooter['menu'] = MENU === undefined
-  ? [prototypesSection]
-  : [...MENU.slice(0, -1), prototypesSection, ...MENU.slice(-1)];
+const menu: readonly MenuSection[] = [...MENU.slice(0, -1), prototypesSection, ...MENU.slice(-1)];
 
 // Tabler icons (MIT), drawn in `currentColor`. The folders and the five real apps have icons, the demos of the components (Internals) none (2026-10-07).
 const icon = (paths: string) =>
@@ -77,10 +94,21 @@ customElements.define(
   'app-cockpit',
   createCockpitClass({
     i18n: DEMO_I18N,
-    title: 'Back Office',
-    subtitle: 'Acme Corporate',
+    // The base text size of the cockpit, the same as the apps' (`demo/demo.css`).
+    theme: { fontSize: '14px' },
+  }),
+);
+
+// The cockpit's data and parts: properties of the element.
+const cockpitElement = document.querySelector<CockpitElement>('app-cockpit')!;
+
+Object.assign(
+  cockpitElement,
+  {
+    headline: 'Back Office',
+    subheadline: 'Acme Corporate',
     // The search (Ctrl K), although there are only a few apps.
-    search: true,
+    search: 'always',
     // The apps of "Apps" pinned (`placement`, 2026-10-08, the user's wishes; "Administration" too for a few hours):
     // entries of their own, first (the topbar's line, the rail, the start page); in the expanded sidebar and the search
     // still in their folder.
@@ -88,8 +116,8 @@ customElements.define(
     // Manager) and "Administration" (File Center, User Manager; 2026-10-08, the user's wish: one folder "Applications"
     // before), "Internals" with the folders
     // (subgroups, their apps indented along a guide line). The folders "Components" and "Planned" and the five real apps have icons, the folders "Apps" and "Administration" none (2026-10-09, the user's wish).
-    recent: false,
-    collapsibleGroups: false,
+    recentCount: 0,
+    collapsibleGroups: 'never',
     // The open apps below the open one (2026-10-07): switch between them, close them.
     taskbar: true,
     groups: [{
@@ -123,23 +151,17 @@ customElements.define(
     defaultItem: 'human-resources',
     // The start page (2026-10-08, the user's wish): shown when every app is closed, and by the logo. Not
     // `startPage: true` here: the footer's "Navigation" menu sets the attribute `start-page` (on by default), and a
-    // stored "Off" must win over the config (an absent boolean attribute would not).
-    storageKey: 'essential-components',
-    // The base text size of the cockpit, the same as the apps' (`demo/demo.css`).
-    theme: { fontSize: '14px' },
-    // The cockpit's navigation (position and colors), the accent color, the page's color scheme, and a made-up menu
-    // with the page's language, from the cockpit's own demo.
-    footer: {
-      actions: [
-        // The navigation dark by default (2026-10-08, the user's wish; like the page before), the topbar of two lines
-        // by default (2026-10-08, the user's wish; automatic before).
-        // The start page on by default, switchable (2026-10-08, the user's wish).
-        navigationSetting('app-cockpit', { scheme: 'dark', nav: 'top', startPage: true }),
-        accentSetting('indigo'),
-        ...pageSettings({ schemes: ['system', 'light', 'dark'], scheme: 'light' }),
-      ],
-      menu,
-    },
+    // stored "Off" must win.
+    // The cockpit's navigation (position, colors, density), the look (the page's color scheme and accent:
+    // `createThemeMenu`), and a made-up menu with the page's language, from the cockpit's own demo.
+    actions: [
+      // The navigation dark by default (2026-10-08, the user's wish; like the page before), the topbar of two lines
+      // by default (2026-10-08, the user's wish; automatic before).
+      // The start page on by default, switchable (2026-10-08, the user's wish).
+      navigationSetting('app-cockpit', { scheme: 'dark', nav: 'top', startPage: true }),
+      themeMenu.action,
+    ],
+    menu,
     // A made-up signed-in user, with their menu (from the cockpit's own demo).
     user: USER,
     userMenu: userMenu(() => signOut()),
@@ -324,8 +346,12 @@ customElements.define(
         load: planned,
       },
     ],
-  }),
+  } satisfies Partial<CockpitElement>,
 );
+
+// The open app in the URL's hash: its first segment (`#board-manager/boards/b1`), a history entry per app, Back and
+// Forward (the cockpit itself never touches the URL).
+routeByHash(cockpitElement);
 
 // Signing out (the user menu's "Sign out") shows the login screen in place of the cockpit (the cockpit's demo login),
 // with Mantine's forms in it (`login/mantine-login.tsx`).

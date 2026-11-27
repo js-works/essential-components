@@ -10,8 +10,8 @@ type LoginComponentConfig = Omit<LoginClassConfig, 'i18n'> & CockpitComponentI18
 // The element's properties (see `LoginElement`), its slots as nodes (`children`: the default slot, the host's form,
 // rendered straight into the element's light DOM).
 type LoginProps = CockpitCommonProps<LoginElement> & {
-  appTitle?: string;
-  subtitle?: string;
+  headline?: string;
+  subheadline?: string;
   heading?: string;
   submitLabel?: string;
   submitting?: boolean;

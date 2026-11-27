@@ -45,7 +45,7 @@
 }
 
 /* The tree fills the frame's height. */
-.cockpit-demo__tree > [data-tree] {
+.cockpit-demo__tree > * {
   flex: 1 1 auto;
   min-height: 0;
 }
@@ -73,4 +73,45 @@
     flex: 1 1 320px;
     padding: 12px;
   }
+}
+
+/* The appearance picker beside its preview: the preview's color scheme and colors follow it. */
+.cockpit-demo__appearance {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 16px;
+}
+
+.cockpit-demo__appearance-picker {
+  flex: none;
+  padding: 16px;
+}
+
+.cockpit-demo__appearance-preview {
+  display: flex;
+  flex: 1 1 420px;
+  gap: 16px;
+  padding: 12px;
+  background: Canvas;
+  color: CanvasText;
+
+  .cockpit-demo__tree {
+    height: 300px;
+  }
+}
+
+.cockpit-demo__appearance-page h3 {
+  margin: 4px 0 8px;
+}
+
+.cockpit-demo__appearance-button {
+  height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 5px;
+  background: light-dark(#0a5cc2, #78b0ff);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
 }

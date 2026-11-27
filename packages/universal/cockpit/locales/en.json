@@ -52,5 +52,20 @@
   "statusViewEmptyMessage": "Once something is added, it shows up here.",
   "statusViewNoResults": "No results",
   "statusViewNoResultsMessage": "Try other search terms or filters.",
-  "systemBannerDismiss": "Dismiss"
+  "systemBannerDismiss": "Dismiss",
+  "appearancePickerScheme": "Color scheme",
+  "appearancePickerLight": "Light",
+  "appearancePickerSystem": "System",
+  "appearancePickerDark": "Dark",
+  "appearancePickerAccent": "Accent color",
+  "themeMenu": "Appearance",
+  "themeMenuScheme": "Color scheme",
+  "themeMenuLight": "Light",
+  "themeMenuSystem": "System",
+  "themeMenuDark": "Dark",
+  "themeMenuAccent": "Accent color",
+  "themeMenuDensity": "Density",
+  "themeMenuCompact": "Compact",
+  "themeMenuNormal": "Normal",
+  "themeMenuComfortable": "Comfortable"
 }

@@ -1,4 +1,5 @@
 import {
+  createAppearancePickerComponent,
   createAppHeaderComponent,
   createCockpitComponent,
   createLoginComponent,
@@ -10,6 +11,7 @@ import {
 export type * from '../index.js';
 export type * from './api/index.js';
 export {
+  createAppearancePickerComponent,
   createAppHeaderComponent,
   createCockpitComponent,
   createLoginComponent,
