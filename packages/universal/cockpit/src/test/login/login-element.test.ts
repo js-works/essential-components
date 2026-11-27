@@ -155,7 +155,7 @@ describe('the login element', () => {
     login.querySelector('form')!.addEventListener('submit', onSubmit);
     await settle(login);
 
-    const button = shadow(login).querySelector<HTMLButtonElement>('.submit')!;
+    const button = shadow(login).querySelector<HTMLButtonElement>('.primary')!;
 
     expect(button.textContent?.trim()).toBe('Sign in');
     button.click();
@@ -178,13 +178,13 @@ describe('the login element', () => {
   it('the submit button: none without a label; the spinner while submitting', async () => {
     const login = await mount('<form></form>');
 
-    expect(shadow(login).querySelector('.submit')).toBeNull();
+    expect(shadow(login).querySelector('.primary')).toBeNull();
 
     login.submitLabel = 'Register';
     login.submitting = true;
     await login.updateComplete;
 
-    const button = shadow(login).querySelector<HTMLButtonElement>('.submit')!;
+    const button = shadow(login).querySelector<HTMLButtonElement>('.primary')!;
 
     expect(button.getAttribute('aria-busy')).toBe('true');
     expect(button.querySelector('.spinner')).not.toBeNull();

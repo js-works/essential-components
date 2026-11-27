@@ -104,6 +104,8 @@ The rules of this repository on top of them:
     (micro-frontends): only a sidebar with the apps (search, recent, groups; from a few apps up to hundreds); the
     open app fills the rest. Lit in its shadow DOM (its own menus and native `<dialog>`s since 2026-10-08; Zag.js before), styled with the `ui-*` tokens. The root's demo page uses it.
   - The login screen: a Lit element of `cockpit` (`createLoginClass`); the root page shows it when signed out.
+  - The status view (an empty list, no results, not found, no access, …; inline or as a screen in the login's layout):
+    a Lit element of `cockpit` (`createStatusViewClass`).
   - `mantine-themes` (`@local/mantine-themes`, 2026-10-04): a few nicer Mantine themes, to be used easily:
     `createMantineTheme({ colors, size, variant })` gives the theme and the CSS variables resolver for a
     `MantineProvider`; named color setups; `modernTheme` (small corners, a bit more contrast), which the root's three
@@ -133,7 +135,7 @@ The rules of this repository on top of them:
     - "Internals": the folders
       "Components" ("Data table", "File upload", "Dialogs + Toasts", "Form validation" (2026-10-07; a "Planned"
       placeholder before), "Rich text" (2026-10-17, `packages/mantine/rich-text/demo/rich-text-demo.tsx`), "Micro-app" (2026-10-17,
-      `packages/mantine/micro-app/demo/micro-app-demo.tsx`), "Cockpit" (`packages/universal/cockpit/src/demo/cockpit-demo.ts`: the app header with a made-up router, its switcher, an own theme and an events log; the nav tree on its own; the cockpit itself is this page)) and "Planned" ("Autocomplete"; placeholders of `demo/planned/planned-demo.ts` (`planned-demo`): what it will be, and that there is
+      `packages/mantine/micro-app/demo/micro-app-demo.tsx`), "Cockpit" (`packages/universal/cockpit/src/demo/cockpit-demo.ts`: the app header with a made-up router, its switcher, an own theme and an events log; the nav tree on its own; the status view; the React components; the cockpit itself is this page)) and "Planned" ("Autocomplete"; placeholders of `demo/planned/planned-demo.ts` (`planned-demo`): what it will be, and that there is
       no demo yet, in a light gray box with rounded corners, `demo.css`).
     - The apps of "Apps" are pinned (`placement: 'pinned'`, 2026-10-08, the user's wish; File Center and User Manager
       too for a few hours): entries of

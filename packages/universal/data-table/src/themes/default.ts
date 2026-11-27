@@ -1,10 +1,11 @@
 import type * as DataTable from '../api/index.js';
+import { withoutUndefined } from './without-undefined.js';
 
-export { defaultTheme };
+export { createDataTableTheme, DEFAULT_THEME };
 
 // The default theme: the neutral look, for apps without a UI library that has a theme here. Pure grays with a high
 // contrast. Colors have a light and a dark value, which follow the color scheme of the page (`light-dark()`).
-const defaultTheme: Required<DataTable.DataTableTheme> = {
+const DEFAULT_THEME: Required<DataTable.DataTableTheme> = {
   colorText: { light: '#111', dark: '#f5f5f5' },
   colorTextDimmed: { light: '#555', dark: '#bbb' },
   colorSurface: { light: '#fff', dark: '#111' },
@@ -38,3 +39,8 @@ const defaultTheme: Required<DataTable.DataTableTheme> = {
   controlHeight: '32px',
   buttonHeight: '36px',
 };
+
+// The default theme with the given keys on top (an `undefined` key hides nothing): a new object each call.
+function createDataTableTheme(theme: DataTable.DataTableTheme = {}): Required<DataTable.DataTableTheme> {
+  return { ...DEFAULT_THEME, ...withoutUndefined(theme) };
+}

@@ -1,7 +1,7 @@
 import type { NavDensity } from './base.js';
 import type { I18nAdapter } from './i18n.js';
 import type { NavGroup } from './navigation.js';
-import type { NavTreeTheme } from './theme.js';
+import type { CockpitTheme } from './theme.js';
 
 export type {
   NavTreeClass,
@@ -17,7 +17,7 @@ type NavTreeItem = {
   id: string;
   title: string;
   href: string;
-  // SVG markup, drawn in `currentColor` (the theme's `iconColor`); without one, no icon.
+  // SVG markup, drawn in `currentColor` (the theme's `navTreeIconColor`); without one, no icon.
   icon?: string;
   // The tooltip (the link's `title`).
   description?: string;
@@ -30,7 +30,7 @@ type NavTreeItem = {
 
 type NavTreeClassConfig = {
   // The first value of the element's `theme`.
-  theme?: NavTreeTheme;
+  theme?: CockpitTheme;
   // The texts ("Other": the heading of the items without a group; the namespace `'cockpit'`): the adapter, the same for
   // every element of the class. Without one: English and en-US.
   i18n?: I18nAdapter;
@@ -52,6 +52,10 @@ type NavTreeNavigateDetail = { id: string; href: string };
 // count, their items along a guide line), the items as links (icon, title, the active one marked). Up and Down (Home,
 // End) move between them. No landmark of its own: the host wraps it in a `<nav>`.
 //
+// Slots: `top` and `bottom` (e.g. a title, a filter; links, a user row), fixed above and below the list (the group
+// select between `top` and the list). With a height from the host (a flex item, or `height`), only the list scrolls;
+// without one, the tree is as tall as its content.
+//
 // A plain click on an item fires the cancelable `navigate` (`NavTreeNavigateDetail`, bubbling, composed): a router
 // cancels it and navigates itself; else the browser follows the link. Middle and modified clicks stay the browser's
 // (a new tab).
@@ -72,5 +76,5 @@ type NavTreeElement = HTMLElement & {
   // The rows' height and the gaps: `compact`, `normal` (the default), `comfortable`; the attribute `density`.
   density: NavDensity;
   // Its first value the config's; switchable live (a new object).
-  theme: NavTreeTheme;
+  theme: CockpitTheme;
 };

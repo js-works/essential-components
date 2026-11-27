@@ -1,53 +1,28 @@
 import { useMatches, useMatchRoute, useRouter } from '@tanstack/react-router';
-import type { i18n as I18nInstance } from 'i18next';
 import type { ReactElement, ReactNode } from 'react';
-import { createElement, useEffect, useLayoutEffect, useRef } from 'react';
-import { useTranslation } from 'react-i18next';
 
-import type { AppHeaderClass, AppHeaderElement, AppHeaderNavigateDetail } from '@local/cockpit';
-import { createAppHeaderClass, MANTINE_APP_HEADER_THEME } from '@local/cockpit';
+import { createMantineCockpitTheme } from '@local/cockpit';
+import type { AppHeaderNavigateDetail } from '@local/cockpit/react';
+import { createAppHeaderComponent } from '@local/cockpit/react';
 
 import type { MicroAppCrumb, MicroAppHeaderProps } from './api/header.js';
 import { moduleOf, trimmed, useCrumbOf } from './crumbs.js';
 import { useHistoryPosition } from './history.js';
-import { i18nAdapterOf } from './i18n-adapter.js';
+import { useI18nAdapter } from './i18n-adapter.js';
 import { useTexts } from './use-texts.js';
 
 export { MicroAppHeader };
 
-const tags = new WeakMap<I18nInstance, string>();
-
-// The cockpit's app header as an internal element of this package (a package never takes a tag of its own): the first
-// `internal-micro-app-header-<n>` not registered yet, registered on first use, in Mantine's look. One per i18next
-// instance: the element's adapter is given to its class.
-function headerTag(i18n: I18nInstance): string {
-  let tag = tags.get(i18n);
-
-  if (tag === undefined) {
-    const headerClass: AppHeaderClass = createAppHeaderClass({
-      theme: MANTINE_APP_HEADER_THEME,
-      i18n: i18nAdapterOf(i18n),
-    });
-    let n = 1;
-
-    while (customElements.get(`internal-micro-app-header-${n}`) !== undefined) {
-      n++;
-    }
-
-    tag = `internal-micro-app-header-${n}`;
-    customElements.define(tag, headerClass);
-    tags.set(i18n, tag);
-  }
-
-  return tag;
-}
+// The cockpit's app header (its React component, an internal element of the cockpit) in Mantine's look, its texts
+// through the app's i18next instance.
+const AppHeader = createAppHeaderComponent({ theme: createMantineCockpitTheme(), useI18n: useI18nAdapter });
 
 // A label as text: the element's tabs and menus take strings (a module's label is one in every app so far).
 const textOf = (node: ReactNode) => (typeof node === 'string' || typeof node === 'number' ? String(node) : '');
 
-// The header of a micro-app: the cockpit's app header (`createAppHeaderClass`), fed from the
-// router (the modules' hrefs, the active module, the crumbs of the current route's matches, Back and Forward) and
-// answers its events with the router (`navigate`, `back`, `forward`). What is not text is slotted: the icon, the crumbs
+// The header of a micro-app: the cockpit's app header (`createAppHeaderComponent`), fed from the router (the modules'
+// hrefs, the active module, the crumbs of the current route's matches, Back and Forward) and answers its events with
+// the router (`navigate`, `back`, `forward`). What is not text is slotted: the icon, the crumbs
 // (their components, e.g. a board's name), the pages of Back and Forward (read for the tooltips), the `actions`.
 function MicroAppHeader(
   { icon, title, modules, actions, crumbs, switcher = [], activeSwitcherItem = '' }: MicroAppHeaderProps,
@@ -56,10 +31,8 @@ function MicroAppHeader(
   const matchRoute = useMatchRoute();
   const matches = useMatches();
   const { text } = useTexts();
-  const { i18n } = useTranslation();
   const { back, forward } = useHistoryPosition();
   const crumbOf = useCrumbOf(modules);
-  const ref = useRef<AppHeaderElement>(null);
   const hrefOf = (to: string) => router.buildLocation({ to } as never).href;
   const active = modules.find((module) =>
     matchRoute({ to: module.to, fuzzy: module.exact !== true } as never) !== false
@@ -81,75 +54,41 @@ function MicroAppHeader(
     path: string | undefined,
   ) => (path === undefined ? undefined : path === '/' ? text('home') : crumbOf(path));
 
-  useLayoutEffect(() => {
-    const element = ref.current;
-
-    if (element === null) {
+  // A switcher's entry leads outside the router: not canceled, the browser follows it.
+  const onNavigate = (event: CustomEvent<AppHeaderNavigateDetail>) => {
+    if (switcher.some((link) => link.href === event.detail.href)) {
       return;
     }
 
-    element.heading = textOf(title);
-    element.switcher = switcher;
-    element.activeSwitcherItem = activeSwitcherItem;
-    element.modules = modules.map((module) => ({
-      id: module.to,
-      label: textOf(module.label),
-      href: hrefOf(module.to),
-    }));
-    element.activeModule = active?.to ?? '';
-    element.homeHref = hrefOf('/');
-    element.crumbs = shown.map((crumb) => ({ label: '', href: hrefOf(crumb.to) }));
-    element.back = back === undefined ? null : {};
-    element.forward = forward === undefined ? null : {};
-  });
+    event.preventDefault();
+    void router.navigate({ href: event.detail.href });
+  };
 
-  useEffect(() => {
-    const element = ref.current;
-
-    if (element === null) {
-      return;
-    }
-
-    // A switcher's entry leads outside the router: not canceled, the browser follows it.
-    const onNavigate = (event: Event) => {
-      const { href } = (event as CustomEvent<AppHeaderNavigateDetail>).detail;
-
-      if (element.switcher.some((link) => link.href === href)) {
-        return;
-      }
-
-      event.preventDefault();
-      void router.navigate({ href });
-    };
-    const onBack = (event: Event) => {
-      event.preventDefault();
-      router.history.back();
-    };
-    const onForward = (event: Event) => {
-      event.preventDefault();
-      router.history.forward();
-    };
-
-    element.addEventListener('navigate', onNavigate);
-    element.addEventListener('back', onBack);
-    element.addEventListener('forward', onForward);
-
-    return () => {
-      element.removeEventListener('navigate', onNavigate);
-      element.removeEventListener('back', onBack);
-      element.removeEventListener('forward', onForward);
-    };
-  }, [router]);
-
-  return createElement(
-    headerTag(i18n),
-    { ref },
-    <span slot="icon" className="micro-app__header-slot">{icon}</span>,
-    ...shown.map((crumb, index) => (
-      <span key={`crumb-${index}`} slot={`crumb-${index}`} className="micro-app__header-slot">{crumb.label}</span>
-    )),
-    <span key="back" slot="back-page">{pageOf(back)}</span>,
-    <span key="forward" slot="forward-page">{pageOf(forward)}</span>,
-    actions === undefined ? null : <span key="end" slot="end" className="micro-app__header-slot">{actions}</span>,
+  return (
+    <AppHeader
+      heading={textOf(title)}
+      switcher={switcher}
+      activeSwitcherItem={activeSwitcherItem}
+      modules={modules.map((module) => ({ id: module.to, label: textOf(module.label), href: hrefOf(module.to) }))}
+      activeModule={active?.to ?? ''}
+      homeHref={hrefOf('/')}
+      crumbs={shown.map((crumb) => ({ label: '', href: hrefOf(crumb.to) }))}
+      back={back === undefined ? null : {}}
+      forward={forward === undefined ? null : {}}
+      icon={icon}
+      end={actions}
+      crumbLabels={shown.map((crumb) => crumb.label)}
+      backPage={pageOf(back)}
+      forwardPage={pageOf(forward)}
+      onNavigate={onNavigate}
+      onBack={(event) => {
+        event.preventDefault();
+        router.history.back();
+      }}
+      onForward={(event) => {
+        event.preventDefault();
+        router.history.forward();
+      }}
+    />
   );
 }

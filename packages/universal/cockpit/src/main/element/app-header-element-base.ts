@@ -3,6 +3,7 @@ import { html, LitElement, nothing } from 'lit';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 
+import { I18nController } from '../core/i18n-controller.js';
 import type { Texts } from '../core/texts.js';
 import { textsOf } from '../core/texts.js';
 import type {
@@ -12,8 +13,7 @@ import type {
   AppHeaderLink,
   AppHeaderNavigateDetail,
   AppHeaderStep,
-  AppHeaderTheme,
-  I18nAdapter,
+  CockpitTheme,
 } from '../index.js';
 import { addAnchorName, removeAnchorName, TIP_ANCHOR } from './anchors.js';
 import { appHeaderStyles } from './app-header-styles.js';
@@ -58,14 +58,13 @@ class AppHeaderElementBase extends LitElement implements AppHeaderElement {
   declare back: AppHeaderStep | null;
   declare forward: AppHeaderStep | null;
   // Its first value the config's; the stylesheet is built from it (`appHeaderStyles()`): no custom properties.
-  declare theme: AppHeaderTheme;
+  declare theme: CockpitTheme;
 
   readonly #sheet = new CSSStyleSheet();
   readonly #id = `app-header${++instances}`;
   readonly #switcherMenu: Menu;
   readonly #modulesMenu: Menu;
-  readonly #adapter: I18nAdapter | undefined;
-  #unsubscribe: (() => void) | undefined;
+  readonly #i18n: I18nController;
   #tip: { text: string; target: HTMLElement } | undefined;
   #tipTarget: HTMLElement | undefined;
   #tipTimer: ReturnType<typeof setTimeout> | undefined;
@@ -85,7 +84,7 @@ class AppHeaderElementBase extends LitElement implements AppHeaderElement {
     this.back = null;
     this.forward = null;
     this.theme = config.theme ?? {};
-    this.#adapter = config.i18n;
+    this.#i18n = new I18nController(this, config.i18n);
     this.#switcherMenu = new Menu(this, `${this.#id}-switcher`, {
       placement: 'bottom-start',
       selected: () => this.activeSwitcherItem || undefined,
@@ -98,14 +97,8 @@ class AppHeaderElementBase extends LitElement implements AppHeaderElement {
     });
   }
 
-  override connectedCallback(): void {
-    super.connectedCallback();
-    this.#unsubscribe = this.#adapter?.onChange?.(() => this.requestUpdate());
-  }
-
   override disconnectedCallback(): void {
     super.disconnectedCallback();
-    this.#unsubscribe?.();
     this.#switcherMenu.close();
     this.#modulesMenu.close();
     this.#hideTip();
@@ -158,7 +151,7 @@ class AppHeaderElementBase extends LitElement implements AppHeaderElement {
   }
 
   get #texts(): Texts {
-    return textsOf(this.#adapter);
+    return textsOf(this.#i18n.adapter);
   }
 
   // --- Navigation ----------------------------------------------------------------------------------------------------
@@ -256,7 +249,11 @@ class AppHeaderElementBase extends LitElement implements AppHeaderElement {
     const slotted = this.querySelector(`:scope > [slot='${key}-page']`)?.textContent?.trim() ?? '';
     const page = slotted || ((key === 'back' ? this.back : this.forward)?.page ?? '');
 
-    return page === '' ? texts[key] : key === 'back' ? texts.backTo({ page }) : texts.forwardTo({ page });
+    if (key === 'back') {
+      return page === '' ? texts.headerBack : texts.headerBackTo({ page });
+    }
+
+    return page === '' ? texts.headerForward : texts.headerForwardTo({ page });
   }
 
   // Placed by CSS anchor positioning at its target (its anchor name, `TIP_ANCHOR`).
@@ -306,7 +303,7 @@ class AppHeaderElementBase extends LitElement implements AppHeaderElement {
           @slotchange=${() => this.requestUpdate()}
         >${this.icon === '' ? nothing : unsafeHTML(this.icon)}</slot></span>
         ${this.#title()}
-        <nav class="modules" aria-label=${texts.modules}>${this.#tabs()}</nav>
+        <nav class="modules" aria-label=${texts.headerModules}>${this.#tabs()}</nav>
         ${this.#modulesTrigger(texts)}
         <div class="end">
           <slot name="end"></slot>
@@ -338,7 +335,7 @@ class AppHeaderElementBase extends LitElement implements AppHeaderElement {
       aria-haspopup="menu"
       aria-expanded=${menu.open ? 'true' : 'false'}
       aria-controls=${menu.popupId}
-      title=${this.#texts.switchApp}
+      title=${this.#texts.headerSwitchApp}
       data-state=${menu.open ? 'open' : 'closed'}
       @click=${menu.toggle}
       @keydown=${menu.onTriggerKeyDown}
@@ -374,12 +371,12 @@ class AppHeaderElementBase extends LitElement implements AppHeaderElement {
       aria-haspopup="menu"
       aria-expanded=${menu.open ? 'true' : 'false'}
       aria-controls=${menu.popupId}
-      aria-label=${texts.modules}
+      aria-label=${texts.headerModules}
       data-state=${menu.open ? 'open' : 'closed'}
       @click=${menu.toggle}
       @keydown=${menu.onTriggerKeyDown}
     >${
-      this.modules.find((module) => module.id === this.activeModule)?.label ?? texts.modules
+      this.modules.find((module) => module.id === this.activeModule)?.label ?? texts.headerModules
     }${chevronDownIcon()}</button>`;
   }
 
@@ -388,7 +385,7 @@ class AppHeaderElementBase extends LitElement implements AppHeaderElement {
       <button
         type="button"
         class="history-button"
-        aria-label=${texts.back}
+        aria-label=${texts.headerBack}
         data-tip="back"
         ?disabled=${this.back === null}
         @click=${this.#onBack}
@@ -396,7 +393,7 @@ class AppHeaderElementBase extends LitElement implements AppHeaderElement {
       <button
         type="button"
         class="history-button"
-        aria-label=${texts.forward}
+        aria-label=${texts.headerForward}
         data-tip="forward"
         ?disabled=${this.forward === null}
         @click=${this.#onForward}
@@ -407,10 +404,10 @@ class AppHeaderElementBase extends LitElement implements AppHeaderElement {
   // "Home" (a link to the start page), then the crumbs; the last one is the current page (no link). Without crumbs,
   // "Home" is the current page.
   #crumbs(texts: Texts): TemplateResult {
-    const home = html`${homeIcon()}<span>${texts.home}</span>`;
+    const home = html`${homeIcon()}<span>${texts.headerHome}</span>`;
     const last = this.crumbs.length - 1;
 
-    return html`<nav class="crumbs" aria-label=${texts.breadcrumb}>
+    return html`<nav class="crumbs" aria-label=${texts.headerBreadcrumb}>
       <ol class="crumb-list">
         <li class="crumb crumb--home">${
       last < 0

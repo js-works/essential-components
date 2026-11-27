@@ -10,7 +10,7 @@ import {
   selectFilter,
   textFilter,
 } from '../src/react/index.js';
-import { defaultTheme } from '../src/themes/index.js';
+import { createDataTableTheme } from '../src/themes/index.js';
 import type { User } from './data.js';
 import { fetchUsersByCountry, roles } from './data.js';
 import { badge, fixedHeight, note } from './demo.module.css';
@@ -21,7 +21,7 @@ import { useToasts } from './toasts.js';
 
 export { GroupingDemo };
 
-const DataTable = createDataTableComponent({ useI18n, theme: defaultTheme });
+const DataTable = createDataTableComponent({ useI18n, theme: createDataTableTheme() });
 
 // The country is the group, so it has no column of its own. Typed by `defineColumns` (and the actions by
 // `defineActions`): no type annotation.

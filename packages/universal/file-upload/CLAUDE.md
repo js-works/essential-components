@@ -95,23 +95,25 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   - `index.ts` exports `createFileUploadComponent` and the types (the main entry's and `api.ts`), flat.
   - `create-file-upload-component.tsx`: the factory. `client.ts`: the DOM part (the element class, the internal adapter
     setter), loaded with `import()` on the first mount, so the wrapper can be imported on the server.
-- `src/main/themes/`: the themes, the subpath `@local/file-upload/themes` (`dist/themes.js`, like the
-  data table's): plain data, for the element and the React component.
-  - `index.ts` exports the themes; `default.ts`: `DEFAULT_THEME`, the theme without a config, also used by the
-    element and the React placeholder.
-  - `mantine.ts`: `MANTINE_THEME`, the values as Mantine's CSS variables (inherited into the shadow DOM), so it follows
+- `src/main/themes/`: the ready themes, the subpath `@local/file-upload/themes` (`dist/themes.js`, like the
+  data table's): functions (`css.md`), `create<Variant>FileUploadTheme(theme?: Partial<FileUploadTheme>)`, the
+  variant's values with the given keys on top (an `undefined` key hides nothing), a new object each call; for the
+  element and the React component. Their values are internal constants (`constant<FileUploadTheme>({ … })`).
+  - `index.ts` exports them; `default.ts`: `createFileUploadTheme()` (its values `DEFAULT_THEME`, the theme without a
+    config, also used by the element and the React placeholder).
+  - `mantine.ts`: `createMantineFileUploadTheme()`, the values as Mantine's CSS variables (inherited into the shadow DOM), so it follows
     Mantine's color scheme and the app's Mantine theme. The root's apps with an upload use it.
-  - `antd.ts`: `ANTD_THEME`, the values as antd 6's CSS variables (`--ant-…`, inherited into the shadow DOM), so it
+  - `antd.ts`: `createAntdFileUploadTheme()`, the values as antd 6's CSS variables (`--ant-…`, inherited into the shadow DOM), so it
     follows the app's antd theme; the tooltip and the progress track like antd's own `Tooltip` and `Progress`. antd sets
     its variables on a class of its own (`css-var-root`), which its components carry: the upload sits inside one of them
     (a `Form`, `Modal`, `Drawer`, `Card`), as it almost always does; not directly in plain markup.
   - No XWiki theme: an app embedded in XWiki follows the wiki through its own library's theme (e.g. a Mantine theme on
-    XWiki's CSS properties), and so does the upload through `MANTINE_THEME`. Only an upload directly in a wiki page
+    XWiki's CSS properties), and so does the upload through `createMantineFileUploadTheme()`. Only an upload directly in a wiki page
     would need one.
   - An entry for i18next: not here (a tier-1 package names no i18n library, `i18n.md`); an adapter over the app's
     i18next for every tier-1 package belongs to `@local/micro-app`.
-  - `MANTINE_THEME` and `ANTD_THEME` are not in the package's demo: it has neither; the root's apps use the first. The demo's `acme-upload`
-    spreads `DEFAULT_THEME`.
+  - The Mantine and the antd theme are not in the package's demo: it has neither; the root's apps use the first. The
+    demo's `acme-upload` is `createFileUploadTheme({ … })`.
 - `src/test/`: the tests, in the folders of what they test.
   - `core/accept.test.ts`, `themes/themes.test.ts`, `texts/texts.test.ts` (the JSON's keys and placeholders against
     the master, the English functions).
@@ -216,12 +218,11 @@ This repository's rules for it (see the root's `CLAUDE.md`):
     - The code never relies on the tag name (use `:host`, not the tag, in CSS).
   - Styling config (per class):
     - `theme` (type `FileUploadTheme`): typed values (colors, radius, fonts) that are put straight into our CSS when
-      the class is created. Always complete (every token required): an app's theme spreads a base,
-      `{ ...DEFAULT_THEME, progressColor: '…' }` or `{ ...MANTINE_THEME, … }` (both from `@local/file-upload/themes`);
-      without a `theme`, `DEFAULT_THEME`. So the base is explicit and nothing is merged inside the package; a new token
-      comes with the spread. Weighed: optional tokens merged over the defaults (one type for two jobs), the config
-      taking a `Partial<FileUploadTheme>`, a `createFileUploadTheme(overrides)` helper (a call in every app for a merge a
-      spread does). Our themes are written `constant<FileUploadTheme>({ … })`: the literal is checked against the type,
+      the class is created. Always complete (every token required): an app's theme starts from a ready one,
+      `createFileUploadTheme({ progressColor: '…' })` or `createMantineFileUploadTheme({ … })` (both from
+      `@local/file-upload/themes`); without a `theme`, the default. So the base is explicit and the config's theme is
+      not merged inside the element; a new token comes with the ready theme. Weighed: optional tokens merged over the
+      defaults (one type for two jobs), the config taking a `Partial<FileUploadTheme>`. Our themes' values are written `constant<FileUploadTheme>({ … })`: the literal is checked against the type,
       a misspelled key too. No public CSS custom properties, so no token names and no prefix. Every color is a
       string, for both color schemes: `light-dark()` where they differ (no `{ light, dark }` object: one form, and a
       design system's variables follow the color scheme already). Values may be `var(...)`:
@@ -256,7 +257,7 @@ This repository's rules for it (see the root's `CLAUDE.md`):
         root `CLAUDE.md`), `previewBorderRadius` (the preview dialog and the inner corner of its close button; `6px`,
         `--ui-radius-lg`, a dialog's).
       - The default colors are the `ui-*` tokens' values (see `themes/default.ts` for the ones without a token).
-        `MANTINE_THEME`: half of Mantine's default radius for the three.
+        The Mantine theme: half of Mantine's default radius for the three.
       - `buttonBorderRadius` (default `5px`, the `--ui-radius-md` of the design language): all buttons (text and
         icon buttons), except the preview (a thumbnail) and the close button of the preview dialog (in its corner).
       - `fontFamily` (default: inherited from the page) and `fontSize`: the base size (default `0.875rem`). All sizes

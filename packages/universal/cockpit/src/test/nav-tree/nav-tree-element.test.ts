@@ -132,4 +132,29 @@ describe('the nav tree', () => {
     await tree.updateComplete;
     expect(text(shadow(tree).querySelector('.group-select'))).toBe('Finance 2');
   });
+
+  it('the slots top and bottom: their room only with content; the list scrolls between them, the select above it', async () => {
+    const tree = await mount((element) => {
+      element.innerHTML = '<input slot="top" type="search"><a slot="bottom" href="/help">Help</a>';
+      element.groupDisplay = 'select';
+    });
+
+    await new Promise((resolve) => setTimeout(resolve));
+    await tree.updateComplete;
+
+    const layout = shadow(tree).querySelector('.layout')!;
+    // The select's list is a popover (the top layer): not a part of the column.
+    const parts = [...layout.children].map((child) => child.className).filter((name) => name !== 'select-positioner');
+
+    expect(parts).toEqual(['top', 'group-select', 'scroll', 'bottom']);
+    expect(shadow(tree).querySelector<HTMLElement>('.top')!.hidden).toBe(false);
+    expect(shadow(tree).querySelector<HTMLElement>('.bottom')!.hidden).toBe(false);
+
+    tree.innerHTML = '';
+    await new Promise((resolve) => setTimeout(resolve));
+    await tree.updateComplete;
+
+    expect(shadow(tree).querySelector<HTMLElement>('.top')!.hidden).toBe(true);
+    expect(shadow(tree).querySelector<HTMLElement>('.bottom')!.hidden).toBe(true);
+  });
 });

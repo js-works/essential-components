@@ -1,14 +1,17 @@
 import type {
   AppHeaderElement,
   AppHeaderLink,
-  AppHeaderTheme,
+  CockpitTheme,
   NavDensity,
   NavTreeElement,
   NavTreeItem,
+  StatusViewElement,
+  StatusViewKind,
 } from '../main/index.js';
-import { createAppHeaderClass, createNavTreeClass } from '../main/index.js';
+import { createAppHeaderClass, createNavTreeClass, createStatusViewClass } from '../main/index.js';
 import { wireAppHeader } from './app-header-demo.js';
 import { DEMO_I18N } from './i18n.js';
+import { mountReactDemo } from './react-demo.js';
 import './cockpit-demo.css';
 import { setupUi } from './ui/ui.js';
 
@@ -55,14 +58,11 @@ const MODULES: readonly AppHeaderLink[] = Object.freeze([
 const PROJECTS: Readonly<Record<string, string>> = Object.freeze({ p1: 'Website relaunch', p2: 'New office' });
 
 // An own theme: teal, round tabs, a serif title font.
-const OWN_THEME: AppHeaderTheme = Object.freeze({
+const OWN_THEME: CockpitTheme = Object.freeze({
+  accentColor: '#0f766e',
   fontFamily: 'Georgia, serif',
-  iconBackgroundColor: 'light-dark(#0f766e, #5eead4)',
-  tabActiveBackgroundColor: 'light-dark(#ccfbf1, #134e4a)',
-  tabActiveTextColor: 'light-dark(#0f766e, #5eead4)',
-  linkTextColor: 'light-dark(#0f766e, #5eead4)',
-  focusRingColor: 'light-dark(#0f766e, #5eead4)',
-  borderRadius: '999px',
+  headerTabActiveBackgroundColor: 'light-dark(#ccfbf1, #134e4a)',
+  headerBorderRadius: '999px',
 });
 
 // The nav tree's made-up items: one without a group, two groups, folders with and without an icon.
@@ -118,7 +118,7 @@ class CockpitDemo extends HTMLElement {
       this.#render();
     }
 
-    this.#cleanups = [setupUi(this)];
+    this.#cleanups = [setupUi(this), mountReactDemo(this.querySelector<HTMLElement>('[data-react]')!)];
   }
 
   disconnectedCallback(): void {
@@ -138,6 +138,8 @@ class CockpitDemo extends HTMLElement {
     <nav class="ui-tabs" aria-label="Cockpit">
       <button class="ui-tabs__tab" type="button">App header</button>
       <button class="ui-tabs__tab" type="button">Nav tree</button>
+      <button class="ui-tabs__tab" type="button">Status view</button>
+      <button class="ui-tabs__tab" type="button">React</button>
       <button class="ui-tabs__tab" type="button">Cockpit</button>
     </nav>
     <section class="ui-tabs__panel ui-stack">
@@ -173,7 +175,8 @@ class CockpitDemo extends HTMLElement {
       <p class="ui-note">The navigation tree of the cockpit's sidebar on its own (<code>createNavTreeClass()</code>): the
         groups as headings, the folders (collapsible, remembered per browser), the items as links. A click fires
         <code>navigate</code>, which a router cancels to navigate itself (here: the item becomes the active one); a middle
-        click opens a new tab. The host gives the width and wraps it in a <code>&lt;nav&gt;</code>.</p>
+        click opens a new tab. The host gives the width and wraps it in a <code>&lt;nav&gt;</code>; with a height (here
+        420px), the list scrolls between the slots <code>top</code> and <code>bottom</code>.</p>
       <form class="ui-toolbar" data-tree-switches>
         <label class="ui-field">Groups
           <select class="ui-select" name="display">
@@ -183,6 +186,7 @@ class CockpitDemo extends HTMLElement {
         </label>
         <label class="ui-field"><input class="ui-checkbox" type="checkbox" name="collapsible"> Collapsible groups</label>
         <label class="ui-field"><input class="ui-checkbox" type="checkbox" name="marked" checked> Marked items</label>
+        <label class="ui-field"><input class="ui-checkbox" type="checkbox" name="slots" checked> Top and bottom</label>
         <label class="ui-field">Density
           <select class="ui-select" name="density">
             <option value="compact">Compact</option>
@@ -196,6 +200,49 @@ class CockpitDemo extends HTMLElement {
       </nav>
       <h2 class="ui-heading">Events</h2>
       <output class="ui-result cockpit-demo__log" data-tree-log></output>
+    </section>
+    <section class="ui-tabs__panel ui-stack" hidden>
+      <p class="ui-note">Why there is nothing (else) to show (<code>createStatusViewClass()</code>): inline in a page
+        (an empty list, no results), or as a screen of its own (not found, no access, an error). Every part only when
+        given: a kind's icon, heading and message (each replaceable), the brand, the button (it fires
+        <code>action</code>), the footer, the hint. Its texts follow the page's language.</p>
+      <form class="ui-toolbar" data-status-switches>
+        <label class="ui-field">Layout
+          <select class="ui-select" name="layout">
+            <option value="inline" selected>Inline</option>
+            <option value="screen">Screen (a frame of 560px)</option>
+          </select>
+        </label>
+        <label class="ui-field">Kind
+          <select class="ui-select" name="kind">
+            <option value="default">Default (none)</option>
+            <option value="empty" selected>Empty</option>
+            <option value="no-results">No results</option>
+            <option value="not-found">Not found</option>
+            <option value="forbidden">No access</option>
+            <option value="expired">Session expired</option>
+            <option value="maintenance">Maintenance</option>
+            <option value="error">Error</option>
+          </select>
+        </label>
+        <label class="ui-field"><input class="ui-checkbox" type="checkbox" name="action" checked> Button</label>
+        <label class="ui-field"><input class="ui-checkbox" type="checkbox" name="brand"> Brand</label>
+        <label class="ui-field"><input class="ui-checkbox" type="checkbox" name="own"> Own texts and icon</label>
+        <label class="ui-field"><input class="ui-checkbox" type="checkbox" name="extras"> Extras (slots)</label>
+      </form>
+      <div class="cockpit-demo__frame" data-status-frame>
+        <${tags.status} data-status></${tags.status}>
+      </div>
+      <h2 class="ui-heading">Events</h2>
+      <output class="ui-result cockpit-demo__log" data-status-log></output>
+    </section>
+    <section class="ui-tabs__panel ui-stack" hidden>
+      <p class="ui-note">The React components of <code>@local/cockpit/react</code>
+        (<code>createNavTreeComponent()</code>, <code>createStatusViewComponent()</code>, …): the elements' properties
+        as props, their slots as nodes (<code>top</code>), their events as callbacks (<code>onNavigate</code>), the
+        texts through a hook (<code>useI18n</code>). A click on an item makes it the active one; the status view's
+        heading follows it.</p>
+      <div data-react></div>
     </section>
     <section class="ui-tabs__panel ui-stack" hidden>
       <p class="ui-note">The cockpit (<code>createCockpitClass()</code>) is this page: the navigation (sidebar, topbar,
@@ -242,6 +289,53 @@ class CockpitDemo extends HTMLElement {
     switches.addEventListener('change', applySwitches);
     applySwitches();
     this.#wireTree();
+    this.#wireStatus();
+  }
+
+  // The status view: the switches set its layout, kind, button and brand, the host's texts and icon (the slot `icon`) and
+  // its extras (the default slot, the footer, the hint).
+  #wireStatus(): void {
+    const view = this.querySelector<StatusViewElement>('[data-status]')!;
+    const frame = this.querySelector<HTMLElement>('[data-status-frame]')!;
+    const log = this.querySelector<HTMLOutputElement>('[data-status-log]')!;
+    const switches = this.querySelector<HTMLFormElement>('[data-status-switches]')!;
+    const labels: Readonly<Record<StatusViewKind, string>> = Object.freeze({
+      default: 'New project',
+      empty: 'New project',
+      'no-results': 'Clear filters',
+      'not-found': 'Back to start',
+      forbidden: 'Request access',
+      expired: 'Sign in again',
+      maintenance: 'Try again',
+      error: 'Try again',
+    });
+
+    view.addEventListener('action', () => {
+      log.textContent = `action (${view.kind})\n${log.textContent ?? ''}`.split('\n').slice(0, 8).join('\n');
+    });
+
+    const apply = () => {
+      const data = new FormData(switches);
+      const own = data.get('own') !== null;
+      const extras = data.get('extras') !== null;
+
+      view.layout = data.get('layout') === 'screen' ? 'screen' : 'inline';
+      view.kind = String(data.get('kind')) as StatusViewKind;
+      view.actionLabel = data.get('action') === null ? '' : labels[view.kind];
+      view.appTitle = data.get('brand') === null ? '' : 'Back Office';
+      view.subtitle = data.get('brand') === null ? '' : 'Acme Corporate';
+      view.heading = own ? 'No projects yet' : '';
+      view.message = own ? 'Projects group the tasks and the people working on them.' : '';
+      view.innerHTML = (own ? ICON.replace('<svg ', '<svg slot="icon" ') : '') + (extras
+        ? `<p class="cockpit-demo__status-id">Error id: 7f3a-91c2</p>
+          <span slot="footer">Need help? <a href="mailto:support@example.com">Contact support</a></span>
+          <span slot="hint">© Acme Corporate</span>`
+        : '');
+      frame.classList.toggle('cockpit-demo__status', view.layout === 'screen');
+    };
+
+    switches.addEventListener('change', apply);
+    apply();
   }
 
   // The nav tree with a made-up router: `navigate` canceled, the item becomes the active one; the switches set its
@@ -270,6 +364,10 @@ class CockpitDemo extends HTMLElement {
       tree.collapsibleGroups = data.get('collapsible') !== null;
       tree.marked = data.get('marked') === null ? [] : ['tasks', 'invoices'];
       tree.density = String(data.get('density')) as NavDensity;
+      tree.innerHTML = data.get('slots') === null
+        ? ''
+        : `<strong slot="top" class="cockpit-demo__tree-top">Acme Projects</strong>
+          <a slot="bottom" class="cockpit-demo__tree-bottom" href="mailto:support@example.com">Help and support</a>`;
     };
 
     switches.addEventListener('change', apply);
@@ -277,14 +375,20 @@ class CockpitDemo extends HTMLElement {
   }
 }
 
-// The classes of the headers and the nav tree, registered once under tags of the demo.
-function defineHeaders(): { plain: string; themed: string; tree: string } {
-  const tags = { plain: 'cockpit-demo-header', themed: 'cockpit-demo-header-themed', tree: 'cockpit-demo-nav-tree' };
+// The classes of the headers, the nav tree and the status view, registered once under tags of the demo.
+function defineHeaders(): { plain: string; themed: string; tree: string; status: string } {
+  const tags = {
+    plain: 'cockpit-demo-header',
+    themed: 'cockpit-demo-header-themed',
+    tree: 'cockpit-demo-nav-tree',
+    status: 'cockpit-demo-status-view',
+  };
 
   if (customElements.get(tags.plain) === undefined) {
     customElements.define(tags.plain, createAppHeaderClass({ i18n: DEMO_I18N }));
     customElements.define(tags.themed, createAppHeaderClass({ theme: OWN_THEME, i18n: DEMO_I18N }));
     customElements.define(tags.tree, createNavTreeClass({ i18n: DEMO_I18N, storageKey: 'cockpit-demo-nav-tree' }));
+    customElements.define(tags.status, createStatusViewClass({ i18n: DEMO_I18N }));
   }
 
   return tags;

@@ -15,12 +15,16 @@
 //
 // Reached as "@local/overlays/themes/webawesome".
 
+import type { DialogTheme } from "../api/dialogs/theme.js";
+import type { ToastTheme } from "../api/toasts/theme.js";
 import { createDialogTheme } from "../dialogs/theme.js";
 import { createToastTheme } from "../toasts/theme.js";
+import { withoutUndefined } from "./without-undefined.js";
 
 // Through the factories rather than spreading the defaults by hand: that is the documented
 // way to build a theme, and it keeps working if the merge ever stops being a plain spread.
-export const webawesomeToastTheme = createToastTheme({
+// Internal: the ready themes are the functions at the end (a new object each call).
+const WEBAWESOME_TOAST_THEME = createToastTheme({
   // A toast floats over the page, which is what `raised` means in Web Awesome's three
   // surface levels (lowered / default / raised).
   background: "var(--wa-color-surface-raised, #ffffff)",
@@ -67,7 +71,7 @@ export const webawesomeToastTheme = createToastTheme({
   darkCloseColor: "var(--wa-color-neutral-on-loud, #9ca3af)",
 });
 
-export const webawesomeDialogTheme = createDialogTheme({
+const WEBAWESOME_DIALOG_THEME = createDialogTheme({
   background: "var(--wa-color-surface-raised, light-dark(white, #333))",
   text: "var(--wa-color-text-normal, light-dark(black, white))",
   // One step up from the toasts' radius: Web Awesome's scale is relative, and a dialog is
@@ -98,3 +102,13 @@ export const webawesomeDialogTheme = createDialogTheme({
   // No Web Awesome counterpart: it does not scale controls on press. The default already
   // disables the effect, so this is left out entirely rather than restated.
 });
+
+/** Web Awesome's toast theme with the given tokens on top (an `undefined` token hides nothing). */
+export function createWebawesomeToastTheme(theme: Partial<ToastTheme> = {}): ToastTheme {
+  return { ...WEBAWESOME_TOAST_THEME, ...withoutUndefined(theme) };
+}
+
+/** Web Awesome's dialog theme with the given tokens on top (an `undefined` token hides nothing). */
+export function createWebawesomeDialogTheme(theme: Partial<DialogTheme> = {}): DialogTheme {
+  return { ...WEBAWESOME_DIALOG_THEME, ...withoutUndefined(theme) };
+}

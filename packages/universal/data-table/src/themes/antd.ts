@@ -1,11 +1,12 @@
 import type * as DataTable from '../api/index.js';
+import { withoutUndefined } from './without-undefined.js';
 
-export { antdTheme };
+export { createAntdDataTableTheme };
 
 // The Ant Design theme: maps the design values onto the CSS variables of antd 6.
 // antd does not set its variables on :root, but on a class of its own (`css-var-root` by default), which only its own
 // components carry. So the table must sit inside an element with that class, or the variables are not there.
-const antdTheme: Required<DataTable.DataTableTheme> = {
+const ANTD_THEME: Required<DataTable.DataTableTheme> = {
   colorText: 'var(--ant-color-text)',
   colorTextDimmed: 'var(--ant-color-text-secondary)',
   colorSurface: 'var(--ant-color-bg-container)',
@@ -39,3 +40,8 @@ const antdTheme: Required<DataTable.DataTableTheme> = {
   controlHeight: 'var(--ant-control-height)',
   buttonHeight: 'calc(var(--ant-control-height) + 4px)',
 };
+
+// The Ant Design theme with the given keys on top (an `undefined` key hides nothing): a new object each call.
+function createAntdDataTableTheme(theme: DataTable.DataTableTheme = {}): Required<DataTable.DataTableTheme> {
+  return { ...ANTD_THEME, ...withoutUndefined(theme) };
+}

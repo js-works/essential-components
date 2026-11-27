@@ -1,7 +1,7 @@
-import { constant } from '../core/utils.js';
+import { constant, withoutUndefined } from '../core/utils.js';
 import type { FileUploadTheme } from '../index.js';
 
-export { ANTD_THEME };
+export { createAntdFileUploadTheme };
 
 // The Ant Design theme: maps the values onto the CSS variables of antd 6, inherited into the shadow DOM. They follow
 // the app's antd theme. antd sets its variables on a class of its own (`css-var-root` by default), which its components
@@ -40,3 +40,8 @@ const ANTD_THEME = constant<FileUploadTheme>({
   tooltipBorderRadius: 'var(--ant-border-radius)',
   tooltipTextColor: 'var(--ant-color-text-light-solid)',
 });
+
+// The Ant Design theme with the given keys on top (an `undefined` key hides nothing): a new object each call.
+function createAntdFileUploadTheme(theme: Partial<FileUploadTheme> = {}): FileUploadTheme {
+  return { ...ANTD_THEME, ...withoutUndefined(theme) };
+}

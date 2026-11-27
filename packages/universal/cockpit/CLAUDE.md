@@ -30,9 +30,10 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   `NavLayout`, `NavScheme`), `menus.ts` (`FooterAction`, `ActionChoice`, `ActionChoices`, `MenuItem`, `MenuSection`,
   `SignedInUser`, `CockpitFooter`), `header.ts` (the app header's: `AppHeaderElement`, `AppHeaderClass`,
   `AppHeaderClassConfig`, `AppHeaderLink`, `AppHeaderCrumb`, `AppHeaderStep`, `AppHeaderNavigateDetail`), `theme.ts`
-  (`CockpitTheme`, `AppHeaderTheme`, `LoginTheme`, `NavTreeTheme`), `nav-tree.ts` (`NavTreeElement`, `NavTreeClass`, `NavTreeClassConfig`, `NavTreeItem`,
+  (`CockpitTheme`: one theme for every element), `nav-tree.ts` (`NavTreeElement`, `NavTreeClass`, `NavTreeClassConfig`, `NavTreeItem`,
   `NavTreeNavigateDetail`), `login.ts` (the login's: `LoginElement`, `LoginClass`,
-  `LoginClassConfig`, `LoginProvider`), `texts.ts` (`CockpitTextKey`, `CockpitParams`, read from the English texts), `i18n.ts`
+  `LoginClassConfig`, `LoginProvider`), `status-view.ts` (`StatusViewElement`, `StatusViewClass`,
+  `StatusViewClassConfig`, `StatusViewKind`, `StatusViewLayout`), the React entry's in `src/main/react/api/`, `texts.ts` (`CockpitTextKey`, `CockpitParams`, read from the English texts), `i18n.ts`
   (`I18nAdapter`, `TextParams`: a verbatim copy of those in `frontend/i18n.md`).
   `src/main/index.ts` exports them flat (`typescript.md`): `import type { NavItem } from '@local/cockpit'`. The demos'
   variables of the element are `cockpitElement` or `element`.
@@ -424,8 +425,8 @@ This repository's rules for it (see the root's `CLAUDE.md`):
     the bar: invisible).
   - Keys: a toolbar with one tab stop (the active task); Left and Right (Home, End) move between its buttons; Delete
     closes the focused task, so does a middle click. After closing from inside, the focus goes to the new active task.
-  - Its values: its `theme` (the cockpit passes its own), else the defaults; no custom properties. Texts: `taskbar`,
-    `closeTask` in `core/texts.ts`.
+  - Its values: its `theme` (the cockpit passes its own), else the defaults; no custom properties. Texts: `taskbarLabel`,
+    `taskbarClose` in `core/texts.ts`.
   - The open items are marked in the navigation: a dot in the accent, like the open one in the search panel
     (`running-dot`, `#iconAndTitle()`), only with `taskbar: true`. Right after the title, with or without an icon (also
     in the flyouts; the corner of the icon was tried), 5px, raised by 4px like a superscript. In the rail, which has no
@@ -443,13 +444,31 @@ This repository's rules for it (see the root's `CLAUDE.md`):
 - No overscroll: every scroll area (the navigation, the open app's area, the search list, the group select's list, the
   flyouts) has `overscroll-behavior: none` (not `contain`, which keeps Firefox's elastic bounce); the taskbar
   `overscroll-behavior-x: none` (sideways only).
-- The theme: the element's property `theme` (`CockpitTheme`, no attribute), its first value the config's `theme`,
-  switchable live (a new object).
+- The theme: one type for every element of the package, `CockpitTheme` (the cockpit, the taskbar, the nav tree, the
+  app header, the login, the status view): a host makes one object and gives it to each class; each element reads
+  the keys it needs. The cockpit's property `theme` (no attribute), its first value the config's `theme`, switchable
+  live (a new object).
   - Its keys (what a host can override, and the accent; the colors stay the design language's, a key is added when
-    needed): `accentColor` (one color; lighter in a dark scheme, e.g. the dark navigation, by `color-mix(in oklab, <accent>
-    60%, white)`; without it the design language's, `light-dark(#0a5cc2, #78b0ff)`), `fontSize` (`14px`), `fontFamily`
-    (`system-ui, sans-serif`), `sidebarWidth` (`256px`), `railWidth` (`68px`), `contentPadding` (`16px 20px`).
-    Defaults: `DEFAULT_COCKPIT_THEME` (`themes/default-cockpit-theme.ts`, exported, so a host starts from it).
+    needed). Shared: `accentColor` (one color; lighter in a dark scheme, e.g. the dark navigation, by `color-mix(in
+    oklab, <accent> 60%, white)`, `accentOf()`; without it the design language's, `light-dark(#0a5cc2, #78b0ff)`),
+    `fontSize` (`14px`), `fontFamily` (`system-ui, sans-serif`), `buttonActiveTransform` (a pressed push
+    button's CSS `transform`, e.g. `translateY(1px)`, `scale(0.96)`; `none` by default; the push buttons: the
+    cockpit's search, footer and topbar icon buttons and "Try again", the app header's switcher, Back and Forward,
+    the login's and the status view's buttons; not tabs, menu items or list entries; one value for all, small and
+    wide: a strong scale suits the icon buttons, not the login's full-width one), `buttonBorderRadius` (the corners
+    of the push buttons, `5px` by default: the screens' buttons and "Try again"; not the app header's, which has
+    `headerBorderRadius`; the cockpit's icon buttons keep theirs). A part's own keys start with its name (the token
+    rule's area): the cockpit's `sidebarWidth` (`256px`), `railWidth` (`68px`), `contentPadding` (`16px 20px`); the
+    nav tree's `navTreeIconColor`; the app header's `header…` (below).
+  - Defaults: `DEFAULT_COCKPIT_THEME` (`themes/default-cockpit-theme.ts`, internal). A host starts from
+    `createCockpitTheme(theme?)` (`css.md`: ready themes are functions): the defaults with the given keys on top, a new
+    object each call. Not in it: the keys that follow the accent (`AccentKey`: `navTreeIconColor`,
+    `headerIconBackgroundColor`, `headerTabActiveBackgroundColor`, `headerTabActiveTextColor`, `headerLinkTextColor`,
+    `headerFocusRingColor`), so a host's accent reaches them, and `fontFamily`, whose default is each element's own
+    (the cockpit's `system-ui`; the nav tree and the inline status view inherit the page's). The default accent given
+    explicitly counts as the default (`accentOf()` does not mix it again).
+  - Weighed: a theme type per element (five types, the shared keys given to each class apart, the app header without
+    an accent), a shared base extended per element (still five types).
   - No custom properties (they would inherit into the mini-apps): the stylesheet is built from the theme
     (`styles(theme)` in `styles.ts`, its values in `themeValues()`: the theme's and the fixed ones of the design
     language), a `CSSStyleSheet` adopted in the shadow root, rewritten in `willUpdate` when the theme changes. The
@@ -467,8 +486,12 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   `createCockpitClass` and `createAppHeaderClass`, the same for every element of the class; its `onChange`
   re-renders). `textsOf` (`core/texts.ts`) asks `translate(namespace, key, params)`; `null` (or no adapter): the English
   text, formatted in the adapter's locale (`en-US` without one; the page's language is never read). Params: `items`
-  (`{ count }`, the English plural by `count === 1`), `closeTask` (`{ title }`), `backTo`, `forwardTo` (`{ page }`).
-  The taskbar gets the cockpit's texts as a property (`texts`).
+  (`{ count }`, the English plural by `count === 1`), `taskbarClose` (`{ title }`), `headerBackTo`, `headerForwardTo` (`{ page }`).
+  - The keys (`i18n.md`: a library's keys flat camelCase, no dots): the cockpit's general ones without a prefix
+    (`loading`, `retry`, `items`, `group`), the cockpit's areas and the other parts with theirs, like the theme's keys:
+    `search…` (with the panel's key hints `searchHintOpen`, `…Move`, `…Close`), `sidebar…`, `taskbar…`, `navTree…`,
+    `header…` (the app header), `login…`, `statusView…`.
+    The taskbar gets the cockpit's texts as a property (`texts`).
   - The translations: ICU messages, `locales/en.json`, `locales/de.json` (exported as
     `@local/cockpit/locales/*.json`), which the app loads into its i18n under the namespace `cockpit`. Derived from
     the master by hand (or the AI) after every change; `src/test/texts/texts.test.ts` checks their keys and
@@ -525,8 +548,8 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   promise shows its message below them (else "The sign in failed. Please try again."). The host's form is not locked
   meanwhile (its own function: it knows). A host with views shows them on its sign in view only (`providers` set per
   view). Plain verbs, not `onSignIn`: React 19 takes every `on…` prop of a custom element as an event listener.
-- The theme: `LoginTheme` (`accentColor`, `fontSize`, `fontFamily`), fixed per class (no `theme` property); without
-  a key the cockpit's default. The rest is the design language's (`light-dark()`; the buttons `5px`, the card `6px`;
+- The theme: the `CockpitTheme` (it reads `accentColor`, `fontSize`, `fontFamily`), fixed per class (no `theme`
+  property); without a key the default. The rest is the design language's (`light-dark()`; the buttons `5px`, the card `6px`;
   the error color the login's own, `light-dark(#c92a2a, #ff8787)`). Pressed, the buttons darken a step
   more than on hover (the submit button the accent with 24% black, 12% on hover; the providers `light-dark(#e9ecef,
   #383838)`), no transition. The accent: the default logo, the submit button,
@@ -549,9 +572,70 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   (`PROVIDERS`, three made-up ones). Any username and password sign in after 500 ms, the password "wrong" fails; reset and register
   answer after 600 ms (the account "taken" exists already); Microsoft and Company SSO sign in after 700 ms, Google
   fails. English only. The class is defined when the login is shown the first time, with the page's accent then.
+- Its CSS: the screen's (`src/main/screen/screen-styles.ts`, shared with the status screen: the screen, the card, the
+  brand, the heading, the main button `.primary`, the footer, the hint, the small screens) and its own parts
+  (`login-styles.ts`).
 - Tests: `src/test/login/login-element.test.ts` (jsdom: the texts, no children of its own, the logo, the footer's
   line, the hint, the providers: shown, the line "or", running, failed; the submit button: the host's form submitted by it and by
   Enter, not when an input used Enter, none without a label, the spinner).
+
+## The status view
+
+- `createStatusViewClass({ theme?, i18n? })`, `StatusViewElement` (the demo registers `cockpit-demo-status-view`;
+  suggested `<app-status-view>`): why there is nothing (else) to show, inline in a page (an empty list, no results, a
+  record that does not exist, a panel without access) or as a screen of its own (not found, no access, an expired
+  session, maintenance, an error). One element for both (`src/main/status-view/`, in the main entry): the layout
+  only decides the frame. Weighed: two elements, a status screen and an empty state (every part is optional, so nothing
+  of one would be dead in the other, and most kinds are useful in both layouts).
+- Every part only when given: the brand (`app-title`, `subtitle`, the slot `logo`; only with `app-title`), the icon
+  (the kind's or the slot `icon`'s; its ground only with one), the heading and the message (the kind's or the host's),
+  the host's extras (the default slot), the button (`action-label`), the footer (the slot `footer`, below a line), the
+  hint (the slot `hint`). Without a kind and texts: nothing.
+- `layout` (reflected): `inline` (the default: no background of its own, the page's text color, the font the theme's
+  only when given; the heading 16 at 14, the icon 48px, the button as wide as its text) or `screen` (the login's card
+  on its screen, `screenStyles()`, at least its container's height: the host gives it, `100dvh` for the window; the
+  heading a `h2` of 20, the icon 56px, the button full width).
+- `kind`: `default` (none: only the host's texts and icon) or a preset: `empty`, `no-results`, `not-found`,
+  `forbidden`, `expired`, `maintenance`, `error` (Tabler's `inbox`, `search`, `file-unknown`, `lock`, `clock`, `tool`,
+  `alert-triangle`; on a light ground of the accent, `error`'s in the error color), each with a heading and a message
+  (`statusView<Kind>`, `statusView<Kind>Message`; worded for both layouts: "Not found", not "Page not found").
+- Invalid attributes (`layout`, `kind`) are the default, invalid values a `RangeError`.
+- The button: the element's (like the login's; a theme makes it fit, e.g. `createMantineCockpitTheme()`), a click
+  fires `action` (a plain bubbling `Event`).
+- The demo: the tab "Status view" of `src/demo/cockpit-demo.ts`: switches for the layout (the screen in a frame of
+  560px), the kind, the button, the brand, the host's texts and icon, the extras (an error id, a footer, a hint), a
+  log of the events.
+- Tests: `src/test/status-view/status-view-element.test.ts`.
+- Not used by the root's apps yet.
+
+## The React components
+
+- The entry `@local/cockpit/react` (`src/main/react/`, an add-on: removable in one piece; React an optional peer
+  dependency, `>=19`): one factory per element class, with the class's config and the i18n as a hook (`useI18n`,
+  `i18n.md`): `createNavTreeComponent`, `createStatusViewComponent`, `createLoginComponent`,
+  `createAppHeaderComponent`, `createCockpitComponent`. Its types in `src/main/react/api/` (`NavTreeProps`,
+  `NavTreeComponentConfig`, …, `CockpitCommonProps`); the entry also exports the main entry's types.
+- One generic wrapper (`define-component.tsx`, `defineComponent(spec, useI18n)`), each factory a spec
+  (`components.ts`): the props set as properties (only the changed ones; a missing prop is the element's default,
+  `theme` and the cockpit's `startPage` the config's), the callback props and their events (`onNavigate`, `onAction`,
+  `onBack`, `onForward`: the DOM event, `preventDefault()` cancels it; the latest callback without listening again),
+  the slots (a node per named slot, in a `<span slot="…" style="display: contents">`; `children` straight into the
+  element, its default slot: the login's form in its light DOM; the app header's `crumbLabels` as `crumb-<index>`),
+  `id`, `className`, `style`, `lang`, `aria-*`, `data-*`, `ref` (the element).
+- No side effect at the call (also on the server): on the first mount on the client the elements' code is loaded
+  (`import()` of `client.ts`), the class created and registered under the first free `internal-cockpit-<name>-<n>`;
+  until then (and on the server) an empty placeholder (`aria-busy`). A failed registration is thrown while rendering
+  (an error boundary gets it).
+- The hook's adapter is set on each element (`setElementI18nAdapter` of `core/i18n-controller.ts`, internal): every
+  element's adapter is an `I18nController` (a Lit controller: the class config's adapter, or one set for the element;
+  subscribed to its `onChange` while connected; a new one renders again). The cockpit gives its own to its nav trees.
+- A slotted icon or logo through React sits in that `<span>`: the element's `::slotted(svg)` sizes do not reach it,
+  the host sizes its SVG itself.
+- `@local/micro-app`'s header is built on `createAppHeaderComponent`.
+- The demo: the tab "React" of `src/demo/cockpit-demo.ts` (`src/demo/react-demo.tsx`): the nav tree and the status
+  view as React components, a made-up router.
+- Tests: `src/test/react/components.test.tsx` (the placeholder and the tag, props as properties and defaults, the
+  callback, the slots, the ref, the hook's adapter, the login's form as children, the app header's crumbs and events).
 
 ## The nav tree
 
@@ -562,8 +646,8 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   like the taskbar).
 - `items` (`NavTreeItem`: `id`, `title`, `href`, `icon?`, `description?` (the tooltip), `group?`, `subgroup?`),
   `groups` (the folders' icons, `NavGroup`), `active` (attribute), `marked` (ids: a dot after the title),
-  `collapsible-groups`, `density`, `theme` (`NavTreeTheme`: `accentColor`, `fontSize`, `fontFamily`, `iconColor`;
-  live). The grouping is `core/groups.ts` (generic over the item type).
+  `collapsible-groups`, `density`, `theme` (the `CockpitTheme`: `accentColor`, `fontSize`, `fontFamily`,
+  `navTreeIconColor`; live). The grouping is `core/groups.ts` (generic over the item type).
 - The items are links (`<a href>`); a plain click fires the cancelable `navigate` (`{ id, href }`, bubbling, composed),
   like the app header: a router cancels it and navigates itself; middle and modified clicks stay the browser's.
 - The groups as headings (the items without a group first, a line in place of their heading); with
@@ -581,18 +665,27 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   goes on to its next tree).
 - No landmark of its own: the host wraps it in a `<nav>`. No resizing (the host's layout gives its width). Its text
   color and font inherited.
+- Slots `top` and `bottom` (the host's title, filter, links, user row): fixed above and below the list, the group
+  select between `top` and the list; each with 12px to the list, its room only with content (`slotchange`). The tree
+  is a flex column: with a height from the host (a flex item, or `height`), only the list scrolls (`.scroll`,
+  `overscroll-behavior: none`, a thin scrollbar); without one, it is as tall as its content (the cockpit's trees,
+  in its own scrolling sidebar). The list reaches 12px out on both sides (the host's padding), so its `overflow` does
+  not cut off the active item's mark at the left edge.
 - In the cockpit: the expanded sidebar and the bottom bar's sheet (the rail keeps its own icons and flyouts). Items
   `href: '#<id>'`; `navigate` canceled, `open(id)`. "Recent" is a tree of its own (its items in one group named
   "Recent", without their folders); with the cockpit's own group select (`groupDisplay: 'select'`), a tree of the chosen
-  group's items (without their group); to be replaced by the tree's `group-display="select"`. `collapsible-groups` with more than `FEW` items (unless `collapsibleGroups: false`), `marked` the open items
-  (with the taskbar), its icons the sidebar's white strokes (`iconColor`). The sheet's first focus: the close button,
-  then the open item once the tree has rendered.
+  group's items (without their group); to be replaced by the tree's `group-display="select"`. `collapsible-groups`
+  with more than `FEW` items (unless `collapsibleGroups: false`), `marked` the open items (with the taskbar), its icons
+  the sidebar's white strokes (`navTreeIconColor`), its theme the cockpit's. The sheet's first focus: the close
+  button, then the open item once the tree has rendered.
 - The demo: the tab "Nav tree" of `src/demo/cockpit-demo.ts` (the root page's Internals › Cockpit): made-up items
-  (one without a group, two groups, folders with and without an icon) in a sidebar-like frame (260px), a made-up
+  (one without a group, two groups, folders with and without an icon) in a sidebar-like frame (260px wide, 420px
+  high, so the list scrolls; a title in `top`, a link in `bottom`, switchable), a made-up
   router (`navigate` canceled, the item becomes the active one), switches for `group-display`, `collapsible-groups`,
   `marked` and `density`, a log of the events; remembered under `cockpit-demo-nav-tree`.
 - Tests: `src/test/nav-tree/nav-tree-element.test.ts` (headings, folders, order, tooltip, active, marked, `navigate`
-  and modified clicks, folders remembered, collapsible groups and "Other", the group select following the active item).
+  and modified clicks, folders remembered, collapsible groups and "Other", the group select following the active item,
+  the slots `top` and `bottom`).
 
 ## Layout and commands
 
@@ -605,6 +698,8 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   light-DOM apps, routing, the whole UI; `create-cockpit-class.ts`), `menu.ts` (the menus), `icons.ts`, its CSS
   (`styles.ts`); the taskbar (`taskbar-element.ts`, `taskbar-styles.ts`); `src/main/nav-tree/`: the nav tree (`create-nav-tree-class.ts`, `nav-tree-element-base.ts`,
   `nav-tree-styles.ts`, `nav-tree-tag.ts`); `src/main/login/`: the login (`create-login-class.ts`, `login-element-base.ts`, `login-styles.ts`);
+  `src/main/status-view/`: the status view (`create-status-view-class.ts`, `status-view-element-base.ts`,
+  `status-view-styles.ts`); `src/main/react/`: the React components (see there); `src/main/screen/screen-styles.ts`: the CSS they share;
   `src/main/core/`: groups (`groupsOf`, `subgroupsOf`: the groups and folders of the navigation), search, texts,
   storage; `src/main/texts/en.ts`: the English texts; `locales/`: the ICU messages; `src/demo/i18n.ts`: the demos' German.
 - `src/demo/`: the package's demo (`npm run dev`), with 3, 30 or 100 apps (the "Apps" choice in the footer; `?apps=some`,
@@ -617,7 +712,7 @@ This repository's rules for it (see the root's `CLAUDE.md`):
 - `src/demo/cockpit-demo.ts` (`CockpitDemo`, light DOM, exported, not registered; its CSS `cockpit-demo.css`): the
   root page's "Cockpit" (Internals › Components). The app header twice (the default look, an own theme) with a made-up
   router (its own list of paths), switches (the switcher, its descriptions, the width) and a log of the events; a
-  second tab the nav tree (see "The nav tree"); a third says where the cockpit is (the page itself: it owns the URL hash, so it cannot run inside it).
+  second tab the nav tree (see "The nav tree"), a third the status view, a fourth the React components; a fifth says where the cockpit is (the page itself: it owns the URL hash, so it cannot run inside it).
 - `npm run typecheck`, `npm run build` (library mode; Lit stays outside), `npm run format`.
 - `npm test` (Vitest, in jsdom; `src/test/setup.ts` adds what jsdom lacks: `adoptedStyleSheets`).
 - `npm run loc` (`src/main`), `npm run loc:all` (all of `src`): the lines (all, code, comments, blank) by kind and by folder,
@@ -643,18 +738,25 @@ This repository's rules for it (see the root's `CLAUDE.md`):
     loaded), `back-page` and `forward-page` (their text read when the tooltip shows, "Back to …").
   - Not canceled, `navigate` lets the browser follow the link (a menu's choice: `location.assign()`), `back` and
     `forward` call `history.back()` and `forward()`.
-  - `MANTINE_APP_HEADER_THEME` (`themes/mantine-app-header-theme.ts`; CONSTANT_CASE: the constants' rule): Mantine's
-    variables as the theme's values.
-- The themes (`src/main/themes/`, its `index.ts`), plain data, exported by the main entry (not an entry of their own
-  like `file-upload`'s `/themes`): `DEFAULT_COCKPIT_THEME`, `DEFAULT_APP_HEADER_THEME`, `MANTINE_APP_HEADER_THEME`. No
-  Mantine theme for the cockpit itself yet.
+- The ready themes (`src/main/themes/`, its `index.ts`), functions exported by the main entry (not an entry of their
+  own like `file-upload`'s `/themes`): `createCockpitTheme(theme?)`, `createMantineCockpitTheme(theme?)`
+  (`themes/mantine-cockpit-theme.ts`).
+  - `createMantineCockpitTheme(theme?)`: a ready theme for an app built on Mantine, like `file-upload`'s (a theme of a
+    tier-1 package may read a UI library's variables; only strings, no dependency): the default theme, Mantine's
+    values on top, then the given keys. Mantine's values: `accentColor` (Mantine's primary color), the font, the
+    `header…` keys, all Mantine's variables, and Mantine's press
+    (`buttonActiveTransform: 'translateY(calc(0.0625rem * var(--mantine-scale)))'`: its `activeClassName`'s global
+    class does not reach into a shadow root, so its transform is copied; an app that turns it off passes `none`), and Mantine's button
+    radius (`buttonBorderRadius: 'var(--mantine-radius-default)'`), so the elements follow the app's Mantine
+    theme. Only inside a Mantine scope, where its variables are defined: an element in an app (`micro-app`'s header),
+    not the shell above the apps (the root page's are scoped per app).
   - The name: `AppHeader` (`createAppHeaderClass()`, `AppHeaderElement`; the host chooses the tag). Weighed:
     `MicroAppHeader` (the other package's name), `CockpitHeader` (reads like the cockpit's own header).
   - Its texts ("Home", "Back", "Forward", "Back to …", "Forward to …", "Modules"): like the cockpit's, through its
     config's `I18nAdapter` (`core/texts.ts`).
-  - Its theme: `AppHeaderTheme` (in `api/theme.ts`, beside `CockpitTheme`), its own keys, defaults from the design
-    language (`DEFAULT_APP_HEADER_THEME`, `themes/default-app-header-theme.ts`, exported). Weighed: `CockpitTheme`
-    extended for both (the header would carry the sidebar's keys).
+  - Its theme: the `CockpitTheme`, its keys `header…` (`headerBackgroundColor`, `headerTabActiveTextColor`, …, the
+    token rule's area); without the accent keys, the active tab, the links, the focus ring and the icon's tile follow
+    `accentColor`.
   - Router-free: the element never changes the URL; it shows the state (`modules`, `activeModule`, `crumbs`, `back`,
     `forward`) and fires events. Links are real `<a href>`; a plain click fires the cancelable `navigate` (`{ href }`),
     which a router adapter cancels to navigate itself; `back` and `forward` likewise.

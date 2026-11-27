@@ -8,6 +8,7 @@ import { html as staticHtml, unsafeStatic } from 'lit/static-html.js';
 
 import type { Group } from '../core/groups.js';
 import { groupsOf, subgroupsOf } from '../core/groups.js';
+import { I18nController, setElementI18nAdapter } from '../core/i18n-controller.js';
 import type { Match } from '../core/search.js';
 import { search } from '../core/search.js';
 import { readStored, writeStored } from '../core/storage.js';
@@ -19,7 +20,6 @@ import type {
   CockpitElement,
   CockpitTheme,
   FooterAction,
-  I18nAdapter,
   MenuItem,
   MenuSection,
   NavDensity,
@@ -29,7 +29,6 @@ import type {
   NavSubgroup,
   NavTreeItem,
   NavTreeNavigateDetail,
-  NavTreeTheme,
   SignedInUser,
 } from '../index.js';
 import { navTreeTagFor } from '../nav-tree/nav-tree-tag.js';
@@ -155,7 +154,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   // The nav tree's tag (the expanded sidebar's items, the sheet's): internal, once per cockpit class.
   readonly #navTreeTag: string;
   // The nav tree's theme, made from the cockpit's (`#treeTheme`).
-  #navTreeTheme: { of: CockpitTheme; theme: NavTreeTheme } | undefined;
+  #navTreeTheme: { of: CockpitTheme; theme: CockpitTheme } | undefined;
 
   #active: string | undefined;
   // The open items (created, or being loaded), the one used last first: closing the open one shows the next.
@@ -188,8 +187,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   #tipAnchor: HTMLElement | undefined;
   #tipTimer: ReturnType<typeof setTimeout> | undefined;
   #resizeObserver: ResizeObserver | undefined;
-  readonly #adapter: I18nAdapter | undefined;
-  #unsubscribe: (() => void) | undefined;
+  readonly #i18n: I18nController;
   // How many entries of each line of the topbar do not fit (they go into its "More" menu), by the line's key.
   readonly #overflow = new Map<string, number>();
   // The group of the top line whose two-pane menu is open (`nav="top"`), by its key (`#entryKey`).
@@ -206,7 +204,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
     this.startPage = config.startPage === true;
     this.theme = config.theme ?? {};
     this.#config = config;
-    this.#adapter = config.i18n;
+    this.#i18n = new I18nController(this, config.i18n);
     this.#key = config.storageKey ?? 'cockpit';
     this.#recent = readStored<string[]>(`${this.#key}:recent`, []);
     this.#collapsed = readStored(`${this.#key}:collapsed`, false);
@@ -278,7 +276,6 @@ class CockpitElementBase extends LitElement implements CockpitElement {
 
   override connectedCallback(): void {
     super.connectedCallback();
-    this.#unsubscribe = this.#adapter?.onChange?.(() => this.requestUpdate());
     window.addEventListener('hashchange', this.#onHashChange);
     document.addEventListener('keydown', this.#onShortcut);
     document.addEventListener('pointerdown', this.#onPointerDownOutside, true);
@@ -295,7 +292,6 @@ class CockpitElementBase extends LitElement implements CockpitElement {
     document.removeEventListener('pointerdown', this.#onPointerDownOutside, true);
     window.removeEventListener('resize', this.#fitDialogs);
     window.removeEventListener('scroll', this.#fitDialogs, { capture: true });
-    this.#unsubscribe?.();
     this.#resizeObserver?.disconnect();
     this.#closeMenus();
   }
@@ -353,6 +349,11 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   }
 
   protected override updated(): void {
+    // The nav trees take the cockpit's adapter (also one set for this element, e.g. by the React wrapper).
+    for (const tree of this.renderRoot.querySelectorAll<HTMLElement>('.nav-tree')) {
+      setElementI18nAdapter(tree, this.#i18n.adapter);
+    }
+
     this.#syncDialog(
       '.sheet-dialog',
       this.#bottom && this.#sheetOpen,
@@ -572,7 +573,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   // --- State helpers -------------------------------------------------------------------------------------------------
 
   get #texts(): Texts {
-    return textsOf(this.#adapter);
+    return textsOf(this.#i18n.adapter);
   }
 
   get #many(): boolean {
@@ -659,7 +660,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   }
 
   #labelOf(group: Group): string {
-    return group.name === '' ? this.#texts.other : group.name;
+    return group.name === '' ? this.#texts.navTreeOther : group.name;
   }
 
   #toggleCollapsed = () => {
@@ -1008,8 +1009,8 @@ class CockpitElementBase extends LitElement implements CockpitElement {
             : html`<button
                 type="button"
                 class="start-page-search-clear"
-                aria-label=${texts.clearSearch}
-                data-tip=${texts.clearSearch}
+                aria-label=${texts.searchClear}
+                data-tip=${texts.searchClear}
                 data-tip-side="bottom"
                 @click=${() => {
               setQuery('');
@@ -1021,7 +1022,9 @@ class CockpitElementBase extends LitElement implements CockpitElement {
         : nothing
     }
         </header>
-        ${sections.length === 0 ? html`<p class="start-page-empty" role="status">${texts.noResults}</p>` : nothing}
+        ${
+      sections.length === 0 ? html`<p class="start-page-empty" role="status">${texts.searchNoResults}</p>` : nothing
+    }
         ${
       sections.map(({ label, icon, items }) =>
         html`<section class="start-page-section">
@@ -1146,7 +1149,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
   // 768px), the logo is a button that toggles the sidebar, like the footer's toggle.
   #brand(texts: Texts, rail?: boolean): TemplateResult {
     const logo = html`<slot name="logo"><span class="brand-logo" aria-hidden="true">${gridIcon()}</span></slot>`;
-    const label = rail ? texts.expand : texts.collapse;
+    const label = rail ? texts.sidebarExpand : texts.sidebarCollapse;
 
     return html`${
       this.startPage
@@ -1244,7 +1247,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
       class="resize-handle"
       role="separator"
       aria-orientation="vertical"
-      aria-label=${texts.resize}
+      aria-label=${texts.sidebarResize}
       aria-valuemin=${MIN_WIDTH}
       aria-valuemax=${MAX_WIDTH}
       aria-valuenow=${ifDefined(this.#width)}
@@ -1372,19 +1375,9 @@ class CockpitElementBase extends LitElement implements CockpitElement {
 
   // The nav tree's theme: the cockpit's, its icons in the sidebar's white strokes. A new object only with a new theme
   // (the tree rewrites its stylesheet for a new one).
-  #treeTheme(): NavTreeTheme {
+  #treeTheme(): CockpitTheme {
     if (this.#navTreeTheme?.of !== this.theme) {
-      const { accentColor, fontSize, fontFamily } = this.theme;
-
-      this.#navTreeTheme = {
-        of: this.theme,
-        theme: {
-          ...(accentColor === undefined ? {} : { accentColor }),
-          ...(fontSize === undefined ? {} : { fontSize }),
-          ...(fontFamily === undefined ? {} : { fontFamily }),
-          iconColor: SIDEBAR_ICON_COLOR,
-        },
-      };
+      this.#navTreeTheme = { of: this.theme, theme: { ...this.theme, navTreeIconColor: SIDEBAR_ICON_COLOR } };
     }
 
     return this.#navTreeTheme.theme;
@@ -2375,16 +2368,16 @@ class CockpitElementBase extends LitElement implements CockpitElement {
 
     return html`<div class=${
       topbar ? 'top-actions' : 'footer'
-    } role="toolbar" aria-label=${texts.footer} aria-orientation=${rail ? 'vertical' : 'horizontal'}>
+    } role="toolbar" aria-label=${texts.sidebarActions} aria-orientation=${rail ? 'vertical' : 'horizontal'}>
       ${
       this.#narrow || topbar
         ? nothing
         : html`<button
           type="button"
           class="footer-button footer-toggle"
-          aria-label=${rail ? texts.expand : texts.collapse}
+          aria-label=${rail ? texts.sidebarExpand : texts.sidebarCollapse}
           aria-expanded=${!rail}
-          data-tip=${rail ? texts.expand : texts.collapse}
+          data-tip=${rail ? texts.sidebarExpand : texts.sidebarCollapse}
           data-tip-side=${side}
           @click=${this.#toggleCollapsed}
         >${panelIcon()}</button>`
@@ -2439,7 +2432,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
       : [
         ...(recent.length > 0 ? [{ label: texts.recent, matches: recent.map((item) => ({ item })) }] : []),
         ...groupsOf(items).flatMap((group) => {
-          const label = group.name === '' ? texts.other : group.name;
+          const label = group.name === '' ? texts.navTreeOther : group.name;
 
           if (!this.#switcher) {
             return [{ label, matches: group.items.map((item) => ({ item })) }];
@@ -2532,7 +2525,7 @@ class CockpitElementBase extends LitElement implements CockpitElement {
             >${closeIcon()}</button>
           </div>
           <div id=${listId} class="palette-list" role="listbox" aria-label=${texts.search}>
-            ${flat.length === 0 ? html`<p class="palette-empty">${texts.noResults}</p>` : nothing}
+            ${flat.length === 0 ? html`<p class="palette-empty">${texts.searchNoResults}</p>` : nothing}
             ${
       sections.map((section) =>
         section.matches.length === 0
@@ -2592,9 +2585,9 @@ class CockpitElementBase extends LitElement implements CockpitElement {
     }
           </div>
           <footer class="palette-footer">
-            <span><kbd class="key">↑</kbd><kbd class="key">↓</kbd> ${texts.move}</span>
-            <span><kbd class="key">↵</kbd> ${texts.open}</span>
-            <span><kbd class="key">Esc</kbd> ${texts.close}</span>
+            <span><kbd class="key">↑</kbd><kbd class="key">↓</kbd> ${texts.searchHintMove}</span>
+            <span><kbd class="key">↵</kbd> ${texts.searchHintOpen}</span>
+            <span><kbd class="key">Esc</kbd> ${texts.searchHintClose}</span>
             <span class="palette-count">${
       texts.items({ count: this.#query.trim() === '' ? items.length : flat.length })
     }</span>

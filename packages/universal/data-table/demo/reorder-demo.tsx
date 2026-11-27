@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 
 import type { RowMove, TableActions, TableColumns } from '../src/react/index.js';
 import { createDataTableComponent, defineFilters, selectFilter } from '../src/react/index.js';
-import { defaultTheme } from '../src/themes/index.js';
+import { createDataTableTheme } from '../src/themes/index.js';
 import { badge, fixedHeight, note, selectedLine } from './demo.module.css';
 import { useI18n } from './i18n.js';
 import { icons } from './icons.js';
@@ -12,7 +12,7 @@ import { useToasts } from './toasts.js';
 
 export { ReorderDemo };
 
-const DataTable = createDataTableComponent({ useI18n, theme: defaultTheme });
+const DataTable = createDataTableComponent({ useI18n, theme: createDataTableTheme() });
 
 // No column is `sortable`: the order of the rows is the one they are moved to.
 const columns: TableColumns<Task> = [

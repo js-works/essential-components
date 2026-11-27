@@ -1,4 +1,4 @@
-export { clamp, constant };
+export { clamp, constant, withoutUndefined };
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -15,4 +15,9 @@ function constant<const T>(value: T): T {
   }
 
   return value;
+}
+
+// An object's keys that are set: an `undefined` must not hide a value it is put on (a theme's keys over a ready theme).
+function withoutUndefined<T extends object>(value: T): Partial<T> {
+  return Object.fromEntries(Object.entries(value).filter(([, each]) => each !== undefined)) as Partial<T>;
 }

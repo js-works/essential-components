@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { ANTD_THEME, MANTINE_THEME } from '../../main/themes/index.js';
+import {
+  createAntdFileUploadTheme,
+  createFileUploadTheme,
+  createMantineFileUploadTheme,
+} from '../../main/themes/index.js';
 
-describe('MANTINE_THEME', () => {
+describe('createMantineFileUploadTheme', () => {
   it('maps every value onto Mantine\'s variables', () => {
-    const { focusRingWidth, focusRingOffset, ...mapped } = MANTINE_THEME;
+    const { focusRingWidth, focusRingOffset, ...mapped } = createMantineFileUploadTheme();
 
     expect([focusRingWidth, focusRingOffset]).toEqual(['2px', '2px']);
 
@@ -13,15 +17,11 @@ describe('MANTINE_THEME', () => {
       expect(value).not.toMatch(/#[0-9a-f]{3,8}\b/i);
     }
   });
-
-  it('is frozen', () => {
-    expect(Object.isFrozen(MANTINE_THEME)).toBe(true);
-  });
 });
 
-describe('ANTD_THEME', () => {
+describe('createAntdFileUploadTheme', () => {
   it('maps every value onto antd\'s variables', () => {
-    const { focusRingWidth, focusRingOffset, ...mapped } = ANTD_THEME;
+    const { focusRingWidth, focusRingOffset, ...mapped } = createAntdFileUploadTheme();
 
     expect([focusRingWidth, focusRingOffset]).toEqual(['2px', '2px']);
 
@@ -29,8 +29,15 @@ describe('ANTD_THEME', () => {
       expect(value).toMatch(/^var\(--ant-[\w-]+\)$/);
     }
   });
+});
 
-  it('is frozen', () => {
-    expect(Object.isFrozen(ANTD_THEME)).toBe(true);
+describe('the ready themes', () => {
+  it('the given keys on top, an undefined one hides nothing; a new object each call', () => {
+    const theme = createMantineFileUploadTheme({ progressColor: 'teal', borderRadius: undefined });
+
+    expect(theme.progressColor).toBe('teal');
+    expect(theme.borderRadius).toBe(createMantineFileUploadTheme().borderRadius);
+    expect(createFileUploadTheme()).not.toBe(createFileUploadTheme());
+    expect(createFileUploadTheme().progressColor).not.toBe('teal');
   });
 });

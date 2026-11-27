@@ -23,7 +23,12 @@ import {
   useDataTableSelection,
   useSavedFilters,
 } from '../src/react/index.js';
-import { antdTheme, defaultTheme, mantineTheme, softTheme } from '../src/themes/index.js';
+import {
+  createAntdDataTableTheme,
+  createDataTableTheme,
+  createMantineDataTableTheme,
+  createSoftDataTableTheme,
+} from '../src/themes/index.js';
 import type { Controls, DemoTheme } from './controls.js';
 import type { User } from './data.js';
 import { countries, createUser, fetchNothing, fetchUsers, newUser, roles, saveUser, suggestEmails } from './data.js';
@@ -43,10 +48,10 @@ export { Demo };
 const DEFAULTS: DataTableDefaults = { pageSize: 10, pageSizeOptions: [10, 25, 50] };
 
 const tables: Record<DemoTheme, DataTableComponent> = {
-  default: createDataTableComponent({ useI18n, theme: defaultTheme, defaults: DEFAULTS }),
-  soft: createDataTableComponent({ useI18n, theme: softTheme, defaults: DEFAULTS }),
-  mantine: createDataTableComponent({ useI18n, theme: mantineTheme, defaults: DEFAULTS }),
-  antd: createDataTableComponent({ useI18n, theme: antdTheme, defaults: DEFAULTS }),
+  default: createDataTableComponent({ useI18n, theme: createDataTableTheme(), defaults: DEFAULTS }),
+  soft: createDataTableComponent({ useI18n, theme: createSoftDataTableTheme(), defaults: DEFAULTS }),
+  mantine: createDataTableComponent({ useI18n, theme: createMantineDataTableTheme(), defaults: DEFAULTS }),
+  antd: createDataTableComponent({ useI18n, theme: createAntdDataTableTheme(), defaults: DEFAULTS }),
 };
 
 // The Mantine and antd themes read the variables of their library, which a real app gets from the library. The demo

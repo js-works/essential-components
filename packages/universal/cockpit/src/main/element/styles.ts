@@ -1,5 +1,5 @@
 import type { CockpitTheme } from '../index.js';
-import { DEFAULT_COCKPIT_THEME } from '../themes/default-cockpit-theme.js';
+import { accentOf, DEFAULT_COCKPIT_THEME, withoutUndefined } from '../themes/default-cockpit-theme.js';
 import { TIP_ANCHOR } from './anchors.js';
 import { MENU_PLACEMENT_STYLES } from './placement-styles.js';
 
@@ -1573,7 +1573,7 @@ ${MENU_PLACEMENT_STYLES}
   height: 32px;
   padding: 0 14px;
   border: 1px solid ${v.border};
-  border-radius: ${v.buttonRadius};
+  border-radius: ${v.buttonBorderRadius};
   background: ${v.field};
   cursor: pointer;
 
@@ -2679,6 +2679,15 @@ ${MENU_PLACEMENT_STYLES}
   }
 }
 
+/* Pressed, the push buttons take the theme's \`buttonActiveTransform\` (\`none\` by default). */
+.search-button,
+.footer-button,
+.retry-button {
+  &:active:not(:disabled) {
+    transform: ${v.buttonActiveTransform};
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -2732,15 +2741,15 @@ function layoutStyles(sidebarWidth: number | undefined, switcherLeft: number | u
 // of the design language.
 function themeValues(theme: CockpitTheme) {
   const t = { ...DEFAULT_COCKPIT_THEME, ...withoutUndefined(theme) };
-  // The accent: one color, lighter in a dark scheme (e.g. the sidebar) by a mix with white; the default has both.
-  const accent = theme.accentColor === undefined
-    ? t.accentColor
-    : `light-dark(${t.accentColor}, color-mix(in oklab, ${t.accentColor} 60%, white))`;
+  // The accent: one color, lighter in a dark scheme (e.g. the sidebar).
+  const accent = accentOf(theme);
 
   return {
     accent,
     fontSize: t.fontSize,
     fontFamily: t.fontFamily,
+    buttonActiveTransform: t.buttonActiveTransform,
+    buttonBorderRadius: t.buttonBorderRadius,
     sidebarWidth: t.sidebarWidth,
     railWidth: t.railWidth,
     contentPadding: t.contentPadding,
@@ -2774,9 +2783,4 @@ function themeValues(theme: CockpitTheme) {
     footerHover: 'light-dark(rgb(0 0 0 / 6%), rgb(255 255 255 / 7%))',
     footerDivider: 'light-dark(rgb(0 0 0 / 9%), rgb(255 255 255 / 10%))',
   };
-}
-
-// A theme's keys that are set (an `undefined` must not hide a default).
-function withoutUndefined(theme: CockpitTheme): CockpitTheme {
-  return Object.fromEntries(Object.entries(theme).filter(([, value]) => value !== undefined));
 }

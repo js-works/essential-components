@@ -87,10 +87,10 @@ function renderApp(path: string, language = 'en', moduleCrumb = true) {
   return router;
 }
 
-// The header's element: its tag is the first `internal-micro-app-header-<n>` not registered yet.
+// The header's element: its tag is the first `internal-cockpit-app-header-<n>` not registered yet.
 function header(): AppHeaderElement {
   return [...document.body.querySelectorAll('*')].find((element) =>
-    element.localName.startsWith('internal-micro-app-header-')
+    element.localName.startsWith('internal-cockpit-app-header-')
   ) as AppHeaderElement;
 }
 

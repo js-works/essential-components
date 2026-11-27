@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import type { FileItem } from '@local/file-upload';
 import { createFileUploadComponent } from '@local/file-upload/react';
-import { MANTINE_THEME } from '@local/file-upload/themes';
+import { createMantineFileUploadTheme } from '@local/file-upload/themes';
 import { useDialogs, useToast } from '@local/overlays/react';
 
 import type { Folder, MediaFile } from '../../domain/index.js';
@@ -29,7 +29,7 @@ export {
 // upload, download. Every change refreshes all reads.
 
 const MediaUpload = createFileUploadComponent({
-  theme: MANTINE_THEME,
+  theme: createMantineFileUploadTheme(),
 });
 
 // Marks or unmarks the selected rows, then says so.

@@ -7,6 +7,7 @@
 // -------------------------------------------------------------------
 
 import type { DialogTheme } from "../api/dialogs/theme.js";
+import { withoutUndefined } from "../themes/without-undefined.js";
 
 /**
  * Built-in dialog defaults — dark-mode-aware surface via `light-dark(...)`. Plain values:
@@ -36,9 +37,9 @@ export const defaultDialogTheme: DialogTheme = {
   spinner: "#444",
 };
 
-/** Merge partial tokens over {@link defaultDialogTheme} to produce a full DialogTheme. */
-export function createDialogTheme(
-  overrides?: Partial<DialogTheme>,
-): DialogTheme {
-  return { ...defaultDialogTheme, ...overrides };
+/**
+ * The default dialog theme with the given tokens on top (an `undefined` token hides nothing): a new object each call.
+ */
+export function createDialogTheme(theme: Partial<DialogTheme> = {}): DialogTheme {
+  return { ...defaultDialogTheme, ...withoutUndefined(theme) };
 }

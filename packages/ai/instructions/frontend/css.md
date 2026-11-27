@@ -10,6 +10,12 @@
   - Apps may have a handful of their own, each only with explicit permission (ask first, with the name and why nothing
     else does), always with the app's prefix (`--user-manager-accent-color`), never a generic name like `--shadow`:
     they inherit into everything inside and collide with other libraries.
+- Ready themes (the default look, one for a UI library) are functions, never exported constants:
+  `create<Variant><Package>Theme(theme?: <Package>Theme): <Package>Theme`, the default variant plain
+  `create<Package>Theme`. Its one argument, of the package's theme type, is put on top of the variant's values (an
+  `undefined` key hides nothing); a new object each call. So a host starts from a ready theme and changes a part of it
+  in one call: `createMantineCalendarTheme({ buttonBorderRadius: '4px' })`. The package keeps its defaults as
+  internal constants.
 - Theme tokens (the keys of a package's theme): `<area><state><cssProperty>` in camelCase, the full name of the CSS
   property they set last; no area for the whole component: `textColor`, `borderRadius`, `fontSize`,
   `buttonHoverBackgroundColor`, `dialogBorderRadius`, `toastTitleColor`, `sidebarWidth`.

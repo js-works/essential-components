@@ -8,7 +8,7 @@ import {
   setupDataTable,
   textFilter,
 } from '../src/index.js';
-import { defaultTheme } from '../src/themes/index.js';
+import { createDataTableTheme } from '../src/themes/index.js';
 import type { User } from './data.js';
 import { countries, fetchUsers, roles, suggestEmails } from './data.js';
 import { i18n } from './i18n.js';
@@ -20,7 +20,7 @@ export { mountElementDemo };
 // content adapter). Everything that depends on the row type is in the controller; the element only has the settings.
 
 // Once per app: the element class and its controller factory, bound to the theme and the i18n adapter.
-const [DataTableBase, createTableController] = setupDataTable({ theme: defaultTheme, i18n });
+const [DataTableBase, createTableController] = setupDataTable({ theme: createDataTableTheme(), i18n });
 
 class DemoDataTable extends DataTableBase {}
 

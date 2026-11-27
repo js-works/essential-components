@@ -1,9 +1,3 @@
-/* The light DOM parts of `MicroAppHeader` (the cockpit's app header): no box of their own, so the element lays out their
-   content (the icon on its tile, a crumb's text in its link). */
-.micro-app__header-slot {
-  display: contents;
-}
-
 /* The data table's box (`DataTable`): none of its own, so the page's layout reaches the table. */
 .micro-app__table {
   display: contents;

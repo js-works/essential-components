@@ -1,10 +1,11 @@
 import type * as DataTable from '../api/index.js';
+import { withoutUndefined } from './without-undefined.js';
 
-export { mantineTheme };
+export { createMantineDataTableTheme };
 
 // The Mantine theme: maps the design values onto Mantine's CSS variables. Mantine's variables adapt to its color
 // scheme, so dark mode follows Mantine.
-const mantineTheme: Required<DataTable.DataTableTheme> = {
+const MANTINE_THEME: Required<DataTable.DataTableTheme> = {
   colorText: 'var(--mantine-color-text)',
   colorTextDimmed: 'var(--mantine-color-dimmed)',
   colorSurface: 'var(--mantine-color-body)',
@@ -43,3 +44,8 @@ const mantineTheme: Required<DataTable.DataTableTheme> = {
   // as the inputs. It was Mantine's `md`, 2.5rem, 4px taller like the default theme's.
   buttonHeight: 'calc(2.25rem * var(--mantine-scale))',
 };
+
+// The Mantine theme with the given keys on top (an `undefined` key hides nothing): a new object each call.
+function createMantineDataTableTheme(theme: DataTable.DataTableTheme = {}): Required<DataTable.DataTableTheme> {
+  return { ...MANTINE_THEME, ...withoutUndefined(theme) };
+}

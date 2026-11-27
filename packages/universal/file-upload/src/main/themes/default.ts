@@ -1,11 +1,11 @@
-import { constant } from '../core/utils.js';
+import { constant, withoutUndefined } from '../core/utils.js';
 import type { FileUploadTheme } from '../index.js';
 
-export { DEFAULT_THEME };
+export { createFileUploadTheme, DEFAULT_THEME };
 
 // The default theme, used when the config has none: the values of the design language (`ui.css`, its `ui-*` tokens;
-// the progress track takes the divider's, the statuses, the badge's mark and the tooltip have no token there). Also
-// the base for an app's own theme: `{ ...DEFAULT_THEME, progressColor: '…' }`.
+// the progress track takes the divider's, the statuses, the badge's mark and the tooltip have no token there).
+// Internal: an app starts from `createFileUploadTheme({ progressColor: '…' })`.
 const DEFAULT_THEME = constant<FileUploadTheme>({
   badgeIconColor: '#fff',
   borderColor: 'light-dark(#b2b8be, #696a6c)',
@@ -37,3 +37,8 @@ const DEFAULT_THEME = constant<FileUploadTheme>({
   tooltipBorderRadius: '2px',
   tooltipTextColor: 'light-dark(#fff, #212529)',
 });
+
+// The default theme with the given keys on top (an `undefined` key hides nothing): a new object each call.
+function createFileUploadTheme(theme: Partial<FileUploadTheme> = {}): FileUploadTheme {
+  return { ...DEFAULT_THEME, ...withoutUndefined(theme) };
+}

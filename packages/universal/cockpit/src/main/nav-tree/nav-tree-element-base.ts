@@ -5,12 +5,13 @@ import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 
 import type { Group } from '../core/groups.js';
 import { groupsOf, subgroupsOf } from '../core/groups.js';
+import { I18nController } from '../core/i18n-controller.js';
 import { readStored, writeStored } from '../core/storage.js';
 import { textsOf } from '../core/texts.js';
 import { checkIcon, selectorIcon } from '../element/icons.js';
 import { Menu } from '../element/menu.js';
 import type {
-  I18nAdapter,
+  CockpitTheme,
   NavDensity,
   NavGroup,
   NavTreeClassConfig,
@@ -18,7 +19,6 @@ import type {
   NavTreeGroupDisplay,
   NavTreeItem,
   NavTreeNavigateDetail,
-  NavTreeTheme,
 } from '../index.js';
 import { navTreeStyles } from './nav-tree-styles.js';
 
@@ -49,16 +49,18 @@ class NavTreeElementBase extends LitElement implements NavTreeElement {
   declare collapsibleGroups: boolean;
   declare groupDisplay: NavTreeGroupDisplay;
   declare density: NavDensity;
-  declare theme: NavTreeTheme;
+  declare theme: CockpitTheme;
 
   readonly #sheet = new CSSStyleSheet();
-  readonly #adapter: I18nAdapter | undefined;
+  readonly #i18n: I18nController;
   readonly #storageKey: string | undefined;
-  #unsubscribe: (() => void) | undefined;
   // The groups and folders opened or closed by the user (`group`, `group/folder`), remembered per browser.
   #open: Record<string, boolean> = {};
   // The group shown with `group-display="select"`: the user's choice, else the active item's (remembered per browser).
   #chosen: string | undefined;
+  // Whether the slots `top` and `bottom` have content.
+  #hasTop = false;
+  #hasBottom = false;
   // The group select's list (a `Menu` of the cockpit: a listbox, its keys, placed by CSS anchor positioning; its
   // positioner a popover, in the top layer).
   readonly #select: Menu;
@@ -73,7 +75,7 @@ class NavTreeElementBase extends LitElement implements NavTreeElement {
     this.groupDisplay = 'sections';
     this.density = 'normal';
     this.theme = config.theme ?? {};
-    this.#adapter = config.i18n;
+    this.#i18n = new I18nController(this, config.i18n);
     this.#storageKey = config.storageKey;
     this.#select = new Menu(this, `nav-tree${++instances}-group`, {
       placement: 'bottom-start',
@@ -90,12 +92,10 @@ class NavTreeElementBase extends LitElement implements NavTreeElement {
     this.#chosen = this.#storageKey === undefined
       ? undefined
       : readStored<string | undefined>(`${this.#storageKey}:group`, undefined);
-    this.#unsubscribe = this.#adapter?.onChange?.(() => this.requestUpdate());
   }
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
-    this.#unsubscribe?.();
     this.#select.close();
   }
 
@@ -201,8 +201,40 @@ class NavTreeElementBase extends LitElement implements NavTreeElement {
     }
   };
 
+  // Whether the slots `top` and `bottom` have content (an element, or text that is not only white space): their room
+  // only then.
+  #slotChange(event: Event): void {
+    const slot = event.target as HTMLSlotElement;
+    const filled = slot.assignedNodes().some((node) =>
+      node.nodeType === Node.ELEMENT_NODE || (node.textContent ?? '').trim() !== ''
+    );
+
+    if (filled !== (slot.name === 'top' ? this.#hasTop : this.#hasBottom)) {
+      if (slot.name === 'top') {
+        this.#hasTop = filled;
+      } else {
+        this.#hasBottom = filled;
+      }
+
+      this.requestUpdate();
+    }
+  }
+
+  // The fixed parts (the slot `top`, the group select; the slot `bottom`) around the list, which scrolls when the host
+  // gives the tree a height.
   protected override render(): TemplateResult {
-    const other = textsOf(this.#adapter).other;
+    const { select, tree } = this.#content();
+
+    return html`<div class="layout" @keydown=${this.#onKeyDown}>
+      <div class="top" ?hidden=${!this.#hasTop}><slot name="top" @slotchange=${this.#slotChange}></slot></div>
+      ${select}
+      <div class="scroll">${tree}</div>
+      <div class="bottom" ?hidden=${!this.#hasBottom}><slot name="bottom" @slotchange=${this.#slotChange}></slot></div>
+    </div>`;
+  }
+
+  #content(): { select: TemplateResult | typeof nothing; tree: TemplateResult } {
+    const other = textsOf(this.#i18n.adapter).navTreeOther;
     const groups = groupsOf(this.items);
     const activeGroup = this.items.find((item) => item.id === this.active)?.group ?? '';
 
@@ -210,38 +242,43 @@ class NavTreeElementBase extends LitElement implements NavTreeElement {
     if (this.groupDisplay === 'select' && groups.length > 1) {
       const chosen = groups.find((group) => group.name === this.#chosen) ?? groups[0]!;
 
-      return html`<div class="tree" @keydown=${this.#onKeyDown}>
-        ${this.#groupSelect(groups, chosen, other)}
-        <section class="section"><ul class="list">${this.#folders(chosen)}</ul></section>
-      </div>`;
+      return {
+        select: this.#groupSelect(groups, chosen, other),
+        tree: html`<div class="tree">
+          <section class="section"><ul class="list">${this.#folders(chosen)}</ul></section>
+        </div>`,
+      };
     }
 
-    return html`<div class="tree" @keydown=${this.#onKeyDown}>${
-      groups.map((group) => {
-        const label = group.name === '' ? (groups.length > 1 && this.collapsibleGroups ? other : '') : group.name;
-        const list = this.#folders(group);
+    return {
+      select: nothing,
+      tree: html`<div class="tree">${
+        groups.map((group) => {
+          const label = group.name === '' ? (groups.length > 1 && this.collapsibleGroups ? other : '') : group.name;
+          const list = this.#folders(group);
 
-        if (!this.collapsibleGroups || label === '') {
-          return html`<section class="section">
+          if (!this.collapsibleGroups || label === '') {
+            return html`<section class="section">
             ${label === '' ? html`<hr class="section-rule" />` : html`<h2 class="section-label">${label}</h2>`}
             <ul class="list">${list}</ul>
           </section>`;
-        }
+          }
 
-        const open = this.#open[group.name]
-          ?? (this.items.length <= MANY || group.name === activeGroup || group.name === '');
+          const open = this.#open[group.name]
+            ?? (this.items.length <= MANY || group.name === activeGroup || group.name === '');
 
-        return html`<div class="group">
+          return html`<div class="group">
           <button type="button" class="group-trigger" aria-expanded=${open} @click=${() =>
-          this.#setOpen(group.name, !open)}>
+            this.#setOpen(group.name, !open)}>
             ${chevron()}
             <span class="group-name">${label}</span>
             <span class="group-count">${group.items.length}</span>
           </button>
           <ul class="list" ?hidden=${!open}>${list}</ul>
         </div>`;
-      })
-    }</div>`;
+        })
+      }</div>`,
+    };
   }
 
   // The select of `group-display="select"`: the chosen group and its count; its list all groups with theirs.
@@ -259,7 +296,7 @@ class NavTreeElementBase extends LitElement implements NavTreeElement {
       <button
         type="button"
         class="group-select"
-        aria-label=${textsOf(this.#adapter).group}
+        aria-label=${textsOf(this.#i18n.adapter).group}
         id=${menu.triggerId}
         aria-haspopup="listbox"
         aria-expanded=${menu.open}

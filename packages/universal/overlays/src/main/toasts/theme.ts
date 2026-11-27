@@ -7,6 +7,7 @@
 // -------------------------------------------------------------------
 
 import type { ToastTheme } from "../api/toasts/theme.js";
+import { withoutUndefined } from "../themes/without-undefined.js";
 
 /** Built-in toast defaults (light card; dark mode is opt-in via `appearance: "dark"`). */
 export const defaultToastTheme: ToastTheme = {
@@ -38,7 +39,9 @@ export const defaultToastTheme: ToastTheme = {
   darkCloseColor: "#9ca3af",
 };
 
-/** Merge partial tokens over {@link defaultToastTheme} to produce a full ToastTheme. */
-export function createToastTheme(overrides?: Partial<ToastTheme>): ToastTheme {
-  return { ...defaultToastTheme, ...overrides };
+/**
+ * The default toast theme with the given tokens on top (an `undefined` token hides nothing): a new object each call.
+ */
+export function createToastTheme(theme: Partial<ToastTheme> = {}): ToastTheme {
+  return { ...defaultToastTheme, ...withoutUndefined(theme) };
 }

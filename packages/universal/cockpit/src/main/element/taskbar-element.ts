@@ -345,7 +345,7 @@ class TaskbarElement extends LitElement {
     const stop = this.tasks.some((task) => task.id === this.active) ? this.active : this.tasks[0]?.id;
 
     return html`
-      <div class="bar" role="toolbar" aria-label=${texts.taskbar} @keydown=${this.#onKeyDown}>
+      <div class="bar" role="toolbar" aria-label=${texts.taskbarLabel} @keydown=${this.#onKeyDown}>
         ${
       repeat(this.tasks, (task) => task.id, (task) => {
         const active = task.id === this.active;
@@ -382,8 +382,8 @@ class TaskbarElement extends LitElement {
                 class="task-close"
                 data-id=${task.id}
                 tabindex="-1"
-                aria-label=${texts.closeTask({ title: task.title })}
-                title=${texts.closeTask({ title: task.title })}
+                aria-label=${texts.taskbarClose({ title: task.title })}
+                title=${texts.taskbarClose({ title: task.title })}
                 @click=${() => this.#close(task)}
               >${closeIcon()}</button>`
         }

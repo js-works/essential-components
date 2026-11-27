@@ -1,10 +1,10 @@
 import type { I18nAdapter } from './i18n.js';
-import type { LoginTheme } from './theme.js';
+import type { CockpitTheme } from './theme.js';
 
 export type { LoginClass, LoginClassConfig, LoginElement, LoginProvider };
 
 type LoginClassConfig = {
-  theme?: LoginTheme;
+  theme?: CockpitTheme;
   // The texts of the provider buttons (the namespace `'cockpit'`, the keys `login…`): the adapter, the same for every
   // element of the class. Without one: English and en-US.
   i18n?: I18nAdapter;

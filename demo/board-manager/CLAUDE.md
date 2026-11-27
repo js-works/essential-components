@@ -199,8 +199,8 @@ the root's `CLAUDE.md` apply.
 - Mantine is scoped: its layered CSS, its variables and color scheme on `.board-manager` (the app, and the content of
   each dialog through `wrapContent`), following the CSS `color-scheme` (see the element); its popups without portal.
 - The components' themes follow Mantine as closely as possible (their values are Mantine's variables): the data
-  table's `mantineTheme`, the file upload's `MANTINE_THEME` (`@local/file-upload/themes`, 2026-10-24;
-  `MANTINE_UPLOAD_THEME` in `shared/ui/document-upload.ts` before, a copy in each app with an upload). More contrast
+  table's `createMantineDataTableTheme()`, the file upload's `createMantineFileUploadTheme()`
+  (`@local/file-upload/themes`). More contrast
   comes from the app's Mantine theme instead (`cssVariablesResolver`, 2026-09-30): `dimmed` `gray.7` (dark `dark.1`) and `placeholder` `gray.6` (dark `dark.2`),
   one step darker than Mantine's (lighter in dark mode); the text and the lines stay Mantine's.
 - The look is made per element (`createBoardManagerLook()` in `board-manager-app.tsx`, 2026-10-01): the theme, the CSS variables

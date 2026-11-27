@@ -18,10 +18,10 @@ import baseStylesheet from './core/view/data-table.css?raw';
 import { generalAction, groupAction, multiRowAction, singleRowAction } from './react/action-builders.js';
 import { createDataTableComponent } from './react/create-data-table-component.js';
 import { defineActions, defineColumns, defineFilters } from './react/definitions.js';
-import { antdTheme } from './themes/antd.js';
-import { defaultTheme } from './themes/default.js';
-import { mantineTheme } from './themes/mantine.js';
-import { softTheme } from './themes/soft.js';
+import { createAntdDataTableTheme } from './themes/antd.js';
+import { createDataTableTheme } from './themes/default.js';
+import { createMantineDataTableTheme } from './themes/mantine.js';
+import { createSoftDataTableTheme } from './themes/soft.js';
 
 // The component under test: created without a configuration (English texts, the default theme).
 const Nav = createDataTableComponent();
@@ -4670,7 +4670,12 @@ describe('theming', () => {
   };
 
   it.each(
-    [['default', defaultTheme], ['soft', softTheme], ['Mantine', mantineTheme], ['Ant Design', antdTheme]] as const,
+    [
+      ['default', createDataTableTheme()],
+      ['soft', createSoftDataTableTheme()],
+      ['Mantine', createMantineDataTableTheme()],
+      ['Ant Design', createAntdDataTableTheme()],
+    ] as const,
   )(
     'has a value for every design value in the %s theme',
     (_, theme) => {
@@ -4748,7 +4753,21 @@ describe('theming', () => {
     }
   });
 
-  it.each([['Mantine', mantineTheme, '--mantine-'], ['Ant Design', antdTheme, '--ant-']] as const)(
+  it('the ready themes: the given keys on top, an undefined one hides nothing; a new object each call', () => {
+    const theme = createMantineDataTableTheme({ radius: '0px', fontSize: undefined });
+
+    expect(theme.radius).toBe('0px');
+    expect(theme.fontSize).toBe(createMantineDataTableTheme().fontSize);
+    expect(createDataTableTheme()).not.toBe(createDataTableTheme());
+  });
+
+  it.each(
+    [['Mantine', createMantineDataTableTheme(), '--mantine-'], [
+      'Ant Design',
+      createAntdDataTableTheme(),
+      '--ant-',
+    ]] as const,
+  )(
     'maps the design values onto the variables of %s',
     (_, theme, prefix) => {
       const values = Object.values(theme).map(String);

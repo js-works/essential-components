@@ -120,8 +120,10 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   - Sizes that have no value of their own are derived with `calc()` (e.g. the title is `1.25 * fontSize`, a row button
     is `0.75 * controlHeight`).
   - The tooltip turns the colors around: `colorText` as background, `colorSurface` as text.
-- Themes are objects in the configuration, not CSS files (see Configuration): `defaultTheme`, `softTheme`,
-  `mantineTheme`, `antdTheme`.
+- Themes are objects in the configuration, not CSS files (see Configuration). The ready ones are functions (`css.md`):
+  `createDataTableTheme`, `createSoftDataTableTheme`, `createMantineDataTableTheme`, `createAntdDataTableTheme`, each `(theme?: DataTableTheme)`: the variant's values with the given keys on top (an `undefined`
+  key hides nothing), a new object each call (`createMantineDataTableTheme({ radius: '0px' })`). Their values are
+  internal constants (`DEFAULT_THEME`, … in `src/themes/`).
 - The soft theme (`src/themes/soft.ts`): the look of the design spec of the filter popup and the
   selection bar, for apps without a UI library that want it instead of the neutral default. Hard-coded values like the
   default theme, light and dark: lighter lines (`#dcdcdc`), a brighter blue as the one accent (`#2b72d6`), a light blue
@@ -167,8 +169,8 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   - `@local/data-table/react`: `createDataTableComponent`, the hooks, the
     React column filters and their types (flat, with the React types), with the app's React (an
     optional peer dependency).
-  - `@local/data-table/themes`: `defaultTheme`, `softTheme`, `mantineTheme`, `antdTheme` (plain data, used by both; no React,
-    no element). The other entries export no themes.
+  - `@local/data-table/themes`: `createDataTableTheme`, `createSoftDataTableTheme`, `createMantineDataTableTheme`, `createAntdDataTableTheme`
+    (used by both; no React, no element). The other entries export no themes.
   - `@local/data-table/react-query`: `useQuerySource(key, fetch, watch)`, a source through
     the app's TanStack Query. Each page the table loads is a query (`key(query)`, `fetchQuery` with a `staleTime` of 30
     seconds), so it is cached and deduplicated like the app's other reads; when a query under `watch` is invalidated,
@@ -371,15 +373,15 @@ This repository's rules for it (see the root's `CLAUDE.md`):
     - The few lengths the view computes inline (the pager's slots, the filter view, the edit form) use the same
       placeholders, through `useThemed()` (`config.ts`).
     - Apps configure only through `theme`.
-  - The themes are exported objects: `defaultTheme`, `softTheme`, `mantineTheme`, `antdTheme` (`src/themes/*.ts`). No CSS theme
-    files.
+  - The ready themes are exported functions: `createDataTableTheme`, `createSoftDataTableTheme`, `createMantineDataTableTheme`, `createAntdDataTableTheme`
+    (`src/themes/*.ts`). No CSS theme files.
   - Without `theme`: the default theme, so the table always has its colors.
 - The public API of the React entry (`@local/data-table/react`): `createDataTableComponent`, `useDataTableController`,
   `useDataTableSelection`, `textFilter`, `selectFilter`, `dateRangeFilter`, `numberRangeFilter`, `booleanFilter`,
   `autocompleteFilter`, `textColumnEditor`, `selectColumnEditor`, `dateColumnEditor`, `criteriaOf`, `pagingOf`,
   `sortOf`, `localPage`, `localSource`, `oneOf`, `matchesText`, `inDateRange`, and the types
   (`DataTableComponentConfig`, `DataTableTheme`, `I18nAdapter`, `DataTableComponent`, `.Controller`, `.Props`, ...). The
-  themes (`defaultTheme`, `softTheme`, `mantineTheme`, `antdTheme`) come from `@local/data-table/themes`.
+  ready themes (`createDataTableTheme`, `createSoftDataTableTheme`, `createMantineDataTableTheme`, `createAntdDataTableTheme`) come from `@local/data-table/themes`.
 
 ## Safepoints
 

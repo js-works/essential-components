@@ -17,13 +17,60 @@
   white-space: pre;
 }
 
-/* The nav tree's frame: a sidebar's width; 12px inside, where the active item's mark sits. */
+/* The nav tree's frame: a sidebar's width and a height, so its list scrolls; 12px inside, where the active item's
+   mark sits. */
 .cockpit-demo__tree {
+  display: flex;
+  flex-direction: column;
   box-sizing: border-box;
   width: 260px;
+  height: 420px;
   padding: 12px;
   border: 1px solid var(--ui-color-divider);
   border-radius: var(--ui-radius-lg);
   background: var(--ui-color-subtle);
   font-family: system-ui, sans-serif;
+}
+
+/* The status view's frame with `layout="screen"`: a container of a fixed height, which it fills. */
+.cockpit-demo__status {
+  height: 560px;
+}
+
+.cockpit-demo__status-id {
+  margin: 0;
+  color: var(--ui-color-muted);
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+}
+
+/* The tree fills the frame's height. */
+.cockpit-demo__tree > [data-tree] {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* The nav tree's slots in the demo: a title on top, a link at the bottom (below a line). */
+.cockpit-demo__tree-top {
+  display: block;
+  padding: 4px 8px;
+}
+
+.cockpit-demo__tree-bottom {
+  display: block;
+  padding: 10px 8px 2px;
+  border-top: 1px solid var(--ui-color-divider);
+}
+
+/* The React tab: the nav tree beside the status view. */
+.cockpit-demo__react {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
+
+  > .cockpit-demo__frame {
+    flex: 1 1 320px;
+    padding: 12px;
+  }
 }

@@ -5,7 +5,7 @@ import type { RowPaging, RowSort } from '../src/react/index.js';
 import { createDataTableComponent, criteriaOf, defineColumns } from '../src/react/index.js';
 import type { FoundPage } from '../src/react-query/index.js';
 import { useFindSource } from '../src/react-query/index.js';
-import { defaultTheme } from '../src/themes/index.js';
+import { createDataTableTheme } from '../src/themes/index.js';
 import type { User } from './data.js';
 import { fetchUsers } from './data.js';
 import { note } from './demo.module.css';
@@ -13,7 +13,7 @@ import { useI18n } from './i18n.js';
 
 export { QueryDemo };
 
-const DataTable = createDataTableComponent({ useI18n, theme: defaultTheme });
+const DataTable = createDataTableComponent({ useI18n, theme: createDataTableTheme() });
 
 const columns = defineColumns<User>([
   { key: 'firstName', header: 'First name', width: 2, sortable: true },

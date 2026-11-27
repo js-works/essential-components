@@ -1,6 +1,6 @@
 import { constant } from '../main/core/utils.js';
 import { createFileUploadClass } from '../main/index.js';
-import { DEFAULT_THEME } from '../main/themes/index.js';
+import { createFileUploadTheme } from '../main/themes/index.js';
 import './demo.css';
 import { submitted, summarize } from './format.js';
 import { createDemoI18n } from './i18n.js';
@@ -248,8 +248,7 @@ class DefaultUpload extends createFileUploadClass({ i18n }) {}
 
 class AcmeUpload extends createFileUploadClass({
   i18n,
-  theme: {
-    ...DEFAULT_THEME,
+  theme: createFileUploadTheme({
     focusRingColor: ACME_ACCENT,
     focusRingOffset: '1px',
     dragOverBorderColor: ACME_ACCENT,
@@ -263,7 +262,7 @@ class AcmeUpload extends createFileUploadClass({
     previewBorderRadius: '2px',
     fontFamily: 'Georgia, serif',
     fontSize: '0.9375rem',
-  },
+  }),
   styles: '.root { border-style: dashed; }',
 }) {}
 

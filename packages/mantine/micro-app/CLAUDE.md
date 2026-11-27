@@ -67,9 +67,10 @@ This repository's rules for it (see the root's `CLAUDE.md`):
 - Back and Forward: where they lead is known from the history's index in each entry's state (`__TSR_index`,
   `history.ts`; a new entry forgets the ones after it). Their pages (the tooltips' "Back to …") are the last crumb of
   that path's routes (`router.matchRoutes`, `crumbs.ts`), else the module's label; `/` is "Home".
-- Its element: an internal one (`internal-micro-app-header-<n>`, registered on first use) with
-  `MANTINE_APP_HEADER_THEME`, one class per i18next instance (its `I18nAdapter`: `i18nAdapterOf(i18n)`, the namespace
-  `cockpit`; the translations are the cockpit's `locales/*.json`, in `microAppResources`). The package's own
+- Its element: the cockpit's React component (`createAppHeaderComponent` of `@local/cockpit/react`, an internal
+  element of the cockpit, `internal-cockpit-app-header-<n>`), with `createMantineCockpitTheme()` and the app's i18next
+  instance through `useI18nAdapter` (the namespace `cockpit`; the translations are the cockpit's `locales/*.json`, in
+  `microAppResources`). The package's own
   `home` names the start page in the tooltips.
 - Tests: `src/micro-app-header.test.tsx` (a memory router and an i18next instance; the element's properties and
   events: the title, the modules and the active one, the crumbs, the module's crumb, the texts in the app's language, `navigate`, Back and Forward).

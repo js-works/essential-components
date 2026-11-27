@@ -1,7 +1,7 @@
 import { createContext, useContext } from 'react';
 
 import type * as Spec from '../api/react/index.js';
-import { defaultTheme } from '../themes/default.js';
+import { DEFAULT_THEME } from '../themes/default.js';
 import type { ThemeStylesheet } from './stylesheet.js';
 import { resolveTheme, themeStylesheet } from './stylesheet.js';
 
@@ -26,7 +26,7 @@ function valueOf(value: Spec.ThemeValue): string {
 // Missing theme values come from the default theme, so the table always has its look. The i18n adapter is added by
 // the element (its config) or the component (its hook).
 function resolveConfig(configTheme: Spec.DataTableTheme | undefined): ResolvedConfig {
-  const theme: Spec.DataTableTheme = { ...defaultTheme, ...configTheme };
+  const theme: Spec.DataTableTheme = { ...DEFAULT_THEME, ...configTheme };
   const values = Object.fromEntries(
     Object.entries(theme).flatMap(([key, value]: [string, Spec.ThemeValue | undefined]) =>
       value === undefined ? [] : [[key, valueOf(value)]]

@@ -1,5 +1,5 @@
-import type { AppHeaderTheme } from '../index.js';
-import { DEFAULT_APP_HEADER_THEME } from '../themes/default-app-header-theme.js';
+import type { CockpitTheme } from '../index.js';
+import { accentOf, DEFAULT_COCKPIT_THEME, withoutUndefined } from '../themes/default-cockpit-theme.js';
 import { TIP_ANCHOR } from './anchors.js';
 import { MENU_PLACEMENT_STYLES } from './placement-styles.js';
 
@@ -9,8 +9,8 @@ export { appHeaderStyles };
 // `font-size` is a multiple of the theme's `fontSize` (`calc(${v.fontSize} * N / 14)`, N the size in px at 14); no rem:
 // a page's root font size must not change it. Narrow (its own width, a container query): the tabs become a menu
 // (below 896px), Back and Forward hide (below 640px).
-function appHeaderStyles(theme: AppHeaderTheme): string {
-  const v = { ...DEFAULT_APP_HEADER_THEME, ...withoutUndefined(theme) };
+function appHeaderStyles(theme: CockpitTheme): string {
+  const v = headerValues(theme);
   const size = (px: number) => `calc(${v.fontSize} * ${px} / 14)`;
 
   return /* css */ `
@@ -198,6 +198,14 @@ a {
   &:disabled {
     opacity: 0.45;
     cursor: default;
+  }
+}
+
+/* Pressed, the push buttons take the theme's \`buttonActiveTransform\` (\`none\` by default); the tabs do not. */
+.title--switcher,
+.history-button {
+  &:active:not(:disabled) {
+    transform: ${v.buttonActiveTransform};
   }
 }
 
@@ -410,6 +418,34 @@ ${MENU_PLACEMENT_STYLES}
 `;
 }
 
-function withoutUndefined(theme: AppHeaderTheme): AppHeaderTheme {
-  return Object.fromEntries(Object.entries(theme).filter(([, value]) => value !== undefined));
+// The theme's values for the header (its `header…` keys and the font), over the defaults; the keys without a default
+// follow the accent.
+function headerValues(theme: CockpitTheme) {
+  const t = { ...DEFAULT_COCKPIT_THEME, ...withoutUndefined(theme) };
+  const accent = accentOf(theme);
+
+  return {
+    fontFamily: t.fontFamily,
+    fontSize: t.fontSize,
+    buttonActiveTransform: t.buttonActiveTransform,
+    backgroundColor: t.headerBackgroundColor,
+    textColor: t.headerTextColor,
+    dividerColor: t.headerDividerColor,
+    iconBackgroundColor: t.headerIconBackgroundColor ?? accent,
+    iconColor: t.headerIconColor,
+    iconBorderRadius: t.headerIconBorderRadius,
+    tabHoverBackgroundColor: t.headerTabHoverBackgroundColor,
+    tabActiveBackgroundColor: t.headerTabActiveBackgroundColor ?? `color-mix(in srgb, ${accent} 11%, transparent)`,
+    tabActiveTextColor: t.headerTabActiveTextColor ?? accent,
+    linkTextColor: t.headerLinkTextColor ?? accent,
+    separatorColor: t.headerSeparatorColor,
+    menuBackgroundColor: t.headerMenuBackgroundColor,
+    menuBoxShadow: t.headerMenuBoxShadow,
+    menuDescriptionTextColor: t.headerMenuDescriptionTextColor,
+    tooltipBackgroundColor: t.headerTooltipBackgroundColor,
+    tooltipTextColor: t.headerTooltipTextColor,
+    tooltipBorderRadius: t.headerTooltipBorderRadius,
+    borderRadius: t.headerBorderRadius,
+    focusRingColor: t.headerFocusRingColor ?? accent,
+  };
 }

@@ -1,72 +1,61 @@
-export type { AppHeaderTheme, CockpitTheme, LoginTheme, NavTreeTheme };
+export type { CockpitTheme };
 
-// The cockpit's look, a few values (the colors are the design language's). Without a key, its default. The element's
-// `theme` can be switched live (a new object).
+// The look of every element of the package (the cockpit, the taskbar, the nav tree, the app header, the login, the
+// status view): one object, given to each class (`createLoginClass({ theme })`, …); each element reads the keys it
+// needs. Without a key, its default (the colors are the design language's). A key that
+// belongs to one part starts with its name (`sidebar…`, `navTree…`, `header…`). Elements with a `theme` property
+// (the cockpit, the nav tree, the app header) switch it live (a new object); the login's and the status view's is
+// fixed per class. Ready themes: `createCockpitTheme()`, `createMantineCockpitTheme()`.
 type CockpitTheme = {
-  // One color, lighter in the dark navigation by a mix with white (default: the design language's).
+  // One color for all: the active entries, the buttons, the focus rings, the logo. A custom one is lighter in a dark
+  // scheme (e.g. the dark navigation) by a mix with white (default: the design language's, which has both).
   accentColor?: string;
-  // The base size of the cockpit's text and icons (default `14px`, the apps' normal text).
+  // The base size of the text and the icons (default `14px`, the apps' normal text); every other size follows it.
   fontSize?: string;
-  // Default `system-ui, sans-serif`: the cockpit's own, so a mini-app's global CSS does not change it.
+  // Default `system-ui, sans-serif`: the package's own, so a mini-app's global CSS does not change it.
   fontFamily?: string;
-  // The sidebar's default width (`256px`; the user can resize it), the rail's (`68px`).
+  // Pressed, a push button's CSS `transform` (default `none`): e.g. `translateY(1px)` like Mantine's, `scale(0.96)`.
+  // The push buttons: the cockpit's icon buttons (search, footer, topbar) and "Try again", the app header's switcher,
+  // Back and Forward, the login's and the status view's buttons; not tabs, menu items or list entries.
+  buttonActiveTransform?: string;
+  // The corners of those push buttons (default `5px`, the design language's), except the app header's
+  // (`headerBorderRadius`, its tabs and buttons alike).
+  buttonBorderRadius?: string;
+
+  // The cockpit: the sidebar's default width (`256px`; the user can resize it), the rail's (`68px`), the room around
+  // the open app beside the expanded sidebar and with the bottom bar (`16px 20px`).
   sidebarWidth?: string;
   railWidth?: string;
-  // Around the open app beside the expanded sidebar and with the bottom bar (default `16px 20px`).
   contentPadding?: string;
-};
 
-// The app header's look (draft; a key is added when needed). Without a key, its default (the design language's). The
-// package's `mantineAppHeaderTheme` gives Mantine's variables (`var(--mantine-…)`), so it looks almost like Mantine.
-type AppHeaderTheme = {
-  fontFamily?: string;
-  fontSize?: string;
-  backgroundColor?: string;
-  textColor?: string;
-  // The line below the first line (also the menus' border); the app's icon on its tile.
-  dividerColor?: string;
-  iconBackgroundColor?: string;
-  iconColor?: string;
-  iconBorderRadius?: string;
+  // The nav tree: the icons of the items and folders (default: the accent; in the cockpit's sidebar white strokes).
+  navTreeIconColor?: string;
+
+  // The app header. Without them, the active tab, the links, the focus ring and the icon's tile follow the accent.
+  headerBackgroundColor?: string;
+  headerTextColor?: string;
+  // The line below the first line (also the menus' border).
+  headerDividerColor?: string;
+  // The app's icon on its tile.
+  headerIconBackgroundColor?: string;
+  headerIconColor?: string;
+  headerIconBorderRadius?: string;
   // The modules' tabs (and the narrow modules menu's trigger).
-  tabHoverBackgroundColor?: string;
-  tabActiveBackgroundColor?: string;
-  tabActiveTextColor?: string;
+  headerTabHoverBackgroundColor?: string;
+  headerTabActiveBackgroundColor?: string;
+  headerTabActiveTextColor?: string;
   // The crumbs that are links; the marks between the crumbs.
-  linkTextColor?: string;
-  separatorColor?: string;
-  // The menus (the switcher, the narrow modules menu).
-  menuBackgroundColor?: string;
-  menuBoxShadow?: string;
-  // The entries' descriptions (the switcher's menu).
-  menuDescriptionTextColor?: string;
+  headerLinkTextColor?: string;
+  headerSeparatorColor?: string;
+  // The menus (the switcher, the narrow modules menu); the entries' descriptions.
+  headerMenuBackgroundColor?: string;
+  headerMenuBoxShadow?: string;
+  headerMenuDescriptionTextColor?: string;
   // The tooltips of Back and Forward.
-  tooltipBackgroundColor?: string;
-  tooltipTextColor?: string;
-  tooltipBorderRadius?: string;
-  // Tabs and buttons (not the icon's tile: `iconBorderRadius`).
-  borderRadius?: string;
-  focusRingColor?: string;
-};
-
-// The login's look (`createLoginClass({ theme })`, fixed per class). Without a key, the cockpit's default
-// (`DEFAULT_COCKPIT_THEME`), so both look alike; the other colors and the radii are the design language's.
-type LoginTheme = {
-  // The button, the links, the focus rings and the logo; lighter in a dark scheme by a mix with white.
-  accentColor?: string;
-  // The base size of the text (default `14px`); the other sizes follow it.
-  fontSize?: string;
-  fontFamily?: string;
-};
-
-// The nav tree's look. Without a key, the cockpit's default (`DEFAULT_COCKPIT_THEME`); the other colors are the design
-// language's.
-type NavTreeTheme = {
-  // The active item, the marks, the focus rings; lighter in a dark scheme by a mix with white.
-  accentColor?: string;
-  // The base size of the text and the icons (default `14px`); the items' text is 13/14 of it.
-  fontSize?: string;
-  fontFamily?: string;
-  // The icons of the items and folders (default: the accent).
-  iconColor?: string;
+  headerTooltipBackgroundColor?: string;
+  headerTooltipTextColor?: string;
+  headerTooltipBorderRadius?: string;
+  // Tabs and buttons (not the icon's tile: `headerIconBorderRadius`).
+  headerBorderRadius?: string;
+  headerFocusRingColor?: string;
 };

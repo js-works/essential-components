@@ -1,6 +1,6 @@
 import { MENU_PLACEMENT_STYLES } from '../element/placement-styles.js';
-import type { NavTreeTheme } from '../index.js';
-import { DEFAULT_COCKPIT_THEME } from '../themes/default-cockpit-theme.js';
+import type { CockpitTheme } from '../index.js';
+import { accentOf, DEFAULT_COCKPIT_THEME } from '../themes/default-cockpit-theme.js';
 
 export { navTreeStyles };
 
@@ -8,16 +8,12 @@ export { navTreeStyles };
 // `font-size` is a multiple of the theme's `fontSize` (`size(N)`, N the size in px at 14); no rem. The colors follow
 // the element's `color-scheme` (`light-dark()`): in the cockpit's dark sidebar their dark side. The text color and the
 // font are inherited (the host's), except the theme's `fontFamily` when given.
-function navTreeStyles(theme: NavTreeTheme): string {
+function navTreeStyles(theme: CockpitTheme): string {
   const fontSize = theme.fontSize ?? DEFAULT_COCKPIT_THEME.fontSize;
-  const accentColor = theme.accentColor ?? DEFAULT_COCKPIT_THEME.accentColor;
-  // A custom accent: lighter in a dark scheme by a mix with white (like the cockpit's); the default has both.
-  const accent = theme.accentColor === undefined
-    ? accentColor
-    : `light-dark(${accentColor}, color-mix(in oklab, ${accentColor} 60%, white))`;
+  const accent = accentOf(theme);
   const v = {
     accent,
-    iconColor: theme.iconColor ?? accent,
+    iconColor: theme.navTreeIconColor ?? accent,
     text: 'CanvasText',
     muted: 'light-dark(#666, #bbb)',
     divider: 'light-dark(#dee2e6, #424242)',
@@ -32,7 +28,9 @@ function navTreeStyles(theme: NavTreeTheme): string {
 
   return /* css */ `
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   ${theme.fontFamily === undefined ? '' : `font-family: ${theme.fontFamily};`}
 }
 
@@ -49,6 +47,44 @@ function navTreeStyles(theme: NavTreeTheme): string {
 button {
   font: inherit;
   color: inherit;
+}
+
+/* The fixed parts around the list: the slot \`top\` and the group select above it, the slot \`bottom\` below it. With a
+   height from the host, only the list scrolls between them; without one, the tree is as tall as its content. */
+.layout {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.top,
+.bottom {
+  flex: none;
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+.top {
+  margin-bottom: 12px;
+}
+
+.bottom {
+  margin-top: 12px;
+}
+
+/* The scrolling list. Reaching 12px out on both sides (the host's padding), so the active item's mark at the left edge
+   and the focus rings are not cut off by its \`overflow\`. */
+.scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-inline: -12px;
+  padding-inline: 12px;
+  overflow-y: auto;
+  overscroll-behavior: none;
+  scrollbar-width: thin;
 }
 
 :focus-visible {
@@ -290,9 +326,11 @@ button {
   }
 }
 
-/* The group select (\`group-display="select"\`): the chosen group and its count; 12px below it. */
+/* The group select (\`group-display="select"\`), fixed above the list: the chosen group and its count; 12px below
+   it. */
 .group-select {
   display: flex;
+  flex: none;
   align-items: center;
   gap: 8px;
   width: 100%;

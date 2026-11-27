@@ -2,10 +2,11 @@ import type { TemplateResult } from 'lit';
 import { html, LitElement, nothing } from 'lit';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 
+import { I18nController } from '../core/i18n-controller.js';
 import type { Texts } from '../core/texts.js';
 import { textsOf } from '../core/texts.js';
 import { gridIcon } from '../element/icons.js';
-import type { I18nAdapter, LoginClassConfig, LoginElement, LoginProvider } from '../index.js';
+import type { LoginClassConfig, LoginElement, LoginProvider } from '../index.js';
 
 export { LoginElementBase };
 
@@ -35,8 +36,7 @@ class LoginElementBase extends LitElement implements LoginElement {
   declare signInWith: ((providerId: string) => void | Promise<void>) | null;
 
   readonly #sheet: CSSStyleSheet;
-  readonly #adapter: I18nAdapter | undefined;
-  #unsubscribe: (() => void) | undefined;
+  readonly #i18n: I18nController;
   // Whether the default slot and the slot `footer` have content: the line "or" and the footer's line only then.
   #hasContent = false;
   #hasFooter = false;
@@ -54,19 +54,9 @@ class LoginElementBase extends LitElement implements LoginElement {
     this.submitting = false;
     this.providers = [];
     this.signInWith = null;
-    this.#adapter = config.i18n;
+    this.#i18n = new I18nController(this, config.i18n);
     this.#sheet = sheet;
     this.addEventListener('keydown', (event) => this.#enter(event));
-  }
-
-  override connectedCallback(): void {
-    super.connectedCallback();
-    this.#unsubscribe = this.#adapter?.onChange?.(() => this.requestUpdate());
-  }
-
-  override disconnectedCallback(): void {
-    super.disconnectedCallback();
-    this.#unsubscribe?.();
   }
 
   protected override createRenderRoot(): HTMLElement | DocumentFragment {
@@ -161,7 +151,7 @@ class LoginElementBase extends LitElement implements LoginElement {
   }
 
   protected override render(): TemplateResult {
-    const t = textsOf(this.#adapter);
+    const t = textsOf(this.#i18n.adapter);
     const providers = this.signInWith === null ? [] : this.providers;
 
     return html`
@@ -194,7 +184,7 @@ class LoginElementBase extends LitElement implements LoginElement {
   #submitTemplate(): TemplateResult {
     return html`
       <button
-        class="submit"
+        class="primary"
         type="button"
         ?disabled=${this.#running !== undefined}
         aria-busy=${this.submitting ? 'true' : 'false'}

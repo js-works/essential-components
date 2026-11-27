@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { createFileUploadClass } from '../../main/element/create-file-upload-class.js';
 import type { FileUploadElement, I18nAdapter, UploadParams } from '../../main/index.js';
-import { DEFAULT_THEME } from '../../main/themes/index.js';
+import { createFileUploadTheme } from '../../main/themes/index.js';
 
 type Pending = UploadParams & {
   resolve: (result?: string) => void;
@@ -1197,7 +1197,7 @@ describe('file upload element', () => {
       const Plain = class extends createFileUploadClass() {};
       const Themed = class extends createFileUploadClass({
         theme: {
-          ...DEFAULT_THEME,
+          ...createFileUploadTheme(),
           progressColor: 'light-dark(#0ca678, #63e6be)',
           borderRadius: '3px',
           buttonBorderRadius: '11px',
@@ -1234,9 +1234,12 @@ describe('file upload element', () => {
     });
 
     it('puts every color of the theme into the CSS', () => {
-      const colors = Object.keys(DEFAULT_THEME).filter((key) => key.endsWith('Color'));
+      const colors = Object.keys(createFileUploadTheme()).filter((key) => key.endsWith('Color'));
       const Colored = class extends createFileUploadClass({
-        theme: { ...DEFAULT_THEME, ...Object.fromEntries(colors.map((key, index) => [key, `rgb(${index}, 1, 2)`])) },
+        theme: {
+          ...createFileUploadTheme(),
+          ...Object.fromEntries(colors.map((key, index) => [key, `rgb(${index}, 1, 2)`])),
+        },
       }) {};
 
       customElements.define('colored-upload', Colored);

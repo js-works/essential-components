@@ -1,5 +1,5 @@
 import type { I18nAdapter } from './i18n.js';
-import type { AppHeaderTheme } from './theme.js';
+import type { CockpitTheme } from './theme.js';
 
 export type {
   AppHeaderClass,
@@ -59,12 +59,12 @@ type AppHeaderElement = HTMLElement & {
   // `null`: at that end of the history (the button disabled).
   back: AppHeaderStep | null;
   forward: AppHeaderStep | null;
-  theme: AppHeaderTheme;
+  theme: CockpitTheme;
 };
 
 type AppHeaderClassConfig = {
   // The first value of the element's `theme`.
-  theme?: AppHeaderTheme;
+  theme?: CockpitTheme;
   // The texts (the namespace `'cockpit'`, `CockpitTextKey`): the adapter, the same for every element of the class.
   // Without one: English and en-US.
   i18n?: I18nAdapter;

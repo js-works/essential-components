@@ -3,7 +3,7 @@ import { render } from 'lit';
 
 import type { DataTable } from '../../../../../packages/universal/data-table/src';
 import { setupDataTable } from '../../../../../packages/universal/data-table/src';
-import { defaultTheme } from '../../../../../packages/universal/data-table/src/themes';
+import { createDataTableTheme } from '../../../../../packages/universal/data-table/src/themes';
 import { createFileUploadClass } from '../../../../../packages/universal/file-upload/src/main';
 import {
   litDialogAdapter,
@@ -23,7 +23,7 @@ const litContent: DataTable.ContentAdapter<TemplateResult> = {
   render: (content, container) => render(content, container),
 };
 
-const [TableBase, createTableController] = setupDataTable({ theme: defaultTheme, content: litContent });
+const [TableBase, createTableController] = setupDataTable({ theme: createDataTableTheme(), content: litContent });
 
 class TableElement extends TableBase {}
 

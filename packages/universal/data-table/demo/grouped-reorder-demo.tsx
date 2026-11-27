@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import type { RowMove, TableActions, TableColumns } from '../src/react/index.js';
 import { createDataTableComponent, useDataTableController } from '../src/react/index.js';
-import { defaultTheme } from '../src/themes/index.js';
+import { createDataTableTheme } from '../src/themes/index.js';
 import type { AgendaItem } from './agenda.js';
 import { deleteSection, fetchAgenda, moveAgendaItem } from './agenda.js';
 import { fixedHeight, selectedLine } from './demo.module.css';
@@ -12,7 +12,7 @@ import { useToasts } from './toasts.js';
 
 export { GroupedReorderDemo };
 
-const DataTable = createDataTableComponent({ useI18n, theme: defaultTheme });
+const DataTable = createDataTableComponent({ useI18n, theme: createDataTableTheme() });
 
 const columns: TableColumns<AgendaItem> = [
   { key: 'title', header: 'Item', width: 5 },

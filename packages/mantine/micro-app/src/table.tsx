@@ -2,14 +2,14 @@ import type { ReactElement } from 'react';
 
 import type { DataTableProps, SavedFilters } from '@local/data-table/react';
 import { createDataTableComponent, useSavedFilters } from '@local/data-table/react';
-import { mantineTheme } from '@local/data-table/themes';
+import { createMantineDataTableTheme } from '@local/data-table/themes';
 
 import { useI18nAdapter } from './i18n-adapter.js';
 import { useSavedFilterStore } from './provider.js';
 
 export { DataTable, useSavedTableFilters };
 
-const BaseTable = createDataTableComponent({ useI18n: useI18nAdapter, theme: mantineTheme });
+const BaseTable = createDataTableComponent({ useI18n: useI18nAdapter, theme: createMantineDataTableTheme() });
 
 // The data table of a micro-app: in Mantine's look, compact, the footer only when there is something to page, the
 // number of rows after the title, 50 rows a page, unless a table says otherwise. In a `micro-app__table` without a

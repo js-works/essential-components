@@ -69,6 +69,11 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   buttons (light DOM) are in a `<style>` inside the container (`themedContainerStyles` in `src/main/toasts/styles.ts`),
   scoped to it by a prelude-less `@scope`, with `:scope` in the selectors for the specificity (0,3,1) that beats the
   app's button styles. No custom properties on the container.
+- The ready themes are functions (`css.md`), each taking the tokens to put on top (an `undefined` token hides
+  nothing), a new object each call: `createToastTheme(theme?)`, `createDialogTheme(theme?)` (the defaults,
+  `defaultToastTheme`, `defaultDialogTheme`: internal), `createWebawesomeToastTheme(theme?)`,
+  `createWebawesomeDialogTheme(theme?)` (`@local/overlays/themes/webawesome`). `createThemes(palette)` stays: it builds
+  both themes from a palette, not from a theme. Tests: `src/test/themes/themes.test.ts`.
 - No internal helper properties: a value used several times is a JS constant or function in the template string
   (`AFFORDANCE_SIZE`, `darkAccent()` in `src/main/toasts/element.ts`), a value per variant a rule per variant (the
   named widths of the dialogs; the dark appearance's accents per type, also for the action buttons). The demo's

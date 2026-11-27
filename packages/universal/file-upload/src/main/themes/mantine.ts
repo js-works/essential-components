@@ -1,7 +1,7 @@
-import { constant } from '../core/utils.js';
+import { constant, withoutUndefined } from '../core/utils.js';
 import type { FileUploadTheme } from '../index.js';
 
-export { MANTINE_THEME };
+export { createMantineFileUploadTheme };
 
 // The Mantine theme: maps the values onto Mantine's CSS variables, inherited into the shadow DOM. They adapt to
 // Mantine's color scheme and to the app's Mantine theme (its primary color, radius, font).
@@ -37,3 +37,8 @@ const MANTINE_THEME = constant<FileUploadTheme>({
   tooltipBorderRadius: 'calc(var(--mantine-radius-default) / 2)',
   tooltipTextColor: 'light-dark(var(--mantine-color-white), var(--mantine-color-black))',
 });
+
+// The Mantine theme with the given keys on top (an `undefined` key hides nothing): a new object each call.
+function createMantineFileUploadTheme(theme: Partial<FileUploadTheme> = {}): FileUploadTheme {
+  return { ...MANTINE_THEME, ...withoutUndefined(theme) };
+}
