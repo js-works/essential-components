@@ -3,7 +3,7 @@ import './ui/ui.css';
 import './demo.css';
 
 import type { FooterAction } from '../main/index.js';
-import { createAppHeaderClass, createCockpitClass } from '../main/index.js';
+import { createAppHeaderClass, createCockpitClass, createSystemBannerClass } from '../main/index.js';
 import { FEW, GROUPS, MANY, SOME } from './apps.js';
 import { DEMO_APP_HEADER_TAG, DemoApp } from './demo-app.js';
 import { accentSetting, MENU, navigationSetting, pageSettings, USER, userMenu } from './footer.js';
@@ -43,6 +43,7 @@ const appsAction: FooterAction = {
 
 customElements.define(DEMO_APP_HEADER_TAG, createAppHeaderClass({ i18n: DEMO_I18N }));
 customElements.define('demo-app', DemoApp);
+customElements.define('app-system-banner', createSystemBannerClass({ i18n: DEMO_I18N }));
 customElements.define(
   'app-cockpit',
   createCockpitClass({

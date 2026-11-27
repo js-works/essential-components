@@ -16,10 +16,19 @@ function styles(theme: CockpitTheme): string {
   return /* css */ `
 
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
   height: 100%;
   min-height: 0;
   color: ${v.text};
+}
+
+/* The host's banners (the slot \`banner\`) on top, as wide as the cockpit; the rest below them (\`.mount\`: the
+   dialogs and popups placed in it do not cover them). */
+.banners {
+  display: flex;
+  flex: none;
+  flex-direction: column;
 }
 
 /* nav-scheme="page": the navigation follows the page (light on a light page, dark on a dark one): every part that is
@@ -64,7 +73,8 @@ function styles(theme: CockpitTheme): string {
 
 .mount {
   position: relative;
-  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 button {

@@ -823,7 +823,9 @@ class CockpitElementBase extends LitElement implements CockpitElement {
     const rail = this.#rail;
     const active = this.#itemOf(this.#active);
     const status = active === undefined ? 'ready' : this.#status.get(active.id) ?? 'loading';
+    // The host's banners (the slot `banner`, e.g. a system banner) above all of it, as wide as the cockpit.
     return html`
+      <div class="banners"><slot name="banner"></slot></div>
       <div
         class="mount"
         data-layout=${topbar ? 'topbar' : bottom ? 'bottom' : 'sidebar'}

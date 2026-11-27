@@ -19,3 +19,10 @@ for (const prototype of [Document.prototype, ShadowRoot.prototype]) {
     });
   }
 }
+
+// jsdom has no `ResizeObserver` (the cockpit watches its own size): one that never reports.
+globalThis.ResizeObserver ??= class {
+  observe(): void {}
+  unobserve(): void {}
+  disconnect(): void {}
+};

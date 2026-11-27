@@ -8,6 +8,7 @@ import {
   createLoginComponent,
   createNavTreeComponent,
   createStatusViewComponent,
+  createSystemBannerComponent,
 } from '../../main/react/index.js';
 
 afterEach(cleanup);
@@ -133,5 +134,16 @@ describe('the React components', () => {
     expect(header.querySelector('[slot="crumb-0"] i')?.textContent).toBe('Boards');
     header.shadowRoot!.querySelector<HTMLButtonElement>('.history-button')!.click();
     expect(onBack).toHaveBeenCalledOnce();
+  });
+
+  it('the system banner\'s dismiss as a callback: preventDefault() keeps it', async () => {
+    const SystemBanner = createSystemBannerComponent();
+    const onDismiss = vi.fn((event: Event) => event.preventDefault());
+    const { container } = render(<SystemBanner tone="warning" message="Staging" dismissible onDismiss={onDismiss} />);
+    const banner = await elementIn<HTMLElement>(container, 'system-banner');
+
+    banner.shadowRoot!.querySelector<HTMLButtonElement>('.close')!.click();
+    expect(onDismiss).toHaveBeenCalledOnce();
+    expect(banner.hidden).toBe(false);
   });
 });

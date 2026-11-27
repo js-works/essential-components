@@ -7,8 +7,15 @@ import type {
   NavTreeItem,
   StatusViewElement,
   StatusViewKind,
+  SystemBannerElement,
+  SystemBannerTone,
 } from '../main/index.js';
-import { createAppHeaderClass, createNavTreeClass, createStatusViewClass } from '../main/index.js';
+import {
+  createAppHeaderClass,
+  createNavTreeClass,
+  createStatusViewClass,
+  createSystemBannerClass,
+} from '../main/index.js';
 import { wireAppHeader } from './app-header-demo.js';
 import { DEMO_I18N } from './i18n.js';
 import { mountReactDemo } from './react-demo.js';
@@ -139,6 +146,7 @@ class CockpitDemo extends HTMLElement {
       <button class="ui-tabs__tab" type="button">App header</button>
       <button class="ui-tabs__tab" type="button">Nav tree</button>
       <button class="ui-tabs__tab" type="button">Status view</button>
+      <button class="ui-tabs__tab" type="button">System banner</button>
       <button class="ui-tabs__tab" type="button">React</button>
       <button class="ui-tabs__tab" type="button">Cockpit</button>
     </nav>
@@ -237,6 +245,30 @@ class CockpitDemo extends HTMLElement {
       <output class="ui-result cockpit-demo__log" data-status-log></output>
     </section>
     <section class="ui-tabs__panel ui-stack" hidden>
+      <p class="ui-note">A strip for what every user must see (<code>createSystemBannerClass()</code>): maintenance, a
+        test environment, acting as another user. In the cockpit its slot <code>banner</code>, above everything (the
+        package's own demo shows one). The button fires <code>action</code>, the close button <code>dismiss</code>
+        (not canceled, the banner hides itself; here it comes back after a second).</p>
+      <form class="ui-toolbar" data-banner-switches>
+        <label class="ui-field">Tone
+          <select class="ui-select" name="tone">
+            <option value="info" selected>Info</option>
+            <option value="warning">Warning</option>
+            <option value="danger">Danger</option>
+            <option value="success">Success</option>
+          </select>
+        </label>
+        <label class="ui-field"><input class="ui-checkbox" type="checkbox" name="action" checked> Button</label>
+        <label class="ui-field"><input class="ui-checkbox" type="checkbox" name="dismissible" checked> Close button</label>
+      </form>
+      <div class="cockpit-demo__frame">
+        <${tags.banner} data-banner></${tags.banner}>
+        <div class="cockpit-demo__page">The page below the banner.</div>
+      </div>
+      <h2 class="ui-heading">Events</h2>
+      <output class="ui-result cockpit-demo__log" data-banner-log></output>
+    </section>
+    <section class="ui-tabs__panel ui-stack" hidden>
       <p class="ui-note">The React components of <code>@local/cockpit/react</code>
         (<code>createNavTreeComponent()</code>, <code>createStatusViewComponent()</code>, …): the elements' properties
         as props, their slots as nodes (<code>top</code>), their events as callbacks (<code>onNavigate</code>), the
@@ -290,6 +322,44 @@ class CockpitDemo extends HTMLElement {
     applySwitches();
     this.#wireTree();
     this.#wireStatus();
+    this.#wireBanner();
+  }
+
+  // The system banner: the switches set its tone, its button and its close button; a dismissed banner comes back after
+  // a second (the demo's).
+  #wireBanner(): void {
+    const banner = this.querySelector<SystemBannerElement>('[data-banner]')!;
+    const log = this.querySelector<HTMLOutputElement>('[data-banner-log]')!;
+    const switches = this.querySelector<HTMLFormElement>('[data-banner-switches]')!;
+    const messages: Readonly<Record<SystemBannerTone, string>> = Object.freeze({
+      info: 'A new version is available. Reload to get it.',
+      warning: 'Maintenance on Sunday, 8 to 10 am: the apps will not be available.',
+      danger: 'You are acting as Jane Doe. Everything you do is done in her name.',
+      success: 'All systems are running again.',
+    });
+    const write = (line: string) => {
+      log.textContent = `${line}\n${log.textContent ?? ''}`.split('\n').slice(0, 8).join('\n');
+    };
+
+    banner.addEventListener('action', () => write(`action (${banner.tone})`));
+    banner.addEventListener('dismiss', () => {
+      write(`dismiss (${banner.tone})`);
+      setTimeout(() => {
+        banner.hidden = false;
+      }, 1000);
+    });
+
+    const apply = () => {
+      const data = new FormData(switches);
+
+      banner.tone = String(data.get('tone')) as SystemBannerTone;
+      banner.message = messages[banner.tone];
+      banner.actionLabel = data.get('action') === null ? '' : banner.tone === 'danger' ? 'Stop' : 'Details';
+      banner.dismissible = data.get('dismissible') !== null;
+    };
+
+    switches.addEventListener('change', apply);
+    apply();
   }
 
   // The status view: the switches set its layout, kind, button and brand, the host's texts and icon (the slot `icon`) and
@@ -375,13 +445,14 @@ class CockpitDemo extends HTMLElement {
   }
 }
 
-// The classes of the headers, the nav tree and the status view, registered once under tags of the demo.
-function defineHeaders(): { plain: string; themed: string; tree: string; status: string } {
+// The classes of the headers, the nav tree, the status view and the system banner, registered once under tags of the demo.
+function defineHeaders(): { plain: string; themed: string; tree: string; status: string; banner: string } {
   const tags = {
     plain: 'cockpit-demo-header',
     themed: 'cockpit-demo-header-themed',
     tree: 'cockpit-demo-nav-tree',
     status: 'cockpit-demo-status-view',
+    banner: 'cockpit-demo-system-banner',
   };
 
   if (customElements.get(tags.plain) === undefined) {
@@ -389,6 +460,7 @@ function defineHeaders(): { plain: string; themed: string; tree: string; status:
     customElements.define(tags.themed, createAppHeaderClass({ theme: OWN_THEME, i18n: DEMO_I18N }));
     customElements.define(tags.tree, createNavTreeClass({ i18n: DEMO_I18N, storageKey: 'cockpit-demo-nav-tree' }));
     customElements.define(tags.status, createStatusViewClass({ i18n: DEMO_I18N }));
+    customElements.define(tags.banner, createSystemBannerClass({ i18n: DEMO_I18N }));
   }
 
   return tags;

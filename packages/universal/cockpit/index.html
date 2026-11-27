@@ -6,7 +6,9 @@
     <title>App cockpit demo</title>
   </head>
   <body>
-    <app-cockpit></app-cockpit>
+    <app-cockpit>
+      <app-system-banner slot="banner" tone="warning" message="Demo environment: the apps and their data are made up." dismissible></app-system-banner>
+    </app-cockpit>
     <script type="module" src="/src/demo/main.ts"></script>
   </body>
 </html>

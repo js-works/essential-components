@@ -135,7 +135,7 @@ The rules of this repository on top of them:
     - "Internals": the folders
       "Components" ("Data table", "File upload", "Dialogs + Toasts", "Form validation" (2026-10-07; a "Planned"
       placeholder before), "Rich text" (2026-10-17, `packages/mantine/rich-text/demo/rich-text-demo.tsx`), "Micro-app" (2026-10-17,
-      `packages/mantine/micro-app/demo/micro-app-demo.tsx`), "Cockpit" (`packages/universal/cockpit/src/demo/cockpit-demo.ts`: the app header with a made-up router, its switcher, an own theme and an events log; the nav tree on its own; the status view; the React components; the cockpit itself is this page)) and "Planned" ("Autocomplete"; placeholders of `demo/planned/planned-demo.ts` (`planned-demo`): what it will be, and that there is
+      `packages/mantine/micro-app/demo/micro-app-demo.tsx`), "Cockpit" (`packages/universal/cockpit/src/demo/cockpit-demo.ts`: the app header with a made-up router, its switcher, an own theme and an events log; the nav tree on its own; the status view; the system banner; the React components; the cockpit itself is this page)) and "Planned" ("Autocomplete"; placeholders of `demo/planned/planned-demo.ts` (`planned-demo`): what it will be, and that there is
       no demo yet, in a light gray box with rounded corners, `demo.css`).
     - The apps of "Apps" are pinned (`placement: 'pinned'`, 2026-10-08, the user's wish; File Center and User Manager
       too for a few hours): entries of

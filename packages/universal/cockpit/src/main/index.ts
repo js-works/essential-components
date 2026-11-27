@@ -3,6 +3,7 @@ import { createCockpitClass } from './element/create-cockpit-class.js';
 import { createLoginClass } from './login/create-login-class.js';
 import { createNavTreeClass } from './nav-tree/create-nav-tree-class.js';
 import { createStatusViewClass } from './status-view/create-status-view-class.js';
+import { createSystemBannerClass } from './system-banner/create-system-banner-class.js';
 import { createCockpitTheme, createMantineCockpitTheme } from './themes/index.js';
 
 export type * from './api/base.js';
@@ -13,6 +14,7 @@ export type * from './api/menus.js';
 export type * from './api/nav-tree.js';
 export type * from './api/navigation.js';
 export type * from './api/status-view.js';
+export type * from './api/system-banner.js';
 export type * from './api/texts.js';
 export type * from './api/theme.js';
 export {
@@ -23,4 +25,5 @@ export {
   createMantineCockpitTheme,
   createNavTreeClass,
   createStatusViewClass,
+  createSystemBannerClass,
 };

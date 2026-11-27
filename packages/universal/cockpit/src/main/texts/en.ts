@@ -63,4 +63,6 @@ const EN = {
   statusViewMaintenanceMessage: () => 'We are making improvements. Please try again later.',
   statusViewError: () => 'Something went wrong',
   statusViewErrorMessage: () => 'An unexpected error occurred. Please try again.',
+  // The system banner's close button.
+  systemBannerDismiss: () => 'Dismiss',
 };

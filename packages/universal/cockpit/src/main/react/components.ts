@@ -9,6 +9,8 @@ import type {
   NavTreeProps,
   StatusViewComponentConfig,
   StatusViewProps,
+  SystemBannerComponentConfig,
+  SystemBannerProps,
 } from './api/index.js';
 import { defineComponent } from './define-component.js';
 
@@ -18,6 +20,7 @@ export {
   createLoginComponent,
   createNavTreeComponent,
   createStatusViewComponent,
+  createSystemBannerComponent,
 };
 
 // The React components of the package's elements, one factory per element class (`createNavTreeClass` …), with the
@@ -62,6 +65,18 @@ function createStatusViewComponent(config: StatusViewComponentConfig = {}) {
     },
     events: { onAction: 'action' },
     slots: { icon: 'icon', logo: 'logo', footer: 'footer', hint: 'hint' },
+  }, useI18n);
+}
+
+function createSystemBannerComponent(config: SystemBannerComponentConfig = {}) {
+  const { useI18n, ...classConfig } = config;
+
+  return defineComponent<SystemBannerProps>({
+    name: 'system-banner',
+    createClass: (client) => client.createSystemBannerClass(classConfig),
+    properties: { tone: 'info', message: '', actionLabel: '', dismissible: false },
+    events: { onAction: 'action', onDismiss: 'dismiss' },
+    slots: {},
   }, useI18n);
 }
 

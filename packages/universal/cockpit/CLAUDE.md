@@ -33,7 +33,8 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   (`CockpitTheme`: one theme for every element), `nav-tree.ts` (`NavTreeElement`, `NavTreeClass`, `NavTreeClassConfig`, `NavTreeItem`,
   `NavTreeNavigateDetail`), `login.ts` (the login's: `LoginElement`, `LoginClass`,
   `LoginClassConfig`, `LoginProvider`), `status-view.ts` (`StatusViewElement`, `StatusViewClass`,
-  `StatusViewClassConfig`, `StatusViewKind`, `StatusViewLayout`), the React entry's in `src/main/react/api/`, `texts.ts` (`CockpitTextKey`, `CockpitParams`, read from the English texts), `i18n.ts`
+  `StatusViewClassConfig`, `StatusViewKind`, `StatusViewLayout`), `system-banner.ts` (`SystemBannerElement`,
+  `SystemBannerClass`, `SystemBannerClassConfig`, `SystemBannerTone`), the React entry's in `src/main/react/api/`, `texts.ts` (`CockpitTextKey`, `CockpitParams`, read from the English texts), `i18n.ts`
   (`I18nAdapter`, `TextParams`: a verbatim copy of those in `frontend/i18n.md`).
   `src/main/index.ts` exports them flat (`typescript.md`): `import type { NavItem } from '@local/cockpit'`. The demos'
   variables of the element are `cockpitElement` or `element`.
@@ -62,7 +63,7 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   of the cockpit, shown through the default slot (`<main><slot></slot></main>`): mini-apps put their CSS globally
   (e.g. into `document.head`), which would not reach into a shadow root. The cockpit replaces that child itself on
   navigation (`load()`, then the element from `NavItem.element`). Named slots for the host's parts (`logo`,
-  `sidebar-end`). The popups are rendered inside the shadow root, positioned `fixed`.
+  `sidebar-end`, `banner`). The popups are rendered inside the shadow root, positioned `fixed`.
 - The menus: `Menu` (`src/main/element/menu.ts`), one per key (`#menu(key, options)` of the element, made on first use and
   kept), with the options of the latest render (`placement`, `anchor`, `sameWidth`, `gutter`, `selected`,
   `onSelect`). The menu keeps its state (`open`, `highlighted`); the templates write its parts out, no spreading: the
@@ -608,12 +609,34 @@ This repository's rules for it (see the root's `CLAUDE.md`):
 - Tests: `src/test/status-view/status-view-element.test.ts`.
 - Not used by the root's apps yet.
 
+## The system banner
+
+- `createSystemBannerClass({ theme?, i18n? })`, `SystemBannerElement` (suggested `<app-system-banner>`; not "banner"
+  alone: ARIA's `banner` is the page's header landmark): a strip for what every user must see (planned maintenance, a
+  test environment, acting as another user), in `src/main/system-banner/`, in the main entry.
+- `tone` (reflected): `info` (the default, the accent), `warning`, `danger`, `success` (the design language's colors);
+  an invalid attribute is the default, an invalid value a `RangeError`. Its icon (Tabler's `info-circle`,
+  `alert-triangle`, `alert-octagon`, `circle-check`) and border line in the tone's color, a light tint of it as the
+  background (the tone's colors put into a rule per tone: no custom properties). `danger` is `role="alert"`, the others
+  `role="status"`.
+- `message` (the text; empty: the default slot, e.g. a message with a link), `action-label` (an outlined button at the
+  end, `action`), `dismissible` (a close button, labeled `systemBannerDismiss`, "Dismiss": a cancelable `dismiss`; not
+  canceled, the banner hides itself, `hidden`; remembering it is the host's).
+- In the cockpit: its slot `banner` (`.banners`, a flex column above `.mount`: as wide as the cockpit, above the
+  sidebar, the topbar and the app; the dialogs and popups placed in `.mount` do not cover it). Several stack.
+- The demos: the package's cockpit shows one (`index.html`, a warning: "Demo environment"); the tab "System banner"
+  of `src/demo/cockpit-demo.ts` (switches for the tone, the button and the close button; a dismissed one comes back
+  after a second; a log of the events).
+- Tests: `src/test/system-banner/system-banner-element.test.ts` (the message, the tones and their roles, the default
+  slot, the attribute, `action`, `dismiss` canceled or not, the cockpit's slot); `src/test/setup.ts` stubs
+  `ResizeObserver` for the cockpit in jsdom.
+
 ## The React components
 
 - The entry `@local/cockpit/react` (`src/main/react/`, an add-on: removable in one piece; React an optional peer
   dependency, `>=19`): one factory per element class, with the class's config and the i18n as a hook (`useI18n`,
   `i18n.md`): `createNavTreeComponent`, `createStatusViewComponent`, `createLoginComponent`,
-  `createAppHeaderComponent`, `createCockpitComponent`. Its types in `src/main/react/api/` (`NavTreeProps`,
+  `createAppHeaderComponent`, `createCockpitComponent`, `createSystemBannerComponent` (`onAction`, `onDismiss`). Its types in `src/main/react/api/` (`NavTreeProps`,
   `NavTreeComponentConfig`, …, `CockpitCommonProps`); the entry also exports the main entry's types.
 - One generic wrapper (`define-component.tsx`, `defineComponent(spec, useI18n)`), each factory a spec
   (`components.ts`): the props set as properties (only the changed ones; a missing prop is the element's default,
@@ -699,7 +722,7 @@ This repository's rules for it (see the root's `CLAUDE.md`):
   (`styles.ts`); the taskbar (`taskbar-element.ts`, `taskbar-styles.ts`); `src/main/nav-tree/`: the nav tree (`create-nav-tree-class.ts`, `nav-tree-element-base.ts`,
   `nav-tree-styles.ts`, `nav-tree-tag.ts`); `src/main/login/`: the login (`create-login-class.ts`, `login-element-base.ts`, `login-styles.ts`);
   `src/main/status-view/`: the status view (`create-status-view-class.ts`, `status-view-element-base.ts`,
-  `status-view-styles.ts`); `src/main/react/`: the React components (see there); `src/main/screen/screen-styles.ts`: the CSS they share;
+  `status-view-styles.ts`); `src/main/system-banner/`: the system banner; `src/main/react/`: the React components (see there); `src/main/screen/screen-styles.ts`: the CSS they share;
   `src/main/core/`: groups (`groupsOf`, `subgroupsOf`: the groups and folders of the navigation), search, texts,
   storage; `src/main/texts/en.ts`: the English texts; `locales/`: the ICU messages; `src/demo/i18n.ts`: the demos' German.
 - `src/demo/`: the package's demo (`npm run dev`), with 3, 30 or 100 apps (the "Apps" choice in the footer; `?apps=some`,
@@ -712,7 +735,7 @@ This repository's rules for it (see the root's `CLAUDE.md`):
 - `src/demo/cockpit-demo.ts` (`CockpitDemo`, light DOM, exported, not registered; its CSS `cockpit-demo.css`): the
   root page's "Cockpit" (Internals › Components). The app header twice (the default look, an own theme) with a made-up
   router (its own list of paths), switches (the switcher, its descriptions, the width) and a log of the events; a
-  second tab the nav tree (see "The nav tree"), a third the status view, a fourth the React components; a fifth says where the cockpit is (the page itself: it owns the URL hash, so it cannot run inside it).
+  second tab the nav tree (see "The nav tree"), a third the status view, a fourth the system banner, a fifth the React components; a sixth says where the cockpit is (the page itself: it owns the URL hash, so it cannot run inside it).
 - `npm run typecheck`, `npm run build` (library mode; Lit stays outside), `npm run format`.
 - `npm test` (Vitest, in jsdom; `src/test/setup.ts` adds what jsdom lacks: `adoptedStyleSheets`).
 - `npm run loc` (`src/main`), `npm run loc:all` (all of `src`): the lines (all, code, comments, blank) by kind and by folder,

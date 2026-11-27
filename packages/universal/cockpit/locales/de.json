@@ -51,5 +51,6 @@
   "statusViewEmpty": "Noch nichts vorhanden",
   "statusViewEmptyMessage": "Sobald etwas hinzugefügt wird, erscheint es hier.",
   "statusViewNoResults": "Keine Treffer",
-  "statusViewNoResultsMessage": "Versuchen Sie andere Suchbegriffe oder Filter."
+  "statusViewNoResultsMessage": "Versuchen Sie andere Suchbegriffe oder Filter.",
+  "systemBannerDismiss": "Ausblenden"
 }

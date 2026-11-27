@@ -59,6 +59,7 @@ const GERMAN: Readonly<Record<string, string>> = {
   statusViewMaintenanceMessage: 'Wir nehmen Verbesserungen vor. Bitte versuchen Sie es später erneut.',
   statusViewError: 'Etwas ist schiefgelaufen',
   statusViewErrorMessage: 'Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.',
+  systemBannerDismiss: 'Ausblenden',
 };
 
 // The demo's adapter: the page's language (`<html lang>`, set by the footer's language switch), German for `de…`,

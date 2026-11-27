@@ -51,5 +51,6 @@
   "statusViewEmpty": "Nothing here yet",
   "statusViewEmptyMessage": "Once something is added, it shows up here.",
   "statusViewNoResults": "No results",
-  "statusViewNoResultsMessage": "Try other search terms or filters."
+  "statusViewNoResultsMessage": "Try other search terms or filters.",
+  "systemBannerDismiss": "Dismiss"
 }

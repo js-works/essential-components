@@ -4,6 +4,7 @@ import {
   createLoginComponent,
   createNavTreeComponent,
   createStatusViewComponent,
+  createSystemBannerComponent,
 } from './components.js';
 
 export type * from '../index.js';
@@ -14,4 +15,5 @@ export {
   createLoginComponent,
   createNavTreeComponent,
   createStatusViewComponent,
+  createSystemBannerComponent,
 };
